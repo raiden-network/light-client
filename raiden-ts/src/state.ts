@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as t from 'io-ts';
-import { AddressZero } from 'ethers/constants';
-import { Network, getNetwork } from 'ethers/utils';
+import { AddressZero } from '@ethersproject/constants';
+import { Network, getNetwork } from '@ethersproject/networks';
 
 import { PartialRaidenConfig } from './config';
 import { ContractsInfo } from './types';

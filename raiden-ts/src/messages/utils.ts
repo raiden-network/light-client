@@ -1,9 +1,10 @@
 import * as t from 'io-ts';
-import { Signer } from 'ethers/abstract-signer';
-import { keccak256, RLP, verifyMessage } from 'ethers/utils';
-import { arrayify, concat, hexlify } from 'ethers/utils/bytes';
-import { encode as rlpEncode } from 'ethers/utils/rlp';
-import { HashZero } from 'ethers/constants';
+import type { Signer } from '@ethersproject/abstract-signer';
+import { keccak256 } from '@ethersproject/keccak256';
+import { encode as rlpEncode } from '@ethersproject/rlp';
+import { verifyMessage } from '@ethersproject/wallet';
+import { arrayify, concat as concatBytes, hexlify } from '@ethersproject/bytes';
+import { HashZero } from '@ethersproject/constants';
 import logging from 'loglevel';
 
 import { LocksrootZero } from '../constants';
@@ -47,8 +48,8 @@ export enum MessageTypeId {
  * @returns Hash of the metadata.
  */
 export function createMetadataHash(metadata: Metadata): Hash {
-  const routeHashes = metadata.routes.map((value) => keccak256(RLP.encode(value.route)) as Hash);
-  return keccak256(RLP.encode(routeHashes)) as Hash;
+  const routeHashes = metadata.routes.map((value) => keccak256(rlpEncode(value.route)) as Hash);
+  return keccak256(rlpEncode(routeHashes)) as Hash;
 }
 
 /**
@@ -70,7 +71,11 @@ export function createBalanceHash({
   (locksroot === HashZero || locksroot === LocksrootZero)
     ? HashZero
     : keccak256(
-        concat([encode(transferredAmount, 32), encode(lockedAmount, 32), encode(locksroot, 32)]),
+        concatBytes([
+          encode(transferredAmount, 32),
+          encode(lockedAmount, 32),
+          encode(locksroot, 32),
+        ]),
       )) as Hash;
 }
 
@@ -84,7 +89,7 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
   switch (message.type) {
     case MessageType.LOCKED_TRANSFER:
       // hash of packed representation of the whole message
-      let packed = concat([
+      let packed = concatBytes([
         encode(CMDIDs[message.type], 1),
         encode(message.message_identifier, 8),
         encode(message.payment_identifier, 8),
@@ -98,11 +103,11 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
       ]);
 
       if (message.type === MessageType.LOCKED_TRANSFER)
-        packed = concat([packed, createMetadataHash(message.metadata)]);
+        packed = concatBytes([packed, createMetadataHash(message.metadata)]);
       return keccak256(packed) as Hash;
     case MessageType.UNLOCK:
       return keccak256(
-        concat([
+        concatBytes([
           encode(CMDIDs[message.type], 1),
           encode(message.message_identifier, 8),
           encode(message.payment_identifier, 8),
@@ -111,7 +116,7 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
       ) as Hash;
     case MessageType.LOCK_EXPIRED:
       return keccak256(
-        concat([
+        concatBytes([
           encode(CMDIDs[message.type], 1),
           encode(message.message_identifier, 8),
           encode(message.recipient, 20),
@@ -135,7 +140,7 @@ export function packMessage(message: Message) {
   switch (message.type) {
     case MessageType.DELIVERED:
       return hexlify(
-        concat([
+        concatBytes([
           encode(CMDIDs[message.type], 1),
           encode(0, 3), // pad(3)
           encode(message.delivered_message_identifier, 8),
@@ -143,7 +148,7 @@ export function packMessage(message: Message) {
       ) as HexString<12>;
     case MessageType.PROCESSED:
       return hexlify(
-        concat([
+        concatBytes([
           encode(CMDIDs[message.type], 1),
           encode(0, 3), // pad(3)
           encode(message.message_identifier, 8),
@@ -159,7 +164,7 @@ export function packMessage(message: Message) {
           locksroot: message.locksroot,
         });
       return hexlify(
-        concat([
+        concatBytes([
           encode(message.token_network_address, 20),
           encode(message.chain_id, 32),
           encode(MessageTypeId.BALANCE_PROOF, 32),
@@ -172,7 +177,7 @@ export function packMessage(message: Message) {
     }
     case MessageType.SECRET_REQUEST:
       return hexlify(
-        concat([
+        concatBytes([
           encode(CMDIDs[message.type], 1),
           encode(0, 3),
           encode(message.message_identifier, 8),
@@ -184,7 +189,7 @@ export function packMessage(message: Message) {
       ) as HexString<116>;
     case MessageType.SECRET_REVEAL:
       return hexlify(
-        concat([
+        concatBytes([
           encode(CMDIDs[message.type], 1),
           encode(0, 3),
           encode(message.message_identifier, 8),
@@ -194,7 +199,7 @@ export function packMessage(message: Message) {
     case MessageType.WITHDRAW_REQUEST:
     case MessageType.WITHDRAW_CONFIRMATION:
       return hexlify(
-        concat([
+        concatBytes([
           encode(message.token_network_address, 20),
           encode(message.chain_id, 32),
           encode(MessageTypeId.WITHDRAW, 32),
@@ -206,7 +211,7 @@ export function packMessage(message: Message) {
       ) as HexString<200>;
     case MessageType.WITHDRAW_EXPIRED:
       return hexlify(
-        concat([
+        concatBytes([
           encode(CMDIDs[message.type], 1),
           encode(0, 3),
           encode(message.nonce, 32),
@@ -222,7 +227,7 @@ export function packMessage(message: Message) {
       ) as HexString<244>;
     case MessageType.PFS_CAPACITY_UPDATE:
       return hexlify(
-        concat([
+        concatBytes([
           encode(message.canonical_identifier.chain_identifier, 32),
           encode(message.canonical_identifier.token_network_address, 20),
           encode(message.canonical_identifier.channel_identifier, 32),
@@ -237,7 +242,7 @@ export function packMessage(message: Message) {
       ) as HexString<236>;
     case MessageType.PFS_FEE_UPDATE:
       return hexlify(
-        concat([
+        concatBytes([
           encode(message.canonical_identifier.chain_identifier, 32),
           encode(message.canonical_identifier.token_network_address, 20),
           encode(message.canonical_identifier.channel_identifier, 32),
@@ -251,7 +256,7 @@ export function packMessage(message: Message) {
       ) as HexString; // variable size of fee_schedule.imbalance_penalty rlpEncoding, when not null
     case MessageType.MONITOR_REQUEST:
       return hexlify(
-        concat([
+        concatBytes([
           encode(message.monitoring_service_contract_address, 20),
           encode(message.balance_proof.chain_id, 32),
           encode(MessageTypeId.MS_REWARD, 32),

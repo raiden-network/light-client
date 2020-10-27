@@ -1,6 +1,9 @@
-import { concat, hexlify } from 'ethers/utils/bytes';
-import { keccak256, randomBytes, bigNumberify, sha256 } from 'ethers/utils';
-import { HashZero } from 'ethers/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { concat as concatBytes, hexlify } from '@ethersproject/bytes';
+import { randomBytes } from '@ethersproject/random';
+import { keccak256 } from '@ethersproject/keccak256';
+import { sha256 } from '@ethersproject/sha2';
+import { HashZero } from '@ethersproject/constants';
 import { first, mergeMap, map, filter } from 'rxjs/operators';
 import { of, from, defer, Observable } from 'rxjs';
 
@@ -26,7 +29,7 @@ export function getLocksroot(locks: readonly Lock[]): Hash {
   const encoded: HexString[] = [];
   for (const lock of locks)
     encoded.push(encode(lock.expiration, 32), encode(lock.amount, 32), lock.secrethash);
-  return keccak256(concat(encoded)) as Hash;
+  return keccak256(concatBytes(encoded)) as Hash;
 }
 
 /**
@@ -56,7 +59,7 @@ export function makeSecret(length = 32): Secret {
  * @returns UInt<8>
  */
 export function makePaymentId(): UInt<8> {
-  return bigNumberify(Date.now()) as UInt<8>;
+  return BigNumber.from(Date.now()) as UInt<8>;
 }
 
 /**
@@ -65,7 +68,7 @@ export function makePaymentId(): UInt<8> {
  * @returns UInt<8>
  */
 export function makeMessageId(): UInt<8> {
-  return bigNumberify(Date.now()) as UInt<8>;
+  return BigNumber.from(Date.now()) as UInt<8>;
 }
 
 /**

@@ -1,7 +1,8 @@
-import { padZeros, hexlify, keccak256 } from 'ethers/utils';
+import { hexZeroPad } from '@ethersproject/bytes';
+import { keccak256 } from '@ethersproject/keccak256';
 import { Signature, Hash } from './utils/types';
 
-export const SignatureZero = hexlify(padZeros([], 65)) as Signature;
+export const SignatureZero = hexZeroPad([], 65) as Signature;
 
 // LocksrootZero = getLocksroot([]) = '0xc5d2...a470';
 export const LocksrootZero = keccak256([]) as Hash;

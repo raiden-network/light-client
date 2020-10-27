@@ -18,8 +18,8 @@ import {
   retryWhen,
   mapTo,
 } from 'rxjs/operators';
-import { Zero } from 'ethers/constants';
-import { ContractTransaction, ContractReceipt } from 'ethers/contract';
+import { Zero } from '@ethersproject/constants';
+import type { ContractTransaction, ContractReceipt } from '@ethersproject/contracts';
 import logging, { Logger } from 'loglevel';
 
 import { HumanStandardToken } from '../contracts/HumanStandardToken';
@@ -314,7 +314,7 @@ export function approveIfNeeded$(
   let resetAllowance$: Observable<true> = of(true);
   if (!allowance.isZero())
     resetAllowance$ = retryAsync$(
-      () => tokenContract.functions.approve(spender, 0),
+      () => tokenContract.approve(spender, 0),
       provider.pollingInterval,
       networkErrorRetryPredicate,
     ).pipe(assertTx('approve', approveError, { log, provider }), mapTo(true));
@@ -325,7 +325,7 @@ export function approveIfNeeded$(
   return resetAllowance$.pipe(
     mergeMap(() =>
       retryAsync$(
-        () => tokenContract.functions.approve(spender, bnMax(minimumAllowance, deposit)),
+        () => tokenContract.approve(spender, bnMax(minimumAllowance, deposit)),
         provider.pollingInterval,
         networkErrorRetryPredicate,
       ),

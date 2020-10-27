@@ -1,14 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Zero, One, Two } from 'ethers/constants';
-import { BigNumber, bigNumberify, toUtf8Bytes } from 'ethers/utils';
+import { Zero, One, Two } from '@ethersproject/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { toUtf8Bytes } from '@ethersproject/strings';
 import {
-  Arrayish,
+  BytesLike,
+  isBytesLike,
+  Hexable,
   hexlify,
-  isArrayish,
   hexZeroPad,
   hexDataLength,
   isHexString,
-} from 'ethers/utils/bytes';
+} from '@ethersproject/bytes';
 import JSONbig from 'json-bigint';
 
 import { BigNumberC, HexString } from './types';
@@ -26,14 +28,14 @@ import { RaidenError, ErrorCodes } from './error';
  * @returns HexString byte-array of length
  */
 export function encode<S extends number = number>(
-  data: boolean | number | string | Arrayish | BigNumber,
+  data: boolean | number | Hexable | BytesLike,
   length: S,
 ): HexString<S> {
   let hex: HexString<S>;
   if (typeof data === 'boolean') data = data ? One : Zero;
-  else if (typeof data === 'number') data = bigNumberify(data);
+  else if (typeof data === 'number') data = BigNumber.from(data);
   if (typeof data === 'string' && !isHexString(data)) data = toUtf8Bytes(data);
-  if (isArrayish(data)) data = hexlify(data);
+  if (isBytesLike(data)) data = hexlify(data);
 
   if (BigNumberC.is(data)) {
     if (data.lt(0)) throw new RaidenError(ErrorCodes.DTA_NEGATIVE_NUMBER);

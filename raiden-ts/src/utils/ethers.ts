@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Contract, Event } from 'ethers/contract';
-import { JsonRpcProvider, Listener, EventType, Filter, Log } from 'ethers/providers';
-import { Network } from 'ethers/utils';
-import { getNetwork as parseNetwork } from 'ethers/utils/networks';
+import type { Contract, Event } from '@ethersproject/contracts';
+import type {
+  JsonRpcProvider,
+  Listener,
+  EventType,
+  Filter,
+  Log,
+  Network,
+} from '@ethersproject/providers';
+import { getNetwork as parseNetwork } from '@ethersproject/networks';
 import { Observable, fromEventPattern, from, EMPTY, defer } from 'rxjs';
 import { mergeMap, debounceTime, catchError, exhaustMap } from 'rxjs/operators';
 
@@ -130,21 +136,18 @@ export function logToContractEvent<T extends ContractEvent>(contract: Contract, 
     // ignore removed (reorg'd) events (reorgs are handled by ConfirmableActions logic)
     // and parse errors (shouldn't happen)
     if (log.removed === true || !parsed) return;
-    const args = Array.prototype.slice.call(parsed.values);
     // not all parameters quite needed right now, but let's comply with the interface
     const event: Event = {
       ...log,
       ...parsed,
-      args,
       removeListener: () => {
         /* getLogs don't install filter */
       },
       getBlock: () => contract.provider.getBlock(log.blockHash!),
       getTransaction: () => contract.provider.getTransaction(log.transactionHash!),
       getTransactionReceipt: () => contract.provider.getTransactionReceipt(log.transactionHash!),
-      decode: (data: string, topics?: string[]) => parsed.decode(data, topics || log.topics),
     };
-    return [...args, event] as T;
+    return [...parsed.args, event] as T;
   };
   return log !== undefined ? mapper(log) : mapper;
 }

@@ -1,4 +1,4 @@
-import { Zero, AddressZero, One } from 'ethers/constants';
+import { Zero, AddressZero, One } from '@ethersproject/constants';
 
 import { UInt, Address, Hash } from '../utils/types';
 import { Reducer, createReducer } from '../utils/actions';

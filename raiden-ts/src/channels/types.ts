@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import { Zero, AddressZero, HashZero } from 'ethers/constants';
+import { Zero, AddressZero, HashZero } from '@ethersproject/constants';
 
 import { SignatureZero, LocksrootZero } from '../constants';
 import { Address, Hash, UInt, Signed } from '../utils/types';

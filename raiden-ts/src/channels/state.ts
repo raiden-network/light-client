@@ -1,5 +1,5 @@
 import * as t from 'io-ts';
-import { BigNumber } from 'ethers/utils';
+import type { BigNumber } from '@ethersproject/bignumber';
 
 import { UInt, Address, Signed, Int } from '../utils/types';
 import { WithdrawRequest, WithdrawExpired, WithdrawConfirmation } from '../messages';

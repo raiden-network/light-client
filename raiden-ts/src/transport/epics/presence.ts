@@ -20,7 +20,8 @@ import minBy from 'lodash/minBy';
 import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import pick from 'lodash/pick';
-import { getAddress, verifyMessage } from 'ethers/utils';
+import { getAddress } from '@ethersproject/address';
+import { verifyMessage } from '@ethersproject/wallet';
 import { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 
 import { exponentialBackoff } from '../../transfers/epics/utils';

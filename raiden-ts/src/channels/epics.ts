@@ -6,7 +6,7 @@ import {
   EMPTY,
   merge,
   interval,
-  concat as concat$,
+  concat,
   combineLatest,
   throwError,
   AsyncSubject,
@@ -35,10 +35,12 @@ import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
 import findKey from 'lodash/findKey';
 
-import { BigNumber, concat, defaultAbiCoder } from 'ethers/utils';
-import { Event } from 'ethers/contract';
-import { Zero } from 'ethers/constants';
-import { Filter, Log, JsonRpcProvider } from 'ethers/providers';
+import type { BigNumber } from '@ethersproject/bignumber';
+import { Zero } from '@ethersproject/constants';
+import { concat as concatBytes } from '@ethersproject/bytes';
+import { defaultAbiCoder, Interface } from '@ethersproject/abi';
+import type { Event } from '@ethersproject/contracts';
+import type { Filter, Log, JsonRpcProvider } from '@ethersproject/providers';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
@@ -134,19 +136,19 @@ export function initTokensRegistryEpic(
     ),
     mergeMap(from),
     map((log) => ({ log, parsed: registryContract.interface.parseLog(log) })),
-    filter(({ parsed }) => !!parsed.values?.token_network_address),
+    filter(({ parsed }) => !!parsed.args['token_network_address']),
     // for each TokenNetwork found, scan for channels with us
     mergeMap(
       ({ log, parsed }) => {
         const encodedAddress = defaultAbiCoder.encode(['address'], [address]);
-        return concat$(
+        return concat(
           // concat channels opened by us and to us separately
           // take(1) won't subscribe the later if something is found on former
           retryAsync$(
             () =>
               provider.getLogs({
                 // filter equivalent to tokenNetworkContract.filter.ChannelOpened()
-                address: parsed.values.token_network_address,
+                address: parsed.args.token_network_address,
                 topics: [null, null, encodedAddress] as string[], // channels from us
                 fromBlock: log.blockNumber!,
                 toBlock: 'latest',
@@ -156,7 +158,7 @@ export function initTokensRegistryEpic(
           retryAsync$(
             () =>
               provider.getLogs({
-                address: parsed.values.token_network_address,
+                address: parsed.args.token_network_address,
                 topics: [null, null, null, encodedAddress] as string[], // channels to us
                 fromBlock: log.blockNumber!,
                 toBlock: 'latest',
@@ -169,8 +171,8 @@ export function initTokensRegistryEpic(
           take(1),
           mapTo(
             tokenMonitored({
-              token: parsed.values.token_address,
-              tokenNetwork: parsed.values.token_network_address,
+              token: parsed.args.token_address,
+              tokenNetwork: parsed.args.token_network_address,
               fromBlock: log.blockNumber!,
             }),
           ),
@@ -254,13 +256,18 @@ type ChannelEvents =
   | ChannelSettledEvent;
 
 function getChannelEventsTopics(tokenNetworkContract: TokenNetwork) {
-  const events = tokenNetworkContract.interface.events;
   return {
-    openTopic: events.ChannelOpened.topic,
-    depositTopic: events.ChannelNewDeposit.topic,
-    withdrawTopic: events.ChannelWithdraw.topic,
-    closedTopic: events.ChannelClosed.topic,
-    settledTopic: events.ChannelSettled.topic,
+    openTopic: Interface.getEventTopic(tokenNetworkContract.interface.getEvent('ChannelOpened')),
+    depositTopic: Interface.getEventTopic(
+      tokenNetworkContract.interface.getEvent('ChannelNewDeposit'),
+    ),
+    withdrawTopic: Interface.getEventTopic(
+      tokenNetworkContract.interface.getEvent('ChannelWithdraw'),
+    ),
+    closedTopic: Interface.getEventTopic(tokenNetworkContract.interface.getEvent('ChannelClosed')),
+    settledTopic: Interface.getEventTopic(
+      tokenNetworkContract.interface.getEvent('ChannelSettled'),
+    ),
   };
 }
 
@@ -652,10 +659,10 @@ export function channelOpenEpic(
           ),
         );
 
-      return concat$(
+      return concat(
         deposit$,
         defer(() =>
-          tokenNetworkContract.functions.openChannel(
+          tokenNetworkContract.openChannel(
             address,
             partner,
             action.payload.settleTimeout ?? settleTimeout,
@@ -696,8 +703,8 @@ function makeDeposit$(
   return retryAsync$(
     () =>
       Promise.all([
-        tokenContract.functions.balanceOf(sender) as Promise<UInt<32>>,
-        tokenContract.functions.allowance(sender, tokenNetworkContract.address) as Promise<
+        tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
+        tokenContract.callStatic.allowance(sender, tokenNetworkContract.address) as Promise<
           UInt<32>
         >,
       ]),
@@ -721,7 +728,7 @@ function makeDeposit$(
       // get current 'view' of own/'address' deposit, despite any other pending deposits
       retryAsync$(
         () =>
-          tokenNetworkContract.functions
+          tokenNetworkContract.callStatic
             .getChannelParticipantInfo(id, address, partner)
             .then(({ 0: totalDeposit }) => [id, totalDeposit] as const),
         provider.pollingInterval,
@@ -731,12 +738,7 @@ function makeDeposit$(
     mergeMap(([id, totalDeposit]) =>
       // send setTotalDeposit transaction
       defer(() =>
-        tokenNetworkContract.functions.setTotalDeposit(
-          id,
-          address,
-          totalDeposit.add(deposit),
-          partner,
-        ),
+        tokenNetworkContract.setTotalDeposit(id, address, totalDeposit.add(deposit), partner),
       ),
     ),
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log, provider }),
@@ -928,7 +930,7 @@ export function channelCloseEpic(
       const additionalHash = balanceProof.additionalHash;
       const nonClosingSignature = balanceProof.signature;
 
-      const closingMessage = concat([
+      const closingMessage = concatBytes([
         encode(tokenNetwork, 20),
         encode(network.chainId, 32),
         encode(MessageTypeId.BALANCE_PROOF, 32),
@@ -943,7 +945,7 @@ export function channelCloseEpic(
       return from(signer.signMessage(closingMessage) as Promise<Signature>).pipe(
         mergeMap((closingSignature) =>
           defer(() =>
-            tokenNetworkContract.functions.closeChannel(
+            tokenNetworkContract.closeChannel(
               channel.id,
               partner,
               address,
@@ -1033,7 +1035,7 @@ export function channelUpdateEpic(
       const additionalHash = channel.partner.balanceProof.additionalHash;
       const closingSignature = channel.partner.balanceProof.signature;
 
-      const nonClosingMessage = concat([
+      const nonClosingMessage = concatBytes([
         encode(tokenNetwork, 20),
         encode(network.chainId, 32),
         encode(MessageTypeId.BALANCE_PROOF_UPDATE, 32),
@@ -1048,7 +1050,7 @@ export function channelUpdateEpic(
       return from(signer.signMessage(nonClosingMessage) as Promise<Signature>).pipe(
         mergeMap((nonClosingSignature) =>
           defer(() =>
-            tokenNetworkContract.functions.updateNonClosingBalanceProof(
+            tokenNetworkContract.updateNonClosingBalanceProof(
               channel.id,
               partner,
               address,
@@ -1184,8 +1186,16 @@ export function channelSettleEpic(
         () =>
           // fetch closing/updated balanceHash for each end
           Promise.all([
-            tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, address, partner),
-            tokenNetworkContract.functions.getChannelParticipantInfo(channel.id, partner, address),
+            tokenNetworkContract.callStatic.getChannelParticipantInfo(
+              channel.id,
+              address,
+              partner,
+            ),
+            tokenNetworkContract.callStatic.getChannelParticipantInfo(
+              channel.id,
+              partner,
+              address,
+            ),
           ]),
         provider.pollingInterval,
         networkErrorRetryPredicate,
@@ -1257,7 +1267,7 @@ export function channelSettleEpic(
             }),
             mergeMap(([part1, part2]) =>
               defer(() =>
-                tokenNetworkContract.functions.settleChannel(
+                tokenNetworkContract.settleChannel(
                   channel.id,
                   part1[0],
                   part1[1].transferredAmount,
@@ -1355,7 +1365,7 @@ export function channelUnlockEpic(
         getTokenNetworkContract(tokenNetwork),
         chooseOnchainAccount({ signer, address, main }, subkey).signer,
       );
-      const locks = concat(
+      const locks = concatBytes(
         action.payload.locks!.reduce(
           (acc, lock) => [
             ...acc,
@@ -1369,7 +1379,7 @@ export function channelUnlockEpic(
 
       // send unlock transaction
       return defer(() =>
-        tokenNetworkContract.functions.unlock(action.payload.id, address, partner, locks),
+        tokenNetworkContract.unlock(action.payload.id, address, partner, locks),
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log, provider }),
         retryTx(provider.pollingInterval, undefined, undefined, { log }),

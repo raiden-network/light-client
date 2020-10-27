@@ -11,7 +11,7 @@ import {
   scan,
   distinctUntilChanged,
 } from 'rxjs/operators';
-import { MaxUint256 } from 'ethers/constants';
+import { MaxUint256 } from '@ethersproject/constants';
 import negate from 'lodash/negate';
 import unset from 'lodash/fp/unset';
 import isEqual from 'lodash/isEqual';

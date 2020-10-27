@@ -1,5 +1,5 @@
-import { Zero } from 'ethers/constants';
-import { bigNumberify } from 'ethers/utils';
+import { BigNumber } from '@ethersproject/bignumber';
+import { Zero } from '@ethersproject/constants';
 import { combineLatest, EMPTY, from, Observable, of, merge, defer } from 'rxjs';
 import {
   catchError,
@@ -139,7 +139,7 @@ function makeAndSignTransfer$(
   );
   const lock: Lock = {
     amount: amountWithFee,
-    expiration: bigNumberify(
+    expiration: BigNumber.from(
       action.payload.expiration || state.blockNumber + revealTimeout * 2,
     ) as UInt<32>,
     secrethash: action.meta.secrethash,
@@ -163,9 +163,9 @@ function makeAndSignTransfer$(
   const message: LockedTransfer = {
     type: MessageType.LOCKED_TRANSFER,
     message_identifier: makeMessageId(),
-    chain_id: bigNumberify(network.chainId) as UInt<32>,
+    chain_id: BigNumber.from(network.chainId) as UInt<32>,
     token_network_address: action.payload.tokenNetwork,
-    channel_identifier: bigNumberify(channel.id) as UInt<32>,
+    channel_identifier: BigNumber.from(channel.id) as UInt<32>,
     nonce: channel.own.nextNonce,
     transferred_amount: channel.own.balanceProof.transferredAmount,
     locked_amount: channel.own.balanceProof.lockedAmount.add(lock.amount) as UInt<32>,
@@ -742,13 +742,13 @@ function sendWithdrawRequest(
       const request: WithdrawRequest = {
         type: MessageType.WITHDRAW_REQUEST,
         message_identifier: makeMessageId(),
-        chain_id: bigNumberify(network.chainId) as UInt<32>,
+        chain_id: BigNumber.from(network.chainId) as UInt<32>,
         token_network_address: action.meta.tokenNetwork,
-        channel_identifier: bigNumberify(channel.id) as UInt<32>,
+        channel_identifier: BigNumber.from(channel.id) as UInt<32>,
         participant: address,
         total_withdraw: action.meta.totalWithdraw,
         nonce: channel.own.nextNonce,
-        expiration: bigNumberify(action.meta.expiration) as UInt<32>,
+        expiration: BigNumber.from(action.meta.expiration) as UInt<32>,
       };
       return from(signMessage(signer, request, { log })).pipe(
         map((message) => withdrawMessage.request({ message }, action.meta)),

@@ -2,10 +2,10 @@ import * as t from 'io-ts';
 import { Observable, from, of, EMPTY } from 'rxjs';
 import { mergeMap, map, timeout, withLatestFrom, catchError, toArray } from 'rxjs/operators';
 import { fromFetch } from 'rxjs/fetch';
-import { concat } from 'ethers/utils';
+import { concat as concatBytes } from '@ethersproject/bytes';
+import type { Signer } from '@ethersproject/abstract-signer';
 import memoize from 'lodash/memoize';
 
-import { Signer } from 'ethers/abstract-signer';
 import { retryAsync$ } from '../utils/rx';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
@@ -59,7 +59,7 @@ export function channelCanRoute(
 const serviceRegistryToken = memoize(
   async (serviceRegistryContract: ServiceRegistry, pollingInterval: number) =>
     retryAsync$(
-      () => serviceRegistryContract.functions.token(),
+      () => serviceRegistryContract.callStatic.token(),
       pollingInterval,
       networkErrorRetryPredicate,
     ).toPromise() as Promise<Address>,
@@ -99,7 +99,7 @@ export function pfsInfo(
   // if it's an address, fetch url from ServiceRegistry, else it's already the URL
   const url$ = Address.is(pfsAddrOrUrl)
     ? retryAsync$(
-        () => serviceRegistryContract.functions.urls(pfsAddrOrUrl),
+        () => serviceRegistryContract.callStatic.urls(pfsAddrOrUrl),
         provider.pollingInterval,
         networkErrorRetryPredicate,
       )
@@ -189,7 +189,7 @@ export function pfsListInfo(
  * @returns Packed IOU as a UInt8Array
  */
 export function packIOU(iou: IOU) {
-  return concat([
+  return concatBytes([
     encode(iou.one_to_n_address, 20),
     encode(iou.chain_id, 32),
     encode(MessageTypeId.IOU, 32),

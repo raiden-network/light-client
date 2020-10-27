@@ -1,4 +1,4 @@
-import { Event } from 'ethers/contract';
+import type { Event } from '@ethersproject/contracts';
 import { EMPTY, from, Observable, of, defer, identity } from 'rxjs';
 import {
   concatMap,
@@ -464,7 +464,7 @@ export function transferSecretRegisterEpic(
       );
       const contract = getContractWithSigner(secretRegistryContract, onchainSigner);
 
-      return defer(() => contract.functions.registerSecret(action.payload.secret)).pipe(
+      return defer(() => contract.registerSecret(action.payload.secret)).pipe(
         assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log, provider }),
         retryTx(provider.pollingInterval, undefined, undefined, { log }),
         // transferSecretRegister.success handled by monitorSecretRegistryEpic
