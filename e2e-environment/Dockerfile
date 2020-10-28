@@ -2,7 +2,7 @@ ARG RAIDEN_VERSION="v1.1.1"
 ARG CONTRACTS_PACKAGE_VERSION="0.37.1"
 ARG CONTRACTS_VERSION="0.37.0"
 ARG SERVICES_VERSION="645e106d406b6fc3e11441c8e85c76d3aff300d3"
-ARG SYNAPSE_VERSION="1.10.1"
+ARG SYNAPSE_VERSION="v1.19.1"
 ARG OS_NAME="LINUX"
 ARG GETH_VERSION="1.9.23"
 ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.23-8c2f2715.tar.gz"
@@ -24,7 +24,7 @@ FROM python:3.7 as synapse-builder
 ARG SYNAPSE_VERSION
 
 RUN python -m venv /synapse-venv \
-    && /synapse-venv/bin/pip install "matrix-synapse[sqlite]==${SYNAPSE_VERSION}" \
+    && /synapse-venv/bin/pip install "matrix-synapse==${SYNAPSE_VERSION}" \
     && /synapse-venv/bin/pip install psycopg2 coincurve pycryptodome
 
 COPY synapse/auth/ /synapse-venv/lib/python3.7/site-packages/

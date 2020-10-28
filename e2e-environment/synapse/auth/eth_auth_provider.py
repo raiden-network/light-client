@@ -15,11 +15,10 @@
 import logging
 import re
 from binascii import unhexlify
-from typing import Callable
+from typing import Any, Callable
 
 from coincurve import PublicKey
 from Crypto.Hash import keccak
-from twisted.internet import defer
 
 __version__ = "0.1"
 logger = logging.getLogger(__name__)
@@ -69,36 +68,35 @@ class EthAuthProvider:
     _user_re = re.compile(r"^@(0x[0-9a-f]{40}):(.+)$")
     _password_re = re.compile(r"^0x[0-9a-f]{130}$")
 
-    def __init__(self, config, account_handler):
+    def __init__(self, config, account_handler) -> None:  # type: ignore
         self.account_handler = account_handler
         self.config = config
         self.hs_hostname = self.account_handler._hs.hostname
         self.log = logging.getLogger(__name__)
 
-    @defer.inlineCallbacks
-    def check_password(self, user_id: str, password: str):
+    async def check_password(self, user_id: str, password: str) -> bool:
         if not password:
-            self.log.error("No password provided, user=%r", user_id)
-            defer.returnValue(False)
+            self.log.error("no password provided, user=%r", user_id)
+            return False
 
         if not self._password_re.match(password):
             self.log.error(
-                "Invalid password format, must be 0x-prefixed hex, "
+                "invalid password format, must be 0x-prefixed hex, "
                 "lowercase, 65-bytes hash. user=%r",
                 user_id,
             )
-            defer.returnValue(False)
+            return False
 
         signature = unhexlify(password[2:])
 
         user_match = self._user_re.match(user_id)
         if not user_match or user_match.group(2) != self.hs_hostname:
             self.log.error(
-                "Invalid user format, must start with 0x-prefixed hex, "
+                "invalid user format, must start with 0x-prefixed hex, "
                 "lowercase address. user=%r",
                 user_id,
             )
-            defer.returnValue(False)
+            return False
 
         user_addr_hex = user_match.group(1)
         user_addr = unhexlify(user_addr_hex[2:])
@@ -106,22 +104,20 @@ class EthAuthProvider:
         rec_addr = _recover(data=self.hs_hostname.encode(), signature=signature)
         if not rec_addr or rec_addr != user_addr:
             self.log.error(
-                "Invalid account password/signature. user=%r, expected=%r, recovered=%r",
-                user_id,
-                user_addr,
-                rec_addr,
+                "invalid account password/signature. user=%r, signer=%r", user_id, rec_addr
             )
-            defer.returnValue(False)
+            return False
 
         localpart = user_id.split(":", 1)[0][1:]
-        self.log.info("Eth login, valid signature. user=%r", user_id)
+        self.log.info("eth login! valid signature. user=%r", user_id)
 
-        if not (yield self.account_handler.check_user_exists(user_id)):
-            self.log.info("First user login, registering: user=%r", user_id)
-            yield self.account_handler.register(localpart=localpart)
+        if not (await self.account_handler.check_user_exists(user_id)):
+            self.log.info("First login, creating new user: user=%r", user_id)
+            registered_user_id = await self.account_handler.register_user(localpart=localpart)
+            await self.account_handler.register_device(registered_user_id, device_id="raiden")
 
-        defer.returnValue(True)
+        return True
 
     @staticmethod
-    def parse_config(config):
+    def parse_config(config: Any) -> Any:
         return config
