@@ -3,8 +3,7 @@ import * as path from 'path';
 import inquirer from 'inquirer';
 import yargs from 'yargs/yargs';
 import { LocalStorage } from 'node-localstorage';
-import { Wallet } from 'ethers';
-import { getAddress } from 'ethers/utils';
+import { Wallet, ethers } from 'ethers';
 import { Raiden, Address, RaidenConfig, assert, UInt } from 'raiden-ts';
 
 import DISCLAIMER from './disclaimer.json';
@@ -145,7 +144,7 @@ async function getKeystoreAccounts(keystorePath: string): Promise<{ [addr: strin
   for (const filename of await fs.readdir(keystorePath)) {
     try {
       const json = await fs.readFile(path.join(keystorePath, filename), 'utf-8');
-      const address = getAddress(JSON.parse(json)['address']);
+      const address = ethers.utils.getAddress(JSON.parse(json)['address']);
       if (!(address in keys)) keys[address] = [];
       keys[address].push(json);
     } catch (e) {}
