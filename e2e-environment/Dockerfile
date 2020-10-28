@@ -4,9 +4,9 @@ ARG CONTRACTS_VERSION="0.37.0"
 ARG SERVICES_VERSION="645e106d406b6fc3e11441c8e85c76d3aff300d3"
 ARG SYNAPSE_VERSION="1.10.1"
 ARG OS_NAME="LINUX"
-ARG GETH_VERSION="1.9.11"
-ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.11-6a62fe39.tar.gz"
-ARG GETH_MD5_LINUX="6b226753430e33edf983c5581b52d6d1"
+ARG GETH_VERSION="1.9.23"
+ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.23-8c2f2715.tar.gz"
+ARG GETH_MD5_LINUX="4817ce02025ba3f876f7055e1e456555"
 
 FROM python:3.7 as raiden-builder
 ARG RAIDEN_VERSION
