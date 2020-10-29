@@ -20,8 +20,9 @@ import {
   expectChannelsAreInSync,
 } from '../fixtures';
 
-import { bigNumberify, BigNumber, keccak256 } from 'ethers/utils';
-import { Two, Zero } from 'ethers/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { keccak256 } from '@ethersproject/keccak256';
+import { Two, Zero } from '@ethersproject/constants';
 import { first, pluck } from 'rxjs/operators';
 
 import {
@@ -51,8 +52,8 @@ import { channelClose, newBlock } from 'raiden-ts/channels/actions';
 
 const direction = Direction.SENT;
 const paymentId = makePaymentId();
-const value = bigNumberify(10) as UInt<32>;
-const fee = bigNumberify(3) as Int<32>;
+const value = BigNumber.from(10) as UInt<32>;
+const fee = BigNumber.from(3) as Int<32>;
 const maxUInt256 = Two.pow(256).sub(1) as UInt<32>;
 const meta = { secrethash, direction };
 

@@ -1,5 +1,7 @@
-import { Zero, AddressZero } from 'ethers/constants';
-import { bigNumberify, keccak256, getNetwork } from 'ethers/utils';
+import { Zero, AddressZero } from '@ethersproject/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { keccak256 } from '@ethersproject/keccak256';
+import { getNetwork } from '@ethersproject/networks';
 
 import { raidenReducer } from 'raiden-ts/reducer';
 import { RaidenState, makeInitialState } from 'raiden-ts/state';
@@ -180,7 +182,7 @@ describe('raidenReducer', () => {
           {
             id: channelId,
             participant: state.address,
-            totalDeposit: bigNumberify(23) as UInt<32>,
+            totalDeposit: BigNumber.from(23) as UInt<32>,
             txHash,
             txBlock: openBlock + 1,
             confirmed: true,
@@ -192,7 +194,7 @@ describe('raidenReducer', () => {
     });
 
     test('own deposit successful', () => {
-      const deposit = bigNumberify(25) as UInt<32>;
+      const deposit = BigNumber.from(25) as UInt<32>;
       const newState = raidenReducer(
         state,
         channelDeposit.success(
@@ -218,7 +220,7 @@ describe('raidenReducer', () => {
     });
 
     test('partner deposit successful', () => {
-      const deposit = bigNumberify(26) as UInt<32>;
+      const deposit = BigNumber.from(26) as UInt<32>;
       const newState = raidenReducer(
         state,
         channelDeposit.success(
@@ -245,7 +247,7 @@ describe('raidenReducer', () => {
   });
 
   describe('channelWithdrawn', () => {
-    const deposit = bigNumberify(500) as UInt<32>;
+    const deposit = BigNumber.from(500) as UInt<32>;
 
     beforeEach(() => {
       state = [
@@ -308,7 +310,7 @@ describe('raidenReducer', () => {
           {
             id: channelId,
             participant: state.address,
-            totalWithdraw: bigNumberify(23) as UInt<32>,
+            totalWithdraw: BigNumber.from(23) as UInt<32>,
             txHash,
             txBlock: openBlock + 2,
             confirmed: true,
@@ -321,7 +323,7 @@ describe('raidenReducer', () => {
     });
 
     test('own withdraw successful', () => {
-      const withdraw = bigNumberify(25) as UInt<32>;
+      const withdraw = BigNumber.from(25) as UInt<32>;
       const newState = raidenReducer(
         state,
         channelWithdrawn(
@@ -347,7 +349,7 @@ describe('raidenReducer', () => {
     });
 
     test('partner withdraw successful', () => {
-      const withdraw = bigNumberify(26) as UInt<32>;
+      const withdraw = BigNumber.from(26) as UInt<32>;
       const newState = raidenReducer(
         state,
         channelWithdrawn(
@@ -857,7 +859,7 @@ describe('raidenReducer', () => {
       {
         id: channelId,
         participant: partner,
-        totalDeposit: bigNumberify(12) as UInt<32>,
+        totalDeposit: BigNumber.from(12) as UInt<32>,
         txHash,
         txBlock: openBlock + 2,
         confirmed: undefined,

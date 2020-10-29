@@ -1,8 +1,8 @@
-import { Network } from 'ethers/utils';
-import { JsonRpcProvider, JsonRpcSigner } from 'ethers/providers';
+import type { Network } from '@ethersproject/networks';
+import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers';
+import { Wallet } from '@ethersproject/wallet';
 
 import { getContracts, getSigner, isValidUrl } from 'raiden-ts/helpers';
-import { Wallet } from 'ethers';
 import Raiden from 'raiden-ts/raiden';
 
 describe('getContracts', () => {
@@ -51,8 +51,8 @@ describe('getSigner', () => {
     const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
     const account = new Wallet(walletPK);
 
-    await expect(getSigner(account, provider)).resolves.toStrictEqual({
-      signer: account.connect(provider),
+    await expect(getSigner(account, provider)).resolves.toMatchObject({
+      signer: { address: account.address, provider },
       address: account.address,
       main: undefined,
     });

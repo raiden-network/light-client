@@ -19,8 +19,8 @@ import {
 } from '../fixtures';
 
 import { first, pluck } from 'rxjs/operators';
-import { bigNumberify } from 'ethers/utils';
-import { Zero, One } from 'ethers/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { Zero, One } from '@ethersproject/constants';
 
 import {
   MessageType,
@@ -51,8 +51,8 @@ import { Direction } from 'raiden-ts/transfers/state';
 
 const direction = Direction.RECEIVED;
 const paymentId = makePaymentId();
-const value = bigNumberify(10) as UInt<32>;
-const fee = bigNumberify(3) as Int<32>;
+const value = BigNumber.from(10) as UInt<32>;
+const fee = BigNumber.from(3) as Int<32>;
 const receivedMeta = { secrethash, direction };
 const sentMeta = { secrethash, direction: Direction.SENT };
 
@@ -512,12 +512,12 @@ describe('receive transfers', () => {
     expect(raiden.output).not.toContainEqual(
       transferSecretRegister.request(expect.anything(), expect.anything()),
     );
-    expect(secretRegistryContract.functions.registerSecret).not.toHaveBeenCalled();
+    expect(secretRegistryContract.registerSecret).not.toHaveBeenCalled();
 
     // advance to some block inside the danger zone, secret get registered
     await waitBlock(sentState.expiration - raiden.config.revealTimeout + 1);
     expect(raiden.output).toContainEqual(transferSecretRegister.request({ secret }, receivedMeta));
-    expect(secretRegistryContract.functions.registerSecret).toHaveBeenCalledWith(secret);
+    expect(secretRegistryContract.registerSecret).toHaveBeenCalledWith(secret);
     // give some time to confirm register tx
     await waitBlock();
     await waitBlock(
@@ -527,7 +527,7 @@ describe('receive transfers', () => {
     await expect(receivedState).resolves.toMatchObject({
       secret,
       secretRegistered: {
-        txHash: (await secretRegistryContract.functions.registerSecret.mock.results[0].value).hash,
+        txHash: (await secretRegistryContract.registerSecret.mock.results[0].value).hash,
         txBlock: expect.toBeWithin(
           sentState.expiration - raiden.config.revealTimeout + 1,
           sentState.expiration,
