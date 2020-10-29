@@ -1,6 +1,7 @@
 <template>
   <raiden-dialog
     :visible="visible"
+    data-cy="udc_withdrawal_dialog"
     class="udc-withdrawal-dialog"
     @close="cancel"
   >
@@ -37,6 +38,7 @@
                 autofocus
                 type="text"
                 :suffix="token.symbol"
+                data-cy="udc_withdrawal_dialog_amount"
                 class="udc-withdrawal-dialog__amount"
               />
             </v-col>
@@ -50,7 +52,7 @@
             {{
               $t('udc-deposit-dialog.available', {
                 balance: accountBalance,
-                currency: $t('app-header.currency'),
+                currency: $t('app-header.currency')
               })
             }}
           </v-row>
@@ -59,6 +61,7 @@
     </v-card-text>
     <v-card-actions v-if="!error && !isDone">
       <action-button
+        data-cy="udc_withdrawal_dialog_button"
         class="udc-withdrawal-dialog__button"
         :enabled="isValid"
         :text="$t('general.buttons.confirm')"
@@ -92,11 +95,11 @@ import Spinner from '@/components/icons/Spinner.vue';
     ErrorMessage,
     RaidenDialog,
     ActionButton,
-    Spinner,
+    Spinner
   },
   computed: {
-    ...mapGetters(['udcToken']),
-  },
+    ...mapGetters(['udcToken'])
+  }
 })
 export default class UdcWithdrawalDialog extends Vue {
   amount: string = '0';

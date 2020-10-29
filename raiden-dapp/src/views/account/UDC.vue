@@ -1,5 +1,5 @@
 <template>
-  <div class="udc">
+  <div data-cy="udc" class="udc">
     <v-row class="udc__description" no-gutters>
       {{ $t('udc.description') }}
     </v-row>
@@ -13,7 +13,12 @@
       />
     </v-row>
     <v-row class="udc__actions" no-gutters justify="center">
-      <v-btn text class="udc__actions__button" @click="showUdcDeposit = true">
+      <v-btn
+        text
+        data-cy="udc_actions_button"
+        class="udc__actions__button"
+        @click="showUdcDeposit = true"
+      >
         <v-img
           width="60px"
           height="55px"
@@ -23,7 +28,12 @@
           {{ $t('udc.deposit') }}
         </span>
       </v-btn>
-      <v-btn text class="udc__actions__button" @click="withdrawFromUdc = true">
+      <v-btn
+        text
+        data-cy="udc_actions_button"
+        class="udc__actions__button"
+        @click="withdrawFromUdc = true"
+      >
         <v-img
           width="60px"
           height="55px"
@@ -77,12 +87,12 @@ import Spinner from '@/components/icons/Spinner.vue';
     UdcWithdrawalDialog,
     AmountDisplay,
     ErrorMessage,
-    Spinner,
+    Spinner
   },
   computed: {
     ...mapState(['accountBalance', 'raidenAccountBalance']),
-    ...mapGetters(['mainnet', 'udcToken', 'usingRaidenAccount']),
-  },
+    ...mapGetters(['mainnet', 'udcToken', 'usingRaidenAccount'])
+  }
 })
 export default class UDC extends Vue {
   amount: string = '10';

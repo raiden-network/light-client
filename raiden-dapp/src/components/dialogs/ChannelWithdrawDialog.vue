@@ -1,5 +1,10 @@
 <template>
-  <raiden-dialog class="channel-withdraw" :visible="visible" @close="cancel">
+  <raiden-dialog
+    data-cy="channel_withdraw"
+    class="channel-withdraw"
+    :visible="visible"
+    @close="cancel"
+  >
     <v-card-title>
       <v-row align="center" justify="center">
         <v-col>
@@ -33,12 +38,16 @@
           <v-form v-model="valid" @submit.prevent="withdrawTokens()">
             <amount-input
               v-model="withdraw"
+              data-cy="channel_withdraw_input"
               class="channel-withdraw__input"
               :token="token"
               :max="channel.ownWithdrawable"
               limit
             />
-            <div class="channel-withdraw__button">
+            <div
+              data-cy="channel_withdraw_button"
+              class="channel-withdraw__button"
+            >
               <action-button
                 :id="`confirm-${identifier}`"
                 :enabled="valid"
@@ -79,8 +88,8 @@ import { BalanceUtils } from '@/utils/balance-utils';
     AmountInput,
     ActionButton,
     RaidenDialog,
-    Spinner,
-  },
+    Spinner
+  }
 })
 export default class ChannelWithdrawDialog extends Vue {
   @Prop({ required: true })

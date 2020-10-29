@@ -1,5 +1,5 @@
 <template>
-  <div class="backup-state">
+  <div data-cy="backup_state" class="backup-state">
     <v-row no-gutters>
       <v-col cols="12" class="backup-state__description">
         {{ $t('backup-state.description') }}
@@ -11,6 +11,7 @@
           <div v-on="!isConnected ? on : null">
             <v-list-item
               :disabled="!isConnected"
+              data-cy="backup_state_buttons_download_state"
               class="backup-state__buttons__download-state"
               @click="downloadState = true"
             >

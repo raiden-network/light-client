@@ -12,6 +12,7 @@
     </v-row>
     <v-row
       v-else-if="balances.length === 0"
+      data-cy="withdrawal_empty"
       class="withdrawal__empty"
       align="center"
       justify="center"
@@ -33,7 +34,7 @@
     </v-row>
     <v-row v-else align="center" justify="center">
       <v-col cols="10">
-        <v-list class="withdrawal__tokens" flat>
+        <v-list data-cy="withdrawal_tokens" class="withdrawal__tokens" flat>
           <template v-for="(token, index) in balances">
             <v-list-item :key="token.address">
               <v-list-item-avatar class="withdrawal__tokens__icon">
@@ -60,6 +61,7 @@
                 <v-btn
                   text
                   icon
+                  data-cy="withdrawal_tokens_button"
                   class="withdrawal__tokens__button"
                   @click="withdraw = token"
                 >
@@ -107,6 +109,7 @@
       </v-card-text>
       <v-card-actions v-if="!withdrawing">
         <action-button
+          data-cy="withdrawal_dialog_action"
           class="withdrawal-dialog__action"
           :enabled="parseFloat(raidenAccountBalance) > 0"
           :text="$t('withdrawal.dialog.button')"
@@ -138,12 +141,12 @@ import { BigNumber } from 'ethers/utils';
     RaidenDialog,
     AddressDisplay,
     AmountDisplay,
-    Spinner,
+    Spinner
   },
   computed: {
     ...mapState(['raidenAccountBalance']),
-    ...mapGetters(['udcToken', 'allTokens']),
-  },
+    ...mapGetters(['udcToken', 'allTokens'])
+  }
 })
 export default class Withdrawal extends Mixins(BlockieMixin) {
   allTokens!: Token[];
@@ -157,19 +160,19 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
   async mounted() {
     const allTokens = uniqBy(
       this.allTokens.concat(this.udcToken),
-      (token) => token.address
+      token => token.address
     );
     const updatedTokenBalances = await Promise.all(
-      allTokens.map(async (token) => ({
+      allTokens.map(async token => ({
         ...token,
         balance: await this.$raiden.getTokenBalance(
           token.address,
           this.$store.state.defaultAccount
-        ),
+        )
       }))
     );
 
-    this.balances = updatedTokenBalances.filter((token) =>
+    this.balances = updatedTokenBalances.filter(token =>
       (token.balance as BigNumber).gt(Zero)
     );
     this.loading = false;
@@ -183,9 +186,7 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
       this.withdrawing = true;
       const { address, balance } = this.withdraw;
       await this.$raiden.transferOnChainTokens(address, balance);
-      this.balances = this.balances.filter(
-        (token) => token.address !== address
-      );
+      this.balances = this.balances.filter(token => token.address !== address);
       this.withdraw = null;
     } catch (e) {
     } finally {

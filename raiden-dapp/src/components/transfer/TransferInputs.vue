@@ -1,5 +1,5 @@
 <template>
-  <v-row no-gutters class="transfer-inputs">
+  <v-row no-gutters data-cy="transfer_inputs" class="transfer-inputs">
     <v-form
       ref="transfer"
       v-model="valid"
@@ -45,6 +45,7 @@
           @input-error="amountError = $event"
         />
         <action-button
+          data-cy="transfer_inputs_form_button"
           class="transfer-inputs__form__button"
           :enabled="valid"
           :text="$t('general.buttons.continue')"

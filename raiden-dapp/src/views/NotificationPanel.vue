@@ -1,5 +1,5 @@
 <template>
-  <div id="notification-panel">
+  <div data-cy="notification_panel" id="notification-panel">
     <div class="notification-panel-content">
       <div class="notification-panel-content__close">
         <v-btn text @click="clear()">
@@ -7,6 +7,7 @@
         </v-btn>
         <v-spacer />
         <v-icon
+          data-cy="notification_panel_content_close_button"
           class="notification-panel-content__close__button"
           icon
           @click="onModalBackClicked()"

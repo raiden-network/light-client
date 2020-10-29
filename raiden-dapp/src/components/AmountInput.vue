@@ -1,5 +1,5 @@
 <template>
-  <fieldset class="amount-input">
+  <fieldset data-cy="amount_input" class="amount-input">
     <div class="amount-input__label">{{ label }}</div>
     <v-text-field
       ref="input"

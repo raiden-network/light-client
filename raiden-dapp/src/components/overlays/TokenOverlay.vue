@@ -8,6 +8,7 @@
 
     <v-list class="transparent">
       <v-list-item
+        data-cy="token_overlay_connect_new"
         class="token-overlay__connect-new"
         @click="navigateToTokenSelect()"
       >

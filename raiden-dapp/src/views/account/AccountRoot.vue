@@ -1,5 +1,5 @@
 <template>
-  <div class="account-root">
+  <div data-cy="account_root" class="account-root">
     <v-row class="account-root__identicon" no-gutters>
       <header-identicon />
     </v-row>

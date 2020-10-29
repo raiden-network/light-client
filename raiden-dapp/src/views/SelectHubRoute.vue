@@ -3,6 +3,7 @@
     ref="form"
     v-model="valid"
     autocomplete="off"
+    data-cy = "select_hub"
     class="select-hub"
     @submit.prevent="selectHub()"
   >
@@ -37,6 +38,7 @@
               text
               icon
               x-large
+              data-cy="select_hub_udc_balance_deposit"
               class="udc-balance__deposit"
               @click="showUdcDeposit = true"
               v-on="on"
@@ -95,6 +97,7 @@
     <token-information :token="token"></token-information>
 
     <action-button
+      data-cy="select_hub_button"
       class="select-hub__button"
       :enabled="valid"
       :text="$t('select-hub.select-button')"

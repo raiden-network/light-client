@@ -1,5 +1,5 @@
 <template>
-  <div class="disclaimer">
+  <div data-cy="disclaimer" class="disclaimer">
     <div class="disclaimer__content">
       <div class="disclaimer__content__paragraphs font-weight-light">
         <p
@@ -11,6 +11,7 @@
       </div>
       <v-checkbox
         v-model="checkedAccept"
+        data-cy="disclaimer_accept_checkbox"
         class="disclaimer__content__accept-checkbox"
         :label="$t('disclaimer.accept-checkbox')"
         dense
@@ -18,6 +19,7 @@
       />
       <v-checkbox
         v-model="checkedPersist"
+        data-cy="disclaimer_persist_checkbox"
         class="disclaimer__content__persist-checkbox"
         :label="$t('disclaimer.persist-checkbox')"
         dense
@@ -26,6 +28,7 @@
     </div>
     <action-button
       :text="$t('disclaimer.accept-button')"
+      data-cy="disclaimer_accept_button"
       class="disclaimer__accept-button"
       :enabled="checkedAccept"
       sticky
@@ -41,7 +44,7 @@ import { RouteNames } from '@/router/route-names';
 import { Location } from 'vue-router';
 
 @Component({
-  components: { ActionButton },
+  components: { ActionButton }
 })
 export default class Disclaimer extends Vue {
   checkedAccept = false;

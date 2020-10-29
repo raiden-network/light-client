@@ -1,55 +1,75 @@
 export function mintAndDepositUtilityTokenFromSelectHubScreen() {
-  cy.get('.select-hub').should('exist');
-  cy.get('.udc-balance__deposit').click();
-  cy.getWithCustomTimeout('.udc-deposit-dialog__action').should('exist');
-  cy.get('.udc-deposit-dialog__action').click();
-  cy.getWithCustomTimeout('.udc-deposit-dialog__action').should('not.exist');
+  // cypress selectors: raiden-dapp/src/views/SelectHubRoute.vue
+  cy.get('[data-cy=select_hub]').should('exist');
+  cy.get('[data-cy=select_hub_udc_balance_deposit]').click();
+  // cypress selectors: raiden-dapp/src/components/dialogs/UdcDepositDialog.vue
+  cy.getWithCustomTimeout('[data-cy=udc_deposit_dialog_action]').should(
+    'exist'
+  );
+  cy.get('[data-cy=udc_deposit_dialog_action]').click();
+  cy.getWithCustomTimeout('[data-cy=udc_deposit_dialog_action]').should(
+    'not.exist'
+  );
 }
 
 export function mintConnectedTokenFromSelectHubScreen() {
-  cy.get('.select-hub').should('exist');
-  cy.get('.token-information__mint').click();
-  cy.getWithCustomTimeout('.mint-dialog__button').should('exist');
-  cy.get('.mint-dialog__button').click();
-  cy.getWithCustomTimeout('.mint-dialog__button').should('not.exist');
+  // cypress selectors: raiden-dapp/src/views/SelectHubRoute.vue
+  cy.get('[data-cy=select_hub]').should('exist');
+  // cypress selectors: raiden-dapp/src/components/TokenInformation.vue
+  cy.get('[data-cy=token_information_mint]').click();
+  // cypress selectors: raiden-dapp/src/components/dialogs/MintDialog.vue
+  cy.getWithCustomTimeout('[data-cy=mint_dialog_button]').should('exist');
+  cy.get('[data-cy=mint_dialog_button]').click();
+  cy.getWithCustomTimeout('[data-cy=mint_dialog_button]').should('not.exist');
 }
 
 export function openChannel() {
-  cy.get('.open-channel').should('exist');
-  cy.get('.open-channel__button').click();
-  cy.getWithCustomTimeout('.open-channel-dialog').should('not.exist');
-  cy.getWithCustomTimeout('.open-channel').should('not.exist');
+  // cypress selectors: raiden-dapp/src/views/OpenChannelRoute.vue
+  cy.get('[data-cy=open_channel]').should('exist');
+  cy.get('[data-cy=open_channel_button]').click();
+  // cypress selectors: raiden-dapp/src/components/dialogs/OpenChannelDialog.vue
+  cy.getWithCustomTimeout('[data-cy=open_channel_dialog]').should('not.exist');
+  cy.getWithCustomTimeout('[data-cy=open_channel]').should('not.exist');
 }
 
 export function depositTokensToOpenedChannel() {
-  cy.get('.channel-deposit').should('exist');
-  cy.get('.channel-deposit__button').click();
-  cy.getWithCustomTimeout('.channel-deposit').should('not.exist');
+  // cypress selectors: raiden-dapp/src/components/dialogs/ChannelDepositDialog.vue
+  cy.get('[data-cy=channel_deposit]').should('exist');
+  cy.get('[data-cy=channel_deposit_button]').click();
+  cy.getWithCustomTimeout('[data-cy=channel_deposit]').should('not.exist');
 }
 
 export function withdrawTokens() {
-  cy.get('.channel-withdraw').should('exist');
-  cy.get('.channel-withdraw__button').click();
-  cy.getWithCustomTimeout('.channel-withdraw').should('not.exist');
+  // cypress selectors: raiden-dapp/src/components/dialogs/ChannelWithdrawDialog.vue
+  cy.get('[data-cy=channel_withdraw]').should('exist');
+  cy.get('[data-cy=channel_withdraw_button]').click();
+  cy.getWithCustomTimeout('[data-cy=channel_withdraw]').should('not.exist');
 }
 
 export function transferETHToRaidenAccount() {
-  cy.get('.raiden-account__transfer-button__button').click();
-  cy.getWithCustomTimeout('.raiden-account__progress-wrapper').should(
+  // cypress selectors: raiden-dapp/src/views/account/RaidenAccount.vue
+  cy.get('[data-cy=raiden_account_transfer_button_button]').click();
+  cy.getWithCustomTimeout('[data-cy=raiden_account_progress_wrappers]').should(
     'not.exist'
   );
 }
 
 export function withdrawTokensBackToMainAccount() {
-  cy.get('.withdrawal__tokens').should('exist');
-  cy.get('.withdrawal__tokens__button').eq(0).click();
-  cy.getWithCustomTimeout('.withdrawal-dialog__action').should('exist');
-  cy.get('.withdrawal-dialog__action').click();
-  cy.getWithCustomTimeout('.withdrawal__empty').should('exist');
+  // cypress selectors: raiden-dapp/src/components/account/Withdrawal.vue
+  cy.get('[data-cy=withdrawal_tokens]').should('exist');
+  cy.get('[data-cy=withdrawal_tokens_button]')
+    .eq(0)
+    .click();
+  cy.getWithCustomTimeout('[data-cy=withdrawal_dialog_action]').should('exist');
+  cy.get('[data-cy=withdrawal_dialog_action]').click();
+  cy.getWithCustomTimeout('[data-cy=withdrawal_empty]').should('exist');
 }
 
 export function withdrawUDCTokens() {
-  cy.get('.udc-withdrawal-dialog').should('exist');
-  cy.get('.udc-withdrawal-dialog__button').click();
-  cy.getWithCustomTimeout('.udc-withdrawal-dialog').should('not.exist');
+  // cypress selectors: raiden-dapp/src/components/dialogs/UdcWithdrawalDialog.vue
+  cy.get('[data-cy=udc_withdrawal_dialog]').should('exist');
+  cy.get('[data-cy=udc_withdrawal_dialog_button]').click();
+  cy.getWithCustomTimeout('[data-cy=udc_withdrawal_dialog]').should(
+    'not.exist'
+  );
 }

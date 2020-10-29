@@ -1,5 +1,6 @@
 <template>
   <raiden-dialog
+    data-cy="open_channel_dialog"
     class="open-channel-dialog"
     :visible="visible"
     hide-close

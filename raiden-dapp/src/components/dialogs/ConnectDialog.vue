@@ -9,7 +9,7 @@
       {{ $t('home.connect-dialog.title') }}
     </v-card-title>
     <div v-if="hasProvider">
-      <div class="connect__button">
+      <div data-cy="connect_button" class="connect__button">
         <action-button
           :text="$t('home.connect-dialog.raiden-account')"
           :enabled="!connecting"

@@ -5,91 +5,141 @@ export function navigateToDisclaimer() {
 }
 
 export function navigateToSelectHub() {
-  cy.get('.no-tokens__add').should('exist');
-  cy.get('.no-tokens__add').click();
-  cy.getWithCustomTimeout('.token-list-item').eq(0).should('exist');
-  cy.get('.token-list-item').eq(0).click();
-  cy.getWithCustomTimeout('.select-hub').should('exist');
+  // cypress selectors: raiden-dapp/src/components/NoTokens.vue
+  cy.get('[data-cy=no_tokens_add]').should('exist');
+  cy.get('[data-cy=no_tokens_add]').click();
+  // cypress selectors: raiden-dapp/src/components/tokens/TokenListItem.vue
+  cy.getWithCustomTimeout('[data-cy=token_list_item]')
+    .eq(0)
+    .should('exist');
+  cy.get('[data-cy=token_list_item]')
+    .eq(0)
+    .click();
+  // cypress selectors: raiden-dapp/src/views/SelectHubRoute.vue
+  cy.getWithCustomTimeout('[data-cy=select_hub]').should('exist');
   cy.contains('Select Hub');
 }
 
 export function navigateToNotificationPanel() {
-  cy.get('.app-header__notifications-button').click();
-  cy.getWithCustomTimeout('#notification-panel').should('exist');
+  // cypress selectors: raiden-dapp/src/components/AppHeader.vue
+  cy.get('[data-cy=app_header_notifications_button]').click();
+  // cypress selectors: raiden-dapp/src/views/NotificationPanel.vue
+  cy.getWithCustomTimeout('[data-cy=notification_panel]').should('exist');
 }
 
 export function navigateToAccountMenu() {
-  cy.get('.app-header__icons__identicon').click();
-  cy.getWithCustomTimeout('.account-root').should('exist');
+  // cypress selectors: raiden-dapp/src/components/AppHeader.vue
+  cy.get('[data-cy=app_header_icons_identicon]').click();
+  // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
+  cy.getWithCustomTimeout('[data-cy=account_root]').should('exist');
 }
 
 export function navigateToBackupState() {
-  cy.get('.account-root').should('exist');
-  cy.get('.account-content__menu__list-items__icon__button').eq(3).click();
-  cy.getWithCustomTimeout('.backup-state').should('exist');
+  // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
+  cy.get('[data-cy=account_root]').should('exist');
+  cy.get('[data-cy=account_content_menu_list_items_icon_button]')
+    .eq(3)
+    .click();
+  // cypress selectors: raiden-dapp/src/views/account/BackupState.vue
+  cy.getWithCustomTimeout('[data-cy=backup_state]').should('exist');
 }
 
 export function navigateToTokenSelect() {
-  cy.get('.transfer-inputs').should('exist');
-  cy.get('.transfer-menus__token-select').click();
+  // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
+  cy.get('[data-cy=transfer_inputs]').should('exist');
+  // cypress selectors: raiden-dapp/src/components/transfer/TransferHeaders.vue
+  cy.get('[data-cy=transfer_menus_token_select]').click();
 }
 
 export function navigateToConnectNewTokenFromTokenOverlay() {
-  cy.getWithCustomTimeout('.token-overlay__connect-new').should('exist');
-  cy.get('.token-overlay__connect-new').click();
-  cy.getWithCustomTimeout('.token-list').should('exist');
+  // cypress selectors: raiden-dapp/src/components/overlays/TokenOverlay.vue
+  cy.getWithCustomTimeout('[data-cy=token_overlay_connect_new]').should(
+    'exist'
+  );
+  cy.get('[data-cy=token_overlay_connect_new]').click();
+  // cypress selectors: raiden-dapp/src/components/tokens/TokenList.vue
+  cy.getWithCustomTimeout('[data-cy=token_list]').should('exist');
   cy.contains('Select Token');
 }
 
 export function navigateBackToTransferScreenFromOverlay() {
-  cy.get('.app-header__back-button').click();
-  cy.getWithCustomTimeout('.transfer-inputs').should('exist');
+  // cypress selectors: raiden-dapp/src/components/AppHeader.vue
+  cy.get('[data-cy=app_header_back_button]').click();
+  // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
+  cy.getWithCustomTimeout('[data-cy=transfer_inputs]').should('exist');
 }
 
 export function navigateToTokenDepositFromTransferScreen() {
-  cy.get('.transfer-inputs').should('exist');
-  cy.get('.transfer-menus__dot-menu__button').click();
-  cy.getWithCustomTimeout('.transfer-menus__dot-menu__menu__deposit').should(
-    'exist'
-  );
-  cy.get('.transfer-menus__dot-menu__menu__deposit').click();
-  cy.getWithCustomTimeout('.channel-deposit').should('exist');
+  // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
+  cy.get('[data-cy=transfer_inputs]').should('exist');
+  // cypress selectors: raiden-dapp/src/components/transfer/TransferHeaders.vue
+  cy.get('[data-cy=transfer_menus_dot_menu_button]').click();
+  cy.getWithCustomTimeout(
+    '[data-cy=transfer_menus_dot_menu_menu_deposit]'
+  ).should('exist');
+  cy.get('[data-cy=transfer_menus_dot_menu_menu_deposit]').click();
+  // cypress selectors: raiden-dapp/src/components/dialogs/ChannelDepositDialog.vue
+  cy.getWithCustomTimeout('[data-cy=channel_deposit]').should('exist');
 }
 
 export function navigateToChannelsList() {
-  cy.get('.transfer-inputs').should('exist');
-  cy.get('.transfer-menus__dot-menu__button').click();
-  cy.getWithCustomTimeout('.transfer-menus__dot-menu__menu__channels').should(
-    'exist'
-  );
-  cy.get('.transfer-menus__dot-menu__menu__channels').click();
-  cy.getWithCustomTimeout('.channel-list').should('exist');
+  // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
+  cy.get('[data-cy=transfer_inputs]').should('exist');
+  // cypress selectors: raiden-dapp/src/components/transfer/TransferHeaders.vue
+  cy.get('[data-cy=transfer_menus_dot_menu_button]').click();
+  cy.getWithCustomTimeout(
+    '[data-cy=transfer_menus_dot_menu_menu_channels]'
+  ).should('exist');
+  cy.get('[data-cy=transfer_menus_dot_menu_menu_channels]').click();
+  // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
+  cy.getWithCustomTimeout('[data-cy=channel_list]').should('exist');
 }
 
 export function navigateToRaidenAccount() {
-  cy.get('.account-root').should('exist');
-  cy.get('.account-content__menu__list-items__icon__button').eq(0).click();
-  cy.getWithCustomTimeout('.raiden-account').should('exist');
+  // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
+  cy.get('[data-cy=account_root]').should('exist');
+  // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
+  cy.get('[data-cy=account_content_menu_list_items_icon_button]')
+    .eq(0)
+    .click();
+  // cypress selectors: raiden-dapp/src/views/account/RaidenAccount.vue
+  cy.getWithCustomTimeout('[data-cy=raiden_account]').should('exist');
 }
 
 export function navigateBackToAccountMenu() {
-  cy.get('.account-route__header__content__back__button').click();
-  cy.getWithCustomTimeout('.account-root').should('exist');
+  // cypress selectors: raiden-dapp/src/views/AccountRoute.vue
+  cy.get('[data-cy=account_route_header_content_back_button]').click();
+  // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
+  cy.getWithCustomTimeout('[data-cy=account_root]').should('exist');
 }
 
 export function navigateToWithdrawal() {
-  cy.get('.account-root').should('exist');
-  cy.get('.account-content__menu__list-items__icon__button').eq(1).click();
-  cy.getWithCustomTimeout('.withdrawal__tokens').should('exist');
+  // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
+  cy.get('[data-cy=account_root]').should('exist');
+  // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
+  cy.get('[data-cy=account_content_menu_list_items_icon_button]')
+    .eq(1)
+    .click();
+  // cypress selectors: raiden-dapp/src/components/account/Withdrawal.vue
+  cy.getWithCustomTimeout('[data-cy=withdrawal_tokens]').should('exist');
 }
 
 export function navigateToUDC() {
-  cy.get('.account-root').should('exist');
-  cy.get('.account-content__menu__list-items__icon__button').eq(2).click();
-  cy.getWithCustomTimeout('.udc').should('exist');
+  // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
+  cy.get('[data-cy=account_root]').should('exist');
+  // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
+  cy.get('[data-cy=account_content_menu_list_items_icon_button]')
+    .eq(2)
+    .click();
+  // cypress selectors: raiden-dapp/src/views/account/UDC.vue
+  cy.getWithCustomTimeout('[data-cy=udc]').should('exist');
 }
 
 export function navigateToDownloadLogs() {
-  cy.get('.account-root').should('exist');
-  cy.get('.account-content__menu__list-items__icon__button').eq(4).click();
+  // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
+  cy.get('[data-cy=account_root]').should('exist');
+  // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
+  cy.get('[data-cy=account_content_menu_list_items_icon_button]')
+    .eq(4)
+    .click();
 }

@@ -3,6 +3,7 @@
     <v-btn
       fab
       color="primary"
+      data-cy="no_tokens_add"
       class="no-tokens__add"
       @click="navigateToTokenSelect()"
     >

@@ -1,5 +1,5 @@
 <template>
-  <v-card class="notification-card" flat>
+  <v-card data-cy="notification_card" class="notification-card" flat>
     <v-row class="notification-card__content" no-gutters>
       <v-avatar class="notification-card__content__icon" size="44" rounded>
         <img :src="require(`@/assets/${notification.icon}.svg`)" />
@@ -31,6 +31,7 @@
       <v-btn
         x-small
         icon
+        data-cy="notification_card_delete_button"
         class="notification-card__delete-button"
         @click="notificationDelete(notification.id)"
       >
