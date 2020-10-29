@@ -65,7 +65,6 @@ import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
 import { pfsListInfo } from './services/utils';
 import { Address, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
-import { patchSignSend } from './utils/ethers';
 import { pluckDistinct } from './utils/rx';
 import {
   getContracts,
@@ -346,9 +345,6 @@ export class Raiden {
     } else {
       provider = new Web3Provider(connection);
     }
-
-    // Patch provider's sign method (https://github.com/raiden-network/light-client/issues/223)
-    patchSignSend(provider);
 
     const network = await provider.getNetwork();
 

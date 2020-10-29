@@ -7,7 +7,7 @@ import { first } from 'rxjs/operators';
 
 import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils';
 
-import { fromEthersEvent, patchSignSend, getNetworkName } from 'raiden-ts/utils/ethers';
+import { fromEthersEvent, getNetworkName } from 'raiden-ts/utils/ethers';
 import {
   Address,
   BigNumberC,
@@ -41,36 +41,6 @@ test('fromEthersEvent', async () => {
   expect(blockNumber).toBe(1337);
   expect(onSpy).toHaveBeenCalledTimes(1);
   expect(removeListenerSpy).toHaveBeenCalledTimes(1);
-});
-
-test('patchSignSend', async () => {
-  const provider = new JsonRpcProvider();
-
-  const sendSpy = jest.spyOn(provider, 'send');
-  sendSpy.mockImplementation(async (method, params) => [method, params]);
-
-  patchSignSend(provider);
-
-  // other methods are called as is
-  await expect(provider.send('eth_othermethod', [1, 2])).resolves.toEqual([
-    'eth_othermethod',
-    [1, 2],
-  ]);
-
-  // eth_sign is first replaced by personal_sign with swapped params
-  await expect(provider.send('eth_sign', [1, 2])).resolves.toEqual(['personal_sign', [2, 1]]);
-
-  // other errors in personal_sign are simply re-raised
-  sendSpy.mockRejectedValueOnce(new Error('signature rejected'));
-  await expect(provider.send('eth_sign', [1, 2])).rejects.toThrow('signature rejected');
-
-  // specific error causes monkey patch to revert itself and call again
-  sendSpy.mockClear();
-  sendSpy.mockRejectedValueOnce(new Error('Method personal_sign not supported'));
-  await expect(provider.send('eth_sign', [1, 2])).resolves.toEqual(['eth_sign', [1, 2]]);
-  expect(sendSpy).toHaveBeenCalledTimes(2);
-  expect(sendSpy).toHaveBeenCalledWith('personal_sign', [2, 1]);
-  expect(sendSpy).toHaveBeenCalledWith('eth_sign', [1, 2]);
 });
 
 describe('types', () => {
