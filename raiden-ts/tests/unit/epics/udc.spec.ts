@@ -1,16 +1,19 @@
 import { makeRaidens, makeTransaction, waitBlock } from '../mocks';
-import { bigNumberify, parseEther } from 'ethers/utils';
+
+import { BigNumber } from '@ethersproject/bignumber';
+import { parseEther } from '@ethersproject/units';
+import { Zero } from '@ethersproject/constants';
+
 import { udcWithdraw, udcWithdrawn } from 'raiden-ts/services/actions';
 import { confirmationBlocks } from '../fixtures';
 import { Hash, UInt } from 'raiden-ts/utils/types';
-import { Zero } from 'ethers/constants';
 
 describe('udcWithdraw', () => {
   test('planned withdraw picked on startup', async () => {
     const [raiden] = await makeRaidens(1, false);
     const amount = parseEther('5');
-    const withdrawBlock = bigNumberify(500);
-    raiden.deps.userDepositContract.functions.withdraw_plans.mockResolvedValue({
+    const withdrawBlock = BigNumber.from(500);
+    raiden.deps.userDepositContract.withdraw_plans.mockResolvedValue({
       amount: amount,
       withdraw_block: withdrawBlock,
       0: amount,
@@ -28,21 +31,21 @@ describe('udcWithdraw', () => {
   test('withdraw request: success', async () => {
     const [raiden] = await makeRaidens(1);
     const amount = parseEther('5');
-    const withdrawBlock = bigNumberify(500);
-    raiden.deps.userDepositContract.functions.withdraw_plans.mockResolvedValue({
+    const withdrawBlock = BigNumber.from(500);
+    raiden.deps.userDepositContract.withdraw_plans.mockResolvedValue({
       amount: amount,
       withdraw_block: withdrawBlock,
       0: amount,
       1: withdrawBlock,
     });
-    raiden.deps.userDepositContract.functions.withdraw_plans.mockResolvedValueOnce({
+    raiden.deps.userDepositContract.withdraw_plans.mockResolvedValueOnce({
       amount: Zero,
       withdraw_block: Zero,
       0: Zero,
       1: Zero,
     });
     const planTx = makeTransaction(1);
-    raiden.deps.userDepositContract.functions.planWithdraw.mockResolvedValue(planTx);
+    raiden.deps.userDepositContract.planWithdraw.mockResolvedValue(planTx);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     raiden.deps.provider.getTransactionReceipt.mockResolvedValue({
@@ -89,8 +92,8 @@ describe('udcWithdraw', () => {
     const [raiden] = await makeRaidens(1);
     const amount = parseEther('5');
     const withdrawTx = makeTransaction(1);
-    raiden.deps.userDepositContract.functions.withdraw.mockResolvedValue(withdrawTx);
-    raiden.deps.userDepositContract.functions.balances
+    raiden.deps.userDepositContract.withdraw.mockResolvedValue(withdrawTx);
+    raiden.deps.userDepositContract.balances
       .mockClear()
       .mockResolvedValueOnce(parseEther('5'))
       .mockResolvedValueOnce(Zero);
@@ -116,8 +119,8 @@ describe('udcWithdraw', () => {
     const [raiden] = await makeRaidens(1);
     const amount = parseEther('5');
     const withdrawTx = makeTransaction(1);
-    raiden.deps.userDepositContract.functions.withdraw.mockResolvedValue(withdrawTx);
-    raiden.deps.userDepositContract.functions.balances.mockClear().mockResolvedValueOnce(Zero);
+    raiden.deps.userDepositContract.withdraw.mockResolvedValue(withdrawTx);
+    raiden.deps.userDepositContract.balances.mockClear().mockResolvedValueOnce(Zero);
     raiden.store.dispatch(
       udcWithdraw.success({ block: 200, confirmed: true }, { amount: amount as UInt<32> }),
     );

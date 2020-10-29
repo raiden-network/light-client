@@ -11,8 +11,8 @@ import {
   ensureChannelIsClosed,
 } from '../fixtures';
 
-import { bigNumberify } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { Zero } from '@ethersproject/constants';
 
 import { MessageType, WithdrawRequest, WithdrawConfirmation } from 'raiden-ts/messages/types';
 import { signMessage } from 'raiden-ts/messages/utils';
@@ -33,14 +33,14 @@ describe('withdraw receive request', () => {
     const request: WithdrawRequest = {
       type: MessageType.WITHDRAW_REQUEST,
       message_identifier: makeMessageId(),
-      chain_id: bigNumberify(raiden.deps.network.chainId) as UInt<32>,
+      chain_id: BigNumber.from(raiden.deps.network.chainId) as UInt<32>,
       token_network_address: tokenNetwork,
-      channel_identifier: bigNumberify(id) as UInt<32>,
+      channel_identifier: BigNumber.from(id) as UInt<32>,
       participant: partner.address,
       // withdrawable amount is partner.deposit + own.g
       total_withdraw: deposit.add(amount) as UInt<32>,
       nonce: getChannel(partner, raiden).own.nextNonce,
-      expiration: bigNumberify(raiden.store.getState().blockNumber + 20) as UInt<32>,
+      expiration: BigNumber.from(raiden.store.getState().blockNumber + 20) as UInt<32>,
     };
     const message = await signMessage(partner.deps.signer, request);
 
@@ -196,7 +196,7 @@ describe('withdraw send request', () => {
     expect(getChannel(raiden, partner).own.nextNonce).toEqual(nonce.add(1));
 
     const withdrawTx = makeTransaction();
-    tokenNetworkContract.functions.setTotalWithdraw.mockResolvedValue(withdrawTx);
+    tokenNetworkContract.setTotalWithdraw.mockResolvedValue(withdrawTx);
 
     // receive confirmation
     const partnerNextNonce = getChannel(raiden, partner).partner.nextNonce;
@@ -205,7 +205,7 @@ describe('withdraw send request', () => {
 
     expect(getChannel(raiden, partner).partner.nextNonce).toEqual(partnerNextNonce.add(1));
     expect(raiden.output).toContainEqual(withdrawMessage.success({ message: confirmation }, meta));
-    expect(tokenNetworkContract.functions.setTotalWithdraw).toHaveBeenCalledWith(
+    expect(tokenNetworkContract.setTotalWithdraw).toHaveBeenCalledWith(
       id,
       raiden.address,
       totalWithdraw,
@@ -391,7 +391,7 @@ test('withdraw expire', async () => {
   // prevent withdraw tx from succeeding
   raiden.deps
     .getTokenNetworkContract(tokenNetwork)
-    .functions.setTotalWithdraw.mockRejectedValue(new Error('withdraw tx failed'));
+    .setTotalWithdraw.mockRejectedValue(new Error('withdraw tx failed'));
 
   await ensureChannelIsDeposited([raiden, partner], deposit);
   await ensureChannelIsDeposited([partner, raiden], amount);

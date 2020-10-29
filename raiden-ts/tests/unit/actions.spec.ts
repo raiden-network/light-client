@@ -1,6 +1,6 @@
 import * as t from 'io-ts';
 import { from } from 'rxjs';
-import { bigNumberify } from 'ethers/utils';
+import { BigNumber } from '@ethersproject/bignumber';
 
 import { channelDeposit, channelMonitored } from 'raiden-ts/channels/actions';
 import { RaidenError, ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
@@ -29,7 +29,7 @@ describe('action factories not tested in reducers.spec.ts', () => {
   });
 
   test('channelDeposit request', () => {
-    const deposit = bigNumberify(999) as UInt<32>;
+    const deposit = BigNumber.from(999) as UInt<32>;
     expect(channelDeposit.request({ deposit }, { tokenNetwork, partner })).toEqual({
       type: channelDeposit.request.type,
       payload: { deposit },

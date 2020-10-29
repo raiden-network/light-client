@@ -10,7 +10,7 @@ import {
   ensurePresence,
 } from '../fixtures';
 
-import { Zero } from 'ethers/constants';
+import { Zero } from '@ethersproject/constants';
 import { first } from 'rxjs/operators';
 
 import { Capabilities } from 'raiden-ts/constants';

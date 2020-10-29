@@ -1,6 +1,6 @@
 import { Wallet } from 'ethers';
-import { bigNumberify } from 'ethers/utils';
-import { One, Zero } from 'ethers/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { One, Zero } from '@ethersproject/constants';
 import {
   Delivered,
   LockedTransfer,
@@ -38,19 +38,19 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('LockedTransfer', async () => {
     const message: LockedTransfer = {
       type: MessageType.LOCKED_TRANSFER,
-      chain_id: bigNumberify(337) as UInt<32>,
-      message_identifier: bigNumberify(123456) as UInt<8>,
+      chain_id: BigNumber.from(337) as UInt<32>,
+      message_identifier: BigNumber.from(123456) as UInt<8>,
       payment_identifier: One as UInt<8>,
       nonce: One as UInt<8>,
       token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
       token: '0xc778417E063141139Fce010982780140Aa0cD5Ab' as Address,
-      channel_identifier: bigNumberify(1338) as UInt<32>,
+      channel_identifier: BigNumber.from(1338) as UInt<32>,
       transferred_amount: Zero as UInt<32>,
-      locked_amount: bigNumberify(10) as UInt<32>,
+      locked_amount: BigNumber.from(10) as UInt<32>,
       recipient: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
       locksroot: '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
       lock: {
-        amount: bigNumberify(10) as UInt<32>,
+        amount: BigNumber.from(10) as UInt<32>,
         expiration: One as UInt<32>,
         secrethash: '0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8' as Hash,
       },
@@ -95,15 +95,15 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('Unlock', async () => {
     const message: Unlock = {
       type: MessageType.UNLOCK,
-      chain_id: bigNumberify(337) as UInt<32>,
-      message_identifier: bigNumberify(123457) as UInt<8>,
+      chain_id: BigNumber.from(337) as UInt<32>,
+      message_identifier: BigNumber.from(123457) as UInt<8>,
       payment_identifier: One as UInt<8>,
       secret: '0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e' as Secret,
       nonce: One as UInt<8>,
       token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
-      channel_identifier: bigNumberify(1338) as UInt<32>,
+      channel_identifier: BigNumber.from(1338) as UInt<32>,
       transferred_amount: Zero as UInt<32>,
-      locked_amount: bigNumberify(10) as UInt<32>,
+      locked_amount: BigNumber.from(10) as UInt<32>,
       locksroot: '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
     };
 
@@ -134,14 +134,14 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('LockExpired', async () => {
     const message: LockExpired = {
       type: MessageType.LOCK_EXPIRED,
-      chain_id: bigNumberify(337) as UInt<32>,
+      chain_id: BigNumber.from(337) as UInt<32>,
       nonce: One as UInt<8>,
       token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
-      message_identifier: bigNumberify(123457) as UInt<8>,
-      channel_identifier: bigNumberify(1338) as UInt<32>,
+      message_identifier: BigNumber.from(123457) as UInt<8>,
+      channel_identifier: BigNumber.from(1338) as UInt<32>,
       secrethash: '0xfdd5831261497a4de31cb31d29b3cafe1fd2dfcdadf3c4a72ed0af9bb106934d' as Hash,
       transferred_amount: Zero as UInt<32>,
-      locked_amount: bigNumberify(10) as UInt<32>,
+      locked_amount: BigNumber.from(10) as UInt<32>,
       recipient: '0x540B51eDc5900B8012091cc7c83caf2cb243aa86' as Address,
       locksroot: '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
     };
@@ -199,10 +199,10 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('SecretRequest', async () => {
     const message: SecretRequest = {
       type: MessageType.SECRET_REQUEST,
-      message_identifier: bigNumberify(123456) as UInt<8>,
+      message_identifier: BigNumber.from(123456) as UInt<8>,
       payment_identifier: One as UInt<8>,
       secrethash: '0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8' as Hash,
-      amount: bigNumberify(10) as UInt<32>,
+      amount: BigNumber.from(10) as UInt<32>,
       expiration: One as UInt<32>,
     };
 
@@ -229,7 +229,7 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('SecretReveal', async () => {
     const message: SecretReveal = {
       type: MessageType.SECRET_REVEAL,
-      message_identifier: bigNumberify(123456) as UInt<8>,
+      message_identifier: BigNumber.from(123456) as UInt<8>,
       secret: '0x3bc51dd335dda4f6aee24b3f88d88c5ee0b0d43aea4ed25a384531ce29fb062e' as Secret,
     };
 
@@ -256,7 +256,7 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('Delivered', async () => {
     const message: Delivered = {
       type: MessageType.DELIVERED,
-      delivered_message_identifier: bigNumberify(123456) as UInt<8>,
+      delivered_message_identifier: BigNumber.from(123456) as UInt<8>,
     };
 
     expect(packMessage(message)).toEqual('0x0c000000000000000001e240');
@@ -280,7 +280,7 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('Processed', async () => {
     const message: Processed = {
       type: MessageType.PROCESSED,
-      message_identifier: bigNumberify(123456) as UInt<8>,
+      message_identifier: BigNumber.from(123456) as UInt<8>,
     };
 
     expect(packMessage(message)).toEqual('0x00000000000000000001e240');
@@ -315,19 +315,19 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('getBalanceProofFromEnvelopeMessage', async () => {
     const message: LockedTransfer = {
       type: MessageType.LOCKED_TRANSFER,
-      chain_id: bigNumberify(337) as UInt<32>,
-      message_identifier: bigNumberify(123456) as UInt<8>,
+      chain_id: BigNumber.from(337) as UInt<32>,
+      message_identifier: BigNumber.from(123456) as UInt<8>,
       payment_identifier: One as UInt<8>,
       nonce: One as UInt<8>,
       token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
       token: '0xc778417E063141139Fce010982780140Aa0cD5Ab' as Address,
-      channel_identifier: bigNumberify(1338) as UInt<32>,
+      channel_identifier: BigNumber.from(1338) as UInt<32>,
       transferred_amount: Zero as UInt<32>,
-      locked_amount: bigNumberify(10) as UInt<32>,
+      locked_amount: BigNumber.from(10) as UInt<32>,
       recipient: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
       locksroot: '0x607e890c54e5ba67cd483bedae3ba9da9bf2ef2fbf237b9fb39a723b2296077b' as Hash,
       lock: {
-        amount: bigNumberify(10) as UInt<32>,
+        amount: BigNumber.from(10) as UInt<32>,
         expiration: One as UInt<32>,
         secrethash: '0x59cad5948673622c1d64e2322488bf01619f7ff45789741b15a9f782ce9290a8' as Hash,
       },
@@ -380,14 +380,14 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('WithdrawRequest', async () => {
     const message: WithdrawRequest = {
       type: MessageType.WITHDRAW_REQUEST,
-      chain_id: bigNumberify(337) as UInt<32>,
-      message_identifier: bigNumberify(123456) as UInt<8>,
+      chain_id: BigNumber.from(337) as UInt<32>,
+      message_identifier: BigNumber.from(123456) as UInt<8>,
       token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
-      channel_identifier: bigNumberify(1338) as UInt<32>,
+      channel_identifier: BigNumber.from(1338) as UInt<32>,
       participant: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
-      total_withdraw: bigNumberify('10000000000000000000') as UInt<32>,
-      nonce: bigNumberify(135) as UInt<8>,
-      expiration: bigNumberify(182811) as UInt<32>,
+      total_withdraw: BigNumber.from('10000000000000000000') as UInt<32>,
+      nonce: BigNumber.from(135) as UInt<8>,
+      expiration: BigNumber.from(182811) as UInt<32>,
     };
 
     expect(packMessage(message)).toEqual(
@@ -417,14 +417,14 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('WithdrawConfirmation', async () => {
     const message: WithdrawConfirmation = {
       type: MessageType.WITHDRAW_CONFIRMATION,
-      chain_id: bigNumberify(337) as UInt<32>,
-      message_identifier: bigNumberify(123456) as UInt<8>,
+      chain_id: BigNumber.from(337) as UInt<32>,
+      message_identifier: BigNumber.from(123456) as UInt<8>,
       token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
-      channel_identifier: bigNumberify(1338) as UInt<32>,
+      channel_identifier: BigNumber.from(1338) as UInt<32>,
       participant: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
-      total_withdraw: bigNumberify('10000000000000000000') as UInt<32>,
-      nonce: bigNumberify(135) as UInt<8>,
-      expiration: bigNumberify(182811) as UInt<32>,
+      total_withdraw: BigNumber.from('10000000000000000000') as UInt<32>,
+      nonce: BigNumber.from(135) as UInt<8>,
+      expiration: BigNumber.from(182811) as UInt<32>,
     };
 
     expect(packMessage(message)).toEqual(
@@ -454,14 +454,14 @@ describe('sign/verify, pack & encode/decode ', () => {
   test('WithdrawExpired', async () => {
     const message: WithdrawExpired = {
       type: MessageType.WITHDRAW_EXPIRED,
-      chain_id: bigNumberify(337) as UInt<32>,
-      message_identifier: bigNumberify(123456) as UInt<8>,
+      chain_id: BigNumber.from(337) as UInt<32>,
+      message_identifier: BigNumber.from(123456) as UInt<8>,
       token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
-      channel_identifier: bigNumberify(1338) as UInt<32>,
+      channel_identifier: BigNumber.from(1338) as UInt<32>,
       participant: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
-      total_withdraw: bigNumberify('10000000000000000000') as UInt<32>,
-      nonce: bigNumberify(135) as UInt<8>,
-      expiration: bigNumberify(182811) as UInt<32>,
+      total_withdraw: BigNumber.from('10000000000000000000') as UInt<32>,
+      nonce: BigNumber.from(135) as UInt<8>,
+      expiration: BigNumber.from(182811) as UInt<32>,
     };
 
     expect(packMessage(message)).toEqual(
@@ -492,9 +492,9 @@ describe('sign/verify, pack & encode/decode ', () => {
     const message: PFSFeeUpdate = {
       type: MessageType.PFS_FEE_UPDATE,
       canonical_identifier: {
-        chain_identifier: bigNumberify(337) as UInt<32>,
+        chain_identifier: BigNumber.from(337) as UInt<32>,
         token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
-        channel_identifier: bigNumberify(1338) as UInt<32>,
+        channel_identifier: BigNumber.from(1338) as UInt<32>,
       },
       updating_participant: '0x14791697260E4c9A71f18484C9f997B308e59325' as Address,
       timestamp: new Date(0).toISOString().substr(0, 19),
@@ -535,10 +535,10 @@ describe('sign/verify, pack & encode/decode ', () => {
     const message: MonitorRequest = {
       type: MessageType.MONITOR_REQUEST,
       balance_proof: {
-        chain_id: bigNumberify(337) as UInt<32>,
+        chain_id: BigNumber.from(337) as UInt<32>,
         nonce: One as UInt<8>,
         token_network_address: '0xe82ae5475589b828D3644e1B56546F93cD27d1a4' as Address,
-        channel_identifier: bigNumberify(1338) as UInt<32>,
+        channel_identifier: BigNumber.from(1338) as UInt<32>,
         balance_hash: balanceHash,
         // data from LockedTransfer test
         additional_hash: '0xb6ab946232e2b8271c21a921389b8fc8537ebb05e25e7d5eca95e25ce82c7da5' as Hash,
@@ -547,7 +547,7 @@ describe('sign/verify, pack & encode/decode ', () => {
       monitoring_service_contract_address: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
       non_closing_participant: address,
       non_closing_signature: '0x8c52419a6f5c71b7618c066e2570592e861544f3a9d7c8de87965ee09281983068ac46f0e9116eac43f6a3628667d5109fa18ce86fc03f94321203df75c8afd81b' as Signature,
-      reward_amount: bigNumberify(5) as UInt<32>,
+      reward_amount: BigNumber.from(5) as UInt<32>,
     };
 
     expect(packMessage(message)).toEqual(
