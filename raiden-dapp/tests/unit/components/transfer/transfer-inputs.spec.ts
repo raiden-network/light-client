@@ -9,7 +9,7 @@ import { RouteNames } from '@/router/route-names';
 import Vuetify from 'vuetify';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import { TestData } from '../../data/mock-data';
-import { One } from 'ethers/constants';
+import { constants } from 'ethers';
 import { generateToken } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
@@ -27,14 +27,14 @@ describe('TransferInputs.vue', () => {
     mocks: {
       $router: router,
       $route: TestData.mockRoute({
-        token,
+        token
       }),
-      $t: (msg: string) => msg,
+      $t: (msg: string) => msg
     },
     propsData: {
       token,
-      capacity: One,
-    },
+      capacity: constants.One
+    }
   });
 
   test('navigates to transfer steps if target and amount is valid', async () => {
@@ -47,7 +47,7 @@ describe('TransferInputs.vue', () => {
     await wrapper.vm.$nextTick();
 
     wrapper.setData({
-      valid: true,
+      valid: true
     });
     await wrapper.vm.$nextTick();
 

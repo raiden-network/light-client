@@ -13,11 +13,10 @@ import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
-import { BigNumber, BigNumberish, parseEther } from 'ethers/utils';
+import { BigNumber, BigNumberish, utils, constants } from 'ethers';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import { ConfigProvider, Configuration } from '@/services/config-provider';
-import { Zero } from 'ethers/constants';
 import i18n from '@/i18n';
 import { NotificationPayload } from '@/store/notifications/types';
 import { NotificationContext } from '@/store/notifications/notification-context';
@@ -635,7 +634,7 @@ export default class RaidenService {
   async transferToRaidenAccount(amount: string) {
     await this.raiden.transferOnchainBalance(
       this.raiden.address,
-      parseEther(amount)
+      utils.parseEther(amount)
     );
     await this.updateBalances();
   }
@@ -646,7 +645,7 @@ export default class RaidenService {
     if (mainAddress) {
       await this.raiden.transferOnchainBalance(
         mainAddress,
-        parseEther(amount),
+        utils.parseEther(amount),
         { subkey: true }
       );
       await this.updateBalances();
@@ -673,7 +672,7 @@ export default class RaidenService {
     const balances: Tokens = {};
     const fetchTokenBalance = async (address: string): Promise<void> =>
       raiden.getTokenBalance(address, raiden.address).then((balance) => {
-        if (balance.gt(Zero)) {
+        if (balance.gt(constants.Zero)) {
           balances[address] = {
             address,
             balance,

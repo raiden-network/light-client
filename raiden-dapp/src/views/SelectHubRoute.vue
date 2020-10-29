@@ -107,8 +107,7 @@ import { Component, Mixins } from 'vue-property-decorator';
 import isEmpty from 'lodash/isEmpty';
 import { mapGetters, mapState } from 'vuex';
 import { RaidenChannels } from 'raiden-ts';
-import { Network } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { constants, providers } from 'ethers';
 
 import { Token } from '@/model/types';
 import AddressInput from '@/components/AddressInput.vue';
@@ -141,7 +140,7 @@ import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 export default class SelectHubRoute extends Mixins(NavigationMixin) {
   defaultAccount!: string;
   channels!: RaidenChannels;
-  network!: Network;
+  network!: providers.Network;
   getToken!: (address: string) => Token;
   mainnet!: boolean;
   udcToken!: Token;
@@ -149,7 +148,7 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
   partner = '';
   valid = true;
   showUdcDeposit = false;
-  udcCapacity = Zero;
+  udcCapacity = constants.Zero;
   hasEnoughServiceTokens = false;
 
   async mounted() {

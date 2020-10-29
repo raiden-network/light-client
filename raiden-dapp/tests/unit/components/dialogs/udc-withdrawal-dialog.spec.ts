@@ -4,17 +4,16 @@ jest.mock('@/i18n', () => jest.fn());
 import flushPromises from 'flush-promises';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store';
-import { One } from 'ethers/constants';
+import { constants, utils } from 'ethers';
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { $identicon } from '../../utils/mocks';
 import Mocked = jest.Mocked;
 import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
-import { parseEther } from 'ethers/utils';
 
 Vue.use(Vuetify);
-describe('UdcWithdrawalDialog.vue', function () {
+describe('UdcWithdrawalDialog.vue', function() {
   let wrapper: Wrapper<UdcWithdrawalDialog>;
   let $raiden: Mocked<RaidenService>;
 
@@ -23,7 +22,7 @@ describe('UdcWithdrawalDialog.vue', function () {
     name: 'ServiceToken',
     symbol: 'SVT',
     decimals: 18,
-    balance: One,
+    balance: constants.One
   };
   function createWrapper() {
     const vuetify = new Vuetify();
@@ -35,13 +34,13 @@ describe('UdcWithdrawalDialog.vue', function () {
         visible: true,
         accountBalance: '0.23',
         token,
-        capacity: parseEther('10'),
+        capacity: utils.parseEther('10')
       },
       mocks: {
         $identicon: $identicon(),
         $t: (msg: string) => msg,
-        $raiden,
-      },
+        $raiden
+      }
     });
   }
 

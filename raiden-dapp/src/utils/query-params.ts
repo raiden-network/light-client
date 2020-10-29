@@ -1,9 +1,9 @@
 import AddressUtils from '@/utils/address-utils';
-import { BigNumber, bigNumberify } from 'ethers/utils';
+import { BigNumber } from 'ethers';
 
 export function getPaymentId(queryParam: any): BigNumber | undefined {
   try {
-    return bigNumberify(queryParam);
+    return BigNumber.from(queryParam);
   } catch (_error) {
     return undefined;
   }

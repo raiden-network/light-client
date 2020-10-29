@@ -4,7 +4,7 @@ import Vue from 'vue';
 import { TestData } from '../../data/mock-data';
 import { mockInput } from '../../utils/interaction-utils';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber } from 'ethers';
 import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
@@ -41,7 +41,7 @@ describe('ChannelDeposit.vue', () => {
     const depositTokensEvent = wrapper.emitted('deposit-tokens');
     const events = depositTokensEvent?.shift();
     const deposit: BigNumber = events?.shift() as BigNumber;
-    expect(new BigNumber(0.5 * 10 ** 5).eq(deposit)).toBeTruthy();
+    expect(BigNumber.from(0.5 * 10 ** 5).eq(deposit)).toBeTruthy();
   });
 
   test('do not update the deposit placeholder if dialog hides', async () => {

@@ -64,9 +64,8 @@ import ActionButton from '@/components/ActionButton.vue';
 import { getAmount, getAddress } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
 import { RaidenChannel, ChannelState } from 'raiden-ts';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, constants } from 'ethers';
 import { Token } from '@/model/types';
-import { Zero } from 'ethers/constants';
 
 @Component({
   components: {
@@ -122,7 +121,7 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
   }
 
   get noChannels(): boolean {
-    return this.capacity === Zero;
+    return this.capacity === constants.Zero;
   }
 
   get blockedHubs(): string[] {

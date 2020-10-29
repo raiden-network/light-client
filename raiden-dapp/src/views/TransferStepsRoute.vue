@@ -195,7 +195,7 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { RaidenPFS, RaidenError } from 'raiden-ts';
-import { BigNumber, bigNumberify } from 'ethers/utils';
+import { BigNumber, constants } from 'ethers';
 
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Token, Route, Transfer } from '@/model/types';
@@ -209,7 +209,6 @@ import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import Checkmark from '@/components/icons/Checkmark.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
-import { Zero } from 'ethers/constants';
 import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
 import Filter from '@/filters';
@@ -246,14 +245,14 @@ export default class TransferSteps extends Mixins(
   pfsFeesPaid: boolean = false;
   pfsSelectionSkipped: boolean = false;
   routeSelectionSkipped: boolean = false;
-  paymentId: BigNumber = bigNumberify(Date.now());
+  paymentId: BigNumber = BigNumber.from(Date.now());
   freePfs: boolean = false;
   showUdcDeposit: boolean = false;
   mediationFeesConfirmed: boolean = false;
   processingTransfer: boolean = false;
   transferDone: boolean = false;
   error: Error | RaidenError | null = null;
-  udcCapacity: BigNumber = Zero;
+  udcCapacity: BigNumber = constants.Zero;
   udcToken!: Token;
 
   amount: string = '';
@@ -347,7 +346,7 @@ export default class TransferSteps extends Mixins(
 
       this.selectedRoute = {
         key: 0,
-        fee: Zero,
+        fee: constants.Zero,
         displayFee: '0',
         path: [...route.path],
         hops: 0,
@@ -482,7 +481,7 @@ export default class TransferSteps extends Mixins(
     if (payload) {
       const [pfs, single] = payload;
       this.selectedPfs = pfs;
-      this.freePfs = bigNumberify(pfs.price).isZero();
+      this.freePfs = BigNumber.from(pfs.price).isZero();
       if (pfs && single && this.freePfs) {
         this.handleStep();
       }

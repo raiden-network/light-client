@@ -129,8 +129,7 @@ import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import uniqBy from 'lodash/uniqBy';
-import { Zero } from 'ethers/constants';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, constants } from 'ethers';
 
 @Component({
   components: {
@@ -170,7 +169,7 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
     );
 
     this.balances = updatedTokenBalances.filter((token) =>
-      (token.balance as BigNumber).gt(Zero)
+      (token.balance as BigNumber).gt(constants.Zero)
     );
     this.loading = false;
   }

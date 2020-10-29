@@ -1,11 +1,10 @@
 import times from 'lodash/times';
-import { BigNumber } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { BigNumber, constants } from 'ethers';
 import {
   RaidenTransfer,
   Address,
   RaidenChannel,
-  ChannelState,
+  ChannelState
 } from 'raiden-ts';
 import { Token } from '@/model/types';
 
@@ -45,8 +44,8 @@ export function generateToken(partialToken: Partial<Token> = {}): Token {
     decimals: 18,
     name: 'TestToken',
     symbol: 'TTT',
-    balance: Zero,
-    ...partialToken,
+    balance: constants.Zero,
+    ...partialToken
   } as Token;
 }
 
@@ -66,14 +65,14 @@ export function generateTransfer(
   return {
     key: getRandomTransactionKey(),
     token: token ? (token.address as Address) : getRandomEthereumAddress(),
-    amount: new BigNumber(10 ** 8),
+    amount: BigNumber.from(10 ** 8),
     changedAt: new Date('June 5, 1986 23:59:59'),
     direction: 'sent',
     partner: getRandomEthereumAddress(),
     initiator: getRandomEthereumAddress(),
     target: getRandomEthereumAddress(),
     success: undefined,
-    ...partialTransfer,
+    ...partialTransfer
   } as RaidenTransfer;
 }
 
@@ -85,15 +84,15 @@ export function generateChannel(
     id: getRandomNumericId(),
     openBlock: 1000,
     partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' as Address,
-    partnerDeposit: new BigNumber(10 ** 8),
+    partnerDeposit: BigNumber.from(10 ** 8),
     settleTimeout: 500,
     state: ChannelState.open,
     token: token ? (token.address as Address) : getRandomEthereumAddress(),
     tokenNetwork: getRandomEthereumAddress(),
-    ownDeposit: new BigNumber(10 ** 8),
-    balance: Zero,
-    capacity: new BigNumber(10 ** 8),
-    ownWithdrawable: new BigNumber(10 ** 8),
-    ...partialChannel,
+    ownDeposit: BigNumber.from(10 ** 8),
+    balance: constants.Zero,
+    capacity: BigNumber.from(10 ** 8),
+    ownWithdrawable: BigNumber.from(10 ** 8),
+    ...partialChannel
   } as RaidenChannel;
 }

@@ -9,8 +9,7 @@ import Vuetify from 'vuetify';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
-import { BigNumber } from 'ethers/utils';
-import { One, Zero } from 'ethers/constants';
+import { BigNumber, constants } from 'ethers';
 import { generateToken } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
@@ -29,17 +28,17 @@ describe('TransferHeaders.vue', () => {
       stubs: ['v-menu', 'v-dialog'],
       mocks: {
         $router: router,
-        $t: (msg: string) => msg,
+        $t: (msg: string) => msg
       },
       propsData: {
         token,
-        capacity,
-      },
+        capacity
+      }
     });
   };
 
   test('displays "no open channels" if channel capacity is zero', () => {
-    const wrapper = createWrapper(Zero);
+    const wrapper = createWrapper(constants.Zero);
     const amountDisplay = wrapper.findAll('span').at(3);
 
     expect(amountDisplay.text()).toContain(
@@ -48,7 +47,7 @@ describe('TransferHeaders.vue', () => {
   });
 
   test('disables deposit button if channel capacity is zero', () => {
-    const wrapper = createWrapper(Zero);
+    const wrapper = createWrapper(constants.Zero);
     const depositButton = wrapper.find(
       '.transfer-menus__dot-menu__menu__deposit'
     );
@@ -57,14 +56,14 @@ describe('TransferHeaders.vue', () => {
   });
 
   test('displays amount if channel has capacity', () => {
-    const wrapper = createWrapper(One);
+    const wrapper = createWrapper(constants.One);
     const amountDisplay = wrapper.findAll('span').at(3);
 
     expect(amountDisplay.find('div').text()).toContain('0.000001');
   });
 
   test('deposit button is enabled if channel has capacity', () => {
-    const wrapper = createWrapper(One);
+    const wrapper = createWrapper(constants.One);
     const depositButton = wrapper.find(
       '.transfer-menus__dot-menu__menu__deposit'
     );
@@ -75,7 +74,7 @@ describe('TransferHeaders.vue', () => {
   });
 
   test('deposit button opens deposit dialog', async () => {
-    const wrapper = createWrapper(One);
+    const wrapper = createWrapper(constants.One);
     const depositButton = wrapper.find(
       '.transfer-menus__dot-menu__menu__deposit'
     );
@@ -91,7 +90,7 @@ describe('TransferHeaders.vue', () => {
   });
 
   test('clicking change token button displays token overlay', async () => {
-    const wrapper = createWrapper(One);
+    const wrapper = createWrapper(constants.One);
 
     const tokenSelectButton = wrapper.findAll('span').at(0);
 
@@ -107,7 +106,7 @@ describe('TransferHeaders.vue', () => {
   test('clicking channels button navigates to channels screen', async () => {
     router.push = jest.fn().mockImplementation(() => Promise.resolve());
 
-    const wrapper = createWrapper(One);
+    const wrapper = createWrapper(constants.One);
     const channelsButton = wrapper.find(
       '.transfer-menus__dot-menu__menu__channels'
     );
@@ -118,7 +117,7 @@ describe('TransferHeaders.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.CHANNELS,
+        name: RouteNames.CHANNELS
       })
     );
   });

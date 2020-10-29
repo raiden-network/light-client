@@ -4,10 +4,9 @@ import store from '@/store';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { RaidenPFS } from 'raiden-ts';
-import { bigNumberify } from 'ethers/utils';
+import { BigNumber, constants } from 'ethers';
 import { Tokens } from '@/types';
 import { Token } from '@/model/types';
-import { Zero } from 'ethers/constants';
 import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
@@ -22,7 +21,7 @@ describe('PathfindingService.vue', () => {
 
   const raidenPFS: RaidenPFS = {
     address: '0x94DEe8e391410A9ebbA791B187df2d993212c849',
-    price: bigNumberify(100),
+    price: BigNumber.from(100),
     rtt: 62,
     token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
     url: 'https://pfs-goerli-with-fee.services-test.raiden.network',
@@ -30,7 +29,7 @@ describe('PathfindingService.vue', () => {
 
   const raidenPFS2: RaidenPFS = {
     address: '0x3a471e23a2281e6C131441fC622e8107CE214043',
-    price: bigNumberify(100),
+    price: BigNumber.from(100),
     rtt: 171,
     token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
     url: 'https://pfs-goerli.services-test.raiden.network',
@@ -55,7 +54,7 @@ describe('PathfindingService.vue', () => {
         name: 'ServiceToken',
         symbol: 'SVT',
         decimals: 18,
-        balance: Zero,
+        balance: constants.Zero,
       } as Token,
     } as Tokens);
   });

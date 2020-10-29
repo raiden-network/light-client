@@ -2,7 +2,7 @@ import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import store from '@/store';
-import { bigNumberify } from 'ethers/utils';
+import { BigNumber } from 'ethers';
 import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
 
 Vue.use(Vuetify);
@@ -12,13 +12,13 @@ describe('TransferProgressDialog.vue', () => {
   let vuetify: Vuetify;
   const transferPending = {
     key: 'sent:0x1',
-    paymentId: bigNumberify('0x1'),
-    status: 'PENDING',
+    paymentId: BigNumber.from('0x1'),
+    status: 'PENDING'
   };
   const transferRequested = {
     key: 'sent:0x1',
-    paymentId: bigNumberify('0x1'),
-    status: 'REQUESTED',
+    paymentId: BigNumber.from('0x1'),
+    status: 'REQUESTED'
   };
 
   beforeEach(() => {
@@ -29,14 +29,14 @@ describe('TransferProgressDialog.vue', () => {
       store,
       stubs: ['v-dialog'],
       mocks: {
-        $t: (msg: string) => msg,
+        $t: (msg: string) => msg
       },
       propsData: {
         visible: true,
         inProgress: true,
         error: false,
-        identifier: transferPending.paymentId,
-      },
+        identifier: transferPending.paymentId
+      }
     });
   });
 

@@ -1,7 +1,7 @@
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
 
-import { One } from 'ethers/constants';
+import { constants } from 'ethers';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import { mount, Wrapper } from '@vue/test-utils';
 import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
@@ -93,7 +93,7 @@ describe('ChannelDialogs.vue', () => {
     });
 
     test('success', async () => {
-      await (wrapper.vm as any).deposit(One);
+      await (wrapper.vm as any).deposit(constants.One);
       const messageEvent = wrapper.emitted('message');
       expect(messageEvent).toBeTruthy();
       const [firstMessageArg] = messageEvent?.shift();
@@ -103,7 +103,7 @@ describe('ChannelDialogs.vue', () => {
 
     test('fail', async () => {
       $raiden.deposit.mockRejectedValueOnce(new Error('failed'));
-      await (wrapper.vm as any).deposit(One);
+      await (wrapper.vm as any).deposit(constants.One);
       const messageEvent = wrapper.emitted('message');
       expect(messageEvent).toBeTruthy();
       const [firstMessageArg] = messageEvent?.shift();
@@ -119,7 +119,7 @@ describe('ChannelDialogs.vue', () => {
     });
 
     test('success', async () => {
-      await (wrapper.vm as any).withdraw(One);
+      await (wrapper.vm as any).withdraw(constants.One);
       const messageEvent = wrapper.emitted('message');
       expect(messageEvent).toBeTruthy();
       const [firstMessageArg] = messageEvent?.shift();
@@ -129,7 +129,7 @@ describe('ChannelDialogs.vue', () => {
 
     test('fail', async () => {
       $raiden.withdraw.mockRejectedValueOnce(new Error('failed'));
-      await (wrapper.vm as any).withdraw(One);
+      await (wrapper.vm as any).withdraw(constants.One);
       const messageEvent = wrapper.emitted('message');
       expect(messageEvent).toBeTruthy();
       const [firstMessageArg] = messageEvent?.shift();

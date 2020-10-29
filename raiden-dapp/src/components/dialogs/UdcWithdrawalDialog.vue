@@ -82,8 +82,7 @@ import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import { mapGetters } from 'vuex';
 import { Token } from '@/model/types';
-import { BigNumber, parseUnits } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { BigNumber, utils, constants } from 'ethers';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 
@@ -124,9 +123,9 @@ export default class UdcWithdrawalDialog extends Vue {
   get withdrawAmount(): BigNumber {
     let amount: BigNumber;
     try {
-      amount = parseUnits(this.amount, this.token.decimals);
+      amount = utils.parseUnits(this.amount, this.token.decimals);
     } catch (e) {
-      amount = Zero;
+      amount = constants.Zero;
     }
     return amount;
   }
@@ -136,7 +135,7 @@ export default class UdcWithdrawalDialog extends Vue {
       return false;
     }
     const amount = this.withdrawAmount;
-    return amount.gt(Zero) && amount.lte(this.capacity);
+    return amount.gt(constants.Zero) && amount.lte(this.capacity);
   }
 
   async planWithdraw() {

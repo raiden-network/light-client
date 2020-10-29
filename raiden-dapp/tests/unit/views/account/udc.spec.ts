@@ -4,10 +4,9 @@ import Vuetify from 'vuetify';
 import store from '@/store';
 import { $identicon } from '../../utils/mocks';
 import UDC from '@/views/account/UDC.vue';
-import { Zero } from 'ethers/constants';
+import { BigNumber, constants } from 'ethers';
 import { Token } from '@/model/types';
 import Filters from '@/filters';
-import { bigNumberify } from 'ethers/utils';
 import flushPromises from 'flush-promises';
 
 Vue.filter('displayFormat', Filters.displayFormat);
@@ -23,7 +22,7 @@ describe('UDC.vue', () => {
     name: 'Service Token',
     symbol: 'SVT',
     decimals: 18,
-    balance: Zero,
+    balance: constants.Zero
   } as Token;
 
   function createWrapper() {
@@ -34,8 +33,8 @@ describe('UDC.vue', () => {
       mocks: {
         $identicon: $identicon(),
         $t: (msg: string) => msg,
-        $raiden,
-      },
+        $raiden
+      }
     });
   }
 
@@ -44,12 +43,12 @@ describe('UDC.vue', () => {
     $raiden = {
       userDepositTokenAddress: '0x1234',
       fetchTokenData: jest.fn(),
-      getUDCCapacity: jest.fn().mockResolvedValue(bigNumberify('5000')),
-      monitoringReward: bigNumberify('500'),
+      getUDCCapacity: jest.fn().mockResolvedValue(BigNumber.from('5000')),
+      monitoringReward: BigNumber.from('500'),
       mint: jest.fn(),
       depositToUDC: jest.fn(),
       getMainAccount: jest.fn(),
-      getAccount: jest.fn(),
+      getAccount: jest.fn()
     };
     store.commit('userDepositTokenAddress', '0x1234');
     store.commit('updateTokens', { '0x1234': token });
@@ -60,7 +59,7 @@ describe('UDC.vue', () => {
   });
 
   test('display balance too low hint', async () => {
-    $raiden.getUDCCapacity = jest.fn().mockResolvedValue(Zero);
+    $raiden.getUDCCapacity = jest.fn().mockResolvedValue(constants.Zero);
     wrapper = createWrapper();
 
     await wrapper.vm.$nextTick();

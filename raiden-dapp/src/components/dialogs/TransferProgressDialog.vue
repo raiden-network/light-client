@@ -63,7 +63,7 @@
 import { Component, Emit, Prop, Vue, Watch } from 'vue-property-decorator';
 import { RaidenTransferStatus, RaidenTransfer } from 'raiden-ts';
 import { mapGetters, mapState } from 'vuex';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber } from 'ethers';
 
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';

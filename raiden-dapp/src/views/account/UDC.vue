@@ -60,7 +60,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
-import { Zero } from 'ethers/constants';
+import { constants } from 'ethers';
 
 import { Token } from '@/model/types';
 import ActionButton from '@/components/ActionButton.vue';
@@ -86,7 +86,7 @@ import Spinner from '@/components/icons/Spinner.vue';
 })
 export default class UDC extends Vue {
   amount: string = '10';
-  udcCapacity = Zero;
+  udcCapacity = constants.Zero;
   hasEnoughServiceTokens = false;
   accountBalance!: string;
   raidenAccountBalance!: string;

@@ -1,7 +1,7 @@
-import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
+import { mount, Wrapper } from '@vue/test-utils';
 import Filters from '@/filters';
-import { One } from 'ethers/constants';
+import { constants } from 'ethers';
 import { Token } from '@/model/types';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 
@@ -12,10 +12,10 @@ describe('AmountDisplay.vue', () => {
 
   const token: Token = {
     address: '0xtoken',
-    balance: One,
+    balance: constants.One,
     decimals: 18,
     symbol: 'TTT',
-    name: 'Test Token',
+    name: 'Test Token'
   };
 
   const createWrapper = (exactAmount: boolean) => {
@@ -23,8 +23,8 @@ describe('AmountDisplay.vue', () => {
       propsData: {
         exactAmount: exactAmount,
         amount: token.balance,
-        token: token,
-      },
+        token: token
+      }
     });
   };
 
