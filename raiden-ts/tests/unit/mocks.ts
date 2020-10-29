@@ -13,22 +13,26 @@ import logging from 'loglevel';
 import { Store, createStore, applyMiddleware } from 'redux';
 
 // TODO: remove this mock
-jest.mock('ethers/providers');
-import { JsonRpcProvider, EventType, Listener } from 'ethers/providers';
-import { Zero, HashZero } from 'ethers/constants';
-import { Log, Filter } from 'ethers/providers/abstract-provider';
+jest.mock('@ethersproject/providers');
 import {
-  Network,
-  parseEther,
-  getAddress,
-  hexlify,
-  randomBytes,
-  keccak256,
-  verifyMessage,
-  bigNumberify,
-} from 'ethers/utils';
-import { Contract, EventFilter, ContractTransaction } from 'ethers/contract';
-import { Wallet } from 'ethers/wallet';
+  Web3Provider,
+  JsonRpcProvider,
+  EventType,
+  Listener,
+  ExternalProvider,
+} from '@ethersproject/providers';
+import { Zero, HashZero } from '@ethersproject/constants';
+import type { Log, Filter } from '@ethersproject/providers';
+import type { FilterByBlockHash } from '@ethersproject/abstract-provider';
+import type { Network } from '@ethersproject/networks';
+import { parseEther } from '@ethersproject/units';
+import { getAddress } from '@ethersproject/address';
+import { randomBytes } from '@ethersproject/random';
+import { Wallet, verifyMessage } from '@ethersproject/wallet';
+import { keccak256 } from '@ethersproject/keccak256';
+import { hexlify } from '@ethersproject/bytes';
+import { BigNumber } from '@ethersproject/bignumber';
+import { Contract, EventFilter, ContractTransaction } from '@ethersproject/contracts';
 import PouchDB from 'pouchdb';
 
 jest.mock('raiden-ts/messages/utils', () => ({
@@ -89,6 +93,14 @@ export type MockedContract<T extends Contract> = jest.Mocked<T> & {
         ? Promise<MockedTransaction>
         : ReturnType<T['functions'][K]>,
       Parameters<T['functions'][K]>
+    >;
+  };
+  callStatic: {
+    [K in keyof T['callStatic']]: jest.MockInstance<
+      ReturnType<T['callStatic'][K]> extends Promise<ContractTransaction>
+        ? Promise<MockedTransaction>
+        : ReturnType<T['callStatic'][K]>,
+      Parameters<T['callStatic'][K]>
     >;
   };
 };
@@ -165,13 +177,12 @@ export function makeLog({ filter, ...opts }: { filter: EventFilter } & Partial<L
     blockHash: makeHash(),
     transactionIndex: 1,
     removed: false,
-    transactionLogIndex: 1,
     data: '0x',
     transactionHash: makeHash(),
     logIndex: 1,
     ...opts,
     address: filter.address!,
-    topics: filter.topics!,
+    topics: filter.topics as string[],
   };
 }
 
@@ -189,8 +200,8 @@ export function makeTransaction(
     hash: transactionHash,
     confirmations: 1,
     nonce: 0,
-    gasLimit: bigNumberify(1e5),
-    gasPrice: bigNumberify(1e9),
+    gasLimit: BigNumber.from(1e5),
+    gasPrice: BigNumber.from(1e9),
     value: Zero,
     data: '0x',
     chainId: 1337,
@@ -341,6 +352,7 @@ function mockEthersEventEmitter(target: JsonRpcProvider | Contract): void {
   function getEventTag(event: EventType): string {
     if (typeof event === 'string') return event;
     else if (Array.isArray(event)) return `filter::${event.join('|')}`;
+    else if ('expiry' in event) return `filter::${event.expiry}`;
     else return `filter:${event.address}:${(event.topics ?? []).join('|')}`;
   }
 
@@ -392,6 +404,27 @@ function mockEthersEventEmitter(target: JsonRpcProvider | Contract): void {
   });
 }
 
+function spyContract(contract: Contract, rejectContractName?: string): void {
+  for (const func in contract.functions) {
+    const spied = jest.spyOn(contract, func);
+    // if rejectContractName is set, use it as name for error if function gets called;
+    // then functions which shouldn't be rejected should be mocked
+    if (rejectContractName)
+      spied.mockImplementation(async (...args: any[]) => {
+        throw new Error(
+          `${rejectContractName}: tried to call "${func}" with params ${JSON.stringify(args)}`,
+        );
+      });
+    jest
+      .spyOn(contract.callStatic, func)
+      .mockImplementation(async (...args) => contract[func](...args));
+    jest.spyOn(contract.functions, func).mockImplementation(async (...args) => {
+      const res = await contract[func](...args);
+      return Array.isArray(res) ? res : [res];
+    });
+  }
+}
+
 /**
  * Create a mock of RaidenEpicDeps
  *
@@ -421,24 +454,35 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     if (typeof event !== 'string' && !Array.isArray(event)) logs.push(args[0] as Log);
     return origEmit.call(provider, event, ...args);
   });
-  jest.spyOn(provider, 'getLogs').mockImplementation(async (filter: Filter) => {
-    return logs.filter((log) => {
-      if (filter.address && filter.address !== log.address) return false;
-      if (
-        filter.topics &&
-        !filter.topics.every(
-          (f, i) =>
-            f == null ||
-            f === log.topics[i] ||
-            (Array.isArray(f) && f.some((f1) => f1 === log.topics[i])),
-        )
-      )
-        return false;
-      if (filter.fromBlock && log.blockNumber! < filter.fromBlock) return false;
-      if (typeof filter.toBlock === 'number' && log.blockNumber! > filter.toBlock!) return false;
-      return true;
-    });
-  });
+  jest
+    .spyOn(provider, 'getLogs')
+    .mockImplementation(
+      async (filter_: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>) => {
+        const filter = await filter_;
+        return logs.filter((log) => {
+          if (filter.address && filter.address !== log.address) return false;
+          if (
+            filter.topics &&
+            !filter.topics.every(
+              (f, i) =>
+                f == null ||
+                f === log.topics[i] ||
+                (Array.isArray(f) && f.some((f1) => f1 === log.topics[i])),
+            )
+          )
+            return false;
+          if ('fromBlock' in filter && filter.fromBlock && log.blockNumber! < filter.fromBlock)
+            return false;
+          if (
+            'toBlock' in filter &&
+            typeof filter.toBlock === 'number' &&
+            log.blockNumber! > filter.toBlock!
+          )
+            return false;
+          return true;
+        });
+      },
+    );
   mockEthersEventEmitter(provider);
 
   const signer = makeWallet().connect(provider);
@@ -450,10 +494,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     registryAddress,
     signer,
   ) as MockedContract<TokenNetworkRegistry>;
-  for (const func in registryContract.functions) {
-    jest.spyOn(registryContract.functions, func as keyof TokenNetworkRegistry['functions']);
-  }
-  registryContract.functions.token_to_token_networks.mockImplementation(
+  spyContract(registryContract);
+  registryContract.token_to_token_networks.mockImplementation(
     async (token: string) => token + 'Network',
   );
 
@@ -462,10 +504,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       const tokenNetworkContract = TokenNetworkFactory.connect(address, signer) as MockedContract<
         TokenNetwork
       >;
-      for (const func in tokenNetworkContract.functions) {
-        jest.spyOn(tokenNetworkContract.functions, func as keyof TokenNetwork['functions']);
-      }
-      tokenNetworkContract.functions.getChannelParticipantInfo.mockResolvedValue([
+      spyContract(tokenNetworkContract);
+      tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
         Zero,
         Zero,
         false,
@@ -483,10 +523,8 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       const tokenContract = HumanStandardTokenFactory.connect(address, signer) as MockedContract<
         HumanStandardToken
       >;
-      for (const func in tokenContract.functions) {
-        jest.spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions']);
-      }
-      tokenContract.functions.allowance.mockResolvedValue(Zero);
+      spyContract(tokenContract);
+      tokenContract.allowance.mockResolvedValue(Zero);
       return tokenContract;
     },
   );
@@ -495,30 +533,24 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     registryAddress,
     signer,
   ) as MockedContract<ServiceRegistry>;
-  for (const func in serviceRegistryContract.functions) {
-    jest.spyOn(serviceRegistryContract.functions, func as keyof ServiceRegistry['functions']);
-  }
-  serviceRegistryContract.functions.token.mockResolvedValue(
-    '0x0800000000000000000000000000000000000008',
-  );
-  serviceRegistryContract.functions.urls.mockImplementation(async () => 'https://pfs.raiden.test');
+  spyContract(serviceRegistryContract);
+  serviceRegistryContract.token.mockResolvedValue('0x0800000000000000000000000000000000000008');
+  serviceRegistryContract.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
   const userDepositContract = UserDepositFactory.connect(address, signer) as MockedContract<
     UserDeposit
   >;
 
-  for (const func in userDepositContract.functions) {
-    jest.spyOn(userDepositContract.functions, func as keyof UserDeposit['functions']);
-  }
+  spyContract(userDepositContract);
 
-  userDepositContract.functions.one_to_n_address.mockResolvedValue(oneToNAddress);
-  userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
-  userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
-  userDepositContract.functions.deposit.mockResolvedValue(
+  userDepositContract.one_to_n_address.mockResolvedValue(oneToNAddress);
+  userDepositContract.balances.mockResolvedValue(parseEther('5'));
+  userDepositContract.total_deposit.mockResolvedValue(parseEther('5'));
+  userDepositContract.deposit.mockResolvedValue(
     makeTransaction(undefined, { to: userDepositContract.address }),
   );
-  userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
-  userDepositContract.functions.withdraw_plans.mockResolvedValue({
+  userDepositContract.effectiveBalance.mockResolvedValue(parseEther('5'));
+  userDepositContract.withdraw_plans.mockResolvedValue({
     amount: Zero,
     withdraw_block: Zero,
     0: Zero,
@@ -529,18 +561,14 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     SecretRegistry
   >;
 
-  for (const func in secretRegistryContract.functions) {
-    jest.spyOn(secretRegistryContract.functions, func as keyof SecretRegistry['functions']);
-  }
+  spyContract(secretRegistryContract);
 
   const monitoringServiceContract = MonitoringServiceFactory.connect(
     address,
     signer,
   ) as MockedContract<MonitoringService>;
 
-  for (const func in monitoringServiceContract.functions) {
-    jest.spyOn(monitoringServiceContract.functions, func as keyof MonitoringService['functions']);
-  }
+  spyContract(monitoringServiceContract);
 
   const contractsInfo: ContractsInfo = {
       TokenNetworkRegistry: {
@@ -838,6 +866,12 @@ const monitoringServiceAddress = makeAddress();
 const secretRegistryAddress = makeAddress();
 const pollingInterval = 10;
 
+process.on('unhandledRejection', (reason, p) => {
+  console.error('Unhandled Rejection at: Promise', p, 'reason:', reason);
+  // application specific logging, throwing an error, or other logic here
+  debugger;
+});
+
 /**
  * Create a mock of a Raiden client for epics
  *
@@ -852,23 +886,33 @@ export async function makeRaiden(
   initialState?: RaidenState,
 ): Promise<MockedRaiden> {
   const network: Network = { name: 'testnet', chainId: 1337 };
-  const { JsonRpcProvider } = jest.requireActual('ethers/providers');
-  const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
+  const { Web3Provider } = jest.requireActual('@ethersproject/providers');
+  const extProvider: ExternalProvider = {
+    isMetaMask: true,
+    request: async ({ method, params }) => {
+      switch (method) {
+        case 'net_version':
+        case 'eth_chainId':
+          return network.chainId;
+        case 'eth_blockNumber':
+          return provider.blockNumber ?? 0;
+        default:
+          throw new Error(`provider.send called: "${method}" => ${JSON.stringify(params)}`);
+      }
+    },
+  };
+  const provider = new Web3Provider(extProvider) as jest.Mocked<Web3Provider>;
+  provider.pollingInterval = pollingInterval;
   const signer = (wallet ?? makeWallet()).connect(provider);
   const address = signer.address as Address;
   const log = logging.getLogger(`raiden:${address}`);
 
   Object.assign(provider, { _network: network });
   jest.spyOn(provider, 'on');
-  jest.spyOn(provider as any, '_doPoll').mockImplementation(() => undefined);
+  jest.spyOn(provider, 'poll').mockImplementation(async () => undefined);
   jest.spyOn(provider, 'removeListener');
   jest.spyOn(provider, 'listenerCount');
-  jest.spyOn(provider, 'getNetwork').mockImplementation(async () => provider.network);
   jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
-  jest.spyOn(provider, 'send').mockImplementation(async (method, params?: any[]) => {
-    if (method === 'net_version') return network.chainId;
-    throw new Error(`provider.send called: "${method}" => ${JSON.stringify(params)}`);
-  });
   jest
     .spyOn(provider, 'getCode')
     .mockImplementation((addr) => (console.trace('getCode called', addr), Promise.resolve('')));
@@ -880,8 +924,8 @@ export async function makeRaiden(
   jest
     .spyOn(provider, 'getTransactionReceipt')
     .mockImplementation(
-      async (txHash: string) =>
-        ({ status: 1, txHash, confirmations: 6, blockNumber: undefined } as any),
+      async (txHash: string | Promise<string>) =>
+        ({ status: 1, txHash: await txHash, confirmations: 6, blockNumber: undefined } as any),
     );
   // use provider.resetEventsBlock used to set current block number for provider
   jest
@@ -896,58 +940,51 @@ export async function makeRaiden(
     if (typeof event !== 'string' && !Array.isArray(event)) logs.push(args[0] as Log);
     return origEmit.call(provider, event, ...args);
   });
-  jest.spyOn(provider, 'getLogs').mockImplementation(async (filter: Filter) => {
-    return logs.filter((log) => {
-      if (filter.address && filter.address !== log.address) return false;
-      if (
-        filter.topics &&
-        !filter.topics.every(
-          (f, i) =>
-            f == null ||
-            f === log.topics[i] ||
-            (Array.isArray(f) && f.some((f1) => f1 === log.topics[i])),
-        )
-      )
-        return false;
-      if (filter.fromBlock && log.blockNumber! < filter.fromBlock) return false;
-      if (typeof filter.toBlock === 'number' && log.blockNumber! > filter.toBlock!) return false;
-      return true;
-    });
-  });
+  jest
+    .spyOn(provider, 'getLogs')
+    .mockImplementation(
+      async (filter_: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>) => {
+        const filter = await filter_;
+        return logs.filter((log) => {
+          if (filter.address && filter.address !== log.address) return false;
+          if (
+            filter.topics &&
+            !filter.topics.every(
+              (f, i) =>
+                f == null ||
+                f === log.topics[i] ||
+                (Array.isArray(f) && f.some((f1) => f1 === log.topics[i])),
+            )
+          )
+            return false;
+          if ('fromBlock' in filter && filter.fromBlock && log.blockNumber! < filter.fromBlock)
+            return false;
+          if (
+            'toBlock' in filter &&
+            typeof filter.toBlock === 'number' &&
+            log.blockNumber! > filter.toBlock!
+          )
+            return false;
+          return true;
+        });
+      },
+    );
   provider.resetEventsBlock(100);
 
   const registryContract = TokenNetworkRegistryFactory.connect(
     registryAddress,
     signer,
   ) as MockedContract<TokenNetworkRegistry>;
-  for (const func in registryContract.functions) {
-    jest
-      .spyOn(registryContract.functions, func as keyof TokenNetworkRegistry['functions'])
-      .mockImplementation(async (...params: any[]) => {
-        throw new Error(
-          `TokenNetworkRegistry: tried to call "${func}" with params ${JSON.stringify(params)}`,
-        );
-      });
-  }
-  registryContract.functions.token_to_token_networks.mockImplementation(async () => makeAddress());
+  spyContract(registryContract, 'TokenNetworkRegistry');
+  registryContract.token_to_token_networks.mockImplementation(async () => makeAddress());
 
   const getTokenNetworkContract = memoize(
     (address: string): MockedContract<TokenNetwork> => {
       const tokenNetworkContract = TokenNetworkFactory.connect(address, signer) as MockedContract<
         TokenNetwork
       >;
-      for (const func in tokenNetworkContract.functions) {
-        jest
-          .spyOn(tokenNetworkContract.functions, func as keyof TokenNetwork['functions'])
-          .mockImplementation(async (...params: any[]) => {
-            throw new Error(
-              `TokenNetwork[${address}]: tried to call "${func}" with params ${JSON.stringify(
-                params,
-              )}`,
-            );
-          });
-      }
-      tokenNetworkContract.functions.getChannelParticipantInfo.mockResolvedValue([
+      spyContract(tokenNetworkContract, `TokenNetwork[${address}]`);
+      tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
         Zero,
         Zero,
         false,
@@ -956,27 +993,25 @@ export async function makeRaiden(
         HashZero,
         Zero,
       ]);
-      tokenNetworkContract.functions.openChannel.mockResolvedValue(
+      tokenNetworkContract.openChannel.mockResolvedValue(
         makeTransaction(undefined, { to: address }),
       );
-      tokenNetworkContract.functions.setTotalDeposit.mockResolvedValue(
+      tokenNetworkContract.setTotalDeposit.mockResolvedValue(
         makeTransaction(undefined, { to: address }),
       );
-      tokenNetworkContract.functions.setTotalWithdraw.mockResolvedValue(
+      tokenNetworkContract.setTotalWithdraw.mockResolvedValue(
         makeTransaction(undefined, { to: address }),
       );
-      tokenNetworkContract.functions.closeChannel.mockResolvedValue(
+      tokenNetworkContract.closeChannel.mockResolvedValue(
         makeTransaction(undefined, { to: address }),
       );
-      tokenNetworkContract.functions.updateNonClosingBalanceProof.mockResolvedValue(
+      tokenNetworkContract.updateNonClosingBalanceProof.mockResolvedValue(
         makeTransaction(undefined, { to: address }),
       );
-      tokenNetworkContract.functions.settleChannel.mockResolvedValue(
+      tokenNetworkContract.settleChannel.mockResolvedValue(
         makeTransaction(undefined, { to: address }),
       );
-      tokenNetworkContract.functions.unlock.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
+      tokenNetworkContract.unlock.mockResolvedValue(makeTransaction(undefined, { to: address }));
       return tokenNetworkContract;
     },
   );
@@ -986,20 +1021,10 @@ export async function makeRaiden(
       const tokenContract = HumanStandardTokenFactory.connect(address, signer) as MockedContract<
         HumanStandardToken
       >;
-      for (const func in tokenContract.functions) {
-        jest
-          .spyOn(tokenContract.functions, func as keyof HumanStandardToken['functions'])
-          .mockImplementation(async (...params: any[]) => {
-            throw new Error(
-              `Token[${address}]: tried to call "${func}" with params ${JSON.stringify(params)}`,
-            );
-          });
-      }
-      tokenContract.functions.approve.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenContract.functions.allowance.mockResolvedValue(Zero);
-      tokenContract.functions.balanceOf.mockResolvedValue(parseEther('1000'));
+      spyContract(tokenContract, `Token[${address}]`);
+      tokenContract.approve.mockResolvedValue(makeTransaction(undefined, { to: address }));
+      tokenContract.allowance.mockResolvedValue(Zero);
+      tokenContract.balanceOf.mockResolvedValue(parseEther('1000'));
       return tokenContract;
     },
   );
@@ -1008,36 +1033,20 @@ export async function makeRaiden(
     serviceRegistryAddress,
     signer,
   ) as MockedContract<ServiceRegistry>;
-  for (const func in serviceRegistryContract.functions) {
-    jest
-      .spyOn(serviceRegistryContract.functions, func as keyof ServiceRegistry['functions'])
-      .mockImplementation(async (...params: any[]) => {
-        throw new Error(
-          `ServiceRegistry: tried to call "${func}" with params ${JSON.stringify(params)}`,
-        );
-      });
-  }
-  serviceRegistryContract.functions.token.mockResolvedValue(svtAddress);
-  serviceRegistryContract.functions.urls.mockImplementation(async () => 'https://pfs.raiden.test');
+  spyContract(serviceRegistryContract, 'ServiceRegistry');
+  serviceRegistryContract.token.mockResolvedValue(svtAddress);
+  serviceRegistryContract.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
   const userDepositContract = UserDepositFactory.connect(udcAddress, signer) as MockedContract<
     UserDeposit
   >;
-  for (const func in userDepositContract.functions) {
-    jest
-      .spyOn(userDepositContract.functions, func as keyof UserDeposit['functions'])
-      .mockImplementation(async (...params: any[]) => {
-        throw new Error(
-          `UserDeposit: tried to call "${func}" with params ${JSON.stringify(params)}`,
-        );
-      });
-  }
-  userDepositContract.functions.token.mockResolvedValue(svtAddress);
-  userDepositContract.functions.one_to_n_address.mockResolvedValue(oneToNAddress);
-  userDepositContract.functions.balances.mockResolvedValue(parseEther('5'));
-  userDepositContract.functions.total_deposit.mockResolvedValue(parseEther('5'));
-  userDepositContract.functions.effectiveBalance.mockResolvedValue(parseEther('5'));
-  userDepositContract.functions.withdraw_plans.mockResolvedValue({
+  spyContract(userDepositContract, 'UserDeposit');
+  userDepositContract.token.mockResolvedValue(svtAddress);
+  userDepositContract.one_to_n_address.mockResolvedValue(oneToNAddress);
+  userDepositContract.balances.mockResolvedValue(parseEther('5'));
+  userDepositContract.total_deposit.mockResolvedValue(parseEther('5'));
+  userDepositContract.effectiveBalance.mockResolvedValue(parseEther('5'));
+  userDepositContract.withdraw_plans.mockResolvedValue({
     amount: Zero,
     withdraw_block: Zero,
     0: Zero,
@@ -1049,16 +1058,8 @@ export async function makeRaiden(
     signer,
   ) as MockedContract<SecretRegistry>;
 
-  for (const func in secretRegistryContract.functions) {
-    jest
-      .spyOn(secretRegistryContract.functions, func as keyof SecretRegistry['functions'])
-      .mockImplementation(async (...params: any[]) => {
-        throw new Error(
-          `SecretRegistry: tried to call "${func}" with params ${JSON.stringify(params)}`,
-        );
-      });
-  }
-  secretRegistryContract.functions.registerSecret.mockImplementation(async (secret_) => {
+  spyContract(secretRegistryContract, 'SecretRegistry');
+  secretRegistryContract.registerSecret.mockImplementation(async (secret_) => {
     const secret = decode(Secret, secret_);
     const transactionHash = makeHash();
     providersEmit(
@@ -1078,15 +1079,7 @@ export async function makeRaiden(
     signer,
   ) as MockedContract<MonitoringService>;
 
-  for (const func in monitoringServiceContract.functions) {
-    jest
-      .spyOn(monitoringServiceContract.functions, func as keyof MonitoringService['functions'])
-      .mockImplementation(async (...params: any[]) => {
-        throw new Error(
-          `MonitoringService: tried to call "${func}" with params ${JSON.stringify(params)}`,
-        );
-      });
-  }
+  spyContract(monitoringServiceContract, 'MonitoringService');
 
   const contractsInfo: ContractsInfo = {
     TokenNetworkRegistry: {
@@ -1230,8 +1223,8 @@ export async function makeRaiden(
     },
     started: undefined,
     stop: () => {
-      raiden.deps.provider.removeAllListeners();
       raiden.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
+      raiden.deps.provider.removeAllListeners();
       const idx = mockedClients.indexOf(raiden);
       if (idx >= 0) mockedClients.splice(idx, 1);
     },
