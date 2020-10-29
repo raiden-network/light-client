@@ -105,7 +105,7 @@ export const ErrorCodec = new t.Type<
  * @returns `False`, if there was a retrieable network error.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function networkErrorRetryPredicate(error: any, {}): boolean {
+export function networkErrorRetryPredicate(error: any): boolean {
   return !(
     typeof error?.message === 'string' && networkErrors.some((msg) => error.message.includes(msg))
   );

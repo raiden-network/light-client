@@ -5,11 +5,11 @@ import {
   defer,
   EMPTY,
   merge,
-  interval,
   concat,
   combineLatest,
   throwError,
   AsyncSubject,
+  timer,
 } from 'rxjs';
 import {
   catchError,
@@ -51,7 +51,7 @@ import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { pluckDistinct, distinctRecordValues, retryAsync$, takeIf } from '../utils/rx';
-import { fromEthersEvent, getNetwork, logToContractEvent } from '../utils/ethers';
+import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
 
 import { createBalanceHash, MessageTypeId } from '../messages/utils';
@@ -192,48 +192,42 @@ export function initTokensRegistryEpic(
  * @param deps.address - Our address
  * @param deps.network - Current network
  * @param deps.provider - Eth provider
+ * @param deps.main - Main account
  * @returns Observable of raidenShutdown actions
  */
 export function initMonitorProviderEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { address, network, provider }: RaidenEpicDeps,
+  { address, main, network, provider }: RaidenEpicDeps,
 ): Observable<raidenShutdown> {
-  return retryAsync$(() => provider.listAccounts(), provider.pollingInterval).pipe(
-    // at init time, check if our address is in provider's accounts list
-    // if not, it means Signer is a local Wallet or another non-provider-side account
-    // if yes, poll accounts every 1s and monitors if address is still there
-    // also, every 1s poll current provider network and monitors if it's the same
-    // if any check fails, emits RaidenShutdownAction, nothing otherwise
-    // Poll reason from: https://github.com/MetaMask/faq/blob/master/DEVELOPERS.md
-    // first/init-time check
-    map((accounts) => accounts.includes(address)),
-    mergeMap((isProviderAccount) =>
-      interval(provider.pollingInterval).pipe(
-        exhaustMap(() =>
-          merge(
-            // if isProviderAccount, also polls and monitors accounts list
-            isProviderAccount
-              ? retryAsync$(() => provider.listAccounts(), provider.pollingInterval).pipe(
-                  mergeMap((accounts) =>
-                    !accounts.includes(address)
-                      ? of(raidenShutdown({ reason: ShutdownReason.ACCOUNT_CHANGED }))
-                      : EMPTY,
-                  ),
-                )
-              : EMPTY,
-            // unconditionally monitors network changes
-            retryAsync$(() => getNetwork(provider), provider.pollingInterval).pipe(
-              mergeMap((curNetwork) =>
-                curNetwork.chainId !== network.chainId
-                  ? of(raidenShutdown({ reason: ShutdownReason.NETWORK_CHANGED }))
-                  : EMPTY,
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
+  const mainAddress = main?.address ?? address;
+  let isProviderAccount: boolean | undefined;
+  return timer(0, provider.pollingInterval).pipe(
+    exhaustMap(async () => {
+      try {
+        const [accounts, currentNetwork] = await Promise.all([
+          isProviderAccount === false ? Promise.resolve(null) : provider.listAccounts(),
+          provider.getNetwork(),
+        ]);
+        // usually, getNetwork will reject if 'underlying network changed', but let's assert here
+        // as well against our state's network to be double-sure
+        assert(currentNetwork.chainId === network.chainId, 'network changed');
+
+        // at init time, check if our address is in provider's accounts list;
+        // if not, it means Signer is a local Wallet or another non-provider-side account
+        if (isProviderAccount === undefined) isProviderAccount = accounts?.includes(mainAddress);
+
+        if (isProviderAccount && accounts && !accounts.includes(mainAddress))
+          return raidenShutdown({ reason: ShutdownReason.ACCOUNT_CHANGED });
+      } catch (error) {
+        if (error?.message?.includes('network changed'))
+          return raidenShutdown({ reason: ShutdownReason.NETWORK_CHANGED });
+        // ignore network errors, so they're retried by timer
+        if (!networkErrorRetryPredicate(error)) return;
+        throw error;
+      }
+    }),
+    filter(isntNil),
   );
 }
 
