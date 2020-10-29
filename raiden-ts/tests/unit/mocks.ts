@@ -912,6 +912,8 @@ export async function makeRaiden(
   jest.spyOn(provider, 'poll').mockImplementation(async () => undefined);
   jest.spyOn(provider, 'removeListener');
   jest.spyOn(provider, 'listenerCount');
+  jest.spyOn(provider, 'getNetwork');
+  jest.spyOn(provider, 'detectNetwork');
   jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
   jest
     .spyOn(provider, 'getCode')
@@ -1084,27 +1086,27 @@ export async function makeRaiden(
   const contractsInfo: ContractsInfo = {
     TokenNetworkRegistry: {
       address: registryContract.address as Address,
-      block_number: 100,
+      block_number: 50,
     },
     ServiceRegistry: {
       address: serviceRegistryContract.address as Address,
-      block_number: 101,
+      block_number: 51,
     },
     UserDeposit: {
       address: userDepositContract.address as Address,
-      block_number: 102,
+      block_number: 52,
     },
     SecretRegistry: {
       address: secretRegistryContract.address as Address,
-      block_number: 102,
+      block_number: 52,
     },
     MonitoringService: {
       address: monitoringServiceContract.address as Address,
-      block_number: 102,
+      block_number: 52,
     },
     OneToN: {
       address: oneToNAddress,
-      block_number: 102,
+      block_number: 52,
     },
   };
 
