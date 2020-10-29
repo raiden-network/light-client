@@ -1,33 +1,44 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { JsonRpcProvider } from 'ethers/providers';
-import type { Network, Arrayish, Signature } from 'ethers/utils';
-import { getAddress } from 'ethers/utils/address';
-import { HashZero } from 'ethers/constants';
+import type { JsonRpcProvider } from '@ethersproject/providers';
+import type { Network } from '@ethersproject/networks';
+import type { BytesLike, Signature } from '@ethersproject/bytes';
+import { getAddress } from '@ethersproject/address';
+import { computeAddress } from '@ethersproject/transactions';
+import { HashZero } from '@ethersproject/constants';
 
 // ethers utils mock to skip slow elliptic sign/verify
 export const patchVerifyMessage = () => {
-  jest.mock('ethers/utils/secp256k1', () => {
-    const origSepc256k1 = jest.requireActual<typeof import('ethers/utils/secp256k1')>(
-      'ethers/utils/secp256k1',
+  jest.mock('@ethersproject/signing-key', () => {
+    const origSigning = jest.requireActual<typeof import('@ethersproject/signing-key')>(
+      '@ethersproject/signing-key',
     );
-    const { KeyPair, computeAddress } = origSepc256k1;
-    class MockedKeyPair extends KeyPair {
+    const { SigningKey } = origSigning;
+    class MockedSigningKey extends SigningKey {
       private _address?: string;
-      sign({}: Arrayish | string): Signature {
+      signDigest({}: BytesLike): Signature {
         if (!this._address) this._address = computeAddress(this.publicKey);
+        const s = HashZero.substr(0, 24) + this._address.substr(2).toLowerCase() + '00';
         return {
           r: HashZero,
-          s: HashZero.substr(0, 24) + this._address!.substr(2) + '00',
+          s,
+          _vs: s,
           recoveryParam: 0,
           v: 27,
         };
       }
     }
     return {
-      ...origSepc256k1,
+      ...origSigning,
       __esModule: true,
-      KeyPair: MockedKeyPair,
+      SigningKey: MockedSigningKey,
+    };
+  });
+
+  jest.mock('@ethersproject/wallet', () => {
+    return {
+      ...jest.requireActual<typeof import('@ethersproject/wallet')>('@ethersproject/wallet'),
+      __esModule: true,
       verifyMessage: jest.fn((msg: string, sig: string): string => {
         // TODO: remove userId special case after mockedMatrixCreateClient is used
         const match = /^@(0x[0-9a-f]{40})[.:]/i.exec(msg);
@@ -51,8 +62,8 @@ export const patchEthersGetNetwork = () =>
 // ethers's contracts use a lot defineReadOnly which doesn't allow us to mock
 // functions and properties. Mock it here so we can mock later
 export const patchEthersDefineReadOnly = () =>
-  jest.mock('ethers/utils/properties', () => ({
-    ...jest.requireActual<typeof import('ethers/utils/properties')>('ethers/utils/properties'),
+  jest.mock('@ethersproject/properties', () => ({
+    ...jest.requireActual<typeof import('@ethersproject/properties')>('@ethersproject/properties'),
     __esModule: true,
     defineReadOnly: jest.fn(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

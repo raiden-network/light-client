@@ -13,10 +13,10 @@ import {
 
 import { Subject } from 'rxjs';
 import { exhaustMap, first, pluck, scan } from 'rxjs/operators';
-import { Wallet } from 'ethers';
-import { AddressZero, Zero, HashZero } from 'ethers/constants';
-import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
-import { Filter } from 'ethers/providers';
+import { Wallet } from '@ethersproject/wallet';
+import { AddressZero, Zero, HashZero } from '@ethersproject/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { defaultAbiCoder } from '@ethersproject/abi';
 
 import { Address, Hash, Int, UInt, Secret } from 'raiden-ts/utils/types';
 import { Processed, MessageType } from 'raiden-ts/messages/types';
@@ -39,7 +39,6 @@ import { tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState, Channel } from 'raiden-ts/channels';
 import { Direction, TransferState } from 'raiden-ts/transfers/state';
 import { transfer, transferSecret, transferUnlock } from 'raiden-ts/transfers/actions';
-import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
 import { assert } from 'raiden-ts/utils';
 import { isResponseOf } from 'raiden-ts/utils/actions';
 import { matrixPresence } from 'raiden-ts/transport/actions';
@@ -73,7 +72,7 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
     txHash = '0x0000000000000000000000000000000000000020111111111111111111111111' as Hash,
     processed: Processed = { type: MessageType.PROCESSED, message_identifier: makeMessageId() },
     paymentId = makePaymentId(),
-    fee = bigNumberify(3) as Int<32>,
+    fee = BigNumber.from(3) as Int<32>,
     paths = [{ path: [partner], fee }],
     metadata = { routes: [{ route: [partner] }] },
     pfsAddress = '0x0900000000000000000000000000000000000009' as Address,
@@ -93,9 +92,9 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
       sender: depsMock.address,
       receiver: pfsAddress,
       one_to_n_address: '0x0A0000000000000000000000000000000000000a' as Address,
-      chain_id: bigNumberify(depsMock.network.chainId) as UInt<32>,
-      expiration_block: bigNumberify(3232341) as UInt<32>,
-      amount: bigNumberify(100) as UInt<32>,
+      chain_id: BigNumber.from(depsMock.network.chainId) as UInt<32>,
+      expiration_block: BigNumber.from(3232341) as UInt<32>,
+      amount: BigNumber.from(100) as UInt<32>,
     } as IOU,
     key = channelKey({ tokenNetwork, partner }),
     action$ = new Subject<RaidenAction>(),
@@ -107,7 +106,7 @@ export function epicFixtures(depsMock: MockRaidenEpicDeps) {
   action$.pipe(scan((s, a) => raidenReducer(s, a), initialState)).subscribe(state$);
   getLatest$(action$, state$, depsMock).subscribe(depsMock.latest$);
 
-  depsMock.registryContract.functions.token_to_token_networks.mockImplementation(async (_token) =>
+  depsMock.registryContract.token_to_token_networks.mockImplementation(async (_token) =>
     _token === token ? tokenNetwork : AddressZero,
   );
 
@@ -160,12 +159,12 @@ export const openBlock = 121;
 export const closeBlock = openBlock + revealTimeout;
 export const settleBlock = closeBlock + settleTimeout + 1;
 export const txHash = makeHash();
-export const deposit = bigNumberify(1000) as UInt<32>;
+export const deposit = BigNumber.from(1000) as UInt<32>;
 export const matrixServer = 'matrix.raiden.test';
 export const secret = makeSecret();
 export const secrethash = getSecrethash(secret);
-export const amount = bigNumberify(10) as UInt<32>;
-export const fee = bigNumberify(3) as Int<32>;
+export const amount = BigNumber.from(10) as UInt<32>;
+export const fee = BigNumber.from(3) as Int<32>;
 
 /**
  * Get channel state with partner for tokenNetwork
@@ -215,28 +214,6 @@ export async function getOrWaitTransfer(
 }
 
 /**
- * Returns the filter used to monitor for channel events
- *
- * @param tokenNetworkContract - TokenNetwork contract
- * @returns Filter used to monitor TokenNetwork for Channel events
- */
-export function getChannelEventsFilter(tokenNetworkContract: TokenNetwork): Filter {
-  const events = tokenNetworkContract.interface.events;
-  return {
-    address: tokenNetworkContract.address,
-    topics: [
-      [
-        events.ChannelOpened.topic,
-        events.ChannelNewDeposit.topic,
-        events.ChannelWithdraw.topic,
-        events.ChannelClosed.topic,
-        events.ChannelSettled.topic,
-      ],
-    ],
-  };
-}
-
-/**
  * Ensure token is monitored on raiden's state
  *
  * @param raiden - Client instance
@@ -266,7 +243,7 @@ export async function ensureChannelIsOpen(
   const openBlock = raiden.deps.provider.blockNumber + 1;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   await providersEmit(
-    getChannelEventsFilter(tokenNetworkContract),
+    {},
     makeLog({
       transactionHash: makeHash(),
       blockNumber: openBlock,
@@ -306,7 +283,7 @@ export async function ensureChannelIsDeposited(
   const id = getChannel(raiden, partner).id;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   await providersEmit(
-    getChannelEventsFilter(tokenNetworkContract),
+    {},
     makeLog({
       transactionHash: txHash,
       blockNumber: txBlock,
@@ -340,7 +317,7 @@ export async function ensureChannelIsClosed([raiden, partner]: [
   const id = getChannel(raiden, partner).id;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   await providersEmit(
-    getChannelEventsFilter(tokenNetworkContract),
+    {},
     makeLog({
       transactionHash: makeHash(),
       blockNumber: closeBlock,
@@ -375,7 +352,7 @@ export async function ensureChannelIsSettled([raiden, partner]: [
   const id = getChannel(raiden, partner).id;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
   await providersEmit(
-    getChannelEventsFilter(tokenNetworkContract),
+    {},
     makeLog({
       transactionHash: makeHash(),
       blockNumber: settleBlock,
