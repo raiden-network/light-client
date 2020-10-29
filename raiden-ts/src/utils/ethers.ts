@@ -8,7 +8,6 @@ import type {
   Log,
   Network,
 } from '@ethersproject/providers';
-import { getNetwork as parseNetwork } from '@ethersproject/networks';
 import { Observable, fromEventPattern, from, EMPTY, defer } from 'rxjs';
 import { mergeMap, debounceTime, catchError, exhaustMap } from 'rxjs/operators';
 
@@ -150,16 +149,6 @@ export function logToContractEvent<T extends ContractEvent>(contract: Contract, 
     return [...parsed.args, event] as T;
   };
   return log !== undefined ? mapper(log) : mapper;
-}
-
-/**
- * Like Provider.getNetwork, but fetches every time instead of using cached property
- *
- * @param provider - Provider to fetch data from
- * @returns Promise of Network info
- */
-export async function getNetwork(provider: JsonRpcProvider): Promise<Network> {
-  return parseNetwork(parseInt(await provider.send('net_version', [])));
 }
 
 /**
