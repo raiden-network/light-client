@@ -23,8 +23,10 @@ import {
 } from '../fixtures';
 
 import { first, pluck } from 'rxjs/operators';
-import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
-import { Zero, AddressZero, One } from 'ethers/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { defaultAbiCoder } from '@ethersproject/abi';
+import { Zero, AddressZero, One } from '@ethersproject/constants';
+
 import { UInt, Int, Address, Signature, Signed } from 'raiden-ts/utils/types';
 import { raidenConfigUpdate, raidenShutdown } from 'raiden-ts/actions';
 import { matrixPresence } from 'raiden-ts/transport/actions';
@@ -49,9 +51,9 @@ function makeIou(raiden: MockedRaiden): IOU {
     sender: raiden.address,
     receiver: pfsAddress,
     one_to_n_address: '0x0A0000000000000000000000000000000000000a' as Address,
-    chain_id: bigNumberify(raiden.deps.network.chainId) as UInt<32>,
-    expiration_block: bigNumberify(3232341) as UInt<32>,
-    amount: bigNumberify(100) as UInt<32>,
+    chain_id: BigNumber.from(raiden.deps.network.chainId) as UInt<32>,
+    expiration_block: BigNumber.from(3232341) as UInt<32>,
+    amount: BigNumber.from(100) as UInt<32>,
   };
 }
 
@@ -287,7 +289,7 @@ describe('PFS: pathFindServiceEpic', () => {
   test('success provided route', async () => {
     expect.assertions(1);
 
-    const fee = bigNumberify(3) as Int<32>;
+    const fee = BigNumber.from(3) as Int<32>;
     const pathFindMeta = {
       tokenNetwork,
       target: target.address,
@@ -361,7 +363,7 @@ describe('PFS: pathFindServiceEpic', () => {
             url: pfsUrl,
             rtt: 3,
             price: One as UInt<32>,
-            token: (await raiden.deps.serviceRegistryContract.functions.token()) as Address,
+            token: (await raiden.deps.serviceRegistryContract.token()) as Address,
           },
         },
         pathFindMeta,
@@ -425,7 +427,7 @@ describe('PFS: pathFindServiceEpic', () => {
     raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
 
     // pfsAddress1 will be accepted with default https:// schema
-    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce('domain.only.url');
+    raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('domain.only.url');
 
     const pfsInfoResponse = makePfsInfoResponse();
 
@@ -492,7 +494,7 @@ describe('PFS: pathFindServiceEpic', () => {
       iouPersist(
         {
           iou: expect.objectContaining({
-            amount: bigNumberify(2),
+            amount: BigNumber.from(2),
           }),
         },
         { tokenNetwork, serviceAddress: iou.receiver },
@@ -529,13 +531,11 @@ describe('PFS: pathFindServiceEpic', () => {
     raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
 
     // invalid url
-    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce('""');
+    raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('""');
     // empty url
-    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce('');
+    raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('');
     // invalid schema (on development mode, both http & https are accepted)
-    raiden.deps.serviceRegistryContract.functions.urls.mockResolvedValueOnce(
-      'ftp://not.https.url',
-    );
+    raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('ftp://not.https.url');
 
     raiden.store.dispatch(pfsListUpdated({ pfsList: [pfsAddress, pfsAddress, pfsAddress] }));
     await waitBlock();
@@ -774,7 +774,7 @@ describe('PFS: pathFindServiceEpic', () => {
     expect.assertions(1);
 
     // set an exorbitantly high amount for transfer
-    const amount = bigNumberify(80000000) as UInt<32>;
+    const amount = BigNumber.from(80000000) as UInt<32>;
 
     const pathFindMeta = {
       tokenNetwork,
@@ -837,7 +837,7 @@ describe('PFS: pathFindServiceEpic', () => {
       iouPersist(
         {
           iou: expect.objectContaining({
-            amount: bigNumberify(102),
+            amount: BigNumber.from(102),
           }),
         },
         { tokenNetwork, serviceAddress: iou.receiver },
@@ -1079,9 +1079,9 @@ describe('PFS: pfsFeeUpdateEpic', () => {
           message: {
             type: MessageType.PFS_FEE_UPDATE,
             canonical_identifier: {
-              chain_identifier: bigNumberify(raiden.deps.network.chainId) as UInt<32>,
+              chain_identifier: BigNumber.from(raiden.deps.network.chainId) as UInt<32>,
               token_network_address: tokenNetwork,
-              channel_identifier: bigNumberify(channel.id) as UInt<32>,
+              channel_identifier: BigNumber.from(channel.id) as UInt<32>,
             },
             updating_participant: raiden.address,
             timestamp: expect.any(String),
@@ -1156,18 +1156,18 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
     await raiden.start();
 
     await waitBlock();
-    const validTill = bigNumberify(Math.floor(Date.now() / 1000) + 86400), // tomorrow
+    const validTill = BigNumber.from(Math.floor(Date.now() / 1000) + 86400), // tomorrow
       registeredEncoded = defaultAbiCoder.encode(
         ['uint256', 'uint256', 'address'],
         [validTill, Zero, AddressZero],
       ),
       expiredEncoded = defaultAbiCoder.encode(
         ['uint256', 'uint256', 'address'],
-        [bigNumberify(Math.floor(Date.now() / 1000) - 86400), Zero, AddressZero],
+        [BigNumber.from(Math.floor(Date.now() / 1000) - 86400), Zero, AddressZero],
       ),
       expiringSoonEncoded = defaultAbiCoder.encode(
         ['uint256', 'uint256', 'address'],
-        [bigNumberify(Math.floor(Date.now() / 1000) + 1), Zero, AddressZero],
+        [BigNumber.from(Math.floor(Date.now() / 1000) + 1), Zero, AddressZero],
       );
 
     // expired
@@ -1233,7 +1233,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
 
     expect(raiden.config.pfs).toBeDefined();
 
-    const validTill = bigNumberify(Math.floor(Date.now() / 1000) + 86400), // tomorrow
+    const validTill = BigNumber.from(Math.floor(Date.now() / 1000) + 86400), // tomorrow
       registeredEncoded = defaultAbiCoder.encode(
         ['uint256', 'uint256', 'address'],
         [validTill, Zero, AddressZero],

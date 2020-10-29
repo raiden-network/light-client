@@ -25,8 +25,9 @@ import {
   id,
 } from '../fixtures';
 
-import { bigNumberify, defaultAbiCoder } from 'ethers/utils';
-import { Zero, WeiPerEther, Two, MaxUint256 } from 'ethers/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { defaultAbiCoder } from '@ethersproject/abi';
+import { Zero, WeiPerEther, Two, MaxUint256 } from '@ethersproject/constants';
 import { first, pluck } from 'rxjs/operators';
 
 import { Capabilities } from 'raiden-ts/constants';
@@ -44,8 +45,8 @@ test('monitorUdcBalanceEpic', async () => {
 
   const raiden = await makeRaiden(undefined, false);
   const { userDepositContract } = raiden.deps;
-  userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
-  userDepositContract.functions.total_deposit.mockResolvedValue(Zero);
+  userDepositContract.effectiveBalance.mockResolvedValue(Zero);
+  userDepositContract.total_deposit.mockResolvedValue(Zero);
 
   await raiden.start();
   await sleep();
@@ -56,23 +57,23 @@ test('monitorUdcBalanceEpic', async () => {
     raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise(),
   ).resolves.toEqual(Zero);
 
-  const balance = bigNumberify(23) as UInt<32>;
-  userDepositContract.functions.effectiveBalance.mockResolvedValue(balance);
-  userDepositContract.functions.total_deposit.mockResolvedValue(balance);
+  const balance = BigNumber.from(23) as UInt<32>;
+  userDepositContract.effectiveBalance.mockResolvedValue(balance);
+  userDepositContract.total_deposit.mockResolvedValue(balance);
   await waitBlock();
 
   expect(raiden.output).toContainEqual(udcDeposit.success({ balance }, { totalDeposit: balance }));
   await expect(
     raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise(),
   ).resolves.toEqual(balance);
-  expect(userDepositContract.functions.effectiveBalance).toHaveBeenCalledTimes(2);
+  expect(userDepositContract.effectiveBalance).toHaveBeenCalledTimes(2);
 });
 
 describe('monitorRequestEpic', () => {
   test('success: receiving a transfer triggers monitoring', async () => {
     expect.assertions(1);
     const [raiden, partner] = await makeRaidens(2);
-    const monitoringReward = bigNumberify(5) as UInt<32>;
+    const monitoringReward = BigNumber.from(5) as UInt<32>;
 
     raiden.store.dispatch(
       raidenConfigUpdate({
@@ -168,7 +169,7 @@ describe('monitorRequestEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     const { userDepositContract } = raiden.deps;
-    const monitoringReward = bigNumberify(5) as UInt<32>;
+    const monitoringReward = BigNumber.from(5) as UInt<32>;
     raiden.store.dispatch(
       raidenConfigUpdate({
         httpTimeout: 30,
@@ -183,8 +184,8 @@ describe('monitorRequestEpic', () => {
       }),
     );
 
-    userDepositContract.functions.effectiveBalance.mockResolvedValue(monitoringReward.sub(1));
-    userDepositContract.functions.total_deposit.mockResolvedValue(monitoringReward.sub(1));
+    userDepositContract.effectiveBalance.mockResolvedValue(monitoringReward.sub(1));
+    userDepositContract.total_deposit.mockResolvedValue(monitoringReward.sub(1));
     await waitBlock();
 
     const balance = monitoringReward.sub(1) as UInt<32>;
@@ -227,7 +228,7 @@ describe('monitorRequestEpic', () => {
     expect.assertions(3);
 
     const [raiden, partner] = await makeRaidens(2);
-    const monitoringReward = bigNumberify(5) as UInt<32>;
+    const monitoringReward = BigNumber.from(5) as UInt<32>;
     raiden.store.dispatch(
       raidenConfigUpdate({
         httpTimeout: 30,
@@ -274,7 +275,7 @@ describe('monitorRequestEpic', () => {
     expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
-    const monitoringReward = bigNumberify(5) as UInt<32>;
+    const monitoringReward = BigNumber.from(5) as UInt<32>;
     raiden.store.dispatch(
       raidenConfigUpdate({
         httpTimeout: 30,
@@ -307,7 +308,7 @@ describe('monitorRequestEpic', () => {
     expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
-    const monitoringReward = bigNumberify(5) as UInt<32>;
+    const monitoringReward = BigNumber.from(5) as UInt<32>;
     raiden.store.dispatch(
       raidenConfigUpdate({
         httpTimeout: 30,
@@ -385,20 +386,20 @@ test('msMonitorNewBPEpic', async () => {
 });
 
 describe('udcDepositEpic', () => {
-  const deposit = bigNumberify(10) as UInt<32>;
+  const deposit = BigNumber.from(10) as UInt<32>;
 
   test('fails if not enough balance', async () => {
     expect.assertions(1);
 
     const raiden = await makeRaiden(undefined, false);
     const { userDepositContract } = raiden.deps;
-    userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
-    userDepositContract.functions.total_deposit.mockResolvedValue(Zero);
+    userDepositContract.effectiveBalance.mockResolvedValue(Zero);
+    userDepositContract.total_deposit.mockResolvedValue(Zero);
 
     const tokenContract = raiden.deps.getTokenContract(
-      await raiden.deps.userDepositContract.functions.token(),
+      await raiden.deps.userDepositContract.token(),
     );
-    tokenContract.functions.balanceOf.mockResolvedValue(deposit.sub(1));
+    tokenContract.balanceOf.mockResolvedValue(deposit.sub(1));
 
     await raiden.start();
     raiden.store.dispatch(udcDeposit.request({ deposit }, { totalDeposit: deposit }));
@@ -417,20 +418,18 @@ describe('udcDepositEpic', () => {
 
     const raiden = await makeRaiden(undefined, false);
     const { userDepositContract } = raiden.deps;
-    userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
-    userDepositContract.functions.total_deposit.mockResolvedValue(Zero);
+    userDepositContract.effectiveBalance.mockResolvedValue(Zero);
+    userDepositContract.total_deposit.mockResolvedValue(Zero);
 
     const tokenContract = raiden.deps.getTokenContract(
-      await raiden.deps.userDepositContract.functions.token(),
+      await raiden.deps.userDepositContract.token(),
     );
     // not enough allowance, but not zero, need to reset
-    tokenContract.functions.allowance.mockResolvedValue(deposit.sub(1));
+    tokenContract.allowance.mockResolvedValue(deposit.sub(1));
 
-    tokenContract.functions.approve.mockResolvedValue(
-      makeTransaction(0, { to: tokenContract.address }),
-    );
+    tokenContract.approve.mockResolvedValue(makeTransaction(0, { to: tokenContract.address }));
     // resetAllowance$ succeeds, but then actual approve fails
-    tokenContract.functions.approve.mockResolvedValueOnce(
+    tokenContract.approve.mockResolvedValueOnce(
       makeTransaction(undefined, { to: tokenContract.address }),
     );
 
@@ -444,9 +443,9 @@ describe('udcDepositEpic', () => {
         { totalDeposit: deposit },
       ),
     );
-    expect(tokenContract.functions.approve).toHaveBeenCalledTimes(2);
-    expect(tokenContract.functions.approve).toHaveBeenCalledWith(userDepositContract.address, 0);
-    expect(tokenContract.functions.approve).toHaveBeenCalledWith(
+    expect(tokenContract.approve).toHaveBeenCalledTimes(2);
+    expect(tokenContract.approve).toHaveBeenCalledWith(userDepositContract.address, 0);
+    expect(tokenContract.approve).toHaveBeenCalledWith(
       userDepositContract.address,
       raiden.config.minimumAllowance,
     );
@@ -457,18 +456,18 @@ describe('udcDepositEpic', () => {
 
     const raiden = await makeRaiden(undefined, false);
     const { userDepositContract } = raiden.deps;
-    userDepositContract.functions.effectiveBalance.mockResolvedValue(Zero);
-    userDepositContract.functions.total_deposit.mockResolvedValue(Zero);
+    userDepositContract.effectiveBalance.mockResolvedValue(Zero);
+    userDepositContract.total_deposit.mockResolvedValue(Zero);
 
     const tokenContract = raiden.deps.getTokenContract(
-      await raiden.deps.userDepositContract.functions.token(),
+      await raiden.deps.userDepositContract.token(),
     );
 
     const approveTx = makeTransaction(undefined, { to: tokenContract.address });
-    tokenContract.functions.approve.mockResolvedValue(approveTx);
+    tokenContract.approve.mockResolvedValue(approveTx);
 
     const depositTx = makeTransaction(0, { to: userDepositContract.address });
-    userDepositContract.functions.deposit.mockResolvedValue(depositTx);
+    userDepositContract.deposit.mockResolvedValue(depositTx);
 
     await raiden.start();
     raiden.store.dispatch(udcDeposit.request({ deposit }, { totalDeposit: deposit }));
@@ -485,31 +484,31 @@ describe('udcDepositEpic', () => {
   test('success', async () => {
     expect.assertions(8);
 
-    const prevDeposit = bigNumberify(330) as UInt<32>;
+    const prevDeposit = BigNumber.from(330) as UInt<32>;
     const balance = prevDeposit.add(deposit) as UInt<32>;
     const raiden = await makeRaiden(undefined, false);
     const { userDepositContract } = raiden.deps;
-    userDepositContract.functions.effectiveBalance.mockResolvedValue(prevDeposit);
-    userDepositContract.functions.total_deposit.mockResolvedValue(prevDeposit);
+    userDepositContract.effectiveBalance.mockResolvedValue(prevDeposit);
+    userDepositContract.total_deposit.mockResolvedValue(prevDeposit);
 
     const tokenContract = raiden.deps.getTokenContract(
-      await raiden.deps.userDepositContract.functions.token(),
+      await raiden.deps.userDepositContract.token(),
     );
     // allowance first isn't enough but not zero, resetAllowance needed
-    tokenContract.functions.allowance.mockResolvedValue(deposit.sub(1));
+    tokenContract.allowance.mockResolvedValue(deposit.sub(1));
 
     const approveTx = makeTransaction(undefined, { to: tokenContract.address });
-    tokenContract.functions.approve.mockResolvedValue(approveTx);
+    tokenContract.approve.mockResolvedValue(approveTx);
     // first approve tx fail with nonce error, replacement fee error should be retried
     const approveFailTx: typeof approveTx = makeTransaction(undefined, {
       to: tokenContract.address,
       wait: jest.fn().mockRejectedValue(new Error('replacement fee too low')),
     });
-    tokenContract.functions.approve.mockResolvedValueOnce(approveFailTx);
+    tokenContract.approve.mockResolvedValueOnce(approveFailTx);
 
     const depositTx = makeTransaction(undefined, { to: userDepositContract.address });
-    userDepositContract.functions.deposit.mockResolvedValue(depositTx);
-    userDepositContract.functions.effectiveBalance.mockResolvedValue(balance);
+    userDepositContract.deposit.mockResolvedValue(depositTx);
+    userDepositContract.effectiveBalance.mockResolvedValue(balance);
 
     await raiden.start();
     raiden.store.dispatch(udcDeposit.request({ deposit }, { totalDeposit: balance }));
@@ -528,14 +527,11 @@ describe('udcDepositEpic', () => {
         { totalDeposit: balance },
       ),
     );
-    expect(tokenContract.functions.approve).toHaveBeenCalledTimes(3);
+    expect(tokenContract.approve).toHaveBeenCalledTimes(3);
     expect(approveTx.wait).toHaveBeenCalledTimes(2);
-    expect(tokenContract.functions.approve).toHaveBeenCalledWith(
-      userDepositContract.address,
-      MaxUint256,
-    );
-    expect(userDepositContract.functions.deposit).toHaveBeenCalledTimes(1);
-    expect(userDepositContract.functions.deposit).toHaveBeenCalledWith(
+    expect(tokenContract.approve).toHaveBeenCalledWith(userDepositContract.address, MaxUint256);
+    expect(userDepositContract.deposit).toHaveBeenCalledTimes(1);
+    expect(userDepositContract.deposit).toHaveBeenCalledWith(
       raiden.address,
       deposit.add(prevDeposit),
     );

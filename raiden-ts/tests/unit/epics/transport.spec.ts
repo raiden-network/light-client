@@ -13,7 +13,8 @@ import { ensureChannelIsOpen, token, matrixServer } from '../fixtures';
 
 import { MatrixClient } from 'matrix-js-sdk';
 import { first } from 'rxjs/operators';
-import { verifyMessage, BigNumber } from 'ethers/utils';
+import { BigNumber } from '@ethersproject/bignumber';
+import { verifyMessage } from '@ethersproject/wallet';
 import { raidenConfigUpdate, raidenShutdown } from 'raiden-ts/actions';
 
 import {
@@ -545,6 +546,7 @@ describe('matrixInviteEpic', () => {
         { address: partner.address },
       ),
     );
+    await sleep();
     expect(matrix.invite).not.toHaveBeenCalled();
   });
 

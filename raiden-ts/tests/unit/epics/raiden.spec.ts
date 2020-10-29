@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { makeLog, makeRaiden, makeAddress, waitBlock } from '../mocks';
+import { makeLog, makeRaiden, makeAddress, waitBlock, sleep } from '../mocks';
 import {
   token,
   tokenNetwork,
@@ -11,7 +11,8 @@ import {
   txHash,
 } from '../fixtures';
 
-import { defaultAbiCoder } from 'ethers/utils/abi-coder';
+import { defaultAbiCoder } from '@ethersproject/abi';
+import { HashZero, One } from '@ethersproject/constants';
 import { first, pluck } from 'rxjs/operators';
 
 import { raidenShutdown } from 'raiden-ts/actions';
@@ -45,34 +46,35 @@ describe('raiden init epics', () => {
     const otherToken = makeAddress();
     const otherTokenNetwork = makeAddress();
 
-    raiden.deps.provider.getLogs.mockImplementation(async ({ address, topics }) => {
-      if (address === registryContract.address) {
-        // on registryContract's getLogs, return 2 registered tokenNetworks
-        return [
-          makeLog({ filter: registryContract.filters.TokenNetworkCreated(token, tokenNetwork) }),
-          makeLog({
-            filter: registryContract.filters.TokenNetworkCreated(otherToken, otherTokenNetwork),
-          }),
-        ];
-      } else if (
-        address === tokenNetwork &&
-        topics?.[3] === defaultAbiCoder.encode(['address'], [raiden.address])
-      ) {
-        // on tokenNetwork ChannelOpened getLogs, return a channel (network of interest)
-        return [
-          makeLog({
-            filter: tokenNetworkContract.filters.ChannelOpened(
-              id,
-              raiden.address,
-              raiden.address,
-              null,
-            ),
-            data: defaultAbiCoder.encode(['uint256'], [settleTimeout]),
-          }),
-        ];
-      }
-      return [];
-    });
+    // on registryContract's getLogs, return 2 registered tokenNetworks
+    raiden.deps.provider.emit(
+      {},
+      makeLog({
+        blockNumber: 71,
+        filter: registryContract.filters.TokenNetworkCreated(token, tokenNetwork),
+      }),
+    );
+    raiden.deps.provider.emit(
+      {},
+      makeLog({
+        blockNumber: 72,
+        filter: registryContract.filters.TokenNetworkCreated(otherToken, otherTokenNetwork),
+      }),
+    );
+    // on tokenNetwork ChannelOpened getLogs, return a channel (network of interest)
+    raiden.deps.provider.emit(
+      {},
+      makeLog({
+        blockNumber: 73,
+        filter: tokenNetworkContract.filters.ChannelOpened(
+          id,
+          raiden.address,
+          raiden.address,
+          null,
+        ),
+        data: defaultAbiCoder.encode(['uint256'], [settleTimeout]),
+      }),
+    );
 
     // ensure one getLogs error doesn't fail and is retried by retryAsync$
     raiden.deps.provider.getLogs.mockRejectedValueOnce(new Error('network error;'));
@@ -129,6 +131,7 @@ describe('raiden init epics', () => {
     // first, address is present, therefore it's a provider account
     raiden.deps.provider.listAccounts.mockResolvedValue([raiden.address]);
     await raiden.start();
+    await sleep();
 
     // account is gone from listAccounts, so not available anymore
     raiden.deps.provider.listAccounts.mockResolvedValue([]);
@@ -140,13 +143,13 @@ describe('raiden init epics', () => {
     );
   });
 
-  test('ShutdownReason.ACCOUNT_CHANGED', async () => {
+  test('ShutdownReason.NETWORK_CHANGED', async () => {
     expect.assertions(2);
 
     const raiden = await makeRaiden();
 
     // change network at runtime
-    raiden.deps.provider.getNetwork.mockResolvedValue({ chainId: 899, name: 'unknown' });
+    raiden.deps.provider.detectNetwork.mockResolvedValue({ chainId: 899, name: 'unknown' });
     await raiden.deps.latest$.toPromise(); // raidenShutdown completes subjects
 
     expect(raiden.started).toBe(false);
@@ -159,10 +162,8 @@ describe('raiden init epics', () => {
     expect.assertions(2);
 
     const raiden = await makeRaiden();
-
-    // change network at runtime
     const error = new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
-    raiden.deps.provider.listAccounts.mockRejectedValue(error);
+    raiden.deps.provider.getNetwork.mockRejectedValue(error);
     await raiden.deps.latest$.toPromise(); // raidenShutdown completes subjects
 
     expect(raiden.started).toBe(false);
@@ -218,6 +219,16 @@ describe('confirmationEpic', () => {
 
     // no confirmations: tx is removed
     raiden.deps.provider.getTransactionReceipt.mockResolvedValue({
+      to: tokenNetwork,
+      from: raiden.address,
+      contractAddress: tokenNetwork,
+      transactionIndex: 1,
+      gasUsed: One,
+      cumulativeGasUsed: One,
+      logsBloom: '',
+      blockHash: HashZero,
+      logs: [],
+      confirmations: 0,
       transactionHash: txHash,
       byzantium: true,
       blockNumber: openBlock,
