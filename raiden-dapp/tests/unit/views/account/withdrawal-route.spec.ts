@@ -9,7 +9,7 @@ Vue.use(Vuetify);
 
 describe('WithdrawalRoute.vue', () => {
   let wrapper: Wrapper<WithdrawalRoute>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

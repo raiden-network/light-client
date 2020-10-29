@@ -10,7 +10,7 @@ Vue.use(Vuetify);
 
 describe('BackupState.vue', () => {
   let wrapper: Wrapper<BackupState>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

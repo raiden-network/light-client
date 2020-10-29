@@ -13,7 +13,7 @@ Vue.filter('displayFormat', Filters.displayFormat);
 
 describe('TokenInformation.vue', () => {
   let wrapper: Wrapper<TokenInformation>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

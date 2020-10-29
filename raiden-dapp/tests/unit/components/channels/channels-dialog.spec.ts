@@ -22,7 +22,7 @@ Vue.filter('truncate', Filters.truncate);
 
 describe('ChannelDialogs.vue', () => {
   let wrapper: Wrapper<ChannelDialogs>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let $raiden: Mocked<RaidenService>;
 
   function createWrapper() {

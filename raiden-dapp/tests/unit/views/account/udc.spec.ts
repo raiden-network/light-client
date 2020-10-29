@@ -16,7 +16,7 @@ Vue.use(Vuetify);
 
 describe('UDC.vue', () => {
   let wrapper: Wrapper<UDC>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let $raiden: any;
   const token = {
     address: '0x1234',

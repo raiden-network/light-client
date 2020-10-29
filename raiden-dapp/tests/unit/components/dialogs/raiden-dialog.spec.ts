@@ -7,7 +7,7 @@ Vue.use(Vuetify);
 
 describe('RaidenDialog.vue', () => {
   let wrapper: Wrapper<RaidenDialog>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeAll(() => {
     vuetify = new Vuetify();

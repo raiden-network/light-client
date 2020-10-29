@@ -14,7 +14,7 @@ Vue.use(Vuex);
 describe('NotificationPanel.vue', () => {
   let wrapper: Wrapper<NotificationPanel>;
   let router: Mocked<VueRouter>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

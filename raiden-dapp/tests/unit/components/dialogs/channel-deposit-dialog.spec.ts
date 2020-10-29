@@ -11,7 +11,7 @@ Vue.use(Vuetify);
 
 describe('ChannelDeposit.vue', () => {
   let wrapper: Wrapper<ChannelDepositDialog>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

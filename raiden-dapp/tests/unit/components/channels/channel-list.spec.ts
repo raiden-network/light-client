@@ -20,7 +20,7 @@ Vue.filter('displayFormat', Filters.displayFormat);
 
 describe('ChannelList.vue', () => {
   let wrapper: Wrapper<ChannelList>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let expanded: { [id: number]: boolean };
 
   beforeEach(() => {

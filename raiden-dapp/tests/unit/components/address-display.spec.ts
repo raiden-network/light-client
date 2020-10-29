@@ -11,7 +11,7 @@ Vue.filter('truncate', Filters.truncate);
 
 describe('AddressDisplay.vue', () => {
   let wrapper: Wrapper<AddressDisplay>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeAll(() => {
     jest.useFakeTimers();

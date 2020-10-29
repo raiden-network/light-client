@@ -14,7 +14,7 @@ Vue.use(Vuetify);
 
 describe('NoTokens.vue', () => {
   let wrapper: Wrapper<NoTokens>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let router: Mocked<VueRouter>;
 
   beforeEach(() => {

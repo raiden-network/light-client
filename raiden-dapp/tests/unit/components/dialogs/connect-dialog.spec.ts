@@ -9,7 +9,7 @@ Vue.use(Vuetify);
 
 describe('ConnectDialog.vue', () => {
   let wrapper: Wrapper<ConnectDialog>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeAll(() => {
     window.web3 = true;

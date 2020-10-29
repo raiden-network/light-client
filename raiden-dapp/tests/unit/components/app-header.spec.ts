@@ -12,7 +12,7 @@ Vue.use(Vuetify);
 
 describe('AppHeader.vue', () => {
   let wrapper: Wrapper<AppHeader>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   function createWrapper(name: string) {
     vuetify = new Vuetify();

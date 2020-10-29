@@ -7,7 +7,7 @@ import Vue from 'vue';
 Vue.use(Vuetify);
 
 describe('NoAccessMessage.vue', () => {
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   function createWrapper(reason: DeniedReason) {
     vuetify = new Vuetify();

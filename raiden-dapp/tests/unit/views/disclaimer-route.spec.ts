@@ -14,7 +14,7 @@ Vue.use(Vuetify);
 Vue.use(Vuex);
 
 describe('DisclaimerRoute.vue', () => {
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let router: Mocked<VueRouter>;
   let wrapper: Wrapper<DisclaimerRoute>;
   let actionButton: Wrapper<Vue>;

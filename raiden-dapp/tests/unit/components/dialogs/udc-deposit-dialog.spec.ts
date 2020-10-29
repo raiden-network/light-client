@@ -11,7 +11,7 @@ import { bigNumberify } from 'ethers/utils';
 Vue.use(Vuetify);
 
 describe('UdcDepositDialog.vue', () => {
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let wrapper: Wrapper<UdcDepositDialog>;
 
   const $raiden = {

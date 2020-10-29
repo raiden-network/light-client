@@ -10,7 +10,7 @@ Vue.use(Vuetify);
 
 describe('Settings.vue', () => {
   let wrapper: Wrapper<Settings>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   beforeEach(async () => {
     vuetify = new Vuetify();
     wrapper = mount(Settings, {

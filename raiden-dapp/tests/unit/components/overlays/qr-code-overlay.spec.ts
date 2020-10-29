@@ -8,7 +8,7 @@ Vue.use(Vuetify);
 
 describe('QrCodeOverlay.vue', () => {
   let wrapper: Wrapper<QrCodeOverlay>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

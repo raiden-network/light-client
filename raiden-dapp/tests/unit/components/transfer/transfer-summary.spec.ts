@@ -11,7 +11,7 @@ Vue.use(Vuetify);
 Vue.use(Vuex);
 
 let wrapper: Wrapper<TransferSummary>;
-let vuetify: typeof Vuetify;
+let vuetify: Vuetify;
 
 const createWrapper = (transfer: Transfer) =>
   mount(TransferSummary, {

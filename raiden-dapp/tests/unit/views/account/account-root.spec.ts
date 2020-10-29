@@ -9,7 +9,7 @@ Vue.use(Vuetify);
 
 describe('AccountRoot.vue', () => {
   let wrapper: Wrapper<AccountRoot>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

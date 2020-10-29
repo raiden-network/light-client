@@ -12,7 +12,7 @@ Vue.use(Vuetify);
 Vue.filter('dispayFormat', Filters.displayFormat);
 
 describe('FindRoutes.vue', () => {
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   const routes = [
     {
       path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],

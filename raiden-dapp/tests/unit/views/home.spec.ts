@@ -22,7 +22,7 @@ Vue.use(Vuetify);
 
 describe('Home.vue', () => {
   let wrapper: Wrapper<Home>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let router: Mocked<VueRouter>;
   let $raiden: RaidenService;
 

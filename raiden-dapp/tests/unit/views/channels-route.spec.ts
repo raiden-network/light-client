@@ -25,7 +25,7 @@ describe('ChannelsRoute.vue', () => {
   let $raiden: Mocked<RaidenService>;
   let $router: Mocked<VueRouter>;
   let wrapper: Wrapper<ChannelsRoute>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   store.commit('updateChannels', TestData.mockChannels);
   store.commit('updateTokens', TestData.mockTokens);
