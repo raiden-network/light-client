@@ -1,11 +1,12 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-
 import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { first } from 'rxjs/operators';
 
-import { BigNumber, bigNumberify, keccak256, hexDataLength } from 'ethers/utils';
+import { BigNumber } from '@ethersproject/bignumber';
+import { Web3Provider } from '@ethersproject/providers';
+import { keccak256 } from '@ethersproject/keccak256';
+import { hexDataLength } from '@ethersproject/bytes';
 
 import { fromEthersEvent, getNetworkName } from 'raiden-ts/utils/ethers';
 import {
@@ -25,20 +26,23 @@ import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/uti
 import { Lock } from 'raiden-ts/channels';
 import { LocksrootZero } from 'raiden-ts/constants';
 
-const { JsonRpcProvider } = jest.requireActual('ethers/providers');
-
 test('fromEthersEvent', async () => {
   expect.assertions(3);
 
-  const provider = new JsonRpcProvider();
+  const provider = new Web3Provider({
+    request: async ({ method }) => {
+      if (method === 'eth_blockNumber') return 123;
+      else if (method === 'eth_chainId') return 1337;
+    },
+  });
+  provider.pollingInterval = 10;
   const onSpy = jest.spyOn(provider, 'on');
   const removeListenerSpy = jest.spyOn(provider, 'removeListener');
 
   const promise = fromEthersEvent<number>(provider, 'block').pipe(first()).toPromise();
-  provider.emit('block', 1337);
   const blockNumber = await promise;
 
-  expect(blockNumber).toBe(1337);
+  expect(blockNumber).toBe(123);
   expect(onSpy).toHaveBeenCalledTimes(1);
   expect(removeListenerSpy).toHaveBeenCalledTimes(1);
 });
@@ -61,9 +65,9 @@ describe('types', () => {
 
   test('UInt<8>', () => {
     expect(UInt(8)).toBe(UInt(8)); // ensure same instance
-    expect(UInt(8).is(bigNumberify('18446744073709551615'))).toBe(true);
-    expect(UInt(8).is(bigNumberify('18446744073709551616'))).toBe(false);
-    expect(UInt(8).is(bigNumberify('-1'))).toBe(false);
+    expect(UInt(8).is(BigNumber.from('18446744073709551615'))).toBe(true);
+    expect(UInt(8).is(BigNumber.from('18446744073709551616'))).toBe(false);
+    expect(UInt(8).is(BigNumber.from('-1'))).toBe(false);
   });
 
   test('UInt<32>', () => {
@@ -71,23 +75,23 @@ describe('types', () => {
     expect(UInt(32)).not.toBe(UInt(8));
     expect(
       UInt(32).is(
-        bigNumberify(
+        BigNumber.from(
           '115792089237316195423570985008687907853269984665640564039457584007913129639935',
         ),
       ),
     ).toBe(true);
     expect(
       UInt(32).is(
-        bigNumberify(
+        BigNumber.from(
           '115792089237316195423570985008687907853269984665640564039457584007913129639936',
         ),
       ),
     ).toBe(false);
-    expect(UInt(32).is(bigNumberify('-1'))).toBe(false);
+    expect(UInt(32).is(BigNumber.from('-1'))).toBe(false);
   });
 
   test('BigNumberC', () => {
-    const b = bigNumberify(16);
+    const b = BigNumber.from(16);
     expect(BigNumberC.is(b)).toBe(true);
     expect(BigNumberC.encode(b)).toEqual('16');
     pipe(
@@ -191,11 +195,12 @@ describe('data', () => {
     expect(encode(3, 2)).toBe('0x0003');
     expect(encode('0x4001', 2)).toBe('0x4001');
     expect(encode([5, 6], 2)).toBe('0x0506');
-    expect(encode(bigNumberify('48879'), 3)).toBe('0x00beef');
+    expect(encode(BigNumber.from('48879'), 3)).toBe('0x00beef');
 
     expect(() => encode(-1, 2)).toThrowError('negative');
-    expect(() => encode(bigNumberify(65537), 2)).toThrowError('too large');
+    expect(() => encode(BigNumber.from(65537), 2)).toThrowError('too large');
     expect(() => encode('0x01', 2)).toThrowError(ErrorCodes.DTA_ARRAY_LENGTH_DIFFERENCE);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     expect(() => encode(null, 2)).toThrowError(
       'Passed data is not a HEX string nor integer array',
@@ -211,19 +216,19 @@ describe('messages', () => {
     expect(getLocksroot([])).toBe(LocksrootZero);
     const locks: Lock[] = [
       {
-        amount: bigNumberify(1) as UInt<32>,
-        expiration: bigNumberify(1) as UInt<32>,
-        secrethash: getSecrethash(keccak256('0x1') as Secret),
+        amount: BigNumber.from(1) as UInt<32>,
+        expiration: BigNumber.from(1) as UInt<32>,
+        secrethash: getSecrethash(keccak256('0x01') as Secret),
       },
       {
-        amount: bigNumberify(2) as UInt<32>,
-        expiration: bigNumberify(2) as UInt<32>,
-        secrethash: getSecrethash(keccak256('0x2') as Secret),
+        amount: BigNumber.from(2) as UInt<32>,
+        expiration: BigNumber.from(2) as UInt<32>,
+        secrethash: getSecrethash(keccak256('0x02') as Secret),
       },
       {
-        amount: bigNumberify(3) as UInt<32>,
-        expiration: bigNumberify(3) as UInt<32>,
-        secrethash: getSecrethash(keccak256('0x3') as Secret),
+        amount: BigNumber.from(3) as UInt<32>,
+        expiration: BigNumber.from(3) as UInt<32>,
+        secrethash: getSecrethash(keccak256('0x03') as Secret),
       },
     ];
     expect(getLocksroot([locks[0]])).toBe(
