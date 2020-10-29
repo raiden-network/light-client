@@ -9,7 +9,7 @@ import { TestData } from '../../data/mock-data';
 import VueRouter from 'vue-router';
 import Filters from '@/filters';
 import { $identicon } from '../../utils/mocks';
-import { parseUnits } from 'ethers/utils';
+import { utils } from 'ethers';
 import ChannelList from '@/components/channels/ChannelList.vue';
 import { Token } from '@/model/types';
 
@@ -37,7 +37,7 @@ describe('ChannelList.vue', () => {
         token: {
           address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
           decimals: 10,
-          balance: parseUnits('2', 10),
+          balance: utils.parseUnits('2', 10),
         } as Token,
         channels: TestData.mockChannelArray,
         expanded,

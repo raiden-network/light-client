@@ -1,5 +1,5 @@
 import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
-import { bigNumberify } from 'ethers/utils';
+import { BigNumber } from 'ethers';
 
 describe('query params', () => {
   describe('amount', () => {
@@ -43,11 +43,11 @@ describe('query params', () => {
 
     test('valid string returns BigNumber', () => {
       expect(getPaymentId('18446744073709551615')).toStrictEqual(
-        bigNumberify('18446744073709551615')
+        BigNumber.from('18446744073709551615')
       );
     });
     test('valid hex encoded string returns BigNumber', () => {
-      const num = bigNumberify('18446744073709551615');
+      const num = BigNumber.from('18446744073709551615');
       expect(getPaymentId('0xffffffffffffffff')).toStrictEqual(num);
     });
     test('undefined returns undefined', () => {

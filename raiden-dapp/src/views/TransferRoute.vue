@@ -27,8 +27,7 @@ import TransactionList from '@/components/transaction-history/TransactionList.vu
 import NoTokens from '@/components/NoTokens.vue';
 import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
-import { BigNumber } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { BigNumber, constants } from 'ethers';
 import { Token, TokenModel } from '@/model/types';
 
 @Component({
@@ -68,9 +67,9 @@ export default class TransferRoute extends Vue {
       const channelWithBiggestCapacity = this.channelWithBiggestCapacity(
         this.token.address
       );
-      return channelWithBiggestCapacity?.capacity ?? Zero;
+      return channelWithBiggestCapacity?.capacity ?? constants.Zero;
     } else {
-      return Zero;
+      return constants.Zero;
     }
   }
 }

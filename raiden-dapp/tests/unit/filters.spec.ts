@@ -1,6 +1,5 @@
 import Filters from '@/filters';
-import { BigNumber } from 'ethers/utils';
-import { One, Zero } from 'ethers/constants';
+import { BigNumber, constants } from 'ethers';
 
 describe('filters', () => {
   describe('truncate', () => {
@@ -33,38 +32,38 @@ describe('filters', () => {
 
   describe('displayFormat', () => {
     test('displays 0 if 0 is passed without decimals', () => {
-      expect(Filters.displayFormat(Zero, 0)).toEqual('0');
+      expect(Filters.displayFormat(constants.Zero, 0)).toEqual('0');
     });
 
     test('displays 1 if 1 is passed without decimals', () => {
-      expect(Filters.displayFormat(One, 0)).toEqual('1');
+      expect(Filters.displayFormat(constants.One, 0)).toEqual('1');
     });
 
     test('return the number prefixed with "<" when the number is less than 0.000001', () => {
-      expect(Filters.displayFormat(new BigNumber(10 ** 3), 18)).toEqual(
+      expect(Filters.displayFormat(BigNumber.from(10 ** 3), 18)).toEqual(
         '<0.000001'
       );
     });
 
     test('return the number prefixed with "≈" rounded at 6 decimal places', () => {
       expect(
-        Filters.displayFormat(new BigNumber(1111110100000000), 18)
+        Filters.displayFormat(BigNumber.from(1111110100000000), 18)
       ).toEqual('≈0.001111');
     });
 
     test('return the number formatted as it is when there are not enough non-zero decimal places', () => {
       expect(
-        Filters.displayFormat(new BigNumber('11100000000000000000'), 18)
+        Filters.displayFormat(BigNumber.from('11100000000000000000'), 18)
       ).toEqual('11.1');
     });
 
     test('return zero the number is zero', () => {
-      expect(Filters.displayFormat(Zero, 18)).toEqual('0.0');
+      expect(Filters.displayFormat(constants.Zero, 18)).toEqual('0.0');
     });
 
     test('throw no exception when there are no decimal places specified ', () => {
       expect(
-        Filters.displayFormat(new BigNumber('11100000000000000001'))
+        Filters.displayFormat(BigNumber.from('11100000000000000001'))
       ).toEqual('≈11.100000');
     });
   });
@@ -77,7 +76,7 @@ describe('filters', () => {
 
   describe('toUnits', () => {
     test('throw no exception when there are no decimal places specified', () => {
-      expect(Filters.toUnits(new BigNumber('11100000000000000001'))).toEqual(
+      expect(Filters.toUnits(BigNumber.from('11100000000000000001'))).toEqual(
         '11.100000000000000001'
       );
     });

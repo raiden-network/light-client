@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber } from 'ethers';
 import { BalanceUtils } from '@/utils/balance-utils';
 import split from 'lodash/split';
 import capitalize from 'lodash/capitalize';

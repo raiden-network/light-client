@@ -3,7 +3,7 @@ import { shallowMount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import { Zero } from 'ethers/constants';
+import { constants } from 'ethers';
 import TransferRoute from '@/views/TransferRoute.vue';
 import NoTokens from '@/components/NoTokens.vue';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
@@ -91,6 +91,6 @@ describe('TransferRoute.vue', () => {
 
   test('capacity is zero if there is the token is undefined', () => {
     const wrapper = createWrapper('', [], []);
-    expect((wrapper.vm as any).capacity).toEqual(Zero);
+    expect((wrapper.vm as any).capacity).toEqual(constants.Zero);
   });
 });

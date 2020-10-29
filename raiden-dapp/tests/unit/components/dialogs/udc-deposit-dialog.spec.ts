@@ -2,11 +2,10 @@ import { mount, Wrapper } from '@vue/test-utils';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
-import { Zero } from 'ethers/constants';
+import { BigNumber, constants } from 'ethers';
 import { Token } from '@/model/types';
 import store from '@/store';
 import flushPromises from 'flush-promises';
-import { bigNumberify } from 'ethers/utils';
 
 Vue.use(Vuetify);
 
@@ -20,7 +19,7 @@ describe('UdcDepositDialog.vue', () => {
     depositToUDC: jest.fn(),
     getMainAccount: jest.fn(),
     getAccount: jest.fn(),
-    getTokenBalance: jest.fn(),
+    getTokenBalance: jest.fn()
   };
 
   const token = {
@@ -28,7 +27,7 @@ describe('UdcDepositDialog.vue', () => {
     name: 'Test Token',
     symbol: 'TTT',
     decimals: 18,
-    balance: Zero,
+    balance: constants.Zero
   } as Token;
 
   function createWrapper(): Wrapper<UdcDepositDialog> {
@@ -39,11 +38,11 @@ describe('UdcDepositDialog.vue', () => {
       stubs: ['v-dialog'],
       mocks: {
         $t: (msg: string) => msg,
-        $raiden,
+        $raiden
       },
       propsData: {
-        visible: true,
-      },
+        visible: true
+      }
     });
   }
 
@@ -54,7 +53,7 @@ describe('UdcDepositDialog.vue', () => {
         '0x3a989D97388a39A0B5796306C615d10B7416bE77'
       );
       store.commit('updateTokens', {
-        '0x3a989D97388a39A0B5796306C615d10B7416bE77': token,
+        '0x3a989D97388a39A0B5796306C615d10B7416bE77': token
       });
       wrapper = createWrapper();
       jest.resetAllMocks();
@@ -87,8 +86,8 @@ describe('UdcDepositDialog.vue', () => {
       store.commit('updateTokens', {
         '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
           ...token,
-          balance: bigNumberify('10000000000000000000'),
-        },
+          balance: BigNumber.from('10000000000000000000')
+        }
       });
 
       wrapper.find('.udc-deposit-dialog__action button').trigger('click');
@@ -108,8 +107,8 @@ describe('UdcDepositDialog.vue', () => {
       store.commit('updateTokens', {
         '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
           ...token,
-          balance: bigNumberify('10000000000000000000'),
-        },
+          balance: BigNumber.from('10000000000000000000')
+        }
       });
       store.commit('network', { name: 'mainnet', chainId: 1 });
 

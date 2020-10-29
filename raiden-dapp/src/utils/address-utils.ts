@@ -1,4 +1,4 @@
-import { getAddress } from 'ethers/utils';
+import { utils } from 'ethers';
 
 export default class AddressUtils {
   static isAddress(address: string): boolean {
@@ -7,7 +7,7 @@ export default class AddressUtils {
 
   static checkAddressChecksum(address: string): boolean {
     try {
-      return address === getAddress(address);
+      return address === utils.getAddress(address);
     } catch (e) {
       return false;
     }

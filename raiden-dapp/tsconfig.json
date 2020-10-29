@@ -28,9 +28,6 @@
       "ethers": [
         "node_modules/ethers/"
       ],
-      "ethers/*": [
-        "node_modules/ethers/*"
-      ],
       "matrix-js-sdk": ["node_modules/raiden-ts/node_modules/@types/matrix-js-sdk/index.d.ts"]
     },
     "lib": [

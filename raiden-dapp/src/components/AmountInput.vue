@@ -24,8 +24,8 @@
 import { Component, Prop, Vue, Emit, Watch } from 'vue-property-decorator';
 import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import { BigNumber } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { BigNumber, constants } from 'ethers';
+
 @Component({})
 export default class AmountInput extends Vue {
   @Prop({ required: false })
@@ -42,7 +42,7 @@ export default class AmountInput extends Vue {
   limit!: boolean;
   @Prop({ default: '', type: String })
   placeholder!: string;
-  @Prop({ required: false, default: () => Zero })
+  @Prop({ required: false, default: () => constants.Zero })
   max!: BigNumber;
   valid: boolean = true;
   amount: string = '';

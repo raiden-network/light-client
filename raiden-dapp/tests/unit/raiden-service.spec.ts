@@ -17,10 +17,9 @@ import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import flushPromises from 'flush-promises';
 import { Address, Hash, Raiden, RaidenTransfer } from 'raiden-ts';
-import { BigNumber, bigNumberify, Network, parseEther } from 'ethers/utils';
+import { BigNumber, providers, utils, constants } from 'ethers';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/internal/operators';
-import { AddressZero, One, Zero } from 'ethers/constants';
 import { paymentId } from './data/mock-data';
 import Mocked = jest.Mocked;
 import { NotificationImportance } from '@/store/notifications/notification-importance';
@@ -39,13 +38,13 @@ describe('RaidenService', () => {
     send: jest.fn(),
     sendAsync: jest.fn(),
   };
-  const path = [{ path: ['0xmediator'], fee: new BigNumber(1 ** 10) }];
+  const path = [{ path: ['0xmediator'], fee: BigNumber.from(1 ** 10) }];
 
   const setupMock = (mock: jest.Mocked<Raiden>) => {
-    mock.getBalance.mockResolvedValue(Zero);
-    mock.getTokenBalance.mockResolvedValue(Zero);
+    mock.getBalance.mockResolvedValue(constants.Zero);
+    mock.getTokenBalance.mockResolvedValue(constants.Zero);
     mock.getTokenList.mockResolvedValue(['0xtoken' as Address]);
-    mock.getUDCCapacity.mockResolvedValue(Zero);
+    mock.getUDCCapacity.mockResolvedValue(constants.Zero);
     mock.userDepositTokenAddress = jest
       .fn()
       .mockResolvedValue('0xuserdeposittoken' as Address);
@@ -69,7 +68,7 @@ describe('RaidenService', () => {
     raidenMock.network = {
       name: 'Test',
       chainId: 1337,
-    } as Network;
+    } as providers.Network;
   };
 
   async function setupSDK({
@@ -113,8 +112,8 @@ describe('RaidenService', () => {
   test('raidenAccountBalance should be fetched when subkey is used', async () => {
     raiden.getBalance = jest
       .fn()
-      .mockResolvedValueOnce(bigNumberify('1000000000000000000'))
-      .mockResolvedValueOnce(bigNumberify('100000000000000000'));
+      .mockResolvedValueOnce(BigNumber.from('1000000000000000000'))
+      .mockResolvedValueOnce(BigNumber.from('100000000000000000'));
 
     await setupSDK({
       stateBackup: '',
@@ -171,7 +170,7 @@ describe('RaidenService', () => {
   test('throw an error when the user calls openChannel before calling connect', async () => {
     expect.assertions(1);
     await expect(
-      raidenService.openChannel('0xaddr', '0xhub', new BigNumber(5000))
+      raidenService.openChannel('0xaddr', '0xhub', BigNumber.from(5000))
     ).rejects.toThrowError('Raiden instance was not initialized');
   });
 
@@ -181,14 +180,14 @@ describe('RaidenService', () => {
     });
 
     test('return a token object from getTokenBalance when there is no exception', async () => {
-      const balance = new BigNumber('1000000000000000000');
+      const balance = BigNumber.from('1000000000000000000');
 
       raiden.getTokenBalance = jest.fn().mockResolvedValue(balance);
       raiden.getTokenInfo = jest.fn().mockResolvedValue({
         decimals: 18,
         name: 'Test Token 1',
         symbol: 'TT1',
-        totalSupply: bigNumberify(1221),
+        totalSupply: BigNumber.from(1221),
       });
 
       await raidenService.fetchTokenData(['0xtoken']);
@@ -215,7 +214,7 @@ describe('RaidenService', () => {
     });
 
     test('returns token balance as string', async () => {
-      const balance = new BigNumber('1000000000000000000');
+      const balance = BigNumber.from('1000000000000000000');
       raiden.getTokenBalance = jest.fn().mockResolvedValue(balance);
       const tokenBalance = await raidenService.getTokenBalance('0xtoken');
 
@@ -233,7 +232,7 @@ describe('RaidenService', () => {
 
       const progress = jest.fn();
 
-      const depositAmount = new BigNumber(100);
+      const depositAmount = BigNumber.from(100);
       await expect(
         raidenService.openChannel(
           '0xtoken',
@@ -258,7 +257,7 @@ describe('RaidenService', () => {
       const error = new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED);
       raiden.openChannel = jest.fn().mockRejectedValue(error);
 
-      const depositAmount = new BigNumber(100);
+      const depositAmount = BigNumber.from(100);
       await expect(
         raidenService.openChannel('0xtoken', '0xpartner', depositAmount)
       ).rejects.toThrow(RaidenError);
@@ -294,7 +293,7 @@ describe('RaidenService', () => {
       expect.assertions(2);
       raiden.depositChannel.mockResolvedValue('0xtxhash' as Hash);
 
-      const depositAmount = new BigNumber(6000);
+      const depositAmount = BigNumber.from(6000);
       await raidenService.deposit('0xtoken', '0xpartner', depositAmount);
       expect(raiden.depositChannel).toHaveBeenCalledTimes(1);
       expect(raiden.depositChannel).toHaveBeenCalledWith(
@@ -309,7 +308,7 @@ describe('RaidenService', () => {
       const error = new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED);
       raiden.depositChannel.mockRejectedValue(error);
 
-      const depositAmount = new BigNumber(6000);
+      const depositAmount = BigNumber.from(6000);
       await expect(
         raidenService.deposit('0xtoken', '0xpartner', depositAmount)
       ).rejects.toThrowError(RaidenError);
@@ -325,7 +324,7 @@ describe('RaidenService', () => {
       expect.assertions(2);
       raiden.withdrawChannel.mockResolvedValue('0xtxhash' as Hash);
 
-      const withdrawAmount = new BigNumber(6000);
+      const withdrawAmount = BigNumber.from(6000);
       await raidenService.withdraw('0xtoken', '0xpartner', withdrawAmount);
       expect(raiden.withdrawChannel).toHaveBeenCalledTimes(1);
       expect(raiden.withdrawChannel).toHaveBeenCalledWith(
@@ -340,7 +339,7 @@ describe('RaidenService', () => {
       const error = new RaidenError(ErrorCodes.RDN_WITHDRAW_TRANSACTION_FAILED);
       raiden.withdrawChannel.mockRejectedValue(error);
 
-      const withdrawAmount = new BigNumber(6000);
+      const withdrawAmount = BigNumber.from(6000);
       await expect(
         raidenService.withdraw('0xtoken', '0xpartner', withdrawAmount)
       ).rejects.toThrowError(RaidenError);
@@ -383,13 +382,13 @@ describe('RaidenService', () => {
         raiden.waitTransfer.mockResolvedValue(null as any);
 
         await expect(
-          raidenService.transfer('0xtoken', '0xpartner', One, path, paymentId)
+          raidenService.transfer('0xtoken', '0xpartner', constants.One, path, paymentId)
         ).resolves.toBeUndefined();
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
         expect(raiden.transfer).toHaveBeenCalledWith(
           '0xtoken',
           '0xpartner',
-          One,
+          constants.One,
           {
             paths: path,
             paymentId,
@@ -402,13 +401,13 @@ describe('RaidenService', () => {
         raiden.waitTransfer.mockRejectedValue(error);
 
         await expect(
-          raidenService.transfer('0xtoken', '0xpartner', One, path, paymentId)
+          raidenService.transfer('0xtoken', '0xpartner', constants.One, path, paymentId)
         ).rejects.toThrow(RaidenError);
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
         expect(raiden.transfer).toHaveBeenCalledWith(
           '0xtoken',
           '0xpartner',
-          One,
+          constants.One,
           {
             paths: path,
             paymentId,
@@ -420,9 +419,9 @@ describe('RaidenService', () => {
     test('resolves an ens domain', async () => {
       (raiden as any).resolveName = jest
         .fn()
-        .mockResolvedValue(AddressZero as Address);
+        .mockResolvedValue(constants.AddressZero as Address);
 
-      expect(await raidenService.ensResolve('domain.eth')).toEqual(AddressZero);
+      expect(await raidenService.ensResolve('domain.eth')).toEqual(constants.AddressZero);
       expect(raiden.resolveName).toHaveBeenCalledTimes(1);
     });
 
@@ -439,20 +438,20 @@ describe('RaidenService', () => {
     describe('findRoutes', () => {
       test('rejects when it cannot find routes: no routes', async () => {
         const error = new Error('no path');
-        raiden.getAvailability = jest.fn().mockResolvedValue(AddressZero);
+        raiden.getAvailability = jest.fn().mockResolvedValue(constants.AddressZero);
         raiden.findRoutes = jest.fn().mockRejectedValue(error);
 
         await expect(
-          raidenService.findRoutes(AddressZero, AddressZero, One)
+          raidenService.findRoutes(constants.AddressZero, constants.AddressZero, constants.One)
         ).rejects.toEqual(error);
       });
 
       test('resolves when it can find routes', async () => {
-        raiden.getAvailability = jest.fn().mockResolvedValueOnce(AddressZero);
+        raiden.getAvailability = jest.fn().mockResolvedValueOnce(constants.AddressZero);
         raiden.findRoutes = jest.fn().mockResolvedValueOnce([]);
 
         await expect(
-          raidenService.findRoutes(AddressZero, AddressZero, One)
+          raidenService.findRoutes(constants.AddressZero, constants.AddressZero, constants.One)
         ).resolves.toEqual([]);
       });
     });
@@ -523,7 +522,7 @@ describe('RaidenService', () => {
           name: address,
           symbol: address.toLocaleUpperCase(),
           decimals: 18,
-          balance: Zero,
+          balance: constants.Zero,
         });
 
         beforeEach(() => {
@@ -541,16 +540,16 @@ describe('RaidenService', () => {
           const tokens = [
             {
               ...createToken('0x1'),
-              balance: One,
+              balance: constants.One,
             },
             {
               ...createToken('0x2'),
-              balance: One,
+              balance: constants.One,
             },
           ];
 
           beforeEach(() => {
-            raiden.getTokenBalance = jest.fn().mockResolvedValue(One);
+            raiden.getTokenBalance = jest.fn().mockResolvedValue(constants.One);
             raiden.getTokenInfo = jest
               .fn()
               .mockImplementation(async (address: string) =>
@@ -594,7 +593,7 @@ describe('RaidenService', () => {
 
     const mockToken = (address: string): Token => ({
       address: address,
-      balance: Zero,
+      balance: constants.Zero,
       decimals: 18,
       name: address,
       symbol: address.replace('0x', '').toLocaleUpperCase(),
@@ -660,7 +659,7 @@ describe('RaidenService', () => {
           name: 'Token 1',
           symbol: 'TKN1',
         };
-        raiden.getTokenBalance = jest.fn().mockResolvedValue(One);
+        raiden.getTokenBalance = jest.fn().mockResolvedValue(constants.One);
         raiden.getTokenList = jest
           .fn()
           .mockResolvedValue([mockToken1 as Address]);
@@ -678,7 +677,7 @@ describe('RaidenService', () => {
           expect.objectContaining({
             [mockToken1]: {
               ...testToken,
-              balance: One,
+              balance: constants.One,
             },
           })
         );
@@ -690,7 +689,7 @@ describe('RaidenService', () => {
       raiden.getTokenList = jest
         .fn()
         .mockResolvedValue([mockToken1, mockToken2]);
-      raiden.getTokenBalance = jest.fn().mockResolvedValue(bigNumberify(100));
+      raiden.getTokenBalance = jest.fn().mockResolvedValue(BigNumber.from(100));
       raiden.getTokenInfo = jest.fn().mockResolvedValue({
         decimals: 0,
         symbol: 'MKT',
@@ -718,7 +717,7 @@ describe('RaidenService', () => {
         expect.objectContaining({
           [mockToken1]: {
             address: mockToken1,
-            balance: bigNumberify(100),
+            balance: BigNumber.from(100),
             decimals: 0,
             symbol: 'MKT',
             name: 'Mock Token',
@@ -788,7 +787,7 @@ describe('RaidenService', () => {
       payload: {
         monitoringService: '0x1234',
         partner: '0x1001',
-        reward: parseEther('5'),
+        reward: utils.parseEther('5'),
         txHash: '0x0001',
         confirmed: true,
       },
@@ -819,11 +818,11 @@ describe('RaidenService', () => {
     subject.next({
       type: 'udc/withdrawn',
       payload: {
-        withdrawal: parseEther('5'),
+        withdrawal: utils.parseEther('5'),
         confirmed: true,
       },
       meta: {
-        amount: parseEther('5'),
+        amount: utils.parseEther('5'),
       },
     });
 
@@ -852,7 +851,7 @@ describe('RaidenService', () => {
         code: 'UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE',
       },
       meta: {
-        amount: parseEther('5'),
+        amount: utils.parseEther('5'),
       },
     });
 
@@ -874,7 +873,7 @@ describe('RaidenService', () => {
         message: 'gas',
       },
       meta: {
-        amount: parseEther('5'),
+        amount: utils.parseEther('5'),
       },
     });
 
@@ -901,7 +900,7 @@ describe('RaidenService', () => {
         token: '0x1234',
       },
       meta: {
-        amount: parseEther('5'),
+        amount: utils.parseEther('5'),
       },
     });
 

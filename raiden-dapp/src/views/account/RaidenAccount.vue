@@ -137,13 +137,13 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
+import { BigNumber, utils } from 'ethers';
 
 import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import { Token } from '@/model/types';
-import { bigNumberify, parseEther, BigNumber } from 'ethers/utils';
 
 @Component({
   components: { AmountInput, ActionButton, ErrorMessage, Spinner },
@@ -180,7 +180,7 @@ export default class RaidenAccount extends Vue {
   }
 
   get maximumAmount(): BigNumber {
-    return bigNumberify(parseEther(this.currentAccountBalance()));
+    return utils.parseEther(this.currentAccountBalance());
   }
 
   toggleDirection() {

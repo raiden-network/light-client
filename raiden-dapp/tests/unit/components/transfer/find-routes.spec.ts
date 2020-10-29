@@ -3,9 +3,8 @@ import FindRoutes from '@/components/transfer/FindRoutes.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { RaidenPaths } from 'raiden-ts';
-import { bigNumberify } from 'ethers/utils';
+import { BigNumber, constants } from 'ethers';
 import { Token } from '@/model/types';
-import { Zero } from 'ethers/constants';
 import Filters from '@/filters';
 
 Vue.use(Vuetify);
@@ -16,7 +15,7 @@ describe('FindRoutes.vue', () => {
   const routes = [
     {
       path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
-      fee: bigNumberify(100),
+      fee: BigNumber.from(100),
     },
   ] as RaidenPaths;
 
@@ -25,7 +24,7 @@ describe('FindRoutes.vue', () => {
     name: 'Test Token',
     symbol: 'TTT',
     decimals: 18,
-    balance: Zero,
+    balance: constants.Zero,
   } as Token;
 
   const $raiden = {
@@ -61,7 +60,7 @@ describe('FindRoutes.vue', () => {
     const selectEvent = wrapper.emitted('select');
     expect(selectEvent).toBeTruthy();
     expect(selectEvent?.shift()).toContainEqual({
-      fee: bigNumberify(100),
+      fee: BigNumber.from(100),
       path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
     });
   });

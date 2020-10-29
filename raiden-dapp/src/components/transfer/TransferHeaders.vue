@@ -72,8 +72,7 @@ import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue'
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
 import { Token } from '@/model/types';
-import { BigNumber } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { BigNumber, constants } from 'ethers';
 
 @Component({
   components: {
@@ -103,7 +102,7 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
   capacity!: BigNumber;
 
   get noChannels(): boolean {
-    return this.capacity === Zero;
+    return this.capacity === constants.Zero;
   }
 
   depositDialogOpen() {

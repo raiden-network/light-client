@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, Network } from 'ethers/utils';
+import { BigNumber, BigNumberish, providers } from 'ethers';
 
 export interface Token {
   readonly address: string;
@@ -87,7 +87,7 @@ export const emptyTokenModel = (): AccTokenModel => ({
   settled: 0,
 });
 
-export const PlaceHolderNetwork: Network = {
+export const PlaceHolderNetwork: providers.Network = {
   name: '',
   chainId: -1,
 };

@@ -65,7 +65,7 @@ import ChannelWithdrawDialog from '@/components/dialogs/ChannelWithdrawDialog.vu
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber } from 'ethers';
 import { ChannelAction } from '@/types';
 import { mapGetters } from 'vuex';
 import { Token } from '@/model/types';

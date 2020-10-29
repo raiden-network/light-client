@@ -1,7 +1,7 @@
 import RaidenService from '@/services/raiden-service';
 import { RaidenChannels, RaidenTransfer, RaidenConfig } from 'raiden-ts';
 import { DeniedReason, Token, Presences } from '@/model/types';
-import { Network } from 'ethers/utils';
+import { providers } from 'ethers';
 
 export type Tokens = { [token: string]: Token };
 export type Transfers = { [key: string]: RaidenTransfer };
@@ -19,7 +19,7 @@ export interface RootState {
   channels: RaidenChannels;
   tokens: Tokens;
   tokenAddresses: string[];
-  network: Network;
+  network: providers.Network;
   presences: Presences;
   transfers: Transfers;
   stateBackup: string;

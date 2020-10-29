@@ -1,15 +1,14 @@
 import { BalanceUtils } from '@/utils/balance-utils';
-import { BigNumber } from 'ethers/utils';
+import { BigNumber, constants } from 'ethers';
 import { Token } from '@/model/types';
-import { One } from 'ethers/constants';
 
 describe('BalanceUtils', () => {
   const token: Token = {
     address: '',
-    balance: new BigNumber(0),
+    balance: BigNumber.from(0),
     decimals: 18,
     name: '',
-    symbol: '',
+    symbol: ''
   };
 
   test('return true when the number of decimal places is greater than what the token supports', () => {
@@ -45,10 +44,10 @@ describe('BalanceUtils', () => {
   });
 
   test('return only integer part if decimals are 0', () => {
-    expect(BalanceUtils.toUnits(One, 0)).toBe('1');
+    expect(BalanceUtils.toUnits(constants.One, 0)).toBe('1');
   });
 
   test('parse ignores trailing dot', () => {
-    expect(BalanceUtils.parse('1.', 0)).toEqual(One);
+    expect(BalanceUtils.parse('1.', 0)).toEqual(constants.One);
   });
 });

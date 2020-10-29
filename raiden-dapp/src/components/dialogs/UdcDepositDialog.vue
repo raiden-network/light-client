@@ -97,8 +97,7 @@ import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import { RaidenError } from 'raiden-ts';
 import Filters from '@/filters';
-import { BigNumber, parseUnits } from 'ethers/utils';
-import { Zero } from 'ethers/constants';
+import { BigNumber, utils, constants } from 'ethers';
 
 @Component({
   components: {
@@ -140,7 +139,7 @@ export default class UdcDepositDialog extends Vue {
     let utilityTokenAmount: BigNumber;
 
     try {
-      utilityTokenAmount = parseUnits(
+      utilityTokenAmount = utils.parseUnits(
         this.defaultUtilityTokenAmount,
         this.udcToken.decimals
       );
@@ -151,10 +150,10 @@ export default class UdcDepositDialog extends Vue {
     if (this.mainnet) {
       return (
         utilityTokenAmount.lte(this.udcToken.balance as BigNumber) &&
-        utilityTokenAmount.gt(Zero)
+        utilityTokenAmount.gt(constants.Zero)
       );
     } else {
-      return utilityTokenAmount.gt(Zero);
+      return utilityTokenAmount.gt(constants.Zero);
     }
   }
 

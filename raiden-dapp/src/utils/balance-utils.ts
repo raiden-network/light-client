@@ -1,12 +1,12 @@
-import { BigNumber, parseUnits, formatUnits, formatEther } from 'ethers/utils';
+import { BigNumber, utils } from 'ethers';
 
 export class BalanceUtils {
   static toEth(wei: BigNumber): string {
-    return formatEther(wei);
+    return utils.formatEther(wei);
   }
 
   static toUnits(wei: BigNumber, decimals: number): string {
-    const units = formatUnits(wei, decimals);
+    const units = utils.formatUnits(wei, decimals);
     if (decimals === 0) {
       return units.split('.')[0];
     }
@@ -24,7 +24,7 @@ export class BalanceUtils {
   }
 
   static parse(deposit: string, decimals: number) {
-    return parseUnits(
+    return utils.parseUnits(
       deposit.endsWith('.')
         ? deposit.substring(0, deposit.length - 1)
         : deposit,

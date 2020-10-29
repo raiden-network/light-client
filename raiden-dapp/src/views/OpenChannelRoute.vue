@@ -58,7 +58,7 @@ import { Component, Mixins } from 'vue-property-decorator';
 import AmountInput from '@/components/AmountInput.vue';
 import { emptyDescription, StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import { Zero } from 'ethers/constants';
+import { constants } from 'ethers';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { Route } from 'vue-router';
@@ -129,7 +129,7 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
     const { address, decimals } = this.token;
     const depositAmount = BalanceUtils.parse(this.deposit, decimals!);
 
-    if (depositAmount.eq(Zero)) {
+    if (depositAmount.eq(constants.Zero)) {
       this.steps = [
         (this.$t('open-channel.steps.open') as any) as StepDescription,
       ];
