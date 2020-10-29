@@ -10,7 +10,7 @@ Vue.use(Vuetify);
 
 describe('AmountInput.vue', () => {
   let wrapper: Wrapper<AmountInput>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   function createWrapper(params: {}): Wrapper<AmountInput> {
     vuetify = new Vuetify();

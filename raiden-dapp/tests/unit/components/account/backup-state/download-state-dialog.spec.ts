@@ -7,7 +7,7 @@ Vue.use(Vuetify);
 
 describe('DownloadStateDialog.vue', () => {
   let wrapper: Wrapper<DownloadStateDialog>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

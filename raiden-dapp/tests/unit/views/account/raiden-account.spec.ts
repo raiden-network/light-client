@@ -11,7 +11,7 @@ Vue.use(Vuetify);
 
 describe('RaidenAccount.vue', () => {
   let wrapper: Wrapper<RaidenAccount>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   const $raiden = {
     transferToRaidenAccount: jest.fn(),
     transferToMainAccount: jest.fn(),

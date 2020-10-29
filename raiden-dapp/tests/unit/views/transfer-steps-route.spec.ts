@@ -20,7 +20,7 @@ import { RouteNames } from '@/router/route-names';
 Vue.use(Vuetify);
 
 describe('TransferStepsRoute.vue', () => {
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let processingTransfer: jest.SpyInstance;
   let transferDone: jest.SpyInstance;
   let router: Mocked<VueRouter>;

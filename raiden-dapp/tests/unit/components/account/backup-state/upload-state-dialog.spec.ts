@@ -11,7 +11,7 @@ Vue.use(Vuex);
 
 describe('UploadStateDialog.vue', () => {
   let wrapper: Wrapper<UploadStateDialog>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let mockStateFile: File;
 
   beforeEach(() => {

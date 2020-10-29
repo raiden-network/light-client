@@ -13,7 +13,7 @@ Vue.use(Vuetify);
 describe('AccountRoute.vue', () => {
   let wrapper: Wrapper<AccountRoute>;
   let router: Mocked<VueRouter>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

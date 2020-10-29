@@ -27,7 +27,7 @@ Vue.filter('truncate', Filters.truncate);
 describe('SelectHubRoute.vue', () => {
   let wrapper: Wrapper<SelectHubRoute>;
   let router: Mocked<VueRouter>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   const testToken = (address: string) =>
     Object.assign(TestData.token, {

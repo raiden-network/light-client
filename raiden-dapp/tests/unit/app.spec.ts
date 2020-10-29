@@ -17,7 +17,7 @@ Vue.use(Vuetify);
 
 describe('App.vue', () => {
   let wrapper: Wrapper<App>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let router: Mocked<VueRouter>;
   let $raiden: RaidenService;
 

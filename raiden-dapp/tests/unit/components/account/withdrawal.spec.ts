@@ -12,7 +12,7 @@ import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 Vue.use(Vuex);
 Vue.use(Vuetify);
 
-let vuetify: typeof Vuetify;
+let vuetify: Vuetify;
 let $raiden: any;
 
 const tokenBalance = new BigNumber('1000000');

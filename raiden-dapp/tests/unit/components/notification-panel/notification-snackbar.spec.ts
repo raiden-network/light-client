@@ -11,7 +11,7 @@ Vue.filter('formatDate', Filters.formatDate);
 
 describe('NotificationSnackbar.vue', () => {
   let wrapper: Wrapper<NotificationSnackbar>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();

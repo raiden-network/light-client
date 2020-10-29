@@ -13,7 +13,7 @@ import flushPromises from 'flush-promises';
 Vue.use(Vuetify);
 
 describe('PathfindingService.vue', () => {
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   const $raiden = {
     fetchTokenData: jest.fn().mockResolvedValueOnce(undefined),

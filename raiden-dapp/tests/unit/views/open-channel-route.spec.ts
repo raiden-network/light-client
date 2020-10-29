@@ -30,7 +30,7 @@ Vue.filter('truncate', Filters.truncate);
 describe('OpenChannelRoute.vue', () => {
   let service: Mocked<RaidenService>;
   let wrapper: Wrapper<OpenChannelRoute>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   let button: Wrapper<Vue>;
   let router: Mocked<VueRouter>;
 

@@ -9,7 +9,7 @@ Vue.use(Vuetify);
 
 describe('TransferProgressDialog.vue', () => {
   let wrapper: Wrapper<TransferProgressDialog>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   const transferPending = {
     key: 'sent:0x1',
     paymentId: bigNumberify('0x1'),

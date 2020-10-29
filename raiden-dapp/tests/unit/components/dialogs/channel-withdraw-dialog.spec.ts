@@ -11,7 +11,7 @@ Vue.use(Vuetify);
 
 describe('ChannelWithdraw.vue', () => {
   let wrapper: Wrapper<ChannelWithdrawDialog>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
   const channel = TestData.openChannel;
 
   beforeEach(() => {

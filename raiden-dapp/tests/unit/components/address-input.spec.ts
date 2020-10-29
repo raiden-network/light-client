@@ -14,7 +14,7 @@ Vue.use(Vuetify);
 
 describe('AddressInput', () => {
   let wrapper: Wrapper<AddressInput>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   let ensResolve: jest.Mock<any, any>;
   let getAvailability: jest.Mock<any, any>;

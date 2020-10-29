@@ -11,7 +11,7 @@ Vue.filter('formatDate', Filters.formatDate);
 
 describe('NotificationCard.vue', () => {
   let wrapper: Wrapper<NotificationCard>;
-  let vuetify: typeof Vuetify;
+  let vuetify: Vuetify;
 
   beforeEach(() => {
     vuetify = new Vuetify();
