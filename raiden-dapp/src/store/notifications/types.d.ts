@@ -3,9 +3,11 @@ import { NotificationContext } from '@/store/notifications/notification-context'
 
 export interface NotificationPayload {
   readonly id: number;
+  readonly icon?: string;
   readonly title: string;
   readonly description: string;
-  readonly icon?: string;
+  readonly link?: string;
+  readonly dappRoute?: string;
   readonly importance: NotificationImportance;
   readonly context: NotificationContext;
   readonly duration: number;

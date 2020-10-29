@@ -27,6 +27,13 @@
   },
   "notifications": {
     "no-notifications": "No notifications",
+    "backup-state": {
+      "icon": "notification_state_backup",
+      "title": "Backup State",
+      "description": "Backup state to not risk loosing funds",
+      "link": "Backup state menu",
+      "dapp-route": "backup state route"
+    },
     "ms-balance-proof": {
       "title": "Balance proof submitted",
       "description": "A monitoring service successfully submitted a balance proof for a channel claiming a reward of {reward} {symbol}. Service: {monitoringService}, Partner: {partner}, Transaction: {txHash}"

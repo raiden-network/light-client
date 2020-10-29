@@ -24,6 +24,13 @@
             {{ $t('notifications.channel-open.success.block-count-success') }}
           </span>
         </div>
+        <span
+          v-if="notification.link"
+          class="notification-card__content__details__link"
+          @click="linkRoute"
+        >
+          {{ notification.link }}
+        </span>
         <span class="notification-card__content__details__received">
           {{ notification.received | formatDate }}
         </span>
@@ -42,10 +49,11 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Mixins } from 'vue-property-decorator';
 import { NotificationPayload } from '@/store/notifications/types';
 import { createNamespacedHelpers, mapState } from 'vuex';
 import NotificationDescriptionDisplay from '@/components/notification-panel/NotificationDescriptionDisplay.vue';
+import NavigationMixin from '../../mixins/navigation-mixin';
 
 const { mapMutations } = createNamespacedHelpers('notifications');
 
@@ -58,7 +66,7 @@ const { mapMutations } = createNamespacedHelpers('notifications');
     ...mapMutations(['notificationDelete']),
   },
 })
-export default class NotificationCard extends Vue {
+export default class NotificationCard extends Mixins(NavigationMixin) {
   notificationDelete!: (id: number) => void;
   blockNumber!: number;
 
@@ -73,6 +81,16 @@ export default class NotificationCard extends Vue {
       );
     } else {
       return false;
+    }
+  }
+
+  get linkRoute() {
+    switch (this.notification.dappRoute) {
+      case 'backup state route':
+        return () => this.navigateToBackupState();
+        break;
+      default:
+        break;
     }
   }
 }
@@ -103,16 +121,23 @@ export default class NotificationCard extends Vue {
       margin-left: 16px;
 
       &__block-count,
+      &__link,
       &__received {
         font-size: 12px;
       }
 
-      &__title {
+      &__title,
+      &__link {
         color: $primary-color;
       }
 
       &__block-count {
         color: $color-white;
+      }
+
+      &__link {
+        cursor: pointer;
+        width: fit-content;
       }
 
       &__received {
