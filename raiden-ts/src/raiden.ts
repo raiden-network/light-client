@@ -495,7 +495,13 @@ export class Raiden {
    * @returns Promise to current block number
    */
   public async getBlockNumber(): Promise<number> {
-    return this.deps.provider.blockNumber || (await this.deps.provider.getBlockNumber());
+    const lastBlockNumber = this.deps.provider.blockNumber;
+    if (
+      lastBlockNumber &&
+      lastBlockNumber >= this.deps.contractsInfo.TokenNetworkRegistry.block_number
+    )
+      return lastBlockNumber;
+    else return await this.deps.provider.getBlockNumber();
   }
 
   /**
