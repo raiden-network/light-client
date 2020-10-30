@@ -48,9 +48,7 @@ export function deleteTopNotification() {
   cy.getWithCustomTimeout('[data-cy=notification_card_delete_button]')
     .eq(0)
     .should('exist');
-  cy.get('[data-cy=notification_card_delete_button]')
-    .eq(0)
-    .click();
+  cy.get('[data-cy=notification_card_delete_button]').eq(0).click();
   // cy.getWithCustomTimeout('[data-cy=notification_card]').should('not.exist');
 }
 
@@ -108,9 +106,7 @@ export function enterDepositTokenAmountForOpenedChannel(uiTimeout) {
 export function enterTokenWithdrawalAmoutFromChannelsList(uiTimeout) {
   // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
   cy.get('[data-cy=channel_list]').should('exist');
-  cy.get('[data-cy=channel_action_button]')
-    .eq(1)
-    .click();
+  cy.get('[data-cy=channel_action_button]').eq(1).click();
   // cypress selectors: raiden-dapp/src/components/dialogs/ChannelWithdrawDialog.vue
   cy.getWithCustomTimeout('[data-cy=channel_withdraw]').should('exist');
   cy.get('[data-cy=channel_withdraw_input]').type('001');
@@ -128,9 +124,7 @@ export function enterETHAmountToTransferFromRaidenAccount(uiTimeout) {
 export function enterUDCWithdrawalAmount(uiTimeout) {
   // cypress selectors: raiden-dapp/src/views/account/UDC.vue
   cy.get('[data-cy=udc]').should('exist');
-  cy.get('[data-cy=udc_actions_button]')
-    .eq(1)
-    .click();
+  cy.get('[data-cy=udc_actions_button]').eq(1).click();
   // cypress selectors: raiden-dapp/src/components/dialogs/UdcWithdrawalDialog.vue
   cy.getWithCustomTimeout('[data-cy=udc_withdrawal_dialog]').should('exist');
   cy.get('[data-cy=udc_withdrawal_dialog_amount]').type('1');

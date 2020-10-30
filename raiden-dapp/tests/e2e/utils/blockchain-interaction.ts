@@ -57,9 +57,7 @@ export function transferETHToRaidenAccount() {
 export function withdrawTokensBackToMainAccount() {
   // cypress selectors: raiden-dapp/src/components/account/Withdrawal.vue
   cy.get('[data-cy=withdrawal_tokens]').should('exist');
-  cy.get('[data-cy=withdrawal_tokens_button]')
-    .eq(0)
-    .click();
+  cy.get('[data-cy=withdrawal_tokens_button]').eq(0).click();
   cy.getWithCustomTimeout('[data-cy=withdrawal_dialog_action]').should('exist');
   cy.get('[data-cy=withdrawal_dialog_action]').click();
   cy.getWithCustomTimeout('[data-cy=withdrawal_empty]').should('exist');

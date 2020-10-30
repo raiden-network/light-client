@@ -3,7 +3,7 @@
     ref="form"
     v-model="valid"
     autocomplete="off"
-    data-cy = "select_hub"
+    data-cy="select_hub"
     class="select-hub"
     @submit.prevent="selectHub()"
   >

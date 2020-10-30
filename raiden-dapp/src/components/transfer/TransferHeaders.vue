@@ -1,6 +1,9 @@
 <template>
   <v-row no-gutters class="transfer-menus">
-    <div data-cy="transfer_menus_token_select" class="transfer-menus__token-select">
+    <div
+      data-cy="transfer_menus_token_select"
+      class="transfer-menus__token-select"
+    >
       <span @click="showTokenOverlay = true">
         {{ $t('transfer.transfer-menus.change-token-title') }}
         <v-icon>mdi-chevron-down</v-icon>
@@ -9,7 +12,12 @@
     <div class="transfer-menus__dot-menu">
       <v-menu transition="scale-transition">
         <template #activator="{ on }">
-          <v-btn icon data-cy="transfer_menus_dot_menu_button" class="transfer-menus__dot-menu__button" v-on="on">
+          <v-btn
+            icon
+            data-cy="transfer_menus_dot_menu_button"
+            class="transfer-menus__dot-menu__button"
+            v-on="on"
+          >
             <v-icon>mdi-dots-vertical</v-icon>
           </v-btn>
         </template>

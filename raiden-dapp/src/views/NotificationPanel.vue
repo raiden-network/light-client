@@ -1,5 +1,5 @@
 <template>
-  <div data-cy="notification_panel" id="notification-panel">
+  <div id="notification-panel" data-cy="notification_panel">
     <div class="notification-panel-content">
       <div class="notification-panel-content__close">
         <v-btn text @click="clear()">

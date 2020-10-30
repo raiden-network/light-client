@@ -44,7 +44,7 @@ import { RouteNames } from '@/router/route-names';
 import { Location } from 'vue-router';
 
 @Component({
-  components: { ActionButton }
+  components: { ActionButton },
 })
 export default class Disclaimer extends Vue {
   checkedAccept = false;

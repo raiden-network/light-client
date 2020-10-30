@@ -1,5 +1,10 @@
 <template>
-  <raiden-dialog data-cy="channel_deposit" class="channel-deposit" :visible="visible" @close="cancel">
+  <raiden-dialog
+    data-cy="channel_deposit"
+    class="channel-deposit"
+    :visible="visible"
+    @close="cancel"
+  >
     <v-card-title>
       <v-row align="center" justify="center">
         <v-col>
@@ -39,7 +44,10 @@
               :max="token.balance"
               limit
             />
-            <div data-cy="channel_deposit_button" class="channel-deposit__button">
+            <div
+              data-cy="channel_deposit_button"
+              class="channel-deposit__button"
+            >
               <action-button
                 :id="`confirm-${identifier}`"
                 :enabled="valid"

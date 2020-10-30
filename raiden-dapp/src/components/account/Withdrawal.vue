@@ -141,12 +141,12 @@ import { BigNumber } from 'ethers/utils';
     RaidenDialog,
     AddressDisplay,
     AmountDisplay,
-    Spinner
+    Spinner,
   },
   computed: {
     ...mapState(['raidenAccountBalance']),
-    ...mapGetters(['udcToken', 'allTokens'])
-  }
+    ...mapGetters(['udcToken', 'allTokens']),
+  },
 })
 export default class Withdrawal extends Mixins(BlockieMixin) {
   allTokens!: Token[];
@@ -160,19 +160,19 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
   async mounted() {
     const allTokens = uniqBy(
       this.allTokens.concat(this.udcToken),
-      token => token.address
+      (token) => token.address
     );
     const updatedTokenBalances = await Promise.all(
-      allTokens.map(async token => ({
+      allTokens.map(async (token) => ({
         ...token,
         balance: await this.$raiden.getTokenBalance(
           token.address,
           this.$store.state.defaultAccount
-        )
+        ),
       }))
     );
 
-    this.balances = updatedTokenBalances.filter(token =>
+    this.balances = updatedTokenBalances.filter((token) =>
       (token.balance as BigNumber).gt(Zero)
     );
     this.loading = false;
@@ -186,7 +186,9 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
       this.withdrawing = true;
       const { address, balance } = this.withdraw;
       await this.$raiden.transferOnChainTokens(address, balance);
-      this.balances = this.balances.filter(token => token.address !== address);
+      this.balances = this.balances.filter(
+        (token) => token.address !== address
+      );
       this.withdraw = null;
     } catch (e) {
     } finally {

@@ -26,7 +26,7 @@
               {{
                 $t('channel-list.channel.state', {
                   value: displayFormat(channel.capacity, token.decimals || 0),
-                  state: capitalizeFirst(channel.state)
+                  state: capitalizeFirst(channel.state),
                 })
               }}
             </v-list-item-subtitle>
@@ -122,7 +122,7 @@ import { ChannelAction } from '@/types';
 
 @Component({
   components: { AddressDisplay, Spinner },
-  computed: mapState(['blockNumber'])
+  computed: mapState(['blockNumber']),
 })
 export default class ChannelList extends Mixins(BlockieMixin) {
   displayFormat = Filters.displayFormat;

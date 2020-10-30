@@ -87,12 +87,12 @@ import Spinner from '@/components/icons/Spinner.vue';
     UdcWithdrawalDialog,
     AmountDisplay,
     ErrorMessage,
-    Spinner
+    Spinner,
   },
   computed: {
     ...mapState(['accountBalance', 'raidenAccountBalance']),
-    ...mapGetters(['mainnet', 'udcToken', 'usingRaidenAccount'])
-  }
+    ...mapGetters(['mainnet', 'udcToken', 'usingRaidenAccount']),
+  },
 })
 export default class UDC extends Vue {
   amount: string = '10';
