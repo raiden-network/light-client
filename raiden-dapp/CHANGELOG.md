@@ -2,7 +2,18 @@
 
 ## [Unreleased]
 
+### Fixed
+
+### Added
+
+- [#2285] Add custom Cypress attributes to selectors
+
+### Changed
+
+[#2285]: https://github.com/raiden-network/light-client/issues/2285
+
 ## [0.12.0] - 2020-10-22
+
 ### Fixed
 
 - [#2237] Displays RDN token on Withdrawal screen
@@ -40,6 +51,7 @@
 [#2224]: https://github.com/raiden-network/light-client/issues/2223
 
 ## [0.11.1] - 2020-08-18
+
 ### Fixed
 
 - [#2047] Conversion and token amount display in UDC deposit dialog
@@ -57,6 +69,7 @@
 [#1951]: https://github.com/raiden-network/light-client/issues/1951
 
 ## [0.11.0] - 2020-08-04
+
 ### Fixed
 
 - [#2031] "No open channels" displayed instead of 0 balance on transfer screen
@@ -96,6 +109,7 @@
 [#2033]: https://github.com/raiden-network/light-client/issues/2033
 
 ## [0.10.0] - 2020-07-13
+
 ### Added
 
 - [#1791] Introduces configuration for token network monitoring.
@@ -139,6 +153,7 @@
 [#1876]: https://github.com/raiden-network/light-client/pull/1876
 
 ## [0.9.0] - 2020-05-28
+
 ### Added
 
 - [#1473] Notify when receiving transfers get disabled (e.g. by low UDC balance)
@@ -167,6 +182,7 @@
 [#1489]: https://github.com/raiden-network/light-client/issues/1489
 
 ## [0.8.0] - 2020-05-14
+
 ### Added
 
 - [#1212] Allows user to view history of all transactions that has been made.
@@ -185,6 +201,7 @@
 [#1302]: https://github.com/raiden-network/light-client/issues/1302
 
 ## [0.7.0] - 2020-05-08
+
 ### Added
 
 - [#1365] Allow user to transfer ETH between Main and Raiden account.
@@ -216,6 +233,7 @@
 [#1427]: https://github.com/raiden-network/light-client/issues/1427
 
 ## [0.6.0] - 2020-04-21
+
 ### Added
 
 - [#1222] Enables state upload
@@ -236,6 +254,7 @@
 - No changes
 
 ## [0.5.1] - 2020-04-06
+
 ### Added
 
 - [#694] Show protocol progress steps on transfer modal.
@@ -253,6 +272,7 @@
 [#687]: https://github.com/raiden-network/light-client/issues/687
 
 ## [0.5.0] - 2020-03-27
+
 ### Added
 
 - [#691] Auto-suggesting hub on Goerli.
@@ -270,6 +290,7 @@
 [#1222]: https://github.com/raiden-network/light-client/issues/1222
 
 ## [0.4.2] - 2020-03-05
+
 ### Fixed
 
 - [#1139] Fix AddressInput value resetting when validation fails
@@ -277,6 +298,7 @@
 [#1139]: https://github.com/raiden-network/light-client/issues/1139
 
 ## [0.4.1] - 2020-03-04
+
 ### Fixed
 
 - [#1116] Fixed unhandled exception on transfer error dialog on PFS expected errors
@@ -290,6 +312,7 @@
 [#1116]: https://github.com/raiden-network/light-client/issues/1116
 
 ## [0.4.0] - 2020-02-28
+
 ### Added
 
 - [#745] Possibility to connect LC with derived subkey
@@ -319,6 +342,7 @@
 [#693]: https://github.com/raiden-network/light-client/issues/693
 
 ## [0.3.0] - 2020-02-07
+
 ### Added
 
 - [#218] Matrix availability check to address inputs.
@@ -354,6 +378,7 @@
 [#543]: https://github.com/raiden-network/light-client/issues/543
 
 ## [0.2] - 2019-11-29
+
 ### Added
 
 - Add PFS route selection functionality.
@@ -393,6 +418,7 @@
 - Remove connected token screen.
 
 ## [0.1.1] - 2019-10-07
+
 ### Added
 
 - Add route guards.
@@ -410,6 +436,7 @@
 - Fix transfer/deposit erroneously allowing the user to deposit/transfer when no open channel exists.
 
 ## [0.1] - 2019-08-21
+
 ### Added
 
 - Add a basic dApp layout.
@@ -427,7 +454,7 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.12.0...HEAD
+[unreleased]: https://github.com/raiden-network/light-client/compare/v0.12.0...HEAD
 [0.12.0]: https://github.com/raiden-network/light-client/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/raiden-network/light-client/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/raiden-network/light-client/compare/v0.10.0...v0.11.0
