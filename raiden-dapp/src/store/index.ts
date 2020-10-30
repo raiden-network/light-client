@@ -54,6 +54,7 @@ const _defaultState: RootState = {
   config: {},
   userDepositTokenAddress: '',
   disclaimerAccepted: false,
+  latestStateBackupReminder: 0,
   persistDisclaimerAcceptance: false,
 };
 
@@ -76,14 +77,17 @@ const settingsLocalStorage = new VuexPersistence<RootState>({
   key: 'raiden_dapp_settings',
 });
 
-const disclaimerAcceptedLocalStorage = new VuexPersistence<RootState>({
+const miscellaneousLocalStorage = new VuexPersistence<RootState>({
   reducer: (state) => ({
     disclaimerAccepted: state.persistDisclaimerAcceptance
       ? state.disclaimerAccepted
       : false,
+    latestStateBackupReminder: state.latestStateBackupReminder,
   }),
-  filter: (mutation) => mutation.type === 'acceptDisclaimer',
-  key: 'raiden_dapp_disclaimer_accepted',
+  filter: (mutation) =>
+    mutation.type === 'acceptDisclaimer' ||
+    mutation.type === 'stateBackupReminder',
+  key: 'miscellaneous',
 });
 
 const store: StoreOptions<RootState> = {
@@ -159,6 +163,9 @@ const store: StoreOptions<RootState> = {
     acceptDisclaimer(state: RootState, persistDecision: boolean) {
       state.disclaimerAccepted = true;
       state.persistDisclaimerAcceptance = persistDecision;
+    },
+    stateBackupReminder(state: RootState, newReminderDate: number) {
+      state.latestStateBackupReminder = newReminderDate;
     },
   },
   actions: {},
@@ -259,7 +266,7 @@ const store: StoreOptions<RootState> = {
       return !!state.settings.useRaidenAccount;
     },
   },
-  plugins: [settingsLocalStorage.plugin, disclaimerAcceptedLocalStorage.plugin],
+  plugins: [settingsLocalStorage.plugin, miscellaneousLocalStorage.plugin],
   modules: {
     notifications,
   },
