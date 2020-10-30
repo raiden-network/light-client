@@ -56,7 +56,13 @@ export function fromEthersEvent<T>(
     if (!fromBlock) {
       // 'resetEventsBlock' is private, set at [[Raiden]] constructor, so we need 'any'
       let resetBlock: number = (target as any)._lastBlockNumber;
-      resetBlock = resetBlock && resetBlock > 0 ? resetBlock : target.blockNumber ?? 1;
+      const innerBlockNumber = target.blockNumber;
+      resetBlock =
+        resetBlock && resetBlock > 0
+          ? resetBlock
+          : innerBlockNumber && innerBlockNumber > 0
+          ? innerBlockNumber
+          : 1;
       fromBlock = resetBlock - confirmations;
     }
     blockQueue.push(fromBlock); // starts 'blockQueue' with subscription-time's resetEventsBlock
