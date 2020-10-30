@@ -1,13 +1,12 @@
 import ganache, { GanacheServerOptions } from 'ganache-cli';
-import memdown from 'memdown';
 import { range } from 'lodash';
 import asyncPool from 'tiny-async-pool';
 import log from 'loglevel';
 
-import { Web3Provider, AsyncSendable } from 'ethers/providers';
-import { MaxUint256, AddressZero } from 'ethers/constants';
-import { ContractFactory } from 'ethers/contract';
-import { parseUnits, ParamType } from 'ethers/utils';
+import { Web3Provider, ExternalProvider } from '@ethersproject/providers';
+import { MaxUint256, AddressZero } from '@ethersproject/constants';
+import { ContractFactory } from '@ethersproject/contracts';
+import { parseUnits } from '@ethersproject/units';
 
 import { ContractsInfo } from 'raiden-ts/types';
 import { Address, last } from 'raiden-ts/utils/types';
@@ -21,28 +20,36 @@ import { MonitoringService } from 'raiden-ts/contracts/MonitoringService';
 import { OneToN } from 'raiden-ts/contracts/OneToN';
 import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
 
+const createdProviders: TestProvider[] = [];
+
+afterEach(() => {
+  let provider;
+  while ((provider = createdProviders.pop())) provider.removeAllListeners();
+});
+
 export class TestProvider extends Web3Provider {
-  public constructor(web3?: AsyncSendable, opts?: GanacheServerOptions) {
-    super(
-      web3 ??
-        ganache.provider({
-          total_accounts: 5,
-          default_balance_ether: 5,
-          seed: 'testrpc_provider',
-          network_id: 1338,
-          db: memdown(),
-          // logger: console,
-          ...opts,
-        }),
-    );
+  public constructor(web3?: ExternalProvider, opts?: GanacheServerOptions) {
+    const chainId = opts?.network_id ?? 1338;
+    const server = ganache.provider({
+      total_accounts: 5,
+      default_balance_ether: 5,
+      seed: 'testrpc_provider',
+      network_id: chainId,
+      _chainId: chainId,
+      _chainIdRpc: chainId,
+      // logger: console,
+      ...opts,
+    });
+    super(web3 ?? server);
+    createdProviders.push(this);
   }
 
   public snapshot(): Promise<number> {
-    return this.send('evm_snapshot', null);
+    return this.send('evm_snapshot', []);
   }
 
   public revert(id: number): Promise<boolean> {
-    return this.send('evm_revert', id);
+    return this.send('evm_revert', [id]);
   }
 
   public async mine(count = 1): Promise<number> {
@@ -56,8 +63,8 @@ export class TestProvider extends Web3Provider {
       };
       this.on('block', cb);
     });
-    asyncPool(10, range(count), () => this.send('evm_mine', null));
-    return promise;
+    asyncPool(10, range(count), () => this.send('evm_mine', []));
+    return await promise;
   }
 
   public async mineUntil(block: number): Promise<number> {
@@ -72,8 +79,8 @@ export class TestProvider extends Web3Provider {
       };
       this.on('block', cb);
     });
-    asyncPool(10, range(block - blockNumber), () => this.send('evm_mine', null));
-    return promise;
+    asyncPool(10, range(block - blockNumber), () => this.send('evm_mine', []));
+    return await promise;
   }
 
   public async deployRegistry(): Promise<ContractsInfo> {
@@ -82,7 +89,7 @@ export class TestProvider extends Web3Provider {
       signer = this.getSigner(address);
 
     const secretRegistryContract = (await new ContractFactory(
-      Contracts.contracts.SecretRegistry.abi as ParamType[],
+      Contracts.contracts.SecretRegistry.abi,
       Contracts.contracts.SecretRegistry.bin,
       signer,
     ).deploy()) as SecretRegistry;
@@ -90,7 +97,7 @@ export class TestProvider extends Web3Provider {
     const secretRegistryDeployBlock = secretRegistryContract.deployTransaction.blockNumber;
 
     const registryContract = (await new ContractFactory(
-      Contracts.contracts.TokenNetworkRegistry.abi as ParamType[],
+      Contracts.contracts.TokenNetworkRegistry.abi,
       Contracts.contracts.TokenNetworkRegistry.bin,
       signer,
     ).deploy(
@@ -105,7 +112,7 @@ export class TestProvider extends Web3Provider {
 
     // controller token for service registry
     const tokenContract = (await new ContractFactory(
-      Contracts.contracts.CustomToken.abi as ParamType[],
+      Contracts.contracts.CustomToken.abi,
       Contracts.contracts.CustomToken.bin,
       signer,
     ).deploy(parseUnits('1000000', 18), 18, `ControllerToken`, `CTK`)) as CustomToken;
@@ -113,7 +120,7 @@ export class TestProvider extends Web3Provider {
 
     const amount = 1e6;
     const serviceRegistryContract = (await new ContractFactory(
-      Contracts.contracts.ServiceRegistry.abi as ParamType[],
+      Contracts.contracts.ServiceRegistry.abi,
       Contracts.contracts.ServiceRegistry.bin,
       signer,
     ).deploy(
@@ -130,14 +137,14 @@ export class TestProvider extends Web3Provider {
     const serviceRegistryDeployBlock = serviceRegistryContract.deployTransaction.blockNumber;
 
     // mint CTK to deployer
-    await (await tokenContract.functions.mintFor(parseUnits('1000', 18), address)).wait();
+    await (await tokenContract.mintFor(parseUnits('1000', 18), address)).wait();
     // approve service registry transfering amount from deployer
-    await (await tokenContract.functions.approve(serviceRegistryContract.address, amount)).wait();
+    await (await tokenContract.approve(serviceRegistryContract.address, amount)).wait();
     await this.mine();
     // deposit amount tokens to service registry
-    await (await serviceRegistryContract.functions.deposit(amount)).wait();
+    await (await serviceRegistryContract.deposit(amount)).wait();
     // setURL for service registry
-    await (await serviceRegistryContract.functions.setURL('https://pfs.raiden.test')).wait();
+    await (await serviceRegistryContract.setURL('https://pfs.raiden.test')).wait();
 
     const userDepositContract = (await new ContractFactory(
       Contracts.contracts.UserDeposit.abi,
@@ -172,10 +179,7 @@ export class TestProvider extends Web3Provider {
     await oneToNContract.deployed();
     const oneToNDeployBlock = oneToNContract.deployTransaction.blockNumber;
 
-    await userDepositContract.functions.init(
-      monitoringServiceContract.address,
-      oneToNContract.address,
-    );
+    await userDepositContract.init(monitoringServiceContract.address, oneToNContract.address);
 
     return {
       TokenNetworkRegistry: {
@@ -229,15 +233,13 @@ export class TestProvider extends Web3Provider {
     ).deploy(parseUnits('1000000', 18), 18, `TestToken${next}`, `TK${next}`)) as CustomToken;
     await tokenContract.deployed();
 
-    const decimals = await tokenContract.functions.decimals();
+    const decimals = await tokenContract.decimals();
     const txs = await Promise.all(
-      accounts.map((account) =>
-        tokenContract.functions.mintFor(parseUnits('1000', decimals), account),
-      ),
+      accounts.map((account) => tokenContract.mintFor(parseUnits('1000', decimals), account)),
     );
     await Promise.all(txs);
 
-    const tx = await registryContract.functions.createERC20TokenNetwork(
+    const tx = await registryContract.createERC20TokenNetwork(
       tokenContract.address,
       MaxUint256,
       MaxUint256,
@@ -245,7 +247,7 @@ export class TestProvider extends Web3Provider {
     );
     await tx.wait();
 
-    const tokenNetworkAddress = await registryContract.functions.token_to_token_networks(
+    const tokenNetworkAddress = await registryContract.token_to_token_networks(
       tokenContract.address,
     );
 

@@ -1,7 +1,8 @@
 import { OpenMode, promises as fs } from 'fs';
-import { bigNumberify } from 'ethers/utils';
 import { filter } from 'rxjs/operators';
-import { Signer, Wallet } from 'ethers';
+import { BigNumber } from '@ethersproject/bignumber';
+import { Wallet } from '@ethersproject/wallet';
+import type { Signer } from '@ethersproject/abstract-signer';
 
 import { assert } from 'raiden-ts/utils';
 import { Raiden } from 'raiden-ts/raiden';
@@ -77,7 +78,7 @@ describe('e2e', () => {
   });
 
   test('account is funded', async () => {
-    await expect(raiden.getBalance(raiden.address)).resolves.toEqual(bigNumberify(ethBalance));
+    await expect(raiden.getBalance(raiden.address)).resolves.toEqual(BigNumber.from(ethBalance));
   });
 
   describe('mediated transfer', () => {
@@ -86,7 +87,7 @@ describe('e2e', () => {
     test('mint TTT', async () => {
       await expect(raiden.mint(getToken(), tttBalance)).resolves.toMatch('0x');
       await expect(raiden.getTokenBalance(getToken())).resolves.toStrictEqual(
-        bigNumberify(tttBalance),
+        BigNumber.from(tttBalance),
       );
     });
 
@@ -102,12 +103,12 @@ describe('e2e', () => {
       ).resolves.toMatch('0x');
       await expect(
         raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
-      ).resolves.toStrictEqual(bigNumberify(svtBalance));
+      ).resolves.toStrictEqual(BigNumber.from(svtBalance));
     });
 
     test('deposit to UDC', async () => {
       await expect(raiden.depositToUDC(svtBalance)).resolves.toMatch('0x');
-      await expect(raiden.getUDCCapacity()).resolves.toStrictEqual(bigNumberify(svtBalance));
+      await expect(raiden.getUDCCapacity()).resolves.toStrictEqual(BigNumber.from(svtBalance));
 
       // Give PFS some time
       await wait(3000);
@@ -116,7 +117,7 @@ describe('e2e', () => {
     test('find routes to partner #2', async () => {
       await expect(raiden.getAvailability(partner2)).resolves.toMatchObject({ available: true });
       routes = await raiden.findRoutes(getToken(), partner2, 50);
-      expect(routes).toMatchObject([{ fee: bigNumberify(0), path: [partner1, partner2] }]);
+      expect(routes).toMatchObject([{ fee: BigNumber.from(0), path: [partner1, partner2] }]);
     });
 
     test('10 consecutive transfers to partner #2', async () => {

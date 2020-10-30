@@ -1,4 +1,4 @@
-import { Wallet } from 'ethers';
+import { Wallet } from '@ethersproject/wallet';
 import { BigNumber } from '@ethersproject/bignumber';
 import { One, Zero } from '@ethersproject/constants';
 import {
