@@ -8,7 +8,12 @@
     "doc": "docs"
   },
   "scripts": {
-    "preinstall": "npx only-allow pnpm"
+    "preinstall": "npx only-allow yarn",
+    "start": "yarn workspace raiden-ts build && yarn workspace raiden-dapp run serve",
+    "build": "yarn workspaces run build",
+    "lint": "yarn workspaces run lint",
+    "test": "yarn workspace raiden-ts test && yarn workspace raiden-dapp test",
+    "prepare": "rimraf ./node_modules/matrix-js-sdk/lib/*.d.ts && yarn workspace raiden-ts prepare"
   },
   "repository": {
     "type": "git",
@@ -18,5 +23,13 @@
   "bugs": {
     "url": "https://github.com/raiden-network/light-client/issues"
   },
-  "homepage": "https://github.com/raiden-network/light-client#readme"
+  "homepage": "https://github.com/raiden-network/light-client#readme",
+  "workspaces": [
+    "raiden-ts",
+    "raiden-dapp",
+    "raiden-cli"
+  ],
+  "devDependencies": {
+    "rimraf": "^3.0.2"
+  }
 }

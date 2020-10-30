@@ -15,7 +15,7 @@
     "i18n:report": "vue-cli-service i18n:report --src './src/**/*.?(js|vue)' --locales './src/locales/**/*.json'",
     "lint": "vue-cli-service lint --no-fix --max-warnings 0 && stylelint ./src/**/*.{vue,scss}",
     "serve:no-logging": "export NODE_ENV=nologging && vue-cli-service serve",
-    "preinstall": "npx only-allow pnpm"
+    "preinstall": "npx only-allow yarn"
   },
   "dependencies": {
     "babel-plugin-istanbul": "^6.0.0",
