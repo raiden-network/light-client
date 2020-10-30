@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare module 'ganache-cli' {
   import 'jest-extended';
-  import { Http2Server } from 'http2';
-  import { AsyncSendable } from 'ethers/providers';
+  import type { Http2Server } from 'http2';
+  import type { ExternalProvider } from '@ethersproject/providers';
 
   export interface GanacheServerOptions {
     accounts?: { balance: string; secretKey?: string }[];
@@ -17,6 +17,8 @@ declare module 'ganache-cli' {
     fork?: string;
     fork_block_number?: string | number;
     network_id?: number;
+    _chainIdRpc?: number;
+    _chainId?: number;
     time?: Date;
     locked?: boolean;
     unlocked_accounts?: string[];
@@ -34,7 +36,7 @@ declare module 'ganache-cli' {
   }
 
   export interface Ganache {
-    provider(options?: GanacheServerOptions): AsyncSendable;
+    provider(options?: GanacheServerOptions): ExternalProvider;
     server(options?: GanacheServerOptions): Http2Server;
   }
 

@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { timer } from 'rxjs';
 import { first, filter, takeUntil, take, toArray } from 'rxjs/operators';
-import { Zero } from 'ethers/constants';
-import { parseEther, parseUnits, bigNumberify, BigNumber, keccak256, Network } from 'ethers/utils';
+import { Zero } from '@ethersproject/constants';
+import { parseEther, parseUnits } from '@ethersproject/units';
+import { BigNumber } from '@ethersproject/bignumber';
+import { keccak256 } from '@ethersproject/keccak256';
+import type { Network } from '@ethersproject/networks';
 import logging from 'loglevel';
 logging.setDefaultLevel(logging.levels.DEBUG);
 
@@ -11,7 +14,7 @@ import { MockMatrixRequestFn } from './mocks';
 
 // mock waitConfirmation Raiden helper to also trigger provider.mine
 jest.mock('raiden-ts/helpers', () => {
-  const actual = jest.requireActual('raiden-ts/helpers');
+  const actual = jest.requireActual<typeof import('raiden-ts/helpers')>('raiden-ts/helpers');
   return {
     ...actual,
     waitConfirmation: jest.fn(
@@ -46,7 +49,7 @@ import { confirmationBlocks } from '../unit/fixtures';
 import { udcWithdrawn } from 'raiden-ts/services/actions';
 
 describe('Raiden', () => {
-  const provider = new TestProvider();
+  let provider = new TestProvider();
   let accounts: string[],
     contractsInfo: ContractsInfo,
     snapId: number | undefined,
@@ -88,7 +91,7 @@ describe('Raiden', () => {
     const raiden = await Raiden.create(
       // we need to create a new test provider, to avoid sharing provider instances,
       // but with same underlying ganache instance
-      new TestProvider(provider._web3Provider),
+      new TestProvider(provider.provider),
       account,
       { ...getStorageOpts(), ...storage },
       contractsInfo,
@@ -129,8 +132,8 @@ describe('Raiden', () => {
         toBlock: 'latest',
       }),
       parsed = serviceRegistryContract.interface.parseLog(events[0]);
-    pfsAddress = parsed.values[0] as string;
-    pfsUrl = await serviceRegistryContract.functions.urls(pfsAddress);
+    pfsAddress = parsed.args[0] as string;
+    pfsUrl = await serviceRegistryContract.urls(pfsAddress);
 
     pfsInfoResponse = {
       message: 'pfs message',
@@ -147,6 +150,7 @@ describe('Raiden', () => {
 
   beforeEach(async () => {
     if (snapId !== undefined) await provider.revert(snapId);
+    provider = new TestProvider(provider.provider);
     snapId = await provider.snapshot();
     await provider.getBlockNumber();
 
@@ -417,7 +421,7 @@ describe('Raiden', () => {
 
       await raiden.mint(await raiden.userDepositTokenAddress(), 10);
       await raiden.depositToUDC(10);
-      await expect(raiden.getUDCCapacity()).resolves.toEqual(bigNumberify(10));
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(BigNumber.from(10));
     });
   });
 
@@ -446,7 +450,7 @@ describe('Raiden', () => {
             tokenNetwork,
             partner,
             state: ChannelState.open,
-            ownDeposit: bigNumberify(117),
+            ownDeposit: BigNumber.from(117),
             partnerDeposit: Zero,
             settleTimeout: 20,
             balance: Zero,
@@ -488,9 +492,9 @@ describe('Raiden', () => {
             tokenNetwork,
             partner,
             state: ChannelState.open,
-            ownDeposit: bigNumberify(300),
+            ownDeposit: BigNumber.from(300),
             balance: Zero,
-            capacity: bigNumberify(300),
+            capacity: BigNumber.from(300),
           },
         },
       });
@@ -521,7 +525,7 @@ describe('Raiden', () => {
           [raiden.address]: {
             state: ChannelState.open,
             ownDeposit: Zero,
-            partnerDeposit: bigNumberify(200),
+            partnerDeposit: BigNumber.from(200),
           },
         },
       });
@@ -1120,7 +1124,7 @@ describe('Raiden', () => {
       });
 
       await expect(raiden.findRoutes(token, target, 23)).resolves.toEqual([
-        { path: [partner, target], fee: bigNumberify(0) },
+        { path: [partner, target], fee: BigNumber.from(0) },
       ]);
 
       expect(fetch).toHaveBeenCalledWith(
@@ -1178,7 +1182,7 @@ describe('Raiden', () => {
       });
 
       await expect(raiden.findRoutes(token, target, 23, { pfs: pfss[0] })).resolves.toEqual([
-        { path: [partner, target], fee: bigNumberify(0) },
+        { path: [partner, target], fee: BigNumber.from(0) },
       ]);
 
       expect(fetch).toHaveBeenCalledWith(
@@ -1252,7 +1256,7 @@ describe('Raiden', () => {
       await expect(raiden.directRoute(token, partner, 201)).resolves.toBeUndefined();
 
       await expect(raiden.directRoute(token, partner, 23)).resolves.toEqual([
-        { path: [partner], fee: bigNumberify(0) },
+        { path: [partner], fee: BigNumber.from(0) },
       ]);
     });
   });
@@ -1264,16 +1268,15 @@ describe('Raiden', () => {
     });
 
     test('should throw exception on main net', async () => {
-      expect.assertions(1);
-      raiden.stop();
-      raiden = await Raiden.create(
-        new TestProvider(undefined, { network_id: 1 }),
-        0,
-        getStorageOpts(),
-        contractsInfo,
-        config,
-      );
+      expect.assertions(3);
+
+      const provider = new TestProvider(undefined, { network_id: 1 });
+      await expect(provider.getNetwork()).resolves.toMatchObject({ chainId: 1 });
+
+      const raiden = await Raiden.create(provider, 0, getStorageOpts(), contractsInfo, config);
+      expect(raiden.network).toMatchObject({ chainId: 1 });
       raidens.push(raiden);
+
       await expect(
         raiden.mint('0x3a989D97388a39A0B5796306C615d10B7416bE77', 50),
       ).rejects.toThrowError('Minting is only allowed on test networks.');
@@ -1303,14 +1306,14 @@ describe('Raiden', () => {
       await raiden.mint(await raiden.userDepositTokenAddress(), 20);
       await expect(raiden.depositToUDC(10)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
       await expect(raiden.depositToUDC(5)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
-      await expect(raiden.getUDCCapacity()).resolves.toEqual(bigNumberify(15));
+      await expect(raiden.getUDCCapacity()).resolves.toEqual(BigNumber.from(15));
     });
 
     test('withdraw success!', async () => {
       expect.assertions(7);
-      const deposit = bigNumberify(100) as UInt<32>;
-      const newDeposit = bigNumberify(30) as UInt<32>;
-      const withdraw = bigNumberify(80) as UInt<32>;
+      const deposit = BigNumber.from(100) as UInt<32>;
+      const newDeposit = BigNumber.from(30) as UInt<32>;
+      const withdraw = BigNumber.from(80) as UInt<32>;
       await raiden.mint(await raiden.userDepositTokenAddress(), deposit);
       await expect(raiden.depositToUDC(deposit)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
       await expect(raiden.getUDCCapacity()).resolves.toEqual(deposit);
@@ -1338,8 +1341,8 @@ describe('Raiden', () => {
 
     test('withdraw success with restart', async () => {
       expect.assertions(5);
-      const deposit = bigNumberify(100) as UInt<32>;
-      const withdraw = bigNumberify(80) as UInt<32>;
+      const deposit = BigNumber.from(100) as UInt<32>;
+      const withdraw = BigNumber.from(80) as UInt<32>;
       await raiden.mint(await raiden.userDepositTokenAddress(), deposit);
       await expect(raiden.depositToUDC(deposit)).resolves.toMatch(/^0x[0-9a-fA-F]{64}$/);
       await expect(raiden.getUDCCapacity()).resolves.toEqual(deposit);
