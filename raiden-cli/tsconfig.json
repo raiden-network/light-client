@@ -10,11 +10,7 @@
     "sourceMap": true,
     "allowJs": true,
     "lib": ["ES2019", "dom"],
-    "baseUrl": ".",
-    "paths": {
-      "matrix-js-sdk": ["node_modules/raiden-ts/node_modules/@types/matrix-js-sdk/index.d.ts"],
-      "*": ["../raiden-ts/node_modules/*", "node_modules/@types/*", "node_modules/*", "*"]
-    }
+    "baseUrl": "."
   },
   "include": [
     "./src/**/*.ts"

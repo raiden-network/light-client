@@ -18,17 +18,7 @@
       ],
       "vuex": [
         "typings/vuex.d.ts"
-      ],
-      "rxjs": [
-        "node_modules/rxjs"
-      ],
-      "rxjs/*": [
-        "node_modules/rxjs/*"
-      ],
-      "ethers": [
-        "node_modules/ethers/"
-      ],
-      "matrix-js-sdk": ["node_modules/raiden-ts/node_modules/@types/matrix-js-sdk/index.d.ts"]
+      ]
     },
     "lib": [
       "esnext",
@@ -45,7 +35,6 @@
     "tests/**/*.tsx"
   ],
   "exclude": [
-    "node_modules",
     "tests/e2e/**/*.ts"
   ]
 }

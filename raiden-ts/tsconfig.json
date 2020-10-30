@@ -11,9 +11,6 @@
     "pretty": true,
     "lib": ["ES2019", "dom"],
     "baseUrl": ".",
-    "paths": {
-      "matrix-js-sdk": ["./node_modules/@types/matrix-js-sdk/index.d.ts"]
-    },
     "outDir": "./dist/"
   },
   "include": ["./src/**/*.ts"],

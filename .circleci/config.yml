@@ -1,7 +1,7 @@
 version: 2.1
 
 var_1: &docker_image raidennetwork/lightclient-node-pnpm:latest
-var_2: &cache_key raiden-{{ .Branch }}-{{ checksum "pnpm-lock.yaml" }}
+var_2: &cache_key raiden-{{ .Branch }}-{{ checksum "yarn.lock" }}
 var_3: &working_dir ~/src
 var_4: &dapp_working_dir ~/src/raiden-dapp
 
@@ -77,11 +77,10 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - restore_cache: *package_lock_key
-      - run: pnpm install --prefer-frozen-lockfile
+      - run: yarn install
       - save_cache:
           <<: *package_lock_key
           paths:
-            - ~/.pnpm-store
             - ~/.cache # Cypress stores its stuff here.
       - persist_to_workspace:
           root: *working_dir
@@ -93,7 +92,7 @@ jobs:
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
-      - run: pnpm run lint -r
+      - run: yarn lint
 
   test_sdk_unit:
     executor: base-executor
@@ -102,7 +101,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: pnpm run test:unit --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
+          command: yarn workspace raiden-ts run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -120,7 +119,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: pnpm run test:integration --filter raiden-ts -- --ci --runInBand --reporters=default --reporters=jest-junit
+          command: yarn workspace raiden-ts run test:integration --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -138,7 +137,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: pnpm run test:unit --filter raiden-dapp -- --ci --runInBand --reporters=default --reporters=jest-junit
+          command: yarn workspace raiden-dapp run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
       - store_test_results:
@@ -156,7 +155,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run e2e tests
-          command: pnpm run test:e2e --filter raiden-dapp -- --headless
+          command: yarn workspace raiden-dapp run test:e2e --headless
       - store_test_results:
           path: raiden-dapp/tests/e2e/results/reports
       - store_artifacts:
@@ -170,7 +169,7 @@ jobs:
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
-      - run: pnpm run build --filter raiden-ts
+      - run: yarn workspace raiden-ts build
       - persist_to_workspace:
           root: *working_dir
           paths:
@@ -188,7 +187,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Build dapp
-          command: pnpm run build --filter raiden-dapp -- --mode << parameters.mode >>
+          command: yarn workspace raiden-dapp build --mode << parameters.mode >>
       - run:
           name: Compress dapp
           command: cd raiden-dapp && tar -czvf dapp.tar.gz dist
@@ -207,7 +206,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Build CLI
-          command: pnpm run build --filter raiden-cli && pnpm run build:bundle --filter raiden-cli
+          command: yarn workspace raiden-cli run build && yarn workspace raiden-cli run build:bundle
       - run:
           name: Compress CLI bundle
           command: >
@@ -253,7 +252,7 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
       - run:
           name: Publish on npm
-          command: pnpm publish --no-git-checks --filter raiden-ts
+          command: yarn workspace raiden-ts publish
 
   test_sdk_e2e:
     executor: e2e-environment-executor
@@ -264,7 +263,7 @@ jobs:
           name: Run end-to-end tests
           command: >
             source /etc/profile.d/smartcontracts.sh &&
-            pnpm run test:e2e --filter raiden-ts --
+            yarn workspace raiden-ts run test:e2e --
             --ci --runInBand --forceExit
             --reporters=default --reporters=jest-junit
           environment:

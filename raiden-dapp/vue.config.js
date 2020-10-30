@@ -24,13 +24,6 @@ module.exports = {
       .use('i18n')
       .loader('@kazupon/vue-i18n-loader')
       .end();
-    const commonModules = ['ethers', 'rxjs', 'lodash', 'loglevel'];
-    for (const mod of commonModules) {
-      config.resolve.alias.set(
-        mod,
-        path.resolve(__dirname, `node_modules/${mod}`)
-      );
-    }
   },
 
   pluginOptions: {
