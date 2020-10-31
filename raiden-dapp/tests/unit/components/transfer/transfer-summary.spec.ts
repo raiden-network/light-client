@@ -17,11 +17,11 @@ const createWrapper = (transfer: Transfer) =>
   mount(TransferSummary, {
     vuetify,
     mocks: {
-      $t: (msg: string) => msg
+      $t: (msg: string) => msg,
     },
     propsData: {
-      transfer
-    }
+      transfer,
+    },
   });
 
 describe('TransferSummary.vue', () => {
@@ -68,7 +68,7 @@ describe('TransferSummary.vue', () => {
   test('show explanation if mediated transfer w/ zero fees', () => {
     wrapper = createWrapper({
       ...mediatedTransfer,
-      mediationFee: BigNumber.from(0)
+      mediationFee: BigNumber.from(0),
     });
 
     const explanations = wrapper.find('.transfer-summary__explanation');

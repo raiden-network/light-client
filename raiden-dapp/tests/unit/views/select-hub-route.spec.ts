@@ -30,7 +30,7 @@ describe('SelectHubRoute.vue', () => {
 
   const testToken = (address: string) =>
     Object.assign(TestData.token, {
-      address: address
+      address: address,
     });
 
   function createWrapper(
@@ -55,10 +55,10 @@ describe('SelectHubRoute.vue', () => {
           getUDCCapacity: jest.fn().mockResolvedValue(BigNumber.from('2')),
           getMainAccount: jest.fn(),
           getAccount: jest.fn(),
-          ...raidenMocks
+          ...raidenMocks,
         },
-        $t: (msg: string) => msg
-      }
+        $t: (msg: string) => msg,
+      },
     };
     if (shallow) {
       return shallowMount(SelectHubRoute, options);
@@ -71,7 +71,7 @@ describe('SelectHubRoute.vue', () => {
     router.push = jest.fn().mockResolvedValue(null);
     store.commit('reset');
     store.commit('updatePresence', {
-      ['0x1D36124C90f53d491b6832F1c073F43E2550E35b']: true
+      ['0x1D36124C90f53d491b6832F1c073F43E2550E35b']: true,
     });
     store.commit(
       'userDepositTokenAddress',
@@ -83,8 +83,8 @@ describe('SelectHubRoute.vue', () => {
         name: 'ServiceToken',
         symbol: 'SVT',
         decimals: 18,
-        balance: constants.One
-      } as Token
+        balance: constants.One,
+      } as Token,
     } as Tokens);
   });
 
@@ -95,7 +95,7 @@ describe('SelectHubRoute.vue', () => {
   test('navigate to "OpenChannel when the user selects a hub', async () => {
     const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
     const route = TestData.mockRoute({
-      token: tokenAddress
+      token: tokenAddress,
     });
     const token = testToken(tokenAddress);
     store.commit('updateTokens', { [tokenAddress]: token });
@@ -115,11 +115,11 @@ describe('SelectHubRoute.vue', () => {
   test('displays error if UDC capacity is not sufficient', async () => {
     const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
     const route = TestData.mockRoute({
-      token: tokenAddress
+      token: tokenAddress,
     });
     wrapper = createWrapper(route, {
       monitoringReward: BigNumber.from('2'),
-      getUDCCapacity: jest.fn().mockReturnValue(BigNumber.from('1'))
+      getUDCCapacity: jest.fn().mockReturnValue(BigNumber.from('1')),
     });
 
     await wrapper.vm.$nextTick();
@@ -135,7 +135,7 @@ describe('SelectHubRoute.vue', () => {
 
   test('navigate to "Home" when the token address is not in checksum format', async () => {
     const route = TestData.mockRoute({
-      token: '0xtoken'
+      token: '0xtoken',
     });
     wrapper = createWrapper(route, {}, true);
     await wrapper.vm.$nextTick();
@@ -143,14 +143,14 @@ describe('SelectHubRoute.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.HOME
+        name: RouteNames.HOME,
       })
     );
   });
 
   test('navigate to "Home" when the token cannot be found', async () => {
     const route = TestData.mockRoute({
-      token: '0xc778417E063141139Fce010982780140Aa0cD5Ab'
+      token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
     });
 
     wrapper = createWrapper(route, {}, true);
@@ -161,7 +161,7 @@ describe('SelectHubRoute.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.HOME
+        name: RouteNames.HOME,
       })
     );
   });
@@ -169,7 +169,7 @@ describe('SelectHubRoute.vue', () => {
   test('auto suggest our hub on goerli if not connected yet', async () => {
     const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
     const route = TestData.mockRoute({
-      token: tokenAddress
+      token: tokenAddress,
     });
     const token = testToken(tokenAddress);
     store.commit('updateTokens', { [tokenAddress]: token });

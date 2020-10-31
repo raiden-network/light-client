@@ -28,12 +28,12 @@ describe('TransferHeaders.vue', () => {
       stubs: ['v-menu', 'v-dialog'],
       mocks: {
         $router: router,
-        $t: (msg: string) => msg
+        $t: (msg: string) => msg,
       },
       propsData: {
         token,
-        capacity
-      }
+        capacity,
+      },
     });
   };
 
@@ -117,7 +117,7 @@ describe('TransferHeaders.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.CHANNELS
+        name: RouteNames.CHANNELS,
       })
     );
   });

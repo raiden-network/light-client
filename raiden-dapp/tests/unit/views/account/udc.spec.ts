@@ -22,7 +22,7 @@ describe('UDC.vue', () => {
     name: 'Service Token',
     symbol: 'SVT',
     decimals: 18,
-    balance: constants.Zero
+    balance: constants.Zero,
   } as Token;
 
   function createWrapper() {
@@ -33,8 +33,8 @@ describe('UDC.vue', () => {
       mocks: {
         $identicon: $identicon(),
         $t: (msg: string) => msg,
-        $raiden
-      }
+        $raiden,
+      },
     });
   }
 
@@ -48,7 +48,7 @@ describe('UDC.vue', () => {
       mint: jest.fn(),
       depositToUDC: jest.fn(),
       getMainAccount: jest.fn(),
-      getAccount: jest.fn()
+      getAccount: jest.fn(),
     };
     store.commit('userDepositTokenAddress', '0x1234');
     store.commit('updateTokens', { '0x1234': token });

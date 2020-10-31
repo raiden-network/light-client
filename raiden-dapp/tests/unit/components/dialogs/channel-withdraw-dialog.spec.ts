@@ -57,7 +57,10 @@ describe('ChannelWithdraw.vue', () => {
     expect(messages.exists()).toBe(true);
     expect(messages.text()).toEqual('amount-input.error.not-enough-funds');
 
-    mockInput(wrapper, utils.formatUnits(channel.capacity, TestData.token.decimals));
+    mockInput(
+      wrapper,
+      utils.formatUnits(channel.capacity, TestData.token.decimals)
+    );
     await wrapper.vm.$nextTick();
     expect(wrapper.find('.v-messages__message').exists()).toBe(false);
   });

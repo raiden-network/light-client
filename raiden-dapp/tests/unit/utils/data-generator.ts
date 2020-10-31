@@ -4,7 +4,7 @@ import {
   RaidenTransfer,
   Address,
   RaidenChannel,
-  ChannelState
+  ChannelState,
 } from 'raiden-ts';
 import { Token } from '@/model/types';
 
@@ -45,7 +45,7 @@ export function generateToken(partialToken: Partial<Token> = {}): Token {
     name: 'TestToken',
     symbol: 'TTT',
     balance: constants.Zero,
-    ...partialToken
+    ...partialToken,
   } as Token;
 }
 
@@ -72,7 +72,7 @@ export function generateTransfer(
     initiator: getRandomEthereumAddress(),
     target: getRandomEthereumAddress(),
     success: undefined,
-    ...partialTransfer
+    ...partialTransfer,
   } as RaidenTransfer;
 }
 
@@ -93,6 +93,6 @@ export function generateChannel(
     balance: constants.Zero,
     capacity: BigNumber.from(10 ** 8),
     ownWithdrawable: BigNumber.from(10 ** 8),
-    ...partialChannel
+    ...partialChannel,
   } as RaidenChannel;
 }

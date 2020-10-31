@@ -5,7 +5,7 @@ import {
   Address,
   ChannelState,
   RaidenChannel,
-  RaidenChannels
+  RaidenChannels,
 } from 'raiden-ts';
 import { Route } from 'vue-router';
 import { RouteNames } from '@/router/route-names';
@@ -22,7 +22,7 @@ export class TestData {
     decimals: 5,
     balance: utils.parseUnits('1.2', 5),
     name: 'TestToken',
-    symbol: 'TTT'
+    symbol: 'TTT',
   };
 
   static openChannel = {
@@ -37,7 +37,7 @@ export class TestData {
     ownDeposit: BigNumber.from(10 ** 8),
     balance: constants.Zero,
     capacity: BigNumber.from(10 ** 8),
-    ownWithdrawable: BigNumber.from(10 ** 8)
+    ownWithdrawable: BigNumber.from(10 ** 8),
   } as RaidenChannel;
 
   static settlingChannel = {
@@ -53,7 +53,7 @@ export class TestData {
     ownDeposit: BigNumber.from(10 ** 8),
     balance: constants.Zero,
     capacity: BigNumber.from(10 ** 8),
-    ownWithdrawable: BigNumber.from(10 ** 8)
+    ownWithdrawable: BigNumber.from(10 ** 8),
   } as RaidenChannel;
 
   static settlableChannel = {
@@ -69,7 +69,7 @@ export class TestData {
     ownDeposit: BigNumber.from(10 ** 8),
     balance: constants.Zero,
     capacity: BigNumber.from(10 ** 8),
-    ownWithdrawable: BigNumber.from(10 ** 8)
+    ownWithdrawable: BigNumber.from(10 ** 8),
   } as RaidenChannel;
 
   static closedChannel = {
@@ -85,21 +85,21 @@ export class TestData {
     ownDeposit: BigNumber.from(10 ** 8),
     balance: constants.Zero,
     capacity: BigNumber.from(10 ** 8),
-    ownWithdrawable: BigNumber.from(10 ** 8)
+    ownWithdrawable: BigNumber.from(10 ** 8),
   } as RaidenChannel;
 
   static mockChannelArray = [
     TestData.openChannel,
     TestData.settlingChannel,
     TestData.settlableChannel,
-    TestData.closedChannel
+    TestData.closedChannel,
   ];
 
   static mockChannels: RaidenChannels = {
     '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {
       '0x1D36124C90f53d491b6832F1c073F43E2550E35b': TestData.openChannel,
-      '0x82641569b2062B545431cF6D7F0A418582865ba7': TestData.settlingChannel
-    }
+      '0x82641569b2062B545431cF6D7F0A418582865ba7': TestData.settlingChannel,
+    },
   };
 
   static mockTokens: Tokens = {
@@ -108,8 +108,8 @@ export class TestData {
       decimals: 5,
       balance: utils.parseUnits('1.2', 5),
       name: 'TestToken',
-      symbol: 'TTT'
-    } as Token
+      symbol: 'TTT',
+    } as Token,
   };
 
   static mockRoute(
@@ -125,7 +125,7 @@ export class TestData {
       params,
       query: {},
       name: name,
-      meta: meta
+      meta: meta,
     };
   }
 
@@ -138,10 +138,10 @@ export class TestData {
       decimals: 5,
       balance: utils.parseUnits('1.2', 5),
       name: 'TestToken',
-      symbol: 'TTT'
+      symbol: 'TTT',
     } as Token,
     transferTotal: BigNumber.from(10 ** 8),
-    paymentId
+    paymentId,
   };
 
   static mockMediatedTransfer: Transfer = {
@@ -152,7 +152,7 @@ export class TestData {
       decimals: 5,
       balance: utils.parseUnits('1.2', 5),
       name: 'TestToken',
-      symbol: 'TTT'
+      symbol: 'TTT',
     } as Token,
     transferTotal: BigNumber.from(10 ** 8),
     hops: 1,
@@ -163,10 +163,10 @@ export class TestData {
       decimals: 5,
       balance: utils.parseUnits('1.2', 5),
       name: 'Service Token',
-      symbol: 'SVT'
+      symbol: 'SVT',
     } as Token,
     pfsAddress: 'https://pfsadr.org',
-    paymentId
+    paymentId,
   };
 
   static notifications: NotificationPayload = {
@@ -181,6 +181,6 @@ export class TestData {
     received: new Date('June 5, 1986'),
     txConfirmationBlock: 123,
     txHash: '0xTxHash',
-    txConfirmed: undefined
+    txConfirmed: undefined,
   };
 }

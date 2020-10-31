@@ -26,21 +26,21 @@ function createWrapper(
 ): Wrapper<Withdrawal> {
   $raiden = {
     getTokenBalance: jest.fn().mockResolvedValue(tokenBalance),
-    transferOnChainTokens: jest.fn()
+    transferOnChainTokens: jest.fn(),
   };
 
   const state = {
-    raidenAccountBalance
+    raidenAccountBalance,
   };
 
   const getters = {
     udcToken: () => {
       return {
         address: '0xuserdeposittoken',
-        balance: BigNumber.from('0')
+        balance: BigNumber.from('0'),
       };
     },
-    allTokens: () => []
+    allTokens: () => [],
   };
 
   const store = new Vuex.Store({ state, getters });
@@ -52,8 +52,8 @@ function createWrapper(
     mocks: {
       $identicon: $identicon(),
       $t: (msg: string) => msg,
-      $raiden
-    }
+      $raiden,
+    },
   });
 }
 

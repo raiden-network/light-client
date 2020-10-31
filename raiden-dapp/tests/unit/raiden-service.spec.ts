@@ -382,7 +382,13 @@ describe('RaidenService', () => {
         raiden.waitTransfer.mockResolvedValue(null as any);
 
         await expect(
-          raidenService.transfer('0xtoken', '0xpartner', constants.One, path, paymentId)
+          raidenService.transfer(
+            '0xtoken',
+            '0xpartner',
+            constants.One,
+            path,
+            paymentId
+          )
         ).resolves.toBeUndefined();
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
         expect(raiden.transfer).toHaveBeenCalledWith(
@@ -401,7 +407,13 @@ describe('RaidenService', () => {
         raiden.waitTransfer.mockRejectedValue(error);
 
         await expect(
-          raidenService.transfer('0xtoken', '0xpartner', constants.One, path, paymentId)
+          raidenService.transfer(
+            '0xtoken',
+            '0xpartner',
+            constants.One,
+            path,
+            paymentId
+          )
         ).rejects.toThrow(RaidenError);
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
         expect(raiden.transfer).toHaveBeenCalledWith(
@@ -421,7 +433,9 @@ describe('RaidenService', () => {
         .fn()
         .mockResolvedValue(constants.AddressZero as Address);
 
-      expect(await raidenService.ensResolve('domain.eth')).toEqual(constants.AddressZero);
+      expect(await raidenService.ensResolve('domain.eth')).toEqual(
+        constants.AddressZero
+      );
       expect(raiden.resolveName).toHaveBeenCalledTimes(1);
     });
 
@@ -438,20 +452,32 @@ describe('RaidenService', () => {
     describe('findRoutes', () => {
       test('rejects when it cannot find routes: no routes', async () => {
         const error = new Error('no path');
-        raiden.getAvailability = jest.fn().mockResolvedValue(constants.AddressZero);
+        raiden.getAvailability = jest
+          .fn()
+          .mockResolvedValue(constants.AddressZero);
         raiden.findRoutes = jest.fn().mockRejectedValue(error);
 
         await expect(
-          raidenService.findRoutes(constants.AddressZero, constants.AddressZero, constants.One)
+          raidenService.findRoutes(
+            constants.AddressZero,
+            constants.AddressZero,
+            constants.One
+          )
         ).rejects.toEqual(error);
       });
 
       test('resolves when it can find routes', async () => {
-        raiden.getAvailability = jest.fn().mockResolvedValueOnce(constants.AddressZero);
+        raiden.getAvailability = jest
+          .fn()
+          .mockResolvedValueOnce(constants.AddressZero);
         raiden.findRoutes = jest.fn().mockResolvedValueOnce([]);
 
         await expect(
-          raidenService.findRoutes(constants.AddressZero, constants.AddressZero, constants.One)
+          raidenService.findRoutes(
+            constants.AddressZero,
+            constants.AddressZero,
+            constants.One
+          )
         ).resolves.toEqual([]);
       });
     });
