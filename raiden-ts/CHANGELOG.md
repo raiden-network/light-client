@@ -4,7 +4,13 @@
 ### Fixed
 - [#2240] Handle network problems when connecting to the Eth node gracefully
 
+### Changed
+- [#1707] Upgrade ethers to v5
+- [#2289] Switch to yarn from pnpm
+
+[#1707]: https://github.com/raiden-network/light-client/issues/1707
 [#2240]: https://github.com/raiden-network/light-client/issues/2240
+[#2289]: https://github.com/raiden-network/light-client/pull/2289
 
 ## [0.12.0] - 2020-10-22
 ### Fixed
