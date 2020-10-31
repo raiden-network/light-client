@@ -46,7 +46,7 @@ describe('OpenChannelRoute.vue', () => {
       store,
       stubs: ['v-dialog'],
       propsData: {
-        current: 0
+        current: 0,
       },
       mixins: [NavigationMixin],
       mocks: {
@@ -54,8 +54,8 @@ describe('OpenChannelRoute.vue', () => {
         $router: router,
         $route: TestData.mockRoute(routeParams),
         $t: (msg: string) => msg,
-        $te: (msg: string) => msg
-      }
+        $te: (msg: string) => msg,
+      },
     };
 
     if (shallow) {
@@ -84,12 +84,12 @@ describe('OpenChannelRoute.vue', () => {
         '0xc778417E063141139Fce010982780140Aa0cD5Ab': {
           address: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
           decimals: 10,
-          balance: utils.parseUnits('2', 10)
-        } as Token
+          balance: utils.parseUnits('2', 10),
+        } as Token,
       } as Tokens);
       wrapper = createWrapper({
         token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-        partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
+        partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
       });
 
       button = wrapper.find('button.action-button__button');
@@ -118,7 +118,7 @@ describe('OpenChannelRoute.vue', () => {
       await wrapper.vm.$nextTick();
       await flushPromises();
       expect(wrapper.vm.$data.error).toMatchObject({
-        code: 'CNL_OPENCHANNEL_FAILED'
+        code: 'CNL_OPENCHANNEL_FAILED',
       });
       await flushPromises();
     });
@@ -133,7 +133,7 @@ describe('OpenChannelRoute.vue', () => {
       await wrapper.vm.$nextTick();
       await flushPromises();
       expect(wrapper.vm.$data.error).toMatchObject({
-        code: 'RDN_DEPOSIT_TRANSACTION_FAILED'
+        code: 'RDN_DEPOSIT_TRANSACTION_FAILED',
       });
       await flushPromises();
     });
@@ -158,7 +158,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.TRANSFER
+          name: RouteNames.TRANSFER,
         })
       );
       expect(loading).toHaveBeenCalledTimes(2);
@@ -177,7 +177,7 @@ describe('OpenChannelRoute.vue', () => {
     test('navigate to "Home" when the address is not in checksum format', async () => {
       wrapper = createWrapper(
         {
-          token: '0xc778417e063141139fce010982780140aa0cd5ab'
+          token: '0xc778417e063141139fce010982780140aa0cd5ab',
         },
         true
       );
@@ -187,7 +187,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.HOME
+          name: RouteNames.HOME,
         })
       );
     });
@@ -196,13 +196,13 @@ describe('OpenChannelRoute.vue', () => {
       store.commit('updateTokens', {
         '0xc778417E063141139Fce010982780140Aa0cD5Ab': {
           address: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-          decimals: 18
-        }
+          decimals: 18,
+        },
       });
       wrapper = createWrapper(
         {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-          partner: '0x1d36124c90f53d491b6832f1c073f43e2550e35b'
+          partner: '0x1d36124c90f53d491b6832f1c073f43e2550e35b',
         },
         true
       );
@@ -212,7 +212,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.SELECT_TOKEN
+          name: RouteNames.SELECT_TOKEN,
         })
       );
     });
@@ -221,7 +221,7 @@ describe('OpenChannelRoute.vue', () => {
       wrapper = createWrapper(
         {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-          partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
+          partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
         },
         true
       );
@@ -230,7 +230,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.HOME
+          name: RouteNames.HOME,
         })
       );
     });
@@ -242,7 +242,7 @@ describe('OpenChannelRoute.vue', () => {
       wrapper = createWrapper(
         {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-          partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
+          partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
         },
         true
       );
@@ -263,7 +263,7 @@ describe('OpenChannelRoute.vue', () => {
       const next = jest.fn();
       const mockRoute = TestData.mockRoute();
       wrapper.setData({
-        loading: true
+        loading: true,
       });
       beforeRouteLeave(mockRoute, mockRoute, next);
       expect(next).toHaveBeenCalled();
@@ -275,7 +275,7 @@ describe('OpenChannelRoute.vue', () => {
       const next = jest.fn();
       const mockRoute = TestData.mockRoute();
       wrapper.setData({
-        loading: true
+        loading: true,
       });
       beforeRouteLeave(mockRoute, mockRoute, next);
       expect(next).toHaveBeenCalled();

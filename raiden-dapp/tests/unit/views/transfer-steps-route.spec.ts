@@ -29,7 +29,7 @@ describe('TransferStepsRoute.vue', () => {
     price: 100,
     rtt: 62,
     token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-    url: 'https://pfs-goerli-with-fee.services-test.raiden.network'
+    url: 'https://pfs-goerli-with-fee.services-test.raiden.network',
   };
 
   const route = {
@@ -37,12 +37,12 @@ describe('TransferStepsRoute.vue', () => {
     fee: BigNumber.from(100),
     hops: 0,
     key: 0,
-    path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77']
+    path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
   } as Route;
 
   const freeRoute = {
     path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
-    fee: constants.Zero
+    fee: constants.Zero,
   } as Route;
 
   const $raiden = {
@@ -57,11 +57,11 @@ describe('TransferStepsRoute.vue', () => {
     findRoutes: jest.fn().mockResolvedValue([
       {
         path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
-        fee: BigNumber.from(100)
-      }
+        fee: BigNumber.from(100),
+      },
     ]),
     getMainAccount: jest.fn(),
-    getAccount: jest.fn()
+    getAccount: jest.fn(),
   };
 
   function createWrapper(data: any) {
@@ -75,22 +75,22 @@ describe('TransferStepsRoute.vue', () => {
         $route: {
           params: {
             target: '0xtarget',
-            token: '0x3a989D97388a39A0B5796306C615d10B7416bE77'
+            token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
           },
           query: {
             amount: '100000',
-            identifier: '123456789123456789123'
-          }
+            identifier: '123456789123456789123',
+          },
         },
         $t: (msg: string, args: object) =>
           `${msg} args: ${JSON.stringify(args)}`,
-        $raiden
+        $raiden,
       },
-      data: function() {
+      data: function () {
         return {
-          ...data
+          ...data,
         };
-      }
+      },
     });
   }
 
@@ -105,8 +105,8 @@ describe('TransferStepsRoute.vue', () => {
         name: 'ServiceToken',
         symbol: 'SVT',
         decimals: 18,
-        balance: constants.One
-      } as Token
+        balance: constants.One,
+      } as Token,
     } as Tokens);
   });
 
@@ -126,7 +126,7 @@ describe('TransferStepsRoute.vue', () => {
     expect.assertions(2);
     const wrapper = createWrapper({
       step: 1,
-      selectedPfs: raidenPFS
+      selectedPfs: raidenPFS,
     });
     await flushPromises();
     const button = wrapper.find('.action-button__button');
@@ -141,7 +141,7 @@ describe('TransferStepsRoute.vue', () => {
     expect.assertions(3);
     const wrapper = createWrapper({
       step: 1,
-      selectedPfs: raidenPFS
+      selectedPfs: raidenPFS,
     });
     $raiden.findRoutes.mockRejectedValueOnce(new Error('failed'));
     await flushPromises();
@@ -160,7 +160,7 @@ describe('TransferStepsRoute.vue', () => {
       step: 2,
       selectedPfs: raidenPFS,
       routes: [route],
-      selectedRoute: route
+      selectedRoute: route,
     });
 
     const button = wrapper.find('.action-button__button');
@@ -175,7 +175,7 @@ describe('TransferStepsRoute.vue', () => {
       step: 3,
       selectedPfs: raidenPFS,
       selectedRoute: route,
-      processingTransfer: false
+      processingTransfer: false,
     });
 
     processingTransfer = jest.spyOn(
@@ -206,7 +206,7 @@ describe('TransferStepsRoute.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.TRANSFER
+        name: RouteNames.TRANSFER,
       })
     );
   });
@@ -219,7 +219,7 @@ describe('TransferStepsRoute.vue', () => {
       selectedPfs: raidenPFS,
       selectedRoute: route,
       route: [route],
-      processingTransfer: false
+      processingTransfer: false,
     });
 
     processingTransfer = jest.spyOn(
@@ -263,7 +263,7 @@ describe('TransferStepsRoute.vue', () => {
     const wrapper = createWrapper({
       step: 1,
       selectedPfs: raidenPFS,
-      processingTransfer: false
+      processingTransfer: false,
     });
 
     await flushPromises();
@@ -280,13 +280,13 @@ describe('TransferStepsRoute.vue', () => {
     $raiden.findRoutes.mockResolvedValue([freeRoute]);
     const wrapper = createWrapper({
       step: 1,
-      processingTransfer: false
+      processingTransfer: false,
     });
 
     // @ts-ignore
     wrapper.vm.setPFS([
       { ...raidenPFS, price: constants.Zero } as RaidenPFS,
-      true
+      true,
     ]);
     await flushPromises();
     jest.advanceTimersByTime(2000);

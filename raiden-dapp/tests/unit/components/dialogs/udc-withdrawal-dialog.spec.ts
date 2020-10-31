@@ -13,7 +13,7 @@ import Mocked = jest.Mocked;
 import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
 
 Vue.use(Vuetify);
-describe('UdcWithdrawalDialog.vue', function() {
+describe('UdcWithdrawalDialog.vue', function () {
   let wrapper: Wrapper<UdcWithdrawalDialog>;
   let $raiden: Mocked<RaidenService>;
 
@@ -22,7 +22,7 @@ describe('UdcWithdrawalDialog.vue', function() {
     name: 'ServiceToken',
     symbol: 'SVT',
     decimals: 18,
-    balance: constants.One
+    balance: constants.One,
   };
   function createWrapper() {
     const vuetify = new Vuetify();
@@ -34,13 +34,13 @@ describe('UdcWithdrawalDialog.vue', function() {
         visible: true,
         accountBalance: '0.23',
         token,
-        capacity: utils.parseEther('10')
+        capacity: utils.parseEther('10'),
       },
       mocks: {
         $identicon: $identicon(),
         $t: (msg: string) => msg,
-        $raiden
-      }
+        $raiden,
+      },
     });
   }
 

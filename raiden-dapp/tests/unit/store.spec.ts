@@ -12,7 +12,7 @@ describe('store', () => {
       balance: constants.Zero,
       decimals: 18,
       name,
-      symbol
+      symbol,
     };
     return tokens;
   };
@@ -138,28 +138,28 @@ describe('store', () => {
         balance: constants.Zero,
         decimals: 18,
         name: 'Test Token 1',
-        symbol: 'TT1'
+        symbol: 'TT1',
       },
       '0x456': {
         address: '0x456',
         balance: BigNumber.from('3'),
         decimals: 18,
         name: 'Test Token 2',
-        symbol: 'TT2'
+        symbol: 'TT2',
       },
       '0x789': {
         address: '0x789',
         balance: constants.Zero,
         decimals: 18,
         name: 'Test Token 3',
-        symbol: 'TT3'
+        symbol: 'TT3',
       },
       '0x012': {
         address: '0x789',
         balance: constants.Zero,
         decimals: 18,
-        name: 'Test Token 4'
-      }
+        name: 'Test Token 4',
+      },
     };
 
     store.commit('updateTokens', tokens);
@@ -169,28 +169,28 @@ describe('store', () => {
         balance: BigNumber.from('3'),
         decimals: 18,
         name: 'Test Token 2',
-        symbol: 'TT2'
+        symbol: 'TT2',
       },
       {
         address: '0x123',
         balance: constants.Zero,
         decimals: 18,
         name: 'Test Token 1',
-        symbol: 'TT1'
+        symbol: 'TT1',
       },
       {
         address: '0x789',
         balance: constants.Zero,
         decimals: 18,
         name: 'Test Token 3',
-        symbol: 'TT3'
+        symbol: 'TT3',
       },
       {
         address: '0x789',
         balance: constants.Zero,
         decimals: 18,
-        name: 'Test Token 4'
-      }
+        name: 'Test Token 4',
+      },
     ]);
   });
 
@@ -215,7 +215,7 @@ describe('store', () => {
       balance: constants.Zero,
       decimals: 18,
       symbol: 'TTT',
-      name: 'Test Token'
+      name: 'Test Token',
     } as Token);
   });
 
@@ -259,15 +259,15 @@ describe('store', () => {
       const biggestChannel = {
         ...TestData.openChannel,
         capacity: BigNumber.from(20 ** 8),
-        partner: '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103'
+        partner: '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103',
       };
       const mockChannels = {
         '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {
           '0x1D36124C90f53d491b6832F1c073F43E2550E35b': TestData.openChannel,
           '0x82641569b2062B545431cF6D7F0A418582865ba7':
             TestData.settlingChannel,
-          '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103': biggestChannel
-        }
+          '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103': biggestChannel,
+        },
       };
       store.commit('updateChannels', mockChannels);
       expect(
@@ -280,7 +280,7 @@ describe('store', () => {
 
   test('the channels getter returns an empty array when the token has no channels', () => {
     const channels = {
-      '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {}
+      '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {},
     };
     store.commit('updateChannels', channels);
     expect(
@@ -290,7 +290,7 @@ describe('store', () => {
 
   test('the token getter returns an empty array when the token has no channels', () => {
     const channels = {
-      '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {}
+      '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {},
     };
     store.commit('updateChannels', channels);
     expect(store.getters.tokens).toEqual([]);
@@ -299,8 +299,8 @@ describe('store', () => {
   test('return only pending transfers', () => {
     [
       { key: 'sent:0x1', completed: true },
-      { key: 'sent:0x2', completed: false }
-    ].forEach(transfer => store.commit('updateTransfers', transfer));
+      { key: 'sent:0x2', completed: false },
+    ].forEach((transfer) => store.commit('updateTransfers', transfer));
     const { pendingTransfers } = store.getters;
     expect(Object.keys(pendingTransfers).length).toEqual(1);
   });
@@ -308,8 +308,8 @@ describe('store', () => {
   test('return transfer with specific identifier ', () => {
     [
       { key: 'sent:0x1', paymentId: BigNumber.from('0x1') },
-      { key: 'sent:0x2', paymentId: BigNumber.from('0x2') }
-    ].forEach(transfer => store.commit('updateTransfers', transfer));
+      { key: 'sent:0x2', paymentId: BigNumber.from('0x2') },
+    ].forEach((transfer) => store.commit('updateTransfers', transfer));
     const transfer = store.getters.transfer('0x1');
     expect(transfer.key).toEqual('sent:0x1');
   });
@@ -325,7 +325,7 @@ describe('store', () => {
   });
 
   test('acceptDisclaimer mutates changes disclaimer related state', () => {
-    [true, false].forEach(persistDecistion => {
+    [true, false].forEach((persistDecistion) => {
       store.commit('acceptDisclaimer', persistDecistion);
       expect(store.state.disclaimerAccepted).toBe(true);
       expect(store.state.persistDisclaimerAcceptance).toBe(persistDecistion);
@@ -333,7 +333,7 @@ describe('store', () => {
   });
 
   test('usingRaidenAccount getter reflect settings state property', () => {
-    [true, false].forEach(useRaidenAccount => {
+    [true, false].forEach((useRaidenAccount) => {
       store.commit('updateSettings', { useRaidenAccount });
       expect(store.getters.usingRaidenAccount).toEqual(useRaidenAccount);
     });
