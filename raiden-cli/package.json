@@ -27,14 +27,7 @@
     "@types/node": "^14.14.6",
     "@types/node-localstorage": "^1.3.0",
     "@types/yargs": "^15.0.9",
-    "@typescript-eslint/eslint-plugin": "^4.6.1",
-    "@typescript-eslint/parser": "^4.6.1",
     "@vercel/ncc": "^0.24.1",
-    "eslint": "^7.12.1",
-    "eslint-config-prettier": "^6.15.0",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-prettier": "^3.1.4",
-    "prettier": "^2.1.2",
     "typescript": "^4.0.5"
   },
   "dependencies": {
@@ -49,56 +42,5 @@
     "raiden-ts": "*",
     "rxjs": "^6.6.3",
     "yargs": "^15.4.1"
-  },
-  "eslintConfig": {
-    "parser": "@typescript-eslint/parser",
-    "plugins": [
-      "@typescript-eslint"
-    ],
-    "extends": [
-      "plugin:@typescript-eslint/recommended",
-      "prettier/@typescript-eslint",
-      "plugin:prettier/recommended",
-      "plugin:import/errors",
-      "plugin:import/warnings",
-      "plugin:import/typescript"
-    ],
-    "env": {
-      "browser": true,
-      "es6": true,
-      "node": true
-    },
-    "globals": {
-      "Atomics": "readonly",
-      "SharedArrayBuffer": "readonly"
-    },
-    "parserOptions": {
-      "ecmaVersion": 2019,
-      "sourceType": "module",
-      "project": "./tsconfig.json"
-    },
-    "rules": {
-      "import/order": [
-        "error"
-      ],
-      "import/export": "off",
-      "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/explicit-function-return-type": "off",
-      "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/no-empty-interface": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          "varsIgnorePattern": "^_"
-        }
-      ]
-    }
-  },
-  "prettier": {
-    "semi": true,
-    "trailingComma": "all",
-    "singleQuote": true,
-    "printWidth": 99,
-    "tabWidth": 2
   }
 }
