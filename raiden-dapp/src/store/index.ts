@@ -136,13 +136,19 @@ const store: StoreOptions<RootState> = {
     },
     reset(state: RootState) {
       // Preserve settings and backup when resetting state
-      const { settings, disclaimerAccepted, stateBackup } = state;
+      const {
+        settings,
+        disclaimerAccepted,
+        stateBackup,
+        latestStateBackupReminder,
+      } = state;
 
       Object.assign(state, {
         ...defaultState(),
         settings,
         disclaimerAccepted,
         stateBackup,
+        latestStateBackupReminder,
       });
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {

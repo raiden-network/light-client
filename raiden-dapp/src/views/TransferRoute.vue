@@ -20,7 +20,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
@@ -29,6 +29,9 @@ import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
 import { BigNumber, constants } from 'ethers';
 import { Token, TokenModel } from '@/model/types';
+import { NotificationPayload } from '../store/notifications/types';
+import { NotificationImportance } from '../store/notifications/notification-importance';
+import { NotificationContext } from '../store/notifications/notification-context';
 
 @Component({
   components: {
@@ -39,14 +42,46 @@ import { Token, TokenModel } from '@/model/types';
     NoChannelsDialog,
   },
   computed: {
+    ...mapState(['latestStateBackupReminder']),
     ...mapGetters(['tokens', 'channelWithBiggestCapacity', 'openChannels']),
   },
 })
 export default class TransferRoute extends Vue {
+  latestStateBackupReminder!: number;
   tokens!: TokenModel[];
+  currentTime: number = new Date().getTime();
+  oneDay: number = new Date().setHours(24);
+  stateBackupReminder = {
+    icon: this.$t('notifications.backup-state.icon') as string,
+    title: this.$t('notifications.backup-state.title') as string,
+    link: this.$t('notifications.backup-state.link') as string,
+    dappRoute: this.$t('notifications.backup-state.dapp-route') as string,
+    description: this.$t('notifications.backup-state.description') as string,
+    importance: NotificationImportance.HIGH,
+    context: NotificationContext.WARNING,
+  } as NotificationPayload;
   channelWithBiggestCapacity!: (
     tokenAddress: string
   ) => RaidenChannel | undefined;
+
+  mounted() {
+    if (this.latestStateBackupReminder === 0) {
+      this.pushStateBackupNotification();
+    } else if (
+      this.currentTime >
+      this.latestStateBackupReminder + this.oneDay
+    ) {
+      this.pushStateBackupNotification();
+    }
+  }
+
+  pushStateBackupNotification(): void {
+    this.$store.commit('stateBackupReminder', this.currentTime);
+    this.$store.commit(
+      'notifications/notificationAddOrReplace',
+      this.stateBackupReminder
+    );
+  }
 
   get noTokens(): boolean {
     return this.tokens.length === 0;
