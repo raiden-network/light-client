@@ -328,7 +328,6 @@ export const fetch = jest.fn<
 Object.assign(globalThis, { fetch });
 
 beforeEach(() => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   fetch.mockImplementation(async (_url?: string) => ({
     ok: true,
     status: 200,
@@ -382,7 +381,6 @@ function mockEthersEventEmitter(target: JsonRpcProvider | Contract): void {
       if (event) return listeners.get(getEventTag(event))?.size ?? 0;
       return Array.from(listeners.values()).reduce((acc, cbs) => acc + cbs.size, 0);
     });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const emitSpy = jest
     .spyOn(target, 'emit')
     .mockImplementation((event: EventType, ...args: any[]) => {
@@ -773,7 +771,6 @@ function mockedMatrixCreateClient({
     getHomeserverUrl: jest.fn(() => server),
     invite: jest.fn(async () => true),
     leave: jest.fn(async () => true),
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     sendEvent: jest.fn(async (roomId: string, type: string, content: any) => {
       const match = roomId.match(/0x[0-9a-f]{40}/gi);
       assert(address, 'matrix.sendEvent but client not started');
@@ -867,9 +864,8 @@ const secretRegistryAddress = makeAddress();
 const pollingInterval = 10;
 
 process.on('unhandledRejection', (reason, p) => {
-  console.error('Unhandled Rejection at: Promise', p, 'reason:', reason);
+  logging.error('Unhandled Rejection at: Promise', p, 'reason:', reason);
   // application specific logging, throwing an error, or other logic here
-  debugger;
 });
 
 /**
@@ -917,7 +913,7 @@ export async function makeRaiden(
   jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
   jest
     .spyOn(provider, 'getCode')
-    .mockImplementation((addr) => (console.trace('getCode called', addr), Promise.resolve('')));
+    .mockImplementation((addr) => (log.trace('getCode called', addr), Promise.resolve('')));
   jest.spyOn(provider, 'getBlock');
   jest.spyOn(provider, 'getTransaction');
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([address]);

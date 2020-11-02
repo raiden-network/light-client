@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { makeRaidens, waitBlock, MockedRaiden, makeTransaction, sleep } from '../mocks';
 import {
   ensureChannelIsDeposited,

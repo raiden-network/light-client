@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as t from 'io-ts';
 import { AddressZero } from '@ethersproject/constants';
 import { Network, getNetwork } from '@ethersproject/networks';
@@ -44,7 +43,6 @@ const _RaidenState = t.readonly(
 );
 
 // the interface trick below forces TSC to use the imported type instead of inlining
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface RaidenState extends t.TypeOf<typeof _RaidenState> {}
 export interface RaidenStateC extends t.Type<RaidenState, t.OutputOf<typeof _RaidenState>> {}
 export const RaidenState: RaidenStateC = _RaidenState;

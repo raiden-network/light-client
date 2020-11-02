@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { JsonRpcProvider } from '@ethersproject/providers';
 import type { Network } from '@ethersproject/networks';
@@ -65,14 +64,12 @@ export const patchEthersDefineReadOnly = () =>
   jest.mock('@ethersproject/properties', () => ({
     ...jest.requireActual<typeof import('@ethersproject/properties')>('@ethersproject/properties'),
     __esModule: true,
-    defineReadOnly: jest.fn(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (object: any, name: string, value: any): void =>
-        Object.defineProperty(object, name, {
-          enumerable: true,
-          value,
-          writable: true,
-          configurable: true,
-        }),
+    defineReadOnly: jest.fn((object: any, name: string, value: any): void =>
+      Object.defineProperty(object, name, {
+        enumerable: true,
+        value,
+        writable: true,
+        configurable: true,
+      }),
     ),
   }));
