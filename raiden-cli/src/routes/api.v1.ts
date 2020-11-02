@@ -8,6 +8,12 @@ import { makePendingTransfersRouter } from './pendingTransfers';
 import { makeTestingRouter } from './testing';
 import { makeTokensRouter } from './tokens';
 
+/**
+ * Make a Raiden APIv1 router, with all its bound endpoints
+ *
+ * @param this - Cli object
+ * @returns Set up router
+ */
 export function makeApiV1Router(this: Cli): Router {
   const router = Router();
 

@@ -19,6 +19,13 @@ function internalErrorHandler(
   next(createError(500, error.message));
 }
 
+/**
+ * Create an app from the Cli
+ *
+ * @param this - Cli object
+ * @param corsOrigin - Which corsOrigin to accept, if any
+ * @returns Express app
+ */
 export function makeApp(this: Cli, corsOrigin?: string): Express {
   const app = express();
   app.use(express.json());

@@ -38,6 +38,10 @@ async function getTokenPartners(this: Cli, request: Request, response: Response)
   );
 }
 
+/**
+ * @param this - Cli object
+ * @returns Router instance
+ */
 export function makeTokensRouter(this: Cli): Router {
   const router = Router();
 
