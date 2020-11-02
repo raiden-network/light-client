@@ -174,7 +174,7 @@ describe('Raiden', () => {
 
   afterEach(async () => {
     let _raiden;
-    while ((_raiden = raidens.pop())) _raiden.stop();
+    while ((_raiden = raidens.pop())) await _raiden.stop();
     httpBackend.stop();
     fetch.mockRestore();
     await flushPromises();

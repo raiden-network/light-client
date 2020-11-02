@@ -1,5 +1,4 @@
 import { OpenMode, promises as fs } from 'fs';
-import { filter } from 'rxjs/operators';
 import { BigNumber } from '@ethersproject/bignumber';
 import { Wallet } from '@ethersproject/wallet';
 import type { Signer } from '@ethersproject/abstract-signer';
@@ -72,9 +71,8 @@ describe('e2e', () => {
     raiden.start();
   });
 
-  afterAll((done) => {
-    raiden.events$.pipe(filter((value) => value.type === 'raiden/shutdown')).subscribe(done);
-    raiden.stop();
+  afterAll(async () => {
+    await raiden.stop();
   });
 
   test('account is funded', async () => {
