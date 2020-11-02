@@ -1,6 +1,6 @@
 # CircleCI docker images
 
-The image is based on the circleci/node:12-browsers docker image, but also contains pnpm.
+The image is based on the circleci/node:lts-browsers docker image, i.e. the current/active NodeJS LTS image, which also comes with `yarn` pre-installed.
 
 ## Updating the images
 If you need to update the image, e.g. you need to use a new version of the base image with a newer version of node, you have to follow the instructions bellow.

@@ -21,7 +21,7 @@ The goal of the CLI is provide a HTTP REST server that is fully compatible with 
 
 The CLI is considered experimental and mostly used for testing internally, not yet stable enough for production usage. Be aware that not all endpoints the specification defines are already implemented yet.
 
-It requires the latest [Node.js LTS (12.x - Erbium)](https://github.com/nodejs/Release)
+It requires the latest [Node.js LTS (14.x - Fermium)](https://github.com/nodejs/Release)
 
 > **INFO:** The Light Client SDK, dApp and CLI are **work in progress** and can only be used on the Ethereum **Testnets**.
 

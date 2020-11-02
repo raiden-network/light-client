@@ -1,23 +1,18 @@
 version: 2.1
 
-var_1: &docker_image raidennetwork/lightclient-node-pnpm:latest
-var_2: &cache_key raiden-{{ .Branch }}-{{ checksum "yarn.lock" }}
-var_3: &working_dir ~/src
-var_4: &dapp_working_dir ~/src/raiden-dapp
+var_1: &working_dir ~/src
+var_2: &dapp_working_dir ~/src/raiden-dapp
 
-anchor_1: &package_lock_key
-  key: *cache_key
-
-anchor_2: &attach_options
+anchor_1: &attach_options
   at: *working_dir
 
-anchor_3: &executor_parameter
+anchor_2: &executor_parameter
   parameters:
     executor:
       type: executor
       default: base-executor
 
-anchor_4: &run_on_release_tag_only
+anchor_3: &run_on_release_tag_only
   filters:
     tags:
       only: /^v\d+\.\d+\.\d+$/
@@ -28,7 +23,7 @@ executors:
   base-executor:
     working_directory: *working_dir
     docker:
-      - image: *docker_image
+      - image: circleci/node:lts-browsers
 
   e2e-environment-executor:
     working_directory: *working_dir
@@ -76,11 +71,17 @@ jobs:
     working_directory: *working_dir
     steps:
       - attach_workspace: *attach_options
-      - restore_cache: *package_lock_key
+      - restore_cache:
+          name: Restore Yarn Package Cache
+          keys:
+            - raiden-v1-yarn-{{ checksum "yarn.lock" }}
+            - raiden-v1-yarn-
       - run: yarn install
       - save_cache:
-          <<: *package_lock_key
+          name: Save Yarn Package Cache
+          key: raiden-v1-yarn-{{ checksum "yarn.lock" }}
           paths:
+            - ./node_modules
             - ~/.cache # Cypress stores its stuff here.
       - persist_to_workspace:
           root: *working_dir
@@ -263,8 +264,8 @@ jobs:
           name: Run end-to-end tests
           command: >
             source /etc/profile.d/smartcontracts.sh &&
-            yarn workspace raiden-ts run test:e2e --
-            --ci --runInBand --forceExit
+            yarn workspace raiden-ts run test:e2e
+            --ci --runInBand
             --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT_DIR: "reports/junit"
