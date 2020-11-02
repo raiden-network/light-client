@@ -20,6 +20,7 @@
 
     <v-card-actions>
       <action-button
+        data-cy="download_state_button"
         class="download-state__button"
         enabled
         full-width

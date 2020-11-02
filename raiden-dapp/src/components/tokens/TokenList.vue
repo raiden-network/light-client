@@ -1,5 +1,5 @@
 <template>
-  <div class="token-list d-flex flex-column">
+  <div data-cy="token_list" class="token-list d-flex flex-column">
     <list-header v-if="header" :header="header" class="flex-grow-0" />
 
     <div class="token-list__wrapper flex-grow-1">

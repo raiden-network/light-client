@@ -1,6 +1,7 @@
 <template>
   <v-list-item
     :key="detailedToken.address"
+    data-cy="token_list_item"
     class="token-list-item"
     @click="emitSelectToken"
   >

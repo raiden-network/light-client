@@ -12,6 +12,7 @@
     </v-row>
     <v-row
       v-else-if="balances.length === 0"
+      data-cy="withdrawal_empty"
       class="withdrawal__empty"
       align="center"
       justify="center"
@@ -33,7 +34,7 @@
     </v-row>
     <v-row v-else align="center" justify="center">
       <v-col cols="10">
-        <v-list class="withdrawal__tokens" flat>
+        <v-list data-cy="withdrawal_tokens" class="withdrawal__tokens" flat>
           <template v-for="(token, index) in balances">
             <v-list-item :key="token.address">
               <v-list-item-avatar class="withdrawal__tokens__icon">
@@ -60,6 +61,7 @@
                 <v-btn
                   text
                   icon
+                  data-cy="withdrawal_tokens_button"
                   class="withdrawal__tokens__button"
                   @click="withdraw = token"
                 >
@@ -107,6 +109,7 @@
       </v-card-text>
       <v-card-actions v-if="!withdrawing">
         <action-button
+          data-cy="withdrawal_dialog_action"
           class="withdrawal-dialog__action"
           :enabled="parseFloat(raidenAccountBalance) > 0"
           :text="$t('withdrawal.dialog.button')"

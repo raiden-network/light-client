@@ -71,6 +71,7 @@
         <v-list-item-action>
           <v-btn
             icon
+            data-cy="account_content_menu_list_items_icon_button"
             class="account-content__menu__list-items__icon__button"
             @click="menuItem.route"
           >

@@ -1,5 +1,5 @@
 <template>
-  <v-row class="channel-list" no-gutters>
+  <v-row data-cy="channel_list" class="channel-list" no-gutters>
     <v-col cols="12">
       <v-list class="channel-list__channels" flat>
         <v-list-item
@@ -35,6 +35,7 @@
             <v-btn
               :id="`deposit-${channel.id}`"
               text
+              data-cy="channel_action_button"
               class="channel-action-button"
               :disabled="channel.state !== 'open' || busy"
               @click="action(['deposit', channel])"
@@ -51,6 +52,7 @@
             <v-btn
               :id="`withdraw-${channel.id}`"
               text
+              data-cy="channel_action_button"
               class="channel-action-button"
               :disabled="channel.state !== 'open' || busy"
               @click="action(['withdraw', channel])"

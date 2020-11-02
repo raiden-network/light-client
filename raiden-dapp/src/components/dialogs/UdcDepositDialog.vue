@@ -76,6 +76,7 @@
               : 'udc-deposit-dialog.button'
           )
         "
+        data-cy="udc_deposit_dialog_action"
         class="udc-deposit-dialog__action"
         @click="udcDeposit()"
       >

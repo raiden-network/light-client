@@ -1,5 +1,5 @@
 <template>
-  <div justify="center" class="raiden-account">
+  <div justify="center" data-cy="raiden_account" class="raiden-account">
     <v-form
       v-if="!loading && !error"
       ref="form"
@@ -80,6 +80,7 @@
       <v-row no-gutters justify="center" class="raiden-account__amount-input">
         <amount-input
           v-model="amount"
+          data-cy="raiden_account_amount_input_field"
           class="raiden-account__amount-input__field"
           :token="token"
           :max="maximumAmount"
@@ -100,6 +101,7 @@
         class="raiden-account__transfer-button"
       >
         <action-button
+          data-cy="raiden_account_transfer_button_button"
           class="raiden-account__transfer-button__button"
           full-width
           :enabled="valid"
@@ -119,6 +121,7 @@
     <v-row
       v-else
       no-gutters
+      data-cy="raiden_account_progress_wrappers"
       class="raiden-account__progress-wrapper"
       justify="center"
       align="center"

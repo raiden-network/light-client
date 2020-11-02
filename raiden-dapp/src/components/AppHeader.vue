@@ -3,6 +3,7 @@
     <div class="app-header__back">
       <v-btn
         v-if="canGoBack"
+        data-cy="app_header_back_button"
         class="app-header__back-button"
         height="40px"
         width="40px"
@@ -23,6 +24,7 @@
     <div class="app-header__icons">
       <v-btn
         v-if="!showTitleOnly"
+        data-cy="app_header_notifications_button"
         class="app-header__notifications-button"
         icon
         height="30px"
@@ -51,6 +53,7 @@
       </v-btn>
       <header-identicon
         v-if="!isDisclaimerRoute"
+        data-cy="app_header_icons_identicon"
         class="app-header__icons__identicon"
         @click.native="navigateToAccoount()"
       />

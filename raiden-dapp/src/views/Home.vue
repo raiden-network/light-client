@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="home">
+  <v-container fluid data-cy="home" class="home">
     <v-row no-gutters>
       <v-col cols="12">
         <div class="home__logo-container">
@@ -44,6 +44,7 @@
       </v-col>
     </v-row>
     <action-button
+      data-cy="home_connect_button"
       class="home__connect-button"
       :text="$t('home.connect-button')"
       :loading="connecting"

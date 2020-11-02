@@ -182,6 +182,7 @@
     ></error-dialog>
 
     <action-button
+      data-cy="transfer_button"
       class="transfer__button"
       :enabled="continueBtnEnabled"
       :text="callToActionText"

@@ -1,6 +1,7 @@
 <template>
   <raiden-dialog
     :visible="visible"
+    data-cy="udc_withdrawal_dialog"
     class="udc-withdrawal-dialog"
     @close="cancel"
   >
@@ -37,6 +38,7 @@
                 autofocus
                 type="text"
                 :suffix="token.symbol"
+                data-cy="udc_withdrawal_dialog_amount"
                 class="udc-withdrawal-dialog__amount"
               />
             </v-col>
@@ -59,6 +61,7 @@
     </v-card-text>
     <v-card-actions v-if="!error && !isDone">
       <action-button
+        data-cy="udc_withdrawal_dialog_button"
         class="udc-withdrawal-dialog__button"
         :enabled="isValid"
         :text="$t('general.buttons.confirm')"

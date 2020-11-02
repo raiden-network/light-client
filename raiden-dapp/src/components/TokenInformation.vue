@@ -37,6 +37,7 @@
                 text
                 icon
                 small
+                data-cy="token_information_mint"
                 class="token-information__mint"
                 @click="showMintDialog = true"
                 v-on="on"

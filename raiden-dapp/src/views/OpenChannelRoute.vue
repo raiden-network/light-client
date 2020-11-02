@@ -2,6 +2,7 @@
   <v-form
     v-model="valid"
     autocomplete="off"
+    data-cy="open_channel"
     class="open-channel"
     @submit.prevent="openChannel()"
   >
@@ -33,6 +34,7 @@
     </v-row>
 
     <action-button
+      data-cy="open_channel_button"
       class="open-channel__button"
       :enabled="valid"
       :text="$t('open-channel.open-button')"
