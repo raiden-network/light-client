@@ -34,6 +34,8 @@ import { NotificationImportance } from '../store/notifications/notification-impo
 import { NotificationContext } from '../store/notifications/notification-context';
 import { RouteNames } from '@/router/route-names';
 
+const ONE_DAY = new Date().setHours(24);
+
 @Component({
   components: {
     NoTokens,
@@ -50,8 +52,6 @@ import { RouteNames } from '@/router/route-names';
 export default class TransferRoute extends Vue {
   latestStateBackupReminder!: number;
   tokens!: TokenModel[];
-  currentTime: number = new Date().getTime();
-  oneDay: number = new Date().setHours(24);
   stateBackupReminder = {
     icon: this.$t('notifications.backup-state.icon') as string,
     title: this.$t('notifications.backup-state.title') as string,
@@ -66,18 +66,18 @@ export default class TransferRoute extends Vue {
   ) => RaidenChannel | undefined;
 
   mounted() {
-    if (this.latestStateBackupReminder === 0) {
-      this.pushStateBackupNotification();
-    } else if (
-      this.currentTime >
-      this.latestStateBackupReminder + this.oneDay
+    const currentTime = new Date().getTime();
+
+    if (
+      this.latestStateBackupReminder === 0 ||
+      currentTime > this.latestStateBackupReminder + ONE_DAY
     ) {
-      this.pushStateBackupNotification();
+      this.pushStateBackupNotification(currentTime);
     }
   }
 
-  pushStateBackupNotification(): void {
-    this.$store.commit('stateBackupReminder', this.currentTime);
+  pushStateBackupNotification(currentTime: number): void {
+    this.$store.commit('stateBackupReminder', currentTime);
     this.$store.commit(
       'notifications/notificationAddOrReplace',
       this.stateBackupReminder

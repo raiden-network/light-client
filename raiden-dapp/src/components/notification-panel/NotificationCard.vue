@@ -29,7 +29,7 @@
         <span
           v-if="notification.link"
           class="notification-card__content__details__link"
-          @click="linkRoute()"
+          @click="linkRoute"
         >
           {{ notification.link }}
         </span>
