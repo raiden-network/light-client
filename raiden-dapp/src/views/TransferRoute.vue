@@ -45,12 +45,12 @@ const ONE_DAY = new Date().setHours(24);
     NoChannelsDialog,
   },
   computed: {
-    ...mapState(['latestStateBackupReminder']),
+    ...mapState(['stateBackupReminderDateMs']),
     ...mapGetters(['tokens', 'channelWithBiggestCapacity', 'openChannels']),
   },
 })
 export default class TransferRoute extends Vue {
-  latestStateBackupReminder!: number;
+  stateBackupReminderDateMs!: number;
   tokens!: TokenModel[];
   stateBackupReminder = {
     icon: this.$t('notifications.backup-state.icon') as string,
@@ -69,15 +69,15 @@ export default class TransferRoute extends Vue {
     const currentTime = new Date().getTime();
 
     if (
-      this.latestStateBackupReminder === 0 ||
-      currentTime > this.latestStateBackupReminder + ONE_DAY
+      this.stateBackupReminderDateMs === 0 ||
+      currentTime > this.stateBackupReminderDateMs + ONE_DAY
     ) {
       this.pushStateBackupNotification(currentTime);
     }
   }
 
   pushStateBackupNotification(currentTime: number): void {
-    this.$store.commit('stateBackupReminder', currentTime);
+    this.$store.commit('updateStateBackupReminderDate', currentTime);
     this.$store.commit(
       'notifications/notificationAddOrReplace',
       this.stateBackupReminder

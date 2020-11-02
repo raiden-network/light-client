@@ -54,7 +54,7 @@ const _defaultState: RootState = {
   config: {},
   userDepositTokenAddress: '',
   disclaimerAccepted: false,
-  latestStateBackupReminder: 0,
+  stateBackupReminderDateMs: 0,
   persistDisclaimerAcceptance: false,
 };
 
@@ -82,11 +82,11 @@ const miscellaneousLocalStorage = new VuexPersistence<RootState>({
     disclaimerAccepted: state.persistDisclaimerAcceptance
       ? state.disclaimerAccepted
       : false,
-    latestStateBackupReminder: state.latestStateBackupReminder,
+    stateBackupReminderDateMs: state.stateBackupReminderDateMs,
   }),
   filter: (mutation) =>
     mutation.type === 'acceptDisclaimer' ||
-    mutation.type === 'stateBackupReminder',
+    mutation.type === 'updateStateBackupReminderDate',
   key: 'miscellaneous',
 });
 
@@ -140,7 +140,7 @@ const store: StoreOptions<RootState> = {
         settings,
         disclaimerAccepted,
         stateBackup,
-        latestStateBackupReminder,
+        stateBackupReminderDateMs,
       } = state;
 
       Object.assign(state, {
@@ -148,7 +148,7 @@ const store: StoreOptions<RootState> = {
         settings,
         disclaimerAccepted,
         stateBackup,
-        latestStateBackupReminder,
+        stateBackupReminderDateMs,
       });
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {
@@ -170,8 +170,8 @@ const store: StoreOptions<RootState> = {
       state.disclaimerAccepted = true;
       state.persistDisclaimerAcceptance = persistDecision;
     },
-    stateBackupReminder(state: RootState, newReminderDate: number) {
-      state.latestStateBackupReminder = newReminderDate;
+    updateStateBackupReminderDate(state: RootState, newReminderDate: number) {
+      state.stateBackupReminderDateMs = newReminderDate;
     },
   },
   actions: {},
