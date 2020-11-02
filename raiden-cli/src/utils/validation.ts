@@ -1,6 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { Address, RaidenError, ErrorCodes } from 'raiden-ts';
 
+/**
+ * Validate bound string is a valid address in request's params
+ *
+ * @param this - Parameter name
+ * @param request - Check param on this request
+ * @param response - Fill this response in case of failure
+ * @param next - Callback
+ */
 export function validateAddressParameter(
   this: string,
   request: Request,
@@ -18,6 +26,14 @@ export function validateAddressParameter(
   }
 }
 
+/**
+ * Validate bound string is a valid address in request's params, optionally
+ *
+ * @param this - Parameter name
+ * @param request - Check param on this request
+ * @param response - Fill this response in case of failure
+ * @param next - Callback
+ */
 export function validateOptionalAddressParameter(
   this: string,
   request: Request,
@@ -28,6 +44,12 @@ export function validateOptionalAddressParameter(
   else validateAddressParameter.call(this, request, response, next);
 }
 
+/**
+ * Checks an error is an InvalidParameter error
+ *
+ * @param error - Error to test
+ * @returns True if error is one of InvalidParameter errors
+ */
 export function isInvalidParameterError(error: RaidenError): boolean {
   return [
     ErrorCodes.DTA_NEGATIVE_NUMBER,
@@ -49,11 +71,18 @@ export function isInvalidParameterError(error: RaidenError): boolean {
  * For the use-case here this usually means that the parameter for the contracts
  * function call lead to a failing require statement. An example would be
  * insufficient tokens funds for depositing.
+ *
+ * @param error - Error to test
+ * @returns True if error is a TransactionWoulfFail error
  */
 export function isTransactionWouldFailError(error: Error): boolean {
   return /always failing transaction/.test(error.message);
 }
 
+/**
+ * @param error - Error to test
+ * @returns True if error is a Conflict error
+ */
 export function isConflictError(error: Error): boolean {
   return (
     [
@@ -66,6 +95,12 @@ export function isConflictError(error: Error): boolean {
   );
 }
 
+/**
+ * @param error - Error to test
+ * @param error.message - Error message
+ * @param error.code - Error code
+ * @returns True if error is an InsufficientFunds error
+ */
 export function isInsuficientFundsError(error: {
   message: string;
   code?: string | number;

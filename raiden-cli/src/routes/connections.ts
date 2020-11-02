@@ -47,6 +47,12 @@ async function getConnections(this: Cli, _request: Request, response: Response) 
  * We don't want to improve this (for now), since SDK doesn't have the concept of connection
  * manager; it may change when we have proper auto-pilot (#211); before that, this dummy
  * implementation should enough to make WebUI work with it
+ *
+ * @param this - Cli object
+ * @param request - Request param
+ * @param response - Response param
+ * @param next - Next callback
+ * @returns Response
  */
 async function connectTokenNetwork(
   this: Cli,
@@ -88,6 +94,11 @@ async function connectTokenNetwork(
 /**
  * Closes all closeable channels in a token network
  * TODO: implement auto-settle (see discussion at #237)
+ *
+ * @param this - Cli object
+ * @param request - Request param
+ * @param response - Response param
+ * @returns Response
  */
 async function disconnectTokenNetwork(this: Cli, request: Request, response: Response) {
   const token: string = request.params.tokenAddress;
@@ -112,6 +123,10 @@ async function disconnectTokenNetwork(this: Cli, request: Request, response: Res
   response.json(partners);
 }
 
+/**
+ * @param this - Cli object
+ * @returns Router instance
+ */
 export function makeConnectionsRouter(this: Cli): Router {
   const router = Router();
 

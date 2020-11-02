@@ -18,6 +18,10 @@ async function mintTokens(this: Cli, request: Request, response: Response, next:
   }
 }
 
+/**
+ * @param this - Cli object
+ * @returns Router instance
+ */
 export function makeTestingRouter(this: Cli): Router {
   const router = Router();
 

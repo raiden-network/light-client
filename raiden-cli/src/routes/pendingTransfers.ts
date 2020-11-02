@@ -68,6 +68,10 @@ async function getPendingTransfers(this: Cli, request: Request, response: Respon
     .subscribe((transfers) => response.json(transfers));
 }
 
+/**
+ * @param this - Cli object
+ * @returns Router instance
+ */
 export function makePendingTransfersRouter(this: Cli): Router {
   const router = Router();
 

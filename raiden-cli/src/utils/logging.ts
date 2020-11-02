@@ -5,6 +5,9 @@ import logging, { LoggingMethod } from 'loglevel';
 
 util.inspect.defaultOptions.depth = 3; // +1 from default of 2
 
+/**
+ * @param output - Output filepath
+ */
 export function setupLoglevel(output?: string): void {
   const originalFactory = logging.methodFactory;
 
@@ -14,7 +17,6 @@ export function setupLoglevel(output?: string): void {
     loggerName: string,
   ): LoggingMethod => {
     const rawMethod = originalFactory(methodName, level, loggerName);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (...message: any[]): void => {
       const prefix = `${new Date(Date.now()).toISOString()} [${methodName}]`;
       rawMethod(prefix, ...message);
