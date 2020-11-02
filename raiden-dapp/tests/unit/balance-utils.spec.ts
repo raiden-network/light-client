@@ -1,5 +1,5 @@
-import { BalanceUtils } from '@/utils/balance-utils';
 import { BigNumber, constants } from 'ethers';
+import { BalanceUtils } from '@/utils/balance-utils';
 import { Token } from '@/model/types';
 
 describe('BalanceUtils', () => {
@@ -12,27 +12,19 @@ describe('BalanceUtils', () => {
   };
 
   test('return true when the number of decimal places is greater than what the token supports', () => {
-    expect(
-      BalanceUtils.decimalsOverflow('0.000000000000000000001', token.decimals!)
-    ).toBe(true);
+    expect(BalanceUtils.decimalsOverflow('0.000000000000000000001', token.decimals!)).toBe(true);
   });
 
   test('return true when the number of decimal places is greater than what the token supports, and the integer part is non-zero', () => {
-    expect(
-      BalanceUtils.decimalsOverflow('1.000000000000000000001', token.decimals!)
-    ).toBe(true);
+    expect(BalanceUtils.decimalsOverflow('1.000000000000000000001', token.decimals!)).toBe(true);
   });
 
   test('return false when the number of decimal places is greater than what the token supports', () => {
-    expect(BalanceUtils.decimalsOverflow('0.00001', token.decimals!)).toBe(
-      false
-    );
+    expect(BalanceUtils.decimalsOverflow('0.00001', token.decimals!)).toBe(false);
   });
 
   test('return false when the number of decimal places is greater than what the token supports, and the integer part is non-zero', () => {
-    expect(BalanceUtils.decimalsOverflow('1.00001', token.decimals!)).toBe(
-      false
-    );
+    expect(BalanceUtils.decimalsOverflow('1.00001', token.decimals!)).toBe(false);
   });
 
   test('return false when the number is an integer', () => {

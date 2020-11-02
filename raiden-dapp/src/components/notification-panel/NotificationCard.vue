@@ -52,8 +52,8 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { NotificationPayload } from '@/store/notifications/types';
 import { createNamespacedHelpers, mapState } from 'vuex';
+import { NotificationPayload } from '@/store/notifications/types';
 import NotificationDescriptionDisplay from '@/components/notification-panel/NotificationDescriptionDisplay.vue';
 
 const { mapMutations } = createNamespacedHelpers('notifications');
@@ -77,8 +77,7 @@ export default class NotificationCard extends Vue {
   get blockCountInProgress(): boolean {
     if (this.notification.txConfirmationBlock) {
       return (
-        !this.notification.txConfirmed &&
-        this.notification.txConfirmationBlock > this.blockNumber
+        !this.notification.txConfirmed && this.notification.txConfirmationBlock > this.blockNumber
       );
     } else {
       return false;

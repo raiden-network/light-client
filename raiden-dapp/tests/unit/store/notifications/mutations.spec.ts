@@ -1,16 +1,11 @@
-import { mutations } from '@/store/notifications/mutations';
 import { TestData } from '../../data/mock-data';
-import {
-  NotificationPayload,
-  NotificationsState,
-} from '@/store/notifications/types';
+import { mutations } from '@/store/notifications/mutations';
+import { NotificationPayload, NotificationsState } from '@/store/notifications/types';
 
 describe('notifications store mutations', () => {
   const notification = TestData.notifications;
 
-  const createNotificationState = (
-    newNotifications = false
-  ): NotificationsState => {
+  const createNotificationState = (newNotifications = false): NotificationsState => {
     return {
       notifications: { 1: notification },
       newNotifications,

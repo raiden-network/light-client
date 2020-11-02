@@ -11,10 +11,7 @@
           </v-list-item-subtitle>
         </v-list-item-content>
         <v-list-item-action>
-          <v-switch
-            v-model="settings.useRaidenAccount"
-            @change="toggleMainAccount"
-          />
+          <v-switch v-model="settings.useRaidenAccount" @change="toggleMainAccount" />
         </v-list-item-action>
       </v-list-item>
     </v-list>

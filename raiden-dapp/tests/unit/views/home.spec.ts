@@ -106,9 +106,7 @@ describe('Home.vue', () => {
   test('displays getting started link', () => {
     const gettingStartedText = wrapper.find('.home__getting-started');
 
-    expect(gettingStartedText.text()).toContain(
-      'home.getting-started.link-name'
-    );
+    expect(gettingStartedText.text()).toContain('home.getting-started.link-name');
   });
 
   test('connect button displays connect dialog', async () => {

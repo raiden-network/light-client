@@ -55,19 +55,19 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
+import { constants } from 'ethers';
+import { Route } from 'vue-router';
+import { mapGetters } from 'vuex';
 import AmountInput from '@/components/AmountInput.vue';
 import { emptyDescription, StepDescription, Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import { constants } from 'ethers';
 import AddressUtils from '@/utils/address-utils';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import { Route } from 'vue-router';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import { mapGetters } from 'vuex';
 import { getAmount } from '@/utils/query-params';
 import OpenChannelDialog from '@/components/dialogs/OpenChannelDialog.vue';
 import { RaidenError } from 'raiden-ts';
@@ -89,13 +89,13 @@ import { RaidenError } from 'raiden-ts';
   },
 })
 export default class OpenChannelRoute extends Mixins(NavigationMixin) {
-  partner: string = '';
+  partner = '';
   getToken!: (address: string) => Token;
 
-  deposit: string = '0.00';
+  deposit = '0.00';
 
-  valid: boolean = false;
-  loading: boolean = false;
+  valid = false;
+  loading = false;
   error: Error | RaidenError | null = null;
 
   steps: StepDescription[] = [];
@@ -130,9 +130,7 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
     const depositAmount = BalanceUtils.parse(this.deposit, decimals!);
 
     if (depositAmount.eq(constants.Zero)) {
-      this.steps = [
-        (this.$t('open-channel.steps.open') as any) as StepDescription,
-      ];
+      this.steps = [(this.$t('open-channel.steps.open') as any) as StepDescription];
     } else {
       this.steps = [
         (this.$t('open-channel.steps.open') as any) as StepDescription,
@@ -148,7 +146,7 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
         address,
         this.partner,
         depositAmount,
-        (progress) => (this.current = progress.current - 1)
+        (progress) => (this.current = progress.current - 1),
       );
 
       this.done = true;
@@ -166,9 +164,7 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
   async created() {
     this.deposit = getAmount(this.$route.query.deposit);
 
-    this.doneStep = (this.$t(
-      'open-channel.steps.done'
-    ) as any) as StepDescription;
+    this.doneStep = (this.$t('open-channel.steps.done') as any) as StepDescription;
     const { token: address, partner } = this.$route.params;
 
     if (!AddressUtils.checkAddressChecksum(address)) {

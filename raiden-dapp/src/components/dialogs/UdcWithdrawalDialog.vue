@@ -16,10 +16,7 @@
         <v-col v-else-if="isDone" cols="12">
           <v-row align="center" justify="center">
             <v-col cols="6">
-              <v-img
-                class="udc-withdrawal-dialog__done"
-                :src="require('@/assets/done.svg')"
-              >
+              <v-img class="udc-withdrawal-dialog__done" :src="require('@/assets/done.svg')">
               </v-img>
             </v-col>
           </v-row>
@@ -81,11 +78,11 @@
 
 <script lang="ts">
 import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
+import { mapGetters } from 'vuex';
+import { BigNumber, utils, constants } from 'ethers';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import { mapGetters } from 'vuex';
 import { Token } from '@/model/types';
-import { BigNumber, utils, constants } from 'ethers';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 
@@ -101,10 +98,10 @@ import Spinner from '@/components/icons/Spinner.vue';
   },
 })
 export default class UdcWithdrawalDialog extends Vue {
-  amount: string = '0';
-  inProgress: boolean = false;
+  amount = '0';
+  inProgress = false;
   error: any = null;
-  isDone: boolean = false;
+  isDone = false;
 
   @Prop({ required: true, type: Boolean })
   visible!: boolean;

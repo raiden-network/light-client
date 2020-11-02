@@ -2,13 +2,13 @@ jest.mock('@/services/raiden-service');
 jest.useFakeTimers();
 
 import flushPromises from 'flush-promises';
-import { $identicon } from '../utils/mocks';
-import store from '@/store/index';
 import { mount, Wrapper } from '@vue/test-utils';
-import AddressInput from '@/components/AddressInput.vue';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import { $identicon } from '../utils/mocks';
 import { mockInput } from '../utils/interaction-utils';
+import AddressInput from '@/components/AddressInput.vue';
+import store from '@/store/index';
 
 Vue.use(Vuetify);
 
@@ -18,17 +18,12 @@ describe('AddressInput', () => {
 
   let ensResolve: jest.Mock<any, any>;
   let getAvailability: jest.Mock<any, any>;
-  const excludeAddress: string = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
-  const blockAddress: string = '0xaCdCAC1e966D1D00baBf2d0E947520cF65fD0516';
-  const onlineTarget: string = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
-  const offlineTarget: string = '0x39ff19161414E257AA29461dCD087F6a1AE362Fd';
+  const excludeAddress = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
+  const blockAddress = '0xaCdCAC1e966D1D00baBf2d0E947520cF65fD0516';
+  const onlineTarget = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
+  const offlineTarget = '0x39ff19161414E257AA29461dCD087F6a1AE362Fd';
 
-  function createWrapper(
-    value: string = '',
-    excluded?: string,
-    blocked?: string,
-    hideErrorLabel: boolean = false
-  ) {
+  function createWrapper(value = '', excluded?: string, blocked?: string, hideErrorLabel = false) {
     vuetify = new Vuetify();
     return mount(AddressInput, {
       vuetify,
@@ -204,9 +199,7 @@ describe('AddressInput', () => {
       expect(inputEvent).toContainEqual([null]);
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(1);
-      expect(wrapper.vm.$data.errorMessages).toContain(
-        'address-input.error.ens-resolve-failed'
-      );
+      expect(wrapper.vm.$data.errorMessages).toContain('address-input.error.ens-resolve-failed');
     });
 
     test('with an error', async () => {
@@ -222,9 +215,7 @@ describe('AddressInput', () => {
       expect(inputEvent).toContainEqual(['enstest.test']);
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(1);
-      expect(wrapper.vm.$data.errorMessages).toContain(
-        'address-input.error.ens-resolve-failed'
-      );
+      expect(wrapper.vm.$data.errorMessages).toContain('address-input.error.ens-resolve-failed');
     });
   });
 
@@ -238,9 +229,7 @@ describe('AddressInput', () => {
 
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
-      expect(messages.text()).toBe(
-        'address-input.error.invalid-excluded-address'
-      );
+      expect(messages.text()).toBe('address-input.error.invalid-excluded-address');
     });
 
     test('show an error message if the input has a blocked address', async () => {
@@ -296,18 +285,14 @@ describe('AddressInput', () => {
       wrapper = createWrapper(onlineTarget);
       jest.advanceTimersByTime(1000);
       await wrapper.vm.$nextTick();
-      expect(
-        wrapper.find('.address-input__availability--online').exists()
-      ).toBeTruthy();
+      expect(wrapper.find('.address-input__availability--online').exists()).toBeTruthy();
     });
 
     test('show target as offline', async () => {
       getAvailability = jest.fn().mockResolvedValue(false);
       wrapper = createWrapper(offlineTarget);
       await wrapper.vm.$nextTick();
-      expect(
-        wrapper.find('.address-input__availability--offline').exists()
-      ).toBeTruthy();
+      expect(wrapper.find('.address-input__availability--offline').exists()).toBeTruthy();
     });
 
     test('show target as offline when presence is not in state yet', async () => {
@@ -318,9 +303,7 @@ describe('AddressInput', () => {
       });
       wrapper = createWrapper(offlineTarget);
       await wrapper.vm.$nextTick();
-      expect(
-        wrapper.find('.address-input__availability--offline').exists()
-      ).toBeTruthy();
+      expect(wrapper.find('.address-input__availability--offline').exists()).toBeTruthy();
     });
 
     test('show target as online when presence is not in state yet', async () => {
@@ -332,9 +315,7 @@ describe('AddressInput', () => {
       wrapper = createWrapper(onlineTarget);
       jest.advanceTimersByTime(1000);
       await wrapper.vm.$nextTick();
-      expect(
-        wrapper.find('.address-input__availability--online').exists()
-      ).toBeTruthy();
+      expect(wrapper.find('.address-input__availability--online').exists()).toBeTruthy();
     });
 
     test('input reacts to target going offline', async () => {
@@ -342,16 +323,12 @@ describe('AddressInput', () => {
       wrapper = createWrapper(onlineTarget);
       jest.advanceTimersByTime(1000);
       await wrapper.vm.$nextTick();
-      expect(
-        wrapper.find('.address-input__availability--online').exists()
-      ).toBeTruthy();
+      expect(wrapper.find('.address-input__availability--online').exists()).toBeTruthy();
       store.commit('updatePresence', { [onlineTarget]: false });
       await flushPromises();
       jest.advanceTimersByTime(1000);
       await wrapper.vm.$nextTick();
-      expect(
-        wrapper.find('.address-input__availability--online').exists()
-      ).toBeFalsy();
+      expect(wrapper.find('.address-input__availability--online').exists()).toBeFalsy();
     });
   });
 });

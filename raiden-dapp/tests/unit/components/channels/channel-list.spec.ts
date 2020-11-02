@@ -5,11 +5,11 @@ import Vue from 'vue';
 import Vuex, { Store } from 'vuex';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
-import { TestData } from '../../data/mock-data';
 import VueRouter from 'vue-router';
-import Filters from '@/filters';
-import { $identicon } from '../../utils/mocks';
 import { utils } from 'ethers';
+import { TestData } from '../../data/mock-data';
+import { $identicon } from '../../utils/mocks';
+import Filters from '@/filters';
 import ChannelList from '@/components/channels/ChannelList.vue';
 import { Token } from '@/model/types';
 
@@ -112,10 +112,7 @@ describe('ChannelList.vue', () => {
       const actionEvent = wrapper.emitted('action');
       expect(actionEvent).toBeTruthy();
       const [firstActionArg] = actionEvent?.shift();
-      expect(firstActionArg).toEqual([
-        'close',
-        expect.objectContaining({ id: 278 }),
-      ]);
+      expect(firstActionArg).toEqual(['close', expect.objectContaining({ id: 278 })]);
     });
 
     test('emits a deposit action when deposit is pressed', async () => {
@@ -124,10 +121,7 @@ describe('ChannelList.vue', () => {
       const actionEvent = wrapper.emitted('action');
       expect(actionEvent).toBeTruthy();
       const [firstActionArg] = actionEvent?.shift();
-      expect(firstActionArg).toEqual([
-        'deposit',
-        expect.objectContaining({ id: 278 }),
-      ]);
+      expect(firstActionArg).toEqual(['deposit', expect.objectContaining({ id: 278 })]);
     });
 
     test('emits a withdraw action when withdraw is pressed', async () => {
@@ -136,10 +130,7 @@ describe('ChannelList.vue', () => {
       const actionEvent = wrapper.emitted('action');
       expect(actionEvent).toBeTruthy();
       const [firstActionArg] = actionEvent?.shift();
-      expect(firstActionArg).toEqual([
-        'withdraw',
-        expect.objectContaining({ id: 278 }),
-      ]);
+      expect(firstActionArg).toEqual(['withdraw', expect.objectContaining({ id: 278 })]);
     });
 
     test('emits a settle action when settle is pressed', async () => {
@@ -148,10 +139,7 @@ describe('ChannelList.vue', () => {
       const actionEvent = wrapper.emitted('action');
       expect(actionEvent).toBeTruthy();
       const [firstActionArg] = actionEvent?.shift();
-      expect(firstActionArg).toEqual([
-        'settle',
-        expect.objectContaining({ id: 280 }),
-      ]);
+      expect(firstActionArg).toEqual(['settle', expect.objectContaining({ id: 280 })]);
     });
   });
 });

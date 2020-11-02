@@ -33,7 +33,7 @@ describe('QrCodeOverlay.vue', () => {
     await wrapper.vm.onInit(
       new Promise((_, __) => {
         throw new Error();
-      })
+      }),
     );
     expect(wrapper.find('.error-message').exists()).toBe(true);
   });

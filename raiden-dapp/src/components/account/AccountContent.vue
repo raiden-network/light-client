@@ -33,11 +33,7 @@
           </span>
         </v-col>
       </v-row>
-      <v-row
-        v-if="usingRaidenAccount"
-        class="account-content__account-details__eth"
-        no-gutters
-      >
+      <v-row v-if="usingRaidenAccount" class="account-content__account-details__eth" no-gutters>
         <v-col cols="2">
           <span class="account-content__account-details__eth__account">
             {{ $t('account-content.account.raiden') }}
@@ -95,12 +91,7 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
     AddressDisplay,
   },
   computed: {
-    ...mapState([
-      'loading',
-      'defaultAccount',
-      'accountBalance',
-      'raidenAccountBalance',
-    ]),
+    ...mapState(['loading', 'defaultAccount', 'accountBalance', 'raidenAccountBalance']),
     ...mapGetters(['isConnected', 'usingRaidenAccount']),
   },
 })
@@ -116,24 +107,16 @@ export default class AccountContent extends Mixins(NavigationMixin) {
     this.menuItems = [
       {
         icon: 'state.svg',
-        title: this.$t(
-          'account-content.menu-items.backup-state.title'
-        ) as string,
-        subtitle: this.$t(
-          'account-content.menu-items.backup-state.subtitle'
-        ) as string,
+        title: this.$t('account-content.menu-items.backup-state.title') as string,
+        subtitle: this.$t('account-content.menu-items.backup-state.subtitle') as string,
         route: () => {
           this.navigateToBackupState();
         },
       },
       {
         icon: 'bug.svg',
-        title: this.$t(
-          'account-content.menu-items.report-bugs.title'
-        ) as string,
-        subtitle: this.$t(
-          'account-content.menu-items.report-bugs.subtitle'
-        ) as string,
+        title: this.$t('account-content.menu-items.report-bugs.title') as string,
+        subtitle: this.$t('account-content.menu-items.report-bugs.subtitle') as string,
         route: () => {
           this.downloadLogs();
         },
@@ -157,12 +140,8 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       if (mainAccount && raidenAccount) {
         const raidenAccount = {
           icon: 'eth.svg',
-          title: this.$t(
-            'account-content.menu-items.raiden-account.title'
-          ) as string,
-          subtitle: this.$t(
-            'account-content.menu-items.raiden-account.subtitle'
-          ) as string,
+          title: this.$t('account-content.menu-items.raiden-account.title') as string,
+          subtitle: this.$t('account-content.menu-items.raiden-account.subtitle') as string,
           route: () => {
             this.navigateToRaidenAccountTransfer();
           },
@@ -170,12 +149,8 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 
         const withdrawal = {
           icon: 'withdrawal.svg',
-          title: this.$t(
-            'account-content.menu-items.withdrawal.title'
-          ) as string,
-          subtitle: this.$t(
-            'account-content.menu-items.withdrawal.subtitle'
-          ) as string,
+          title: this.$t('account-content.menu-items.withdrawal.title') as string,
+          subtitle: this.$t('account-content.menu-items.withdrawal.subtitle') as string,
           route: () => {
             this.navigateToWithdrawal();
           },
@@ -193,9 +168,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       this.menuItems.unshift({
         icon: 'gear.svg',
         title: this.$t('account-content.menu-items.settings.title') as string,
-        subtitle: this.$t(
-          'account-content.menu-items.settings.subtitle'
-        ) as string,
+        subtitle: this.$t('account-content.menu-items.settings.subtitle') as string,
         route: () => {
           this.navigateToSettings();
         },

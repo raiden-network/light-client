@@ -15,14 +15,10 @@
             />
           </v-list-item-avatar>
           <v-list-item-content class="channel-list__channels__channel__content">
-            <v-list-item-title
-              class="channel-list__channels__channel__partner-address"
-            >
+            <v-list-item-title class="channel-list__channels__channel__partner-address">
               <address-display :address="channel.partner" />
             </v-list-item-title>
-            <v-list-item-subtitle
-              class="channel-list__channels__channel__state-info"
-            >
+            <v-list-item-subtitle class="channel-list__channels__channel__state-info">
               {{
                 $t('channel-list.channel.state', {
                   value: displayFormat(channel.capacity, token.decimals || 0),
@@ -40,11 +36,7 @@
               :disabled="channel.state !== 'open' || busy"
               @click="action(['deposit', channel])"
             >
-              <v-img
-                width="27"
-                height="25px"
-                :src="require('@/assets/deposit.svg')"
-              />
+              <v-img width="27" height="25px" :src="require('@/assets/deposit.svg')" />
               <span class="action-title">
                 {{ $t('channel-actions.deposit') }}
               </span>
@@ -57,11 +49,7 @@
               :disabled="channel.state !== 'open' || busy"
               @click="action(['withdraw', channel])"
             >
-              <v-img
-                width="27px"
-                height="25px"
-                :src="require('@/assets/withdrawal.svg')"
-              />
+              <v-img width="27px" height="25px" :src="require('@/assets/withdrawal.svg')" />
               <span class="action-title">
                 {{ $t('channel-actions.withdraw') }}
               </span>
@@ -69,9 +57,7 @@
           </v-list-item-icon>
           <v-list-item-icon class="channel-action">
             <v-btn
-              v-if="
-                selectedChannel && channel.id === selectedChannel.id && busy
-              "
+              v-if="selectedChannel && channel.id === selectedChannel.id && busy"
               :id="`busy-${channel.id}`"
               disabled
               class="channel-action__button text-capitalize channel-action__button__secondary"
@@ -79,9 +65,7 @@
               <spinner :size="28" :width="4" />
             </v-btn>
             <v-btn
-              v-else-if="
-                channel.state === 'open' || channel.state === 'closing'
-              "
+              v-else-if="channel.state === 'open' || channel.state === 'closing'"
               :id="`close-${channel.id}`"
               :disabled="busy"
               class="channel-action__button text-capitalize channel-action__button__secondary"

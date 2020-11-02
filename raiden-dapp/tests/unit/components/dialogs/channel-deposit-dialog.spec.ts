@@ -1,11 +1,11 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import { BigNumber } from 'ethers';
+import flushPromises from 'flush-promises';
 import { TestData } from '../../data/mock-data';
 import { mockInput } from '../../utils/interaction-utils';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
-import { BigNumber } from 'ethers';
-import flushPromises from 'flush-promises';
 
 Vue.use(Vuetify);
 

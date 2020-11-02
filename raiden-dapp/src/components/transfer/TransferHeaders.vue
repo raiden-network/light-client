@@ -1,9 +1,6 @@
 <template>
   <v-row no-gutters class="transfer-menus">
-    <div
-      data-cy="transfer_menus_token_select"
-      class="transfer-menus__token-select"
-    >
+    <div data-cy="transfer_menus_token_select" class="transfer-menus__token-select">
       <span @click="showTokenOverlay = true">
         {{ $t('transfer.transfer-menus.change-token-title') }}
         <v-icon>mdi-chevron-down</v-icon>
@@ -65,6 +62,7 @@
 <script lang="ts">
 import { Component, Prop, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
+import { BigNumber, constants } from 'ethers';
 import NavigationMixin from '../../mixins/navigation-mixin';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
@@ -72,7 +70,6 @@ import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue'
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
 import { Token } from '@/model/types';
-import { BigNumber, constants } from 'ethers';
 
 @Component({
   components: {
@@ -86,15 +83,13 @@ import { BigNumber, constants } from 'ethers';
   },
 })
 export default class TransferHeaders extends Mixins(NavigationMixin) {
-  showTokenOverlay: boolean = false;
-  showDepositDialog: boolean = false;
-  loading: boolean = false;
-  done: boolean = false;
+  showTokenOverlay = false;
+  showDepositDialog = false;
+  loading = false;
+  done = false;
   error: Error | null = null;
 
-  channelWithBiggestCapacity!: (
-    tokenAddress: string
-  ) => RaidenChannel | undefined;
+  channelWithBiggestCapacity!: (tokenAddress: string) => RaidenChannel | undefined;
 
   @Prop({ required: true })
   token!: Token;
@@ -121,7 +116,7 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
       await this.$raiden.deposit(
         this.token.address,
         this.channelWithBiggestCapacity(this.token.address)!.partner,
-        amount
+        amount,
       );
       this.done = true;
       this.loading = false;

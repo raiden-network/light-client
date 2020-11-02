@@ -18,9 +18,7 @@ export class Web3Provider {
 
     /* istanbul ignore next */
     if (provider && provider.isMetaMask) {
-      provider.on('chainChanged', () =>
-        window.location.replace(window.location.origin)
-      );
+      provider.on('chainChanged', () => window.location.replace(window.location.origin));
     }
 
     return provider;

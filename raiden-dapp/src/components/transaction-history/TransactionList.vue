@@ -10,11 +10,7 @@
           :key="index"
           class="transaction-history__transactions__list__item"
         >
-          <v-lazy
-            transition="fade-transition"
-            :options="{ threshold: 0.7 }"
-            min-height="74"
-          >
+          <v-lazy transition="fade-transition" :options="{ threshold: 0.7 }" min-height="74">
             <transaction :transfer="transfer" />
           </v-lazy>
         </div>
@@ -26,9 +22,9 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
+import { Transfers } from '../../types';
 import { RaidenTransfer } from 'raiden-ts';
 import { Token } from '@/model/types';
-import { Transfers } from '../../types';
 import Transaction from '@/components/transaction-history/Transaction.vue';
 
 @Component({
@@ -49,18 +45,14 @@ export default class TransactionLists extends Vue {
     const transferList = Object.values(this.transfers);
 
     if (this.token !== undefined) {
-      return transferList.filter(
-        (transfer) => transfer.token === this.token!.address
-      );
+      return transferList.filter((transfer) => transfer.token === this.token!.address);
     } else {
       return transferList;
     }
   }
 
   get orderedTransfers(): RaidenTransfer[] {
-    return this.filteredTransfersForToken.sort(
-      (a: any, b: any) => b.changedAt - a.changedAt
-    );
+    return this.filteredTransfersForToken.sort((a: any, b: any) => b.changedAt - a.changedAt);
   }
 }
 </script>

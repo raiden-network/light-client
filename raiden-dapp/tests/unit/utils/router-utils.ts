@@ -1,9 +1,10 @@
 import { Route } from 'vue-router';
 import { routes as routeConfigs } from '@/router/routes';
 
-export function transformRouteConfigsToRoutes(
-  routeList = routeConfigs
-): { [key: string]: Route } {
+/**
+ * @param routeList
+ */
+export function transformRouteConfigsToRoutes(routeList = routeConfigs): { [key: string]: Route } {
   const routes: { [key: string]: Route } = {};
 
   routeList.forEach((routeConfig) => {

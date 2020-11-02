@@ -62,10 +62,10 @@
 </template>
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
+import { mapGetters } from 'vuex';
 import { Token } from '@/model/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import MintDialog from '@/components/dialogs/MintDialog.vue';
-import { mapGetters } from 'vuex';
 
 @Component({
   components: { AddressDisplay, MintDialog },
@@ -79,7 +79,7 @@ export default class TokenInformation extends Vue {
 
   getToken!: (address: string) => Token;
   mainnet!: boolean;
-  showMintDialog: boolean = false;
+  showMintDialog = false;
 
   async tokenMinted() {
     this.showMintDialog = false;

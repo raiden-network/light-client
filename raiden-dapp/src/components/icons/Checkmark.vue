@@ -8,13 +8,7 @@
     xmlns:xlink="http://www.w3.org/1999/xlink"
   >
     <defs>
-      <linearGradient
-        id="linearGradient-1"
-        x1="-59.3619792%"
-        y1="50%"
-        x2="206.183811%"
-        y2="50%"
-      >
+      <linearGradient id="linearGradient-1" x1="-59.3619792%" y1="50%" x2="206.183811%" y2="50%">
         <stop stop-color="#313030" offset="0%"></stop>
         <stop stop-color="#000000" offset="100%"></stop>
       </linearGradient>
@@ -27,12 +21,7 @@
         height="108.9%"
         filterUnits="objectBoundingBox"
       >
-        <feOffset
-          dx="10"
-          dy="10"
-          in="SourceAlpha"
-          result="shadowOffsetOuter1"
-        ></feOffset>
+        <feOffset dx="10" dy="10" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
         <feGaussianBlur
           stdDeviation="7.5"
           in="shadowOffsetOuter1"
@@ -46,13 +35,7 @@
       </filter>
       <polygon id="path-4" points="0 0 66.88 0 66.88 48.4 0 48.4"></polygon>
     </defs>
-    <g
-      id="Layouts"
-      stroke="none"
-      stroke-width="1"
-      fill="none"
-      fill-rule="evenodd"
-    >
+    <g id="Layouts" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
       <g id="stepper/4" transform="translate(-672.000000, -444.000000)">
         <g id="Check" transform="translate(672.000000, 444.000000)">
           <circle id="Oval" fill="#50D2F5" cx="55" cy="55" r="55"></circle>

@@ -1,7 +1,7 @@
-import { IdenticonPlugin } from '@/plugins/identicon-plugin';
 import Vue, { VueConstructor } from 'vue';
-import { IdenticonCache } from '@/services/identicon-cache';
 import { createLocalVue } from '@vue/test-utils';
+import { IdenticonPlugin } from '@/plugins/identicon-plugin';
+import { IdenticonCache } from '@/services/identicon-cache';
 import { RaidenPlugin } from '@/plugins/raiden';
 import RaidenService from '@/services/raiden-service';
 

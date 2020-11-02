@@ -28,33 +28,24 @@ describe('globalNavigationGuard()', () => {
   });
 
   test('do not redirect if child guard returns nothing', () => {
-    globalNavigationGuard.apply(
-      { children: [emptyChildGuard] },
-      staticGuardArguments
-    );
+    globalNavigationGuard.apply({ children: [emptyChildGuard] }, staticGuardArguments);
     expect(next).toHaveBeenCalledWith({});
   });
 
   test('directly navigate to current location if guard returns null', async () => {
-    globalNavigationGuard.apply(
-      { children: [fastForwardChildGuard] },
-      staticGuardArguments
-    );
+    globalNavigationGuard.apply({ children: [fastForwardChildGuard] }, staticGuardArguments);
     expect(next).toHaveBeenCalledWith();
   });
 
   test('redirect to location child guard returns', async () => {
-    globalNavigationGuard.apply(
-      { children: [firstChildGuard] },
-      staticGuardArguments
-    );
+    globalNavigationGuard.apply({ children: [firstChildGuard] }, staticGuardArguments);
     expect(next).toHaveBeenCalledWith({ name: 'first-route' });
   });
 
   test('ignore second child guard if first returns location', async () => {
     globalNavigationGuard.apply(
       { children: [firstChildGuard, secondChildGuard] },
-      staticGuardArguments
+      staticGuardArguments,
     );
     expect(next).toHaveBeenCalledWith({ name: 'first-route' });
   });
@@ -62,7 +53,7 @@ describe('globalNavigationGuard()', () => {
   test('redirect to second child guards location if first returns nothing', async () => {
     globalNavigationGuard.apply(
       { children: [emptyChildGuard, secondChildGuard] },
-      staticGuardArguments
+      staticGuardArguments,
     );
     expect(next).toHaveBeenCalledWith({ name: 'second-route' });
   });

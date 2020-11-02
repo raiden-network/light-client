@@ -17,6 +17,4 @@ export type NavigationGuardNextArgument = RawLocation | false | null;
  * Note that a returned location of `void` (or `null`) causes an immediate
  * routing to the already targeting location.
  */
-export type NavigationGuardChild = (
-  to: Route
-) => NavigationGuardNextArgument | undefined;
+export type NavigationGuardChild = (to: Route) => NavigationGuardNextArgument | undefined;

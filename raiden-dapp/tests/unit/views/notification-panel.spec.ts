@@ -2,10 +2,10 @@ jest.mock('vue-router');
 import Mocked = jest.Mocked;
 import Vue from 'vue';
 import Vuex from 'vuex';
-import store from '@/store/index';
 import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
+import store from '@/store/index';
 import NotificationPanel from '@/views/NotificationPanel.vue';
 
 Vue.use(Vuetify);
@@ -30,9 +30,7 @@ describe('NotificationPanel.vue', () => {
   });
 
   test('displays text when no notifications are available', () => {
-    const noNotificationsHeader = wrapper.find(
-      '.notification-panel-content__no-notifications'
-    );
+    const noNotificationsHeader = wrapper.find('.notification-panel-content__no-notifications');
 
     expect(noNotificationsHeader.text()).toBe('notifications.no-notifications');
   });

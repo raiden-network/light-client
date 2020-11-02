@@ -13,10 +13,7 @@
               width="40px"
               @click="onModalBackClicked()"
             >
-              <v-img
-                :src="require('@/assets/back_arrow.svg')"
-                max-width="34px"
-              />
+              <v-img :src="require('@/assets/back_arrow.svg')" max-width="34px" />
             </v-btn>
           </div>
           <div class="account-route__header__content__title">

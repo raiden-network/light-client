@@ -3,12 +3,7 @@
     <list-header v-if="header" :header="header" class="flex-grow-0" />
 
     <div class="token-list__wrapper flex-grow-1">
-      <v-virtual-scroll
-        #default="{ item }"
-        :items="tokens"
-        item-height="105"
-        bench="400"
-      >
+      <v-virtual-scroll #default="{ item }" :items="tokens" item-height="105" bench="400">
         <token-list-item :token="item" @select="forwardTokenSelection" />
       </v-virtual-scroll>
     </div>
@@ -17,9 +12,9 @@
 
 <script lang="ts">
 import { Component, Vue, Prop, Emit } from 'vue-property-decorator';
+import TokenListItem from './TokenListItem.vue';
 import { Token } from '@/model/types';
 import ListHeader from '@/components/ListHeader.vue';
-import TokenListItem from './TokenListItem.vue';
 
 @Component({ components: { ListHeader, TokenListItem } })
 export default class TokenList extends Vue {

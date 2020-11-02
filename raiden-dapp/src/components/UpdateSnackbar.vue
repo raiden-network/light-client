@@ -17,8 +17,8 @@ import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
 
 @Component({ components: { BlurredOverlay } })
 export default class UpdateSnackbar extends Vue {
-  isUpdating: boolean = false;
-  updateAvailable: boolean = false;
+  isUpdating = false;
+  updateAvailable = false;
   swRegistration: ServiceWorkerRegistration | null = null;
 
   created() {

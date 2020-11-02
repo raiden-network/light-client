@@ -12,9 +12,10 @@ const accountRoutes = [
   RouteNames.ACCOUNT_UDC,
 ] as string[];
 
-export function redirectIfNotConnected(
-  to: Route
-): NavigationGuardNextArgument | undefined {
+/**
+ * @param to
+ */
+export function redirectIfNotConnected(to: Route): NavigationGuardNextArgument | undefined {
   const { isConnected } = store.getters;
   const routingToAccount = accountRoutes.includes(to.name ?? '');
   const routingToHome = to.name === RouteNames.HOME;

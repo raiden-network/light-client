@@ -2,18 +2,18 @@ jest.mock('vue-router');
 
 import flushPromises from 'flush-promises';
 import { mount, shallowMount, Wrapper } from '@vue/test-utils';
-import ChannelsRoute from '@/views/ChannelsRoute.vue';
 import Vuex from 'vuex';
-import { TestData } from '../data/mock-data';
 import Vuetify from 'vuetify';
-import Filters from '@/filters';
 import Vue from 'vue';
-import store from '@/store';
+import VueRouter from 'vue-router';
+import { TestData } from '../data/mock-data';
 import { $identicon } from '../utils/mocks';
+import ChannelsRoute from '@/views/ChannelsRoute.vue';
+import Filters from '@/filters';
+import store from '@/store';
 import RaidenService from '@/services/raiden-service';
 import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';
-import VueRouter from 'vue-router';
 
 jest.mock('@/i18n', () => jest.fn());
 
@@ -30,10 +30,7 @@ describe('ChannelsRoute.vue', () => {
   store.commit('updateChannels', TestData.mockChannels);
   store.commit('updateTokens', TestData.mockTokens);
 
-  function createWrapper(
-    token: string = '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
-    shallow: boolean = false
-  ) {
+  function createWrapper(token = '0xd0A1E359811322d97991E03f863a0C30C2cF029C', shallow = false) {
     vuetify = new Vuetify();
 
     const options = {
@@ -74,9 +71,7 @@ describe('ChannelsRoute.vue', () => {
 
   test('render the test data', () => {
     wrapper = createWrapper();
-    expect(wrapper.findAll('.channel-list__channels__channel').length).toEqual(
-      2
-    );
+    expect(wrapper.findAll('.channel-list__channels__channel').length).toEqual(2);
   });
 
   test('navigate to home when the address is not in checksum format', async () => {
@@ -88,7 +83,7 @@ describe('ChannelsRoute.vue', () => {
     expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.HOME,
-      })
+      }),
     );
   });
 
@@ -101,7 +96,7 @@ describe('ChannelsRoute.vue', () => {
     expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.HOME,
-      })
+      }),
     );
   });
 

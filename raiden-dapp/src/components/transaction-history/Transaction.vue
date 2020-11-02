@@ -24,11 +24,7 @@
           }}
           <address-display
             class="transaction__item__details-left__address"
-            :address="
-              transfer.direction === 'sent'
-                ? transfer.target
-                : transfer.initiator
-            "
+            :address="transfer.direction === 'sent' ? transfer.target : transfer.initiator"
           />
         </v-row>
         <v-row class="transaction__item__details-left__time-stamp" no-gutters>
@@ -63,12 +59,7 @@
             >
               {{ $t('transfer-history.pending-transfer') }}
             </v-chip>
-            <v-chip
-              v-else-if="transfer.success"
-              color="success-chip"
-              x-small
-              text-color="success"
-            >
+            <v-chip v-else-if="transfer.success" color="success-chip" x-small text-color="success">
               {{ $t('transfer-history.successful-transfer') }}
             </v-chip>
             <v-chip v-else color="failed-chip" x-small text-color="failed">
@@ -83,11 +74,11 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
+import { mapState } from 'vuex';
 import { RaidenTransfer } from 'raiden-ts';
 import { Tokens } from '@/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import { mapState } from 'vuex';
 
 @Component({
   components: {

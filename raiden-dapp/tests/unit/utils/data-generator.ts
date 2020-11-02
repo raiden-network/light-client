@@ -1,22 +1,13 @@
 import times from 'lodash/times';
 import { BigNumber, constants } from 'ethers';
-import {
-  RaidenTransfer,
-  Address,
-  RaidenChannel,
-  ChannelState,
-} from 'raiden-ts';
+import { RaidenTransfer, Address, RaidenChannel, ChannelState } from 'raiden-ts';
 import { Token } from '@/model/types';
 
 const HEXADECIMAL_CHARACTERS = '0123456789abcdefABCDEF';
 const ALPHABET_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz';
 const NUMBER_CHARACTERS = '0123456789';
 
-function getRandomString(
-  charSet: string,
-  length: number,
-  prefix: string = ''
-): string {
+function getRandomString(charSet: string, length: number, prefix = ''): string {
   let output = prefix;
 
   times(length, () => {
@@ -38,6 +29,9 @@ function getRandomNumericId(): number {
   return +getRandomString(NUMBER_CHARACTERS, 5);
 }
 
+/**
+ * @param partialToken
+ */
 export function generateToken(partialToken: Partial<Token> = {}): Token {
   return {
     address: getRandomEthereumAddress(),
@@ -58,9 +52,13 @@ export function generateToken(partialToken: Partial<Token> = {}): Token {
  * the Token type of the dApp and casts its address for the token within the to
  * generate transfer.
  */
+/**
+ * @param partialTransfer
+ * @param token
+ */
 export function generateTransfer(
   partialTransfer: Partial<RaidenTransfer> = {},
-  token?: Token
+  token?: Token,
 ): RaidenTransfer {
   return {
     key: getRandomTransactionKey(),
@@ -76,9 +74,13 @@ export function generateTransfer(
   } as RaidenTransfer;
 }
 
+/**
+ * @param partialChannel
+ * @param token
+ */
 export function generateChannel(
   partialChannel: Partial<RaidenChannel>,
-  token?: Token
+  token?: Token,
 ): RaidenChannel {
   return {
     id: getRandomNumericId(),

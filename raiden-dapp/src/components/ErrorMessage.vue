@@ -43,20 +43,14 @@ export default class ErrorMessage extends Vue {
   }
 
   get problem() {
-    if (
-      this.code === 'RDN_GENERAL_ERROR' &&
-      typeof this.error?.message === 'string'
-    ) {
+    if (this.code === 'RDN_GENERAL_ERROR' && typeof this.error?.message === 'string') {
       return this.error.message;
     }
     return this.$t(`errors.${this.code}.problem`);
   }
 
   get solution() {
-    if (
-      this.code === 'RDN_GENERAL_ERROR' &&
-      typeof this.error?.message === 'string'
-    ) {
+    if (this.code === 'RDN_GENERAL_ERROR' && typeof this.error?.message === 'string') {
       return undefined;
     }
     return this.$t(`errors.${this.code}.solution`);

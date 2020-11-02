@@ -1,15 +1,13 @@
+import { MutationTree } from 'vuex';
+import { NotificationContext } from './notification-context';
 import {
   NotificationPayload,
   NotificationsState,
   NotificationDictionary,
 } from '@/store/notifications/types';
-import { MutationTree } from 'vuex';
-import { NotificationContext } from './notification-context';
 
 function generateNotificationId(notifications: NotificationDictionary) {
-  const id = Object.values(notifications).map(
-    (notification) => notification.id
-  );
+  const id = Object.values(notifications).map((notification) => notification.id);
   return Math.max(...id, 0) + 1;
 }
 
@@ -22,17 +20,12 @@ export const mutations: MutationTree<NotificationsState> = {
   notificationsViewed(state: NotificationsState) {
     state.newNotifications = false;
   },
-  notificationAddOrReplace(
-    state: NotificationsState,
-    payload: NotificationPayload
-  ) {
+  notificationAddOrReplace(state: NotificationsState, payload: NotificationPayload) {
     const { notifications } = state;
     const notificationsWithSameTxHash = Object.values(notifications).filter(
-      ({ txHash }) => txHash && txHash === payload.txHash
+      ({ txHash }) => txHash && txHash === payload.txHash,
     );
-    const id =
-      notificationsWithSameTxHash[0]?.id ??
-      generateNotificationId(notifications);
+    const id = notificationsWithSameTxHash[0]?.id ?? generateNotificationId(notifications);
     const display = notificationsWithSameTxHash[0]?.id ? false : true;
 
     const notification: NotificationPayload = {

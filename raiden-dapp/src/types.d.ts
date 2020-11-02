@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import 'vuetify/types/lib.d';
+import { providers } from 'ethers';
 import RaidenService from '@/services/raiden-service';
 import { RaidenChannels, RaidenTransfer, RaidenConfig } from 'raiden-ts';
 import { DeniedReason, Token, Presences } from '@/model/types';
-import { providers } from 'ethers';
 
 export type Tokens = { [token: string]: Token };
 export type Transfers = { [key: string]: RaidenTransfer };

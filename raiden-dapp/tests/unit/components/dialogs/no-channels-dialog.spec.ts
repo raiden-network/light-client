@@ -3,8 +3,8 @@ import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import { RouteNames } from '@/router/route-names';
 import Vuetify from 'vuetify';
+import { RouteNames } from '@/router/route-names';
 import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
 
@@ -27,15 +27,13 @@ describe('NoChannelsDialog.vue', () => {
   });
 
   test('clicking dialog button redirects to token select screen', async () => {
-    const connectNewTokenButton = wrapper
-      .findComponent(ActionButton)
-      .find('button');
+    const connectNewTokenButton = wrapper.findComponent(ActionButton).find('button');
     connectNewTokenButton.trigger('click');
     await wrapper.vm.$nextTick();
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
-      expect.objectContaining({ name: RouteNames.SELECT_TOKEN })
+      expect.objectContaining({ name: RouteNames.SELECT_TOKEN }),
     );
   });
 });

@@ -1,6 +1,9 @@
-import AddressUtils from '@/utils/address-utils';
 import { BigNumber } from 'ethers';
+import AddressUtils from '@/utils/address-utils';
 
+/**
+ * @param queryParam
+ */
 export function getPaymentId(queryParam: any): BigNumber | undefined {
   try {
     return BigNumber.from(queryParam);
@@ -9,6 +12,9 @@ export function getPaymentId(queryParam: any): BigNumber | undefined {
   }
 }
 
+/**
+ * @param queryParam
+ */
 export function getAmount(queryParam: any): string {
   let amount = '';
 
@@ -21,14 +27,14 @@ export function getAmount(queryParam: any): string {
   return amount;
 }
 
+/**
+ * @param queryParam
+ */
 export function getAddress(queryParam: any) {
   let address = '';
 
   if (queryParam && typeof queryParam === 'string') {
-    if (
-      AddressUtils.isAddress(queryParam) &&
-      AddressUtils.checkAddressChecksum(queryParam)
-    ) {
+    if (AddressUtils.isAddress(queryParam) && AddressUtils.checkAddressChecksum(queryParam)) {
       address = queryParam;
     }
   }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('vue-router');
 jest.useFakeTimers();
 import { shallowMount, Wrapper } from '@vue/test-utils';
@@ -5,13 +6,13 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import { constants } from 'ethers';
+import { generateChannel, generateToken } from '../utils/data-generator';
 import TransferRoute from '@/views/TransferRoute.vue';
 import NoTokens from '@/components/NoTokens.vue';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
-import { generateChannel, generateToken } from '../utils/data-generator';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -29,7 +30,7 @@ describe('TransferRoute.vue', () => {
       library results in a property does not exist error.
       */
       TransferRoute.prototype.constructor.options.methods,
-      'pushStateBackupNotification'
+      'pushStateBackupNotification',
     );
   });
 
@@ -39,7 +40,7 @@ describe('TransferRoute.vue', () => {
     tokenParameter = token.address,
     tokens = [token],
     channels = [channel],
-    stateBackupReminderDateMs = 0
+    stateBackupReminderDateMs = 0,
   ): Wrapper<TransferRoute> {
     const state = {
       stateBackupReminderDateMs,

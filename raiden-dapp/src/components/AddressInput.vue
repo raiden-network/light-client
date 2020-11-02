@@ -37,9 +37,7 @@
       </template>
       <template #append>
         <span v-if="!busy" class="address-input__qr-code">
-          <qr-code
-            @click.native="isQrCodeOverlayVisible = !isQrCodeOverlayVisible"
-          />
+          <qr-code @click.native="isQrCodeOverlayVisible = !isQrCodeOverlayVisible" />
         </span>
         <div v-else>
           <spinner :size="22" :width="2" :inline="true" />
@@ -58,12 +56,6 @@
 import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 
-import QrCode from '@/components/icons/QrCode.vue';
-import QrCodeOverlay from '@/components/overlays/QrCodeOverlay.vue';
-import Spinner from '@/components/icons/Spinner.vue';
-import { Presences } from '@/model/types';
-import AddressUtils from '@/utils/address-utils';
-import BlockieMixin from '@/mixins/blockie-mixin';
 import {
   BehaviorSubject,
   defer,
@@ -74,13 +66,13 @@ import {
   partition,
   Subscription,
 } from 'rxjs';
-import {
-  catchError,
-  debounceTime,
-  map,
-  switchMap,
-  tap,
-} from 'rxjs/internal/operators';
+import { catchError, debounceTime, map, switchMap, tap } from 'rxjs/internal/operators';
+import QrCode from '@/components/icons/QrCode.vue';
+import QrCodeOverlay from '@/components/overlays/QrCodeOverlay.vue';
+import Spinner from '@/components/icons/Spinner.vue';
+import { Presences } from '@/model/types';
+import AddressUtils from '@/utils/address-utils';
+import BlockieMixin from '@/mixins/blockie-mixin';
 
 type ValidationResult = {
   error?: string;
@@ -127,16 +119,16 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     this.inputError(this.errorMessages[0]);
   }
 
-  address: string = '';
+  address = '';
 
-  typing: boolean = false;
-  valid: boolean = false;
-  touched: boolean = false;
+  typing = false;
+  valid = false;
+  touched = false;
   errorMessages: string[] = [];
-  busy: boolean = false;
+  busy = false;
   presences!: Presences;
-  isAddressAvailable: boolean = false;
-  isQrCodeOverlayVisible: boolean = false;
+  isAddressAvailable = false;
+  isQrCodeOverlayVisible = false;
 
   get isAddressValid() {
     // v-text-field interprets strings returned from a validation rule
@@ -157,9 +149,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     return [() => isAddressValid || ''];
   }
 
-  private checkAvailability(
-    value: ValidationResult
-  ): Observable<ValidationResult> {
+  private checkAvailability(value: ValidationResult): Observable<ValidationResult> {
     return 'error' in value
       ? of(value)
       : of(value).pipe(
@@ -167,7 +157,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           switchMap((value) =>
             value.value in this.presences
               ? of(this.presences[value.value])
-              : defer(() => from(this.$raiden.getAvailability(value.value)))
+              : defer(() => from(this.$raiden.getAvailability(value.value))),
           ),
           map((available) => {
             this.busy = false;
@@ -180,7 +170,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
               };
             }
             return value;
-          })
+          }),
         );
   }
 
@@ -194,14 +184,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           tap(() => (this.busy = true)),
           switchMap((value) => this.$raiden.ensResolve(value)),
           map((resolvedAddress) => {
-            if (
-              !resolvedAddress ||
-              !AddressUtils.checkAddressChecksum(resolvedAddress)
-            ) {
+            if (!resolvedAddress || !AddressUtils.checkAddressChecksum(resolvedAddress)) {
               return {
-                error: this.$t(
-                  'address-input.error.ens-resolve-failed'
-                ) as string,
+                error: this.$t('address-input.error.ens-resolve-failed') as string,
                 value: resolvedAddress,
               };
             }
@@ -209,13 +194,11 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           }),
           catchError(() =>
             of({
-              error: this.$t(
-                'address-input.error.ens-resolve-failed'
-              ) as string,
+              error: this.$t('address-input.error.ens-resolve-failed') as string,
               value,
-            })
+            }),
           ),
-          tap(() => (this.busy = false))
+          tap(() => (this.busy = false)),
         );
   }
 
@@ -226,9 +209,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       if (!AddressUtils.checkAddressChecksum(value)) {
         message = this.$t('address-input.error.no-checksum') as string;
       } else if (this.exclude.includes(value)) {
-        message = this.$t(
-          'address-input.error.invalid-excluded-address'
-        ) as string;
+        message = this.$t('address-input.error.invalid-excluded-address') as string;
       } else if (this.block.includes(value)) {
         message = this.$t('address-input.error.channel-not-open') as string;
       }
@@ -265,13 +246,13 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
           this.touched = true;
           const [addresses, nonAddresses] = partition(of(value), (value) =>
-            AddressUtils.isAddress(value)
+            AddressUtils.isAddress(value),
           );
           return merge<ValidationResult>(
             addresses.pipe(switchMap((value) => this.validateAddress(value))),
-            nonAddresses.pipe(switchMap((value) => this.lookupEnsDomain(value)))
+            nonAddresses.pipe(switchMap((value) => this.lookupEnsDomain(value))),
           ).pipe(switchMap((value) => this.checkAvailability(value)));
-        })
+        }),
       )
       .subscribe(({ error, value }) => {
         this.typing = false;
@@ -300,11 +281,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   @Watch('presences')
   onPresenceUpdate() {
-    if (
-      !this.address ||
-      !this.value ||
-      this.presences[this.address] === this.isAddressAvailable
-    ) {
+    if (!this.address || !this.value || this.presences[this.address] === this.isAddressAvailable) {
       return;
     }
     this.valueChanged(this.value);
@@ -330,10 +307,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   isChecksumAddress(address: string): boolean {
     const tokenAddress = address;
-    return (
-      AddressUtils.isAddress(tokenAddress) &&
-      AddressUtils.checkAddressChecksum(tokenAddress)
-    );
+    return AddressUtils.isAddress(tokenAddress) && AddressUtils.checkAddressChecksum(tokenAddress);
   }
 
   private checkForErrors() {

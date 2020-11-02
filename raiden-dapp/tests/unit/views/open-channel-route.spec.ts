@@ -39,7 +39,7 @@ describe('OpenChannelRoute.vue', () => {
       token?: string;
       partner?: string;
     },
-    shallow: boolean = false
+    shallow = false,
   ): Wrapper<OpenChannelRoute> {
     const options = {
       vuetify,
@@ -108,7 +108,7 @@ describe('OpenChannelRoute.vue', () => {
 
     test('show an error when a channel open fails', async () => {
       service.openChannel.mockRejectedValueOnce(
-        new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED)
+        new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED),
       );
 
       mockInput(wrapper, '0.1');
@@ -125,7 +125,7 @@ describe('OpenChannelRoute.vue', () => {
 
     test('show an error when the deposit fails', async () => {
       service.openChannel.mockRejectedValueOnce(
-        new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED)
+        new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED),
       );
 
       mockInput(wrapper, '0.1');
@@ -159,7 +159,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.TRANSFER,
-        })
+        }),
       );
       expect(loading).toHaveBeenCalledTimes(2);
     });
@@ -179,7 +179,7 @@ describe('OpenChannelRoute.vue', () => {
         {
           token: '0xc778417e063141139fce010982780140aa0cd5ab',
         },
-        true
+        true,
       );
 
       await flushPromises();
@@ -188,7 +188,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.HOME,
-        })
+        }),
       );
     });
 
@@ -204,7 +204,7 @@ describe('OpenChannelRoute.vue', () => {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
           partner: '0x1d36124c90f53d491b6832f1c073f43e2550e35b',
         },
-        true
+        true,
       );
 
       await flushPromises();
@@ -213,7 +213,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.SELECT_TOKEN,
-        })
+        }),
       );
     });
 
@@ -223,7 +223,7 @@ describe('OpenChannelRoute.vue', () => {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
           partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
         },
-        true
+        true,
       );
       await flushPromises();
 
@@ -231,7 +231,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.HOME,
-        })
+        }),
       );
     });
   });
@@ -244,7 +244,7 @@ describe('OpenChannelRoute.vue', () => {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
           partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
         },
-        true
+        true,
       );
       const vm = wrapper.vm as any;
       beforeRouteLeave = vm.beforeRouteLeave as NavigationGuard;

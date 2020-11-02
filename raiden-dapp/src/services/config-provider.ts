@@ -8,10 +8,7 @@ export class ConfigProvider {
     } = process.env;
 
     if (deploymentInfoFilePath && deploymentServicesInfoFilePath) {
-      const [
-        deploymentInfoFile,
-        deploymentServicesInfoFile,
-      ] = await Promise.all([
+      const [deploymentInfoFile, deploymentServicesInfoFile] = await Promise.all([
         fetch(deploymentInfoFilePath),
         fetch(deploymentServicesInfoFilePath),
       ]);
@@ -29,8 +26,7 @@ export class ConfigProvider {
   }
 
   static async configuration(): Promise<Configuration> {
-    const configurationUrl =
-      process.env.VUE_APP_CONFIGURATION_URL || './config.json';
+    const configurationUrl = process.env.VUE_APP_CONFIGURATION_URL || './config.json';
     const response = await fetch(configurationUrl);
     return (await response.json()) as Configuration;
   }
