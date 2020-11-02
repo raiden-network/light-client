@@ -120,13 +120,6 @@
     "/dist",
     "/dist:cjs"
   ],
-  "eslintIgnore": [
-    "raiden-contracts/*",
-    "scripts/*",
-    "dist/*",
-    "dist:cjs/*",
-    "src/contracts/*"
-  ],
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
