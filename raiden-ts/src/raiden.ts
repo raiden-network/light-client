@@ -447,10 +447,11 @@ export class Raiden {
   /**
    * Triggers all epics to be unsubscribed
    */
-  public stop(): void {
+  public async stop(): Promise<void> {
     // start still can't be called again, but turns this.started to false
     // this.epicMiddleware is set to null by latest$'s complete callback
     if (this.started) this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
+    if (this.started !== undefined) await this.deps.db.busy$.toPromise();
   }
 
   /**
