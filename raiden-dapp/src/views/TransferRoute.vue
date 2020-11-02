@@ -52,15 +52,6 @@ const ONE_DAY = new Date().setHours(24);
 export default class TransferRoute extends Vue {
   stateBackupReminderDateMs!: number;
   tokens!: TokenModel[];
-  stateBackupReminder = {
-    icon: this.$t('notifications.backup-state.icon') as string,
-    title: this.$t('notifications.backup-state.title') as string,
-    link: this.$t('notifications.backup-state.link') as string,
-    dappRoute: RouteNames.ACCOUNT_BACKUP,
-    description: this.$t('notifications.backup-state.description') as string,
-    importance: NotificationImportance.HIGH,
-    context: NotificationContext.WARNING,
-  } as NotificationPayload;
   channelWithBiggestCapacity!: (
     tokenAddress: string
   ) => RaidenChannel | undefined;
@@ -77,10 +68,20 @@ export default class TransferRoute extends Vue {
   }
 
   pushStateBackupNotification(currentTime: number): void {
+    const stateBackupReminder = {
+      icon: this.$t('notifications.backup-state.icon') as string,
+      title: this.$t('notifications.backup-state.title') as string,
+      link: this.$t('notifications.backup-state.link') as string,
+      dappRoute: RouteNames.ACCOUNT_BACKUP,
+      description: this.$t('notifications.backup-state.description') as string,
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.WARNING,
+    } as NotificationPayload;
+
     this.$store.commit('updateStateBackupReminderDate', currentTime);
     this.$store.commit(
       'notifications/notificationAddOrReplace',
-      this.stateBackupReminder
+      stateBackupReminder
     );
   }
 
