@@ -27,6 +27,8 @@ docker run --detach --rm \
   raidennetwork/lightclient-e2e-environment \
   >/dev/null
 
+sleep 5
+
 echo "Getting DEPLOYMENT_INFO from docker image '$DOCKER_CONTAINER_NAME' ..."
 docker cp "$DOCKER_CONTAINER_NAME":/opt/deployment/deployment_private_net.json "$DEPLOYMENT_INFO_DIR/"
 docker cp "$DOCKER_CONTAINER_NAME":/opt/deployment/deployment_services_private_net.json "$DEPLOYMENT_INFO_DIR/"
@@ -36,8 +38,8 @@ export DEPLOYMENT_INFO="${DEPLOYMENT_INFO_DIR}/deployment_private_net.json"
 export DEPLOYMENT_SERVICES_INFO="${DEPLOYMENT_INFO_DIR}/deployment_services_private_net.json"
 source "${DEPLOYMENT_INFO_DIR}/smartcontracts.sh"
 
-echo "Run end-to-end tests for dApp..."
-pnpm run test:e2e -- "$@"
+echo "Run end-to-end tests for $( basename $( realpath . ) )..."
+yarn run test:e2e "$@"
 
 echo "Getting the service logs..."
 docker cp "$DOCKER_CONTAINER_NAME":/var/log/supervisor/. ./logs/
