@@ -2,7 +2,9 @@
   <v-card data-cy="notification_card" class="notification-card" flat>
     <v-row class="notification-card__content" no-gutters>
       <v-avatar class="notification-card__content__icon" size="44" rounded>
-        <img :src="require(`@/assets/${notification.icon}.svg`)" />
+        <img
+          :src="require(`@/assets/notifications/${notification.icon}.svg`)"
+        />
       </v-avatar>
       <div class="notification-card__content__details">
         <span class="notification-card__content__details__title">
@@ -42,7 +44,7 @@
         class="notification-card__delete-button"
         @click="notificationDelete(notification.id)"
       >
-        <img :src="require('@/assets/notification_trash.svg')" />
+        <img :src="require('@/assets/notifications/notification_trash.svg')" />
       </v-btn>
     </v-row>
   </v-card>
