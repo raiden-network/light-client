@@ -9,5 +9,5 @@ Cypress.Commands.add(
     } else {
       cy.get(selector, { timeout: 1800000 });
     }
-  }
+  },
 );

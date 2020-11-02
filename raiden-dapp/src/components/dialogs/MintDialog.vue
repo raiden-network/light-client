@@ -48,9 +48,9 @@ export default class MintDialog extends Vue {
   @Prop({ required: true, type: Boolean })
   visible!: boolean;
 
-  loading: boolean = false;
+  loading = false;
   error: Error | RaidenError | null = null;
-  amount: string = '1';
+  amount = '1';
 
   @Emit()
   cancel() {
@@ -64,7 +64,7 @@ export default class MintDialog extends Vue {
     try {
       await this.$raiden.mint(
         this.token.address,
-        BalanceUtils.parse(this.amount, this.token.decimals!)
+        BalanceUtils.parse(this.amount, this.token.decimals!),
       );
       this.$emit('done');
     } catch (e) {

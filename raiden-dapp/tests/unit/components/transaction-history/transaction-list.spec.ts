@@ -1,12 +1,12 @@
 import { shallowMount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import { generateToken, generateTransfer } from '../../utils/data-generator';
 import { RaidenTransfer } from 'raiden-ts';
 import Transaction from '@/components/transaction-history/Transaction.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import { Token } from '@/model/types';
 import { Transfers } from '@/types';
-import { generateToken, generateTransfer } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 
@@ -17,12 +17,10 @@ describe('TransactionList.vue', () => {
 
   const createWrapper = (
     tokenProp?: Token,
-    transferList: RaidenTransfer[] = transfers
+    transferList: RaidenTransfer[] = transfers,
   ): Wrapper<TransactionList> => {
     const transfersState: Transfers = {};
-    transferList.forEach(
-      (transfer) => (transfersState[transfer.key] = transfer)
-    );
+    transferList.forEach((transfer) => (transfersState[transfer.key] = transfer));
 
     /*
      * For some reason does the plain 'mount' not work with with lazy list of
@@ -68,9 +66,7 @@ describe('TransactionList.vue', () => {
   test('transaction list is stored by date', () => {
     const wrapper = createWrapper();
     const transactionEntries = wrapper.findAllComponents(Transaction);
-    const orderAsIs = transactionEntries.wrappers.map(
-      (entry) => entry.props().transfer.changedAt
-    );
+    const orderAsIs = transactionEntries.wrappers.map((entry) => entry.props().transfer.changedAt);
     const correctOrder = orderAsIs.sort();
 
     expect(orderAsIs).toEqual(correctOrder);

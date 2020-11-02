@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils';
-import NoAccessMessage from '@/components/NoAccessMessage.vue';
-import { DeniedReason } from '@/model/types';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import NoAccessMessage from '@/components/NoAccessMessage.vue';
+import { DeniedReason } from '@/model/types';
 
 Vue.use(Vuetify);
 
@@ -24,9 +24,7 @@ describe('NoAccessMessage.vue', () => {
 
   test('unsupported network', () => {
     const wrapper = createWrapper(DeniedReason.UNSUPPORTED_NETWORK);
-    expect(wrapper.find('span').text().trim()).toEqual(
-      'no-access.unsupported-network'
-    );
+    expect(wrapper.find('span').text().trim()).toEqual('no-access.unsupported-network');
   });
 
   test('user denied', () => {
@@ -38,7 +36,7 @@ describe('NoAccessMessage.vue', () => {
         .trim()
         .split('\n')
         .map((text) => text.trim())
-        .join(' ')
+        .join(' '),
     ).toEqual('no-access.generic-error');
   });
 
@@ -51,7 +49,7 @@ describe('NoAccessMessage.vue', () => {
         .trim()
         .split('\n')
         .map((text) => text.trim())
-        .join(' ')
+        .join(' '),
     ).toEqual('no-access.sdk-initialization-failure');
   });
 
@@ -59,8 +57,6 @@ describe('NoAccessMessage.vue', () => {
     const wrapper = createWrapper(DeniedReason.RDN_STATE_MIGRATION);
     const invalidOldStateMessage = wrapper.find('span');
 
-    expect(invalidOldStateMessage.text()).toEqual(
-      'no-access.rdn-state-migration'
-    );
+    expect(invalidOldStateMessage.text()).toEqual('no-access.rdn-state-migration');
   });
 });

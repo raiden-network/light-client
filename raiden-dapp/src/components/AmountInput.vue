@@ -22,9 +22,9 @@
 
 <script lang="ts">
 import { Component, Prop, Vue, Emit, Watch } from 'vue-property-decorator';
+import { BigNumber, constants } from 'ethers';
 import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import { BigNumber, constants } from 'ethers';
 
 @Component({})
 export default class AmountInput extends Vue {
@@ -44,14 +44,13 @@ export default class AmountInput extends Vue {
   placeholder!: string;
   @Prop({ required: false, default: () => constants.Zero })
   max!: BigNumber;
-  valid: boolean = true;
-  amount: string = '';
+  valid = true;
+  amount = '';
   private static numericRegex = /^\d*[.]?\d*$/;
 
   readonly rules = [
     (v: string) => !!v || '',
-    (v: string) =>
-      !Number.isNaN(Number(v)) || this.$parent.$t('amount-input.error.invalid'),
+    (v: string) => !Number.isNaN(Number(v)) || this.$parent.$t('amount-input.error.invalid'),
     (v: string) =>
       !this.limit ||
       (v && this.noDecimalOverflow(v)) ||

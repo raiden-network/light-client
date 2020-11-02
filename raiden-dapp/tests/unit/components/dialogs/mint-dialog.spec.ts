@@ -3,8 +3,8 @@ import Vuetify from 'vuetify';
 import Vue from 'vue';
 import flushPromises from 'flush-promises';
 
-import MintDialog from '@/components/dialogs/MintDialog.vue';
 import { TestData } from '../../data/mock-data';
+import MintDialog from '@/components/dialogs/MintDialog.vue';
 import Filters from '@/filters';
 import { RaidenError, ErrorCodes } from 'raiden-ts';
 
@@ -45,9 +45,7 @@ describe('MintDialog.vue', () => {
   });
 
   test('shows an error if minting fails', async () => {
-    $raiden.mint = jest
-      .fn()
-      .mockRejectedValueOnce(new RaidenError(ErrorCodes.RDN_MINT_FAILED));
+    $raiden.mint = jest.fn().mockRejectedValueOnce(new RaidenError(ErrorCodes.RDN_MINT_FAILED));
 
     wrapper.find('.action-button__button').trigger('click');
 
@@ -56,8 +54,6 @@ describe('MintDialog.vue', () => {
 
     expect($raiden.mint).toHaveBeenCalled();
     expect($raiden.mint).rejects;
-    expect(wrapper.find('.error-message__title').text()).toContain(
-      'errors.RDN_MINT_FAILED.title'
-    );
+    expect(wrapper.find('.error-message__title').text()).toContain('errors.RDN_MINT_FAILED.title');
   });
 });

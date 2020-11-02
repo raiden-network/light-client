@@ -1,10 +1,10 @@
 import { mount, Wrapper } from '@vue/test-utils';
-import AmountInput from '@/components/AmountInput.vue';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import flushPromises from 'flush-promises';
 import { mockInput } from '../utils/interaction-utils';
 import { TestData } from '../data/mock-data';
-import flushPromises from 'flush-promises';
+import AmountInput from '@/components/AmountInput.vue';
 
 Vue.use(Vuetify);
 

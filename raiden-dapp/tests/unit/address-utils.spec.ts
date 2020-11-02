@@ -6,25 +6,19 @@ describe('AddressUtils', () => {
   });
 
   test('return true when the string is a valid address', () => {
-    expect(
-      AddressUtils.isAddress('0x82641569b2062b545431cf6d7f0a418582865ba7')
-    ).toBe(true);
+    expect(AddressUtils.isAddress('0x82641569b2062b545431cf6d7f0a418582865ba7')).toBe(true);
   });
 
   test('return false when the address is not in checksum format', () => {
-    expect(
-      AddressUtils.checkAddressChecksum(
-        '0x82641569b2062b545431cf6d7f0a418582865ba7'
-      )
-    ).toBe(false);
+    expect(AddressUtils.checkAddressChecksum('0x82641569b2062b545431cf6d7f0a418582865ba7')).toBe(
+      false,
+    );
   });
 
   test('return true when the address is already in checksum format', () => {
-    expect(
-      AddressUtils.checkAddressChecksum(
-        '0x82641569b2062B545431cF6D7F0A418582865ba7'
-      )
-    ).toBe(true);
+    expect(AddressUtils.checkAddressChecksum('0x82641569b2062B545431cF6D7F0A418582865ba7')).toBe(
+      true,
+    );
   });
 
   test('return false when the input is not an address', () => {

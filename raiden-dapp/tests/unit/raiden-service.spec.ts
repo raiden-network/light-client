@@ -24,9 +24,7 @@ import { paymentId } from './data/mock-data';
 import Mocked = jest.Mocked;
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { NotificationContext } from '@/store/notifications/notification-context';
-const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual(
-  'raiden-ts'
-);
+const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual('raiden-ts');
 
 describe('RaidenService', () => {
   let raidenService: RaidenService;
@@ -45,9 +43,7 @@ describe('RaidenService', () => {
     mock.getTokenBalance.mockResolvedValue(constants.Zero);
     mock.getTokenList.mockResolvedValue(['0xtoken' as Address]);
     mock.getUDCCapacity.mockResolvedValue(constants.Zero);
-    mock.userDepositTokenAddress = jest
-      .fn()
-      .mockResolvedValue('0xuserdeposittoken' as Address);
+    mock.userDepositTokenAddress = jest.fn().mockResolvedValue('0xuserdeposittoken' as Address);
     mock.getAvailability.mockResolvedValue({
       userId: '123',
       available: true,
@@ -105,7 +101,7 @@ describe('RaidenService', () => {
   test('throw an error when the user calls getAccount before connecting', async () => {
     expect.assertions(1);
     await expect(raidenService.getAccount()).rejects.toThrowError(
-      'Raiden instance was not initialized'
+      'Raiden instance was not initialized',
     );
   });
 
@@ -130,29 +126,21 @@ describe('RaidenService', () => {
     await flushPromises();
 
     expect(store.commit).toBeCalledTimes(2);
-    expect(store.commit).toBeCalledWith(
-      'accessDenied',
-      DeniedReason.NO_ACCOUNT
-    );
+    expect(store.commit).toBeCalledWith('accessDenied', DeniedReason.NO_ACCOUNT);
     expect(store.commit).toBeCalledWith('loadComplete');
   });
 
   test('commit a deniedAccess when the user attempts to connect on an unsupported network', async () => {
     providerMock.mockResolvedValue(mockProvider);
     factory.mockRejectedValue(
-      new Error(
-        'No deploy info provided nor recognized network: {name: "homestead", chainId: 1}'
-      )
+      new Error('No deploy info provided nor recognized network: {name: "homestead", chainId: 1}'),
     );
 
     await raidenService.connect();
     await flushPromises();
 
     expect(store.commit).toBeCalledTimes(2);
-    expect(store.commit).toBeCalledWith(
-      'accessDenied',
-      DeniedReason.UNSUPPORTED_NETWORK
-    );
+    expect(store.commit).toBeCalledWith('accessDenied', DeniedReason.UNSUPPORTED_NETWORK);
     expect(store.commit).toBeCalledWith('loadComplete');
   });
 
@@ -170,7 +158,7 @@ describe('RaidenService', () => {
   test('throw an error when the user calls openChannel before calling connect', async () => {
     expect.assertions(1);
     await expect(
-      raidenService.openChannel('0xaddr', '0xhub', BigNumber.from(5000))
+      raidenService.openChannel('0xaddr', '0xhub', BigNumber.from(5000)),
     ).rejects.toThrowError('Raiden instance was not initialized');
   });
 
@@ -201,7 +189,7 @@ describe('RaidenService', () => {
             name: 'Test Token 1',
             symbol: 'TT1',
           } as Token,
-        } as Tokens)
+        } as Tokens),
       );
       expect(raiden.getTokenBalance).toHaveBeenCalledTimes(1);
       expect(raiden.getTokenBalance).toHaveBeenCalledWith('0xtoken');
@@ -234,19 +222,14 @@ describe('RaidenService', () => {
 
       const depositAmount = BigNumber.from(100);
       await expect(
-        raidenService.openChannel(
-          '0xtoken',
-          '0xpartner',
-          depositAmount,
-          progress
-        )
+        raidenService.openChannel('0xtoken', '0xpartner', depositAmount, progress),
       ).resolves.toBeUndefined();
       expect(raiden.openChannel).toBeCalledTimes(1);
       expect(raiden.openChannel).toBeCalledWith(
         '0xtoken',
         '0xpartner',
         { deposit: expect.any(BigNumber) },
-        expect.any(Function)
+        expect.any(Function),
       );
 
       expect(progress).toHaveBeenCalled();
@@ -259,7 +242,7 @@ describe('RaidenService', () => {
 
       const depositAmount = BigNumber.from(100);
       await expect(
-        raidenService.openChannel('0xtoken', '0xpartner', depositAmount)
+        raidenService.openChannel('0xtoken', '0xpartner', depositAmount),
       ).rejects.toThrow(RaidenError);
     });
 
@@ -282,9 +265,9 @@ describe('RaidenService', () => {
       const error = new RaidenError(ErrorCodes.CNL_CLOSECHANNEL_FAILED);
       raiden.closeChannel.mockRejectedValue(error);
 
-      await expect(
-        raidenService.closeChannel('0xtoken', '0xpartner')
-      ).rejects.toThrowError(RaidenError);
+      await expect(raidenService.closeChannel('0xtoken', '0xpartner')).rejects.toThrowError(
+        RaidenError,
+      );
       expect(raiden.closeChannel).toHaveBeenCalledTimes(1);
       expect(raiden.closeChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
     });
@@ -296,11 +279,7 @@ describe('RaidenService', () => {
       const depositAmount = BigNumber.from(6000);
       await raidenService.deposit('0xtoken', '0xpartner', depositAmount);
       expect(raiden.depositChannel).toHaveBeenCalledTimes(1);
-      expect(raiden.depositChannel).toHaveBeenCalledWith(
-        '0xtoken',
-        '0xpartner',
-        depositAmount
-      );
+      expect(raiden.depositChannel).toHaveBeenCalledWith('0xtoken', '0xpartner', depositAmount);
     });
 
     test('throw when deposit fails', async () => {
@@ -310,14 +289,10 @@ describe('RaidenService', () => {
 
       const depositAmount = BigNumber.from(6000);
       await expect(
-        raidenService.deposit('0xtoken', '0xpartner', depositAmount)
+        raidenService.deposit('0xtoken', '0xpartner', depositAmount),
       ).rejects.toThrowError(RaidenError);
       expect(raiden.depositChannel).toHaveBeenCalledTimes(1);
-      expect(raiden.depositChannel).toHaveBeenCalledWith(
-        '0xtoken',
-        '0xpartner',
-        depositAmount
-      );
+      expect(raiden.depositChannel).toHaveBeenCalledWith('0xtoken', '0xpartner', depositAmount);
     });
 
     test('resolves when withdraw is successful', async () => {
@@ -327,11 +302,7 @@ describe('RaidenService', () => {
       const withdrawAmount = BigNumber.from(6000);
       await raidenService.withdraw('0xtoken', '0xpartner', withdrawAmount);
       expect(raiden.withdrawChannel).toHaveBeenCalledTimes(1);
-      expect(raiden.withdrawChannel).toHaveBeenCalledWith(
-        '0xtoken',
-        '0xpartner',
-        withdrawAmount
-      );
+      expect(raiden.withdrawChannel).toHaveBeenCalledWith('0xtoken', '0xpartner', withdrawAmount);
     });
 
     test('throw when withdraw fails', async () => {
@@ -341,40 +312,28 @@ describe('RaidenService', () => {
 
       const withdrawAmount = BigNumber.from(6000);
       await expect(
-        raidenService.withdraw('0xtoken', '0xpartner', withdrawAmount)
+        raidenService.withdraw('0xtoken', '0xpartner', withdrawAmount),
       ).rejects.toThrowError(RaidenError);
       expect(raiden.withdrawChannel).toHaveBeenCalledTimes(1);
-      expect(raiden.withdrawChannel).toHaveBeenCalledWith(
-        '0xtoken',
-        '0xpartner',
-        withdrawAmount
-      );
+      expect(raiden.withdrawChannel).toHaveBeenCalledWith('0xtoken', '0xpartner', withdrawAmount);
     });
 
     describe('settleChannel', () => {
       test('resolves when settle is successful', async () => {
         raiden.settleChannel = jest.fn().mockResolvedValue('txhash' as Hash);
-        await expect(
-          raidenService.settleChannel('0xtoken', '0xpartner')
-        ).resolves.toBeUndefined();
+        await expect(raidenService.settleChannel('0xtoken', '0xpartner')).resolves.toBeUndefined();
         expect(raiden.settleChannel).toHaveBeenCalledTimes(1);
-        expect(raiden.settleChannel).toHaveBeenCalledWith(
-          '0xtoken',
-          '0xpartner'
-        );
+        expect(raiden.settleChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
       });
 
       test('throw when settle fails', async () => {
         const error = new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_FAILED);
         raiden.settleChannel = jest.fn().mockRejectedValue(error);
-        await expect(
-          raidenService.settleChannel('0xtoken', '0xpartner')
-        ).rejects.toThrowError(RaidenError);
-        expect(raiden.settleChannel).toHaveBeenCalledTimes(1);
-        expect(raiden.settleChannel).toHaveBeenCalledWith(
-          '0xtoken',
-          '0xpartner'
+        await expect(raidenService.settleChannel('0xtoken', '0xpartner')).rejects.toThrowError(
+          RaidenError,
         );
+        expect(raiden.settleChannel).toHaveBeenCalledTimes(1);
+        expect(raiden.settleChannel).toHaveBeenCalledWith('0xtoken', '0xpartner');
       });
     });
     describe('transfer', () => {
@@ -382,24 +341,13 @@ describe('RaidenService', () => {
         raiden.waitTransfer.mockResolvedValue(null as any);
 
         await expect(
-          raidenService.transfer(
-            '0xtoken',
-            '0xpartner',
-            constants.One,
-            path,
-            paymentId
-          )
+          raidenService.transfer('0xtoken', '0xpartner', constants.One, path, paymentId),
         ).resolves.toBeUndefined();
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
-        expect(raiden.transfer).toHaveBeenCalledWith(
-          '0xtoken',
-          '0xpartner',
-          constants.One,
-          {
-            paths: path,
-            paymentId,
-          }
-        );
+        expect(raiden.transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', constants.One, {
+          paths: path,
+          paymentId,
+        });
       });
 
       test('throw when a transfer fails', async () => {
@@ -407,35 +355,20 @@ describe('RaidenService', () => {
         raiden.waitTransfer.mockRejectedValue(error);
 
         await expect(
-          raidenService.transfer(
-            '0xtoken',
-            '0xpartner',
-            constants.One,
-            path,
-            paymentId
-          )
+          raidenService.transfer('0xtoken', '0xpartner', constants.One, path, paymentId),
         ).rejects.toThrow(RaidenError);
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
-        expect(raiden.transfer).toHaveBeenCalledWith(
-          '0xtoken',
-          '0xpartner',
-          constants.One,
-          {
-            paths: path,
-            paymentId,
-          }
-        );
+        expect(raiden.transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', constants.One, {
+          paths: path,
+          paymentId,
+        });
       });
     });
 
     test('resolves an ens domain', async () => {
-      (raiden as any).resolveName = jest
-        .fn()
-        .mockResolvedValue(constants.AddressZero as Address);
+      (raiden as any).resolveName = jest.fn().mockResolvedValue(constants.AddressZero as Address);
 
-      expect(await raidenService.ensResolve('domain.eth')).toEqual(
-        constants.AddressZero
-      );
+      expect(await raidenService.ensResolve('domain.eth')).toEqual(constants.AddressZero);
       expect(raiden.resolveName).toHaveBeenCalledTimes(1);
     });
 
@@ -452,41 +385,27 @@ describe('RaidenService', () => {
     describe('findRoutes', () => {
       test('rejects when it cannot find routes: no routes', async () => {
         const error = new Error('no path');
-        raiden.getAvailability = jest
-          .fn()
-          .mockResolvedValue(constants.AddressZero);
+        raiden.getAvailability = jest.fn().mockResolvedValue(constants.AddressZero);
         raiden.findRoutes = jest.fn().mockRejectedValue(error);
 
         await expect(
-          raidenService.findRoutes(
-            constants.AddressZero,
-            constants.AddressZero,
-            constants.One
-          )
+          raidenService.findRoutes(constants.AddressZero, constants.AddressZero, constants.One),
         ).rejects.toEqual(error);
       });
 
       test('resolves when it can find routes', async () => {
-        raiden.getAvailability = jest
-          .fn()
-          .mockResolvedValueOnce(constants.AddressZero);
+        raiden.getAvailability = jest.fn().mockResolvedValueOnce(constants.AddressZero);
         raiden.findRoutes = jest.fn().mockResolvedValueOnce([]);
 
         await expect(
-          raidenService.findRoutes(
-            constants.AddressZero,
-            constants.AddressZero,
-            constants.One
-          )
+          raidenService.findRoutes(constants.AddressZero, constants.AddressZero, constants.One),
         ).resolves.toEqual([]);
       });
     });
 
     describe('availability', () => {
       test('returns true when target is online', async () => {
-        raiden.getAvailability = jest
-          .fn()
-          .mockResolvedValue({ available: true });
+        raiden.getAvailability = jest.fn().mockResolvedValue({ available: true });
 
         const isAvailable = await raidenService.getAvailability('0xtarget');
         expect(isAvailable).toBe(true);
@@ -521,7 +440,7 @@ describe('RaidenService', () => {
           'updateTransfers',
           expect.objectContaining({
             ...dummyTransfer,
-          } as RaidenTransfer)
+          } as RaidenTransfer),
         );
       });
     });
@@ -537,9 +456,7 @@ describe('RaidenService', () => {
       });
 
       test('empty list is returned if not subkey', async () => {
-        await expect(
-          raidenService.getRaidenAccountBalances()
-        ).resolves.toStrictEqual([]);
+        await expect(raidenService.getRaidenAccountBalances()).resolves.toStrictEqual([]);
       });
 
       describe('with tokens and subkey', () => {
@@ -557,9 +474,7 @@ describe('RaidenService', () => {
         });
 
         test('return empty list if no balances are found', async () => {
-          await expect(
-            raidenService.getRaidenAccountBalances()
-          ).resolves.toStrictEqual([]);
+          await expect(raidenService.getRaidenAccountBalances()).resolves.toStrictEqual([]);
         });
 
         describe('with balances', () => {
@@ -578,9 +493,7 @@ describe('RaidenService', () => {
             raiden.getTokenBalance = jest.fn().mockResolvedValue(constants.One);
             raiden.getTokenInfo = jest
               .fn()
-              .mockImplementation(async (address: string) =>
-                createToken(address)
-              );
+              .mockImplementation(async (address: string) => createToken(address));
           });
 
           test('load from chain if no token info is cached', async () => {
@@ -588,9 +501,7 @@ describe('RaidenService', () => {
               tokens: {},
             };
 
-            await expect(
-              raidenService.getRaidenAccountBalances()
-            ).resolves.toMatchObject(tokens);
+            await expect(raidenService.getRaidenAccountBalances()).resolves.toMatchObject(tokens);
             expect(raiden.getTokenInfo).toHaveBeenCalledTimes(2);
           });
 
@@ -603,9 +514,7 @@ describe('RaidenService', () => {
               },
             };
 
-            await expect(
-              raidenService.getRaidenAccountBalances()
-            ).resolves.toMatchObject(tokens);
+            await expect(raidenService.getRaidenAccountBalances()).resolves.toMatchObject(tokens);
             expect(raiden.getTokenInfo).toHaveBeenCalledTimes(1);
           });
         });
@@ -632,9 +541,7 @@ describe('RaidenService', () => {
     beforeEach(() => {
       store.commit = jest.fn();
 
-      raiden.getTokenList = jest
-        .fn()
-        .mockResolvedValue([mockToken1, mockToken2]);
+      raiden.getTokenList = jest.fn().mockResolvedValue([mockToken1, mockToken2]);
       raiden.getTokenInfo = jest.fn().mockImplementation(mockToken);
 
       providerMock.mockResolvedValue(mockProvider);
@@ -686,9 +593,7 @@ describe('RaidenService', () => {
           symbol: 'TKN1',
         };
         raiden.getTokenBalance = jest.fn().mockResolvedValue(constants.One);
-        raiden.getTokenList = jest
-          .fn()
-          .mockResolvedValue([mockToken1 as Address]);
+        raiden.getTokenList = jest.fn().mockResolvedValue([mockToken1 as Address]);
         raiden.getTokenInfo = jest.fn().mockResolvedValue(testToken);
         (raiden as any).events$ = subject;
 
@@ -705,16 +610,14 @@ describe('RaidenService', () => {
               ...testToken,
               balance: constants.One,
             },
-          })
+          }),
         );
         expect(store.commit).toBeCalledWith('updateBlock', 123);
       });
     });
 
     test('loads the token list', async () => {
-      raiden.getTokenList = jest
-        .fn()
-        .mockResolvedValue([mockToken1, mockToken2]);
+      raiden.getTokenList = jest.fn().mockResolvedValue([mockToken1, mockToken2]);
       raiden.getTokenBalance = jest.fn().mockResolvedValue(BigNumber.from(100));
       raiden.getTokenInfo = jest.fn().mockResolvedValue({
         decimals: 0,
@@ -729,14 +632,14 @@ describe('RaidenService', () => {
       await flushPromises();
       expect(store.commit).toHaveBeenCalledWith(
         'updateTokenAddresses',
-        expect.arrayContaining([mockToken1, mockToken2])
+        expect.arrayContaining([mockToken1, mockToken2]),
       );
       expect(store.commit).toHaveBeenCalledWith(
         'updateTokens',
         expect.objectContaining({
           [mockToken1]: { address: mockToken1 },
           [mockToken2]: { address: mockToken2 },
-        })
+        }),
       );
       expect(store.commit).toHaveBeenCalledWith(
         'updateTokens',
@@ -748,7 +651,7 @@ describe('RaidenService', () => {
             symbol: 'MKT',
             name: 'Mock Token',
           },
-        })
+        }),
       );
     });
   });
@@ -781,10 +684,7 @@ describe('RaidenService', () => {
     await flushPromises();
 
     expect(store.commit).toBeCalledTimes(2);
-    expect(store.commit).toBeCalledWith(
-      'accessDenied',
-      DeniedReason.INITIALIZATION_FAILED
-    );
+    expect(store.commit).toBeCalledWith('accessDenied', DeniedReason.INITIALIZATION_FAILED);
     expect(store.commit).toBeCalledWith('loadComplete');
   });
 
@@ -822,15 +722,12 @@ describe('RaidenService', () => {
 
     await flushPromises();
 
-    expect(store.commit).toHaveBeenCalledWith(
-      'notifications/notificationAddOrReplace',
-      {
-        description: 'notifications.ms-balance-proof.description',
-        title: 'notifications.ms-balance-proof.title',
-        importance: NotificationImportance.HIGH,
-        context: NotificationContext.INFO,
-      }
-    );
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      description: 'notifications.ms-balance-proof.description',
+      title: 'notifications.ms-balance-proof.title',
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.INFO,
+    });
   });
 
   test('notify that withdraw was successful', async () => {
@@ -852,15 +749,12 @@ describe('RaidenService', () => {
       },
     });
 
-    expect(store.commit).toHaveBeenCalledWith(
-      'notifications/notificationAddOrReplace',
-      {
-        description: 'notifications.withdrawal.success.description',
-        title: 'notifications.withdrawal.success.title',
-        importance: NotificationImportance.HIGH,
-        context: NotificationContext.INFO,
-      }
-    );
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      description: 'notifications.withdrawal.success.description',
+      title: 'notifications.withdrawal.success.title',
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.INFO,
+    });
   });
 
   test('do not notify that withdraw failed if validation error', async () => {
@@ -903,15 +797,12 @@ describe('RaidenService', () => {
       },
     });
 
-    expect(store.commit).toHaveBeenCalledWith(
-      'notifications/notificationAddOrReplace',
-      {
-        description: 'notifications.withdrawal.failure.description',
-        title: 'notifications.withdrawal.failure.title',
-        importance: NotificationImportance.HIGH,
-        context: NotificationContext.ERROR,
-      }
-    );
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      description: 'notifications.withdrawal.failure.description',
+      title: 'notifications.withdrawal.failure.title',
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.ERROR,
+    });
   });
 
   test('token monitored', async () => {
@@ -988,15 +879,12 @@ describe('RaidenService', () => {
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
     });
 
-    expect(store.commit).not.toHaveBeenCalledWith(
-      'notifications/notificationAddOrReplace',
-      {
-        title: 'notifications.settlement.success.title',
-        description: 'notifications.settlement.success.description',
-        context: NotificationContext.INFO,
-        importance: NotificationImportance.HIGH,
-      }
-    );
+    expect(store.commit).not.toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      title: 'notifications.settlement.success.title',
+      description: 'notifications.settlement.success.description',
+      context: NotificationContext.INFO,
+      importance: NotificationImportance.HIGH,
+    });
   });
 
   test('notify that channel settle was successful', async () => {
@@ -1018,16 +906,13 @@ describe('RaidenService', () => {
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
     });
 
-    expect(store.commit).toHaveBeenCalledWith(
-      'notifications/notificationAddOrReplace',
-      {
-        title: 'notifications.settlement.success.title',
-        description: 'notifications.settlement.success.description',
-        icon: 'notifications.settlement.icon',
-        context: NotificationContext.NONE,
-        importance: NotificationImportance.HIGH,
-      }
-    );
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      title: 'notifications.settlement.success.title',
+      description: 'notifications.settlement.success.description',
+      icon: 'notifications.settlement.icon',
+      context: NotificationContext.NONE,
+      importance: NotificationImportance.HIGH,
+    });
   });
 
   test('notify that channel settle was failure', async () => {
@@ -1044,16 +929,13 @@ describe('RaidenService', () => {
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
     });
 
-    expect(store.commit).toHaveBeenCalledWith(
-      'notifications/notificationAddOrReplace',
-      {
-        title: 'notifications.settlement.failure.title',
-        description: 'notifications.settlement.failure.description',
-        icon: 'notifications.settlement.icon',
-        context: NotificationContext.NONE,
-        importance: NotificationImportance.HIGH,
-      }
-    );
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      title: 'notifications.settlement.failure.title',
+      description: 'notifications.settlement.failure.description',
+      icon: 'notifications.settlement.icon',
+      context: NotificationContext.NONE,
+      importance: NotificationImportance.HIGH,
+    });
   });
 
   test('notify that channel open failed', async () => {
@@ -1070,16 +952,13 @@ describe('RaidenService', () => {
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
     });
 
-    expect(store.commit).toHaveBeenCalledWith(
-      'notifications/notificationAddOrReplace',
-      {
-        title: 'notifications.channel-open.failure.title',
-        description: 'error message',
-        icon: 'notifications.channel-open.icon',
-        context: NotificationContext.NONE,
-        importance: NotificationImportance.HIGH,
-      }
-    );
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      title: 'notifications.channel-open.failure.title',
+      description: 'error message',
+      icon: 'notifications.channel-open.icon',
+      context: NotificationContext.NONE,
+      importance: NotificationImportance.HIGH,
+    });
   });
 
   test('notify that channel open success', async () => {
@@ -1101,18 +980,15 @@ describe('RaidenService', () => {
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
     });
 
-    expect(store.commit).toHaveBeenCalledWith(
-      'notifications/notificationAddOrReplace',
-      {
-        title: 'notifications.channel-open.success.title',
-        description: 'notifications.channel-open.success.description',
-        icon: 'notifications.channel-open.icon',
-        context: NotificationContext.NONE,
-        importance: NotificationImportance.HIGH,
-        txConfirmationBlock: 0,
-        txHash: '0xTxHash',
-        txConfirmed: true,
-      }
-    );
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      title: 'notifications.channel-open.success.title',
+      description: 'notifications.channel-open.success.description',
+      icon: 'notifications.channel-open.icon',
+      context: NotificationContext.NONE,
+      importance: NotificationImportance.HIGH,
+      txConfirmationBlock: 0,
+      txHash: '0xTxHash',
+      txConfirmed: true,
+    });
   });
 });

@@ -1,10 +1,6 @@
 <template>
   <div class="select-token flex-grow-1 pt-8">
-    <token-list
-      :header="$t('select-token.header')"
-      :tokens="allTokens"
-      @select="selectToken"
-    />
+    <token-list :header="$t('select-token.header')" :tokens="allTokens" @select="selectToken" />
   </div>
 </template>
 
@@ -20,10 +16,7 @@ import TokenList from '@/components/tokens/TokenList.vue';
   components: { TokenList },
   computed: mapGetters(['allTokens']),
 })
-export default class SelectTokenRoute extends Mixins(
-  BlockieMixin,
-  NavigationMixin
-) {
+export default class SelectTokenRoute extends Mixins(BlockieMixin, NavigationMixin) {
   allTokens!: Token[];
 
   async mounted() {

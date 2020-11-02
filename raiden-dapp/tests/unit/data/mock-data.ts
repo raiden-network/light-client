@@ -1,13 +1,8 @@
-import { Token, Transfer } from '@/model/types';
 import { BigNumber, utils, constants } from 'ethers';
-
-import {
-  Address,
-  ChannelState,
-  RaidenChannel,
-  RaidenChannels,
-} from 'raiden-ts';
 import { Route } from 'vue-router';
+import { Token, Transfer } from '@/model/types';
+
+import { Address, ChannelState, RaidenChannel, RaidenChannels } from 'raiden-ts';
 import { RouteNames } from '@/router/route-names';
 import { Tokens } from '@/types';
 import { NotificationPayload } from '@/store/notifications/types';
@@ -112,11 +107,7 @@ export class TestData {
     } as Token,
   };
 
-  static mockRoute(
-    params: {} = {},
-    meta: {} = {},
-    name: string = RouteNames.HOME
-  ): Route {
+  static mockRoute(params: {} = {}, meta: {} = {}, name: string = RouteNames.HOME): Route {
     return {
       path: '',
       fullPath: '',

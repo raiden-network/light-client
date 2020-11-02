@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import { mount, Wrapper } from '@vue/test-utils';
-import Filters from '@/filters';
 import { constants } from 'ethers';
+import Filters from '@/filters';
 import { Token } from '@/model/types';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 

@@ -5,9 +5,7 @@ module.exports = {
   productionSourceMap: false,
   // https://forum.vuejs.org/t/solution-to-building-error-in-circleci-or-any-other-machine-with-cpu-limitations/40862
   parallel: !process.env.CIRCLECI,
-  publicPath: process.env.VUE_APP_PUBLIC_PATH
-    ? process.env.VUE_APP_PUBLIC_PATH
-    : '/',
+  publicPath: process.env.VUE_APP_PUBLIC_PATH ? process.env.VUE_APP_PUBLIC_PATH : '/',
   chainWebpack: (config) => {
     if (process.env.NODE_ENV !== 'production' && !process.env.CI) {
       config.module
@@ -38,8 +36,7 @@ module.exports = {
   configureWebpack: (config) => {
     if (process.env.NODE_ENV === 'development') {
       config.devtool = 'eval-source-map';
-      config.output.devtoolFallbackModuleFilenameTemplate =
-        'webpack:///[resource-path]?[hash]';
+      config.output.devtoolFallbackModuleFilenameTemplate = 'webpack:///[resource-path]?[hash]';
       config.output.devtoolModuleFilenameTemplate = (info) => {
         const isVue = info.resourcePath.match(/\.vue$/);
         const isScript = info.query.match(/type=script/);
@@ -74,7 +71,7 @@ module.exports = {
         {
           from: path.resolve(process.env.DEPLOYMENT_SERVICES_INFO),
           to: path.resolve(__dirname, 'dist'),
-        }
+        },
       );
     }
 
@@ -89,7 +86,7 @@ module.exports = {
       config.plugins.push(
         new CopyWebpackPlugin({
           patterns: patterns,
-        })
+        }),
       );
     }
   },

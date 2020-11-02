@@ -21,13 +21,13 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
+import { BigNumber, constants } from 'ethers';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import NoTokens from '@/components/NoTokens.vue';
 import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
-import { BigNumber, constants } from 'ethers';
 import { Token, TokenModel } from '@/model/types';
 import { NotificationPayload } from '../store/notifications/types';
 import { NotificationImportance } from '../store/notifications/notification-importance';

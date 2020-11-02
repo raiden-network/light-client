@@ -2,10 +2,7 @@
   <div class="notification-description">
     <p v-for="(phrase, index) in splitDescription" :key="index">
       <template v-if="isAddress(phrase)">
-        <address-display
-          class="notification-description__address"
-          :address="phrase"
-        />
+        <address-display class="notification-description__address" :address="phrase" />
       </template>
       <template v-else>
         {{ phrase }}

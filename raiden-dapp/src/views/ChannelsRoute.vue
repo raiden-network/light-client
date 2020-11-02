@@ -101,13 +101,13 @@ import Filters from '@/filters';
   },
 })
 export default class ChannelsRoute extends Mixins(NavigationMixin) {
-  message: string = '';
-  snackbar: boolean = false;
+  message = '';
+  snackbar = false;
   channels!: (address: string) => RaidenChannel[];
 
   selectedChannel: RaidenChannel | null = null;
   action: ChannelAction | null = null;
-  busy: boolean = false;
+  busy = false;
 
   truncate = Filters.truncate;
 
@@ -118,23 +118,20 @@ export default class ChannelsRoute extends Mixins(NavigationMixin) {
 
   get open(): RaidenChannel[] {
     return this.channels(this.$route.params.token).filter(
-      (channel) => channel.state === ChannelState.open
+      (channel) => channel.state === ChannelState.open,
     );
   }
 
   get closed(): RaidenChannel[] {
     return this.channels(this.$route.params.token).filter(
-      (channel) =>
-        channel.state === ChannelState.closed ||
-        channel.state === ChannelState.closing
+      (channel) => channel.state === ChannelState.closed || channel.state === ChannelState.closing,
     );
   }
 
   get settleable(): RaidenChannel[] {
     return this.channels(this.$route.params.token).filter(
       (channel) =>
-        channel.state === ChannelState.settling ||
-        channel.state === ChannelState.settleable
+        channel.state === ChannelState.settling || channel.state === ChannelState.settleable,
     );
   }
 

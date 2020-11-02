@@ -60,14 +60,14 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+import { BigNumber } from 'ethers';
+import { mapGetters } from 'vuex';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import ChannelWithdrawDialog from '@/components/dialogs/ChannelWithdrawDialog.vue';
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
-import { BigNumber } from 'ethers';
 import { ChannelAction } from '@/types';
-import { mapGetters } from 'vuex';
 import { Token } from '@/model/types';
 
 @Component({

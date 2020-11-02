@@ -20,11 +20,7 @@
       <v-col cols="auto">
         <v-row align="center" justify="center">
           <div>
-            <v-img
-              height="150px"
-              width="150px"
-              :src="require('@/assets/info.svg')"
-            ></v-img>
+            <v-img height="150px" width="150px" :src="require('@/assets/info.svg')"></v-img>
           </div>
         </v-row>
         <v-row>
@@ -89,16 +85,9 @@
       <v-card-text>
         <div v-if="!withdrawing">
           <i18n path="withdrawal.dialog.body" tag="span">
-            <amount-display
-              inline
-              :amount="withdraw.balance"
-              :token="withdraw"
-            />
+            <amount-display inline :amount="withdraw.balance" :token="withdraw" />
           </i18n>
-          <div
-            v-if="parseFloat(raidenAccountBalance) === 0"
-            class="error--text mt-2"
-          >
+          <div v-if="parseFloat(raidenAccountBalance) === 0" class="error--text mt-2">
             {{ $t('withdrawal.dialog.no-eth') }}
           </div>
         </div>
@@ -124,6 +113,8 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
+import uniqBy from 'lodash/uniqBy';
+import { BigNumber, constants } from 'ethers';
 import { Token } from '@/model/types';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
@@ -131,8 +122,6 @@ import AmountDisplay from '@/components/AmountDisplay.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
-import uniqBy from 'lodash/uniqBy';
-import { BigNumber, constants } from 'ethers';
 
 @Component({
   components: {
@@ -152,27 +141,24 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
   raidenAccountBalance!: string;
   udcToken!: Token;
   balances: Token[] = [];
-  loading: boolean = true;
-  withdrawing: boolean = false;
+  loading = true;
+  withdrawing = false;
   withdraw: Token | null = null;
 
   async mounted() {
-    const allTokens = uniqBy(
-      this.allTokens.concat(this.udcToken),
-      (token) => token.address
-    );
+    const allTokens = uniqBy(this.allTokens.concat(this.udcToken), (token) => token.address);
     const updatedTokenBalances = await Promise.all(
       allTokens.map(async (token) => ({
         ...token,
         balance: await this.$raiden.getTokenBalance(
           token.address,
-          this.$store.state.defaultAccount
+          this.$store.state.defaultAccount,
         ),
-      }))
+      })),
     );
 
     this.balances = updatedTokenBalances.filter((token) =>
-      (token.balance as BigNumber).gt(constants.Zero)
+      (token.balance as BigNumber).gt(constants.Zero),
     );
     this.loading = false;
   }
@@ -185,9 +171,7 @@ export default class Withdrawal extends Mixins(BlockieMixin) {
       this.withdrawing = true;
       const { address, balance } = this.withdraw;
       await this.$raiden.transferOnChainTokens(address, balance);
-      this.balances = this.balances.filter(
-        (token) => token.address !== address
-      );
+      this.balances = this.balances.filter((token) => token.address !== address);
       this.withdraw = null;
     } catch (e) {
     } finally {

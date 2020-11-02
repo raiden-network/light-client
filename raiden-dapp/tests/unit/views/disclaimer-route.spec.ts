@@ -2,9 +2,9 @@ import { mount, Wrapper } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
+import VueRouter from 'vue-router';
 import DisclaimerRoute from '@/views/DisclaimerRoute.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import VueRouter from 'vue-router';
 import Mocked = jest.Mocked;
 import Vue from 'vue';
 import store from '@/store';
@@ -37,18 +37,12 @@ describe('DisclaimerRoute.vue', () => {
   });
 
   async function clickAcceptCheckbox() {
-    wrapper
-      .find('.disclaimer__content__accept-checkbox')
-      .find('input')
-      .trigger('click');
+    wrapper.find('.disclaimer__content__accept-checkbox').find('input').trigger('click');
     await wrapper.vm.$nextTick();
   }
 
   async function clickPersistCheckbox() {
-    wrapper
-      .find('.disclaimer__content__persist-checkbox')
-      .find('input')
-      .trigger('click');
+    wrapper.find('.disclaimer__content__persist-checkbox').find('input').trigger('click');
     await wrapper.vm.$nextTick();
   }
 

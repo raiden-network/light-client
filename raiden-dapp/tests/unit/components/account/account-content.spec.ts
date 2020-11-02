@@ -6,8 +6,8 @@ import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import { RouteNames } from '@/router/route-names';
 import Vuetify from 'vuetify';
+import { RouteNames } from '@/router/route-names';
 import store from '@/store';
 
 Vue.use(Vuetify);
@@ -41,20 +41,12 @@ describe('AccountContent.vue', () => {
   test('displays address', async () => {
     store.commit('account', '0x31aA9D3E2bd38d22CA3Ae9be7aae1D518fe46043');
     await wrapper.vm.$nextTick();
-    const addressTitle = wrapper
-      .findAll('.account-content__account-details__address')
-      .at(0);
-    const addressDesktop = wrapper.find(
-      '.account-content__account-details__address__desktop'
-    );
-    const addressMobile = wrapper.find(
-      '.account-content__account-details__address__mobile'
-    );
+    const addressTitle = wrapper.findAll('.account-content__account-details__address').at(0);
+    const addressDesktop = wrapper.find('.account-content__account-details__address__desktop');
+    const addressMobile = wrapper.find('.account-content__account-details__address__mobile');
 
     expect(addressTitle.text()).toBe('account-content.address');
-    expect(addressDesktop.text()).toBe(
-      '0x31aA9D3E2bd38d22CA3Ae9be7aae1D518fe46043'
-    );
+    expect(addressDesktop.text()).toBe('0x31aA9D3E2bd38d22CA3Ae9be7aae1D518fe46043');
     expect(addressMobile.text()).toBe('0x31...6043');
   });
 
@@ -63,18 +55,12 @@ describe('AccountContent.vue', () => {
     store.commit('updateSettings', { useRaidenAccount: false });
     await wrapper.vm.$nextTick();
 
-    const accountDetails = wrapper.findAll(
-      '.account-content__account-details__eth'
-    );
+    const accountDetails = wrapper.findAll('.account-content__account-details__eth');
     expect(accountDetails.length).toBe(1);
 
     const mainAccountDetails = accountDetails.at(0);
-    const title = mainAccountDetails.find(
-      '.account-content__account-details__eth__account'
-    );
-    const balance = mainAccountDetails.find(
-      '.account-content__account-details__eth__balance'
-    );
+    const title = mainAccountDetails.find('.account-content__account-details__eth__account');
+    const balance = mainAccountDetails.find('.account-content__account-details__eth__balance');
 
     expect(title.text()).toBe('account-content.account.main');
     expect(balance.text()).toBe('12.000');
@@ -85,18 +71,12 @@ describe('AccountContent.vue', () => {
     store.commit('updateSettings', { useRaidenAccount: true });
     await wrapper.vm.$nextTick();
 
-    const accountDetails = wrapper.findAll(
-      '.account-content__account-details__eth'
-    );
+    const accountDetails = wrapper.findAll('.account-content__account-details__eth');
     expect(accountDetails.length).toBe(2);
 
     const raidenAccountDetails = accountDetails.at(1);
-    const title = raidenAccountDetails.find(
-      '.account-content__account-details__eth__account'
-    );
-    const balance = raidenAccountDetails.find(
-      '.account-content__account-details__eth__balance'
-    );
+    const title = raidenAccountDetails.find('.account-content__account-details__eth__account');
+    const balance = raidenAccountDetails.find('.account-content__account-details__eth__balance');
 
     expect(title.text()).toBe('account-content.account.raiden');
     expect(balance.text()).toBe('13.000');
@@ -109,58 +89,38 @@ describe('AccountContent.vue', () => {
   });
 
   test('backup state menu item', () => {
-    const backupStateMenuItem = wrapper
-      .findAll('.account-content__menu__list-items')
-      .at(1);
+    const backupStateMenuItem = wrapper.findAll('.account-content__menu__list-items').at(1);
     const backupStateTitle = backupStateMenuItem.find('.v-list-item__title');
-    const backupStateSubtitle = backupStateMenuItem.find(
-      '.v-list-item__subtitle'
-    );
+    const backupStateSubtitle = backupStateMenuItem.find('.v-list-item__subtitle');
     const backupStateButton = backupStateMenuItem.find('button');
     backupStateButton.trigger('click');
 
-    expect(backupStateTitle.text()).toEqual(
-      'account-content.menu-items.backup-state.title'
-    );
-    expect(backupStateSubtitle.text()).toEqual(
-      'account-content.menu-items.backup-state.subtitle'
-    );
+    expect(backupStateTitle.text()).toEqual('account-content.menu-items.backup-state.title');
+    expect(backupStateSubtitle.text()).toEqual('account-content.menu-items.backup-state.subtitle');
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.ACCOUNT_BACKUP,
-      })
+      }),
     );
   });
 
   test('report bugs menu item', () => {
-    const reportBugsMenuItem = wrapper
-      .findAll('.account-content__menu__list-items')
-      .at(2);
+    const reportBugsMenuItem = wrapper.findAll('.account-content__menu__list-items').at(2);
     const reportBugsTitle = reportBugsMenuItem.find('.v-list-item__title');
-    const reportBugsSubtitle = reportBugsMenuItem.find(
-      '.v-list-item__subtitle'
-    );
+    const reportBugsSubtitle = reportBugsMenuItem.find('.v-list-item__subtitle');
 
-    expect(reportBugsTitle.text()).toEqual(
-      'account-content.menu-items.report-bugs.title'
-    );
-    expect(reportBugsSubtitle.text()).toBe(
-      'account-content.menu-items.report-bugs.subtitle'
-    );
+    expect(reportBugsTitle.text()).toEqual('account-content.menu-items.report-bugs.title');
+    expect(reportBugsSubtitle.text()).toBe('account-content.menu-items.report-bugs.subtitle');
   });
 
   test('udc menu item', () => {
-    const udcMenuItem = wrapper
-      .findAll('.account-content__menu__list-items')
-      .at(0);
+    const udcMenuItem = wrapper.findAll('.account-content__menu__list-items').at(0);
     const udcMenuTitle = udcMenuItem.find('.v-list-item__title');
     const udcMenuSubtitle = udcMenuItem.find('.v-list-item__subtitle');
 
     expect(udcMenuTitle.text()).toEqual('account-content.menu-items.udc.title');
-    expect(udcMenuSubtitle.text()).toBe(
-      'account-content.menu-items.udc.subtitle'
-    );
+    expect(udcMenuSubtitle.text()).toBe('account-content.menu-items.udc.subtitle');
 
     udcMenuItem.find('button').trigger('click');
 
@@ -168,22 +128,20 @@ describe('AccountContent.vue', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.ACCOUNT_UDC,
-      })
+      }),
     );
   });
 
   test('show raiden account menu item, if connected via sub key', () => {
     expect(wrapper.vm.$data.menuItems[0].title).toEqual(
-      'account-content.menu-items.raiden-account.title'
+      'account-content.menu-items.raiden-account.title',
     );
   });
 
   test('calls method for downloading logs', async () => {
     // @ts-ignore
     wrapper.vm.downloadLogs = jest.fn();
-    const reportBugsMenuItem = wrapper
-      .findAll('.account-content__menu__list-items')
-      .at(2);
+    const reportBugsMenuItem = wrapper.findAll('.account-content__menu__list-items').at(2);
     const reportBugsButton = reportBugsMenuItem.find('button');
     reportBugsButton.trigger('click');
     await wrapper.vm.$nextTick();
@@ -206,26 +164,18 @@ describe('AccountContent.vue', () => {
     await wrapper.vm.$nextTick();
     await flushPromises();
 
-    const settingsMenuItem = wrapper
-      .findAll('.account-content__menu__list-items')
-      .at(0);
+    const settingsMenuItem = wrapper.findAll('.account-content__menu__list-items').at(0);
     const settingsMenuTitle = settingsMenuItem.find('.v-list-item__title');
-    const settingsMenuSubtitle = settingsMenuItem.find(
-      '.v-list-item__subtitle'
-    );
+    const settingsMenuSubtitle = settingsMenuItem.find('.v-list-item__subtitle');
     settingsMenuItem.find('button').trigger('click');
 
-    expect(settingsMenuTitle.text()).toEqual(
-      'account-content.menu-items.settings.title'
-    );
-    expect(settingsMenuSubtitle.text()).toEqual(
-      'account-content.menu-items.settings.subtitle'
-    );
+    expect(settingsMenuTitle.text()).toEqual('account-content.menu-items.settings.title');
+    expect(settingsMenuSubtitle.text()).toEqual('account-content.menu-items.settings.subtitle');
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.ACCOUNT_SETTINGS,
-      })
+      }),
     );
   });
 });

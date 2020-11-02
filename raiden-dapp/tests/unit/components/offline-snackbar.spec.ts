@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
-import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 
 Vue.use(Vuetify);
 

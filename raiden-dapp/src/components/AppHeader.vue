@@ -69,10 +69,7 @@ import NavigationMixin from '@/mixins/navigation-mixin';
 import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 
-const {
-  mapState: mapNotificationsState,
-  mapMutations,
-} = createNamespacedHelpers('notifications');
+const { mapState: mapNotificationsState, mapMutations } = createNamespacedHelpers('notifications');
 
 @Component({
   components: {
@@ -105,10 +102,7 @@ export default class AppHeader extends Mixins(NavigationMixin) {
   }
 
   get canGoBack(): boolean {
-    const routesWithoutBackBtn: string[] = [
-      RouteNames.HOME,
-      RouteNames.TRANSFER,
-    ];
+    const routesWithoutBackBtn: string[] = [RouteNames.HOME, RouteNames.TRANSFER];
     return (
       this.isConnected &&
       !this.isDisclaimerRoute &&

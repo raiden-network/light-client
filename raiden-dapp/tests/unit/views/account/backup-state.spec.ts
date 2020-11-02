@@ -26,9 +26,7 @@ describe('BackupState.vue', () => {
   });
 
   test('download state title', () => {
-    const downloadStateTitle = wrapper.find(
-      '.backup-state__buttons__download-state__title'
-    );
+    const downloadStateTitle = wrapper.find('.backup-state__buttons__download-state__title');
 
     expect(downloadStateTitle.text()).toBe('backup-state.download');
   });
@@ -36,9 +34,7 @@ describe('BackupState.vue', () => {
   test('clicking download state button opens download state dialog', () => {
     expect(wrapper.vm.$data.downloadState).toBe(false);
 
-    const downloadStateButton = wrapper.find(
-      '.backup-state__buttons__download-state'
-    );
+    const downloadStateButton = wrapper.find('.backup-state__buttons__download-state');
     downloadStateButton.trigger('click');
     expect(wrapper.vm.$data.downloadState).toBe(true);
 
@@ -48,9 +44,7 @@ describe('BackupState.vue', () => {
   });
 
   test('upload state title', () => {
-    const uploadStateTitle = wrapper.find(
-      '.backup-state__buttons__upload-state__title'
-    );
+    const uploadStateTitle = wrapper.find('.backup-state__buttons__upload-state__title');
 
     expect(uploadStateTitle.text()).toBe('backup-state.upload');
   });
@@ -58,9 +52,7 @@ describe('BackupState.vue', () => {
   test('clicking upload state button opens upload state dialog', () => {
     expect(wrapper.vm.$data.uploadState).toBe(false);
 
-    const uploadStateButton = wrapper.find(
-      '.backup-state__buttons__upload-state'
-    );
+    const uploadStateButton = wrapper.find('.backup-state__buttons__upload-state');
     uploadStateButton.trigger('click');
     expect(wrapper.vm.$data.uploadState).toBe(true);
 
@@ -70,9 +62,7 @@ describe('BackupState.vue', () => {
   });
 
   test('download state button disabled if disconnected', () => {
-    const downloadStateButton = wrapper.find(
-      '.backup-state__buttons__download-state'
-    );
+    const downloadStateButton = wrapper.find('.backup-state__buttons__download-state');
 
     expect(downloadStateButton.classes()).toContain('v-list-item--disabled');
   });

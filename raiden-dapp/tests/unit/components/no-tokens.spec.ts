@@ -3,10 +3,10 @@ import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import { RouteNames } from '@/router/route-names';
 import Vuex from 'vuex';
-import store from '@/store/index';
 import Vuetify from 'vuetify';
+import store from '@/store/index';
+import { RouteNames } from '@/router/route-names';
 import NoTokens from '@/components/NoTokens.vue';
 
 Vue.use(Vuex);
@@ -39,7 +39,7 @@ describe('NoTokens.vue', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.SELECT_TOKEN,
-      })
+      }),
     );
   });
 });

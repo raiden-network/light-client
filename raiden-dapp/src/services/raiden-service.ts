@@ -1,3 +1,8 @@
+import { Store } from 'vuex';
+import { BigNumber, BigNumberish, utils, constants } from 'ethers';
+import { exhaustMap, filter } from 'rxjs/operators';
+import asyncPool from 'tiny-async-pool';
+import uniq from 'lodash/uniq';
 import {
   Capabilities,
   ChangeEvent,
@@ -8,25 +13,20 @@ import {
   RaidenPaths,
   RaidenPFS,
 } from 'raiden-ts';
-import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
-import { BigNumber, BigNumberish, utils, constants } from 'ethers';
-import { exhaustMap, filter } from 'rxjs/operators';
-import asyncPool from 'tiny-async-pool';
 import { ConfigProvider, Configuration } from '@/services/config-provider';
 import i18n from '@/i18n';
 import { NotificationPayload } from '@/store/notifications/types';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
-import uniq from 'lodash/uniq';
 
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
-  private _userDepositTokenAddress: string = '';
+  private _userDepositTokenAddress = '';
   private _configuration?: Configuration;
   private _subkey?: true;
 
@@ -34,7 +34,7 @@ export default class RaidenService {
     provider: any,
     account: string | number = 0,
     stateBackup?: string,
-    subkey?: true
+    subkey?: true,
   ): Promise<Raiden> {
     try {
       const contracts = await ConfigProvider.contracts();
@@ -52,7 +52,7 @@ export default class RaidenService {
           matrixServer: process.env.VUE_APP_MATRIX_SERVER,
           matrixServerLookup: process.env.VUE_APP_MATRIX_LIST_URL,
         },
-        subkey
+        subkey,
       );
     } catch (e) {
       throw new RaidenInitializationFailed(e);
@@ -69,10 +69,7 @@ export default class RaidenService {
 
   private async updateBalances(): Promise<void> {
     this.store.commit('balance', await this.getBalance());
-    this.store.commit(
-      'raidenAccountBalance',
-      await this.getBalance(this.raiden.address)
-    );
+    this.store.commit('raidenAccountBalance', await this.getBalance(this.raiden.address));
   }
 
   async fetchTokenList() {
@@ -133,7 +130,7 @@ export default class RaidenService {
           provider,
           configuration?.private_key,
           stateBackup,
-          subkey
+          subkey,
         );
 
         this._raiden = raiden;
@@ -144,19 +141,14 @@ export default class RaidenService {
         this.store.commit('account', account);
 
         this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
-        this.store.commit(
-          'userDepositTokenAddress',
-          this._userDepositTokenAddress
-        );
+        this.store.commit('userDepositTokenAddress', this._userDepositTokenAddress);
 
         await this.monitorPreSetTokens();
 
         // update connected tokens data on each newBlock
         raiden.events$
           .pipe(filter((value) => value.type === 'block/new'))
-          .subscribe((event) =>
-            this.store.commit('updateBlock', event.payload.blockNumber)
-          );
+          .subscribe((event) => this.store.commit('updateBlock', event.payload.blockNumber));
 
         raiden.events$
           .pipe(
@@ -166,10 +158,10 @@ export default class RaidenService {
                 uniq(
                   this.store.getters.tokens
                     .map((m: TokenModel) => m.address)
-                    .concat(this._userDepositTokenAddress)
-                )
-              )
-            )
+                    .concat(this._userDepositTokenAddress),
+                ),
+              ),
+            ),
           )
           .subscribe();
 
@@ -202,21 +194,18 @@ export default class RaidenService {
               value.payload.monitoringService,
               value.payload.partner,
               value.payload.reward,
-              value.payload.txHash
+              value.payload.txHash,
             );
           } else if (value.type === 'udc/withdrawn') {
             if (!value.payload.confirmed) {
               return;
             }
-            await this.notifyWithdrawal(
-              value.meta.amount,
-              value.payload.withdrawal
-            );
+            await this.notifyWithdrawal(value.meta.amount, value.payload.withdrawal);
           } else if (value.type === 'udc/withdraw/failure') {
             await this.notifyWithdrawalFailure(
               value.payload?.code,
               value.meta.amount,
-              value.payload.message
+              value.payload.message,
             );
           } else if (value.type === 'channel/settle/success') {
             if (value.payload.confirmed) {
@@ -229,7 +218,7 @@ export default class RaidenService {
               value.payload.txBlock,
               value.payload.txHash,
               value.payload.confirmed,
-              value.meta.partner
+              value.meta.partner,
             );
           } else if (value.type === 'channel/open/failed') {
             await this.notifyChannelOpenFailed(value.payload.message);
@@ -256,20 +245,14 @@ export default class RaidenService {
         raiden.start();
         this.store.commit('balance', await this.getBalance());
         if (subkey) {
-          this.store.commit(
-            'raidenAccountBalance',
-            await this.getBalance(raiden.address)
-          );
+          this.store.commit('raidenAccountBalance', await this.getBalance(raiden.address));
         }
       }
     } catch (e) {
       let deniedReason: DeniedReason;
       if (e.message && e.message.indexOf('No deploy info provided') > -1) {
         deniedReason = DeniedReason.UNSUPPORTED_NETWORK;
-      } else if (
-        e.message &&
-        e.message.indexOf('Could not replace stored state') > -1
-      ) {
+      } else if (e.message && e.message.indexOf('Could not replace stored state') > -1) {
         deniedReason = DeniedReason.RDN_STATE_MIGRATION;
       } else if (e instanceof RaidenInitializationFailed) {
         deniedReason = DeniedReason.INITIALIZATION_FAILED;
@@ -305,11 +288,7 @@ export default class RaidenService {
     }
   }
 
-  private async notifyWithdrawalFailure(
-    code: any,
-    plannedAmount: BigNumber,
-    message: string
-  ) {
+  private async notifyWithdrawalFailure(code: any, plannedAmount: BigNumber, message: string) {
     if (
       [
         'UDC_PLAN_WITHDRAW_GT_ZERO',
@@ -347,10 +326,7 @@ export default class RaidenService {
     } as NotificationPayload);
   }
 
-  private async notifyWithdrawal(
-    plannedAmount: BigNumber,
-    withdrawal: BigNumber
-  ) {
+  private async notifyWithdrawal(plannedAmount: BigNumber, withdrawal: BigNumber) {
     const token = this.store.getters.udcToken;
     const decimals = token.decimals ?? 18;
     const amount = BalanceUtils.toUnits(plannedAmount, decimals);
@@ -372,7 +348,7 @@ export default class RaidenService {
     monitoringService: string,
     partner: string,
     reward: BigNumber,
-    txHash: string
+    txHash: string,
   ) {
     const token = this.store.getters.udcToken;
     const decimals = token.decimals ?? 18;
@@ -422,23 +398,19 @@ export default class RaidenService {
     txBlock: number,
     txHash: string,
     txConfirmed: boolean | undefined,
-    partner: string
+    partner: string,
   ) {
     let txConfirmationBlock;
 
     if (this.store.state?.config?.confirmationBlocks !== undefined) {
-      txConfirmationBlock =
-        txBlock + this.store.state.config.confirmationBlocks;
+      txConfirmationBlock = txBlock + this.store.state.config.confirmationBlocks;
     } else {
       txConfirmationBlock = 0;
     }
 
-    const description = i18n.t(
-      'notifications.channel-open.success.description',
-      {
-        partner,
-      }
-    );
+    const description = i18n.t('notifications.channel-open.success.description', {
+      partner,
+    });
 
     await this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.channel-open.success.title'),
@@ -503,7 +475,7 @@ export default class RaidenService {
     token: string,
     partner: string,
     amount: BigNumber,
-    progress?: (progress: Progress) => void
+    progress?: (progress: Progress) => void,
   ): Promise<void> {
     const progressUpdater = (current: number, total: number) => {
       if (progress) {
@@ -518,7 +490,7 @@ export default class RaidenService {
     progressUpdater(1, 3);
 
     await raiden.openChannel(token, partner, { deposit: amount }, (e) =>
-      e.type === EventTypes.OPENED ? progressUpdater(2, 3) : ''
+      e.type === EventTypes.OPENED ? progressUpdater(2, 3) : '',
     );
   }
 
@@ -554,7 +526,7 @@ export default class RaidenService {
     target: string,
     amount: BigNumber,
     paths: RaidenPaths,
-    paymentId: BigNumber
+    paymentId: BigNumber,
   ) {
     const key = await this.raiden.transfer(token, target, amount, {
       paymentId,
@@ -569,7 +541,7 @@ export default class RaidenService {
     token: string,
     target: string,
     amount: BigNumber,
-    raidenPFS?: RaidenPFS
+    raidenPFS?: RaidenPFS,
   ): Promise<RaidenPaths> {
     return await this.raiden.findRoutes(token, target, amount, {
       pfs: raidenPFS,
@@ -584,7 +556,7 @@ export default class RaidenService {
   async directRoute(
     token: string,
     target: string,
-    value: BigNumberish
+    value: BigNumberish,
   ): Promise<RaidenPaths | undefined> {
     return await this.raiden.directRoute(token, target, value);
   }
@@ -596,10 +568,8 @@ export default class RaidenService {
 
   /* istanbul ignore next */
   async depositToUDC(amount: BigNumber, depositing: () => void): Promise<void> {
-    await this.raiden.depositToUDC(
-      amount,
-      (event: ChangeEvent<EventTypes, { txHash: string }>) =>
-        event.type === EventTypes.APPROVED ? depositing() : null
+    await this.raiden.depositToUDC(amount, (event: ChangeEvent<EventTypes, { txHash: string }>) =>
+      event.type === EventTypes.APPROVED ? depositing() : null,
     );
   }
 
@@ -632,10 +602,7 @@ export default class RaidenService {
 
   /* istanbul ignore next */
   async transferToRaidenAccount(amount: string) {
-    await this.raiden.transferOnchainBalance(
-      this.raiden.address,
-      utils.parseEther(amount)
-    );
+    await this.raiden.transferOnchainBalance(this.raiden.address, utils.parseEther(amount));
     await this.updateBalances();
   }
 
@@ -643,11 +610,9 @@ export default class RaidenService {
   async transferToMainAccount(amount: string) {
     const { mainAddress } = this.raiden;
     if (mainAddress) {
-      await this.raiden.transferOnchainBalance(
-        mainAddress,
-        utils.parseEther(amount),
-        { subkey: true }
-      );
+      await this.raiden.transferOnchainBalance(mainAddress, utils.parseEther(amount), {
+        subkey: true,
+      });
       await this.updateBalances();
     }
   }
@@ -707,14 +672,8 @@ export default class RaidenService {
     await this.raiden.monitorToken(address);
   }
 
-  async getTokenBalance(
-    tokenAddress: string,
-    raidenAccount?: string
-  ): Promise<BigNumber> {
-    const tokenBalance = await this.raiden.getTokenBalance(
-      tokenAddress,
-      raidenAccount
-    );
+  async getTokenBalance(tokenAddress: string, raidenAccount?: string): Promise<BigNumber> {
+    const tokenBalance = await this.raiden.getTokenBalance(tokenAddress, raidenAccount);
     return tokenBalance;
   }
 }

@@ -41,8 +41,6 @@ describe('SelectTokenRoute.vue', () => {
 
   test('navigates to the select hub route with address of given token', () => {
     (wrapper.vm as any).selectToken(token);
-    expect((wrapper.vm as any).navigateToSelectHub).toHaveBeenCalledWith(
-      token.address
-    );
+    expect((wrapper.vm as any).navigateToSelectHub).toHaveBeenCalledWith(token.address);
   });
 });

@@ -27,10 +27,7 @@
       </v-row>
       <v-row v-else-if="done" align="center" justify="center">
         <v-col cols="6">
-          <v-img
-            class="channel-withdraw__done"
-            :src="require('@/assets/done.svg')"
-          ></v-img>
+          <v-img class="channel-withdraw__done" :src="require('@/assets/done.svg')"></v-img>
         </v-col>
       </v-row>
       <v-row v-else align="center" justify="center">
@@ -44,10 +41,7 @@
               :max="channel.ownWithdrawable"
               limit
             />
-            <div
-              data-cy="channel_withdraw_button"
-              class="channel-withdraw__button"
-            >
+            <div data-cy="channel_withdraw_button" class="channel-withdraw__button">
               <action-button
                 :id="`confirm-${identifier}`"
                 :enabled="valid"
@@ -105,8 +99,8 @@ export default class ChannelWithdrawDialog extends Vue {
   @Prop({ required: false, default: false })
   done?: boolean;
 
-  withdraw: string = '';
-  valid: boolean = false;
+  withdraw = '';
+  valid = false;
 
   @Watch('visible')
   onVisibilityChanged(visible: boolean) {

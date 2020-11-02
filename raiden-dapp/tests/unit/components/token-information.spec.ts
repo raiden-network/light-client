@@ -1,10 +1,10 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import { TestData } from '../data/mock-data';
 import store from '@/store';
 
 import TokenInformation from '@/components/TokenInformation.vue';
-import { TestData } from '../data/mock-data';
 import Filters from '@/filters';
 
 Vue.use(Vuetify);

@@ -1,7 +1,7 @@
+import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 import store from '@/store';
 import { RouteNames } from '@/router/route-names';
 import { redirectIfNotConnected } from '@/router/guards/connection';
-import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 
 const {
   [RouteNames.HOME]: homeRoute,
@@ -48,7 +48,7 @@ describe('redirectIfNotConnected()', () => {
 
     Object.values(protectedRoutes).forEach((route) => {
       expect(redirectIfNotConnected(route)).toEqual(
-        expect.objectContaining({ name: RouteNames.HOME })
+        expect.objectContaining({ name: RouteNames.HOME }),
       );
     });
   });
@@ -58,7 +58,7 @@ describe('redirectIfNotConnected()', () => {
 
     Object.values(protectedRoutes).forEach((route) => {
       expect(redirectIfNotConnected(route)).toEqual(
-        expect.objectContaining({ query: { redirectTo: route.fullPath } })
+        expect.objectContaining({ query: { redirectTo: route.fullPath } }),
       );
     });
   });

@@ -1,10 +1,10 @@
 import { mount, Wrapper } from '@vue/test-utils';
-import AddressDisplay from '@/components/AddressDisplay.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { TestData } from '../data/mock-data';
-import Filters from '@/filters';
 import { $identicon } from '../utils/mocks';
+import Filters from '@/filters';
+import AddressDisplay from '@/components/AddressDisplay.vue';
 
 Vue.use(Vuetify);
 Vue.filter('truncate', Filters.truncate);
@@ -24,7 +24,7 @@ describe('AddressDisplay.vue', () => {
           {},
           {
             title: 'Home',
-          }
+          },
         ),
         $identicon: $identicon(),
         $t: (msg: string) => msg,

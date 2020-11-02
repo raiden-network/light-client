@@ -1,9 +1,9 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import { generateToken, generateTransfer } from '../../utils/data-generator';
 import Transaction from '@/components/transaction-history/Transaction.vue';
 import { RaidenTransfer } from 'raiden-ts';
-import { generateToken, generateTransfer } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 
@@ -11,9 +11,7 @@ describe('Transaction.vue', () => {
   const vuetify = new Vuetify();
   const token = generateToken();
 
-  const createWrapper = (
-    transferProp?: RaidenTransfer
-  ): Wrapper<Transaction> => {
+  const createWrapper = (transferProp?: RaidenTransfer): Wrapper<Transaction> => {
     if (transferProp === undefined) {
       transferProp = generateTransfer({ success: true }, token);
     }
@@ -33,34 +31,24 @@ describe('Transaction.vue', () => {
   };
   test('transactions are prefixed with "sent to" for sent transfers', () => {
     const wrapper = createWrapper();
-    const transactionHistoryDirection = wrapper.find(
-      '.transaction__item__details-left'
-    );
+    const transactionHistoryDirection = wrapper.find('.transaction__item__details-left');
 
-    expect(transactionHistoryDirection.text()).toContain(
-      'transfer-history.sent-title'
-    );
+    expect(transactionHistoryDirection.text()).toContain('transfer-history.sent-title');
   });
 
   test('transactions are prefixed with "Received from" for received transfers', () => {
     const receivedTransfer = generateTransfer({ direction: 'received' }, token);
     const wrapper = createWrapper(receivedTransfer);
-    const transactionHistoryDirection = wrapper.find(
-      '.transaction__item__details-left'
-    );
+    const transactionHistoryDirection = wrapper.find('.transaction__item__details-left');
 
-    expect(transactionHistoryDirection.text()).toContain(
-      'transfer-history.received-title'
-    );
+    expect(transactionHistoryDirection.text()).toContain('transfer-history.received-title');
   });
 
   test('transaction item displays a "CONFIRMED" chip for successful transfers', () => {
     const wrapper = createWrapper();
     const confirmedTransferChip = wrapper.find('.v-chip__content');
 
-    expect(confirmedTransferChip.text()).toBe(
-      'transfer-history.successful-transfer'
-    );
+    expect(confirmedTransferChip.text()).toBe('transfer-history.successful-transfer');
   });
 
   test('transaction item displays a "FAILED" chip for failed transfers', () => {
@@ -76,16 +64,12 @@ describe('Transaction.vue', () => {
     const wrapper = createWrapper(pendingTransfer);
     const pendingTransferChip = wrapper.find('.v-chip__content');
 
-    expect(pendingTransferChip.text()).toBe(
-      'transfer-history.pending-transfer'
-    );
+    expect(pendingTransferChip.text()).toBe('transfer-history.pending-transfer');
   });
 
   test('transaction item display correctly formatted date', () => {
     const wrapper = createWrapper();
-    const transactionTimeStamp = wrapper.find(
-      '.transaction__item__details-left__time-stamp'
-    );
+    const transactionTimeStamp = wrapper.find('.transaction__item__details-left__time-stamp');
     expect(transactionTimeStamp.text()).toContain('6/5/1986');
     expect(transactionTimeStamp.text()).toContain('11:59:59 PM');
   });

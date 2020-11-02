@@ -4,8 +4,8 @@ import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import { $identicon } from '../../utils/mocks';
 import { BigNumber } from 'ethers';
+import { $identicon } from '../../utils/mocks';
 import Withdrawal from '@/components/account/Withdrawal.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 
@@ -22,7 +22,7 @@ const raidenNoBalance = '0';
 
 function createWrapper(
   tokenBalance: BigNumber,
-  raidenAccountBalance: string
+  raidenAccountBalance: string,
 ): Wrapper<Withdrawal> {
   $raiden = {
     getTokenBalance: jest.fn().mockResolvedValue(tokenBalance),
@@ -67,10 +67,7 @@ describe('Withdrawal.vue', () => {
     wrapper.find('.withdrawal__tokens__button').trigger('click');
     await wrapper.vm.$nextTick();
 
-    const confirmButton = wrapper
-      .findComponent(RaidenDialog)
-      .findAll('button')
-      .at(1);
+    const confirmButton = wrapper.findComponent(RaidenDialog).findAll('button').at(1);
     confirmButton.trigger('click');
     await wrapper.vm.$nextTick();
 
@@ -91,10 +88,7 @@ describe('Withdrawal.vue', () => {
     wrapper.find('.withdrawal__tokens__button').trigger('click');
     await wrapper.vm.$nextTick();
 
-    const confirmButton = wrapper
-      .findComponent(RaidenDialog)
-      .findAll('button')
-      .at(1);
+    const confirmButton = wrapper.findComponent(RaidenDialog).findAll('button').at(1);
 
     expect(confirmButton.attributes()['disabled']).toBe('disabled');
   });

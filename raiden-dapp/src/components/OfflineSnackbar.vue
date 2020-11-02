@@ -14,7 +14,7 @@ import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
 
 @Component({ components: { BlurredOverlay } })
 export default class OfflineSnackbar extends Vue {
-  offline: boolean = false;
+  offline = false;
 
   handleOnline() {
     this.offline = false;
