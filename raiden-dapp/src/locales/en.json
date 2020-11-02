@@ -31,8 +31,7 @@
       "icon": "notification_state_backup",
       "title": "Backup State",
       "description": "Backup state to not risk loosing funds",
-      "link": "Backup state menu",
-      "dapp-route": "backup state route"
+      "link": "Backup state menu"
     },
     "ms-balance-proof": {
       "title": "Balance proof submitted",

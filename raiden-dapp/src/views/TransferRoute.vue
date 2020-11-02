@@ -32,6 +32,7 @@ import { Token, TokenModel } from '@/model/types';
 import { NotificationPayload } from '../store/notifications/types';
 import { NotificationImportance } from '../store/notifications/notification-importance';
 import { NotificationContext } from '../store/notifications/notification-context';
+import { RouteNames } from '@/router/route-names';
 
 @Component({
   components: {
@@ -55,7 +56,7 @@ export default class TransferRoute extends Vue {
     icon: this.$t('notifications.backup-state.icon') as string,
     title: this.$t('notifications.backup-state.title') as string,
     link: this.$t('notifications.backup-state.link') as string,
-    dappRoute: this.$t('notifications.backup-state.dapp-route') as string,
+    dappRoute: RouteNames.ACCOUNT_BACKUP,
     description: this.$t('notifications.backup-state.description') as string,
     importance: NotificationImportance.HIGH,
     context: NotificationContext.WARNING,

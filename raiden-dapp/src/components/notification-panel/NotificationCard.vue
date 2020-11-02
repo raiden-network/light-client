@@ -29,7 +29,7 @@
         <span
           v-if="notification.link"
           class="notification-card__content__details__link"
-          @click="linkRoute"
+          @click="linkRoute()"
         >
           {{ notification.link }}
         </span>
@@ -51,11 +51,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Mixins } from 'vue-property-decorator';
+import { Component, Prop, Vue } from 'vue-property-decorator';
 import { NotificationPayload } from '@/store/notifications/types';
 import { createNamespacedHelpers, mapState } from 'vuex';
 import NotificationDescriptionDisplay from '@/components/notification-panel/NotificationDescriptionDisplay.vue';
-import NavigationMixin from '../../mixins/navigation-mixin';
 
 const { mapMutations } = createNamespacedHelpers('notifications');
 
@@ -68,7 +67,7 @@ const { mapMutations } = createNamespacedHelpers('notifications');
     ...mapMutations(['notificationDelete']),
   },
 })
-export default class NotificationCard extends Mixins(NavigationMixin) {
+export default class NotificationCard extends Vue {
   notificationDelete!: (id: number) => void;
   blockNumber!: number;
 
@@ -86,14 +85,8 @@ export default class NotificationCard extends Mixins(NavigationMixin) {
     }
   }
 
-  get linkRoute() {
-    switch (this.notification.dappRoute) {
-      case 'backup state route':
-        return () => this.navigateToBackupState();
-        break;
-      default:
-        break;
-    }
+  linkRoute() {
+    this.$router.push({ name: this.notification.dappRoute });
   }
 }
 </script>
