@@ -4,7 +4,8 @@ import { NavigationGuardNextArgument } from './types';
 import store from '@/store';
 
 /**
- * @param to
+ * @param to - navigation target
+ * @returns eventual navigation instruction for middleware of global guard
  */
 export function redirectIfDisclaimerIsNotAccepted(
   to: Route,

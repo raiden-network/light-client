@@ -62,7 +62,9 @@ export default class TokenOverlay extends Mixins(BlockieMixin, NavigationMixin) 
   }
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
 }
 </script>
 

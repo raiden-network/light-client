@@ -102,7 +102,9 @@ export default class TransferProgressDialog extends Vue {
   }
 
   @Emit()
-  dismiss() {}
+  dismiss(): boolean {
+    return true;
+  }
 }
 </script>
 

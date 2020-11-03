@@ -32,7 +32,7 @@ export default class QrCodeOverlay extends Vue {
   showPermissionHint = false;
   error: Error | null = null;
 
-  async onInit(promise: Promise<any>) {
+  async onInit(promise: Promise<MediaTrackCapabilities>) {
     this.showPermissionHint = true;
 
     try {
@@ -45,10 +45,14 @@ export default class QrCodeOverlay extends Vue {
   }
 
   @Emit()
-  decode() {}
+  decode(): boolean {
+    return true;
+  }
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
 }
 </script>
 

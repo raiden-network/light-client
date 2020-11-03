@@ -67,6 +67,7 @@ import {
   Subscription,
 } from 'rxjs';
 import { catchError, debounceTime, map, switchMap, tap } from 'rxjs/internal/operators';
+import { VTextField } from 'vuetify/lib';
 import QrCode from '@/components/icons/QrCode.vue';
 import QrCodeOverlay from '@/components/overlays/QrCodeOverlay.vue';
 import Spinner from '@/components/icons/Spinner.vue';
@@ -129,6 +130,10 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   presences!: Presences;
   isAddressAvailable = false;
   isQrCodeOverlayVisible = false;
+
+  $refs!: {
+    address: VTextField;
+  };
 
   get isAddressValid() {
     // v-text-field interprets strings returned from a validation rule
@@ -267,7 +272,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       });
   }
 
-  /* istanbul ignore file */
   destroyed() {
     this.subscription?.unsubscribe();
   }
@@ -299,7 +303,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 
   @Emit()
-  public input(_value?: string) {}
+  public input(value?: string): string {
+    return value ?? '';
+  }
 
   valueChanged(value?: string) {
     this.valueChange.next(value);
@@ -322,7 +328,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     }
 
     setTimeout(() => {
-      // @ts-ignore
       this.$refs.address.validate();
     });
   }

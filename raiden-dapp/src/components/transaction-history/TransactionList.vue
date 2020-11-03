@@ -52,7 +52,10 @@ export default class TransactionLists extends Vue {
   }
 
   get orderedTransfers(): RaidenTransfer[] {
-    return this.filteredTransfersForToken.sort((a: any, b: any) => b.changedAt - a.changedAt);
+    return this.filteredTransfersForToken.sort(
+      (a: RaidenTransfer, b: RaidenTransfer) =>
+        b.changedAt.getMilliseconds() - a.changedAt.getMilliseconds(),
+    );
   }
 }
 </script>

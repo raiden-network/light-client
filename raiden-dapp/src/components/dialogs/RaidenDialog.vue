@@ -30,7 +30,9 @@ export default class RaidenDialog extends Vue {
   hideClose!: boolean;
 
   @Emit()
-  close() {}
+  close(): boolean {
+    return true;
+  }
 }
 </script>
 

@@ -13,7 +13,8 @@ const accountRoutes = [
 ] as string[];
 
 /**
- * @param to
+ * @param to - navigation target
+ * @returns eventual navigation instruction for middleware of global guard
  */
 export function redirectIfNotConnected(to: Route): NavigationGuardNextArgument | undefined {
   const { isConnected } = store.getters;

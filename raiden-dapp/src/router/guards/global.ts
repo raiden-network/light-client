@@ -2,11 +2,11 @@ import { Route, NavigationGuardNext } from 'vue-router';
 import { NavigationGuardChild } from './types';
 
 /**
- * @param this
- * @param this.children
- * @param to
- * @param _from
- * @param next
+ * @param this - bound function conext
+ * @param this.children - list of navigation guard children
+ * @param to - navigation target
+ * @param _from - navigation origin (ignored)
+ * @param next - middleware function
  */
 export function globalNavigationGuard(
   this: { children: NavigationGuardChild[] },

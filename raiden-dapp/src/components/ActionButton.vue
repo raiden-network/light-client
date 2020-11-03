@@ -54,7 +54,9 @@ export default class ActionButton extends Vue {
   fullWidth?: boolean;
 
   @Emit()
-  click() {}
+  click(): boolean {
+    return true;
+  }
 }
 </script>
 <style lang="scss" scoped>

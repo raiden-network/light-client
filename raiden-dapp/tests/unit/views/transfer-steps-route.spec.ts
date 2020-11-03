@@ -4,12 +4,13 @@ import { mount } from '@vue/test-utils';
 import { BigNumber, constants } from 'ethers';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import VueRouter from 'vue-router';
 import flushPromises from 'flush-promises';
+import { $t } from '../utils/mocks';
 import { RaidenPaths, RaidenPFS } from 'raiden-ts';
 import Mocked = jest.Mocked;
-import VueRouter from 'vue-router';
 
-import TransferStepsRoute from '@/views/TransferStepsRoute.vue';
+import TransferSteps from '@/views/TransferStepsRoute.vue';
 import { Route, Token } from '@/model/types';
 import store from '@/store';
 import { Tokens } from '@/types';
@@ -18,7 +19,7 @@ import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuetify);
 
-describe('TransferStepsRoute.vue', () => {
+describe('TransferSteps.vue', () => {
   let vuetify: Vuetify;
   let processingTransfer: jest.SpyInstance;
   let transferDone: jest.SpyInstance;
@@ -62,9 +63,17 @@ describe('TransferStepsRoute.vue', () => {
     getAccount: jest.fn(),
   };
 
-  function createWrapper(data: any) {
+  function createWrapper(
+    data: {
+      step?: number;
+      selectedPfs?: RaidenPFS;
+      routes?: Route[];
+      selectedRoute?: Route;
+      processingTransfer?: boolean;
+    } = {},
+  ) {
     vuetify = new Vuetify();
-    return mount(TransferStepsRoute, {
+    return mount(TransferSteps, {
       store,
       vuetify,
       stubs: ['v-dialog'],
@@ -80,7 +89,7 @@ describe('TransferStepsRoute.vue', () => {
             identifier: '123456789123456789123',
           },
         },
-        $t: (msg: string, args: object) => `${msg} args: ${JSON.stringify(args)}`,
+        $t,
         $raiden,
       },
       data: function () {
@@ -269,8 +278,10 @@ describe('TransferStepsRoute.vue', () => {
       processingTransfer: false,
     });
 
-    // @ts-ignore
-    wrapper.vm.setPFS([{ ...raidenPFS, price: constants.Zero } as RaidenPFS, true]);
+    (wrapper.vm as TransferSteps).setPFS([
+      { ...raidenPFS, price: constants.Zero } as RaidenPFS,
+      true,
+    ]);
     await flushPromises();
     jest.advanceTimersByTime(2000);
     expect(wrapper.vm.$data.step).toBe(3);

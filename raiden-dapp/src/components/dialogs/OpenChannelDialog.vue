@@ -66,6 +66,8 @@ export default class OpenChannelDialog extends Vue {
   doneStep!: StepDescription;
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
 }
 </script>
