@@ -84,8 +84,7 @@ describe('RaidenService', () => {
   }
 
   beforeEach(() => {
-    // @ts-ignore
-    raiden = new Raiden() as jest.Mocked<Raiden>;
+    raiden = new Raiden() as Mocked<Raiden>;
     setupMock(raiden);
     factory = Raiden.create = jest.fn();
     providerMock = Web3Provider.provider = jest.fn();

@@ -59,6 +59,7 @@
 import { Component, Prop, Watch, Mixins } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
 import { BigNumber, constants } from 'ethers';
+import { VForm } from 'vuetify/lib';
 import NavigationMixin from '../../mixins/navigation-mixin';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
@@ -94,9 +95,13 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
   @Prop({ required: true })
   capacity!: BigNumber;
 
+  $refs!: {
+    transfer: VForm;
+  };
+
   @Watch('$route', { immediate: true, deep: true })
   onRouteChange() {
-    (this.$refs?.transfer as any)?.reset();
+    this.$refs.transfer.reset();
   }
 
   async created() {

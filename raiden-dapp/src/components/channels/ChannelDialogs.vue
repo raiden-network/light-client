@@ -94,7 +94,9 @@ export default class ChannelDialogs extends Vue {
   error: Error | null = null;
 
   @Emit()
-  message(_message: string) {}
+  message(message: string): string {
+    return message;
+  }
 
   @Emit()
   dismiss() {
@@ -103,7 +105,9 @@ export default class ChannelDialogs extends Vue {
   }
 
   @Emit()
-  busy(_busy: boolean) {}
+  busy(busy: boolean): boolean {
+    return busy;
+  }
 
   async deposit(deposit: BigNumber) {
     const { token, partner } = this.channel!;

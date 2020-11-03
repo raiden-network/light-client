@@ -144,6 +144,10 @@ export default class RaidenAccount extends Vue {
     balance: 0,
   };
 
+  $refs!: {
+    form: HTMLFormElement;
+  };
+
   mounted() {
     this.amount = this.currentAccountBalance();
   }
@@ -157,7 +161,6 @@ export default class RaidenAccount extends Vue {
   }
 
   toggleDirection() {
-    // @ts-ignore
     this.$refs.form.reset();
     this.isFromMainToRaidenAccount = !this.isFromMainToRaidenAccount;
     this.amount = this.currentAccountBalance();

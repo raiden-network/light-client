@@ -1,10 +1,13 @@
 import { BigNumber } from 'ethers';
 import AddressUtils from '@/utils/address-utils';
 
+type RouteQueryParameter = string | (string | null)[];
+
 /**
- * @param queryParam
+ * @param queryParam - pure paremter of the query
+ * @returns parsed payment identifier if parameter is (correctly) defined
  */
-export function getPaymentId(queryParam: any): BigNumber | undefined {
+export function getPaymentId(queryParam: RouteQueryParameter): BigNumber | undefined {
   try {
     return BigNumber.from(queryParam);
   } catch (_error) {
@@ -13,9 +16,10 @@ export function getPaymentId(queryParam: any): BigNumber | undefined {
 }
 
 /**
- * @param queryParam
+ * @param queryParam - pure paremter of the query
+ * @returns parsed amount value if parameter is (correctly) defined
  */
-export function getAmount(queryParam: any): string {
+export function getAmount(queryParam: RouteQueryParameter): string {
   let amount = '';
 
   if (queryParam && typeof queryParam === 'string') {
@@ -28,9 +32,10 @@ export function getAmount(queryParam: any): string {
 }
 
 /**
- * @param queryParam
+ * @param queryParam - pure paremter of the query
+ * @returns parsed address if parameter is (correctly) defined
  */
-export function getAddress(queryParam: any) {
+export function getAddress(queryParam: RouteQueryParameter): string {
   let address = '';
 
   if (queryParam && typeof queryParam === 'string') {

@@ -86,6 +86,13 @@ import { getLogsFromStore } from '@/utils/logstore';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 
+interface MenuItem {
+  icon: string;
+  title: string;
+  subtitle: string;
+  route: () => void;
+}
+
 @Component({
   components: {
     AddressDisplay,
@@ -96,7 +103,7 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
   },
 })
 export default class AccountContent extends Mixins(NavigationMixin) {
-  menuItems: {}[] = [];
+  menuItems: MenuItem[] = [];
   loading!: boolean;
   defaultAccount!: string;
   accountBalance!: string;

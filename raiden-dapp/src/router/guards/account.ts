@@ -6,9 +6,9 @@ import { RouteNames } from '../route-names';
  * and then loads the General view in a separate <router-view>. The last
  * visited route is loaded when clicking out of the General view.
  *
- * @param to
- * @param from
- * @param next
+ * @param to - navigation target
+ * @param from - navigation origin
+ * @param next - middleware function
  */
 export function beforeRouteToAccount(to: Route, from: Route, next: NavigationGuardNext): void {
   if (from.name === null) {

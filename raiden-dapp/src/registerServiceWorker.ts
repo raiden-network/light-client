@@ -25,7 +25,11 @@ if (process.env.NODE_ENV === 'production' && !process.env.VUE_APP_RAIDEN_PACKAGE
       console.log('New content is downloading.');
     },
     updated(registration: ServiceWorkerRegistration) {
-      document.dispatchEvent(new CustomEvent('swUpdated', { detail: registration }));
+      document.dispatchEvent(
+        new CustomEvent('swUpdated', {
+          detail: registration,
+        }),
+      );
       console.log('New content is available; please refresh.');
     },
     offline() {

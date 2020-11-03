@@ -56,7 +56,9 @@ export default class ConnectDialog extends Vue {
   hasProvider!: boolean;
 
   @Emit()
-  close() {}
+  close(): boolean {
+    return true;
+  }
 
   @Emit()
   connect() {

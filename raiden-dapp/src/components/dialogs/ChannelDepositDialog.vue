@@ -116,7 +116,9 @@ export default class ChannelDepositDialog extends Vue {
   }
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
 
   depositTokens() {
     const deposit = BalanceUtils.parse(this.deposit, this.token.decimals!);

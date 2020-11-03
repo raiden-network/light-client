@@ -22,7 +22,7 @@ export default class UpdateSnackbar extends Vue {
   swRegistration: ServiceWorkerRegistration | null = null;
 
   created() {
-    document.addEventListener('swUpdated', this.handleSWUpdate, { once: true });
+    window.addEventListener('swUpdated', this.handleSWUpdate, { once: true });
 
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       setTimeout(() => {
@@ -32,10 +32,10 @@ export default class UpdateSnackbar extends Vue {
     });
   }
   beforeDestroy() {
-    document.removeEventListener('swUpdated', this.handleSWUpdate);
+    window.removeEventListener('swUpdated', this.handleSWUpdate);
   }
 
-  handleSWUpdate(event: any) {
+  handleSWUpdate(event: ServiceWorkerUpdatedEvent) {
     this.swRegistration = event.detail;
     this.updateAvailable = true;
   }

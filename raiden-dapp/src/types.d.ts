@@ -35,13 +35,30 @@ export interface RootState {
 
 declare global {
   interface Window {
-    web3: any;
-    ethereum: any;
+    web3: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    ethereum: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  }
+
+  type ServiceWorkerUpdatedEvent = CustomEvent<ServiceWorkerRegistration>;
+
+  interface WindowEventMap {
+    swUpdated: ServiceWorkerUpdatedEvent;
   }
 }
 
 declare module 'vue/types/vue' {
   interface Vue {
     $raiden: RaidenService;
+  }
+}
+
+declare module 'vuetify/lib' {
+  export interface VTextField extends Vue {
+    valid: boolean;
+    validate: () => void;
+  }
+
+  export interface VForm extends Vue {
+    reset: () => void;
   }
 }

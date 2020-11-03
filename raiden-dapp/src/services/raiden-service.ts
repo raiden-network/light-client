@@ -1,5 +1,5 @@
 import { Store } from 'vuex';
-import { BigNumber, BigNumberish, utils, constants } from 'ethers';
+import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import uniq from 'lodash/uniq';
@@ -28,10 +28,9 @@ export default class RaidenService {
   private store: Store<RootState>;
   private _userDepositTokenAddress = '';
   private _configuration?: Configuration;
-  private _subkey?: true;
 
   private static async createRaiden(
-    provider: any,
+    provider: providers.JsonRpcProvider | providers.ExternalProvider | string,
     account: string | number = 0,
     stateBackup?: string,
     subkey?: true,
@@ -135,7 +134,6 @@ export default class RaidenService {
 
         this._raiden = raiden;
         this._configuration = configuration;
-        this._subkey = subkey;
 
         const account = await this.getAccount();
         this.store.commit('account', account);
@@ -266,7 +264,7 @@ export default class RaidenService {
   }
 
   private async notifyNoReceive() {
-    await this.store.commit('notifications/notificationAddOrReplace', {
+    this.store.commit('notifications/notificationAddOrReplace', {
       icon: i18n.t('notifications.no-receive.icon'),
       title: i18n.t('notifications.no-receive.title'),
       description: i18n.t('notifications.no-receive.description'),
@@ -288,7 +286,7 @@ export default class RaidenService {
     }
   }
 
-  private async notifyWithdrawalFailure(code: any, plannedAmount: BigNumber, message: string) {
+  private async notifyWithdrawalFailure(code: string, plannedAmount: BigNumber, message: string) {
     if (
       [
         'UDC_PLAN_WITHDRAW_GT_ZERO',
@@ -318,7 +316,7 @@ export default class RaidenService {
           message: message,
         });
 
-    await this.store.commit('notifications/notificationAddOrReplace', {
+    this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.withdrawal.failure.title'),
       description,
       context: NotificationContext.ERROR,
@@ -332,7 +330,7 @@ export default class RaidenService {
     const amount = BalanceUtils.toUnits(plannedAmount, decimals);
     const withdrawn = BalanceUtils.toUnits(withdrawal, decimals);
 
-    await this.store.commit('notifications/notificationAddOrReplace', {
+    this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.withdrawal.success.title'),
       description: i18n.t('notifications.withdrawal.success.description', {
         amount,
@@ -354,7 +352,7 @@ export default class RaidenService {
     const decimals = token.decimals ?? 18;
     const amount = BalanceUtils.toUnits(reward, decimals);
 
-    await this.store.commit('notifications/notificationAddOrReplace', {
+    this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.ms-balance-proof.title'),
       description: i18n.t('notifications.ms-balance-proof.description', {
         monitoringService,
@@ -373,7 +371,7 @@ export default class RaidenService {
       partner,
     });
 
-    await this.store.commit('notifications/notificationAddOrReplace', {
+    this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.settlement.success.title'),
       description,
       icon: i18n.t('notifications.settlement.icon'),
@@ -383,7 +381,7 @@ export default class RaidenService {
   }
 
   private async notifyChannelSettleFailure(partner: string) {
-    await this.store.commit('notifications/notificationAddOrReplace', {
+    this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.settlement.failure.title'),
       description: i18n.t('notifications.settlement.failure.description', {
         partner,
@@ -412,7 +410,7 @@ export default class RaidenService {
       partner,
     });
 
-    await this.store.commit('notifications/notificationAddOrReplace', {
+    this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.channel-open.success.title'),
       description,
       icon: i18n.t('notifications.channel-open.icon'),
@@ -425,7 +423,7 @@ export default class RaidenService {
   }
 
   private async notifyChannelOpenFailed(message: string) {
-    await this.store.commit('notifications/notificationAddOrReplace', {
+    this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.channel-open.failure.title'),
       description: message,
       icon: i18n.t('notifications.channel-open.icon'),

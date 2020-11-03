@@ -82,7 +82,9 @@ export default class UploadStateDialog extends Mixins(NavigationMixin) {
   visible!: boolean;
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
 
   onDropzoneEnter(e: DragEvent) {
     e.preventDefault();

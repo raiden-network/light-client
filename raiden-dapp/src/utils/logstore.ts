@@ -10,7 +10,7 @@ interface RaidenDB extends DBSchema {
     value: {
       logger: string;
       level: string;
-      message: any[];
+      message: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
       block?: number;
     };
     key: number;
@@ -36,6 +36,7 @@ function serializeError(e: Error): string {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function filterMessage(message: any[]) {
   if (message[0] === '%c prev state') return;
   if (message[0]?.startsWith?.('action %c')) return;
@@ -56,6 +57,7 @@ function filterMessage(message: any[]) {
   return message;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serialize(e: any): string {
   if (typeof e === 'string') return e;
   try {
@@ -87,7 +89,8 @@ async function setDbForLogger(loggerName: string) {
 }
 
 /**
- * @param additionalLoggers
+ * @param additionalLoggers - logger names to add as well
+ *
  */
 export async function setupLogStore(additionalLoggers: string[] = ['matrix']): Promise<void> {
   if (typeof db !== 'undefined') return;
@@ -102,6 +105,8 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
     ): logging.LoggingMethod => {
       const rawMethod = origFactory(methodName, level, loggerName);
       setDbForLogger(loggerName);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (...message: any[]): void => {
         rawMethod(...message);
         const filtered = filterMessage(message);
@@ -143,7 +148,7 @@ function redactLogs(text: string): string {
 }
 
 /**
- *
+ * @returns tuple of the last transaction time and full content of the log store
  */
 export async function getLogsFromStore(): Promise<[number, string]> {
   let content = '';

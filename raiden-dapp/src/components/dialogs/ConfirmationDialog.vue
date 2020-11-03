@@ -42,9 +42,14 @@ export default class ConfirmationDialog extends Vue {
   identifier!: number;
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
+
   @Emit()
-  confirm() {}
+  confirm(): boolean {
+    return true;
+  }
 }
 </script>
 

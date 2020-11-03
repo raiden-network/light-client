@@ -45,7 +45,10 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
   visible!: boolean;
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
+
   /* istanbul ignore next */
   async getAndDownloadState() {
     const filename = `raiden_lc_state_${new Date().toISOString()}.json`;

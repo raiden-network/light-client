@@ -59,7 +59,7 @@ const _defaultState: RootState = {
 };
 
 /**
- * @returns A default root state
+ * @returns clone of the default root state object
  */
 export function defaultState(): RootState {
   return clone(_defaultState);

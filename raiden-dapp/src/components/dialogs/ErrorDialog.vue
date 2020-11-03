@@ -22,7 +22,9 @@ export default class ErrorDialog extends Vue {
   error!: Error | RaidenError | null;
 
   @Emit()
-  dismiss() {}
+  dismiss(): boolean {
+    return true;
+  }
 
   get showDialog() {
     return this.error !== null;

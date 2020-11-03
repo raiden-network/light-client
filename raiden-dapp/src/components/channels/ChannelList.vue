@@ -123,7 +123,9 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   busy!: boolean;
 
   @Emit()
-  action(_action: [ChannelAction, RaidenChannel]) {}
+  action(action: [ChannelAction, RaidenChannel]) {
+    return action;
+  }
 }
 </script>
 
