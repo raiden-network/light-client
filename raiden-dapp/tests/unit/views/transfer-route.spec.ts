@@ -25,7 +25,7 @@ describe('TransferRoute.vue', () => {
     This workaround is used because the class component
     library results in a property does not exist error.
     */
-    TransferRoute.prototype.constructor.options.methods,
+    TransferRoute.prototype,
     'pushStateBackupNotification'
   );
 
