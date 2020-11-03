@@ -17,6 +17,8 @@ pathfinding-service-address = "http://localhost:6000"
 # Misc
 address = "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec"
 
+log-json = true
+
 # Log settings
 [log-config]
-"raiden" = "INFO"
+"raiden" = "DEBUG"
