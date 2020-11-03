@@ -1,4 +1,5 @@
 jest.mock('vue-router');
+jest.useFakeTimers();
 import { shallowMount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuex from 'vuex';
@@ -19,12 +20,24 @@ describe('TransferRoute.vue', () => {
   const vuetify = new Vuetify();
   const token = generateToken();
   const channel = generateChannel({}, token);
+  const pushStateBackupNotificationSpy = jest.spyOn(
+    /*
+    This workaround is used because the class component
+    library results in a property does not exist error.
+    */
+    TransferRoute.prototype.constructor.options.methods,
+    'pushStateBackupNotification'
+  );
 
   function createWrapper(
     tokenParameter = token.address,
     tokens = [token],
-    channels = [channel]
+    channels = [channel],
+    stateBackupReminderDateMs = 0
   ): Wrapper<TransferRoute> {
+    const state = {
+      stateBackupReminderDateMs,
+    };
     const getters = {
       tokens: () => tokens,
       token: () => (tokenAddress: string) =>
@@ -34,8 +47,17 @@ describe('TransferRoute.vue', () => {
         channels.filter(({ token }) => token === tokenAddress)?.[0] ?? null,
       openChannels: () => channels,
     };
+    const mutations = {
+      updateStateBackupReminderDate: jest.fn(),
+      'notifications/notificationAddOrReplace': jest.fn(),
+    };
 
-    const store = new Vuex.Store({ getters });
+    const store = new Vuex.Store({
+      state,
+      getters,
+      mutations,
+    });
+
     return shallowMount(TransferRoute, {
       vuetify,
       store,
@@ -92,5 +114,37 @@ describe('TransferRoute.vue', () => {
   test('capacity is zero if there is the token is undefined', () => {
     const wrapper = createWrapper('', [], []);
     expect((wrapper.vm as any).capacity).toEqual(constants.Zero);
+  });
+
+  test('notifies about backing up state if user has never been notified', () => {
+    createWrapper(token.address, [token], [], 0);
+    expect(pushStateBackupNotificationSpy).toHaveBeenCalled();
+  });
+
+  test('notifies about backing up state if more than one day passes', () => {
+    createWrapper(token.address, [token], [], 1);
+    expect(pushStateBackupNotificationSpy).toHaveBeenCalled();
+  });
+
+  test('does not notify about backing up state if less than one day passes', () => {
+    const currentTime = new Date().getTime();
+    createWrapper(token.address, [token], [], currentTime);
+    expect(pushStateBackupNotificationSpy).not.toHaveBeenCalled();
+  });
+
+  test('notifies about backing up state if user has never been notified', () => {
+    createWrapper(token.address, [token], [], 0);
+    expect(pushStateBackupNotificationSpy).toHaveBeenCalled();
+  });
+
+  test('notifies about backing up state if more than one day passes', () => {
+    createWrapper(token.address, [token], [], 1);
+    expect(pushStateBackupNotificationSpy).toHaveBeenCalled();
+  });
+
+  test('does not notify about backing up state if less than one day passes', () => {
+    const currentTime = new Date().getTime();
+    createWrapper(token.address, [token], [], currentTime);
+    expect(pushStateBackupNotificationSpy).not.toHaveBeenCalled();
   });
 });

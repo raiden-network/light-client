@@ -34,7 +34,7 @@ import { NotificationImportance } from '../store/notifications/notification-impo
 import { NotificationContext } from '../store/notifications/notification-context';
 import { RouteNames } from '@/router/route-names';
 
-const ONE_DAY = new Date().setHours(24);
+const ONE_DAY = new Date(0).setUTCHours(24);
 
 @Component({
   components: {
