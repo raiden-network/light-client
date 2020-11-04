@@ -8,7 +8,7 @@ ARG GETH_VERSION="1.9.23"
 ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.9.23-8c2f2715.tar.gz"
 ARG GETH_MD5_LINUX="4817ce02025ba3f876f7055e1e456555"
 
-FROM python:3.7 as raiden-builder
+FROM python:3.9 as raiden-builder
 ARG RAIDEN_VERSION
 
 # clone raiden repo + install dependencies
@@ -20,7 +20,7 @@ WORKDIR /app/raiden
 RUN git checkout ${RAIDEN_VERSION}
 RUN make install
 
-FROM python:3.7 as synapse-builder
+FROM python:3.9 as synapse-builder
 ARG SYNAPSE_VERSION
 
 RUN python -m venv /synapse-venv \
@@ -29,7 +29,7 @@ RUN python -m venv /synapse-venv \
 
 COPY synapse/auth/ /synapse-venv/lib/python3.7/site-packages/
 
-FROM python:3.7
+FROM python:3.9
 LABEL maintainer="Raiden Network Team <contact@raiden.network>"
 
 ARG OS_NAME
