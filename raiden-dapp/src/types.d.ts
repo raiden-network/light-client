@@ -1,3 +1,4 @@
+import 'vuetify/types/lib.d';
 import RaidenService from '@/services/raiden-service';
 import { RaidenChannels, RaidenTransfer, RaidenConfig } from 'raiden-ts';
 import { DeniedReason, Token, Presences } from '@/model/types';
@@ -27,6 +28,7 @@ export interface RootState {
   config: Partial<RaidenConfig>;
   userDepositTokenAddress: string;
   disclaimerAccepted: boolean;
+  stateBackupReminderDateMs: number;
   persistDisclaimerAcceptance: boolean;
 }
 

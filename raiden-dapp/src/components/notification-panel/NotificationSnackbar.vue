@@ -10,7 +10,7 @@
   >
     <v-row no-gutters class="notification-area">
       <v-col cols="2">
-        <img :src="require('@/assets/notification_block.svg')" />
+        <img :src="require('@/assets/notifications/notification_block.svg')" />
       </v-col>
       <v-col class="notification-area__title">
         <span>

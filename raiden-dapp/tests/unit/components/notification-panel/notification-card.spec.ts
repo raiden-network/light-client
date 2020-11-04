@@ -1,7 +1,10 @@
+import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
 import { TestData } from '../../data/mock-data';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import VueRouter from 'vue-router';
+import { RouteNames } from '@/router/route-names';
 import Filters from '@/filters';
 import NotificationCard from '@/components/notification-panel/NotificationCard.vue';
 import store from '@/store';
@@ -12,13 +15,16 @@ Vue.filter('formatDate', Filters.formatDate);
 describe('NotificationCard.vue', () => {
   let wrapper: Wrapper<NotificationCard>;
   let vuetify: Vuetify;
+  let router: Mocked<VueRouter>;
 
   beforeEach(() => {
     vuetify = new Vuetify();
+    router = new VueRouter() as Mocked<VueRouter>;
     wrapper = mount(NotificationCard, {
       vuetify,
       store,
       mocks: {
+        $router: router,
         $t: (msg: string) => msg,
       },
       propsData: { notification: TestData.notifications },
@@ -65,6 +71,28 @@ describe('NotificationCard.vue', () => {
     expect(notificationBlockCount.text()).toContain('123');
     expect(notificationBlockCount.text()).toContain(
       'notifications.block-count-progress'
+    );
+  });
+
+  test('displays link if link is in notification', () => {
+    const notificationLink = wrapper.find(
+      '.notification-card__content__details__link'
+    );
+
+    expect(notificationLink.text()).toContain('Visit the Withdrawal menu');
+  });
+
+  test('clicking link in notification routes user', () => {
+    router.push = jest.fn().mockResolvedValue(null);
+
+    const notificationLink = wrapper.find(
+      '.notification-card__content__details__link'
+    );
+    notificationLink.trigger('click');
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({ name: RouteNames.ACCOUNT_WITHDRAWAL })
     );
   });
 

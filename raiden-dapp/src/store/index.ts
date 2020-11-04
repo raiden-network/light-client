@@ -54,6 +54,7 @@ const _defaultState: RootState = {
   config: {},
   userDepositTokenAddress: '',
   disclaimerAccepted: false,
+  stateBackupReminderDateMs: 0,
   persistDisclaimerAcceptance: false,
 };
 
@@ -76,14 +77,17 @@ const settingsLocalStorage = new VuexPersistence<RootState>({
   key: 'raiden_dapp_settings',
 });
 
-const disclaimerAcceptedLocalStorage = new VuexPersistence<RootState>({
+const miscellaneousLocalStorage = new VuexPersistence<RootState>({
   reducer: (state) => ({
     disclaimerAccepted: state.persistDisclaimerAcceptance
       ? state.disclaimerAccepted
       : false,
+    stateBackupReminderDateMs: state.stateBackupReminderDateMs,
   }),
-  filter: (mutation) => mutation.type === 'acceptDisclaimer',
-  key: 'raiden_dapp_disclaimer_accepted',
+  filter: (mutation) =>
+    mutation.type === 'acceptDisclaimer' ||
+    mutation.type === 'updateStateBackupReminderDate',
+  key: 'miscellaneous',
 });
 
 const store: StoreOptions<RootState> = {
@@ -132,13 +136,19 @@ const store: StoreOptions<RootState> = {
     },
     reset(state: RootState) {
       // Preserve settings and backup when resetting state
-      const { settings, disclaimerAccepted, stateBackup } = state;
+      const {
+        settings,
+        disclaimerAccepted,
+        stateBackup,
+        stateBackupReminderDateMs,
+      } = state;
 
       Object.assign(state, {
         ...defaultState(),
         settings,
         disclaimerAccepted,
         stateBackup,
+        stateBackupReminderDateMs,
       });
     },
     updateTransfers(state: RootState, transfer: RaidenTransfer) {
@@ -159,6 +169,9 @@ const store: StoreOptions<RootState> = {
     acceptDisclaimer(state: RootState, persistDecision: boolean) {
       state.disclaimerAccepted = true;
       state.persistDisclaimerAcceptance = persistDecision;
+    },
+    updateStateBackupReminderDate(state: RootState, newReminderDate: number) {
+      state.stateBackupReminderDateMs = newReminderDate;
     },
   },
   actions: {},
@@ -259,7 +272,7 @@ const store: StoreOptions<RootState> = {
       return !!state.settings.useRaidenAccount;
     },
   },
-  plugins: [settingsLocalStorage.plugin, disclaimerAcceptedLocalStorage.plugin],
+  plugins: [settingsLocalStorage.plugin, miscellaneousLocalStorage.plugin],
   modules: {
     notifications,
   },

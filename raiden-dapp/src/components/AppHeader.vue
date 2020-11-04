@@ -41,14 +41,14 @@
           <v-img
             height="30px"
             width="25px"
-            :src="require('@/assets/notifications.svg')"
+            :src="require('@/assets/notifications/notifications.svg')"
           />
         </v-badge>
         <v-img
           v-else
           height="30px"
           width="25px"
-          :src="require('@/assets/notifications.svg')"
+          :src="require('@/assets/notifications/notifications.svg')"
         />
       </v-btn>
       <header-identicon

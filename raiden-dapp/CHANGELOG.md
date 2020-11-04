@@ -6,10 +6,12 @@
 
 ### Added
 
+- [#2178] Backup state reminder notification
 - [#2285] Add custom Cypress attributes to selectors
 
 ### Changed
 
+[#2178]: https://github.com/raiden-network/light-client/issues/2178
 [#2285]: https://github.com/raiden-network/light-client/issues/2285
 
 ## [0.12.0] - 2020-10-22

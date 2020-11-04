@@ -2,7 +2,9 @@
   <v-card data-cy="notification_card" class="notification-card" flat>
     <v-row class="notification-card__content" no-gutters>
       <v-avatar class="notification-card__content__icon" size="44" rounded>
-        <img :src="require(`@/assets/${notification.icon}.svg`)" />
+        <img
+          :src="require(`@/assets/notifications/${notification.icon}.svg`)"
+        />
       </v-avatar>
       <div class="notification-card__content__details">
         <span class="notification-card__content__details__title">
@@ -24,6 +26,13 @@
             {{ $t('notifications.channel-open.success.block-count-success') }}
           </span>
         </div>
+        <span
+          v-if="notification.link"
+          class="notification-card__content__details__link"
+          @click="linkRoute"
+        >
+          {{ notification.link }}
+        </span>
         <span class="notification-card__content__details__received">
           {{ notification.received | formatDate }}
         </span>
@@ -35,7 +44,7 @@
         class="notification-card__delete-button"
         @click="notificationDelete(notification.id)"
       >
-        <img :src="require('@/assets/notification_trash.svg')" />
+        <img :src="require('@/assets/notifications/notification_trash.svg')" />
       </v-btn>
     </v-row>
   </v-card>
@@ -75,6 +84,10 @@ export default class NotificationCard extends Vue {
       return false;
     }
   }
+
+  linkRoute() {
+    this.$router.push({ name: this.notification.dappRoute });
+  }
 }
 </script>
 
@@ -103,16 +116,23 @@ export default class NotificationCard extends Vue {
       margin-left: 16px;
 
       &__block-count,
+      &__link,
       &__received {
         font-size: 12px;
       }
 
-      &__title {
+      &__title,
+      &__link {
         color: $primary-color;
       }
 
       &__block-count {
         color: $color-white;
+      }
+
+      &__link {
+        cursor: pointer;
+        width: fit-content;
       }
 
       &__received {
