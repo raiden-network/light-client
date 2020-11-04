@@ -13,7 +13,7 @@ api-address = "0.0.0.0:5001"
 matrix-server = "http://localhost"
 
 routing-mode = "pfs"
-pathfinding-service-address = "http://localhost:6000"
+pathfinding-service-address = "http://localhost:5555"
 # Misc
 address = "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec"
 
