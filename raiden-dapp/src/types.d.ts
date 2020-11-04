@@ -1,3 +1,4 @@
+import 'vuetify/types/lib.d';
 import RaidenService from '@/services/raiden-service';
 import { RaidenChannels, RaidenTransfer, RaidenConfig } from 'raiden-ts';
 import { DeniedReason, Token, Presences } from '@/model/types';
