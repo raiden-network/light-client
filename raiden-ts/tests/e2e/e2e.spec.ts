@@ -47,7 +47,7 @@ async function createRaiden(account: number | string | Signer): Promise<Raiden> 
     {
       pfs: 'http://localhost:5555',
       matrixServer: 'http://localhost',
-      revealTimeout: 10,
+      revealTimeout: 20,
       settleTimeout: 50,
       confirmationBlocks: 1,
     },

@@ -12,6 +12,9 @@ accept-disclaimer = true
 api-address = "0.0.0.0:5002"
 matrix-server = "http://localhost"
 
+default-reveal-timeout = 20
+default-settle-timeout = 40
+
 routing-mode = "pfs"
 pathfinding-service-address = "http://localhost:5555"
 # Misc

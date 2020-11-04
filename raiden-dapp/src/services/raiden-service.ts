@@ -50,6 +50,10 @@ export default class RaidenService {
           pfs: process.env.VUE_APP_PFS,
           matrixServer: process.env.VUE_APP_MATRIX_SERVER,
           matrixServerLookup: process.env.VUE_APP_MATRIX_LIST_URL,
+          revealTimeout:
+            process.env.VUE_APP_REVEAL_TIMEOUT === undefined
+              ? undefined
+              : parseInt(process.env.VUE_APP_REVEAL_TIMEOUT),
         },
         subkey,
       );
