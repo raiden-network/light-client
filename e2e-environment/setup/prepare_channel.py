@@ -27,8 +27,6 @@ def open_channel(port: int, token: str, partner: str) -> bool:
     url = f'http://localhost:{port}/api/v1/channels'
     data = {
         'partner_address': partner,
-        'reveal_timeout': '10',
-        'settle_timeout': '20',
         'token_address': token,
         'total_deposit': AMOUNT,
     }
