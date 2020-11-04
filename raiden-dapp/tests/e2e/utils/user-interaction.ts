@@ -114,6 +114,23 @@ export function makeDirectTransfer(uiTimeout: number) {
 }
 
 /**
+ * @param uiTimeout - Timeout
+ */
+export function makeMediatedTransfer(uiTimeout: number) {
+  // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
+  cy.get('[data-cy=transfer_inputs]').should('exist');
+  cy.get('[data-cy=transfer_inputs_form_button]').click();
+  cy.wait(uiTimeout);
+  // cypress selectors: raiden-dapp/src/views/TransferStepsRoute.vue
+  cy.getWithCustomTimeout('[data-cy=transfer_button]').should('exist');
+  cy.get('[data-cy=transfer_button]').click();
+  // Click again to confirm fees dialog
+  cy.getWithCustomTimeout('[data-cy=transfer_button]').should('exist');
+  cy.get('[data-cy=transfer_button]').click();
+  cy.getWithCustomTimeout('[data-cy=transfer_inputs]').should('exist');
+}
+
+/**
  *
  */
 export function downloadState() {
