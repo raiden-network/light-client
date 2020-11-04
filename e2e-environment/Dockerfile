@@ -170,7 +170,7 @@ COPY services/keystore/UTC--2020-03-11T15-39-16.935381228Z--2b5e1928c25c5a326dbb
 RUN setup_channels.sh
 #                                                           HTTP, HTTP metrics, TCP replication, HTTP replication
 # GETH                               | RAIDEN  |SUP |PFS | Matrix
-EXPOSE 8545 8546 8547 30303 30303/udp 5001 5002 9001 6000 80 9101 9092 9093
+EXPOSE 8545 8546 8547 30303 30303/udp 5001 5002 9001 5555 80 9101 9092 9093
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 

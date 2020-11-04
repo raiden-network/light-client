@@ -37,7 +37,7 @@ DockerHub repository. Else the test scripts won't make use of it.
 docker run --detach --rm \
   --name lc-e2e \
   --publish 127.0.0.1:80:80 \
-  --publish 127.0.0.1:6000:6000 \
+  --publish 127.0.0.1:5555:5555 \
   --publish 127.0.0.1:5001:5001 \
   --publish 127.0.0.1:5002:5002 \
   --publish 127.0.0.1:8545:8545 \
@@ -51,7 +51,7 @@ accessible at the following ports on `localhost`:
 
 - RPC endpoint of the Geth Etherum node: `8545`
 - Synapse Matrix server: `80`
-- Path-finding service: `6000`
+- Path-finding service: `5555`
 - First Raiden node: `5001`
 - Second Raiden node: `5002`
 
