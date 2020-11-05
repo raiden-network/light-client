@@ -13,10 +13,6 @@ parameters:
     type: string
     default: ~/src
 
-  yarn_cache_key:
-    type: string
-    default: raiden-{{ .Branch }}-{{ checksum "yarn-lock.yaml" }}
-
   test_report_directory:
     type: string
     default: reports/junit
@@ -97,10 +93,14 @@ jobs:
       - run: git submodule sync
       - run: git submodule update --init
       - restore_cache:
-          key: << pipeline.parameters.yarn_cache_key >>
+          name: Restore Yarn Package Cache
+          keys:
+            - raiden-v1-yarn-{{ checksum "yarn.lock" }}
+            - raiden-v1-yarn-
       - run: yarn install
       - save_cache:
-          key: << pipeline.parameters.yarn_cache_key >>
+          name: Save Yarn Package Cache
+          key: raiden-v1-yarn-{{ checksum "yarn.lock" }}
           paths:
             - ./node_modules
             - ~/.cache # Cypress stores its stuff here.
