@@ -6,6 +6,7 @@ import {
   timer,
   MonoTypeOperatorFunction,
   of,
+  defer,
 } from 'rxjs';
 import {
   tap,
@@ -313,23 +314,16 @@ export function approveIfNeeded$(
   // see https://github.com/raiden-network/light-client/issues/2010
   let resetAllowance$: Observable<true> = of(true);
   if (!allowance.isZero())
-    resetAllowance$ = retryAsync$(
-      () => tokenContract.approve(spender, 0),
-      provider.pollingInterval,
-      networkErrorRetryPredicate,
-    ).pipe(assertTx('approve', approveError, { log, provider }), mapTo(true));
+    resetAllowance$ = defer(async () => tokenContract.approve(spender, 0)).pipe(
+      assertTx('approve', approveError, { log, provider }),
+      mapTo(true),
+    );
 
   // if needed, send approveTx and wait/assert it before proceeding; 'deposit' could be enough,
   // but we send 'prevAllowance + deposit' in case there's a pending deposit
   // default minimumAllowance=MaxUint256 allows to approve once and for all
   return resetAllowance$.pipe(
-    mergeMap(() =>
-      retryAsync$(
-        () => tokenContract.approve(spender, bnMax(minimumAllowance, deposit)),
-        provider.pollingInterval,
-        networkErrorRetryPredicate,
-      ),
-    ),
+    mergeMap(async () => tokenContract.approve(spender, bnMax(minimumAllowance, deposit))),
     assertTx('approve', approveError, { log, provider }),
     pluck(1),
   );
