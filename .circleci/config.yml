@@ -58,9 +58,9 @@ commands:
           name: Check License for << parameters.directory >>
           working_directory: << pipeline.parameters.working_directory>>/<< parameters.directory >>
           command: >
-            license-checker --production
+            npx license-checker@25.0.1
+            --production
             --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense'
-            --excludePackages 'uuid@2.0.1'
             --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
 
   upload_test_results_and_coverage:
@@ -114,13 +114,6 @@ jobs:
     working_directory: ~/
     steps:
       - attach_workspace: *attach_options
-      # TODO: Export installation into Dockerfile?
-      - run:
-          name: Update $PATH
-          command: echo 'export PATH=$PATH:$HOME/node_modules/.bin' >> $BASH_ENV
-      - run:
-          name: Install license checker
-          command: npm install license-checker@25.0.1
       - check-license:
           directory: raiden-ts
       - check-license:
