@@ -82,8 +82,7 @@ Finally, you can install the required dependencies and build the SDK:
 
 ```bash
 yarn install
-cd raiden-ts
-yarn build
+yarn workspace raiden-ts build
 ```
 
 ### Code style

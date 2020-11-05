@@ -19,21 +19,19 @@ You can access an alpha testnet version of the Raiden dApp at https://lightclien
 2. Build the SDK  
 
    ```bash
-   cd raiden-ts
-   yarn build
+   yarn workspace raiden-ts build
    ```
 
 3. Serve dApp for development  
 
    ```
-   cd ../raiden-dapp
-   yarn serve
+   yarn workspace raiden-dapp serve
    ```
 
 4. Compile dApp for production  
 
    ```
-   yarn build
+   yarn workspace raiden-dapp build
    ```
 
 ## Run Tests
@@ -41,17 +39,17 @@ You can access an alpha testnet version of the Raiden dApp at https://lightclien
 1. Unit tests
 
    ```
-   yarn test
+   yarn workspace raiden-dapp test
    ```
 
 2. E2E tests
 
    ```
-   yarn test:e2e:docker
+   yarn workspace raiden-dapp test:e2e:docker
    ```
 
 ## Check Linting
 
 ```
-yarn lint
+yarn workspace raiden-dapp lint
 ```

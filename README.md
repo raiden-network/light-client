@@ -243,15 +243,13 @@ Go to the [CLI README](https://github.com/raiden-network/light-client/tree/maste
 3. Build the Raiden SDK  
 
    ```bash
-   cd raiden-ts
-   yarn build
+   yarn workspace raiden-ts build
    ```
 
 4. Run the dApp locally  
 
    ```
-   cd ../raiden-dapp
-   yarn serve
+   yarn workspace raiden-dapp serve
    ```
 
    After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp.
