@@ -27,7 +27,8 @@ describe('NotificationSnackbar.vue', () => {
 
   test('displays notifications', async () => {
     expect.assertions(1);
-    await store.commit('notifications/notificationAddOrReplace', TestData.notifications);
+    store.commit('notifications/notificationAddOrReplace', TestData.notifications);
+    await wrapper.vm.$nextTick();
     await wrapper.vm.$nextTick();
     expect(wrapper.find('.notification-area__title').text()).toMatch('Channel Settlement');
   });
@@ -36,14 +37,11 @@ describe('NotificationSnackbar.vue', () => {
     expect.assertions(1);
     const notificationId = TestData.notifications.id;
 
-    await store.commit('notifications/notificationAddOrReplace', TestData.notifications);
+    store.commit('notifications/notificationAddOrReplace', TestData.notifications);
     await wrapper.vm.$nextTick();
     wrapper.find('button').trigger('click');
     await wrapper.vm.$nextTick();
 
-    expect(
-      // @ts-ignore
-      store.state.notifications.notifications[notificationId].display,
-    ).toBeFalsy();
+    expect(store.state.notifications.notifications[notificationId].display).toBeFalsy();
   });
 });

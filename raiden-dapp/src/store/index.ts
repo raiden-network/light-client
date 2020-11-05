@@ -10,6 +10,7 @@ import orderBy from 'lodash/orderBy';
 import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
 import { BigNumber, providers } from 'ethers';
+import { NotificationsState } from './notifications/types';
 import {
   AccTokenModel,
   DeniedReason,
@@ -90,8 +91,9 @@ const miscellaneousLocalStorage = new VuexPersistence<RootState>({
   key: 'miscellaneous',
 });
 
-const store: StoreOptions<RootState> = {
-  state: defaultState(),
+const store: StoreOptions<RootState & { notifications: NotificationsState }> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  state: defaultState() as any, // 'notifications' member filled in by module
   mutations: {
     noProvider(state: RootState) {
       state.providerDetected = false;

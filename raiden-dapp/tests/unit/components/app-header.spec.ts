@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
@@ -49,7 +50,7 @@ describe('AppHeader.vue', () => {
 
     expect(newNotificationsBadge.exists()).toBe(false);
 
-    await store.commit('notifications/notificationAddOrReplace', TestData.notifications);
+    store.commit('notifications/notificationAddOrReplace', TestData.notifications);
 
     await wrapper.vm.$nextTick();
     newNotificationsBadge = wrapper.find('.v-badge__badge');

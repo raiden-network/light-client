@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BigNumber } from 'ethers';
 import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
 
@@ -12,7 +13,7 @@ describe('query params', () => {
     });
 
     test('undefined returns empty string', () => {
-      expect(getAmount(undefined)).toBe('');
+      expect(getAmount(undefined as any)).toBe('');
     });
   });
 
@@ -32,7 +33,7 @@ describe('query params', () => {
     });
 
     test('undefined returns empty string', () => {
-      expect(getAddress(undefined)).toBe('');
+      expect(getAddress(undefined as any)).toBe('');
     });
   });
 
@@ -51,7 +52,7 @@ describe('query params', () => {
       expect(getPaymentId('0xffffffffffffffff')).toStrictEqual(num);
     });
     test('undefined returns undefined', () => {
-      expect(getPaymentId(undefined)).toStrictEqual(undefined);
+      expect(getPaymentId(undefined as any)).toStrictEqual(undefined);
     });
   });
 });

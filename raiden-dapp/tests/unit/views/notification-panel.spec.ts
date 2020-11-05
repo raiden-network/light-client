@@ -1,10 +1,11 @@
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 import Vue from 'vue';
 import Vuex from 'vuex';
 import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
+
+import Mocked = jest.Mocked;
 import store from '@/store/index';
 import NotificationPanel from '@/views/NotificationPanel.vue';
 

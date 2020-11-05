@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';

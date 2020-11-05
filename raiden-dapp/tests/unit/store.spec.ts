@@ -1,5 +1,6 @@
 import { BigNumber, constants } from 'ethers';
 import { TestData } from './data/mock-data';
+import { defaultState as defaultNotificationsState } from '@/store/notifications/state';
 import store, { defaultState } from '@/store/index';
 import { DeniedReason, emptyTokenModel, Token } from '@/model/types';
 import { Tokens } from '@/types';
@@ -28,7 +29,7 @@ describe('store', () => {
   };
 
   beforeEach(() => {
-    store.replaceState(defaultState());
+    store.replaceState({ ...defaultState(), notifications: defaultNotificationsState() });
   });
 
   test('isConnected getter is false while disconnected', () => {

@@ -1,24 +1,24 @@
-import Filters from '@/filters';
-
 jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
 jest.useFakeTimers();
 
 import VueRouter, { NavigationGuard } from 'vue-router';
 import flushPromises from 'flush-promises';
-import { mount, shallowMount, Wrapper } from '@vue/test-utils';
-import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import { mount, shallowMount, Wrapper } from '@vue/test-utils';
+import { utils } from 'ethers';
 import { TestData } from '../data/mock-data';
+import { mockInput } from '../utils/interaction-utils';
+
 import store from '@/store';
+import Filters from '@/filters';
+import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { RouteNames } from '@/router/route-names';
 import Mocked = jest.Mocked;
 import { Token } from '@/model/types';
 import { Tokens } from '@/types';
-import { mockInput } from '../utils/interaction-utils';
-import { utils } from 'ethers';
 import { RaidenError, ErrorCodes } from 'raiden-ts';
 import RaidenService from '@/services/raiden-service';
 
@@ -35,10 +35,7 @@ describe('OpenChannelRoute.vue', () => {
   let router: Mocked<VueRouter>;
 
   function createWrapper(
-    routeParams: {
-      token?: string;
-      partner?: string;
-    },
+    routeParams: { token: string } | { partner: string },
     shallow = false,
   ): Wrapper<OpenChannelRoute> {
     const options = {
@@ -246,8 +243,8 @@ describe('OpenChannelRoute.vue', () => {
         },
         true,
       );
-      const vm = wrapper.vm as any;
-      beforeRouteLeave = vm.beforeRouteLeave as NavigationGuard;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      beforeRouteLeave = (wrapper.vm as any).beforeRouteLeave as NavigationGuard;
     });
 
     test('do not block when it is not loading', () => {

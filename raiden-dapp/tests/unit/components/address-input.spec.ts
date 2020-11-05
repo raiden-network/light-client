@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('@/services/raiden-service');
 jest.useFakeTimers();
 
@@ -16,8 +17,8 @@ describe('AddressInput', () => {
   let wrapper: Wrapper<AddressInput>;
   let vuetify: Vuetify;
 
-  let ensResolve: jest.Mock<any, any>;
-  let getAvailability: jest.Mock<any, any>;
+  let ensResolve: jest.Mock<string, [string]>;
+  let getAvailability: jest.Mock<{ available: boolean }, [string]>;
   const excludeAddress = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
   const blockAddress = '0xaCdCAC1e966D1D00baBf2d0E947520cF65fD0516';
   const onlineTarget = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
@@ -155,8 +156,7 @@ describe('AddressInput', () => {
 
   test('insert address if QR code got decoded', async () => {
     wrapper = createWrapper('', excludeAddress, blockAddress);
-    // @ts-ignore
-    wrapper.vm.onDecode(onlineTarget);
+    (wrapper.vm as any).onDecode(onlineTarget);
 
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
@@ -203,7 +203,7 @@ describe('AddressInput', () => {
     });
 
     test('with an error', async () => {
-      ensResolve = jest.fn().mockRejectedValue(Error('something went wrong'));
+      ensResolve = jest.fn().mockRejectedValue(new Error('something went wrong'));
       wrapper = createWrapper('', excludeAddress, blockAddress);
 
       mockInput(wrapper, 'enstest.test');

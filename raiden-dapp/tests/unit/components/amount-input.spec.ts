@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
@@ -12,7 +13,7 @@ describe('AmountInput.vue', () => {
   let wrapper: Wrapper<AmountInput>;
   let vuetify: Vuetify;
 
-  function createWrapper(params: {}): Wrapper<AmountInput> {
+  function createWrapper(params: Record<string, unknown>): Wrapper<AmountInput> {
     vuetify = new Vuetify();
     return mount(AmountInput, {
       vuetify,
@@ -93,8 +94,7 @@ describe('AmountInput.vue', () => {
         },
         preventDefault: jest.fn().mockReturnValue(null),
       };
-      // @ts-ignore
-      wrapper.vm.onPaste(event);
+      (wrapper.vm as any).onPaste(event);
 
       expect(event.preventDefault).toHaveBeenCalledTimes(1);
     });
@@ -110,8 +110,7 @@ describe('AmountInput.vue', () => {
         },
         preventDefault: jest.fn().mockReturnValue(null),
       };
-      // @ts-ignore
-      wrapper.vm.onPaste(event);
+      (wrapper.vm as any).onPaste(event);
 
       expect(event.preventDefault).toHaveBeenCalledTimes(0);
       expect(event.target.setSelectionRange).toHaveBeenCalledTimes(1);

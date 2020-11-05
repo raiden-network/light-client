@@ -30,7 +30,8 @@ function getRandomNumericId(): number {
 }
 
 /**
- * @param partialToken
+ * @param partialToken - Token data override
+ * @returns Token object
  */
 export function generateToken(partialToken: Partial<Token> = {}): Token {
   return {
@@ -43,7 +44,7 @@ export function generateToken(partialToken: Partial<Token> = {}): Token {
   } as Token;
 }
 
-/*
+/**
  * There is an inconsistent typing of token addresses. While the Token interface
  * of the dApp defines it as a string, the SDK defines the token address of
  * a RaidenTransfer as Address. Therefore it is not possible to simply use the
@@ -51,10 +52,10 @@ export function generateToken(partialToken: Partial<Token> = {}): Token {
  * parameter. To circumvent this problem, the optional token parameter accepts
  * the Token type of the dApp and casts its address for the token within the to
  * generate transfer.
- */
-/**
- * @param partialTransfer
- * @param token
+ *
+ * @param partialTransfer - RaidenTransfer overrides
+ * @param token - Token object
+ * @returns RaidenTransfer mocked object
  */
 export function generateTransfer(
   partialTransfer: Partial<RaidenTransfer> = {},
@@ -75,8 +76,9 @@ export function generateTransfer(
 }
 
 /**
- * @param partialChannel
- * @param token
+ * @param partialChannel - RaidenChannel overrides
+ * @param token - Token object
+ * @returns RaidenChannel mocked object
  */
 export function generateChannel(
   partialChannel: Partial<RaidenChannel>,

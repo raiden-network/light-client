@@ -2,7 +2,8 @@ import { Route } from 'vue-router';
 import { routes as routeConfigs } from '@/router/routes';
 
 /**
- * @param routeList
+ * @param routeList - List of routes
+ * @returns Routes mapping
  */
 export function transformRouteConfigsToRoutes(routeList = routeConfigs): { [key: string]: Route } {
   const routes: { [key: string]: Route } = {};

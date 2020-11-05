@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
@@ -37,12 +38,10 @@ describe('DownloadStateDialog.vue', () => {
   });
 
   test('calls method for getting and downloading state', async () => {
-    // @ts-ignore
-    wrapper.vm.getAndDownloadState = jest.fn();
+    (wrapper.vm as any).getAndDownloadState = jest.fn();
     wrapper.find('.action-button__button').trigger('click');
     await wrapper.vm.$nextTick();
 
-    // @ts-ignore
-    expect(wrapper.vm.getAndDownloadState).toBeCalled();
+    expect((wrapper.vm as any).getAndDownloadState).toBeCalled();
   });
 });
