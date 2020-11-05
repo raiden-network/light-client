@@ -66,7 +66,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
   - [Prerequisites](#prerequisites)
   - [SDK Documentation](#sdk-documentation)
   - [CLI Documentation](#cli-documentation)
-  - [dApp Installation](#dapp-installation)
+  - [Install and Run dApp](#install-and-run-dapp)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
 - [License](#license)
@@ -90,8 +90,8 @@ The goal of the Raiden Light Client SDK is to provide an easy-to-use framework, 
 With the SDK we want to make your life as a dApp developer easier.
 
 - You should be able to interact with the Raiden Network easily with your dApp.
-- We want to help you to enable your users to make token transfers using their consumer wallets like imToken or Metamask.
-- You should be able to transfer and receive tokens using low end devices.
+- We want to help you to enable your users to make token transfers using consumer wallets like imToken or MetaMask.
+- You should be able to transfer and receive tokens using low-end devices.
 
 ## Architecture
 
@@ -99,7 +99,7 @@ With the SDK we want to make your life as a dApp developer easier.
 
 This is a standalone Typescript library which contains all the low level machinery to interact with the Ethereum blockchain and the Raiden Network.
 
-Its target audience is blockchain and dApp developers looking to perform transfers in the Raiden Network from their apps. Targeting browsers and Node.js as initial platforms allows the SDK to reach a majority of the current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other languages and environments.
+Its target audience is blockchain and dApp developers looking to perform transfers in the Raiden Network from their dApps. Targeting browsers and Node.js as initial platforms allows the SDK to reach a majority of the current and in-development dApps, as well as to work as a common language reference implementation for ports and re-implementations in other languages and environments.
 
 Look at the [Raiden Light Client SDK folder of this repository](./raiden-ts/README.md) for more information and a technical deep dive into the SDK architecture, technologies, tips and details on the design goals and decisions. Reading it is highly recommended to anyone wishing to better understand how the Raiden Light Client works under the hood or to contribute to it, though not required to use this library as a dApp developer.
 
@@ -144,14 +144,13 @@ If you haven't used Raiden before we recommend that you:
 
 ## Try Out the Raiden Demo dApp
 
-The Raiden dApp is the demo and first dApp user of the SDK. It's a single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and [vuetify](https://vuetifyjs.com) as UI framework which uses Material Design as the design guideline.
+The Raiden dApp is a demo and the first dApp to use SDK. It's a single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and uses [vuetify](https://vuetifyjs.com) Material Design as UI framework.
 
 These step-by-step instructions will guide you through the process for trying out the Raiden demo dApp. The dApp is hosted at [https://lightclient.raiden.network/](https://lightclient.raiden.network/) and we will be using the Goerli testnet and MetaMask wallet in this example.
 
 ### Prerequisites
 
-1. You need to have MetaMask installed for your browser. If you don't have MetaMask, [visit their website](https://metamask.io/) to download and install it.
-2. It is NOT recommended to use the dApp on mobile (but it works).
+You need to have MetaMask installed for your browser. If you don't have MetaMask, [visit their website](https://metamask.io/) to download and install it.
 
 ### Steps to Make Your First Transfer
 
@@ -171,12 +170,11 @@ These step-by-step instructions will guide you through the process for trying ou
 
 #### 4. Select a Hub and Open a Channel
 
-1. Click the mint button next to your token balance, to mint some TTT tokens.
-2. Click **Select Hub**
-3. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
-4. Sign the deposit with your MetaMask.
-5. Click **Open Channel**.
-6. Sign "Open Channel", "Approve" and "Set Total Deposit" with your MetaMask when prompted
+1. Click on the symbol next to the **SVT** balance to mint and deposit testnet utility tokens.
+2. Click the mint button next to your token balance, to mint some TTT tokens.
+3. Click **Select Hub**
+4. Enter the amount of TTT Tokens you want to deposit when opening a channel with the hub
+5. Click **Open Channel** and sign with MetaMask.
 
 #### 5. Make a transfer
 
@@ -198,33 +196,26 @@ This is important because your state contains all the off-chain information whic
 
 You can download and upload your state via the `General Menu`. Note that if you loose or delete your state you will also loose your tokens.
 
-Structure of the state file:
+Example structure of beginning of the state file JSON:
 
 ```json
-{
-  "address": "0x2a23F385d32dcce35824D4498Bb10f9B6575B2de",
-  "version": 2,
-  "chainId": 5,
-  "registry": "0x9b0c8C8C75904CEf5B7a8dbF59c3459Ea85c6526",
-  "blockNumber": 2561973,
-  "config": {},
-  "channels": {},
-  "tokens": {
-    "0xE2b702eD684bEb02850ac604278f078A4ce8b6E6": "0x2001E8851d33CA476e209e37ED8db1BB9E72334F"
-  },
-  "transport": {},
-  "sent": {},
-  "received": {},
-  "path": { "iou": {} },
-  "pendingTxs": []
-}
+[
+  {
+    "_id": "_meta",
+    "version": 2,
+    "network": 5,
+    "registry": "0x9b0c8C8C75904CEf5B7a8dbF59c3459Ea85c6526",
+    "address": "0x2a23F385d32dcce35824D4498Bb10f9B6575B2de",
+    "blockNumber": 2561973
+  }
+]
 ```
 
 ## Run Repository Code
 
 ### Prerequisites
 
-To run the code in this repository, you must have Node.js 10+ on your computer and a web3-enabled browser (e.g. Firefox with Metamask extension), as well as some ETH on the account.
+To run the code in this repository, you must have Node.js 14+ and Yarn installed as well as a web3-enabled browser (e.g. Firefox with Metamask extension), with some ETH on the account.
 
 ### SDK Documentation
 
@@ -234,31 +225,34 @@ Go to the [SDK Documentation](https://lightclient.raiden.network/docs/) for more
 
 Go to the [CLI README](https://github.com/raiden-network/light-client/tree/master/raiden-cli) for installation instructions and the current status of the API.
 
-### dApp Installation
+### Install and Run dApp
 
-```bash
-git clone --recurse-submodules https://github.com/raiden-network/light-client.git
-cd light-client/raiden-dapp
-```
+1. Clone repository  
 
-#### Build the Raiden SDK
+   ```bash
+   git clone --recurse-submodules https://github.com/raiden-network/light-client.git
+   cd light-client
+   ```
 
-First you need to build the sdk. For this you have to go to the `raiden` directory and run the following commands.
+2. Install dependencies  
 
-```bash
-pnpm install
-pnpm run build --filter raiden-ts
-```
+   ```bash
+   yarn install
+   ```
 
-#### Running the dApp locally
+3. Build the Raiden SDK  
 
-To start the development server you have to run the following command.
+   ```bash
+   yarn workspace raiden-ts build
+   ```
 
-```bash
-pnpm run serve --filter raiden-dapp
-```
+4. Run the dApp locally  
 
-After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp. It requires either MetaMask to be installed on your browser or some other web3 provider (e.g. Wallet apps with dApp support).
+   ```
+   yarn workspace raiden-dapp serve
+   ```
+
+   After the development server starts you have to navigate to `http://localhost:8080`, in order to use the Raiden dApp.
 
 ## Roadmap and Timeline
 
