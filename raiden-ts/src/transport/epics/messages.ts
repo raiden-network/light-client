@@ -38,6 +38,7 @@ import {
   SecretRequest,
   SecretReveal,
   MessageType,
+  Message,
 } from '../../messages/types';
 import { encodeJsonMessage, isMessageReceivedOfType, signMessage } from '../../messages/utils';
 import { messageSend, messageReceived, messageGlobalSend } from '../../messages/actions';
@@ -46,6 +47,10 @@ import { getServerName } from '../../utils/matrix';
 import { LruCache } from '../../utils/lru';
 import { getPresenceByUserId, getCap } from '../utils';
 import { globalRoomNames, roomMatch, getRoom$, waitMemberAndSend$, parseMessage } from './helpers';
+
+function getMessageBody(message: string | Signed<Message>): string {
+  return typeof message === 'string' ? message : encodeJsonMessage(message);
+}
 
 /**
  * Handles a [[messageSend.request]] action and send its message to the first room on queue for
@@ -71,11 +76,7 @@ export function matrixMessageSendEpic(
     mergeMap((action) => matrix$.pipe(map((matrix) => ({ action, matrix })))),
     // merge all inner/grouped observables, so different user's "queues" can be parallel
     mergeMap(({ action, matrix }) => {
-      const body: string =
-        typeof action.payload.message === 'string'
-          ? action.payload.message
-          : encodeJsonMessage(action.payload.message);
-      const content = { body, msgtype: 'm.text' };
+      const content = { body: getMessageBody(action.payload.message), msgtype: 'm.text' };
       // wait for address to be monitored, online & have joined a non-global room with us
       return waitMemberAndSend$(
         action.meta.address,
@@ -132,11 +133,12 @@ export function matrixMessageGlobalSendEpic(
       return getRoom$(matrix, roomAlias).pipe(
         // send message!
         mergeMap((room) => {
-          const body: string =
-            typeof action.payload.message === 'string'
-              ? action.payload.message
-              : encodeJsonMessage(action.payload.message);
-          return matrix.sendEvent(room.roomId, 'm.room.message', { body, msgtype: 'm.text' }, '');
+          return matrix.sendEvent(
+            room.roomId,
+            'm.room.message',
+            { body: getMessageBody(action.payload.message), msgtype: 'm.text' },
+            '',
+          );
         }),
         catchError((err) => {
           log.error(
