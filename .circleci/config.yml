@@ -1,13 +1,13 @@
 version: 2.1
 
 parameters:
-  base_executor_image_tag:
+  base_executor_image:
     type: string
-    default: lts-browsers
+    default: cimg/node:lts-browsers
 
-  e2e_environment_executor_image_tag:
+  e2e_environment_executor_image:
     type: string
-    default: latest
+    default: raidennetwork/lightclient-e2e-environment:latest
 
   working_directory:
     type: string
@@ -40,12 +40,12 @@ executors:
   base-executor:
     <<: *executor_shared_options
     docker:
-      - image: cimg/node:<< pipeline.parameters.base_executor_image_tag >>
+      - image: << pipeline.parameters.base_executor_image >>
 
   e2e-environment-executor:
     <<: *executor_shared_options
     docker:
-      - image: raidennetwork/lightclient-e2e-environment:<< pipeline.parameters.e2e_environment_executor_image_tag >>
+      - image: << pipeline.parameters.e2e_environment_executor_image >>
 
 commands:
   check-license:
