@@ -1,7 +1,7 @@
 # Raiden Light Client Development Guide
 
 Welcome! This guideline explains how to contribute to the Raiden Light Client
-codebase. It's here to help you to understand what development practises we use
+codebase. It's here to help you to understand what development practices we use
 and what the requirements for a pull request are to be opened against Raiden Light Client repository.
 
 ## Table of Contents
@@ -44,16 +44,14 @@ If you want to submit a feature request, please use the **User Story** issue tem
 
 ### Report bugs
 
-If you have found a bug in the Light Client or the JS SDK, then please use the **Bug** issue template and provide the following infos:
+If you have found a bug in the Light Client or the SDK, then please use the **Bug** issue template and provide the following infos:
 
 - A short description of the problem.
-- The steps you need take in order to reproduce the behavior
+- The steps needed in order to reproduce the problem.
 - What was the expected result
 - What was the actual result
 
 ## Creating a pull request
-
-If you have coding experience and would like to contribute to codebase, then you can open a pull request against the repository.
 
 If you are interested in contributing make sure that there is an issue about it. Express interest, by picking the issue so that core developers know that you are working on the issue.
 
@@ -67,27 +65,25 @@ All pull requests should be:
 
 These are the required external dependencies for development:
 
-- Node >=10.13.0
-- A Web3 enabled browser (e.g. through [MetaMask](https://metamask.io))
+- Node >=14
+- A Web3 enabled browser (e.g. [MetaMask](https://metamask.io))
 - git
 
 Start by getting the source code:
 
 ```bash
-$ git clone --recurse-submodules https://github.com/raiden-network/light-client.git
-$ cd light-client
+git clone --recurse-submodules https://github.com/raiden-network/light-client.git
+cd light-client
 ```
 
-Afterwards install `pnpm` if you haven't already:
+Afterwards install [yarn](https://classic.yarnpkg.com/en/docs/install/) if you haven't already:
+
+Finally, you can install the required dependencies and build the SDK:
 
 ```bash
-$ npm i -g pnpm
-```
-
-Finally, you can install the required dependencies:
-
-```bash
-$ pnpm install
+yarn install
+cd raiden-ts
+yarn build
 ```
 
 ### Code style
@@ -95,7 +91,7 @@ $ pnpm install
 The code style is enforced by [ESLint](https://eslint.org), which means that in most cases you don't need to do anything other than running:
 
 ```bash
-$ npm run lint
+yarn lint
 ```
 
 To automatically fix any fixable codestyle issue in the SDK or Light Client, you may add to the `lint` command the `--fix` option.
