@@ -101,7 +101,7 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
 
   @Watch('$route', { immediate: true, deep: true })
   onRouteChange() {
-    this.$refs.transfer.reset();
+    this.$refs.transfer?.reset();
   }
 
   async created() {

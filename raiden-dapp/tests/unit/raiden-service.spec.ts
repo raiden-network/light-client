@@ -1,5 +1,4 @@
-import { ConfigProvider, Configuration } from '@/services/config-provider';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('vuex');
 jest.mock('raiden-ts');
 jest.mock('@/i18n', () => ({
@@ -10,17 +9,18 @@ jest.mock('@/i18n', () => ({
 }));
 jest.mock('@/services/config-provider');
 
+import { Store } from 'vuex';
+import flushPromises from 'flush-promises';
+import { BigNumber, providers, utils, constants } from 'ethers';
+import { BehaviorSubject, EMPTY, of } from 'rxjs';
+import { delay } from 'rxjs/operators';
+import { paymentId } from './data/mock-data';
+import { Address, EventTypes, Hash, OnChange, Raiden, RaidenTransfer } from 'raiden-ts';
+import { ConfigProvider, Configuration } from '@/services/config-provider';
 import { DeniedReason, Token, TokenModel } from '@/model/types';
 import RaidenService from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
-import { Store } from 'vuex';
 import { RootState, Tokens } from '@/types';
-import flushPromises from 'flush-promises';
-import { Address, Hash, Raiden, RaidenTransfer } from 'raiden-ts';
-import { BigNumber, providers, utils, constants } from 'ethers';
-import { BehaviorSubject, EMPTY, of } from 'rxjs';
-import { delay } from 'rxjs/internal/operators';
-import { paymentId } from './data/mock-data';
 import Mocked = jest.Mocked;
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { NotificationContext } from '@/store/notifications/notification-context';
@@ -84,7 +84,7 @@ describe('RaidenService', () => {
   }
 
   beforeEach(() => {
-    raiden = new Raiden() as Mocked<Raiden>;
+    raiden = new (Raiden as any)() as Mocked<Raiden>;
     setupMock(raiden);
     factory = Raiden.create = jest.fn();
     providerMock = Web3Provider.provider = jest.fn();
@@ -211,11 +211,12 @@ describe('RaidenService', () => {
     });
 
     test('resolves when channel open and deposit are successful', async () => {
-      // @ts-ignore
-      raiden.openChannel = jest.fn(async ({}, {}, {}, callback?: Function) => {
-        callback?.({ type: 'OPENED', payload: { txHash: '0xtxhash' } });
-        return '0xtxhash';
-      });
+      raiden.openChannel.mockImplementation(
+        async ({}, {}, _?, callback?: OnChange<EventTypes, any>): Promise<any> => {
+          callback?.({ type: EventTypes.OPENED, payload: { txHash: '0xtxhash' } });
+          return '0xtxhash';
+        },
+      );
 
       const progress = jest.fn();
 

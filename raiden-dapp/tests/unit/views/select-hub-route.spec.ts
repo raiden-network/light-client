@@ -10,11 +10,12 @@ import Vue from 'vue';
 import flushPromises from 'flush-promises';
 import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
+import { $identicon } from '../utils/mocks';
 import SelectHubRoute from '@/views/SelectHubRoute.vue';
 import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';
+import RaidenService from '@/services/raiden-service';
 import store from '@/store';
-import { $identicon } from '../utils/mocks';
 import Filters from '@/filters';
 import { Token } from '@/model/types';
 import { Tokens } from '@/types';
@@ -33,7 +34,7 @@ describe('SelectHubRoute.vue', () => {
       address: address,
     });
 
-  function createWrapper(route: Route, raidenMocks: any = {}, shallow = false) {
+  function createWrapper(route: Route, raidenMocks: Partial<RaidenService> = {}, shallow = false) {
     vuetify = new Vuetify();
     const options = {
       vuetify,

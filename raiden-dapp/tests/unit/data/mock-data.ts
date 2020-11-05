@@ -107,7 +107,11 @@ export class TestData {
     } as Token,
   };
 
-  static mockRoute(params: {} = {}, meta: {} = {}, name: string = RouteNames.HOME): Route {
+  static mockRoute(
+    params: Record<string, string> = {},
+    meta: Record<string, unknown> = {},
+    name: string = RouteNames.HOME,
+  ): Route {
     return {
       path: '',
       fullPath: '',

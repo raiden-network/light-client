@@ -303,8 +303,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 
   @Emit()
-  public input(value?: string): string {
-    return value ?? '';
+  public input(_value?: string) {
+    /* pass */
   }
 
   valueChanged(value?: string) {

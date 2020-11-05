@@ -1,12 +1,12 @@
-import AccountContent from '@/components/account/AccountContent.vue';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('vue-router');
 import flushPromises from 'flush-promises';
-import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
+import Mocked = jest.Mocked;
+import AccountContent from '@/components/account/AccountContent.vue';
 import { RouteNames } from '@/router/route-names';
 import store from '@/store';
 
@@ -139,15 +139,13 @@ describe('AccountContent.vue', () => {
   });
 
   test('calls method for downloading logs', async () => {
-    // @ts-ignore
-    wrapper.vm.downloadLogs = jest.fn();
+    (wrapper.vm as any).downloadLogs = jest.fn();
     const reportBugsMenuItem = wrapper.findAll('.account-content__menu__list-items').at(2);
     const reportBugsButton = reportBugsMenuItem.find('button');
     reportBugsButton.trigger('click');
     await wrapper.vm.$nextTick();
 
-    // @ts-ignore
-    expect(wrapper.vm.downloadLogs).toBeCalled();
+    expect((wrapper.vm as any).downloadLogs).toBeCalled();
   });
 
   test('settings menu item when disconnected', async () => {

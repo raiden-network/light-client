@@ -3,10 +3,10 @@ import flushPromises from 'flush-promises';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import VueRouter from 'vue-router';
+import Vue from 'vue';
 import DisclaimerRoute from '@/views/DisclaimerRoute.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import Mocked = jest.Mocked;
-import Vue from 'vue';
 import store from '@/store';
 import { RouteNames } from '@/router/route-names';
 

@@ -11,7 +11,7 @@ export function acceptDisclaimer() {
 }
 
 /**
- * @param firstTimeConnect
+ * @param firstTimeConnect - Whether this is first time connecting
  */
 export function connectToDApp(firstTimeConnect = true) {
   // cypress selectors: raiden-dapp/src/views/Home.vue
@@ -28,10 +28,10 @@ export function connectToDApp(firstTimeConnect = true) {
 }
 
 /**
- * @param uiTimeout
- * @param partnerAddress
+ * @param uiTimeout - Timeout to wait
+ * @param partnerAddress - Partner address
  */
-export function enterAndSelectHub(uiTimeout, partnerAddress) {
+export function enterAndSelectHub(uiTimeout: number, partnerAddress: string) {
   // cypress selectors: raiden-dapp/src/views/SelectHubRoute.vue
   cy.get('[data-cy=select_hub]').should('exist');
   // cypress selectors: raiden-dapp/src/components/AddressInput.vue
@@ -43,9 +43,9 @@ export function enterAndSelectHub(uiTimeout, partnerAddress) {
 }
 
 /**
- * @param uiTimeout
+ * @param uiTimeout - Timeout to wait
  */
-export function enterChannelDepositAmount(uiTimeout) {
+export function enterChannelDepositAmount(uiTimeout: number) {
   // cypress selectors: raiden-dapp/src/views/OpenChannelRoute.vue
   cy.get('[data-cy=open_channel]').should('exist');
   cy.contains('Open Channel');
@@ -77,10 +77,10 @@ export function closeNotificationPanel() {
 }
 
 /**
- * @param uiTimeout
- * @param partnerAddress
+ * @param uiTimeout - Timeout to wait
+ * @param partnerAddress - Partner address
  */
-export function enterTransferAddress(uiTimeout, partnerAddress) {
+export function enterTransferAddress(uiTimeout: number, partnerAddress: string) {
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
   cy.get('[data-cy=transfer_inputs]').should('exist');
   // cypress selectors: raiden-dapp/src/components/AddressInput.vue
@@ -89,9 +89,9 @@ export function enterTransferAddress(uiTimeout, partnerAddress) {
 }
 
 /**
- * @param uiTimeout
+ * @param uiTimeout - Timeout to wait
  */
-export function enterTransferAmount(uiTimeout) {
+export function enterTransferAmount(uiTimeout: number) {
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
   cy.get('[data-cy=transfer_inputs]').should('exist');
   // cypress selectors: raiden-dapp/src/components/AmountInput.vue
@@ -100,9 +100,9 @@ export function enterTransferAmount(uiTimeout) {
 }
 
 /**
- * @param uiTimeout
+ * @param uiTimeout - Timeout
  */
-export function makeDirectTransfer(uiTimeout) {
+export function makeDirectTransfer(uiTimeout: number) {
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
   cy.get('[data-cy=transfer_inputs]').should('exist');
   cy.get('[data-cy=transfer_inputs_form_button]').click();
@@ -127,9 +127,9 @@ export function downloadState() {
 }
 
 /**
- * @param uiTimeout
+ * @param uiTimeout - Timeout
  */
-export function enterDepositTokenAmountForOpenedChannel(uiTimeout) {
+export function enterDepositTokenAmountForOpenedChannel(uiTimeout: number) {
   // cypress selectors: raiden-dapp/src/components/dialogs/ChannelDepositDialog.vue
   cy.get('[data-cy=channel_deposit]').should('exist');
   cy.get('[data-cy=channel_deposit_input]').type('001');
@@ -137,9 +137,9 @@ export function enterDepositTokenAmountForOpenedChannel(uiTimeout) {
 }
 
 /**
- * @param uiTimeout
+ * @param uiTimeout - Timeout
  */
-export function enterTokenWithdrawalAmoutFromChannelsList(uiTimeout) {
+export function enterTokenWithdrawalAmoutFromChannelsList(uiTimeout: number) {
   // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
   cy.get('[data-cy=channel_list]').should('exist');
   cy.get('[data-cy=channel_action_button]').eq(1).click();
@@ -150,9 +150,9 @@ export function enterTokenWithdrawalAmoutFromChannelsList(uiTimeout) {
 }
 
 /**
- * @param uiTimeout
+ * @param uiTimeout - Timeout
  */
-export function enterETHAmountToTransferFromRaidenAccount(uiTimeout) {
+export function enterETHAmountToTransferFromRaidenAccount(uiTimeout: number) {
   // cypress selectors: raiden-dapp/src/views/account/RaidenAccount.vue
   cy.get('[data-cy=raiden_account]').should('exist');
   cy.get('input').clear();
@@ -161,9 +161,9 @@ export function enterETHAmountToTransferFromRaidenAccount(uiTimeout) {
 }
 
 /**
- * @param uiTimeout
+ * @param uiTimeout - Timeout
  */
-export function enterUDCWithdrawalAmount(uiTimeout) {
+export function enterUDCWithdrawalAmount(uiTimeout: number) {
   // cypress selectors: raiden-dapp/src/views/account/UDC.vue
   cy.get('[data-cy=udc]').should('exist');
   cy.get('[data-cy=udc_actions_button]').eq(1).click();

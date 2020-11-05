@@ -14,7 +14,6 @@ import TransferSteps from '@/views/TransferStepsRoute.vue';
 import { Route, Token } from '@/model/types';
 import store from '@/store';
 import { Tokens } from '@/types';
-
 import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuetify);
@@ -217,7 +216,7 @@ describe('TransferSteps.vue', () => {
       step: 3,
       selectedPfs: raidenPFS,
       selectedRoute: route,
-      route: [route],
+      routes: [route],
       processingTransfer: false,
     });
 
@@ -278,10 +277,8 @@ describe('TransferSteps.vue', () => {
       processingTransfer: false,
     });
 
-    (wrapper.vm as TransferSteps).setPFS([
-      { ...raidenPFS, price: constants.Zero } as RaidenPFS,
-      true,
-    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (wrapper.vm as any).setPFS([{ ...raidenPFS, price: constants.Zero } as RaidenPFS, true]);
     await flushPromises();
     jest.advanceTimersByTime(2000);
     expect(wrapper.vm.$data.step).toBe(3);

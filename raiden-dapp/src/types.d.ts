@@ -35,8 +35,8 @@ export interface RootState {
 
 declare global {
   interface Window {
-    web3: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-    ethereum: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    web3: any;
+    ethereum: any;
   }
 
   type ServiceWorkerUpdatedEvent = CustomEvent<ServiceWorkerRegistration>;

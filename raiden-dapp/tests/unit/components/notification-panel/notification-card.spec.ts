@@ -88,7 +88,7 @@ describe('NotificationCard.vue', () => {
   });
 
   test('clicking "trash"-icon calls method for deleting notification', async () => {
-    await store.commit('notifications/notificationAddOrReplace', TestData.notifications);
+    store.commit('notifications/notificationAddOrReplace', TestData.notifications);
     const deleteNotificationButton = wrapper.find('button');
     deleteNotificationButton.trigger('click');
     await wrapper.vm.$nextTick();

@@ -8,12 +8,13 @@ import { BigNumber } from 'ethers';
 import { $identicon } from '../../utils/mocks';
 import Withdrawal from '@/components/account/Withdrawal.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import RaidenService from '@/services/raiden-service';
 
 Vue.use(Vuex);
 Vue.use(Vuetify);
 
 let vuetify: Vuetify;
-let $raiden: any;
+let $raiden: Partial<RaidenService>;
 
 const tokenBalance = BigNumber.from('1000000');
 const tokenNoBalance = BigNumber.from('0');
@@ -56,8 +57,6 @@ function createWrapper(
     },
   });
 }
-
-beforeEach(() => {});
 
 describe('Withdrawal.vue', () => {
   test('can withdraw tokens', async () => {

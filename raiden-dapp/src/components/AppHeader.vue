@@ -31,13 +31,7 @@
         width="25px"
         @click.native="notificationPanel()"
       >
-        <v-badge
-          v-if="newNotifications"
-          color="notification"
-          overlap
-          bordered
-          dot
-        >
+        <v-badge v-if="newNotifications" color="notification" overlap bordered dot>
           <v-img
             height="30px"
             width="25px"
