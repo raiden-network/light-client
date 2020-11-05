@@ -40,7 +40,7 @@ executors:
   base-executor:
     <<: *executor_shared_options
     docker:
-      - image: circleci/node:<< pipeline.parameters.base_executor_image_tag >>
+      - image: cimg/node:<< pipeline.parameters.base_executor_image_tag >>
 
   e2e-environment-executor:
     <<: *executor_shared_options
