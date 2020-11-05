@@ -145,12 +145,7 @@
     "coverageDirectory": ".coverage",
     "reporters": [
       "default",
-      [
-        "jest-junit",
-        {
-          "outputDirectory": ".coverage"
-        }
-      ]
+      "jest-junit"
     ],
     "globals": {
       "ts-jest": {
