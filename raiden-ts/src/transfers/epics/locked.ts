@@ -491,23 +491,31 @@ function receiveTransferSigned(
       );
 
       let request$: Observable<Signed<SecretRequest> | undefined> = of(undefined);
-      if (
-        getCap(caps, Capabilities.RECEIVE) &&
-        locked.target === address &&
-        // only request secret if transfer don't expire soon
-        locked.lock.expiration.sub(revealTimeout).gt(state.blockNumber)
-      )
-        request$ = defer(() => {
-          const request: SecretRequest = {
-            type: MessageType.SECRET_REQUEST,
-            payment_identifier: locked.payment_identifier,
-            secrethash,
-            amount: locked.lock.amount,
-            expiration: locked.lock.expiration,
-            message_identifier: makeMessageId(),
+      if (locked.target === address) {
+        let ignoredDetails;
+        if (!getCap(caps, Capabilities.RECEIVE)) ignoredDetails = { reason: 'receiving disabled' };
+        else if (!locked.lock.expiration.sub(revealTimeout).gt(state.blockNumber))
+          ignoredDetails = {
+            reason: 'lock expired or expires too soon',
+            lockExpiration: locked.lock.expiration.toString(),
+            dangerZoneStart: locked.lock.expiration.sub(revealTimeout).toString(),
           };
-          return signMessage(signer, request, { log });
-        });
+        if (!ignoredDetails) {
+          request$ = defer(async () => {
+            const request: SecretRequest = {
+              type: MessageType.SECRET_REQUEST,
+              payment_identifier: locked.payment_identifier,
+              secrethash,
+              amount: locked.lock.amount,
+              expiration: locked.lock.expiration,
+              message_identifier: makeMessageId(),
+            };
+            return signMessage(signer, request, { log });
+          });
+        } else {
+          log.warn('Ignoring received transfer', ignoredDetails);
+        }
+      }
 
       const processed$ = defer(() => {
         const processed: Processed = {
