@@ -4,16 +4,20 @@
 ### Fixed
 - [#2240] Handle network problems when connecting to the Eth node gracefully
 - [#2312] Call WebRTC's connection.close() on teardown
+- [#2299] Don't acknowledge SecretReveals if receiving is disabled
 
 ### Changed
 - [#1707] Upgrade ethers to v5
 - [#2289] Switch to yarn from pnpm
 - [#2311] Bump NodeJS requirement to v14 LTS
 - [#2312] Make Raiden.stop() async, resolves when DB finished flushing
+- [#2297] Add logs when ignoring incoming transfers
 
 [#1707]: https://github.com/raiden-network/light-client/issues/1707
 [#2240]: https://github.com/raiden-network/light-client/issues/2240
 [#2289]: https://github.com/raiden-network/light-client/pull/2289
+[#2297]: https://github.com/raiden-network/light-client/issues/2297
+[#2299]: https://github.com/raiden-network/light-client/issues/2299
 [#2311]: https://github.com/raiden-network/light-client/issues/2311
 [#2312]: https://github.com/raiden-network/light-client/pull/2312
 

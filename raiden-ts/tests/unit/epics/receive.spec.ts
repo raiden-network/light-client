@@ -31,7 +31,7 @@ import {
   SecretReveal,
   SecretRequest,
 } from 'raiden-ts/messages/types';
-import { isMessageReceivedOfType } from 'raiden-ts/messages/utils';
+import { isMessageReceivedOfType, signMessage } from 'raiden-ts/messages/utils';
 import { messageReceived, messageSend } from 'raiden-ts/messages/actions';
 import {
   transferSigned,
@@ -46,8 +46,15 @@ import {
   transferSecretRegister,
 } from 'raiden-ts/transfers/actions';
 import { UInt, Int, Signed, untime } from 'raiden-ts/utils/types';
-import { makeSecret, getSecrethash, makePaymentId } from 'raiden-ts/transfers/utils';
+import {
+  makeSecret,
+  getSecrethash,
+  makePaymentId,
+  makeMessageId,
+} from 'raiden-ts/transfers/utils';
 import { Direction } from 'raiden-ts/transfers/state';
+import { Capabilities } from 'raiden-ts/constants';
+import { raidenConfigUpdate } from 'raiden-ts/actions';
 
 const direction = Direction.RECEIVED;
 const paymentId = makePaymentId();
@@ -534,6 +541,39 @@ describe('receive transfers', () => {
         ),
       },
     });
+  });
+
+  test('reveal ignored if receiving disabled', async () => {
+    expect.assertions(1);
+
+    const [raiden, partner] = await makeRaidens(2);
+    await ensureTransferPending([partner, raiden]);
+
+    // disable receiving for us
+    raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.RECEIVE]: 0 } }));
+    await sleep();
+
+    // try to reveal secret directly to target
+    raiden.store.dispatch(
+      messageReceived(
+        {
+          text: '',
+          ts: 123,
+          message: await signMessage(partner.deps.signer, {
+            type: MessageType.SECRET_REVEAL,
+            message_identifier: makeMessageId(),
+            secret,
+          }),
+          userId: partner.store.getState().transport.setup!.userId,
+        },
+        { address: partner.address },
+      ),
+    );
+
+    // give some time to confirm register tx
+    await sleep(raiden.config.httpTimeout);
+
+    expect(raiden.output).not.toContainEqual(transferSecret(expect.anything(), expect.anything()));
   });
 });
 
