@@ -11,6 +11,7 @@
         type="submit"
         :disabled="!enabled"
         :loading="loading"
+        data-cy="action_button"
         class="text-capitalize action-button__button"
         :class="{
           sticky: sticky,

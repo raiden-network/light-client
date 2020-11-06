@@ -87,3 +87,34 @@ export function withdrawUDCTokens() {
   cy.get('[data-cy=udc_withdrawal_dialog_button]').click();
   cy.getWithCustomTimeout('[data-cy=udc_withdrawal_dialog]').should('not.exist');
 }
+
+export function closeChannel() {
+  // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
+  cy.get('[data-cy=channel_action]').should('exist');
+  cy.contains('Close');
+  cy.get('[data-cy=channel_action]').click();
+  // cypress selectors: raiden-dapp/src/components/dialogs/RaidenDialog.vue
+  cy.getWithCustomTimeout('[data-cy=raiden_dialog]').should('exist');
+  cy.contains('Close Channel');
+  // cypress selectors: raiden-dapp/src/components/ActionButton.vue
+  cy.get('[data-cy=action_button]').should('exist');
+  cy.get('[data-cy=action_button]').click();
+  // cypress selectors: raiden-dapp/src/components/dialogs/RaidenDialog.vue
+  cy.get('[data-cy=raiden_dialog]').should('not.exist');
+}
+
+export function settleChannel() {
+  // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
+  cy.get('[data-cy=channel_action]', { timeout: 500000 })
+    .should('exist')
+    .and('contain', 'Settle');
+  cy.get('[data-cy=channel_action]').click();
+  // cypress selectors: raiden-dapp/src/components/dialogs/RaidenDialog.vue
+  cy.getWithCustomTimeout('[data-cy=raiden_dialog]').should('exist');
+  cy.contains('Settle Channel');
+  // cypress selectors: raiden-dapp/src/components/ActionButton.vue
+  cy.get('[data-cy=action_button]').should('exist');
+  cy.get('[data-cy=action_button]').click();
+  // cypress selectors: raiden-dapp/src/components/dialogs/RaidenDialog.vue
+  cy.get('[data-cy=raiden_dialog]').should('not.exist');
+}

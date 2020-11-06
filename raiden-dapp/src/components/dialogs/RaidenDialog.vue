@@ -8,7 +8,7 @@
       :persistent="hideClose"
       @click:outside="close()"
     >
-      <v-card class="raiden-dialog">
+      <v-card data-cy="raiden_dialog" class="raiden-dialog">
         <v-btn v-if="!hideClose" icon class="raiden-dialog__close" @click="close()">
           <v-icon>mdi-close</v-icon>
         </v-btn>
