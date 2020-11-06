@@ -290,9 +290,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       &__arrow {
         color: $primary-color;
       }
-    }
 
-    &__list-items {
       &:nth-of-type(3) {
         margin-bottom: 50px;
       }
