@@ -7,12 +7,7 @@
     class="select-hub"
     @submit.prevent="selectHub()"
   >
-    <v-row
-      justify="center"
-      align-content="center"
-      no-gutters
-      class="udc-balance__container"
-    >
+    <v-row justify="center" align-content="center" no-gutters class="udc-balance__container">
       <v-col cols="10">
         <span
           class="udc-balance__amount"
@@ -20,11 +15,7 @@
             'low-balance': !hasEnoughServiceTokens,
           }"
         >
-          <amount-display
-            exact-amount
-            :amount="udcCapacity"
-            :token="udcToken"
-          />
+          <amount-display exact-amount :amount="udcCapacity" :token="udcToken" />
           <v-text-field
             v-model="udcCapacity"
             :rules="[() => hasEnoughServiceTokens || '']"
@@ -54,7 +45,7 @@
                   : 'select-hub.service-token-tooltip',
                 {
                   token: serviceToken,
-                }
+                },
               )
             }}
           </span>
@@ -68,10 +59,7 @@
     </v-row>
     <v-row justify="center" no-gutters class="udc-balance__container">
       <v-col cols="10">
-        <span
-          v-if="!hasEnoughServiceTokens"
-          class="udc-balance__description low-balance"
-        >
+        <span v-if="!hasEnoughServiceTokens" class="udc-balance__description low-balance">
           {{
             $t('select-hub.service-token-balance-too-low', {
               token: serviceToken,
@@ -109,8 +97,8 @@
 import { Component, Mixins } from 'vue-property-decorator';
 import isEmpty from 'lodash/isEmpty';
 import { mapGetters, mapState } from 'vuex';
-import { RaidenChannels } from 'raiden-ts';
 import { constants, providers } from 'ethers';
+import { RaidenChannels } from 'raiden-ts';
 
 import { Token } from '@/model/types';
 import AddressInput from '@/components/AddressInput.vue';
@@ -171,9 +159,7 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
     const { monitoringReward } = this.$raiden;
 
     this.udcCapacity = await this.$raiden.getUDCCapacity();
-    this.hasEnoughServiceTokens = !!(
-      monitoringReward && this.udcCapacity.gte(monitoringReward)
-    );
+    this.hasEnoughServiceTokens = !!(monitoringReward && this.udcCapacity.gte(monitoringReward));
   }
 
   get isConnectedToHub() {

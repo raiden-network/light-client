@@ -193,11 +193,14 @@ export function transferSecretRevealEpic(
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.config$ - Config observable
  * @returns Observable of output actions for this epic
  */
 export function transferSecretRevealedEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
+  { config$ }: RaidenEpicDeps,
 ): Observable<transferUnlock.request | transferSecret> {
   return action$.pipe(
     // we don't require Signed SecretReveal, nor even check sender for persisting the secret
@@ -235,6 +238,9 @@ export function transferSecretRevealedEpic(
         );
       }
     }),
+    // enable this epic only if/while/when receiving is enabled, to avoid being forced handling
+    // undesired reveals
+    takeIf(config$.pipe(map(({ caps }) => getCap(caps, Capabilities.RECEIVE)))),
   );
 }
 

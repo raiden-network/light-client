@@ -1,16 +1,18 @@
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
-import store from '@/store';
 import VueRouter from 'vue-router';
-import { RouteNames } from '@/router/route-names';
 import Vuetify from 'vuetify';
+import { BigNumber, constants } from 'ethers';
+
+import { generateToken } from '../../utils/data-generator';
+
+import Mocked = jest.Mocked;
+import store from '@/store';
+import { RouteNames } from '@/router/route-names';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
-import { BigNumber, constants } from 'ethers';
-import { generateToken } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 
@@ -41,16 +43,12 @@ describe('TransferHeaders.vue', () => {
     const wrapper = createWrapper(constants.Zero);
     const amountDisplay = wrapper.findAll('span').at(3);
 
-    expect(amountDisplay.text()).toContain(
-      'transfer.transfer-menus.no-channels'
-    );
+    expect(amountDisplay.text()).toContain('transfer.transfer-menus.no-channels');
   });
 
   test('disables deposit button if channel capacity is zero', () => {
     const wrapper = createWrapper(constants.Zero);
-    const depositButton = wrapper.find(
-      '.transfer-menus__dot-menu__menu__deposit'
-    );
+    const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
 
     expect(depositButton.attributes()['disabled']).toBe('disabled');
   });
@@ -64,20 +62,16 @@ describe('TransferHeaders.vue', () => {
 
   test('deposit button is enabled if channel has capacity', () => {
     const wrapper = createWrapper(constants.One);
-    const depositButton = wrapper.find(
-      '.transfer-menus__dot-menu__menu__deposit'
-    );
+    const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
 
     expect(depositButton.attributes()).not.toMatchObject(
-      expect.objectContaining({ disabled: 'disabled' })
+      expect.objectContaining({ disabled: 'disabled' }),
     );
   });
 
   test('deposit button opens deposit dialog', async () => {
     const wrapper = createWrapper(constants.One);
-    const depositButton = wrapper.find(
-      '.transfer-menus__dot-menu__menu__deposit'
-    );
+    const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
 
     depositButton.trigger('click');
     await wrapper.vm.$nextTick();
@@ -97,9 +91,7 @@ describe('TransferHeaders.vue', () => {
     tokenSelectButton.trigger('click');
     await wrapper.vm.$nextTick();
 
-    const tokenOverlay = wrapper
-      .findComponent(TokenOverlay)
-      .find('.v-overlay--active');
+    const tokenOverlay = wrapper.findComponent(TokenOverlay).find('.v-overlay--active');
     expect(tokenOverlay.exists()).toBe(true);
   });
 
@@ -107,9 +99,7 @@ describe('TransferHeaders.vue', () => {
     router.push = jest.fn().mockImplementation(() => Promise.resolve());
 
     const wrapper = createWrapper(constants.One);
-    const channelsButton = wrapper.find(
-      '.transfer-menus__dot-menu__menu__channels'
-    );
+    const channelsButton = wrapper.find('.transfer-menus__dot-menu__menu__channels');
 
     channelsButton.trigger('click');
     await wrapper.vm.$nextTick();
@@ -118,7 +108,7 @@ describe('TransferHeaders.vue', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.CHANNELS,
-      })
+      }),
     );
   });
 });

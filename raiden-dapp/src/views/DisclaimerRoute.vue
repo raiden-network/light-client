@@ -2,10 +2,7 @@
   <div data-cy="disclaimer" class="disclaimer">
     <div class="disclaimer__content">
       <div class="disclaimer__content__paragraphs font-weight-light">
-        <p
-          v-for="(paragraph, index) in $t('disclaimer.paragraphs')"
-          :key="index"
-        >
+        <p v-for="(paragraph, index) in $t('disclaimer.paragraphs')" :key="index">
           {{ paragraph }}
         </p>
       </div>
@@ -39,9 +36,9 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import { Location } from 'vue-router';
 import ActionButton from '@/components/ActionButton.vue';
 import { RouteNames } from '@/router/route-names';
-import { Location } from 'vue-router';
 
 @Component({
   components: { ActionButton },

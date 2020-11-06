@@ -24,21 +24,11 @@
       >
         {{ $t('notifications.no-notifications') }}
       </v-row>
-      <v-container
-        v-else
-        class="notification-panel-content__notifications"
-        fluid
-      >
-        <div
-          class="notification-panel-content__notifications__notification-wrapper"
-        >
+      <v-container v-else class="notification-panel-content__notifications" fluid>
+        <div class="notification-panel-content__notifications__notification-wrapper">
           <v-list color="transparent">
             <div v-for="notification of notifications" :key="notification.id">
-              <v-lazy
-                transition="fade-transition"
-                :options="{ threshold: 0.7 }"
-                min-height="110"
-              >
+              <v-lazy transition="fade-transition" :options="{ threshold: 0.7 }" min-height="110">
                 <notification-card
                   :notification="notification"
                   class="notification-panel-content__notifications__notification-wrapper__notification"

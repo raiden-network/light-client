@@ -2,9 +2,9 @@ import { mount, Wrapper } from '@vue/test-utils';
 import Vuex from 'vuex';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import { BigNumber } from 'ethers';
 import { TestData, paymentId } from '../../data/mock-data';
 import TransferSummary from '@/components/transfer/TransferSummary.vue';
-import { BigNumber } from 'ethers';
 import { Transfer } from '@/model/types';
 
 Vue.use(Vuetify);
@@ -39,27 +39,23 @@ describe('TransferSummary.vue', () => {
 
     // Shows direct transfer header
     expect(wrapper.find('.transfer-summary__header').text()).toContain(
-      'transfer.steps.summary.direct-transfer'
+      'transfer.steps.summary.direct-transfer',
     );
 
     // Shows explanation because route request and selection was skipped
     expect(wrapper.find('.transfer-summary__explanation li').text()).toContain(
-      'transfer.steps.summary.footnotes.direct-transfer'
+      'transfer.steps.summary.footnotes.direct-transfer',
     );
   });
 
   test('show mediated transfer breakdown', () => {
     wrapper = createWrapper(mediatedTransfer);
 
-    const routeRequestHeader = wrapper
-      .findAll('.transfer-summary__header')
-      .at(1);
+    const routeRequestHeader = wrapper.findAll('.transfer-summary__header').at(1);
     const explanations = wrapper.find('.transfer-summary__explanation');
 
     // Shows mediated transfer header
-    expect(routeRequestHeader.text()).toContain(
-      'transfer.steps.summary.mediated-transfer'
-    );
+    expect(routeRequestHeader.text()).toContain('transfer.steps.summary.mediated-transfer');
 
     // Shows no explanations if nothing was skipped
     expect(explanations.text()).toEqual('');
@@ -75,7 +71,7 @@ describe('TransferSummary.vue', () => {
 
     // Shows explanations if nothing was skipped
     expect(explanations.text()).toEqual(
-      'transfer.steps.summary.footnotes.route-selection-skipped'
+      'transfer.steps.summary.footnotes.route-selection-skipped',
     );
   });
 });

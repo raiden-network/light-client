@@ -22,9 +22,11 @@
 
 <script lang="ts">
 import { Component, Prop, Vue, Emit, Watch } from 'vue-property-decorator';
+import { BigNumber, constants } from 'ethers';
+import { InputValidationRule } from 'vuetify';
+import { VTextField } from 'vuetify/lib';
 import { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import { BigNumber, constants } from 'ethers';
 
 @Component({})
 export default class AmountInput extends Vue {
@@ -44,46 +46,44 @@ export default class AmountInput extends Vue {
   placeholder!: string;
   @Prop({ required: false, default: () => constants.Zero })
   max!: BigNumber;
-  valid: boolean = true;
-  amount: string = '';
+  valid = true;
+  amount = '';
   private static numericRegex = /^\d*[.]?\d*$/;
 
-  readonly rules = [
-    (v: string) => !!v || '',
-    (v: string) =>
-      !Number.isNaN(Number(v)) || this.$parent.$t('amount-input.error.invalid'),
-    (v: string) =>
+  readonly rules: InputValidationRule[] = [
+    (value) => !!value || '',
+    (value) =>
+      !Number.isNaN(Number(value)) || (this.$parent.$t('amount-input.error.invalid') as string),
+    (value) =>
       !this.limit ||
-      (v && this.noDecimalOverflow(v)) ||
-      this.$parent.$t('amount-input.error.too-many-decimals', {
+      (value && this.noDecimalOverflow(value)) ||
+      (this.$parent.$t('amount-input.error.too-many-decimals', {
         decimals: this.token!.decimals,
-      }),
-    (v: string) => {
+      }) as string),
+    (value) => {
       let parsedAmount;
       try {
-        parsedAmount = BalanceUtils.parse(v, this.token!.decimals!);
+        parsedAmount = BalanceUtils.parse(value, this.token!.decimals!);
       } catch (e) {}
       return (
         !this.limit ||
-        (v && parsedAmount && !parsedAmount.isZero()) ||
-        this.$parent.$t('amount-input.error.zero')
+        (value && parsedAmount && !parsedAmount.isZero()) ||
+        (this.$parent.$t('amount-input.error.zero') as string)
       );
     },
-    (v: string) =>
+    (value) =>
       !this.limit ||
-      (v && this.hasEnoughBalance(v, this.max)) ||
-      this.$parent.$t('amount-input.error.not-enough-funds', {
+      (value && this.hasEnoughBalance(value, this.max)) ||
+      (this.$parent.$t('amount-input.error.not-enough-funds', {
         funds: BalanceUtils.toUnits(this.max, this.token!.decimals ?? 18),
         symbol: this.token!.symbol,
-      }),
+      }) as string),
   ];
 
-  get errorMessages(): any[] {
+  get errorMessages(): string[] {
     return this.rules
       .map((rule) => rule(this.value))
-      .filter((res) => {
-        return res !== true;
-      });
+      .filter((result) => typeof result !== 'boolean' && result != '') as string[];
   }
 
   private noDecimalOverflow(v: string) {
@@ -115,9 +115,13 @@ export default class AmountInput extends Vue {
     this.updateIfValid(value);
   }
 
+  $refs!: {
+    input: VTextField;
+  };
+
   @Watch('token')
   onTokenUpdate() {
-    (this.$refs.input as any).validate();
+    this.$refs.input.validate();
   }
 
   @Watch('errorMessages')
@@ -152,7 +156,7 @@ export default class AmountInput extends Vue {
   onInput(value: string) {
     /* istanbul ignore else */
     if (this.$refs.input) {
-      const input = this.$refs.input as any;
+      const input = this.$refs.input;
       this.valid = input.valid;
     }
     this.$emit('input', value);

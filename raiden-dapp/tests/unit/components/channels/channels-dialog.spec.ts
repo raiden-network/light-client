@@ -1,18 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
 
 import { constants } from 'ethers';
-import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import { mount, Wrapper } from '@vue/test-utils';
-import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import Vuex from 'vuex';
 import { TestData } from '../../data/mock-data';
+import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
+import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
 import RaidenService from '@/services/raiden-service';
 import Mocked = jest.Mocked;
 import store from '@/store';
-import Vuex from 'vuex';
 import { Tokens } from '@/types';
 import Filters from '@/filters';
 
@@ -162,9 +163,7 @@ describe('ChannelDialogs.vue', () => {
       expect(firstMessageArg).toEqual('channel-list.messages.close.failure');
       // error dialog is shown instead of dismissing
       expect(wrapper.find('.error-message').isVisible()).toBeTruthy();
-      expect(wrapper.find('.error-message__label + p').text()).toMatch(
-        'failed'
-      );
+      expect(wrapper.find('.error-message__label + p').text()).toMatch('failed');
     });
   });
 
@@ -194,9 +193,7 @@ describe('ChannelDialogs.vue', () => {
 
       // error dialog is shown instead of dismissing
       expect(wrapper.find('.error-message').isVisible()).toBeTruthy();
-      expect(wrapper.find('.error-message__label + p').text()).toMatch(
-        'failed'
-      );
+      expect(wrapper.find('.error-message__label + p').text()).toMatch('failed');
     });
   });
 });

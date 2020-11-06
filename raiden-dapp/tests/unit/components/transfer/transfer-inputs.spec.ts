@@ -1,16 +1,16 @@
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
-import { mockInput } from '../../utils/interaction-utils';
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
-import store from '@/store';
 import VueRouter from 'vue-router';
-import { RouteNames } from '@/router/route-names';
 import Vuetify from 'vuetify';
-import TransferInputs from '@/components/transfer/TransferInputs.vue';
-import { TestData } from '../../data/mock-data';
 import { constants } from 'ethers';
+import { TestData } from '../../data/mock-data';
+import { mockInput } from '../../utils/interaction-utils';
 import { generateToken } from '../../utils/data-generator';
+import Mocked = jest.Mocked;
+import TransferInputs from '@/components/transfer/TransferInputs.vue';
+import { RouteNames } from '@/router/route-names';
+import store from '@/store';
 
 Vue.use(Vuetify);
 
@@ -27,9 +27,16 @@ describe('TransferInputs.vue', () => {
     mocks: {
       $router: router,
       $route: TestData.mockRoute({
-        token,
+        token: token.address,
       }),
       $t: (msg: string) => msg,
+      $refs: {
+        transfer: {
+          reset() {
+            /* pass */
+          },
+        },
+      },
     },
     propsData: {
       token,
@@ -59,7 +66,7 @@ describe('TransferInputs.vue', () => {
 
     expect(router.push).toHaveBeenCalled();
     expect(router.push).toHaveBeenCalledWith(
-      expect.objectContaining({ name: RouteNames.TRANSFER_STEPS })
+      expect.objectContaining({ name: RouteNames.TRANSFER_STEPS }),
     );
   });
 });

@@ -23,10 +23,7 @@
         }}
       </v-list-item-title>
       <v-list-item-subtitle>
-        <address-display
-          :address="detailedToken.address"
-          class="token-list-item__address"
-        />
+        <address-display :address="detailedToken.address" class="token-list-item__address" />
       </v-list-item-subtitle>
     </v-list-item-content>
 

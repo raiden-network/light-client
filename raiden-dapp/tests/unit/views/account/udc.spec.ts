@@ -1,13 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import store from '@/store';
-import { $identicon } from '../../utils/mocks';
-import UDC from '@/views/account/UDC.vue';
 import { BigNumber, constants } from 'ethers';
+import flushPromises from 'flush-promises';
+import { $identicon } from '../../utils/mocks';
+import store from '@/store';
+import UDC from '@/views/account/UDC.vue';
 import { Token } from '@/model/types';
 import Filters from '@/filters';
-import flushPromises from 'flush-promises';
+import RaidenService from '@/services/raiden-service';
 
 Vue.filter('displayFormat', Filters.displayFormat);
 
@@ -16,7 +18,7 @@ Vue.use(Vuetify);
 describe('UDC.vue', () => {
   let wrapper: Wrapper<UDC>;
   let vuetify: Vuetify;
-  let $raiden: any;
+  let $raiden: Partial<RaidenService>;
   const token = {
     address: '0x1234',
     name: 'Service Token',
@@ -41,7 +43,6 @@ describe('UDC.vue', () => {
   beforeEach(async () => {
     vuetify = new Vuetify();
     $raiden = {
-      userDepositTokenAddress: '0x1234',
       fetchTokenData: jest.fn(),
       getUDCCapacity: jest.fn().mockResolvedValue(BigNumber.from('5000')),
       monitoringReward: BigNumber.from('500'),

@@ -55,11 +55,7 @@
         </v-col>
       </v-row>
       <v-row v-if="mainnet && !loading && !error" no-gutters justify="center">
-        <a
-          class="udc-deposit-dialog--uniswap-url"
-          :href="uniswapURL"
-          target="_blank"
-        >
+        <a class="udc-deposit-dialog--uniswap-url" :href="uniswapURL" target="_blank">
           {{ $t('udc-deposit-dialog.uniswap-url-title') }}
         </a>
       </v-row>
@@ -69,13 +65,7 @@
         arrow
         full-width
         :enabled="valid && !loading"
-        :text="
-          $t(
-            mainnet
-              ? 'udc-deposit-dialog.button-main'
-              : 'udc-deposit-dialog.button'
-          )
-        "
+        :text="$t(mainnet ? 'udc-deposit-dialog.button-main' : 'udc-deposit-dialog.button')"
         data-cy="udc_deposit_dialog_action"
         class="udc-deposit-dialog__action"
         @click="udcDeposit()"
@@ -88,6 +78,7 @@
 <script lang="ts">
 import { Component, Vue, Emit, Prop } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
+import { BigNumber, utils, constants } from 'ethers';
 import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import { BalanceUtils } from '@/utils/balance-utils';
@@ -97,7 +88,6 @@ import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import { RaidenError } from 'raiden-ts';
 import Filters from '@/filters';
-import { BigNumber, utils, constants } from 'ethers';
 
 @Component({
   components: {
@@ -113,11 +103,11 @@ import { BigNumber, utils, constants } from 'ethers';
 })
 export default class UdcDepositDialog extends Vue {
   mainnet!: boolean;
-  uniswapURL: string = '';
+  uniswapURL = '';
   udcToken!: Token;
-  defaultUtilityTokenAmount: string = '';
+  defaultUtilityTokenAmount = '';
   step: 'mint' | 'approve' | 'deposit' | '' = '';
-  loading: boolean = false;
+  loading = false;
   error: Error | RaidenError | null = null;
 
   @Prop({ required: true, type: Boolean })
@@ -129,10 +119,7 @@ export default class UdcDepositDialog extends Vue {
   }
 
   get utilityTokenBalance(): string {
-    return Filters.displayFormat(
-      this.udcToken.balance as BigNumber,
-      this.udcToken.decimals
-    );
+    return Filters.displayFormat(this.udcToken.balance as BigNumber, this.udcToken.decimals);
   }
 
   get valid(): boolean {
@@ -141,7 +128,7 @@ export default class UdcDepositDialog extends Vue {
     try {
       utilityTokenAmount = utils.parseUnits(
         this.defaultUtilityTokenAmount,
-        this.udcToken.decimals
+        this.udcToken.decimals,
       );
     } catch (err) {
       return false;
@@ -159,8 +146,7 @@ export default class UdcDepositDialog extends Vue {
 
   async mounted() {
     const mainAccountAddress =
-      (await this.$raiden.getMainAccount()) ??
-      (await this.$raiden.getAccount());
+      (await this.$raiden.getMainAccount()) ?? (await this.$raiden.getAccount());
 
     this.uniswapURL = this.$t('udc-deposit-dialog.uniswap-url', {
       rdnToken: this.udcToken.address,
@@ -176,10 +162,7 @@ export default class UdcDepositDialog extends Vue {
     this.error = null;
     this.loading = true;
     const token = this.udcToken;
-    const depositAmount = BalanceUtils.parse(
-      this.defaultUtilityTokenAmount,
-      token.decimals!
-    );
+    const depositAmount = BalanceUtils.parse(this.defaultUtilityTokenAmount, token.decimals!);
 
     try {
       if (!this.mainnet && depositAmount.gt(token.balance!)) {

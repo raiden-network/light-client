@@ -1,10 +1,11 @@
 jest.mock('vue-router');
 
-import { RouteNames } from '@/router/route-names';
 import { shallowMount, Wrapper } from '@vue/test-utils';
-import NavigationMixin from '@/mixins/navigation-mixin';
 import VueRouter from 'vue-router';
+import { Component, Mixins } from 'vue-property-decorator';
 import { TestData } from '../../data/mock-data';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import { RouteNames } from '@/router/route-names';
 import Mocked = jest.Mocked;
 
 describe('NavigationMixin', () => {
@@ -15,12 +16,10 @@ describe('NavigationMixin', () => {
     router = new VueRouter() as Mocked<VueRouter>;
     router.push = jest.fn().mockResolvedValue(null);
 
-    const component = {
-      render() {},
-      mixins: [NavigationMixin],
-    };
+    @Component({ template: '<div></div>' })
+    class MyComponent extends Mixins(NavigationMixin) {}
 
-    wrapper = shallowMount(component as any, {
+    wrapper = shallowMount(MyComponent, {
       mocks: {
         $router: router,
         $route: TestData.mockRoute(),
@@ -38,7 +37,7 @@ describe('NavigationMixin', () => {
         params: {
           token: '0xtoken',
         },
-      })
+      }),
     );
   });
 
@@ -49,7 +48,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.HOME,
-      })
+      }),
     );
   });
 
@@ -64,7 +63,7 @@ describe('NavigationMixin', () => {
           token: '0xtoken',
           partner: '0xpartner',
         },
-      })
+      }),
     );
   });
 
@@ -75,7 +74,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.SELECT_TOKEN,
-      })
+      }),
     );
   });
 
@@ -89,7 +88,7 @@ describe('NavigationMixin', () => {
         params: {
           token: '0xtoken',
         },
-      })
+      }),
     );
   });
 
@@ -107,7 +106,7 @@ describe('NavigationMixin', () => {
         query: {
           amount: '100',
         },
-      })
+      }),
     );
   });
 
@@ -118,7 +117,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.ACCOUNT_ROOT,
-      })
+      }),
     );
   });
 
@@ -129,7 +128,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.ACCOUNT_BACKUP,
-      })
+      }),
     );
   });
 
@@ -140,7 +139,7 @@ describe('NavigationMixin', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.ACCOUNT_RAIDEN,
-      })
+      }),
     );
   });
 
@@ -164,7 +163,7 @@ describe('NavigationMixin', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.HOME,
-        })
+        }),
       );
     });
 
@@ -176,7 +175,7 @@ describe('NavigationMixin', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.HOME,
-        })
+        }),
       );
     });
 
@@ -188,7 +187,7 @@ describe('NavigationMixin', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.SELECT_TOKEN,
-        })
+        }),
       );
     });
 
@@ -200,7 +199,7 @@ describe('NavigationMixin', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.HOME,
-        })
+        }),
       );
     });
 
@@ -218,7 +217,7 @@ describe('NavigationMixin', () => {
           params: {
             token: '0xtoken',
           },
-        })
+        }),
       );
     });
 
@@ -242,7 +241,7 @@ describe('NavigationMixin', () => {
             target: '0xtarget',
             amount: '100',
           },
-        })
+        }),
       );
     });
   });

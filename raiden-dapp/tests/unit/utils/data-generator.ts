@@ -1,22 +1,13 @@
 import times from 'lodash/times';
 import { BigNumber, constants } from 'ethers';
-import {
-  RaidenTransfer,
-  Address,
-  RaidenChannel,
-  ChannelState,
-} from 'raiden-ts';
+import { RaidenTransfer, Address, RaidenChannel, ChannelState } from 'raiden-ts';
 import { Token } from '@/model/types';
 
 const HEXADECIMAL_CHARACTERS = '0123456789abcdefABCDEF';
 const ALPHABET_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz';
 const NUMBER_CHARACTERS = '0123456789';
 
-function getRandomString(
-  charSet: string,
-  length: number,
-  prefix: string = ''
-): string {
+function getRandomString(charSet: string, length: number, prefix = ''): string {
   let output = prefix;
 
   times(length, () => {
@@ -38,6 +29,10 @@ function getRandomNumericId(): number {
   return +getRandomString(NUMBER_CHARACTERS, 5);
 }
 
+/**
+ * @param partialToken - Token data override
+ * @returns Token object
+ */
 export function generateToken(partialToken: Partial<Token> = {}): Token {
   return {
     address: getRandomEthereumAddress(),
@@ -49,7 +44,7 @@ export function generateToken(partialToken: Partial<Token> = {}): Token {
   } as Token;
 }
 
-/*
+/**
  * There is an inconsistent typing of token addresses. While the Token interface
  * of the dApp defines it as a string, the SDK defines the token address of
  * a RaidenTransfer as Address. Therefore it is not possible to simply use the
@@ -57,10 +52,14 @@ export function generateToken(partialToken: Partial<Token> = {}): Token {
  * parameter. To circumvent this problem, the optional token parameter accepts
  * the Token type of the dApp and casts its address for the token within the to
  * generate transfer.
+ *
+ * @param partialTransfer - RaidenTransfer overrides
+ * @param token - Token object
+ * @returns RaidenTransfer mocked object
  */
 export function generateTransfer(
   partialTransfer: Partial<RaidenTransfer> = {},
-  token?: Token
+  token?: Token,
 ): RaidenTransfer {
   return {
     key: getRandomTransactionKey(),
@@ -76,9 +75,14 @@ export function generateTransfer(
   } as RaidenTransfer;
 }
 
+/**
+ * @param partialChannel - RaidenChannel overrides
+ * @param token - Token object
+ * @returns RaidenChannel mocked object
+ */
 export function generateChannel(
   partialChannel: Partial<RaidenChannel>,
-  token?: Token
+  token?: Token,
 ): RaidenChannel {
   return {
     id: getRandomNumericId(),

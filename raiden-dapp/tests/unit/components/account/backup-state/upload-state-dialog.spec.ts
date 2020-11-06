@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.useFakeTimers();
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuex from 'vuex';
-import store from '@/store/index';
 import Vuetify from 'vuetify';
+import store from '@/store/index';
 import UploadStateDialog from '@/components/account/backup-state/UploadStateDialog.vue';
 
 Vue.use(Vuetify);
@@ -67,24 +68,19 @@ describe('UploadStateDialog.vue', () => {
   });
 
   test('calls methods for uploading state on file select', async () => {
-    // @ts-ignore
-    wrapper.vm.uploadState = jest.fn();
-    // @ts-ignore
-    expect(wrapper.vm.uploadState).not.toBeCalled();
+    (wrapper.vm as any).uploadState = jest.fn();
+    expect((wrapper.vm as any).uploadState).not.toBeCalled();
 
     const stateInput = wrapper.find('input');
-    // @ts-ignore
-    stateInput.element.value = '';
+    stateInput.setValue('');
     stateInput.trigger('change');
     await wrapper.vm.$nextTick();
 
-    // @ts-ignore
-    expect(wrapper.vm.uploadState).toBeCalled();
+    expect((wrapper.vm as any).uploadState).toBeCalled();
   });
 
   test('method for dropzone error displays and hides dropzone error message', async () => {
-    // @ts-ignore
-    wrapper.vm.dropzoneError();
+    (wrapper.vm as any).dropzoneError();
 
     expect(wrapper.vm.$data.dropzoneErrorMessage).toBe(true);
     jest.advanceTimersByTime(2000);
@@ -99,8 +95,7 @@ describe('UploadStateDialog.vue', () => {
       1: mockStateFile,
       length: 2,
     };
-    // @ts-ignore
-    wrapper.vm.uploadState(fileList);
+    (wrapper.vm as any).uploadState(fileList);
 
     expect(wrapper.vm.$data.dropzoneErrorMessage).toBe(true);
   });
@@ -112,8 +107,7 @@ describe('UploadStateDialog.vue', () => {
       0: mockStateFile,
       length: 1,
     };
-    // @ts-ignore
-    wrapper.vm.uploadState(fileList);
+    (wrapper.vm as any).uploadState(fileList);
 
     expect(wrapper.vm.$data.dropzoneErrorMessage).toBe(false);
   });

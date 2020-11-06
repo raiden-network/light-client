@@ -232,6 +232,10 @@ async function updateChannel(this: Cli, request: Request, response: Response, ne
   }
 }
 
+/**
+ * @param this - Cli object
+ * @returns Router instance
+ */
 export function makeChannelsRouter(this: Cli): Router {
   const router = Router();
 

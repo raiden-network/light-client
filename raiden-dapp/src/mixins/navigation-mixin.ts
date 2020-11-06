@@ -13,11 +13,7 @@ export default class NavigationMixin extends Vue {
   }
 
   navigateToHome() {
-    this.$router
-      .push({
-        name: RouteNames.HOME,
-      })
-      .catch(() => {});
+    this.$router.push({ name: RouteNames.HOME });
   }
 
   navigateToOpenChannel(token: string, partner: string) {
@@ -39,11 +35,7 @@ export default class NavigationMixin extends Vue {
     });
   }
 
-  navigateToSelectTransferTarget(
-    token: string,
-    target?: string,
-    amount?: string
-  ) {
+  navigateToSelectTransferTarget(token: string, target?: string, amount?: string) {
     const route = {
       name: RouteNames.TRANSFER,
       params: { token: token },
@@ -121,7 +113,7 @@ export default class NavigationMixin extends Vue {
         this.navigateToSelectTransferTarget(
           this.$route.params.token,
           this.$route.params.target,
-          this.$route.params.amount
+          this.$route.params.amount,
         );
         break;
       case RouteNames.TRANSFER:

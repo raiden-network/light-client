@@ -1,24 +1,6 @@
 import Vue from 'vue';
 import VuexPersistence from 'vuex-persist';
 import Vuex, { StoreOptions } from 'vuex';
-import { RootState, Settings, Tokens, Transfers } from '@/types';
-import {
-  ChannelState,
-  getNetworkName,
-  RaidenChannel,
-  RaidenChannels,
-  RaidenConfig,
-  RaidenTransfer,
-} from 'raiden-ts';
-import {
-  AccTokenModel,
-  DeniedReason,
-  emptyTokenModel,
-  PlaceHolderNetwork,
-  Token,
-  TokenModel,
-  Presences,
-} from '@/model/types';
 import map from 'lodash/map';
 import flatMap from 'lodash/flatMap';
 import filter from 'lodash/filter';
@@ -28,6 +10,25 @@ import orderBy from 'lodash/orderBy';
 import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
 import { BigNumber, providers } from 'ethers';
+import { NotificationsState } from './notifications/types';
+import {
+  AccTokenModel,
+  DeniedReason,
+  emptyTokenModel,
+  PlaceHolderNetwork,
+  Token,
+  TokenModel,
+  Presences,
+} from '@/model/types';
+import {
+  ChannelState,
+  getNetworkName,
+  RaidenChannel,
+  RaidenChannels,
+  RaidenConfig,
+  RaidenTransfer,
+} from 'raiden-ts';
+import { RootState, Settings, Tokens, Transfers } from '@/types';
 import { notifications } from '@/store/notifications';
 
 Vue.use(Vuex);
@@ -58,6 +59,9 @@ const _defaultState: RootState = {
   persistDisclaimerAcceptance: false,
 };
 
+/**
+ * @returns clone of the default root state object
+ */
 export function defaultState(): RootState {
   return clone(_defaultState);
 }
@@ -79,19 +83,17 @@ const settingsLocalStorage = new VuexPersistence<RootState>({
 
 const miscellaneousLocalStorage = new VuexPersistence<RootState>({
   reducer: (state) => ({
-    disclaimerAccepted: state.persistDisclaimerAcceptance
-      ? state.disclaimerAccepted
-      : false,
+    disclaimerAccepted: state.persistDisclaimerAcceptance ? state.disclaimerAccepted : false,
     stateBackupReminderDateMs: state.stateBackupReminderDateMs,
   }),
   filter: (mutation) =>
-    mutation.type === 'acceptDisclaimer' ||
-    mutation.type === 'updateStateBackupReminderDate',
+    mutation.type === 'acceptDisclaimer' || mutation.type === 'updateStateBackupReminderDate',
   key: 'miscellaneous',
 });
 
-const store: StoreOptions<RootState> = {
-  state: defaultState(),
+const store: StoreOptions<RootState & { notifications: NotificationsState }> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  state: defaultState() as any, // 'notifications' member filled in by module
   mutations: {
     noProvider(state: RootState) {
       state.providerDetected = false;
@@ -119,8 +121,7 @@ const store: StoreOptions<RootState> = {
     },
     updateTokens(state: RootState, tokens: Tokens) {
       for (const [address, token] of Object.entries(tokens))
-        if (address in state.tokens && isEqual(token, state.tokens[address]))
-          continue;
+        if (address in state.tokens && isEqual(token, state.tokens[address])) continue;
         else if (address in state.tokens)
           state.tokens[address] = { ...state.tokens[address], ...token };
         else state.tokens = { ...state.tokens, [address]: token };
@@ -136,12 +137,7 @@ const store: StoreOptions<RootState> = {
     },
     reset(state: RootState) {
       // Preserve settings and backup when resetting state
-      const {
-        settings,
-        disclaimerAccepted,
-        stateBackup,
-        stateBackupReminderDateMs,
-      } = state;
+      const { settings, disclaimerAccepted, stateBackup, stateBackupReminderDateMs } = state;
 
       Object.assign(state, {
         ...defaultState(),
@@ -177,10 +173,7 @@ const store: StoreOptions<RootState> = {
   actions: {},
   getters: {
     tokens: function (state: RootState): TokenModel[] {
-      const reducer = (
-        acc: AccTokenModel,
-        channel: RaidenChannel
-      ): AccTokenModel => {
+      const reducer = (acc: AccTokenModel, channel: RaidenChannel): AccTokenModel => {
         acc.address = channel.token;
         (acc[channel.state] as number) += 1;
         return acc;
@@ -197,7 +190,7 @@ const store: StoreOptions<RootState> = {
           }
 
           return model;
-        }
+        },
       );
     },
     allTokens: (state: RootState): Token[] =>
@@ -205,9 +198,7 @@ const store: StoreOptions<RootState> = {
         .filter((token) => state.tokenAddresses.includes(token.address))
         .sort((a: Token, b: Token) => {
           if (hasNonZeroBalance(a, b)) {
-            return (b.balance! as BigNumber).gt(a.balance! as BigNumber)
-              ? 1
-              : -1;
+            return (b.balance! as BigNumber).gt(a.balance! as BigNumber) ? 1 : -1;
           }
           return a.symbol && b.symbol ? a.symbol.localeCompare(b.symbol) : 0;
         }),
@@ -237,9 +228,7 @@ const store: StoreOptions<RootState> = {
     },
     channelWithBiggestCapacity: (_, getters) => (tokenAddress: string) => {
       const channels: RaidenChannel[] = getters.channels(tokenAddress);
-      const openChannels = channels.filter(
-        (value) => value.state === ChannelState.open
-      );
+      const openChannels = channels.filter((value) => value.state === ChannelState.open);
       return orderBy(openChannels, ['capacity'], ['desc'])[0];
     },
     pendingTransfers: ({ transfers }: RootState) =>
@@ -255,15 +244,10 @@ const store: StoreOptions<RootState> = {
           return pendingTransfers;
         }, {}),
     transfer: (state: RootState) => (paymentId: BigNumber) => {
-      return Object.values(state.transfers).find((transfer) =>
-        transfer.paymentId.eq(paymentId)
-      );
+      return Object.values(state.transfers).find((transfer) => transfer.paymentId.eq(paymentId));
     },
     isConnected: (state: RootState): boolean => {
-      return (
-        !state.loading &&
-        !!(state.defaultAccount && state.defaultAccount !== '')
-      );
+      return !state.loading && !!(state.defaultAccount && state.defaultAccount !== '');
     },
     udcToken: (state: RootState): Token => {
       return state.tokens[state.userDepositTokenAddress];

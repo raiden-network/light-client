@@ -1,13 +1,13 @@
 jest.mock('vue-router');
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
-import Mocked = jest.Mocked;
 import { shallowMount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Vuex from 'vuex';
-import store from '@/store/index';
 import Vuetify from 'vuetify';
+import Mocked = jest.Mocked;
+import store from '@/store/index';
 import RaidenService from '@/services/raiden-service';
 import App from '@/App.vue';
 

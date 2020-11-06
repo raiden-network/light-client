@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
-import store from '@/store';
 import { $identicon } from '../utils/mocks';
 import { connectAccount } from '../utils/store-utils';
+import { TestData } from '../data/mock-data';
+import store from '@/store';
 import AppHeader from '@/components/AppHeader.vue';
 import { RouteNames } from '@/router/route-names';
-import { TestData } from '../data/mock-data';
 
 Vue.use(Vuetify);
 
@@ -49,10 +50,7 @@ describe('AppHeader.vue', () => {
 
     expect(newNotificationsBadge.exists()).toBe(false);
 
-    await store.commit(
-      'notifications/notificationAddOrReplace',
-      TestData.notifications
-    );
+    store.commit('notifications/notificationAddOrReplace', TestData.notifications);
 
     await wrapper.vm.$nextTick();
     newNotificationsBadge = wrapper.find('.v-badge__badge');
@@ -76,9 +74,7 @@ describe('AppHeader.vue', () => {
     wrapper = createWrapper(RouteNames.DISCLAIMER);
     const title = wrapper.find('.app-header__title__route');
     const networkLabel = wrapper.find('.app-header__top__content__network');
-    const notificationsBadge = wrapper.find(
-      '.app-header__notifications-wrapper'
-    );
+    const notificationsBadge = wrapper.find('.app-header__notifications-wrapper');
     const identicon = wrapper.find('.app-header__icons__identicon');
 
     expect((wrapper.vm as any).canGoBack).toBe(false);

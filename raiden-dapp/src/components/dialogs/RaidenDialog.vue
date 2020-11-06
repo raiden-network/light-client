@@ -9,12 +9,7 @@
       @click:outside="close()"
     >
       <v-card class="raiden-dialog">
-        <v-btn
-          v-if="!hideClose"
-          icon
-          class="raiden-dialog__close"
-          @click="close()"
-        >
+        <v-btn v-if="!hideClose" icon class="raiden-dialog__close" @click="close()">
           <v-icon>mdi-close</v-icon>
         </v-btn>
         <slot></slot>
@@ -24,8 +19,8 @@
 </template>
 
 <script lang="ts">
-import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
 import { Component, Emit, Vue, Prop } from 'vue-property-decorator';
+import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
 
 @Component({ components: { BlurredOverlay } })
 export default class RaidenDialog extends Vue {
@@ -35,7 +30,9 @@ export default class RaidenDialog extends Vue {
   hideClose!: boolean;
 
   @Emit()
-  close() {}
+  close(): boolean {
+    return true;
+  }
 }
 </script>
 

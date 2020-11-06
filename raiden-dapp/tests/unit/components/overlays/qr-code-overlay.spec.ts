@@ -29,12 +29,8 @@ describe('QrCodeOverlay.vue', () => {
   });
 
   test('shows error', async () => {
-    // @ts-ignore
-    await wrapper.vm.onInit(
-      new Promise((_, __) => {
-        throw new Error();
-      })
-    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (wrapper.vm as any).onInit(Promise.reject(new Error()));
     expect(wrapper.find('.error-message').exists()).toBe(true);
   });
 });

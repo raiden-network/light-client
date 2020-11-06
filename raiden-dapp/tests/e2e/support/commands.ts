@@ -1,3 +1,14 @@
+export {};
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  export namespace Cypress {
+    interface Chainable {
+      getWithCustomTimeout: (selector: string) => Cypress.Chainable<JQuery<HTMLElement>>;
+    }
+  }
+}
+
 Cypress.Commands.add(
   'getWithCustomTimeout',
   {
@@ -9,5 +20,5 @@ Cypress.Commands.add(
     } else {
       cy.get(selector, { timeout: 1800000 });
     }
-  }
+  },
 );

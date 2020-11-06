@@ -2,9 +2,7 @@
   <v-card data-cy="notification_card" class="notification-card" flat>
     <v-row class="notification-card__content" no-gutters>
       <v-avatar class="notification-card__content__icon" size="44" rounded>
-        <img
-          :src="require(`@/assets/notifications/${notification.icon}.svg`)"
-        />
+        <img :src="require(`@/assets/notifications/${notification.icon}.svg`)" />
       </v-avatar>
       <div class="notification-card__content__details">
         <span class="notification-card__content__details__title">
@@ -52,8 +50,8 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { NotificationPayload } from '@/store/notifications/types';
 import { createNamespacedHelpers, mapState } from 'vuex';
+import { NotificationPayload } from '@/store/notifications/types';
 import NotificationDescriptionDisplay from '@/components/notification-panel/NotificationDescriptionDisplay.vue';
 
 const { mapMutations } = createNamespacedHelpers('notifications');
@@ -77,8 +75,7 @@ export default class NotificationCard extends Vue {
   get blockCountInProgress(): boolean {
     if (this.notification.txConfirmationBlock) {
       return (
-        !this.notification.txConfirmed &&
-        this.notification.txConfirmationBlock > this.blockNumber
+        !this.notification.txConfirmed && this.notification.txConfirmationBlock > this.blockNumber
       );
     } else {
       return false;

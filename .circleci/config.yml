@@ -1,10 +1,24 @@
 version: 2.1
 
-var_1: &working_dir ~/src
-var_2: &dapp_working_dir ~/src/raiden-dapp
+parameters:
+  base_executor_image:
+    type: string
+    default: cimg/node:lts-browsers
+
+  e2e_environment_executor_image:
+    type: string
+    default: raidennetwork/lightclient-e2e-environment:latest
+
+  working_directory:
+    type: string
+    default: ~/src
+
+  test_report_directory:
+    type: string
+    default: reports/junit
 
 anchor_1: &attach_options
-  at: *working_dir
+  at: << pipeline.parameters.working_directory >>
 
 anchor_2: &executor_parameter
   parameters:
@@ -12,65 +26,72 @@ anchor_2: &executor_parameter
       type: executor
       default: base-executor
 
-anchor_3: &run_on_release_tag_only
+anchor_3: &executor_shared_options
+  working_directory: << pipeline.parameters.working_directory >>
+  environment:
+    JEST_JUNIT_OUTPUT_DIR: << pipeline.parameters.test_report_directory >>
+
+anchor_4: &filter_release_tag
   filters:
     tags:
       only: /^v\d+\.\d+\.\d+$/
-    branches:
-      ignore: /.*/
 
 executors:
   base-executor:
-    working_directory: *working_dir
+    <<: *executor_shared_options
     docker:
-      - image: circleci/node:lts-browsers
+      - image: << pipeline.parameters.base_executor_image >>
 
   e2e-environment-executor:
-    working_directory: *working_dir
+    <<: *executor_shared_options
     docker:
-      - image: raidennetwork/lightclient-e2e-environment:latest
+      - image: << pipeline.parameters.e2e_environment_executor_image >>
+
+commands:
+  check-license:
+    parameters:
+      directory:
+        description: The sub-directory at the working directory where to check for licenses
+        type: string
+    steps:
+      - run:
+          name: Check License for << parameters.directory >>
+          working_directory: << pipeline.parameters.working_directory>>/<< parameters.directory >>
+          command: >
+            npx license-checker@25.0.1
+            --production
+            --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense'
+            --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
+
+  upload_test_results_and_coverage:
+    parameters:
+      base_flag:
+        type: enum
+        enum: [sdk, dapp, cli]
+      test_kind_flag:
+        type: enum
+        enum: [unit, integration, e2e]
+    steps:
+      - store_test_results:
+          path: << pipeline.parameters.test_report_directory >>
+      - store_artifacts:
+          path: << pipeline.parameters.test_report_directory >>
+      - run:
+          name: Upload test coverage results to CodeCov
+          command: >
+            bash <(curl -s https://codecov.io/bash) -C $CIRCLE_SHA1
+            -F << parameters.base_flag >>
+            -F << parameters.base_flag >>.<< parameters.test_kind_flag >>
 
 jobs:
-  checkout:
+  install:
     <<: *executor_parameter
     executor: << parameters.executor >>
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - checkout
       - run: git submodule sync
       - run: git submodule update --init
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./*
-
-  check_licenses:
-    executor: base-executor
-    working_directory: ~/
-    steps:
-      - attach_workspace: *attach_options
-      - run:
-          name: Update $PATH
-          command: echo 'export PATH=$PATH:$HOME/node_modules/.bin' >> $BASH_ENV
-      - run:
-          name: Install license checker
-          command: npm install license-checker@25.0.1
-      - run:
-          name: Check SDK Licenses
-          command: cd ~/src/raiden-ts && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
-      - run:
-          name: Check dApp Licenses
-          command: cd ~/src/raiden-dapp && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
-      - run:
-          name: Check CLI Licenses
-          command: cd ~/src/raiden-cli && license-checker --production --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense' --excludePackages 'uuid@2.0.1' --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
-
-  install:
-    <<: *executor_parameter
-    executor: << parameters.executor >>
-    working_directory: *working_dir
-    steps:
-      - attach_workspace: *attach_options
       - restore_cache:
           name: Restore Yarn Package Cache
           keys:
@@ -84,95 +105,31 @@ jobs:
             - ./node_modules
             - ~/.cache # Cypress stores its stuff here.
       - persist_to_workspace:
-          root: *working_dir
+          root: << pipeline.parameters.working_directory >>
           paths:
             - ./*
 
-  lint:
+  check_licenses:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: ~/
     steps:
       - attach_workspace: *attach_options
-      - run: yarn lint
-
-  test_sdk_unit:
-    executor: base-executor
-    working_directory: *working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - run:
-          name: Run unit tests
-          command: yarn workspace raiden-ts run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
-      - store_test_results:
-          path: reports/junit
-      - store_artifacts:
-          path: reports/junit
-      - run:
-          name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F sdk_unit -F sdk -C $CIRCLE_SHA1
-
-  test_sdk_integration:
-    executor: base-executor
-    working_directory: *working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - run:
-          name: Run unit tests
-          command: yarn workspace raiden-ts run test:integration --ci --runInBand --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
-      - store_test_results:
-          path: reports/junit
-      - store_artifacts:
-          path: reports/junit
-      - run:
-          name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F sdk_integration -F sdk -C $CIRCLE_SHA1
-
-  test_dapp_unit:
-    executor: base-executor
-    working_directory: *working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - run:
-          name: Run unit tests
-          command: yarn workspace raiden-dapp run test:unit --ci --runInBand --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
-      - store_test_results:
-          path: reports/junit
-      - store_artifacts:
-          path: reports/junit
-      - run:
-          name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F dapp -C $CIRCLE_SHA1
-
-  test_dapp_e2e:
-    executor: e2e-environment-executor
-    working_directory: *working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - run:
-          name: Run e2e tests
-          command: yarn workspace raiden-dapp run test:e2e --headless
-      - store_test_results:
-          path: raiden-dapp/tests/e2e/results/reports
-      - store_artifacts:
-          path: raiden-dapp/tests/e2e/results/videos
-      - store_artifacts:
-          path: raiden-dapp/tests/e2e/results/screenshots
+      - check-license:
+          directory: raiden-ts
+      - check-license:
+          directory: raiden-dapp
+      - check-license:
+          directory: raiden-cli
 
   build_sdk:
     <<: *executor_parameter
     executor: << parameters.executor >>
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
     steps:
       - attach_workspace: *attach_options
-      - run: yarn workspace raiden-ts build
+      - run: yarn build
       - persist_to_workspace:
-          root: *working_dir
+          root: << pipeline.parameters.working_directory >>
           paths:
             - ./*
 
@@ -181,51 +138,127 @@ jobs:
       mode:
         description: Mode to configure the environment of the dApp build
         type: enum
-        enum: ["production", "staging", "development", "e2e", "raiden-package"]
+        enum: [production, staging, development, e2e, raiden-package]
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Build dapp
-          command: yarn workspace raiden-dapp build --mode << parameters.mode >>
+          command: yarn build --mode << parameters.mode >>
       - run:
           name: Compress dapp
-          command: cd raiden-dapp && tar -czvf dapp.tar.gz dist
+          command: tar -czvf dapp.tar.gz dist
       - store_artifacts:
-          path: raiden-dapp/dapp.tar.gz
-          destination: dapp.tar.gz
+          path: dapp.tar.gz
       - persist_to_workspace:
-          root: *working_dir
+          root: << pipeline.parameters.working_directory >>
           paths:
             - ./*
 
   build_cli:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>/raiden-cli
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Build CLI
-          command: yarn workspace raiden-cli run build && yarn workspace raiden-cli run build:bundle
+          command: yarn run build
+      - run:
+          name: Bundle CLI
+          command: yarn run build:bundle
       - run:
           name: Compress CLI bundle
           command: >
-            cd raiden-cli ;
             cp -av ./raiden bundle/ ;
             tar -czvf raiden-cli.tar.gz bundle --transform='s/^bundle/raiden-cli/'
       - store_artifacts:
-          path: raiden-cli/raiden-cli.tar.gz
-          destination: raiden-cli.tar.gz
+          path: raiden-cli.tar.gz
+
+  lint:
+    working_directory: << pipeline.parameters.working_directory >>
+    executor: base-executor
+    steps:
+      - attach_workspace: *attach_options
+      - run: yarn lint
+
+  test_sdk_unit:
+    executor: base-executor
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Run unit tests
+          command: yarn run test:unit --ci --runInBand
+      - upload_test_results_and_coverage:
+          base_flag: sdk
+          test_kind_flag: unit
+
+  test_sdk_integration:
+    executor: base-executor
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Run integration tests
+          command: yarn run test:integration --ci --runInBand
+      - upload_test_results_and_coverage:
+          base_flag: sdk
+          test_kind_flag: integration
+
+  test_sdk_e2e:
+    executor: e2e-environment-executor
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Run end-to-end tests
+          command: >
+            source /etc/profile.d/smartcontracts.sh &&
+            yarn run test:e2e --ci --runInBand
+      - upload_test_results_and_coverage:
+          base_flag: sdk
+          test_kind_flag: e2e
+
+  test_dapp_unit:
+    executor: base-executor
+    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Run unit tests
+          command: yarn run test:unit --ci --runInBand
+      - upload_test_results_and_coverage:
+          base_flag: dapp
+          test_kind_flag: unit
+
+  test_dapp_e2e:
+    executor: e2e-environment-executor
+    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
+    steps:
+      - attach_workspace: *attach_options
+      - run:
+          name: Run e2e tests
+          command: yarn run test:e2e --headless
+      # TODO: Check how we can make this unified with how other jobs upload
+      # the test results (overwrite Cypress directory config via cli parameters)
+      - store_test_results:
+          path: tests/e2e/results/reports
+      - store_artifacts:
+          path: tests/e2e/results/videos
+      - store_artifacts:
+          path: tests/e2e/results/screenshots
 
   generate_documentation:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
-      - run: cd docs && ./generate_documentation.sh
+      - run:
+          working_directory: docs
+          command: ./generate_documentation.sh
       - persist_to_workspace:
-          root: *working_dir
+          root: << pipeline.parameters.working_directory >>
           paths:
             - ./raiden-dapp/dist/docs
 
@@ -235,7 +268,7 @@ jobs:
         description: The public path where to reach deployment (must be correct according to the build mode)
         type: string
     executor: base-executor
-    working_directory: *dapp_working_dir
+    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
     steps:
       - attach_workspace: *attach_options
       - add_ssh_keys:
@@ -245,7 +278,7 @@ jobs:
 
   publish_artifact:
     executor: base-executor
-    working_directory: *working_dir
+    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -253,56 +286,31 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
       - run:
           name: Publish on npm
-          command: yarn workspace raiden-ts publish
-
-  test_sdk_e2e:
-    executor: e2e-environment-executor
-    working_directory: *working_dir
-    steps:
-      - attach_workspace: *attach_options
-      - run:
-          name: Run end-to-end tests
-          command: >
-            source /etc/profile.d/smartcontracts.sh &&
-            yarn workspace raiden-ts run test:e2e
-            --ci --runInBand
-            --reporters=default --reporters=jest-junit
-          environment:
-            JEST_JUNIT_OUTPUT_DIR: "reports/junit"
-      - store_test_results:
-          path: reports/junit
-      - store_artifacts:
-          path: reports/junit
-      - run:
-          name: "Upload coverage"
-          command: bash <(curl -s https://codecov.io/bash) -F sdk_e2e -F sdk -C $CIRCLE_SHA1
+          command: yarn publish
 
 workflows:
   version: 2
   default_workflow:
+    when:
+      not:
+        equal: [master, << pipeline.git.branch >>]
+
     jobs:
-      - checkout:
-          filters:
-            branches:
-              ignore:
-                - master
-      - install:
-          requires:
-            - checkout
+      - install
       - check_licenses:
           requires:
             - install
       - build_sdk:
           requires:
             - install
-      - lint:
-          requires:
-            - build_sdk
       - build_dapp:
           mode: development
           requires:
             - build_sdk
       - build_cli:
+          requires:
+            - build_sdk
+      - lint:
           requires:
             - build_sdk
       - test_sdk_unit:
@@ -316,15 +324,11 @@ workflows:
             - build_dapp
 
   publish_staging:
+    when:
+      equal: [master, << pipeline.git.branch >>]
+
     jobs:
-      - checkout:
-          filters:
-            branches:
-              only:
-                - master
-      - install:
-          requires:
-            - checkout
+      - install
       - build_sdk:
           requires:
             - install
@@ -347,33 +351,38 @@ workflows:
             - build_dapp
 
   publish_production:
+    when:
+      and:
+        - not: << pipeline.git.branch >>
+        - << pipeline.git.tag >>
+
+    # Note:
+    # In constrast to branches, each job that should run on a pipeline triggered
+    # by a new tag must use a tag filter. Else the job does not get executed, no
+    # matter its dependencies or anything else.
     jobs:
-      - checkout:
-          <<: *run_on_release_tag_only
       - install:
-          <<: *run_on_release_tag_only
-          requires:
-            - checkout
+          <<: *filter_release_tag
       - build_sdk:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           requires:
             - install
       - build_dapp:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           mode: production
           requires:
             - build_sdk
       - generate_documentation:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           requires:
             - build_dapp
       - deploy_gh_pages:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           public_path: /
           requires:
             - generate_documentation
       - publish_artifact:
-          <<: *run_on_release_tag_only
+          <<: *filter_release_tag
           context: "Raiden Context"
           requires:
             - deploy_gh_pages
@@ -386,13 +395,10 @@ workflows:
             branches:
               only:
                 - master
+
     jobs:
-      - checkout:
-          executor: e2e-environment-executor
       - install:
           executor: e2e-environment-executor
-          requires:
-            - checkout
       - build_sdk:
           executor: e2e-environment-executor
           requires:

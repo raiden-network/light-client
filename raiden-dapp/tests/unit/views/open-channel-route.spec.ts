@@ -1,24 +1,24 @@
-import Filters from '@/filters';
-
 jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
 jest.useFakeTimers();
 
 import VueRouter, { NavigationGuard } from 'vue-router';
 import flushPromises from 'flush-promises';
-import { mount, shallowMount, Wrapper } from '@vue/test-utils';
-import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import { mount, shallowMount, Wrapper } from '@vue/test-utils';
+import { utils } from 'ethers';
 import { TestData } from '../data/mock-data';
+import { mockInput } from '../utils/interaction-utils';
+
 import store from '@/store';
+import Filters from '@/filters';
+import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { RouteNames } from '@/router/route-names';
 import Mocked = jest.Mocked;
 import { Token } from '@/model/types';
 import { Tokens } from '@/types';
-import { mockInput } from '../utils/interaction-utils';
-import { utils } from 'ethers';
 import { RaidenError, ErrorCodes } from 'raiden-ts';
 import RaidenService from '@/services/raiden-service';
 
@@ -35,11 +35,8 @@ describe('OpenChannelRoute.vue', () => {
   let router: Mocked<VueRouter>;
 
   function createWrapper(
-    routeParams: {
-      token?: string;
-      partner?: string;
-    },
-    shallow: boolean = false
+    routeParams: { token: string } | { partner: string },
+    shallow = false,
   ): Wrapper<OpenChannelRoute> {
     const options = {
       vuetify,
@@ -108,7 +105,7 @@ describe('OpenChannelRoute.vue', () => {
 
     test('show an error when a channel open fails', async () => {
       service.openChannel.mockRejectedValueOnce(
-        new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED)
+        new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED),
       );
 
       mockInput(wrapper, '0.1');
@@ -125,7 +122,7 @@ describe('OpenChannelRoute.vue', () => {
 
     test('show an error when the deposit fails', async () => {
       service.openChannel.mockRejectedValueOnce(
-        new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED)
+        new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED),
       );
 
       mockInput(wrapper, '0.1');
@@ -159,7 +156,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.TRANSFER,
-        })
+        }),
       );
       expect(loading).toHaveBeenCalledTimes(2);
     });
@@ -179,7 +176,7 @@ describe('OpenChannelRoute.vue', () => {
         {
           token: '0xc778417e063141139fce010982780140aa0cd5ab',
         },
-        true
+        true,
       );
 
       await flushPromises();
@@ -188,7 +185,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.HOME,
-        })
+        }),
       );
     });
 
@@ -204,7 +201,7 @@ describe('OpenChannelRoute.vue', () => {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
           partner: '0x1d36124c90f53d491b6832f1c073f43e2550e35b',
         },
-        true
+        true,
       );
 
       await flushPromises();
@@ -213,7 +210,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.SELECT_TOKEN,
-        })
+        }),
       );
     });
 
@@ -223,7 +220,7 @@ describe('OpenChannelRoute.vue', () => {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
           partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
         },
-        true
+        true,
       );
       await flushPromises();
 
@@ -231,7 +228,7 @@ describe('OpenChannelRoute.vue', () => {
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
           name: RouteNames.HOME,
-        })
+        }),
       );
     });
   });
@@ -244,10 +241,10 @@ describe('OpenChannelRoute.vue', () => {
           token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
           partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
         },
-        true
+        true,
       );
-      const vm = wrapper.vm as any;
-      beforeRouteLeave = vm.beforeRouteLeave as NavigationGuard;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      beforeRouteLeave = (wrapper.vm as any).beforeRouteLeave as NavigationGuard;
     });
 
     test('do not block when it is not loading', () => {

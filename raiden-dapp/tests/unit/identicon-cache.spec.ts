@@ -8,7 +8,7 @@ describe('IdenticonCache', () => {
 
   beforeEach(() => {
     cache = new IdenticonCache();
-    const generator: jest.Mock = makeBlockie as any;
+    const generator = makeBlockie as jest.MockedFunction<typeof makeBlockie>;
     generator.mockClear();
     generator.mockReturnValue('1');
   });

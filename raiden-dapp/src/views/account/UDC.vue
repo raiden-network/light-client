@@ -19,11 +19,7 @@
         class="udc__actions__button"
         @click="showUdcDeposit = true"
       >
-        <v-img
-          width="60px"
-          height="55px"
-          :src="require('../../assets/deposit.svg')"
-        />
+        <v-img width="60px" height="55px" :src="require('../../assets/deposit.svg')" />
         <span class="udc__actions__button--title">
           {{ $t('udc.deposit') }}
         </span>
@@ -34,11 +30,7 @@
         class="udc__actions__button"
         @click="withdrawFromUdc = true"
       >
-        <v-img
-          width="60px"
-          height="55px"
-          :src="require('../../assets/withdrawal.svg')"
-        />
+        <v-img width="60px" height="55px" :src="require('../../assets/withdrawal.svg')" />
         <span class="udc__actions__button--title">
           {{ $t('udc.withdrawal') }}
         </span>
@@ -95,7 +87,7 @@ import Spinner from '@/components/icons/Spinner.vue';
   },
 })
 export default class UDC extends Vue {
-  amount: string = '10';
+  amount = '10';
   udcCapacity = constants.Zero;
   hasEnoughServiceTokens = false;
   accountBalance!: string;
@@ -104,16 +96,14 @@ export default class UDC extends Vue {
   udcToken!: Token;
   usingRaidenAccount!: boolean;
   showUdcDeposit = false;
-  withdrawFromUdc: boolean = false;
+  withdrawFromUdc = false;
 
   get serviceToken(): string {
     return this.udcToken.symbol ?? (this.mainnet ? 'RDN' : 'SVT');
   }
 
   get relevantEthBalanceForWithdrawal(): string {
-    return this.usingRaidenAccount
-      ? this.raidenAccountBalance
-      : this.accountBalance;
+    return this.usingRaidenAccount ? this.raidenAccountBalance : this.accountBalance;
   }
 
   async mounted() {
@@ -123,9 +113,7 @@ export default class UDC extends Vue {
   private async updateUDCCapacity() {
     const { monitoringReward } = this.$raiden;
     this.udcCapacity = await this.$raiden.getUDCCapacity();
-    this.hasEnoughServiceTokens = !!(
-      monitoringReward && this.udcCapacity.gte(monitoringReward)
-    );
+    this.hasEnoughServiceTokens = !!(monitoringReward && this.udcCapacity.gte(monitoringReward));
   }
 
   async mintDone() {

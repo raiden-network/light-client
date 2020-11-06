@@ -1,5 +1,6 @@
-import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BigNumber } from 'ethers';
+import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
 
 describe('query params', () => {
   describe('amount', () => {
@@ -12,7 +13,7 @@ describe('query params', () => {
     });
 
     test('undefined returns empty string', () => {
-      expect(getAmount(undefined)).toBe('');
+      expect(getAmount(undefined as any)).toBe('');
     });
   });
 
@@ -23,7 +24,7 @@ describe('query params', () => {
 
     test('valid address returns the value', () => {
       expect(getAddress('0x1D36124C90f53d491b6832F1c073F43E2550E35b')).toBe(
-        '0x1D36124C90f53d491b6832F1c073F43E2550E35b'
+        '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
       );
     });
 
@@ -32,7 +33,7 @@ describe('query params', () => {
     });
 
     test('undefined returns empty string', () => {
-      expect(getAddress(undefined)).toBe('');
+      expect(getAddress(undefined as any)).toBe('');
     });
   });
 
@@ -43,7 +44,7 @@ describe('query params', () => {
 
     test('valid string returns BigNumber', () => {
       expect(getPaymentId('18446744073709551615')).toStrictEqual(
-        BigNumber.from('18446744073709551615')
+        BigNumber.from('18446744073709551615'),
       );
     });
     test('valid hex encoded string returns BigNumber', () => {
@@ -51,7 +52,7 @@ describe('query params', () => {
       expect(getPaymentId('0xffffffffffffffff')).toStrictEqual(num);
     });
     test('undefined returns undefined', () => {
-      expect(getPaymentId(undefined)).toStrictEqual(undefined);
+      expect(getPaymentId(undefined as any)).toStrictEqual(undefined);
     });
   });
 });

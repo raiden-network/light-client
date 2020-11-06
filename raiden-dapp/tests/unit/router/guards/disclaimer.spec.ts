@@ -1,7 +1,7 @@
+import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 import store from '@/store';
 import { RouteNames } from '@/router/route-names';
 import { redirectIfDisclaimerIsNotAccepted } from '@/router/guards/disclaimer';
-import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 
 const {
   [RouteNames.DISCLAIMER]: disclaimerRoute,
@@ -18,7 +18,7 @@ describe('redirectIfDisclaimerIsNotAccepted()', () => {
 
     Object.values(routesWithoutDisclaimer).forEach((route) => {
       expect(redirectIfDisclaimerIsNotAccepted(route)).toEqual(
-        expect.objectContaining({ name: RouteNames.DISCLAIMER })
+        expect.objectContaining({ name: RouteNames.DISCLAIMER }),
       );
     });
   });
@@ -28,7 +28,7 @@ describe('redirectIfDisclaimerIsNotAccepted()', () => {
 
     Object.values(routesWithoutDisclaimer).forEach((route) => {
       expect(redirectIfDisclaimerIsNotAccepted(route)).toEqual(
-        expect.objectContaining({ query: { redirectTo: route.fullPath } })
+        expect.objectContaining({ query: { redirectTo: route.fullPath } }),
       );
     });
   });

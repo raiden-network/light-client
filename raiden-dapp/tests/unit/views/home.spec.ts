@@ -1,15 +1,15 @@
-import { ConfigProvider } from '@/services/config-provider';
-
-jest.mock('@/services/raiden-service');
-jest.mock('@/services/config-provider');
-jest.mock('@/i18n', () => jest.fn());
-
 import flushPromises from 'flush-promises';
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import VueRouter from 'vue-router';
+
+jest.mock('@/services/raiden-service');
+jest.mock('@/services/config-provider');
+jest.mock('@/i18n', () => jest.fn());
+
+import { ConfigProvider } from '@/services/config-provider';
 import store from '@/store/index';
 import RaidenService from '@/services/raiden-service';
 import { DeniedReason } from '@/model/types';
@@ -27,7 +27,9 @@ describe('Home.vue', () => {
   let $raiden: RaidenService;
 
   beforeEach(() => {
-    (ConfigProvider as any).configuration.mockResolvedValue({});
+    (ConfigProvider as jest.Mocked<typeof ConfigProvider>).configuration.mockResolvedValue({
+      per_network: {},
+    });
     vuetify = new Vuetify();
     router = new VueRouter() as Mocked<VueRouter>;
     router.push = jest.fn().mockResolvedValue(null);
@@ -56,8 +58,8 @@ describe('Home.vue', () => {
       ...settings,
     });
 
-    // @ts-ignore
-    await wrapper.vm.connect();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (wrapper.vm as any).connect();
     await flushPromises();
   }
 
@@ -106,9 +108,7 @@ describe('Home.vue', () => {
   test('displays getting started link', () => {
     const gettingStartedText = wrapper.find('.home__getting-started');
 
-    expect(gettingStartedText.text()).toContain(
-      'home.getting-started.link-name'
-    );
+    expect(gettingStartedText.text()).toContain('home.getting-started.link-name');
   });
 
   test('connect button displays connect dialog', async () => {

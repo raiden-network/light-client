@@ -1,56 +1,55 @@
-# raiden-dapp
+# Raiden dApp
 
-> **INFO:** The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress, doesn't work for token transfers yet and currently can only be used on the Ethereum **Testnets**.
+> **INFO:** The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is a work in progress.
 
 ## Demo
 
 You can access an alpha testnet version of the Raiden dApp at https://lightclient.raiden.network/. 
 
-![Raiden dApp Screenshot](https://user-images.githubusercontent.com/35398162/63415278-c9207300-c3fd-11e9-9109-20f563a8d7f0.PNG)
+## Project Setup
 
-## Project setup
-```
-pnpm install
-```
+1. Install dependencies  
 
-### Compiles and hot-reloads for development
-```
-pnpm run serve
-```
+   In the root directory run:
 
-### Compiles and minifies for production
-```
-pnpm run build
-```
+   ```bash
+   yarn install
+   ```
 
-### Run your tests
-```
-pnpm run test
-```
+2. Build the SDK  
 
-### Lints and fixes files
-```
-pnpm run lint
-```
+   ```bash
+   yarn workspace raiden-ts build
+   ```
 
-### Run your unit tests
-```
-pnpm run test:unit
-```
+3. Serve dApp for development  
 
-### Run your end-to-end tests
+   ```
+   yarn workspace raiden-dapp serve
+   ```
+
+4. Compile dApp for production  
+
+   ```
+   yarn workspace raiden-dapp build
+   ```
+
+## Run Tests
+
+1. Unit tests
+
+   ```
+   yarn workspace raiden-dapp test
+   ```
+
+2. E2E tests
+
+   ```
+   yarn workspace raiden-dapp test:e2e:docker
+   ```
+
+## Check Linting
 
 ```
-pnpm run test:e2e
+yarn workspace raiden-dapp lint
 ```
-
-If you have not a full environment setup with Ethereum node, Matrix server etc.,
-then you can make use of the following script target:
-
-```
-pnpm run test:e2e:docker
-```
-
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).

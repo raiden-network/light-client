@@ -1,8 +1,9 @@
-import store, { defaultState } from '@/store/index';
+import { BigNumber, constants } from 'ethers';
 import { TestData } from './data/mock-data';
+import { defaultState as defaultNotificationsState } from '@/store/notifications/state';
+import store, { defaultState } from '@/store/index';
 import { DeniedReason, emptyTokenModel, Token } from '@/model/types';
 import { Tokens } from '@/types';
-import { BigNumber, constants } from 'ethers';
 
 describe('store', () => {
   const testTokens = (token: string, name?: string, symbol?: string) => {
@@ -28,7 +29,7 @@ describe('store', () => {
   };
 
   beforeEach(() => {
-    store.replaceState(defaultState());
+    store.replaceState({ ...defaultState(), notifications: defaultNotificationsState() });
   });
 
   test('isConnected getter is false while disconnected', () => {
@@ -98,9 +99,10 @@ describe('store', () => {
 
   test('the channels getter returns an array of channels', () => {
     store.commit('updateChannels', TestData.mockChannels);
-    expect(
-      store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
-    ).toEqual([TestData.openChannel, TestData.settlingChannel]);
+    expect(store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')).toEqual([
+      TestData.openChannel,
+      TestData.settlingChannel,
+    ]);
   });
 
   test('updateTokens mutation updates the tokens', () => {
@@ -117,11 +119,7 @@ describe('store', () => {
   });
 
   test('the tokens getter returns tokens that include name and symbol information', () => {
-    const tokens = testTokens(
-      '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
-      'Test Token',
-      'TTT'
-    );
+    const tokens = testTokens('0xd0A1E359811322d97991E03f863a0C30C2cF029C', 'Test Token', 'TTT');
 
     store.commit('updateTokens', tokens);
     store.commit('updateChannels', TestData.mockChannels);
@@ -195,22 +193,14 @@ describe('store', () => {
   });
 
   test('the token getter returns null when the token is not cached', () => {
-    expect(
-      store.getters.token('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
-    ).toBeNull();
+    expect(store.getters.token('0xd0A1E359811322d97991E03f863a0C30C2cF029C')).toBeNull();
   });
 
   test('the token getter returns the token when it is cached', () => {
-    const tokens = testTokens(
-      '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
-      'Test Token',
-      'TTT'
-    );
+    const tokens = testTokens('0xd0A1E359811322d97991E03f863a0C30C2cF029C', 'Test Token', 'TTT');
 
     store.commit('updateTokens', tokens);
-    expect(
-      store.getters.token('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
-    ).toEqual({
+    expect(store.getters.token('0xd0A1E359811322d97991E03f863a0C30C2cF029C')).toEqual({
       address: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
       balance: constants.Zero,
       decimals: 18,
@@ -241,17 +231,13 @@ describe('store', () => {
       const mockChannels = TestData.mockChannels;
       store.commit('updateChannels', mockChannels);
       expect(
-        store.getters.channelWithBiggestCapacity(
-          '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
-        )
+        store.getters.channelWithBiggestCapacity('0xd0A1E359811322d97991E03f863a0C30C2cF029C'),
       ).toEqual(TestData.openChannel);
     });
 
     test('return undefined when there are no channels', () => {
       expect(
-        store.getters.channelWithBiggestCapacity(
-          '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
-        )
+        store.getters.channelWithBiggestCapacity('0xd0A1E359811322d97991E03f863a0C30C2cF029C'),
       ).toBeUndefined();
     });
 
@@ -264,16 +250,13 @@ describe('store', () => {
       const mockChannels = {
         '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {
           '0x1D36124C90f53d491b6832F1c073F43E2550E35b': TestData.openChannel,
-          '0x82641569b2062B545431cF6D7F0A418582865ba7':
-            TestData.settlingChannel,
+          '0x82641569b2062B545431cF6D7F0A418582865ba7': TestData.settlingChannel,
           '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103': biggestChannel,
         },
       };
       store.commit('updateChannels', mockChannels);
       expect(
-        store.getters.channelWithBiggestCapacity(
-          '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
-        )
+        store.getters.channelWithBiggestCapacity('0xd0A1E359811322d97991E03f863a0C30C2cF029C'),
       ).toEqual(biggestChannel);
     });
   });
@@ -283,9 +266,7 @@ describe('store', () => {
       '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {},
     };
     store.commit('updateChannels', channels);
-    expect(
-      store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
-    ).toEqual([]);
+    expect(store.getters.channels('0xd0A1E359811322d97991E03f863a0C30C2cF029C')).toEqual([]);
   });
 
   test('the token getter returns an empty array when the token has no channels', () => {

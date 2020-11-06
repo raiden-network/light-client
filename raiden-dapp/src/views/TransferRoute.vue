@@ -2,16 +2,8 @@
   <v-container class="transfer" fluid>
     <no-tokens v-if="noTokens" />
     <template v-else>
-      <transfer-headers
-        class="transfer__menus"
-        :token="token"
-        :capacity="capacity"
-      />
-      <transfer-inputs
-        class="transfer__inputs"
-        :token="token"
-        :capacity="capacity"
-      />
+      <transfer-headers class="transfer__menus" :token="token" :capacity="capacity" />
+      <transfer-inputs class="transfer__inputs" :token="token" :capacity="capacity" />
       <transaction-list class="transfer__list" :token="token" />
       <no-channels-dialog :visible="!openChannels" />
     </template>
@@ -21,18 +13,18 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
+import { BigNumber, constants } from 'ethers';
+import { NotificationPayload } from '../store/notifications/types';
+import { NotificationImportance } from '../store/notifications/notification-importance';
+import { NotificationContext } from '../store/notifications/notification-context';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import NoTokens from '@/components/NoTokens.vue';
 import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
-import { BigNumber, constants } from 'ethers';
-import { Token, TokenModel } from '@/model/types';
-import { NotificationPayload } from '../store/notifications/types';
-import { NotificationImportance } from '../store/notifications/notification-importance';
-import { NotificationContext } from '../store/notifications/notification-context';
 import { RouteNames } from '@/router/route-names';
+import { Token, TokenModel } from '@/model/types';
 
 const ONE_DAY = new Date(0).setUTCHours(24);
 
@@ -52,9 +44,7 @@ const ONE_DAY = new Date(0).setUTCHours(24);
 export default class TransferRoute extends Vue {
   stateBackupReminderDateMs!: number;
   tokens!: TokenModel[];
-  channelWithBiggestCapacity!: (
-    tokenAddress: string
-  ) => RaidenChannel | undefined;
+  channelWithBiggestCapacity!: (tokenAddress: string) => RaidenChannel | undefined;
 
   mounted() {
     const currentTime = new Date().getTime();
@@ -79,10 +69,7 @@ export default class TransferRoute extends Vue {
     } as NotificationPayload;
 
     this.$store.commit('updateStateBackupReminderDate', currentTime);
-    this.$store.commit(
-      'notifications/notificationAddOrReplace',
-      stateBackupReminder
-    );
+    this.$store.commit('notifications/notificationAddOrReplace', stateBackupReminder);
   }
 
   get noTokens(): boolean {
@@ -101,9 +88,7 @@ export default class TransferRoute extends Vue {
 
   get capacity(): BigNumber {
     if (this.token) {
-      const channelWithBiggestCapacity = this.channelWithBiggestCapacity(
-        this.token.address
-      );
+      const channelWithBiggestCapacity = this.channelWithBiggestCapacity(this.token.address);
       return channelWithBiggestCapacity?.capacity ?? constants.Zero;
     } else {
       return constants.Zero;

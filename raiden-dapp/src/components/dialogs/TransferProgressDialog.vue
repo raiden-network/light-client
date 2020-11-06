@@ -1,9 +1,5 @@
 <template>
-  <raiden-dialog
-    :visible="visible"
-    class="transfer-progress-dialog"
-    @close="dismiss"
-  >
+  <raiden-dialog :visible="visible" class="transfer-progress-dialog" @close="dismiss">
     <v-card-title>
       <span v-if="error">
         {{ $t('transfer.error.title') }}
@@ -37,10 +33,7 @@
               class="transfer-progress-dialog--error"
             ></v-img>
           </div>
-          <spinner
-            v-else-if="inProgress"
-            class="transfer-progress-dialog--progress"
-          />
+          <spinner v-else-if="inProgress" class="transfer-progress-dialog--progress" />
         </v-col>
       </v-row>
       <v-row>
@@ -61,9 +54,9 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue, Watch } from 'vue-property-decorator';
-import { RaidenTransferStatus, RaidenTransfer } from 'raiden-ts';
 import { mapGetters, mapState } from 'vuex';
 import { BigNumber } from 'ethers';
+import { RaidenTransferStatus, RaidenTransfer } from 'raiden-ts';
 
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
@@ -109,7 +102,9 @@ export default class TransferProgressDialog extends Vue {
   }
 
   @Emit()
-  dismiss() {}
+  dismiss(): boolean {
+    return true;
+  }
 }
 </script>
 

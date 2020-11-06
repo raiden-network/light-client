@@ -18,7 +18,7 @@ const router = new Router({
 router.beforeEach(
   globalNavigationGuard.bind({
     children: [redirectIfDisclaimerIsNotAccepted, redirectIfNotConnected],
-  })
+  }),
 );
 
 export default router;

@@ -58,7 +58,6 @@ describe('Raiden', () => {
     tokenNetwork: string,
     partner: string,
     network: Network,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pfsInfoResponse: any,
     pfsAddress: string,
     pfsUrl: string;
@@ -84,7 +83,6 @@ describe('Raiden', () => {
 
   async function createRaiden(
     account: number | string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     storage?: { state?: any; storage?: Storage; adapter?: any; prefix?: string },
     subkey?: true,
   ): Promise<Raiden> {

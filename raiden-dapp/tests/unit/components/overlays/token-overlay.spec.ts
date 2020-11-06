@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Vue from 'vue';
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
@@ -13,9 +14,7 @@ Vue.use(Vuex);
 
 const token = generateToken();
 
-function createWrapper(
-  tokenAddressParameter = '0xToken'
-): Wrapper<TokenOverlay> {
+function createWrapper(tokenAddressParameter = '0xToken'): Wrapper<TokenOverlay> {
   const vuetify = new Vuetify();
   const store = new Store({
     getters: {
@@ -74,12 +73,8 @@ describe('TokenOverlay.vue', () => {
 
     tokenListItem.element.click();
 
-    expect(
-      (wrapper.vm as any).navigateToSelectTransferTarget
-    ).toHaveBeenCalledTimes(1);
-    expect(
-      (wrapper.vm as any).navigateToSelectTransferTarget
-    ).toHaveBeenCalledWith(token.address);
+    expect((wrapper.vm as any).navigateToSelectTransferTarget).toHaveBeenCalledTimes(1);
+    expect((wrapper.vm as any).navigateToSelectTransferTarget).toHaveBeenCalledWith(token.address);
   });
 
   test('emit a cancel event when selecting already active token again', () => {

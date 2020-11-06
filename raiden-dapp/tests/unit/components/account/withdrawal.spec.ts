@@ -4,16 +4,17 @@ import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import { $identicon } from '../../utils/mocks';
 import { BigNumber } from 'ethers';
+import { $identicon } from '../../utils/mocks';
 import Withdrawal from '@/components/account/Withdrawal.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import RaidenService from '@/services/raiden-service';
 
 Vue.use(Vuex);
 Vue.use(Vuetify);
 
 let vuetify: Vuetify;
-let $raiden: any;
+let $raiden: Partial<RaidenService>;
 
 const tokenBalance = BigNumber.from('1000000');
 const tokenNoBalance = BigNumber.from('0');
@@ -22,7 +23,7 @@ const raidenNoBalance = '0';
 
 function createWrapper(
   tokenBalance: BigNumber,
-  raidenAccountBalance: string
+  raidenAccountBalance: string,
 ): Wrapper<Withdrawal> {
   $raiden = {
     getTokenBalance: jest.fn().mockResolvedValue(tokenBalance),
@@ -57,8 +58,6 @@ function createWrapper(
   });
 }
 
-beforeEach(() => {});
-
 describe('Withdrawal.vue', () => {
   test('can withdraw tokens', async () => {
     const wrapper = createWrapper(tokenBalance, raidenBalance);
@@ -67,10 +66,7 @@ describe('Withdrawal.vue', () => {
     wrapper.find('.withdrawal__tokens__button').trigger('click');
     await wrapper.vm.$nextTick();
 
-    const confirmButton = wrapper
-      .findComponent(RaidenDialog)
-      .findAll('button')
-      .at(1);
+    const confirmButton = wrapper.findComponent(RaidenDialog).findAll('button').at(1);
     confirmButton.trigger('click');
     await wrapper.vm.$nextTick();
 
@@ -91,10 +87,7 @@ describe('Withdrawal.vue', () => {
     wrapper.find('.withdrawal__tokens__button').trigger('click');
     await wrapper.vm.$nextTick();
 
-    const confirmButton = wrapper
-      .findComponent(RaidenDialog)
-      .findAll('button')
-      .at(1);
+    const confirmButton = wrapper.findComponent(RaidenDialog).findAll('button').at(1);
 
     expect(confirmButton.attributes()['disabled']).toBe('disabled');
   });

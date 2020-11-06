@@ -10,7 +10,7 @@ interface RaidenDB extends DBSchema {
     value: {
       logger: string;
       level: string;
-      message: any[];
+      message: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
       block?: number;
     };
     key: number;
@@ -36,6 +36,7 @@ function serializeError(e: Error): string {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function filterMessage(message: any[]) {
   if (message[0] === '%c prev state') return;
   if (message[0]?.startsWith?.('action %c')) return;
@@ -50,13 +51,13 @@ function filterMessage(message: any[]) {
       ? serializeError(e)
       : e?.payload instanceof Error // error action
       ? { ...e, payload: serializeError(e.payload) }
-      : e
+      : e,
   );
-  if (typeof message[1] === 'string' && message[1].startsWith('color:'))
-    message.splice(1, 1);
+  if (typeof message[1] === 'string' && message[1].startsWith('color:')) message.splice(1, 1);
   return message;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serialize(e: any): string {
   if (typeof e === 'string') return e;
   try {
@@ -87,9 +88,11 @@ async function setDbForLogger(loggerName: string) {
   await setupDb(loggerName);
 }
 
-export async function setupLogStore(
-  additionalLoggers: string[] = ['matrix']
-): Promise<void> {
+/**
+ * @param additionalLoggers - logger names to add as well
+ *
+ */
+export async function setupLogStore(additionalLoggers: string[] = ['matrix']): Promise<void> {
   if (typeof db !== 'undefined') return;
   await setupDb('raiden'); // init database, for startup logs
 
@@ -98,10 +101,12 @@ export async function setupLogStore(
     log.methodFactory = (
       methodName: string,
       level: 0 | 1 | 2 | 3 | 4 | 5,
-      loggerName: string
+      loggerName: string,
     ): logging.LoggingMethod => {
       const rawMethod = origFactory(methodName, level, loggerName);
       setDbForLogger(loggerName);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (...message: any[]): void => {
         rawMethod(...message);
         const filtered = filterMessage(message);
@@ -114,7 +119,7 @@ export async function setupLogStore(
             message: filtered,
             ...(lastBlockNumber ? { block: lastBlockNumber } : {}),
           },
-          Date.now()
+          Date.now(),
         ).catch(() =>
           db.put(
             storeName,
@@ -124,8 +129,8 @@ export async function setupLogStore(
               message: message.map(serialize),
               ...(lastBlockNumber ? { block: lastBlockNumber } : {}),
             },
-            Date.now()
-          )
+            Date.now(),
+          ),
         );
       };
     };
@@ -142,6 +147,9 @@ function redactLogs(text: string): string {
   return text;
 }
 
+/**
+ * @returns tuple of the last transaction time and full content of the log store
+ */
 export async function getLogsFromStore(): Promise<[number, string]> {
   let content = '';
   let cursor = await db.transaction(storeName).store.openCursor();
@@ -149,9 +157,7 @@ export async function getLogsFromStore(): Promise<[number, string]> {
   let first = true;
   while (cursor) {
     const { logger, level, message, block } = cursor.value;
-    const line = message
-      .map((m) => (typeof m === 'string' ? m : JSON.stringify(m)))
-      .join(' ');
+    const line = message.map((m) => (typeof m === 'string' ? m : JSON.stringify(m))).join(' ');
     lastTime = +cursor.key;
     const time = new Date(cursor.key).toISOString();
     const blockStr = block ? ` #${block}` : ''; // don't print block if there's none

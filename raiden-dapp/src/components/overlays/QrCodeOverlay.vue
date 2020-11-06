@@ -3,22 +3,12 @@
     <v-btn icon class="scanner__close-button" @click="cancel">
       <v-icon>mdi-close</v-icon>
     </v-btn>
-    <v-row
-      v-if="showPermissionHint"
-      justify="center"
-      align-content="center"
-      class="fill-height"
-    >
+    <v-row v-if="showPermissionHint" justify="center" align-content="center" class="fill-height">
       <spinner class="scanner__progress" />
       <h2>{{ $t('scan.permission.title') }}</h2>
       <p>{{ $t('scan.permission.description') }}</p>
     </v-row>
-    <v-row
-      v-if="error"
-      justify="center"
-      align-content="center"
-      class="fill-height"
-    >
+    <v-row v-if="error" justify="center" align-content="center" class="fill-height">
       <v-col cols="8">
         <error-message error="" />
       </v-col>
@@ -39,10 +29,10 @@ export default class QrCodeOverlay extends Vue {
   @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
 
-  showPermissionHint: boolean = false;
+  showPermissionHint = false;
   error: Error | null = null;
 
-  async onInit(promise: Promise<any>) {
+  async onInit(promise: Promise<MediaTrackCapabilities>) {
     this.showPermissionHint = true;
 
     try {
@@ -55,10 +45,14 @@ export default class QrCodeOverlay extends Vue {
   }
 
   @Emit()
-  decode() {}
+  decode(): boolean {
+    return true;
+  }
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
 }
 </script>
 

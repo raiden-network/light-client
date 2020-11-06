@@ -1,9 +1,8 @@
-import Settings from '@/views/account/Settings.vue';
-
 jest.mock('vue-router');
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import Settings from '@/views/account/Settings.vue';
 import store from '@/store';
 
 Vue.use(Vuetify);

@@ -2,20 +2,21 @@ import { BigNumber, constants } from 'ethers';
 
 jest.useFakeTimers();
 
-import Filters from '@/filters';
 import { mount, shallowMount, Wrapper } from '@vue/test-utils';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import { TestData } from '../data/mock-data';
-import SelectHubRoute from '@/views/SelectHubRoute.vue';
 import VueRouter, { Route } from 'vue-router';
+import Vue from 'vue';
+import flushPromises from 'flush-promises';
+import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
+import { $identicon } from '../utils/mocks';
+import SelectHubRoute from '@/views/SelectHubRoute.vue';
 import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';
-import Vue from 'vue';
+import RaidenService from '@/services/raiden-service';
 import store from '@/store';
-import { $identicon } from '../utils/mocks';
-import flushPromises from 'flush-promises';
+import Filters from '@/filters';
 import { Token } from '@/model/types';
 import { Tokens } from '@/types';
 
@@ -33,11 +34,7 @@ describe('SelectHubRoute.vue', () => {
       address: address,
     });
 
-  function createWrapper(
-    route: Route,
-    raidenMocks: any = {},
-    shallow: boolean = false
-  ) {
+  function createWrapper(route: Route, raidenMocks: Partial<RaidenService> = {}, shallow = false) {
     vuetify = new Vuetify();
     const options = {
       vuetify,
@@ -73,10 +70,7 @@ describe('SelectHubRoute.vue', () => {
     store.commit('updatePresence', {
       ['0x1D36124C90f53d491b6832F1c073F43E2550E35b']: true,
     });
-    store.commit(
-      'userDepositTokenAddress',
-      '0x3a989D97388a39A0B5796306C615d10B7416bE77'
-    );
+    store.commit('userDepositTokenAddress', '0x3a989D97388a39A0B5796306C615d10B7416bE77');
     store.commit('updateTokens', {
       '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
         address: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
@@ -108,7 +102,7 @@ describe('SelectHubRoute.vue', () => {
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
-      expect.objectContaining({ name: RouteNames.OPEN_CHANNEL })
+      expect.objectContaining({ name: RouteNames.OPEN_CHANNEL }),
     );
   });
 
@@ -126,11 +120,11 @@ describe('SelectHubRoute.vue', () => {
     await flushPromises();
 
     expect(wrapper.find('.udc-balance__description').text()).toContain(
-      'select-hub.service-token-balance-too-low'
+      'select-hub.service-token-balance-too-low',
     );
-    expect(
-      wrapper.find('.action-button__button').element.getAttribute('disabled')
-    ).toBe('disabled');
+    expect(wrapper.find('.action-button__button').element.getAttribute('disabled')).toBe(
+      'disabled',
+    );
   });
 
   test('navigate to "Home" when the token address is not in checksum format', async () => {
@@ -144,7 +138,7 @@ describe('SelectHubRoute.vue', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.HOME,
-      })
+      }),
     );
   });
 
@@ -162,7 +156,7 @@ describe('SelectHubRoute.vue', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.HOME,
-      })
+      }),
     );
   });
 

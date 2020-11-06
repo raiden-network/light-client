@@ -99,6 +99,10 @@ async function doTransfer(this: Cli, request: Request, response: Response, next:
   }
 }
 
+/**
+ * @param this - Cli object
+ * @returns Router instance
+ */
 export function makePaymentsRouter(this: Cli): Router {
   const router = Router();
 

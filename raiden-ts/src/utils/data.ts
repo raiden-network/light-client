@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Zero, One, Two } from '@ethersproject/constants';
 import { BigNumber } from '@ethersproject/bignumber';
 import { toUtf8Bytes } from '@ethersproject/strings';

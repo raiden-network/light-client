@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
 
 import flushPromises from 'flush-promises';
-import RaidenService from '@/services/raiden-service';
-import store from '@/store';
 import { constants, utils } from 'ethers';
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { $identicon } from '../../utils/mocks';
+import store from '@/store';
+import RaidenService from '@/services/raiden-service';
 import Mocked = jest.Mocked;
 import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
 

@@ -48,10 +48,7 @@ import TokenList from '@/components/tokens/TokenList.vue';
   components: { TokenList },
   computed: { ...mapGetters(['tokens']) },
 })
-export default class TokenOverlay extends Mixins(
-  BlockieMixin,
-  NavigationMixin
-) {
+export default class TokenOverlay extends Mixins(BlockieMixin, NavigationMixin) {
   tokens!: TokenModel[];
 
   handleTokenClick(selectToken: Token): void {
@@ -65,7 +62,9 @@ export default class TokenOverlay extends Mixins(
   }
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
 }
 </script>
 
@@ -74,11 +73,7 @@ export default class TokenOverlay extends Mixins(
   ::v-deep {
     .v-overlay {
       &__scrim {
-        background: linear-gradient(
-          180deg,
-          #050505 0%,
-          #0a1923 100%
-        ) !important;
+        background: linear-gradient(180deg, #050505 0%, #0a1923 100%) !important;
       }
 
       &__content {

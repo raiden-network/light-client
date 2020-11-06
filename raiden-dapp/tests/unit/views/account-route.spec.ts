@@ -1,12 +1,12 @@
-import AccountRoute from '@/views/AccountRoute.vue';
-
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
-import { mount, Wrapper } from '@vue/test-utils';
-import { TestData } from '../data/mock-data';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
+import { mount, Wrapper } from '@vue/test-utils';
+
+import { TestData } from '../data/mock-data';
+import AccountRoute from '@/views/AccountRoute.vue';
+import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 

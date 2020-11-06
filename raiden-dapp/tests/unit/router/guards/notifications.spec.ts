@@ -1,7 +1,7 @@
 import { NavigationGuardNext, Route } from 'vue-router';
+import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 import { RouteNames } from '@/router/route-names';
 import { beforeRouteToNotifications } from '@/router/guards/notifications';
-import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 
 const {
   [RouteNames.NOTIFICATIONS]: notificationsRoute,
@@ -12,11 +12,7 @@ const next: NavigationGuardNext = jest.fn();
 
 describe('beforeRouteToNotifications', () => {
   test('redirect to home route when accessing notifications route directly', () => {
-    beforeRouteToNotifications(
-      notificationsRoute,
-      { name: null } as Route,
-      next
-    );
+    beforeRouteToNotifications(notificationsRoute, { name: null } as Route, next);
     expect(next).toHaveBeenCalledWith({ name: RouteNames.HOME });
   });
 

@@ -29,18 +29,11 @@
           tag="div"
           class="home__getting-started text-center font-weight-light"
         >
-          <a
-            href="https://github.com/raiden-network/light-client#getting-started"
-            target="_blank"
-          >
+          <a href="https://github.com/raiden-network/light-client#getting-started" target="_blank">
             {{ $t('home.getting-started.link-name') }}
           </a>
         </i18n>
-        <no-access-message
-          v-if="accessDenied"
-          :reason="accessDenied"
-          class="home__no-access"
-        />
+        <no-access-message v-if="accessDenied" :reason="accessDenied" class="home__no-access" />
       </v-col>
     </v-row>
     <action-button
@@ -89,13 +82,13 @@ import { ConfigProvider } from '@/services/config-provider';
 export default class Home extends Vue {
   isConnected!: boolean;
   tokens!: TokenModel[];
-  connectDialog: boolean = false;
-  connecting: boolean = false;
+  connectDialog = false;
+  connecting = false;
   loading!: boolean;
   accessDenied!: DeniedReason;
   stateBackup!: string;
   settings!: Settings;
-  hasProvider: boolean = false;
+  hasProvider = false;
 
   async created() {
     if (Web3Provider.injectedWeb3Available()) {
@@ -132,10 +125,7 @@ export default class Home extends Vue {
     // Have to reset this explicitly, for some reason
     this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
 
-    await this.$raiden.connect(
-      stateBackup,
-      useRaidenAccount ? true : undefined
-    );
+    await this.$raiden.connect(stateBackup, useRaidenAccount ? true : undefined);
     this.connecting = false;
     if (!this.accessDenied) {
       this.connectDialog = false;

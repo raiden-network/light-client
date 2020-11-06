@@ -23,7 +23,7 @@ declare module 'ganache-cli' {
     locked?: boolean;
     unlocked_accounts?: string[];
     db_path?: string;
-    db?: any; // eslint-disable-line
+    db?: any;
     ws?: boolean;
     account_keys_path?: string;
     vmErrorsOnRPCResponse?: boolean;

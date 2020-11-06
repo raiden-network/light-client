@@ -57,15 +57,16 @@
 
 <script lang="ts">
 import { Component, Prop, Watch, Mixins } from 'vue-property-decorator';
-import NavigationMixin from '../../mixins/navigation-mixin';
 import { mapState, mapGetters } from 'vuex';
+import { BigNumber, constants } from 'ethers';
+import { VForm } from 'vuetify/lib';
+import NavigationMixin from '../../mixins/navigation-mixin';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import { getAmount, getAddress } from '@/utils/query-params';
 import AddressUtils from '@/utils/address-utils';
 import { RaidenChannel, ChannelState } from 'raiden-ts';
-import { BigNumber, constants } from 'ethers';
 import { Token } from '@/model/types';
 
 @Component({
@@ -80,12 +81,12 @@ import { Token } from '@/model/types';
   },
 })
 export default class TransferInputs extends Mixins(NavigationMixin) {
-  valid: boolean = false;
-  amount: string = '';
-  target: string = '';
+  valid = false;
+  amount = '';
+  target = '';
   defaultAccount!: string;
-  addressError: string = '';
-  amountError: string = '';
+  addressError = '';
+  amountError = '';
 
   channels!: (tokenAddress: string) => RaidenChannel[];
 
@@ -94,9 +95,13 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
   @Prop({ required: true })
   capacity!: BigNumber;
 
+  $refs!: {
+    transfer: VForm;
+  };
+
   @Watch('$route', { immediate: true, deep: true })
   onRouteChange() {
-    (this.$refs?.transfer as any)?.reset();
+    this.$refs.transfer?.reset();
   }
 
   async created() {

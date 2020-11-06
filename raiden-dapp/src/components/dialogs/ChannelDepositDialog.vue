@@ -27,10 +27,7 @@
       </v-row>
       <v-row v-else-if="done" align="center" justify="center">
         <v-col cols="6">
-          <v-img
-            class="channel-deposit__done"
-            :src="require('@/assets/done.svg')"
-          ></v-img>
+          <v-img class="channel-deposit__done" :src="require('@/assets/done.svg')"></v-img>
         </v-col>
       </v-row>
       <v-row v-else align="center" justify="center">
@@ -44,10 +41,7 @@
               :max="token.balance"
               limit
             />
-            <div
-              data-cy="channel_deposit_button"
-              class="channel-deposit__button"
-            >
+            <div data-cy="channel_deposit_button" class="channel-deposit__button">
               <action-button
                 :id="`confirm-${identifier}`"
                 :enabled="valid"
@@ -102,8 +96,8 @@ export default class ChannelDepositDialog extends Vue {
   @Prop({ required: false, default: false })
   done?: boolean;
 
-  deposit: string = '';
-  valid: boolean = false;
+  deposit = '';
+  valid = false;
 
   @Watch('visible')
   onVisibilityChanged(visible: boolean) {
@@ -122,7 +116,9 @@ export default class ChannelDepositDialog extends Vue {
   }
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
 
   depositTokens() {
     const deposit = BalanceUtils.parse(this.deposit, this.token.decimals!);

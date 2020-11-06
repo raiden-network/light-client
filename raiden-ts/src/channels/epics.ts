@@ -692,18 +692,15 @@ function makeDeposit$(
   deposit: UInt<32>,
   channelId$: Observable<number>,
   { log, provider, config$ }: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$'>,
-): Observable<channelDeposit.failure> {
+) {
   // retryTx from here
-  return retryAsync$(
-    () =>
-      Promise.all([
-        tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
-        tokenContract.callStatic.allowance(sender, tokenNetworkContract.address) as Promise<
-          UInt<32>
-        >,
-      ]),
-    provider.pollingInterval,
-    networkErrorRetryPredicate,
+  return defer(() =>
+    Promise.all([
+      tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
+      tokenContract.callStatic.allowance(sender, tokenNetworkContract.address) as Promise<
+        UInt<32>
+      >,
+    ]),
   ).pipe(
     withLatestFrom(config$),
     mergeMap(([[balance, allowance], { minimumAllowance }]) =>
@@ -718,22 +715,15 @@ function makeDeposit$(
     ),
     mergeMapTo(channelId$),
     take(1),
-    mergeMap((id) =>
-      // get current 'view' of own/'address' deposit, despite any other pending deposits
-      retryAsync$(
-        () =>
-          tokenNetworkContract.callStatic
-            .getChannelParticipantInfo(id, address, partner)
-            .then(({ 0: totalDeposit }) => [id, totalDeposit] as const),
-        provider.pollingInterval,
-        networkErrorRetryPredicate,
-      ),
+    // get current 'view' of own/'address' deposit, despite any other pending deposits
+    mergeMap(async (id) =>
+      tokenNetworkContract.callStatic
+        .getChannelParticipantInfo(id, address, partner)
+        .then(({ 0: totalDeposit }) => [id, totalDeposit] as const),
     ),
-    mergeMap(([id, totalDeposit]) =>
-      // send setTotalDeposit transaction
-      defer(() =>
-        tokenNetworkContract.setTotalDeposit(id, address, totalDeposit.add(deposit), partner),
-      ),
+    // send setTotalDeposit transaction
+    mergeMap(async ([id, totalDeposit]) =>
+      tokenNetworkContract.setTotalDeposit(id, address, totalDeposit.add(deposit), partner),
     ),
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
@@ -744,8 +734,6 @@ function makeDeposit$(
       txNonceErrors.concat(txFailErrors),
       { log },
     ),
-    // ignore success so it's picked by channelEventsEpic
-    ignoreElements(),
   );
 }
 
@@ -852,6 +840,8 @@ export function channelDepositEpic(
                     { log, provider, config$ },
                   ),
                 ),
+                // ignore success tx so it's picked by channelEventsEpic
+                ignoreElements(),
               );
             }),
             catchError((error) => of(channelDeposit.failure(error, action.meta))),

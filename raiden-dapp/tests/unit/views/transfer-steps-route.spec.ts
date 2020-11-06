@@ -4,21 +4,21 @@ import { mount } from '@vue/test-utils';
 import { BigNumber, constants } from 'ethers';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
-import { RaidenPaths, RaidenPFS } from 'raiden-ts';
-import flushPromises from 'flush-promises';
-import Mocked = jest.Mocked;
 import VueRouter from 'vue-router';
+import flushPromises from 'flush-promises';
+import { $t } from '../utils/mocks';
+import { RaidenPaths, RaidenPFS } from 'raiden-ts';
+import Mocked = jest.Mocked;
 
-import TransferStepsRoute from '@/views/TransferStepsRoute.vue';
+import TransferSteps from '@/views/TransferStepsRoute.vue';
 import { Route, Token } from '@/model/types';
 import store from '@/store';
 import { Tokens } from '@/types';
-
 import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuetify);
 
-describe('TransferStepsRoute.vue', () => {
+describe('TransferSteps.vue', () => {
   let vuetify: Vuetify;
   let processingTransfer: jest.SpyInstance;
   let transferDone: jest.SpyInstance;
@@ -49,9 +49,7 @@ describe('TransferStepsRoute.vue', () => {
     transfer: jest.fn(),
     fetchTokenData: jest.fn().mockResolvedValue(undefined),
     fetchServices: jest.fn().mockResolvedValue([raidenPFS]),
-    getUDCCapacity: jest
-      .fn()
-      .mockResolvedValue(BigNumber.from('1000000000000000000')),
+    getUDCCapacity: jest.fn().mockResolvedValue(BigNumber.from('1000000000000000000')),
     userDepositTokenAddress: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
     directRoute: jest.fn().mockResolvedValue(undefined),
     findRoutes: jest.fn().mockResolvedValue([
@@ -64,9 +62,17 @@ describe('TransferStepsRoute.vue', () => {
     getAccount: jest.fn(),
   };
 
-  function createWrapper(data: any) {
+  function createWrapper(
+    data: {
+      step?: number;
+      selectedPfs?: RaidenPFS;
+      routes?: Route[];
+      selectedRoute?: Route;
+      processingTransfer?: boolean;
+    } = {},
+  ) {
     vuetify = new Vuetify();
-    return mount(TransferStepsRoute, {
+    return mount(TransferSteps, {
       store,
       vuetify,
       stubs: ['v-dialog'],
@@ -82,8 +88,7 @@ describe('TransferStepsRoute.vue', () => {
             identifier: '123456789123456789123',
           },
         },
-        $t: (msg: string, args: object) =>
-          `${msg} args: ${JSON.stringify(args)}`,
+        $t,
         $raiden,
       },
       data: function () {
@@ -95,10 +100,7 @@ describe('TransferStepsRoute.vue', () => {
   }
 
   beforeAll(() => {
-    store.commit(
-      'userDepositTokenAddress',
-      '0x3a989D97388a39A0B5796306C615d10B7416bE77'
-    );
+    store.commit('userDepositTokenAddress', '0x3a989D97388a39A0B5796306C615d10B7416bE77');
     store.commit('updateTokens', {
       '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
         address: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
@@ -178,11 +180,7 @@ describe('TransferStepsRoute.vue', () => {
       processingTransfer: false,
     });
 
-    processingTransfer = jest.spyOn(
-      wrapper.vm.$data,
-      'processingTransfer',
-      'set'
-    );
+    processingTransfer = jest.spyOn(wrapper.vm.$data, 'processingTransfer', 'set');
     transferDone = jest.spyOn(wrapper.vm.$data, 'transferDone', 'set');
 
     // Confirmation btn is enabled
@@ -207,7 +205,7 @@ describe('TransferStepsRoute.vue', () => {
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.TRANSFER,
-      })
+      }),
     );
   });
 
@@ -218,15 +216,11 @@ describe('TransferStepsRoute.vue', () => {
       step: 3,
       selectedPfs: raidenPFS,
       selectedRoute: route,
-      route: [route],
+      routes: [route],
       processingTransfer: false,
     });
 
-    processingTransfer = jest.spyOn(
-      wrapper.vm.$data,
-      'processingTransfer',
-      'set'
-    );
+    processingTransfer = jest.spyOn(wrapper.vm.$data, 'processingTransfer', 'set');
     transferDone = jest.spyOn(wrapper.vm.$data, 'transferDone', 'set');
 
     // Confirmation btn is enabled
@@ -283,11 +277,8 @@ describe('TransferStepsRoute.vue', () => {
       processingTransfer: false,
     });
 
-    // @ts-ignore
-    wrapper.vm.setPFS([
-      { ...raidenPFS, price: constants.Zero } as RaidenPFS,
-      true,
-    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (wrapper.vm as any).setPFS([{ ...raidenPFS, price: constants.Zero } as RaidenPFS, true]);
     await flushPromises();
     jest.advanceTimersByTime(2000);
     expect(wrapper.vm.$data.step).toBe(3);

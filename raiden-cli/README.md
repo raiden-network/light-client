@@ -29,7 +29,7 @@ It requires the latest [Node.js LTS (14.x - Fermium)](https://github.com/nodejs/
 
 ### Build the SDK
 ```sh
-pnpm install  # install/update SDK's dependencies, if needed; it'll also build the SDK
+yarn install  # install/update SDK's dependencies, if needed; it'll also build the SDK
 ```
 
 The SDK transpilation can be quite heavy on memory. If you are building on low-end devices and get out-of-memory errors on the build step, try increasing memory or swap size. Optionally, you can build the SDK on a more capable machine (even of different architecture) and copy/rsync `dist` and `dist:cjs` output folders to `../raiden-ts`.
@@ -37,8 +37,8 @@ The SDK transpilation can be quite heavy on memory. If you are building on low-e
 
 ### Build the CLI
 ```sh
-pnpm run build --filter raiden-cli # build the dependent output
-pnpm run build:bundle --filter raiden-cli # build the bundled output
+yarn workspace raiden-cli build # build the dependent output
+yarn workspace raiden-cli build:bundle # build the bundled output
 ```
 
 The `build` script will output `./build/index.js`, which requires dependencies in place in `../raiden-ts/node_modules`, `../raiden-ts/dist*/` and `./node_modules/` folders.

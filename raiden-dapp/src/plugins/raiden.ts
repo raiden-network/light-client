@@ -2,7 +2,11 @@ import _Vue from 'vue';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store/index';
 
-export function RaidenPlugin(Vue: typeof _Vue, _options?: any): void {
+/**
+ * @param Vue - global Vue instance to act on
+ * @param _options - eventual configuration for the plugin (ignored)
+ */
+export function RaidenPlugin(Vue: typeof _Vue, _options?: null): void {
   Vue.prototype.$raiden = new RaidenService(store);
 }
 

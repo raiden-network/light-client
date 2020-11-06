@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { mount, Wrapper } from '@vue/test-utils';
-import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
 import { BigNumber, constants } from 'ethers';
+import flushPromises from 'flush-promises';
 import { Token } from '@/model/types';
 import store from '@/store';
-import flushPromises from 'flush-promises';
+import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 
 Vue.use(Vuetify);
 
@@ -48,10 +49,7 @@ describe('UdcDepositDialog.vue', () => {
 
   describe('depositing on testnet', () => {
     beforeEach(() => {
-      store.commit(
-        'userDepositTokenAddress',
-        '0x3a989D97388a39A0B5796306C615d10B7416bE77'
-      );
+      store.commit('userDepositTokenAddress', '0x3a989D97388a39A0B5796306C615d10B7416bE77');
       store.commit('updateTokens', {
         '0x3a989D97388a39A0B5796306C615d10B7416bE77': token,
       });
@@ -100,10 +98,7 @@ describe('UdcDepositDialog.vue', () => {
 
   describe('depositing on mainnet', () => {
     beforeEach(() => {
-      store.commit(
-        'userDepositTokenAddress',
-        '0x3a989D97388a39A0B5796306C615d10B7416bE77'
-      );
+      store.commit('userDepositTokenAddress', '0x3a989D97388a39A0B5796306C615d10B7416bE77');
       store.commit('updateTokens', {
         '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
           ...token,
@@ -121,9 +116,7 @@ describe('UdcDepositDialog.vue', () => {
     });
 
     test('displays uniswap URL', () => {
-      expect(wrapper.vm.$data.uniswapURL).toBe(
-        'udc-deposit-dialog.uniswap-url'
-      );
+      expect(wrapper.vm.$data.uniswapURL).toBe('udc-deposit-dialog.uniswap-url');
     });
 
     test('amount validates to true if inputted amount is lower or equal to available amount', async () => {

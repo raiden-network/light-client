@@ -32,18 +32,10 @@
             mdi-upload
           </v-icon>
         </v-row>
-        <v-row
-          class="upload-state__dropzone__description"
-          justify="center"
-          no-gutters
-        >
+        <v-row class="upload-state__dropzone__description" justify="center" no-gutters>
           {{ $t('backup-state.upload-drag-and-drop') }}
         </v-row>
-        <v-row
-          class="upload-state__dropzone__description"
-          justify="center"
-          no-gutters
-        >
+        <v-row class="upload-state__dropzone__description" justify="center" no-gutters>
           {{ $t('backup-state.upload-divider') }}
         </v-row>
         <v-row class="upload-state__dropzone__button">
@@ -62,12 +54,12 @@
 
 <script lang="ts">
 import { Component, Prop, Emit, Mixins } from 'vue-property-decorator';
-import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import { mapState } from 'vuex';
+import NavigationMixin from '../../../mixins/navigation-mixin';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import { Settings } from '@/types';
-import NavigationMixin from '../../../mixins/navigation-mixin';
 
 @Component({
   components: {
@@ -80,17 +72,19 @@ import NavigationMixin from '../../../mixins/navigation-mixin';
   },
 })
 export default class UploadStateDialog extends Mixins(NavigationMixin) {
-  dragCount: number = 0;
-  activeDropzone: boolean = false;
-  dropzoneErrorMessage: boolean = false;
-  uploadingStateProgress: boolean = false;
+  dragCount = 0;
+  activeDropzone = false;
+  dropzoneErrorMessage = false;
+  uploadingStateProgress = false;
   settings!: Settings;
 
   @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
 
   onDropzoneEnter(e: DragEvent) {
     e.preventDefault();
@@ -171,10 +165,7 @@ export default class UploadStateDialog extends Mixins(NavigationMixin) {
     let { useRaidenAccount } = this.settings;
 
     /* istanbul ignore next */
-    await this.$raiden.connect(
-      retrievedState,
-      useRaidenAccount ? true : undefined
-    );
+    await this.$raiden.connect(retrievedState, useRaidenAccount ? true : undefined);
 
     this.navigateToHome();
   }

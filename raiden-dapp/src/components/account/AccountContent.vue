@@ -33,11 +33,7 @@
           </span>
         </v-col>
       </v-row>
-      <v-row
-        v-if="usingRaidenAccount"
-        class="account-content__account-details__eth"
-        no-gutters
-      >
+      <v-row v-if="usingRaidenAccount" class="account-content__account-details__eth" no-gutters>
         <v-col cols="2">
           <span class="account-content__account-details__eth__account">
             {{ $t('account-content.account.raiden') }}
@@ -88,22 +84,24 @@ import { getLogsFromStore } from '@/utils/logstore';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 
+interface MenuItem {
+  icon: string;
+  title: string;
+  subtitle: string;
+  route: () => void;
+}
+
 @Component({
   components: {
     AddressDisplay,
   },
   computed: {
-    ...mapState([
-      'loading',
-      'defaultAccount',
-      'accountBalance',
-      'raidenAccountBalance',
-    ]),
+    ...mapState(['loading', 'defaultAccount', 'accountBalance', 'raidenAccountBalance']),
     ...mapGetters(['isConnected', 'usingRaidenAccount']),
   },
 })
 export default class AccountContent extends Mixins(NavigationMixin) {
-  menuItems: {}[] = [];
+  menuItems: MenuItem[] = [];
   loading!: boolean;
   defaultAccount!: string;
   accountBalance!: string;
@@ -191,9 +189,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       this.menuItems.unshift({
         icon: 'gear.svg',
         title: this.$t('account-content.menu-items.settings.title') as string,
-        subtitle: this.$t(
-          'account-content.menu-items.settings.subtitle'
-        ) as string,
+        subtitle: this.$t('account-content.menu-items.settings.subtitle') as string,
         route: () => {
           this.navigateToSettings();
         },

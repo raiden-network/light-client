@@ -1,9 +1,9 @@
 import { mount } from '@vue/test-utils';
-import FindRoutes from '@/components/transfer/FindRoutes.vue';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
-import { RaidenPaths } from 'raiden-ts';
 import { BigNumber, constants } from 'ethers';
+import { RaidenPaths } from 'raiden-ts';
+import FindRoutes from '@/components/transfer/FindRoutes.vue';
 import { Token } from '@/model/types';
 import Filters from '@/filters';
 
@@ -52,9 +52,7 @@ describe('FindRoutes.vue', () => {
     await wrapper.vm.$nextTick();
     expect(wrapper.find('.find-routes__table').element).toBeVisible();
 
-    wrapper
-      .findAll('.find-routes__table .v-data-table__checkbox')
-      .trigger('click');
+    wrapper.findAll('.find-routes__table .v-data-table__checkbox').trigger('click');
     await wrapper.vm.$nextTick();
 
     const selectEvent = wrapper.emitted('select');

@@ -1,11 +1,6 @@
 <template>
   <div class="pathfinding-services fill-height">
-    <v-row
-      no-gutters
-      class="pathfinding-services__wrapper"
-      align="center"
-      justify="center"
-    >
+    <v-row no-gutters class="pathfinding-services__wrapper" align="center" justify="center">
       <v-col cols="12">
         <v-row v-if="loading">
           <spinner />
@@ -50,11 +45,7 @@
           </template>
 
           <template #[`item.price`]="{ item }">
-            <amount-display
-              exact-amount
-              :amount="item.price"
-              :token="token(item.tokem)"
-            />
+            <amount-display exact-amount :amount="item.price" :token="token(item.tokem)" />
           </template>
         </v-data-table>
       </v-col>
@@ -77,7 +68,7 @@ export default class PathfindingServices extends Vue {
   headers: { text: string; align: string; value: string }[] = [];
 
   error: Error | RaidenError | null = null;
-  loading: boolean = false;
+  loading = false;
 
   selected: RaidenPFS[] = [];
   services: RaidenPFS[] = [];
@@ -101,13 +92,7 @@ export default class PathfindingServices extends Vue {
   }
 
   @Emit()
-  select({
-    item,
-    value,
-  }: {
-    item: RaidenPFS;
-    value: boolean;
-  }): [RaidenPFS, boolean] | null {
+  select({ item, value }: { item: RaidenPFS; value: boolean }): [RaidenPFS, boolean] | null {
     // A PFS service got selected
     if (value) {
       return [item, this.services.length === 1];

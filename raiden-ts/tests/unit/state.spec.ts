@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { promises as fs } from 'fs';
 import path from 'path';
+import logging from 'loglevel';
 
 import { RaidenState } from 'raiden-ts/state';
 import { TransferState } from 'raiden-ts/transfers/state';
@@ -40,7 +41,7 @@ test('migrate, decode & dump', async () => {
     if (!file.toLowerCase().endsWith('json')) continue;
 
     const dbName = `raiden_${file}`;
-    console.info('migrating', file);
+    logging.info('migrating', file);
     let dump: any = await fs.readFile(path.join(dir, file), { encoding: 'utf-8' });
 
     if (typeof dump === 'string') dump = jsonParse(dump);

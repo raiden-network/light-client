@@ -1,11 +1,11 @@
 import Vue from 'vue';
 import { BigNumber } from 'ethers';
-import { BalanceUtils } from '@/utils/balance-utils';
 import split from 'lodash/split';
 import capitalize from 'lodash/capitalize';
+import { BalanceUtils } from '@/utils/balance-utils';
 
 export default class Filters {
-  static truncate(value?: string, width: number = 12) {
+  static truncate(value?: string, width = 12) {
     if (!value) {
       return '';
     }
@@ -14,15 +14,11 @@ export default class Filters {
       return value;
     } else {
       const substWidth = Math.floor(width / 2);
-      return (
-        value.substr(0, substWidth) +
-        separator +
-        value.substr(value.length - substWidth)
-      );
+      return value.substr(0, substWidth) + separator + value.substr(value.length - substWidth);
     }
   }
 
-  static decimals(value: string, decimals: number = 3) {
+  static decimals(value: string, decimals = 3) {
     return parseFloat(value).toFixed(decimals);
   }
 
@@ -64,9 +60,9 @@ export default class Filters {
     BalanceUtils.toUnits(wei, decimals ?? 18);
 
   static formatDate = (value: Date): string => {
-    return `${new Intl.DateTimeFormat('en-US').format(
-      value
-    )} ${value.toLocaleTimeString('en-US')}`;
+    return `${new Intl.DateTimeFormat('en-US').format(value)} ${value.toLocaleTimeString(
+      'en-US',
+    )}`;
   };
 }
 

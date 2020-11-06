@@ -19,7 +19,7 @@ function createWrapper(
   properties: {
     header?: string;
     tokens?: Token[];
-  } = {}
+  } = {},
 ): Wrapper<TokenList> {
   const vuetify = new Vuetify();
   const propsData = { tokens: [], ...properties };

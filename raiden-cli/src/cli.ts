@@ -3,6 +3,15 @@ import { Logger, getLogger } from 'loglevel';
 import { makeApp } from './app';
 import { Cli } from './types';
 
+/**
+ * Populate a Cli with app and server properties
+ *
+ * @param raiden - Raiden SDK instance
+ * @param endpoint - tuple of [host, port] for endpoint to listen on (if any)
+ * @param log - Logger instance
+ * @param corsOrigin - Accept cors requests from this origin
+ * @returns Cli instance
+ */
 export function makeCli(
   raiden: Raiden,
   endpoint?: readonly [string, number],

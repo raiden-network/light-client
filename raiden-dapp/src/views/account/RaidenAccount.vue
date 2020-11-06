@@ -1,11 +1,6 @@
 <template>
   <div justify="center" data-cy="raiden_account" class="raiden-account">
-    <v-form
-      v-if="!loading && !error"
-      ref="form"
-      v-model="valid"
-      @submit.prevent="transfer"
-    >
+    <v-form v-if="!loading && !error" ref="form" v-model="valid" @submit.prevent="transfer">
       <v-row class="raiden-account__title" no-gutters justify="center">
         <span v-if="isFromMainToRaidenAccount">
           {{ $t('raiden-account.transfer-from-main-account') }}
@@ -17,10 +12,7 @@
       <v-row no-gutters justify="center">
         <v-col cols="3" class="raiden-account__column">
           <div class="raiden-account__column__card">
-            <span
-              v-if="isFromMainToRaidenAccount"
-              class="raiden-account__column__card__title"
-            >
+            <span v-if="isFromMainToRaidenAccount" class="raiden-account__column__card__title">
               {{ $t('general.main-account') }}
             </span>
             <span v-else class="raiden-account__column__card__title">
@@ -52,10 +44,7 @@
         </v-col>
         <v-col cols="3" class="raiden-account__column">
           <div class="raiden-account__column__card">
-            <span
-              v-if="isFromMainToRaidenAccount"
-              class="raiden-account__column__card__title"
-            >
+            <span v-if="isFromMainToRaidenAccount" class="raiden-account__column__card__title">
               {{ $t('general.raiden-account') }}
             </span>
             <span v-else class="raiden-account__column__card__title">
@@ -67,12 +56,7 @@
                 class="raiden-account__column__card__image__raiden-logo"
                 :src="require('../../assets/logo.svg')"
               />
-              <v-img
-                v-else
-                :src="require('../../assets/eth.svg')"
-                width="30px"
-                height="53px"
-              />
+              <v-img v-else :src="require('../../assets/eth.svg')" width="30px" height="53px" />
             </div>
           </div>
         </v-col>
@@ -86,20 +70,11 @@
           :max="maximumAmount"
           limit
         />
-        <v-btn
-          icon
-          large
-          class="raiden-account__amount-input__toggle"
-          @click="toggleDirection"
-        >
+        <v-btn icon large class="raiden-account__amount-input__toggle" @click="toggleDirection">
           <v-icon large color="primary">mdi-autorenew</v-icon>
         </v-btn>
       </v-row>
-      <v-row
-        no-gutters
-        justify="center"
-        class="raiden-account__transfer-button"
-      >
+      <v-row no-gutters justify="center" class="raiden-account__transfer-button">
         <action-button
           data-cy="raiden_account_transfer_button_button"
           class="raiden-account__transfer-button__button"
@@ -169,14 +144,16 @@ export default class RaidenAccount extends Vue {
     balance: 0,
   };
 
+  $refs!: {
+    form: HTMLFormElement;
+  };
+
   mounted() {
     this.amount = this.currentAccountBalance();
   }
 
   currentAccountBalance() {
-    return this.isFromMainToRaidenAccount
-      ? this.accountBalance
-      : this.raidenAccountBalance;
+    return this.isFromMainToRaidenAccount ? this.accountBalance : this.raidenAccountBalance;
   }
 
   get maximumAmount(): BigNumber {
@@ -184,7 +161,6 @@ export default class RaidenAccount extends Vue {
   }
 
   toggleDirection() {
-    // @ts-ignore
     this.$refs.form.reset();
     this.isFromMainToRaidenAccount = !this.isFromMainToRaidenAccount;
     this.amount = this.currentAccountBalance();
@@ -250,8 +226,8 @@ export default class RaidenAccount extends Vue {
         width: 30px;
 
         &__raiden-logo {
-          filter: invert(77%) sepia(19%) saturate(6534%) hue-rotate(157deg)
-            brightness(81%) contrast(91%);
+          filter: invert(77%) sepia(19%) saturate(6534%) hue-rotate(157deg) brightness(81%)
+            contrast(91%);
         }
       }
 

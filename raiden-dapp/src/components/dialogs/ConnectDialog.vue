@@ -1,10 +1,5 @@
 <template>
-  <raiden-dialog
-    class="connect"
-    :visible="visible"
-    :hide-close="hideClose"
-    @close="close"
-  >
+  <raiden-dialog class="connect" :visible="visible" :hide-close="hideClose" @close="close">
     <v-card-title>
       {{ $t('home.connect-dialog.title') }}
     </v-card-title>
@@ -50,7 +45,7 @@ import NoAccessMessage from '@/components/NoAccessMessage.vue';
   computed: mapState(['accessDenied']),
 })
 export default class ConnectDialog extends Vue {
-  hideClose: boolean = false;
+  hideClose = false;
   accessDenied!: DeniedReason;
 
   @Prop({ required: true, type: Boolean, default: false })
@@ -61,7 +56,9 @@ export default class ConnectDialog extends Vue {
   hasProvider!: boolean;
 
   @Emit()
-  close() {}
+  close(): boolean {
+    return true;
+  }
 
   @Emit()
   connect() {

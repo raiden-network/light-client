@@ -43,7 +43,7 @@ source /opt/raiden/bin/activate
 python -m raiden_contracts.deploy verify --rpc-provider http://localhost:8545 --contracts-version ${CONTRACTS_VERSION}
 
 PFS_RETRIES=0
-until $(curl --output /dev/null --silent --get --fail http://localhost:6000/api/v1/info); do
+until $(curl --output /dev/null --silent --get --fail http://localhost:5555/api/v1/info); do
   if [ $PFS_RETRIES -gt 10 ]; then
     exit 1
   fi

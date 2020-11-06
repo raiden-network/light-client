@@ -9,9 +9,7 @@
       <div class="address__tooltip">
         <input ref="copy" class="address__input" :value="address" />
         <div>
-          {{
-            copied ? $t('address-display.copied') : $t('address-display.copy')
-          }}
+          {{ copied ? $t('address-display.copied') : $t('address-display.copy') }}
         </div>
       </div>
     </v-tooltip>
@@ -30,8 +28,8 @@ export default class AddressDisplay extends Vue {
   @Prop({ required: false, default: false, type: Boolean })
   fullAddress!: boolean;
 
-  copied: boolean = false;
-  private timeout: number = 0;
+  copied = false;
+  private timeout = 0;
 
   get addressOutput() {
     return this.fullAddress ? this.address : Filters.truncate(this.address, 8);

@@ -25,10 +25,8 @@ export class BalanceUtils {
 
   static parse(deposit: string, decimals: number) {
     return utils.parseUnits(
-      deposit.endsWith('.')
-        ? deposit.substring(0, deposit.length - 1)
-        : deposit,
-      decimals
+      deposit.endsWith('.') ? deposit.substring(0, deposit.length - 1) : deposit,
+      decimals,
     );
   }
 }

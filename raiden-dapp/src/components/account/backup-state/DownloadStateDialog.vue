@@ -7,10 +7,7 @@
     <v-card-text>
       <v-row align="center" justify="center" no-gutters>
         <v-col cols="6">
-          <v-img
-            class="download-state__warning"
-            :src="require('@/assets/warning.svg')"
-          ></v-img>
+          <v-img class="download-state__warning" :src="require('@/assets/warning.svg')"></v-img>
         </v-col>
         <v-col cols="12">
           {{ $t('backup-state.download-warning') }}
@@ -33,9 +30,9 @@
 
 <script lang="ts">
 import { Component, Prop, Emit, Mixins } from 'vue-property-decorator';
+import NavigationMixin from '../../../mixins/navigation-mixin';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import NavigationMixin from '../../../mixins/navigation-mixin';
 
 @Component({
   components: {
@@ -48,7 +45,10 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
   visible!: boolean;
 
   @Emit()
-  cancel() {}
+  cancel(): boolean {
+    return true;
+  }
+
   /* istanbul ignore next */
   async getAndDownloadState() {
     const filename = `raiden_lc_state_${new Date().toISOString()}.json`;
@@ -78,10 +78,7 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
   }
 
   /* istanbul ignore next */
-  revokeDownloadURL(
-    stateFileURL: string,
-    downloadLink: HTMLAnchorElement
-  ): void {
+  revokeDownloadURL(stateFileURL: string, downloadLink: HTMLAnchorElement): void {
     setTimeout(() => {
       URL.revokeObjectURL(stateFileURL);
       document.body.removeChild(downloadLink);

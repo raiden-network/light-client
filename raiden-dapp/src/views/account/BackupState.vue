@@ -86,8 +86,8 @@ import UploadStateDialog from '@/components/account/backup-state/UploadStateDial
 })
 export default class BackupState extends Vue {
   isConnected!: boolean;
-  downloadState: boolean = false;
-  uploadState: boolean = false;
+  downloadState = false;
+  uploadState = false;
 }
 </script>
 

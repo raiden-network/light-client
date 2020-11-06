@@ -60,14 +60,14 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+import { BigNumber } from 'ethers';
+import { mapGetters } from 'vuex';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import ChannelWithdrawDialog from '@/components/dialogs/ChannelWithdrawDialog.vue';
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import { RaidenChannel } from 'raiden-ts';
-import { BigNumber } from 'ethers';
 import { ChannelAction } from '@/types';
-import { mapGetters } from 'vuex';
 import { Token } from '@/model/types';
 
 @Component({
@@ -94,7 +94,9 @@ export default class ChannelDialogs extends Vue {
   error: Error | null = null;
 
   @Emit()
-  message(_message: string) {}
+  message(message: string): string {
+    return message;
+  }
 
   @Emit()
   dismiss() {
@@ -103,7 +105,9 @@ export default class ChannelDialogs extends Vue {
   }
 
   @Emit()
-  busy(_busy: boolean) {}
+  busy(busy: boolean): boolean {
+    return busy;
+  }
 
   async deposit(deposit: BigNumber) {
     const { token, partner } = this.channel!;
