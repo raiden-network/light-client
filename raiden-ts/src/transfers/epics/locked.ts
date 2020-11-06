@@ -124,15 +124,13 @@ function makeAndSignTransfer$(
 
   const tokenNetwork = action.payload.tokenNetwork;
   const channel = getOpenChannel(state, { tokenNetwork, partner });
+
   assert(
     !action.payload.expiration ||
       // require mediated transfers to have at least confirmationBlocks before danger zone
       action.payload.expiration >= state.blockNumber + revealTimeout + confirmationBlocks,
     'expiration too soon',
   );
-
-  // fee is added to the lock amount; overflow is checked on locksSum below
-  const amountWithFee = action.payload.value.add(fee) as UInt<32>;
   const expiration = BigNumber.from(
     action.payload.expiration ||
       Math.min(
@@ -150,7 +148,8 @@ function makeAndSignTransfer$(
     },
   ]);
   const lock: Lock = {
-    amount: amountWithFee,
+    // fee is added to the lock amount; overflow is checked on locksSum below
+    amount: action.payload.value.add(fee) as UInt<32>,
     expiration,
     secrethash: action.meta.secrethash,
   };
