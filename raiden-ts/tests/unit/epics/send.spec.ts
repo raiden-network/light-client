@@ -138,7 +138,7 @@ describe('send transfer', () => {
     expect(raiden.output).toContainEqual(
       transfer.failure(
         expect.objectContaining({
-          message: expect.stringContaining('overflow of locked amount with fee'),
+          message: expect.stringContaining('overflow'),
         }),
         meta,
       ),
