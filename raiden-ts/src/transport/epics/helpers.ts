@@ -152,7 +152,7 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
         withLatestFrom(config$),
         mergeMap(([err, { pollingInterval }], count) => {
           // always retry rate-limit errors
-          if (count < RETRY_COUNT - 1 || err?.httpStatus === 429) {
+          if (count < RETRY_COUNT - 1 || [429, 500].includes(err?.httpStatus)) {
             log.warn(`messageSend error, retrying ${count + 1}/${RETRY_COUNT}`, err);
             return timer(pollingInterval);
           } else return throwError(err); // give up

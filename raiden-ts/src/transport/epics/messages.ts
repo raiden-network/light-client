@@ -26,6 +26,7 @@ import {
 
 import { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
 
+import { retryWaitWhile } from '../../utils/rx';
 import { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { Signed } from '../../utils/types';
@@ -46,6 +47,7 @@ import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
 import { LruCache } from '../../utils/lru';
 import { getPresenceByUserId, getCap } from '../utils';
+import { exponentialBackoff } from '../../transfers/epics/utils';
 import { globalRoomNames, roomMatch, getRoom$, waitMemberAndSend$, parseMessage } from './helpers';
 
 function getMessageBody(message: string | Signed<Message>): string {
@@ -140,6 +142,10 @@ export function matrixMessageGlobalSendEpic(
             '',
           );
         }),
+        retryWaitWhile(
+          exponentialBackoff(config.pollingInterval, config.httpTimeout),
+          (err, count) => ![429, 500].includes(err?.httpStatus) || count > 3,
+        ),
         catchError((err) => {
           log.error(
             'Error sending message to global room',
