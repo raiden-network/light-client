@@ -112,24 +112,16 @@ export default class AccountContent extends Mixins(NavigationMixin) {
     this.menuItems = [
       {
         icon: 'account_state.svg',
-        title: this.$t(
-          'account-content.menu-items.backup-state.title'
-        ) as string,
-        subtitle: this.$t(
-          'account-content.menu-items.backup-state.subtitle'
-        ) as string,
+        title: this.$t('account-content.menu-items.backup-state.title') as string,
+        subtitle: this.$t('account-content.menu-items.backup-state.subtitle') as string,
         route: () => {
           this.navigateToBackupState();
         },
       },
       {
         icon: 'account_bug.svg',
-        title: this.$t(
-          'account-content.menu-items.report-bugs.title'
-        ) as string,
-        subtitle: this.$t(
-          'account-content.menu-items.report-bugs.subtitle'
-        ) as string,
+        title: this.$t('account-content.menu-items.report-bugs.title') as string,
+        subtitle: this.$t('account-content.menu-items.report-bugs.subtitle') as string,
         route: () => {
           this.downloadLogs();
         },
@@ -153,12 +145,8 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       if (mainAccount && raidenAccount) {
         const raidenAccount = {
           icon: 'account_eth.svg',
-          title: this.$t(
-            'account-content.menu-items.raiden-account.title'
-          ) as string,
-          subtitle: this.$t(
-            'account-content.menu-items.raiden-account.subtitle'
-          ) as string,
+          title: this.$t('account-content.menu-items.raiden-account.title') as string,
+          subtitle: this.$t('account-content.menu-items.raiden-account.subtitle') as string,
           route: () => {
             this.navigateToRaidenAccountTransfer();
           },
@@ -166,12 +154,8 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 
         const withdrawal = {
           icon: 'account_withdrawal.svg',
-          title: this.$t(
-            'account-content.menu-items.withdrawal.title'
-          ) as string,
-          subtitle: this.$t(
-            'account-content.menu-items.withdrawal.subtitle'
-          ) as string,
+          title: this.$t('account-content.menu-items.withdrawal.title') as string,
+          subtitle: this.$t('account-content.menu-items.withdrawal.subtitle') as string,
           route: () => {
             this.navigateToWithdrawal();
           },
