@@ -124,27 +124,42 @@ function makeAndSignTransfer$(
 
   const tokenNetwork = action.payload.tokenNetwork;
   const channel = getOpenChannel(state, { tokenNetwork, partner });
+
   assert(
     !action.payload.expiration ||
       // require mediated transfers to have at least confirmationBlocks before danger zone
       action.payload.expiration >= state.blockNumber + revealTimeout + confirmationBlocks,
     'expiration too soon',
   );
-
-  // fee is added to the lock amount, check for overflow
-  const amountWithFee = decode(
-    UInt(32),
-    action.payload.value.add(fee),
-    'overflow of locked amount with fee',
-  );
+  const expiration = BigNumber.from(
+    action.payload.expiration ||
+      Math.min(
+        state.blockNumber + revealTimeout * 2,
+        state.blockNumber + channel.settleTimeout - confirmationBlocks,
+      ),
+  ) as UInt<32>;
+  assert(expiration.lte(state.blockNumber + channel.settleTimeout), [
+    'expiration too far in the future',
+    {
+      expiration: expiration.toString(),
+      blockNumber: state.blockNumber,
+      settleTimeout: channel.settleTimeout,
+      revealTimeout,
+    },
+  ]);
   const lock: Lock = {
-    amount: amountWithFee,
-    expiration: BigNumber.from(
-      action.payload.expiration || state.blockNumber + revealTimeout * 2,
-    ) as UInt<32>,
+    // fee is added to the lock amount; overflow is checked on locksSum below
+    amount: action.payload.value.add(fee) as UInt<32>,
+    expiration,
     secrethash: action.meta.secrethash,
   };
-  const locksroot = getLocksroot([...channel.own.locks, lock]);
+  const locks = [...channel.own.locks, lock];
+  const locksSum = totalLocked(locks);
+  assert(
+    UInt(32).is(channel.own.balanceProof.transferredAmount.add(locksSum)),
+    'overflow on future transferredAmount',
+  );
+  const locksroot = getLocksroot(locks);
 
   log.info(
     'Signing transfer of value',
@@ -168,7 +183,7 @@ function makeAndSignTransfer$(
     channel_identifier: BigNumber.from(channel.id) as UInt<32>,
     nonce: channel.own.nextNonce,
     transferred_amount: channel.own.balanceProof.transferredAmount,
-    locked_amount: channel.own.balanceProof.lockedAmount.add(lock.amount) as UInt<32>,
+    locked_amount: locksSum,
     locksroot,
     payment_identifier: action.payload.paymentId,
     token: channel.token,
@@ -269,9 +284,11 @@ function makeAndSignUnlock$(
       token_network_address: locked.token_network_address,
       channel_identifier: locked.channel_identifier,
       nonce: channel.own.nextNonce,
-      transferred_amount: channel.own.balanceProof.transferredAmount.add(
-        locked.lock.amount,
-      ) as UInt<32>,
+      transferred_amount: decode(
+        UInt(32),
+        channel.own.balanceProof.transferredAmount.add(locked.lock.amount),
+        'overflow on transferredAmount',
+      ),
       locked_amount: channel.own.balanceProof.lockedAmount.sub(locked.lock.amount) as UInt<32>,
       locksroot: getLocksroot(withoutLock(channel.own, secrethash)),
       payment_identifier: locked.payment_identifier,
@@ -467,14 +484,28 @@ function receiveTransferSigned(
         locked.transferred_amount.eq(channel.partner.balanceProof.transferredAmount),
         'transferredAmount mismatch',
       );
-      assert(locked.locked_amount.eq(totalLocked(locks)), 'lockedAmount mismatch');
+      const locksSum = totalLocked(locks);
+      assert(locked.locked_amount.eq(locksSum), 'lockedAmount mismatch');
+      assert(
+        UInt(32).is(channel.partner.balanceProof.transferredAmount.add(locksSum)),
+        'overflow on future transferredAmount',
+      );
 
       const { partnerCapacity } = channelAmounts(channel);
       assert(
         locked.lock.amount.lte(partnerCapacity),
         'balanceProof total amount bigger than capacity',
       );
-      // don't mind expiration, accept expired transfers to apply state change and stay in sync
+      assert(locked.lock.expiration.lte(state.blockNumber + channel.settleTimeout), [
+        'expiration too far in the future',
+        {
+          expiration: locked.lock.expiration.toString(),
+          blockNumber: state.blockNumber,
+          settleTimeout: channel.settleTimeout,
+          revealTimeout,
+        },
+      ]);
+      // accept expired transfers, to apply state change and stay in sync
       // with partner, so we can receive later LockExpired and transfers on top of it
 
       assert(locked.recipient === address, "Received transfer isn't for us");
