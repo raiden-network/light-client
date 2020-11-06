@@ -8,6 +8,7 @@ import {
   isInvalidParameterError,
   validateOptionalAddressParameter,
   isInsuficientFundsError,
+  isTransferFailedError,
 } from '../utils/validation';
 
 export enum ApiPaymentEvent {
@@ -90,6 +91,8 @@ async function doTransfer(this: Cli, request: Request, response: Response, next:
       response.status(400).send(error.message);
     } else if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
+    } else if (isTransferFailedError(error)) {
+      response.status(409).send(error.message);
     } else if (isConflictError(error)) {
       const pfsErrorDetail = error.details?.errors ? ` (${error.details.errors})` : '';
       response.status(409).json({ message: error.message, details: pfsErrorDetail });

@@ -80,6 +80,23 @@ export function isTransactionWouldFailError(error: Error): boolean {
 }
 
 /**
+ * Checks if error is related to a failed transfer
+ *
+ * @param error - Error to test
+ * @returns True if error signals failed transfer
+ */
+export function isTransferFailedError(error: Error): boolean {
+  return [
+    ErrorCodes.XFER_ALREADY_COMPLETED,
+    ErrorCodes.XFER_CHANNEL_CLOSED_PREMATURELY,
+    ErrorCodes.XFER_EXPIRED,
+    ErrorCodes.XFER_INVALID_SECRETREQUEST,
+    ErrorCodes.XFER_REFUNDED,
+    ErrorCodes.XFER_REGISTERSECRET_TX_FAILED,
+  ].includes(error.message);
+}
+
+/**
  * @param error - Error to test
  * @returns True if error is a Conflict error
  */
