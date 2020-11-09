@@ -88,6 +88,9 @@ export function withdrawUDCTokens() {
   cy.getWithCustomTimeout('[data-cy=udc_withdrawal_dialog]').should('not.exist');
 }
 
+/**
+ *
+ */
 export function closeChannel() {
   // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
   cy.get('[data-cy=channel_action]').should('exist');
@@ -103,11 +106,12 @@ export function closeChannel() {
   cy.get('[data-cy=raiden_dialog]').should('not.exist');
 }
 
+/**
+ *
+ */
 export function settleChannel() {
   // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
-  cy.get('[data-cy=channel_action]', { timeout: 500000 })
-    .should('exist')
-    .and('contain', 'Settle');
+  cy.getWithCustomTimeout('[data-cy=channel_action]').should('exist').and('contain', 'Settle');
   cy.get('[data-cy=channel_action]').click();
   // cypress selectors: raiden-dapp/src/components/dialogs/RaidenDialog.vue
   cy.getWithCustomTimeout('[data-cy=raiden_dialog]').should('exist');

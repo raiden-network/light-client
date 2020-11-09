@@ -53,6 +53,9 @@ export default class RaidenService {
           ...(process.env.VUE_APP_REVEAL_TIMEOUT && +process.env.VUE_APP_REVEAL_TIMEOUT
             ? { revealTimeout: +process.env.VUE_APP_REVEAL_TIMEOUT }
             : undefined),
+          ...(process.env.VUE_APP_SETTLE_TIMEOUT && +process.env.VUE_APP_SETTLE_TIMEOUT
+            ? { settleTimeout: +process.env.VUE_APP_SETTLE_TIMEOUT }
+            : undefined),
         },
         subkey,
       );
