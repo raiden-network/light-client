@@ -118,7 +118,7 @@
       },
       "withdrawal": {
         "title": "Withdraw Tokens",
-        "subtitle": "Withdraw tokens from Raiden account to main account"
+        "subtitle": "Transfer tokens from your Raiden account to your main account"
       },
       "udc": {
         "title": "Manage UDC Tokens",
