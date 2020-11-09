@@ -113,7 +113,7 @@
         "subtitle": "Download your logs"
       },
       "raiden-account": {
-        "title": "Manage Main/Raiden Account Funds",
+        "title": "Transfer ETH",
         "subtitle": "Transfer ETH between main and Raiden account"
       },
       "withdrawal": {
