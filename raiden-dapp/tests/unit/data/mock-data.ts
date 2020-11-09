@@ -178,6 +178,5 @@ export class TestData {
     received: new Date('June 5, 1986'),
     txConfirmationBlock: 123,
     txHash: '0xTxHash',
-    txConfirmed: undefined,
   };
 }

@@ -15,7 +15,6 @@ export interface NotificationPayload {
   readonly received: Date;
   readonly txConfirmationBlock?: number;
   readonly txHash?: string;
-  readonly txConfirmed?: boolean;
   display: boolean;
 }
 

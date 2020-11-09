@@ -27,6 +27,11 @@
   },
   "notifications": {
     "no-notifications": "No notifications",
+    "clear": "Clear",
+    "block-count-progress": "Blocks until confirmation: ",
+    "tx-reorged-failure-reason": "The transaction could not get confirmed due to a reorg of the blockchain!",
+    "tx-state-confirmed": "confirmed",
+    "tx-state-pending": "not confirmed yet",
     "backup-state": {
       "icon": "notification_state_backup",
       "title": "Backup your state!",
@@ -56,8 +61,6 @@
         }
       }
     },
-    "clear": "Clear",
-    "block-count-progress": "Blocks remaining: ",
     "settlement": {
       "icon": "notification_settle",
       "success": {
@@ -73,11 +76,11 @@
       "icon": "notification_channels",
       "success": {
         "title": "Channel Open",
-        "description": "Open channel with {partner}.",
-        "block-count-success": "Channel successfully opened"
+        "description": "Open channel with {partner} is {state}."
       },
       "failure": {
-        "title": "Channel Open Failure"
+        "title": "Channel Open Failure",
+        "description": "{reason}"
       }
     }
   },

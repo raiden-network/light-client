@@ -13,15 +13,12 @@
           :description="notification.description"
         />
         <div
-          v-if="notification.txConfirmationBlock"
+          v-if="showConfirmationCounter"
           class="notification-card__content__details__block-count"
         >
-          <span v-if="blockCountInProgress">
+          <span>
             {{ $t('notifications.block-count-progress') }}
-            {{ notification.txConfirmationBlock - blockNumber }}
-          </span>
-          <span v-else>
-            {{ $t('notifications.channel-open.success.block-count-success') }}
+            {{ blocksUntilTxConfirmation }}
           </span>
         </div>
         <span
@@ -66,20 +63,23 @@ const { mapMutations } = createNamespacedHelpers('notifications');
   },
 })
 export default class NotificationCard extends Vue {
-  notificationDelete!: (id: number) => void;
   blockNumber!: number;
+  notificationDelete!: (id: number) => void;
 
   @Prop({ required: true })
   notification!: NotificationPayload;
 
-  get blockCountInProgress(): boolean {
-    if (this.notification.txConfirmationBlock) {
-      return (
-        !this.notification.txConfirmed && this.notification.txConfirmationBlock > this.blockNumber
-      );
-    } else {
-      return false;
+  get blocksUntilTxConfirmation(): number | undefined {
+    const { txConfirmationBlock } = this.notification;
+
+    if (txConfirmationBlock) {
+      return txConfirmationBlock - this.blockNumber;
     }
+    // Else notification is not related to a blockchain transaction
+  }
+
+  get showConfirmationCounter(): boolean {
+    return this.blocksUntilTxConfirmation !== undefined && this.blocksUntilTxConfirmation > 0;
   }
 
   linkRoute() {
