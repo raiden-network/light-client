@@ -29,7 +29,7 @@
     "no-notifications": "No notifications",
     "backup-state": {
       "icon": "notification_state_backup",
-      "title": "Backup State",
+      "title": "Backup your state!",
       "description": "Backup your state to not risk loosing funds",
       "link": "Click here to go to the backup state menu"
     },
