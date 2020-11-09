@@ -14,17 +14,17 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
 import { BigNumber, constants } from 'ethers';
-import { NotificationPayload } from '../store/notifications/types';
-import { NotificationImportance } from '../store/notifications/notification-importance';
 import { NotificationContext } from '../store/notifications/notification-context';
+import { NotificationImportance } from '../store/notifications/notification-importance';
+import { NotificationPayload } from '../store/notifications/types';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import NoTokens from '@/components/NoTokens.vue';
 import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
-import { RaidenChannel } from 'raiden-ts';
 import { RouteNames } from '@/router/route-names';
 import { Token, TokenModel } from '@/model/types';
+import { RaidenChannel } from 'raiden-ts';
 
 const ONE_DAY = new Date(0).setUTCHours(24);
 
@@ -64,6 +64,7 @@ export default class TransferRoute extends Vue {
       link: this.$t('notifications.backup-state.link') as string,
       dappRoute: RouteNames.ACCOUNT_BACKUP,
       description: this.$t('notifications.backup-state.description') as string,
+      duration: 60000,
       importance: NotificationImportance.HIGH,
       context: NotificationContext.WARNING,
     } as NotificationPayload;
