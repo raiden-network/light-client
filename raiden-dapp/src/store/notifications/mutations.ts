@@ -1,4 +1,5 @@
 import { MutationTree } from 'vuex';
+import { NotificationImportance } from './notification-importance';
 import { NotificationContext } from './notification-context';
 import {
   NotificationPayload,
@@ -34,6 +35,7 @@ export const mutations: MutationTree<NotificationsState> = {
       received: new Date(),
       display,
       context: payload.context ?? NotificationContext.NONE,
+      importance: payload.importance ?? NotificationImportance.LOW,
       duration: payload.duration ?? 5000,
     };
 
