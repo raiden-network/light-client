@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Watch, Vue } from 'vue-property-decorator';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 
 @Component({
@@ -27,12 +27,13 @@ export default class NotificationDescriptionDisplay extends Vue {
   @Prop({ required: true })
   description!: string;
 
-  isAddress(address: string): boolean {
-    return this.addressRegEx.test(address);
+  @Watch('description', { immediate: true })
+  updateSplitDescription(newDescription: string): void {
+    this.splitDescription = newDescription.split(this.addressRegEx);
   }
 
-  mounted() {
-    this.splitDescription = this.description.split(this.addressRegEx);
+  isAddress(address: string): boolean {
+    return this.addressRegEx.test(address);
   }
 }
 </script>
