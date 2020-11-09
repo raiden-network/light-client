@@ -122,7 +122,7 @@
       },
       "udc": {
         "title": "Manage UDC Tokens",
-        "subtitle": "Manage User Deposit funds"
+        "subtitle": "Transfer tokens from or to your User Deposit Contract"
       }
     }
   },
