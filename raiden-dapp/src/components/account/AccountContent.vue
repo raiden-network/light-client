@@ -51,29 +51,27 @@
         v-for="(menuItem, index) in menuItems"
         :key="index"
         class="account-content__menu__list-items"
+        data-cy="account_content_menu_list_items"
+        :ripple="false"
+        @click="menuItem.route"
       >
         <div class="account-content__menu__list-items__icon">
           <v-img
-            :src="require(`@/assets/${menuItem.icon}`)"
+            :src="require(`@/assets/account-menu/${menuItem.icon}`)"
             max-width="40px"
             height="36px"
             contain
           ></v-img>
         </div>
         <v-list-item-content>
-          <v-list-item-title>{{ menuItem.title }}</v-list-item-title>
+          <v-list-item-title class="account-content__menu__list-items__title">
+            {{ menuItem.title }}
+          </v-list-item-title>
           <v-list-item-subtitle>{{ menuItem.subtitle }}</v-list-item-subtitle>
         </v-list-item-content>
-        <v-list-item-action>
-          <v-btn
-            icon
-            data-cy="account_content_menu_list_items_icon_button"
-            class="account-content__menu__list-items__icon__button"
-            @click="menuItem.route"
-          >
-            <v-icon>mdi-chevron-right mdi-36px</v-icon>
-          </v-btn>
-        </v-list-item-action>
+        <v-icon class="account-content__menu__list-items__arrow">
+          mdi-chevron-right mdi-36px
+        </v-icon>
       </v-list-item>
     </v-list>
   </div>
@@ -113,7 +111,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
   async mounted() {
     this.menuItems = [
       {
-        icon: 'state.svg',
+        icon: 'account_state.svg',
         title: this.$t('account-content.menu-items.backup-state.title') as string,
         subtitle: this.$t('account-content.menu-items.backup-state.subtitle') as string,
         route: () => {
@@ -121,7 +119,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         },
       },
       {
-        icon: 'bug.svg',
+        icon: 'account_bug.svg',
         title: this.$t('account-content.menu-items.report-bugs.title') as string,
         subtitle: this.$t('account-content.menu-items.report-bugs.subtitle') as string,
         route: () => {
@@ -133,7 +131,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
     if (this.isConnected) {
       // add UDC item
       this.menuItems.unshift({
-        icon: 'udc.svg',
+        icon: 'account_udc.svg',
         title: this.$t('account-content.menu-items.udc.title') as string,
         subtitle: this.$t('account-content.menu-items.udc.subtitle') as string,
         route: () => {
@@ -146,7 +144,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       // if sub key is used
       if (mainAccount && raidenAccount) {
         const raidenAccount = {
-          icon: 'eth.svg',
+          icon: 'account_eth.svg',
           title: this.$t('account-content.menu-items.raiden-account.title') as string,
           subtitle: this.$t('account-content.menu-items.raiden-account.subtitle') as string,
           route: () => {
@@ -155,7 +153,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         };
 
         const withdrawal = {
-          icon: 'withdrawal.svg',
+          icon: 'account_withdrawal.svg',
           title: this.$t('account-content.menu-items.withdrawal.title') as string,
           subtitle: this.$t('account-content.menu-items.withdrawal.subtitle') as string,
           route: () => {
@@ -262,15 +260,39 @@ export default class AccountContent extends Mixins(NavigationMixin) {
     background-color: transparent;
     margin-top: 50px;
 
+    ::v-deep {
+      ::before {
+        background-color: transparent;
+      }
+    }
+
     &__list-items {
-      border: solid 2px $secondary-text-color;
+      background-color: $account-menu-bg;
       border-radius: 15px;
       margin-top: -2px;
       height: 74px;
+      margin-bottom: 10px;
+
+      &:hover {
+        background-color: $account-menu-fg;
+      }
+
+      &__title {
+        color: $primary-color;
+        font-weight: 500;
+      }
 
       &__icon {
         padding-right: 20px;
-        width: 60px;
+        width: 50px;
+      }
+
+      &__arrow {
+        color: $primary-color;
+      }
+
+      &:nth-of-type(3) {
+        margin-bottom: 50px;
       }
     }
   }

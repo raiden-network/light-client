@@ -105,24 +105,24 @@
         "subtitle": "Change how you interact with the dApp"
       },
       "backup-state": {
-        "title": "Backup state",
-        "subtitle": "Download & upload your state"
+        "title": "Backup State",
+        "subtitle": "Download or upload your state"
       },
       "report-bugs": {
-        "title": "Report bugs",
-        "subtitle": "Download logs"
+        "title": "Download Logs",
+        "subtitle": "Download your logs"
       },
       "raiden-account": {
-        "title": "Raiden Account",
-        "subtitle": "Transfer ETH between your main and Raiden account"
+        "title": "Transfer ETH",
+        "subtitle": "Transfer ETH between main and Raiden account"
       },
       "withdrawal": {
-        "title": "Withdrawal",
-        "subtitle": "Withdraw tokens to your main account"
+        "title": "Withdraw Tokens",
+        "subtitle": "Transfer tokens from your Raiden account to your main account"
       },
       "udc": {
-        "title": "UDC",
-        "subtitle": "Manage User Deposit Contract funds"
+        "title": "Manage UDC Tokens",
+        "subtitle": "Transfer tokens from or to your User Deposit Contract"
       }
     }
   },

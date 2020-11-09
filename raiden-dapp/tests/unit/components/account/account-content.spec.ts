@@ -92,8 +92,8 @@ describe('AccountContent.vue', () => {
     const backupStateMenuItem = wrapper.findAll('.account-content__menu__list-items').at(1);
     const backupStateTitle = backupStateMenuItem.find('.v-list-item__title');
     const backupStateSubtitle = backupStateMenuItem.find('.v-list-item__subtitle');
-    const backupStateButton = backupStateMenuItem.find('button');
-    backupStateButton.trigger('click');
+
+    backupStateMenuItem.trigger('click');
 
     expect(backupStateTitle.text()).toEqual('account-content.menu-items.backup-state.title');
     expect(backupStateSubtitle.text()).toEqual('account-content.menu-items.backup-state.subtitle');
@@ -122,7 +122,7 @@ describe('AccountContent.vue', () => {
     expect(udcMenuTitle.text()).toEqual('account-content.menu-items.udc.title');
     expect(udcMenuSubtitle.text()).toBe('account-content.menu-items.udc.subtitle');
 
-    udcMenuItem.find('button').trigger('click');
+    udcMenuItem.trigger('click');
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
@@ -141,8 +141,9 @@ describe('AccountContent.vue', () => {
   test('calls method for downloading logs', async () => {
     (wrapper.vm as any).downloadLogs = jest.fn();
     const reportBugsMenuItem = wrapper.findAll('.account-content__menu__list-items').at(2);
-    const reportBugsButton = reportBugsMenuItem.find('button');
-    reportBugsButton.trigger('click');
+
+    reportBugsMenuItem.trigger('click');
+
     await wrapper.vm.$nextTick();
 
     expect((wrapper.vm as any).downloadLogs).toBeCalled();
@@ -165,7 +166,7 @@ describe('AccountContent.vue', () => {
     const settingsMenuItem = wrapper.findAll('.account-content__menu__list-items').at(0);
     const settingsMenuTitle = settingsMenuItem.find('.v-list-item__title');
     const settingsMenuSubtitle = settingsMenuItem.find('.v-list-item__subtitle');
-    settingsMenuItem.find('button').trigger('click');
+    settingsMenuItem.trigger('click');
 
     expect(settingsMenuTitle.text()).toEqual('account-content.menu-items.settings.title');
     expect(settingsMenuSubtitle.text()).toEqual('account-content.menu-items.settings.subtitle');
