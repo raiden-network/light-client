@@ -12,9 +12,12 @@
 
 ### Changed
 
+- [#2334] Blockchain related notifications handle confirmation status updates
+
 [#2178]: https://github.com/raiden-network/light-client/issues/2178
 [#2285]: https://github.com/raiden-network/light-client/issues/2285
 [#2274]: https://github.com/raiden-network/light-client/issues/2274
+[#2334]: https://github.com/raiden-network/light-client/issues/2334
 
 ## [0.12.0] - 2020-10-22
 
