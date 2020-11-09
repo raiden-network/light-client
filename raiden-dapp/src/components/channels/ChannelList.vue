@@ -55,7 +55,7 @@
               </span>
             </v-btn>
           </v-list-item-icon>
-          <v-list-item-icon class="channel-action">
+          <v-list-item-icon data-cy="channel_action" class="channel-action">
             <v-btn
               v-if="selectedChannel && channel.id === selectedChannel.id && busy"
               :id="`busy-${channel.id}`"

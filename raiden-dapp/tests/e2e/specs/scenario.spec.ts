@@ -40,6 +40,8 @@ import {
   transferETHToRaidenAccount,
   withdrawTokensBackToMainAccount,
   withdrawUDCTokens,
+  closeChannel,
+  settleChannel,
 } from '../utils/blockchain-interaction';
 
 describe('dApp e2e tests', () => {
@@ -83,6 +85,8 @@ describe('dApp e2e tests', () => {
     navigateToChannelsList();
     enterTokenWithdrawalAmoutFromChannelsList(uiTimeout);
     withdrawTokens();
+    closeChannel();
+    settleChannel();
     navigateToAccountMenu();
     navigateToRaidenAccount();
     enterETHAmountToTransferFromRaidenAccount(uiTimeout);
