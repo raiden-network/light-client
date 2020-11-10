@@ -12,7 +12,7 @@ export function navigateToDisclaimer() {
  */
 export function navigateToSelectHub() {
   // cypress selectors: raiden-dapp/src/components/NoTokens.vue
-  cy.get('[data-cy=no_tokens_add]').should('exist');
+  cy.getWithCustomTimeout('[data-cy=no_tokens_add]').should('exist');
   cy.get('[data-cy=no_tokens_add]').click();
   // cypress selectors: raiden-dapp/src/components/tokens/TokenListItem.vue
   cy.getWithCustomTimeout('[data-cy=token_list_item]').eq(0).should('exist');
