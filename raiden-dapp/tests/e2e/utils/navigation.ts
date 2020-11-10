@@ -12,7 +12,7 @@ export function navigateToDisclaimer() {
  */
 export function navigateToSelectHub() {
   // cypress selectors: raiden-dapp/src/components/NoTokens.vue
-  cy.get('[data-cy=no_tokens_add]').should('exist');
+  cy.getWithCustomTimeout('[data-cy=no_tokens_add]').should('exist');
   cy.get('[data-cy=no_tokens_add]').click();
   // cypress selectors: raiden-dapp/src/components/tokens/TokenListItem.vue
   cy.getWithCustomTimeout('[data-cy=token_list_item]').eq(0).should('exist');
@@ -48,7 +48,7 @@ export function navigateToAccountMenu() {
 export function navigateToBackupState() {
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
-  cy.get('[data-cy=account_content_menu_list_items_icon]').eq(3).click();
+  cy.get('[data-cy=account_content_menu_list_items]').eq(3).click();
   // cypress selectors: raiden-dapp/src/views/account/BackupState.vue
   cy.getWithCustomTimeout('[data-cy=backup_state]').should('exist');
 }
@@ -120,7 +120,7 @@ export function navigateToRaidenAccount() {
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
-  cy.get('[data-cy=account_content_menu_list_items_icon]').eq(0).click();
+  cy.get('[data-cy=account_content_menu_list_items]').eq(0).click();
   // cypress selectors: raiden-dapp/src/views/account/RaidenAccount.vue
   cy.getWithCustomTimeout('[data-cy=raiden_account]').should('exist');
 }
@@ -142,7 +142,7 @@ export function navigateToWithdrawal() {
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
-  cy.get('[data-cy=account_content_menu_list_items_icon]').eq(1).click();
+  cy.get('[data-cy=account_content_menu_list_items]').eq(1).click();
   // cypress selectors: raiden-dapp/src/components/account/Withdrawal.vue
   cy.getWithCustomTimeout('[data-cy=withdrawal_tokens]').should('exist');
 }
@@ -154,7 +154,7 @@ export function navigateToUDC() {
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
-  cy.get('[data-cy=account_content_menu_list_items_icon]').eq(2).click();
+  cy.get('[data-cy=account_content_menu_list_items]').eq(2).click();
   // cypress selectors: raiden-dapp/src/views/account/UDC.vue
   cy.getWithCustomTimeout('[data-cy=udc]').should('exist');
 }
@@ -166,5 +166,5 @@ export function navigateToDownloadLogs() {
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
-  cy.get('[data-cy=account_content_menu_list_items_icon]').eq(4).click();
+  cy.get('[data-cy=account_content_menu_list_items]').eq(4).click();
 }
