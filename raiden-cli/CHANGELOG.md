@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.13.0] - 2020-11-10
 ### Fixed
 - [#2314] Return proper error codes for transfer failures
 - [#2344] Handle JSON wallets with trimmed IVs
@@ -25,6 +27,7 @@
 [#2054]: https://github.com/raiden-network/light-client/pulls/2054
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/raiden-network/light-client/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/raiden-network/light-client/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/raiden-network/light-client/compare/v0.11.0...v0.11.1
