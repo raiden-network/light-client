@@ -174,13 +174,34 @@ async function getWallet(
       { type: 'password', name: 'password', message: `[${address}] Password:`, mask: '*' },
     ]));
 
+  let lastError;
   for (const json of keys[address]) {
     try {
       return await Wallet.fromEncryptedJson(json, password);
-    } catch (e) {}
+    } catch (err) {
+      lastError = err;
+      if (err?.message?.includes('invalid counter bytes size')) {
+        const parsed = JSON.parse(json);
+        // try to fix non-16-bytes [crypto.cipherparams.iv]
+        keys[address].push(
+          JSON.stringify({
+            ...parsed,
+            crypto: {
+              ...parsed.crypto,
+              cipherparams: {
+                ...parsed.crypto.cipherparams,
+                iv: (parsed.crypto.cipherparams.iv as string).padStart(32, '0'),
+              },
+            },
+          }),
+        );
+      }
+    }
   }
 
-  throw new Error(`Could not decrypt keystore for "${address}" with provided password`);
+  throw (
+    lastError ?? new Error(`Could not decrypt keystore for "${address}" with provided password`)
+  );
 }
 
 function createLocalStorage(name: string): LocalStorage {
