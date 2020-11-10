@@ -83,7 +83,9 @@ export default class AmountInput extends Vue {
   get errorMessages(): string[] {
     return this.rules
       .map((rule) => rule(this.value))
-      .filter((result) => typeof result !== 'boolean' && result != '') as string[];
+      .filter((res) => {
+        return res !== true;
+      }) as string[];
   }
 
   private noDecimalOverflow(v: string) {
