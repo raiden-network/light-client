@@ -153,11 +153,11 @@ export default class RaidenService {
         this._raiden = raiden;
         this._configuration = configuration;
 
-        const account = await this.getAccount();
+        const account = this.getAccount();
         this.store.commit('account', account);
 
         this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
-        this.store.commit('userDepositTokenAddress', this._userDepositTokenAddress);
+        this.store.commit('userDepositContract/tokenAddress', this._userDepositTokenAddress);
 
         await this.monitorPreSetTokens();
 
@@ -461,12 +461,12 @@ export default class RaidenService {
     this.raiden.stop();
   }
 
-  async getAccount(): Promise<string> {
+  getAccount(): string {
     return this.raiden.address;
   }
 
   /* istanbul ignore next */
-  async getMainAccount(): Promise<string | undefined> {
+  getMainAccount(): string | undefined {
     return this.raiden.mainAddress;
   }
 

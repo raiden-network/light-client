@@ -144,9 +144,9 @@ export default class UdcDepositDialog extends Vue {
     }
   }
 
-  async mounted() {
+  mounted() {
     const mainAccountAddress =
-      (await this.$raiden.getMainAccount()) ?? (await this.$raiden.getAccount());
+      this.$raiden.getMainAccount() ?? this.$raiden.getAccount();
 
     this.uniswapURL = this.$t('udc-deposit-dialog.uniswap-url', {
       rdnToken: this.udcToken.address,
