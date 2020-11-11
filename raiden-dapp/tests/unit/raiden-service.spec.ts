@@ -954,27 +954,52 @@ describe('RaidenService', () => {
 
     expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
       title: 'notifications.channel-open.failure.title',
-      description: 'error message',
+      description: 'notifications.channel-open.failure.description',
       icon: 'notifications.channel-open.icon',
-      context: NotificationContext.NONE,
       importance: NotificationImportance.HIGH,
     });
   });
 
-  test('notify that channel open success', async () => {
+  test('notify that channel open succeed with state pending', async () => {
     expect.assertions(1);
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
-    (store.getters as any) = {
-      udcToken: {},
-    };
+    (store.state as any) = { config: { confirmationBlocks: 5 } };
     subject.next({
       type: 'channel/open/success',
       payload: {
         id: 0,
         txHash: '0xTxHash',
-        txBlock: '0TxBlock',
+        txBlock: 0,
+        confirmed: undefined,
+      },
+      meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
+    });
+    await flushPromises();
+
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      title: 'notifications.channel-open.success.title',
+      description: 'notifications.channel-open.success.description',
+      icon: 'notifications.channel-open.icon',
+      txHash: '0xTxHash',
+      txConfirmationBlock: 5,
+      importance: NotificationImportance.HIGH,
+    });
+  });
+
+  test('notify that channel open succeed with state confirmed', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.state as any) = { config: { confirmationBlocks: 5 } };
+    subject.next({
+      type: 'channel/open/success',
+      payload: {
+        id: 0,
+        txHash: '0xTxHash',
+        txBlock: 0,
         confirmed: true,
       },
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
@@ -984,11 +1009,36 @@ describe('RaidenService', () => {
       title: 'notifications.channel-open.success.title',
       description: 'notifications.channel-open.success.description',
       icon: 'notifications.channel-open.icon',
-      context: NotificationContext.NONE,
-      importance: NotificationImportance.HIGH,
-      txConfirmationBlock: 0,
       txHash: '0xTxHash',
-      txConfirmed: true,
+      txConfirmationBlock: 5,
+      importance: NotificationImportance.HIGH,
+    });
+  });
+
+  test('notify that channel open failed when confirmation is false', async () => {
+    expect.assertions(1);
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    (store.state as any) = { config: { confirmationBlocks: 5 } };
+    subject.next({
+      type: 'channel/open/success',
+      payload: {
+        id: 0,
+        txHash: '0xTxHash',
+        txBlock: 0,
+        confirmed: false,
+      },
+      meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
+    });
+
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      title: 'notifications.channel-open.failure.title',
+      description: 'notifications.channel-open.failure.description',
+      icon: 'notifications.channel-open.icon',
+      txHash: '0xTxHash',
+      txConfirmationBlock: 5,
+      importance: NotificationImportance.HIGH,
     });
   });
 });

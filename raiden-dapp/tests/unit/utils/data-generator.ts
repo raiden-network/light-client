@@ -2,6 +2,7 @@ import times from 'lodash/times';
 import { BigNumber, constants } from 'ethers';
 import { RaidenTransfer, Address, RaidenChannel, ChannelState } from 'raiden-ts';
 import { Token } from '@/model/types';
+import { NotificationPayload } from '@/store/notifications/types';
 
 const HEXADECIMAL_CHARACTERS = '0123456789abcdefABCDEF';
 const ALPHABET_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz';
@@ -81,7 +82,7 @@ export function generateTransfer(
  * @returns RaidenChannel mocked object
  */
 export function generateChannel(
-  partialChannel: Partial<RaidenChannel>,
+  partialChannel: Partial<RaidenChannel> = {},
   token?: Token,
 ): RaidenChannel {
   return {
@@ -99,4 +100,18 @@ export function generateChannel(
     ownWithdrawable: BigNumber.from(10 ** 8),
     ...partialChannel,
   } as RaidenChannel;
+}
+
+/**
+ * @param partialPayload - NotificationPayload overrides
+ * @returns NotificationPayload mocked object
+ */
+export function generateNotificationPayload(
+  partialPayload: Partial<NotificationPayload> = {},
+): NotificationPayload {
+  return {
+    title: 'Test Nofication',
+    description: 'Used for unit tests',
+    ...partialPayload,
+  } as NotificationPayload;
 }

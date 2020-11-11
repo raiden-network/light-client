@@ -23,6 +23,18 @@ import { NotificationPayload } from '@/store/notifications/types';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 
+function raidenActionConfirmationValueToStateTranslation(
+  confirmationValue: boolean | undefined,
+): string {
+  if (confirmationValue === undefined) {
+    return i18n.t('notifications.tx-state-pending') as string;
+  } else if (confirmationValue) {
+    return i18n.t('notifications.tx-state-confirmed') as string;
+  } else {
+    return ''; // Reorged actions get a special error notification.
+  }
+}
+
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<RootState>;
@@ -404,36 +416,43 @@ export default class RaidenService {
     txConfirmed: boolean | undefined,
     partner: string,
   ) {
-    let txConfirmationBlock;
+    const confirmationBlocks = this.store.state.config?.confirmationBlocks ?? 0;
+    const txConfirmationBlock = txBlock + confirmationBlocks;
+    const icon = i18n.t('notifications.channel-open.icon');
 
-    if (this.store.state?.config?.confirmationBlocks !== undefined) {
-      txConfirmationBlock = txBlock + this.store.state.config.confirmationBlocks;
+    let title = '';
+    let description = '';
+
+    if (txConfirmed === undefined || txConfirmed === true) {
+      title = i18n.t('notifications.channel-open.success.title') as string;
+      const state = raidenActionConfirmationValueToStateTranslation(txConfirmed);
+      description = i18n.t('notifications.channel-open.success.description', {
+        partner,
+        state,
+      }) as string;
     } else {
-      txConfirmationBlock = 0;
+      const reason = i18n.t('notifications.tx-reorged-failure-reason');
+      title = i18n.t('notifications.channel-open.failure.title') as string;
+      description = i18n.t('notifications.channel-open.failure.description', { reason }) as string;
     }
 
-    const description = i18n.t('notifications.channel-open.success.description', {
-      partner,
-    });
-
-    this.store.commit('notifications/notificationAddOrReplace', {
-      title: i18n.t('notifications.channel-open.success.title'),
+    const notificationPayload = {
+      title,
       description,
-      icon: i18n.t('notifications.channel-open.icon'),
-      context: NotificationContext.NONE,
-      importance: NotificationImportance.HIGH,
-      txConfirmationBlock,
+      icon,
       txHash,
-      txConfirmed,
-    } as NotificationPayload);
+      txConfirmationBlock,
+      importance: NotificationImportance.HIGH,
+    };
+
+    this.store.commit('notifications/notificationAddOrReplace', notificationPayload);
   }
 
-  private async notifyChannelOpenFailed(message: string) {
+  private async notifyChannelOpenFailed(reason: string) {
     this.store.commit('notifications/notificationAddOrReplace', {
       title: i18n.t('notifications.channel-open.failure.title'),
-      description: message,
+      description: i18n.t('notifications.channel-open.failure.description', { reason }),
       icon: i18n.t('notifications.channel-open.icon'),
-      context: NotificationContext.NONE,
       importance: NotificationImportance.HIGH,
     });
   }
