@@ -319,9 +319,15 @@ workflows:
       - test_sdk_integration:
           requires:
             - build_sdk
+      - test_sdk_e2e:
+          requires:
+            - build_sdk
       - test_dapp_unit:
           requires:
             - build_dapp
+      - test_dapp_e2e:
+          requires:
+            - build_sdk
 
   publish_staging:
     when:
@@ -386,26 +392,3 @@ workflows:
           context: "Raiden Context"
           requires:
             - deploy_gh_pages
-
-  nightly:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-
-    jobs:
-      - install:
-          executor: e2e-environment-executor
-      - build_sdk:
-          executor: e2e-environment-executor
-          requires:
-            - install
-      - test_sdk_e2e:
-          requires:
-            - build_sdk
-      - test_dapp_e2e:
-          requires:
-            - build_sdk
