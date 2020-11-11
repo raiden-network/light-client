@@ -184,7 +184,7 @@ You need to have MetaMask installed for your browser. If you don't have MetaMask
 
 ### Backup the State to Keep Your Tokens
 
-Store a backup of your state to **avoid loosing tokens** in case you:
+Store a backup of your state to **avoid losing tokens** in case you:
 
 - Delete your local browser storage
 - Change your computer
