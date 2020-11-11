@@ -184,7 +184,7 @@ You need to have MetaMask installed for your browser. If you don't have MetaMask
 
 ### Backup the State to Keep Your Tokens
 
-Store a backup of your state to **avoid loosing tokens** in case you:
+Store a backup of your state to **avoid losing tokens** in case you:
 
 - Delete your local browser storage
 - Change your computer
@@ -194,7 +194,7 @@ If you want to continue using the dApp with a specific account when switching br
 
 This is important because your state contains all the off-chain information which is needed to make transactions in the Raiden Network. Your state is stored in the browser across sessions and therefore it needs to be downloaded and uploaded whenever you switch browser or change computer.
 
-You can download and upload your state via the `General Menu`. Note that if you loose or delete your state you will also loose your tokens.
+You can download and upload your state via the `General Menu`. Note that if you lose or delete your state you will also lose your tokens.
 
 Example structure of beginning of the state file JSON:
 
