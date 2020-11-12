@@ -14,8 +14,8 @@
         </v-main>
       </div>
     </div>
-    <div class="policy">
-      <a href="https://raiden.network/privacy.html" target="_blank">
+    <div v-if="imprint" class="policy">
+      <a :href="imprint" target="_blank">
         {{ $t('application.privacy-policy') }}
       </a>
     </div>
@@ -42,6 +42,10 @@ import NotificationSnackbar from '@/components/notification-panel/NotificationSn
   },
 })
 export default class App extends Mixins(NavigationMixin) {
+  get imprint(): string | undefined {
+    return process.env.VUE_APP_IMPRINT;
+  }
+
   destroyed() {
     this.$raiden.disconnect();
   }

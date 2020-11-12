@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Fixed
+
+### Added
+
+- [#1693] Customizable privacy policy
+
+### Changed
+
+[#1693]: https://github.com/raiden-network/light-client/issues/1693
+
 ## [0.13.0] - 2020-11-10
 
 ### Fixed
