@@ -25,6 +25,7 @@ import {
   enterTransferAddress,
   enterTransferAmount,
   makeDirectTransfer,
+  makeMediatedTransfer,
   downloadState,
   enterDepositTokenAmountForOpenedChannel,
   enterTokenWithdrawalAmoutFromChannelsList,
@@ -47,6 +48,7 @@ import {
 describe('dApp e2e tests', () => {
   const uiTimeout = 3000;
   const partnerAddress = '0xCBC49ec22c93DB69c78348C90cd03A323267db86';
+  const thirdAddres = '0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec';
 
   before(async () => {
     const allIndexedDBs = await window.indexedDB.databases();
@@ -72,6 +74,9 @@ describe('dApp e2e tests', () => {
     enterTransferAddress(uiTimeout, partnerAddress);
     enterTransferAmount(uiTimeout);
     makeDirectTransfer(uiTimeout);
+    enterTransferAddress(uiTimeout, thirdAddres);
+    enterTransferAmount(uiTimeout);
+    makeMediatedTransfer(uiTimeout);
     navigateToAccountMenu();
     navigateToBackupState();
     downloadState();
