@@ -1,8 +1,18 @@
+import { constants } from 'ethers';
 import { generateToken } from '../../utils/data-generator';
+import { PlannedUdcWithdrawal } from '@/store/user-deposit-contract/types';
 import { mutations } from '@/store/user-deposit-contract/mutations';
 import { defaultState } from '@/store/user-deposit-contract/state';
 
 const token = generateToken();
+
+const plannedWithdrawal: PlannedUdcWithdrawal = {
+  txHash: '0xTxHash',
+  txBlock: 1,
+  amount: constants.One,
+  withdrawBlock: 5,
+  confirmed: undefined,
+};
 
 describe('user deposit contract store mutations', () => {
   test('can set token address', () => {
@@ -21,5 +31,22 @@ describe('user deposit contract store mutations', () => {
     mutations.setToken(state, token);
 
     expect(state.token).toBe(token);
+  });
+
+  test('can set planned withdrawal', () => {
+    const state = defaultState();
+    expect(state.plannedWithdrawal).toBeUndefined();
+
+    mutations.setPlannedWithdrawal(state, plannedWithdrawal);
+
+    expect(state.plannedWithdrawal).toBe(plannedWithdrawal);
+  });
+
+  test('can clear planned withdrawal', () => {
+    const state = { ...defaultState(), plannedWithdrawal };
+
+    mutations.clearPlannedWithdrawal(state);
+
+    expect(state.plannedWithdrawal).toBeUndefined();
   });
 });

@@ -1,5 +1,6 @@
 import { Store } from 'vuex';
 import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
+import { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
 import {
@@ -238,6 +239,10 @@ export default class RaidenService {
           }
         });
 
+        raiden.events$.subscribe((event) => {
+          this.updatePlannedUserDepositWithdrawals(event);
+        });
+
         raiden.channels$.subscribe((value) => {
           this.store.commit('updateChannels', value);
         });
@@ -455,6 +460,24 @@ export default class RaidenService {
       icon: i18n.t('notifications.channel-open.icon'),
       importance: NotificationImportance.HIGH,
     });
+  }
+
+  private async updatePlannedUserDepositWithdrawals(event: ObservedValueOf<Raiden['events$']>) {
+    if (event.type === 'udc/withdraw/success') {
+      if (event.payload.confirmed === false) {
+        this.store.commit('userDepositContract/clearPlannedWithdrawal');
+      } else {
+        this.store.commit('userDepositContract/setPlannedWithdrawal', {
+          txHash: event.payload.txHash,
+          txBlock: event.payload.txBlock,
+          amount: event.meta.amount,
+          withdrawBlock: event.payload.block,
+          confirmed: event.payload.confirmed,
+        });
+      }
+    } else if (event.type === 'udc/withdrawn' && event.payload.confirmed) {
+      this.store.commit('userDepositContract/clearPlannedWithdrawal');
+    }
   }
 
   disconnect = (): void => {
