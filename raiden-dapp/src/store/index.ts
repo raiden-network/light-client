@@ -30,6 +30,7 @@ import {
 } from 'raiden-ts';
 import { RootState, Settings, Tokens, Transfers } from '@/types';
 import { notifications } from '@/store/notifications';
+import { userDepositContract, UserDepositContractState } from '@/store/user-deposit-contract';
 
 Vue.use(Vuex);
 
@@ -53,7 +54,6 @@ const _defaultState: RootState = {
     useRaidenAccount: true,
   },
   config: {},
-  userDepositTokenAddress: '',
   disclaimerAccepted: false,
   stateBackupReminderDateMs: 0,
   persistDisclaimerAcceptance: false,
@@ -91,7 +91,12 @@ const miscellaneousLocalStorage = new VuexPersistence<RootState>({
   key: 'miscellaneous',
 });
 
-const store: StoreOptions<RootState & { notifications: NotificationsState }> = {
+export type CombinedStoreState = RootState & {
+  notifications: NotificationsState;
+  userDepositContract: UserDepositContractState;
+};
+
+const store: StoreOptions<CombinedStoreState> = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   state: defaultState() as any, // 'notifications' member filled in by module
   mutations: {
@@ -158,9 +163,6 @@ const store: StoreOptions<RootState & { notifications: NotificationsState }> = {
     },
     updateConfig(state: RootState, config: Partial<RaidenConfig>) {
       state.config = config;
-    },
-    userDepositTokenAddress(state: RootState, address: string) {
-      state.userDepositTokenAddress = address;
     },
     acceptDisclaimer(state: RootState, persistDecision: boolean) {
       state.disclaimerAccepted = true;
@@ -249,9 +251,6 @@ const store: StoreOptions<RootState & { notifications: NotificationsState }> = {
     isConnected: (state: RootState): boolean => {
       return !state.loading && !!(state.defaultAccount && state.defaultAccount !== '');
     },
-    udcToken: (state: RootState): Token => {
-      return state.tokens[state.userDepositTokenAddress];
-    },
     usingRaidenAccount: (state: RootState): boolean => {
       return !!state.settings.useRaidenAccount;
     },
@@ -259,6 +258,7 @@ const store: StoreOptions<RootState & { notifications: NotificationsState }> = {
   plugins: [settingsLocalStorage.plugin, miscellaneousLocalStorage.plugin],
   modules: {
     notifications,
+    userDepositContract,
   },
 };
 
