@@ -58,12 +58,7 @@
               class="udc-balance__container"
             >
               <v-col cols="10">
-                <span
-                  class="udc-balance__amount"
-                  :class="{
-                    'low-balance': selectedPfs !== null && !udcCapacity.gte(selectedPfs.price),
-                  }"
-                >
+                <span class="udc-balance__amount" :class="{ 'low-balance': balanceIsLow }">
                   <amount-display exact-amount :amount="udcCapacity" :token="udcToken" />
                 </span>
                 <v-tooltip bottom>
@@ -187,11 +182,12 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { BigNumber, constants } from 'ethers';
-import { mapGetters } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import { RaidenPFS, RaidenError } from 'raiden-ts';
 
 import { BalanceUtils } from '@/utils/balance-utils';
 import { Token, Route, Transfer } from '@/model/types';
+import { Tokens } from '@/types';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import PathfindingServices from '@/components/transfer/PathfindingServices.vue';
@@ -222,7 +218,9 @@ import PfsFeesDialog from '@/components/dialogs/PfsFeesDialog.vue';
     AmountDisplay,
   },
   computed: {
-    ...mapGetters(['mainnet', 'udcToken']),
+    ...mapState(['tokens']),
+    ...mapState('userDepositContract', { udcToken: 'token' }),
+    ...mapGetters(['mainnet']),
   },
 })
 export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin) {
@@ -243,11 +241,16 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   error: Error | RaidenError | null = null;
   udcCapacity: BigNumber = constants.Zero;
   udcToken!: Token;
+  tokens!: Tokens;
 
   amount = '';
   target = '';
 
   mainnet!: boolean;
+
+  get balanceIsLow(): boolean {
+    return this.selectedPfs !== null && !this.udcCapacity.gte(this.selectedPfs.price);
+  }
 
   get transferSummary(): Transfer {
     return {
@@ -311,7 +314,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
       return;
     }
 
-    await this.$raiden.fetchTokenData([address]);
+    await this.$raiden.fetchAndUpdateTokenData([address]);
 
     if (typeof this.token.decimals !== 'number') {
       this.navigateToHome();
@@ -428,7 +431,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
 
   get token(): Token {
     const { token: address } = this.$route.params;
-    return this.$store.state.tokens[address] || ({ address } as Token);
+    return this.tokens[address] || ({ address } as Token);
   }
 
   get continueBtnEnabled() {

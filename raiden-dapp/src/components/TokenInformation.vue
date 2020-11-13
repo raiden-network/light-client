@@ -85,7 +85,7 @@ export default class TokenInformation extends Vue {
     this.showMintDialog = false;
 
     // Update token information
-    await this.$raiden.fetchTokenData([this.token.address]);
+    await this.$raiden.fetchAndUpdateTokenData([this.token.address]);
   }
 }
 </script>

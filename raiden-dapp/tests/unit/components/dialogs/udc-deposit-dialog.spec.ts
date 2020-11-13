@@ -2,78 +2,91 @@
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
-import { BigNumber, constants } from 'ethers';
+import Vuex from 'vuex';
+import { constants, BigNumber } from 'ethers';
 import flushPromises from 'flush-promises';
-import { Token } from '@/model/types';
-import store from '@/store';
+import { generateToken } from '../../utils/data-generator';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 
 Vue.use(Vuetify);
+Vue.use(Vuex);
 
-describe('UdcDepositDialog.vue', () => {
-  let vuetify: Vuetify;
-  let wrapper: Wrapper<UdcDepositDialog>;
+const $raiden = {
+  mint: jest.fn(),
+  depositToUDC: jest.fn(async (_, call: () => void) => call()),
+  getMainAccount: jest.fn(),
+  getAccount: jest.fn(),
+};
 
-  const $raiden = {
-    userDepositTokenAddress: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-    mint: jest.fn(),
-    depositToUDC: jest.fn(),
-    getMainAccount: jest.fn(),
-    getAccount: jest.fn(),
-    getTokenBalance: jest.fn(),
+function createWrapper(mainnet = false, balance = constants.Zero): Wrapper<UdcDepositDialog> {
+  const vuetify = new Vuetify();
+  const token = generateToken({ balance });
+
+  const getters = {
+    mainnet: () => mainnet,
   };
 
-  const token = {
-    address: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-    name: 'Test Token',
-    symbol: 'TTT',
-    decimals: 18,
-    balance: constants.Zero,
-  } as Token;
+  const userDepositContractModule = {
+    namespaced: true,
+    state: { token },
+  };
 
-  function createWrapper(): Wrapper<UdcDepositDialog> {
-    vuetify = new Vuetify();
-    return mount(UdcDepositDialog, {
-      vuetify,
-      store,
-      stubs: ['v-dialog'],
-      mocks: {
-        $t: (msg: string) => msg,
-        $raiden,
-      },
-      propsData: {
-        visible: true,
-      },
-    });
-  }
+  const store = new Vuex.Store({
+    getters,
+    modules: { userDepositContract: userDepositContractModule },
+  });
+
+  return mount(UdcDepositDialog, {
+    vuetify,
+    store,
+    stubs: ['v-dialog'],
+    mocks: {
+      $t: (msg: string) => msg,
+      $raiden,
+    },
+    propsData: {
+      visible: true,
+    },
+  });
+}
+
+async function clickActionButton(wrapper: Wrapper<UdcDepositDialog>): Promise<void> {
+  await wrapper.vm.$nextTick(); // Else the button does not get enabled.
+  wrapper.find('.udc-deposit-dialog__action button').trigger('click');
+  await flushPromises();
+}
+
+async function setAmount(wrapper: Wrapper<UdcDepositDialog>, amount: string): Promise<void> {
+  await wrapper.vm.$nextTick();
+  const inputField = wrapper.find('input');
+  inputField.setValue(amount);
+  await wrapper.vm.$nextTick();
+}
+
+describe('UdcDepositDialog.vue', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
 
   describe('depositing on testnet', () => {
-    beforeEach(() => {
-      store.commit('userDepositTokenAddress', '0x3a989D97388a39A0B5796306C615d10B7416bE77');
-      store.commit('updateTokens', {
-        '0x3a989D97388a39A0B5796306C615d10B7416bE77': token,
-      });
-      wrapper = createWrapper();
-      jest.resetAllMocks();
-    });
-
     test('emit a done event when the mint and deposit is successful', async () => {
       expect.assertions(3);
-      $raiden.depositToUDC.mockImplementation(async (_, call: () => void) => {
-        call();
-      });
-      wrapper.find('.udc-deposit-dialog__action button').trigger('click');
-      await flushPromises();
+      const wrapper = createWrapper();
+
+      await clickActionButton(wrapper);
+
       expect($raiden.mint).toHaveBeenCalledTimes(1);
       expect($raiden.depositToUDC).toHaveBeenCalledTimes(1);
       expect(wrapper.emitted()['done']).toHaveLength(1);
     });
 
+    expect.assertions(3);
     test('show an error message when the minting fails', async () => {
-      expect.assertions(3);
       $raiden.mint.mockRejectedValueOnce(new Error('error'));
-      wrapper.find('.udc-deposit-dialog__action button').trigger('click');
-      await flushPromises();
+      const wrapper = createWrapper();
+
+      await clickActionButton(wrapper);
+
       expect($raiden.mint).toHaveBeenCalledTimes(1);
       expect($raiden.depositToUDC).toHaveBeenCalledTimes(0);
       expect(wrapper.vm.$data.error).toMatchObject({ message: 'error' });
@@ -81,15 +94,10 @@ describe('UdcDepositDialog.vue', () => {
 
     test('do not mint when the user has already enough tokens', async () => {
       expect.assertions(3);
-      store.commit('updateTokens', {
-        '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
-          ...token,
-          balance: BigNumber.from('10000000000000000000'),
-        },
-      });
+      const wrapper = createWrapper(undefined, BigNumber.from('10000000000000000000'));
 
-      wrapper.find('.udc-deposit-dialog__action button').trigger('click');
-      await flushPromises();
+      await clickActionButton(wrapper);
+
       expect($raiden.mint).toHaveBeenCalledTimes(0);
       expect($raiden.depositToUDC).toHaveBeenCalledTimes(1);
       expect(wrapper.emitted()['done']).toHaveLength(1);
@@ -97,46 +105,25 @@ describe('UdcDepositDialog.vue', () => {
   });
 
   describe('depositing on mainnet', () => {
-    beforeEach(() => {
-      store.commit('userDepositTokenAddress', '0x3a989D97388a39A0B5796306C615d10B7416bE77');
-      store.commit('updateTokens', {
-        '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
-          ...token,
-          balance: BigNumber.from('10000000000000000000'),
-        },
-      });
-      store.commit('network', { name: 'mainnet', chainId: 1 });
-
-      wrapper = createWrapper();
-      jest.resetAllMocks();
-    });
-
-    test('mainnet is used', () => {
-      expect((wrapper.vm as any).mainnet).toBe(true);
-    });
-
     test('displays uniswap URL', () => {
+      const wrapper = createWrapper(true);
       expect(wrapper.vm.$data.uniswapURL).toBe('udc-deposit-dialog.uniswap-url');
     });
 
     test('amount validates to true if inputted amount is lower or equal to available amount', async () => {
-      const inputField = wrapper.find('input');
-      inputField.setValue('5.55');
-      await wrapper.vm.$nextTick();
+      const wrapper = createWrapper(true, BigNumber.from('20000000000000000000'));
 
+      await setAmount(wrapper, '5.55');
       expect((wrapper.vm as any).valid).toBe(true);
 
-      inputField.setValue('10');
-      await wrapper.vm.$nextTick();
-
+      await setAmount(wrapper, '20');
       expect((wrapper.vm as any).valid).toBe(true);
     });
 
     test('amount validates to false if inputted amount is higher than available amount', async () => {
-      const inputField = wrapper.find('input');
-      inputField.setValue('50');
-      await wrapper.vm.$nextTick();
+      const wrapper = createWrapper(true, BigNumber.from('10000000000000000000'));
 
+      await setAmount(wrapper, '20');
       expect((wrapper.vm as any).valid).toBe(false);
     });
   });

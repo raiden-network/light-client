@@ -1,6 +1,6 @@
+import { generateToken } from '../../utils/data-generator';
 import { mutations } from '@/store/user-deposit-contract/mutations';
 import { defaultState } from '@/store/user-deposit-contract/state';
-import { generateToken } from '../../utils/data-generator';
 
 const token = generateToken();
 

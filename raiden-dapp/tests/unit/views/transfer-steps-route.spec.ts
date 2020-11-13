@@ -1,208 +1,174 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.useFakeTimers();
+jest.mock('vue-router');
 
-import { mount } from '@vue/test-utils';
+import { shallowMount, Wrapper } from '@vue/test-utils';
 import { BigNumber, constants } from 'ethers';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import Vuex from 'vuex';
 import VueRouter from 'vue-router';
 import flushPromises from 'flush-promises';
 import { $t } from '../utils/mocks';
+import { generateToken } from '../utils/data-generator';
 import { RaidenPaths, RaidenPFS } from 'raiden-ts';
 import Mocked = jest.Mocked;
 
 import TransferSteps from '@/views/TransferStepsRoute.vue';
-import { Route, Token } from '@/model/types';
-import store from '@/store';
-import { Tokens } from '@/types';
+import ActionButton from '@/components/ActionButton.vue';
+import { Route } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuetify);
+Vue.use(Vuex);
 
-describe('TransferSteps.vue', () => {
-  let vuetify: Vuetify;
-  let processingTransfer: jest.SpyInstance;
-  let transferDone: jest.SpyInstance;
-  let router: Mocked<VueRouter>;
+const userDepositToken = generateToken({ balance: constants.One });
+const transferToken = generateToken({ address: '0x3a989D97388a39A0B5796306C615d10B7416bE77' }); // Must be a checksum address.
+const $router = new VueRouter() as Mocked<VueRouter>;
+const $route = {
+  params: {
+    target: '0xtarget',
+    token: transferToken.address,
+  },
+  query: {
+    amount: '10',
+  },
+};
 
-  const raidenPFS: RaidenPFS = {
-    address: '0x94DEe8e391410A9ebbA791B187df2d993212c849',
-    price: 100,
-    rtt: 62,
-    token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-    url: 'https://pfs-goerli-with-fee.services-test.raiden.network',
+const raidenPFS = {
+  price: 100,
+  url: 'https://pfs-goerli-with-fee.services-test.raiden.network',
+} as RaidenPFS;
+
+const transferRoute = {
+  fee: BigNumber.from(100),
+  path: [transferToken.address],
+} as Route;
+
+const freeTransferRoute = {
+  fee: constants.Zero,
+  path: [transferToken.address],
+} as Route;
+
+const $raiden = {
+  getAccount: jest.fn(),
+  getMainAccount: jest.fn(),
+  fetchAndUpdateTokenData: jest.fn(),
+  getUDCCapacity: jest.fn(async () => BigNumber.from('1000000000000000000')),
+  findRoutes: jest.fn(async () => [{ path: [transferToken.address], fee: BigNumber.from(100) }]),
+  transfer: jest.fn(async () => undefined),
+  directRoute: jest.fn(),
+};
+
+async function createWrapper(
+  step = 1,
+  routes: Route[] = [],
+  selectedRoute: Route | null = null,
+): Promise<Wrapper<TransferSteps>> {
+  const vuetify = new Vuetify();
+
+  const state = {
+    tokens: { [transferToken.address]: transferToken },
   };
 
-  const route = {
-    displayFee: '0.0000000000000001',
-    fee: BigNumber.from(100),
-    hops: 0,
-    key: 0,
-    path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
-  } as Route;
-
-  const freeRoute = {
-    path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
-    fee: constants.Zero,
-  } as Route;
-
-  const $raiden = {
-    transfer: jest.fn(),
-    fetchTokenData: jest.fn().mockResolvedValue(undefined),
-    fetchServices: jest.fn().mockResolvedValue([raidenPFS]),
-    getUDCCapacity: jest.fn().mockResolvedValue(BigNumber.from('1000000000000000000')),
-    userDepositTokenAddress: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-    directRoute: jest.fn().mockResolvedValue(undefined),
-    findRoutes: jest.fn().mockResolvedValue([
-      {
-        path: ['0x3a989D97388a39A0B5796306C615d10B7416bE77'],
-        fee: BigNumber.from(100),
-      },
-    ]),
-    getMainAccount: jest.fn(),
-    getAccount: jest.fn(),
+  const getters = {
+    mainnet: () => false,
   };
 
-  function createWrapper(
-    data: {
-      step?: number;
-      selectedPfs?: RaidenPFS;
-      routes?: Route[];
-      selectedRoute?: Route;
-      processingTransfer?: boolean;
-    } = {},
-  ) {
-    vuetify = new Vuetify();
-    return mount(TransferSteps, {
-      store,
-      vuetify,
-      stubs: ['v-dialog'],
-      mocks: {
-        $router: router,
-        $route: {
-          params: {
-            target: '0xtarget',
-            token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-          },
-          query: {
-            amount: '100000',
-            identifier: '123456789123456789123',
-          },
-        },
-        $t,
-        $raiden,
-      },
-      data: function () {
-        return {
-          ...data,
-        };
-      },
-    });
-  }
+  const userDepositContractModule = {
+    namespaced: true,
+    state: { token: userDepositToken },
+  };
 
-  beforeAll(() => {
-    store.commit('userDepositTokenAddress', '0x3a989D97388a39A0B5796306C615d10B7416bE77');
-    store.commit('updateTokens', {
-      '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
-        address: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-        name: 'ServiceToken',
-        symbol: 'SVT',
-        decimals: 18,
-        balance: constants.One,
-      } as Token,
-    } as Tokens);
+  const store = new Vuex.Store({
+    state,
+    getters,
+    modules: { userDepositContract: userDepositContractModule },
   });
 
+  const wrapper = shallowMount(TransferSteps, {
+    store,
+    vuetify,
+    stubs: { 'action-button': ActionButton },
+    mocks: { $router, $route, $t, $raiden },
+    data: function () {
+      return {
+        selectedPfs: raidenPFS,
+        step,
+        routes,
+        selectedRoute,
+      };
+    },
+  });
+
+  await flushPromises(); // Asynchronous 'created' lifecycle hook.
+  return wrapper;
+}
+
+async function clickTransferButton(wrapper: Wrapper<TransferSteps>): Promise<void> {
+  const button = wrapper.find('.transfer__button button');
+  expect(button.attributes()['disabled']).toBeUndefined();
+  button.trigger('click');
+  await flushPromises();
+  jest.runOnlyPendingTimers();
+}
+
+describe('TransferSteps.vue', () => {
   beforeEach(() => {
-    router = new VueRouter() as Mocked<VueRouter>;
-    router.push = jest.fn().mockResolvedValue(null);
-    $raiden.transfer.mockClear();
+    jest.clearAllMocks();
   });
 
   test('renders 3 steps', async () => {
-    expect.assertions(1);
-    const wrapper = createWrapper({});
+    const wrapper = await createWrapper();
+
     expect(wrapper.findAll('.transfer-steps__step').length).toBe(3);
   });
 
   test('enables the continue button and allows the user to proceed', async () => {
-    expect.assertions(2);
-    const wrapper = createWrapper({
-      step: 1,
-      selectedPfs: raidenPFS,
-    });
-    await flushPromises();
-    const button = wrapper.find('.action-button__button');
-    expect(button.attributes()['disabled']).toBeUndefined();
-    button.trigger('click');
-    await flushPromises();
-    jest.runOnlyPendingTimers();
+    const wrapper = await createWrapper();
+
+    await clickTransferButton(wrapper);
+
     expect(wrapper.vm.$data.step).toBe(2);
   });
 
   test('show an error when the paths fail to fetch', async () => {
-    expect.assertions(3);
-    const wrapper = createWrapper({
-      step: 1,
-      selectedPfs: raidenPFS,
-    });
-    $raiden.findRoutes.mockRejectedValueOnce(new Error('failed'));
-    await flushPromises();
-    const button = wrapper.find('.action-button__button');
-    expect(button.attributes()['disabled']).toBeUndefined();
-    button.trigger('click');
-    await flushPromises();
-    jest.runOnlyPendingTimers();
+    const wrapper = await createWrapper();
+    (wrapper.vm as any).$raiden.findRoutes.mockRejectedValue(new Error('failed'));
+
+    await clickTransferButton(wrapper);
+
     expect(wrapper.vm.$data.step).toBe(2);
     expect(wrapper.vm.$data.error).toMatchObject({ message: 'failed' });
   });
 
   test('enables the continue button and lets the user to proceed to the 3rd step', async () => {
-    expect.assertions(2);
-    const wrapper = createWrapper({
-      step: 2,
-      selectedPfs: raidenPFS,
-      routes: [route],
-      selectedRoute: route,
-    });
+    const wrapper = await createWrapper(2, [transferRoute], transferRoute);
 
-    const button = wrapper.find('.action-button__button');
-    expect(button.attributes()['disabled']).toBeUndefined();
-    button.trigger('click');
+    await clickTransferButton(wrapper);
+
     expect(wrapper.vm.$data.step).toBe(3);
   });
 
   test('enables the final confirmation button and allows the token transfer', async () => {
-    $raiden.transfer.mockResolvedValue(null);
-    const wrapper = createWrapper({
-      step: 3,
-      selectedPfs: raidenPFS,
-      selectedRoute: route,
-      processingTransfer: false,
-    });
+    const wrapper = await createWrapper(3, undefined, transferRoute);
+    const processingTransferSpy = jest.spyOn(wrapper.vm.$data, 'processingTransfer', 'set');
+    const transferDoneSpy = jest.spyOn(wrapper.vm.$data, 'transferDone', 'set');
 
-    processingTransfer = jest.spyOn(wrapper.vm.$data, 'processingTransfer', 'set');
-    transferDone = jest.spyOn(wrapper.vm.$data, 'transferDone', 'set');
+    await clickTransferButton(wrapper);
 
-    // Confirmation btn is enabled
-    const button = wrapper.find('.action-button__button');
-    expect(button.attributes()['disabled']).toBeUndefined();
+    expect((wrapper.vm as any).$raiden.transfer).toHaveBeenCalledTimes(1);
 
-    // Token transfer
-    button.trigger('click');
-    await flushPromises();
-    jest.advanceTimersByTime(7000);
+    expect(processingTransferSpy).toHaveBeenCalledTimes(2);
+    expect(processingTransferSpy).toHaveBeenNthCalledWith(1, true);
+    expect(processingTransferSpy).toHaveBeenNthCalledWith(2, false);
 
-    expect($raiden.transfer).toHaveBeenCalledTimes(1);
-    expect(processingTransfer).toHaveBeenCalledTimes(2);
-    expect(processingTransfer).toHaveBeenNthCalledWith(1, true);
-    expect(processingTransfer).toHaveBeenNthCalledWith(2, false);
-    expect(transferDone).toBeCalledTimes(2);
-    expect(transferDone).toHaveBeenNthCalledWith(1, true);
-    expect(transferDone).toHaveBeenNthCalledWith(2, false);
+    expect(transferDoneSpy).toBeCalledTimes(2);
+    expect(transferDoneSpy).toHaveBeenNthCalledWith(1, true);
+    expect(transferDoneSpy).toHaveBeenNthCalledWith(2, false);
 
-    // Redirected to transfer screen after successful transfer
-    expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith(
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.TRANSFER,
       }),
@@ -210,78 +176,51 @@ describe('TransferSteps.vue', () => {
   });
 
   test('show an error when the token transfer fails', async () => {
-    $raiden.transfer.mockRejectedValueOnce(new Error('failure'));
+    const wrapper = await createWrapper(3, [transferRoute], transferRoute);
+    (wrapper.vm as any).$raiden.transfer.mockRejectedValue(new Error('failure'));
+    const processingTransferSpy = jest.spyOn(wrapper.vm.$data, 'processingTransfer', 'set');
+    const transferDoneSpy = jest.spyOn(wrapper.vm.$data, 'transferDone', 'set');
 
-    const wrapper = createWrapper({
-      step: 3,
-      selectedPfs: raidenPFS,
-      selectedRoute: route,
-      routes: [route],
-      processingTransfer: false,
-    });
+    await clickTransferButton(wrapper);
 
-    processingTransfer = jest.spyOn(wrapper.vm.$data, 'processingTransfer', 'set');
-    transferDone = jest.spyOn(wrapper.vm.$data, 'transferDone', 'set');
+    expect((wrapper.vm as any).$raiden.transfer).toHaveBeenCalledTimes(1);
 
-    // Confirmation btn is enabled
-    const button = wrapper.find('.action-button__button');
-    expect(button.attributes()['disabled']).toBeUndefined();
+    expect(processingTransferSpy).toHaveBeenCalledTimes(1);
+    expect(processingTransferSpy).toHaveBeenNthCalledWith(1, true);
 
-    // Token transfer
-    button.trigger('click');
-    await flushPromises();
-    jest.advanceTimersByTime(2000);
-
-    expect($raiden.transfer).toHaveBeenCalledTimes(1);
-    expect(processingTransfer).toHaveBeenCalledTimes(1);
-    expect(processingTransfer).toHaveBeenNthCalledWith(1, true);
-    expect(transferDone).toBeCalledTimes(0);
+    expect(transferDoneSpy).toBeCalledTimes(0);
     expect(wrapper.vm.$data.error).toBeInstanceOf(Error);
   });
 
   test('skip to transfer summary, if a direct route is available', async () => {
-    expect.assertions(2);
-    $raiden.directRoute.mockResolvedValueOnce([freeRoute] as RaidenPaths);
-    $raiden.transfer.mockResolvedValueOnce(undefined);
-    const wrapper = createWrapper({});
-    await flushPromises();
+    // Mock needs to be available during creation of wrapper.
+    $raiden.directRoute.mockResolvedValue([freeTransferRoute] as RaidenPaths);
+    const wrapper = await createWrapper();
+
     expect(wrapper.vm.$data.step).toBe(3);
-    expect($raiden.transfer).toHaveBeenCalledTimes(0);
+    expect((wrapper.vm as any).$raiden.transfer).toHaveBeenCalledTimes(0);
+    $raiden.directRoute = jest.fn();
   });
 
   test('skip to transfer summary, if a free route is available', async () => {
-    expect.assertions(2);
-    $raiden.findRoutes.mockResolvedValue([freeRoute]);
-    $raiden.transfer.mockResolvedValueOnce(undefined);
+    const wrapper = await createWrapper();
+    (wrapper.vm as any).$raiden.findRoutes.mockResolvedValue([freeTransferRoute]);
 
-    const wrapper = createWrapper({
-      step: 1,
-      selectedPfs: raidenPFS,
-      processingTransfer: false,
-    });
-
-    await flushPromises();
-    wrapper.find('.action-button__button').trigger('click');
-
-    await flushPromises();
-    jest.advanceTimersByTime(3000);
+    await clickTransferButton(wrapper);
 
     expect(wrapper.vm.$data.step).toBe(3);
-    expect($raiden.transfer).toHaveBeenCalledTimes(0);
+    expect((wrapper.vm as any).$raiden.transfer).toHaveBeenCalledTimes(0);
   });
 
   test('skip pfs selection if free pfs is found', async () => {
-    $raiden.findRoutes.mockResolvedValue([freeRoute]);
-    const wrapper = createWrapper({
-      step: 1,
-      processingTransfer: false,
-    });
+    const wrapper = await createWrapper();
+    (wrapper.vm as any).$raiden.findRoutes.mockResolvedValue([freeTransferRoute]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (wrapper.vm as any).setPFS([{ ...raidenPFS, price: constants.Zero } as RaidenPFS, true]);
     await flushPromises();
     jest.advanceTimersByTime(2000);
+
     expect(wrapper.vm.$data.step).toBe(3);
-    expect($raiden.transfer).toHaveBeenCalledTimes(0);
+    expect((wrapper.vm as any).$raiden.transfer).toHaveBeenCalledTimes(0);
   });
 });

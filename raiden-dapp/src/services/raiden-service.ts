@@ -2,7 +2,6 @@ import { Store } from 'vuex';
 import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
-import uniq from 'lodash/uniq';
 import {
   Capabilities,
   ChangeEvent,
@@ -172,12 +171,10 @@ export default class RaidenService {
             filter((value) => value.type === 'block/new'),
             exhaustMap(() =>
               this.fetchAndUpdateTokenData(
-                this.store.getters.tokens.map((m: TokenModel) => m.address)
-              )
+                this.store.getters.tokens.map((m: TokenModel) => m.address),
+              ),
             ),
-            exhaustMap(() =>
-              this.updateUserDepositContractToken(),
-            ),
+            exhaustMap(() => this.updateUserDepositContractToken()),
           )
           .subscribe();
 
@@ -462,16 +459,16 @@ export default class RaidenService {
 
   disconnect = (): void => {
     this.raiden.stop();
-  }
+  };
 
   getAccount = (): string => {
     return this.raiden.address;
-  }
+  };
 
   /* istanbul ignore next */
   getMainAccount = (): string | undefined => {
     return this.raiden.mainAddress;
-  }
+  };
 
   async getBalance(address?: string): Promise<string> {
     const balance = await this.raiden.getBalance(address);

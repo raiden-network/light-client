@@ -15,7 +15,7 @@ describe('PathfindingService.vue', () => {
   let vuetify: Vuetify;
 
   const $raiden = {
-    fetchTokenData: jest.fn().mockResolvedValueOnce(undefined),
+    fetchAndUpdateTokenData: jest.fn().mockResolvedValueOnce(undefined),
     fetchServices: jest.fn(),
   };
 

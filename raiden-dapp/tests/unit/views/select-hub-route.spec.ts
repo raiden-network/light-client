@@ -1,85 +1,100 @@
-import { BigNumber, constants } from 'ethers';
+import { BigNumber } from 'ethers';
 
 jest.useFakeTimers();
+jest.mock('vue-router');
 
 import { mount, shallowMount, Wrapper } from '@vue/test-utils';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import VueRouter, { Route } from 'vue-router';
 import Vue from 'vue';
+import VueRouter from 'vue-router';
 import flushPromises from 'flush-promises';
 import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
 import { $identicon } from '../utils/mocks';
+import { generateToken } from '../utils/data-generator';
 import SelectHubRoute from '@/views/SelectHubRoute.vue';
 import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';
-import RaidenService from '@/services/raiden-service';
-import store from '@/store';
 import Filters from '@/filters';
-import { Token } from '@/model/types';
-import { Tokens } from '@/types';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
 Vue.filter('truncate', Filters.truncate);
 
-describe('SelectHubRoute.vue', () => {
-  let wrapper: Wrapper<SelectHubRoute>;
-  let router: Mocked<VueRouter>;
-  let vuetify: Vuetify;
+const userDepositToken = generateToken();
+const transferToken = generateToken({ address: '0x3a989D97388a39A0B5796306C615d10B7416bE77' }); // Checksum address required.
+const $router = new VueRouter() as Mocked<VueRouter>;
+const transferTokenRoute = TestData.mockRoute({ token: transferToken.address });
 
-  const testToken = (address: string) =>
-    Object.assign(TestData.token, {
-      address: address,
-    });
+async function createWrapper(
+  $route = transferTokenRoute,
+  monitoringReward = BigNumber.from('1'),
+  udcCapacity = BigNumber.from('2'),
+  networkName = 'mainnet',
+  shallow = false,
+): Promise<Wrapper<SelectHubRoute>> {
+  const vuetify = new Vuetify();
 
-  function createWrapper(route: Route, raidenMocks: Partial<RaidenService> = {}, shallow = false) {
-    vuetify = new Vuetify();
-    const options = {
-      vuetify,
-      store,
-      stubs: ['v-dialog'],
-      mocks: {
-        $route: route,
-        $router: router,
-        $identicon: $identicon(),
-        $raiden: {
-          fetchTokenData: jest.fn().mockResolvedValue(null),
-          getAvailability: jest.fn().mockResolvedValue(true),
-          monitoringReward: BigNumber.from('1'),
-          monitorToken: jest.fn(),
-          getUDCCapacity: jest.fn().mockResolvedValue(BigNumber.from('2')),
-          getMainAccount: jest.fn(),
-          getAccount: jest.fn(),
-          ...raidenMocks,
-        },
-        $t: (msg: string) => msg,
-      },
-    };
-    if (shallow) {
-      return shallowMount(SelectHubRoute, options);
-    }
-    return mount(SelectHubRoute, options);
-  }
-
-  beforeEach(() => {
-    router = new VueRouter() as Mocked<VueRouter>;
-    router.push = jest.fn().mockResolvedValue(null);
-    store.commit('reset');
-    store.commit('updatePresence', {
+  const state = {
+    defaultAccount: '0xAccount',
+    channels: { [transferToken.address]: {} },
+    network: { name: networkName },
+    tokens: {
+      [transferToken.address]: transferToken,
+    },
+    presences: {
       ['0x1D36124C90f53d491b6832F1c073F43E2550E35b']: true,
-    });
-    store.commit('userDepositTokenAddress', '0x3a989D97388a39A0B5796306C615d10B7416bE77');
-    store.commit('updateTokens', {
-      '0x3a989D97388a39A0B5796306C615d10B7416bE77': {
-        address: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
-        name: 'ServiceToken',
-        symbol: 'SVT',
-        decimals: 18,
-        balance: constants.One,
-      } as Token,
-    } as Tokens);
+    },
+  };
+
+  const getters = {
+    mainnet: () => false,
+    token: () => (address: string) =>
+      address === transferToken.address ? transferToken : undefined,
+  };
+
+  const userDepositContractModule = {
+    namespaced: true,
+    state: { token: userDepositToken },
+  };
+
+  const store = new Vuex.Store({
+    state,
+    getters,
+    modules: { userDepositContract: userDepositContractModule },
+  });
+
+  const options = {
+    vuetify,
+    store,
+    stubs: ['v-dialog'],
+    mocks: {
+      $route,
+      $router,
+      $identicon: $identicon(),
+      $raiden: {
+        fetchAndUpdateTokenData: jest.fn().mockResolvedValue(null),
+        getAvailability: jest.fn().mockResolvedValue(true),
+        monitoringReward,
+        monitorToken: jest.fn(),
+        getUDCCapacity: jest.fn(async () => udcCapacity),
+        getMainAccount: jest.fn(),
+        getAccount: jest.fn(),
+      },
+      $t: (msg: string) => msg,
+    },
+  };
+
+  const wrapper = shallow ? shallowMount(SelectHubRoute, options) : mount(SelectHubRoute, options);
+  await wrapper.vm.$nextTick();
+  await flushPromises();
+  return wrapper;
+}
+
+describe('SelectHubRoute.vue', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   beforeAll(() => {
@@ -87,37 +102,22 @@ describe('SelectHubRoute.vue', () => {
   });
 
   test('navigate to "OpenChannel when the user selects a hub', async () => {
-    const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
-    const route = TestData.mockRoute({
-      token: tokenAddress,
-    });
-    const token = testToken(tokenAddress);
-    store.commit('updateTokens', { [tokenAddress]: token });
-    wrapper = createWrapper(route);
+    const wrapper = await createWrapper();
+
     mockInput(wrapper, '0x1D36124C90f53d491b6832F1c073F43E2550E35b');
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
     await flushPromises();
     wrapper.find('form').trigger('submit');
 
-    expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith(
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({ name: RouteNames.OPEN_CHANNEL }),
     );
   });
 
   test('displays error if UDC capacity is not sufficient', async () => {
-    const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
-    const route = TestData.mockRoute({
-      token: tokenAddress,
-    });
-    wrapper = createWrapper(route, {
-      monitoringReward: BigNumber.from('2'),
-      getUDCCapacity: jest.fn().mockReturnValue(BigNumber.from('1')),
-    });
-
-    await wrapper.vm.$nextTick();
-    await flushPromises();
+    const wrapper = await createWrapper(undefined, BigNumber.from('2'), BigNumber.from('1'));
 
     expect(wrapper.find('.udc-balance__description').text()).toContain(
       'select-hub.service-token-balance-too-low',
@@ -128,14 +128,11 @@ describe('SelectHubRoute.vue', () => {
   });
 
   test('navigate to "Home" when the token address is not in checksum format', async () => {
-    const route = TestData.mockRoute({
-      token: '0xtoken',
-    });
-    wrapper = createWrapper(route, {}, true);
-    await wrapper.vm.$nextTick();
-    await flushPromises();
-    expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith(
+    const route = TestData.mockRoute({ token: '0xNoChecksumAddress' });
+    await createWrapper(route, undefined, undefined, undefined, true);
+
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.HOME,
       }),
@@ -143,17 +140,11 @@ describe('SelectHubRoute.vue', () => {
   });
 
   test('navigate to "Home" when the token cannot be found', async () => {
-    const route = TestData.mockRoute({
-      token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-    });
+    const route = TestData.mockRoute({ token: '0xcB91d6549c3c88B36d52E43C019713E2053B4fEf' });
+    await createWrapper(route, undefined, undefined, undefined, true);
 
-    wrapper = createWrapper(route, {}, true);
-
-    await wrapper.vm.$nextTick();
-    await flushPromises();
-
-    expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith(
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.HOME,
       }),
@@ -161,14 +152,7 @@ describe('SelectHubRoute.vue', () => {
   });
 
   test('auto suggest our hub on goerli if not connected yet', async () => {
-    const tokenAddress = '0xc778417E063141139Fce010982780140Aa0cD5Ab';
-    const route = TestData.mockRoute({
-      token: tokenAddress,
-    });
-    const token = testToken(tokenAddress);
-    store.commit('updateTokens', { [tokenAddress]: token });
-    store.commit('network', { name: 'goerli' });
-    wrapper = createWrapper(route);
+    const wrapper = await createWrapper(undefined, undefined, undefined, 'goerli');
 
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
