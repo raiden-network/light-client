@@ -837,15 +837,15 @@ export class Raiden {
    * @param target - Target address
    * @param value - Amount to try to transfer
    * @param options - Optional parameters for transfer:
-   * @param options.paymentId - payment identifier, a random one will be generated if missing</li>
-   * @param options.secret - Secret to register, a random one will be generated if missing</li>
+   * @param options.paymentId - payment identifier, a random one will be generated if missing
+   * @param options.secret - Secret to register, a random one will be generated if missing
    * @param options.secrethash - Must match secret, if both provided, or else, secret must be
-   *     informed to target by other means, and reveal can't be performed</li>
-   * @param options.paths - Used to specify possible routes & fees instead of querying PFS.</li>
+   *     informed to target by other means, and reveal can't be performed
+   * @param options.paths - Used to specify possible routes & fees instead of querying PFS.
    * @param options.pfs - Use this PFS instead of configured or automatically choosen ones.
    *     Is ignored if paths were already provided. If neither are set and config.pfs is not
    *     disabled (null), use it if set or if undefined (auto mode), fetches the best
-   *     PFS from ServiceRegistry and automatically fetch routes from it.</li>
+   *     PFS from ServiceRegistry and automatically fetch routes from it.
    * @param options.lockTimeout - Specify a lock timeout for transfer; default is 2 * revealTimeout
    * @returns A promise to transfer's unique key (id) when it's accepted
    */

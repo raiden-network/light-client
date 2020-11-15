@@ -256,7 +256,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           working_directory: docs
-          command: ./generate_documentation.sh
+          command: yarn workspace raiden-ts run docs && cp -r ./raiden-ts/docs ./raiden-dapp/dist/
       - persist_to_workspace:
           root: << pipeline.parameters.working_directory >>
           paths:
@@ -286,7 +286,7 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
       - run:
           name: Publish on npm
-          command: yarn publish
+          command: yarn publish --no-git-tag-version --non-interactive
 
 workflows:
   version: 2
