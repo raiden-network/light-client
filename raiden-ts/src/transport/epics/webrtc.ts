@@ -412,7 +412,8 @@ function listenDataChannel(
         ).pipe(
           finalize(() => {
             dataChannel.close();
-            connection.close();
+            // FIXME: https://github.com/node-webrtc/node-webrtc/issues/636
+            // connection.close();
           }),
         ),
       ),
