@@ -255,8 +255,10 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - run:
-          working_directory: docs
-          command: yarn workspace raiden-ts run docs && cp -r ./raiden-ts/docs ./raiden-dapp/dist/
+          name: Generate SDK docs
+          command: >
+            yarn workspace raiden-ts run docs &&
+            cp -vr ./raiden-ts/docs ./raiden-dapp/dist/
       - persist_to_workspace:
           root: << pipeline.parameters.working_directory >>
           paths:
