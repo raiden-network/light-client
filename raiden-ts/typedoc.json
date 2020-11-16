@@ -1,0 +1,71 @@
+{
+  "mode": "modules",
+  "plugin": ["typedoc-plugin-pages"],
+  "theme": "pages-plugin",
+  "readme": "./docs-source/SDK-Development.md",
+  "out": "./docs",
+  "exclude": ["src/contracts", "src/polyfills.ts"],
+  "categoryOrder": ["Classes", "Enums", "*"],
+  "defaultCategory": "Others",
+  "categorizeByGroup": true,
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeNotExported": true,
+  "includeVersion": true,
+  "listInvalidSymbolLinks": true,
+  "pages": {
+    "groups": [
+      {
+        "title": "Get Started",
+        "pages": [
+          {
+            "title": "Prerequisites",
+            "source": "./docs-source/prerequisites.md"
+          },
+          {
+            "title": "Installing the SDK",
+            "source": "./docs-source/installing-sdk.md"
+          },
+          {
+            "title": "Installing the dApp",
+            "source": "./docs-source/installing-dapp.md"
+          },
+          {
+            "title": "Connecting",
+            "source": "./docs-source/connecting.md"
+          },
+          {
+            "title": "Private chains",
+            "source": "./docs-source/private-chain.md"
+          }
+        ]
+      },
+      {
+        "title": "Usage",
+        "pages": [
+          {
+            "title": "Opening a channel",
+            "source": "./docs-source/opening-channel.md"
+          },
+          {
+            "title": "Funding a channel",
+            "source": "./docs-source/funding-channel.md"
+          },
+          {
+            "title": "Transferring",
+            "source": "./docs-source/direct-transfer.md"
+          },
+          {
+            "title": "Closing a channel",
+            "source": "./docs-source/closing-channel.md"
+          },
+          {
+            "title": "Settling a channel",
+            "source": "./docs-source/settling-channel.md"
+          }
+        ]
+      }
+    ]
+  }
+}

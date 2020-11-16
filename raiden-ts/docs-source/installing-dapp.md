@@ -8,11 +8,9 @@ git clone --recurse-submodules https://github.com/raiden-network/light-client.gi
 
 ## Build the SDK
 
-Change to the `raiden-ts` directory inside your newly cloned project, install the dependencies and build the SDK.
-
 ```bash
 cd light-client
-pnpm run build --filter raiden-ts
+yarn workspace raiden-ts build
 ```
 
 ## Run the dApp locally
@@ -20,7 +18,7 @@ pnpm run build --filter raiden-ts
 Start the development server by running the following command:
 
 ```bash
-pnpm run serve --filter raiden-dapp
+yarn workspace raiden-dapp run serve
 ```
 
 Once the development server has been started, navigate to `http://localhost:8080` to start using the Raiden dApp.

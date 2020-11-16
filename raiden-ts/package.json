@@ -14,16 +14,14 @@
     "test:e2e": "NODE_ENV=development jest --coverage tests/e2e",
     "test:e2e:docker": "bash ../e2e-environment/run-e2e-tests.sh",
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
-    "clean": "rimraf dist/ dist:cjs/ .coverage/ src/contracts/ src/abi/ src/deployment/ src/versions.json",
+    "clean": "rimraf dist/ dist:cjs/ .coverage/ src/contracts/ src/abi/ src/deployment/ src/versions.json docs/",
     "contracts:pre": "node ./scripts/copyContracts.js prebuild",
     "contracts:build": "typechain --target=ethers-v5 'src/abi/*.json' --outDir src/contracts",
     "contracts:post": "node ./scripts/copyContracts.js postbuild",
     "contracts": "yarn run contracts:pre && yarn run contracts:build",
     "versions": "node ./scripts/versions.js",
-    "docs:generate": "typedoc --ignoreCompilerErrors --mode file --theme markdown --platform vuepress --out ./docs ./src",
-    "docs:build": "vuepress build docs",
-    "docs:dev": "vuepress dev docs",
-    "prepack": "yarn clean && yarn build"
+    "docs": "typedoc",
+    "prepack": "yarn clean && yarn build && yarn run docs"
   },
   "repository": {
     "type": "git",
@@ -70,9 +68,8 @@
     "ts-jest": "^26.4.4",
     "typechain": "^4.0.0",
     "typedoc": "^0.19.2",
-    "typedoc-plugin-markdown": "^3.0.11",
-    "typescript": "^4.0.5",
-    "vuepress": "^1.7.1"
+    "typedoc-plugin-pages": "^1.0.1",
+    "typescript": "^4.0.5"
   },
   "dependencies": {
     "@ethersproject/abi": "^5.0.7",
@@ -117,7 +114,8 @@
   },
   "files": [
     "/dist",
-    "/dist:cjs"
+    "/dist:cjs",
+    "/docs"
   ],
   "jest": {
     "preset": "ts-jest",
