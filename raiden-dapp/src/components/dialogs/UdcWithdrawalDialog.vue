@@ -100,7 +100,7 @@ import Spinner from '@/components/icons/Spinner.vue';
 export default class UdcWithdrawalDialog extends Vue {
   amount = '0';
   inProgress = false;
-  error: Error | undefined;
+  error: Error | null = null;
   isDone = false;
 
   @Prop({ required: true, type: Boolean })
@@ -154,7 +154,7 @@ export default class UdcWithdrawalDialog extends Vue {
   cancel() {
     this.isDone = false;
     this.inProgress = false;
-    this.error = undefined;
+    this.error = null;
     this.amount = '0';
   }
 }
