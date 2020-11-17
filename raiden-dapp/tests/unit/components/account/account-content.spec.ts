@@ -1,46 +1,69 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('vue-router');
-import flushPromises from 'flush-promises';
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
+import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import Mocked = jest.Mocked;
 import AccountContent from '@/components/account/AccountContent.vue';
 import { RouteNames } from '@/router/route-names';
-import store from '@/store';
 
 Vue.use(Vuetify);
+Vue.use(Vuex);
+
+const $router = new VueRouter() as Mocked<VueRouter>;
+
+async function createWrapper(
+  defaultAccount = '0xAccount',
+  accountBalance = '0',
+  usingRaidenAccount = false,
+  raidenAccountBalance = '0',
+  isConnected = true,
+  useSubkey = false,
+): Promise<Wrapper<AccountContent>> {
+  const vuetify = new Vuetify();
+  const state = {
+    loading: false,
+    defaultAccount,
+    accountBalance,
+    raidenAccountBalance,
+  };
+
+  const getters = {
+    isConnected: () => isConnected,
+    usingRaidenAccount: () => usingRaidenAccount,
+  };
+
+  const store = new Vuex.Store({ state, getters });
+
+  const $raiden = {
+    getMainAccount: jest.fn(() => '0xMainAccount'),
+    getAccount: jest.fn(() => (useSubkey ? '0xAccount' : undefined)),
+  };
+
+  const wrapper = mount(AccountContent, {
+    vuetify,
+    store,
+    mocks: {
+      $router,
+      $raiden,
+      $t: (msg: string) => msg,
+    },
+  });
+
+  // Else some components are not rendered correctly.
+  await wrapper.vm.$nextTick();
+  return wrapper;
+}
 
 describe('AccountContent.vue', () => {
-  let wrapper: Wrapper<AccountContent>;
-  let router: Mocked<VueRouter>;
-  let vuetify: Vuetify;
-  const $raiden = {
-    getMainAccount: jest.fn().mockResolvedValue('0x1'),
-    getAccount: jest.fn().mockResolvedValue('0x2'),
-  };
-  beforeEach(async () => {
-    vuetify = new Vuetify();
-    router = new VueRouter() as Mocked<VueRouter>;
-    store.commit('loadComplete');
-    store.commit('account', 'testAccount');
-    wrapper = mount(AccountContent, {
-      vuetify,
-      store,
-      mocks: {
-        $router: router,
-        $t: (msg: string) => msg,
-        $raiden,
-      },
-    });
-
-    await wrapper.vm.$nextTick();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   test('displays address', async () => {
-    store.commit('account', '0x31aA9D3E2bd38d22CA3Ae9be7aae1D518fe46043');
-    await wrapper.vm.$nextTick();
+    const wrapper = await createWrapper('0x31aA9D3E2bd38d22CA3Ae9be7aae1D518fe46043');
     const addressTitle = wrapper.findAll('.account-content__account-details__address').at(0);
     const addressDesktop = wrapper.find('.account-content__account-details__address__desktop');
     const addressMobile = wrapper.find('.account-content__account-details__address__mobile');
@@ -51,9 +74,7 @@ describe('AccountContent.vue', () => {
   });
 
   test('displays balance for main account only if not using raiden account', async () => {
-    store.commit('balance', '12.0');
-    store.commit('updateSettings', { useRaidenAccount: false });
-    await wrapper.vm.$nextTick();
+    const wrapper = await createWrapper(undefined, '12.0', false);
 
     const accountDetails = wrapper.findAll('.account-content__account-details__eth');
     expect(accountDetails.length).toBe(1);
@@ -67,9 +88,7 @@ describe('AccountContent.vue', () => {
   });
 
   test('displays balance for main and raiden account if using raiden account', async () => {
-    store.commit('raidenAccountBalance', '13.0');
-    store.commit('updateSettings', { useRaidenAccount: true });
-    await wrapper.vm.$nextTick();
+    const wrapper = await createWrapper(undefined, undefined, true, '13.0');
 
     const accountDetails = wrapper.findAll('.account-content__account-details__eth');
     expect(accountDetails.length).toBe(2);
@@ -82,13 +101,15 @@ describe('AccountContent.vue', () => {
     expect(balance.text()).toBe('13.000');
   });
 
-  test('displays one menu item', () => {
+  test('displays one menu item', async () => {
+    const wrapper = await createWrapper();
     const menuItems = wrapper.findAll('.account-content__menu');
 
     expect(menuItems.length).toBe(1);
   });
 
-  test('backup state menu item', () => {
+  test('backup state menu item', async () => {
+    const wrapper = await createWrapper();
     const backupStateMenuItem = wrapper.findAll('.account-content__menu__list-items').at(1);
     const backupStateTitle = backupStateMenuItem.find('.v-list-item__title');
     const backupStateSubtitle = backupStateMenuItem.find('.v-list-item__subtitle');
@@ -97,15 +118,16 @@ describe('AccountContent.vue', () => {
 
     expect(backupStateTitle.text()).toEqual('account-content.menu-items.backup-state.title');
     expect(backupStateSubtitle.text()).toEqual('account-content.menu-items.backup-state.subtitle');
-    expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith(
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.ACCOUNT_BACKUP,
       }),
     );
   });
 
-  test('report bugs menu item', () => {
+  test('report bugs menu item', async () => {
+    const wrapper = await createWrapper();
     const reportBugsMenuItem = wrapper.findAll('.account-content__menu__list-items').at(2);
     const reportBugsTitle = reportBugsMenuItem.find('.v-list-item__title');
     const reportBugsSubtitle = reportBugsMenuItem.find('.v-list-item__subtitle');
@@ -114,7 +136,8 @@ describe('AccountContent.vue', () => {
     expect(reportBugsSubtitle.text()).toBe('account-content.menu-items.report-bugs.subtitle');
   });
 
-  test('udc menu item', () => {
+  test('udc menu item', async () => {
+    const wrapper = await createWrapper();
     const udcMenuItem = wrapper.findAll('.account-content__menu__list-items').at(0);
     const udcMenuTitle = udcMenuItem.find('.v-list-item__title');
     const udcMenuSubtitle = udcMenuItem.find('.v-list-item__subtitle');
@@ -124,44 +147,41 @@ describe('AccountContent.vue', () => {
 
     udcMenuItem.trigger('click');
 
-    expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith(
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.ACCOUNT_UDC,
       }),
     );
   });
 
-  test('show raiden account menu item, if connected via sub key', () => {
+  test('show raiden account menu item, if connected via sub key', async () => {
+    const wrapper = await createWrapper(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true,
+    );
     expect(wrapper.vm.$data.menuItems[0].title).toEqual(
       'account-content.menu-items.raiden-account.title',
     );
   });
 
   test('calls method for downloading logs', async () => {
+    const wrapper = await createWrapper();
     (wrapper.vm as any).downloadLogs = jest.fn();
     const reportBugsMenuItem = wrapper.findAll('.account-content__menu__list-items').at(2);
 
     reportBugsMenuItem.trigger('click');
-
     await wrapper.vm.$nextTick();
 
     expect((wrapper.vm as any).downloadLogs).toBeCalled();
   });
 
   test('settings menu item when disconnected', async () => {
-    store.commit('reset');
-    wrapper = mount(AccountContent, {
-      vuetify,
-      store,
-      mocks: {
-        $router: router,
-        $t: (msg: string) => msg,
-        $raiden,
-      },
-    });
-    await wrapper.vm.$nextTick();
-    await flushPromises();
+    const wrapper = await createWrapper(undefined, undefined, undefined, undefined, false);
 
     const settingsMenuItem = wrapper.findAll('.account-content__menu__list-items').at(0);
     const settingsMenuTitle = settingsMenuItem.find('.v-list-item__title');
@@ -170,8 +190,8 @@ describe('AccountContent.vue', () => {
 
     expect(settingsMenuTitle.text()).toEqual('account-content.menu-items.settings.title');
     expect(settingsMenuSubtitle.text()).toEqual('account-content.menu-items.settings.subtitle');
-    expect(router.push).toHaveBeenCalledTimes(1);
-    expect(router.push).toHaveBeenCalledWith(
+    expect($router.push).toHaveBeenCalledTimes(1);
+    expect($router.push).toHaveBeenCalledWith(
       expect.objectContaining({
         name: RouteNames.ACCOUNT_SETTINGS,
       }),

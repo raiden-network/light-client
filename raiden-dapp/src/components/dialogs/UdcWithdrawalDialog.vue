@@ -78,7 +78,7 @@
 
 <script lang="ts">
 import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { mapState } from 'vuex';
 import { BigNumber, utils, constants } from 'ethers';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ActionButton from '@/components/ActionButton.vue';
@@ -94,7 +94,7 @@ import Spinner from '@/components/icons/Spinner.vue';
     Spinner,
   },
   computed: {
-    ...mapGetters(['udcToken']),
+    ...mapState('userDepositContract', { udcToken: 'token' }),
   },
 })
 export default class UdcWithdrawalDialog extends Vue {

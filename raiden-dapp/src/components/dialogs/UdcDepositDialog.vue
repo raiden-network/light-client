@@ -77,7 +77,7 @@
 
 <script lang="ts">
 import { Component, Vue, Emit, Prop } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import { BigNumber, utils, constants } from 'ethers';
 import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
@@ -98,7 +98,8 @@ import Filters from '@/filters';
     AmountInput,
   },
   computed: {
-    ...mapGetters(['mainnet', 'udcToken']),
+    ...mapState('userDepositContract', { udcToken: 'token' }),
+    ...mapGetters(['mainnet']),
   },
 })
 export default class UdcDepositDialog extends Vue {
@@ -144,9 +145,8 @@ export default class UdcDepositDialog extends Vue {
     }
   }
 
-  async mounted() {
-    const mainAccountAddress =
-      (await this.$raiden.getMainAccount()) ?? (await this.$raiden.getAccount());
+  mounted() {
+    const mainAccountAddress = this.$raiden.getMainAccount() ?? this.$raiden.getAccount();
 
     this.uniswapURL = this.$t('udc-deposit-dialog.uniswap-url', {
       rdnToken: this.udcToken.address,

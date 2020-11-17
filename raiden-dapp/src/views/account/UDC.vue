@@ -83,7 +83,8 @@ import Spinner from '@/components/icons/Spinner.vue';
   },
   computed: {
     ...mapState(['accountBalance', 'raidenAccountBalance']),
-    ...mapGetters(['mainnet', 'udcToken', 'usingRaidenAccount']),
+    ...mapState('userDepositContract', { udcToken: 'token' }),
+    ...mapGetters(['mainnet', 'usingRaidenAccount']),
   },
 })
 export default class UDC extends Vue {

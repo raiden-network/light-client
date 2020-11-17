@@ -27,7 +27,6 @@ export interface RootState {
   stateBackup: string;
   settings: Settings;
   config: Partial<RaidenConfig>;
-  userDepositTokenAddress: string;
   disclaimerAccepted: boolean;
   stateBackupReminderDateMs: number;
   persistDisclaimerAcceptance: boolean;

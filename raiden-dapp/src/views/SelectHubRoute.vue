@@ -121,10 +121,10 @@ import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
   },
   computed: {
     ...mapState(['defaultAccount', 'channels', 'network']),
+    ...mapState('userDepositContract', { udcToken: 'token' }),
     ...mapGetters({
       getToken: 'token',
       mainnet: 'mainnet',
-      udcToken: 'udcToken',
     }),
   },
 })
@@ -178,7 +178,7 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
       return;
     }
 
-    await this.$raiden.fetchTokenData([address]);
+    await this.$raiden.fetchAndUpdateTokenData([address]);
 
     if (typeof this.token.decimals !== 'number') {
       this.navigateToHome();

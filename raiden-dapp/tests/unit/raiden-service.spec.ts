@@ -15,13 +15,15 @@ import { BigNumber, providers, utils, constants } from 'ethers';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { paymentId } from './data/mock-data';
+import { generateToken } from './utils/data-generator';
 import { Address, EventTypes, Hash, OnChange, Raiden, RaidenTransfer } from 'raiden-ts';
 import { ConfigProvider, Configuration } from '@/services/config-provider';
 import { DeniedReason, Token, TokenModel } from '@/model/types';
 import RaidenService from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
-import { RootState, Tokens } from '@/types';
+import { Tokens } from '@/types';
 import Mocked = jest.Mocked;
+import { CombinedStoreState } from '@/store';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { NotificationContext } from '@/store/notifications/notification-context';
 const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual('raiden-ts');
@@ -29,7 +31,7 @@ const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual('raiden-ts'
 describe('RaidenService', () => {
   let raidenService: RaidenService;
   let raiden: Mocked<Raiden>;
-  let store: Mocked<Store<RootState>>;
+  let store: Mocked<Store<CombinedStoreState>>;
   let providerMock: jest.Mock;
   let factory: jest.Mock;
   const mockProvider = {
@@ -88,7 +90,10 @@ describe('RaidenService', () => {
     setupMock(raiden);
     factory = Raiden.create = jest.fn();
     providerMock = Web3Provider.provider = jest.fn();
-    store = new Store({}) as Mocked<Store<RootState>>;
+    store = new Store({}) as Mocked<Store<CombinedStoreState>>;
+    (store.state as any) = {
+      userDepositContract: { token: undefined },
+    };
     raidenService = new RaidenService(store);
   });
 
@@ -98,10 +103,7 @@ describe('RaidenService', () => {
   });
 
   test('throw an error when the user calls getAccount before connecting', async () => {
-    expect.assertions(1);
-    await expect(raidenService.getAccount()).rejects.toThrowError(
-      'Raiden instance was not initialized',
-    );
+    expect(raidenService.getAccount).toThrow('Raiden instance was not initialized');
   });
 
   test('raidenAccountBalance should be fetched when subkey is used', async () => {
@@ -177,7 +179,7 @@ describe('RaidenService', () => {
         totalSupply: BigNumber.from(1221),
       });
 
-      await raidenService.fetchTokenData(['0xtoken']);
+      await raidenService.fetchAndUpdateTokenData(['0xtoken']);
       expect(store.commit).toHaveBeenCalledWith(
         'updateTokens',
         expect.objectContaining({
@@ -197,7 +199,7 @@ describe('RaidenService', () => {
     });
 
     test('return the account when the sdk is connected', async () => {
-      expect(await raidenService.getAccount()).toBe('123');
+      expect(raidenService.getAccount()).toBe('123');
     });
 
     test('returns token balance as string', async () => {
@@ -573,7 +575,7 @@ describe('RaidenService', () => {
         expect(store.commit).toBeCalledWith('account', '123');
         expect(store.commit).toBeCalledWith('balance', '0.0');
 
-        await raidenService.fetchTokenData(['0xtoken1']);
+        await raidenService.fetchAndUpdateTokenData(['0xtoken1']);
 
         expect(store.commit).toHaveBeenLastCalledWith('updateTokens', {
           [mockToken1]: tokens[mockToken1],
@@ -702,8 +704,8 @@ describe('RaidenService', () => {
 
   test('notify that monitor balance proof was send', async () => {
     expect.assertions(1);
-    (store.getters as any) = {
-      udcToken: {},
+    (store.state as any) = {
+      userDepositContract: { token: {} },
     };
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
@@ -732,12 +734,13 @@ describe('RaidenService', () => {
 
   test('notify that withdraw was successful', async () => {
     expect.assertions(1);
+    (store.state as any) = {
+      userDepositContract: { token: generateToken() },
+    };
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
-    (store.getters as any) = {
-      udcToken: {},
-    };
+
     subject.next({
       type: 'udc/withdrawn',
       payload: {
@@ -762,9 +765,6 @@ describe('RaidenService', () => {
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
-    (store.getters as any) = {
-      udcToken: {},
-    };
     subject.next({
       type: 'udc/withdraw/failure',
       payload: {
@@ -780,12 +780,12 @@ describe('RaidenService', () => {
 
   test('notify that withdraw failed', async () => {
     expect.assertions(1);
+    (store.state as any) = {
+      userDepositContract: { token: generateToken() },
+    };
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
-    (store.getters as any) = {
-      udcToken: {},
-    };
     subject.next({
       type: 'udc/withdraw/failure',
       payload: {
@@ -807,6 +807,9 @@ describe('RaidenService', () => {
 
   test('token monitored', async () => {
     expect.assertions(1);
+    (store.state as any) = {
+      userDepositContract: { token: generateToken() },
+    };
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
@@ -865,9 +868,6 @@ describe('RaidenService', () => {
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
-    (store.getters as any) = {
-      udcToken: {},
-    };
     subject.next({
       type: 'channel/settle/success',
       payload: {
@@ -892,9 +892,6 @@ describe('RaidenService', () => {
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
-    (store.getters as any) = {
-      udcToken: {},
-    };
     subject.next({
       type: 'channel/settle/success',
       payload: {
@@ -920,9 +917,6 @@ describe('RaidenService', () => {
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
-    (store.getters as any) = {
-      udcToken: {},
-    };
     subject.next({
       type: 'channel/settle/failure',
       payload: { message: 'error message' },
@@ -943,9 +937,6 @@ describe('RaidenService', () => {
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;
     await setupSDK();
-    (store.getters as any) = {
-      udcToken: {},
-    };
     subject.next({
       type: 'channel/open/failed',
       payload: { message: 'error message' },
@@ -960,7 +951,7 @@ describe('RaidenService', () => {
     });
   });
 
-  test('notify that channel open succeed with state pending', async () => {
+  test('notify that channel open success', async () => {
     expect.assertions(1);
     const subject = new BehaviorSubject({});
     (raiden as any).events$ = subject;

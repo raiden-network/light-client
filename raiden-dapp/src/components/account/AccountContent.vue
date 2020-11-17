@@ -108,7 +108,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
   raidenAccountBalance!: string;
   isConnected!: boolean;
 
-  async mounted() {
+  mounted() {
     this.menuItems = [
       {
         icon: 'account_state.svg',
@@ -139,8 +139,8 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         },
       });
 
-      const mainAccount = await this.$raiden.getMainAccount();
-      const raidenAccount = await this.$raiden.getAccount();
+      const mainAccount = this.$raiden.getMainAccount();
+      const raidenAccount = this.$raiden.getAccount();
       // if sub key is used
       if (mainAccount && raidenAccount) {
         const raidenAccount = {
@@ -186,7 +186,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
     const [lastTime, content] = await getLogsFromStore();
     let account = '';
     try {
-      account = `${await this.$raiden.getAccount()}_`;
+      account = `${this.$raiden.getAccount()}_`;
     } catch (err) {}
     const filename = `raiden_${account}${new Date(lastTime).toISOString()}.log`;
     const file = new File([content], filename, { type: 'text/plain' });
