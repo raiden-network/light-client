@@ -586,7 +586,10 @@ describe('Raiden', () => {
       ).resolves.toMatchObject({
         // test edge case 1: channel closed at stop block is picked up correctly
         [token]: {
-          [partner]: { state: ChannelState.closed, closeBlock },
+          [partner]: {
+            state: expect.toBeOneOf([ChannelState.closed, ChannelState.settleable]),
+            closeBlock,
+          },
         },
         // test edge case 2: channel opened at restart block is picked up correctly
         [newToken]: { [partner]: { state: ChannelState.open, openBlock: restartBlock } },

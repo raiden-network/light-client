@@ -411,7 +411,6 @@ function listenDataChannel(
           ),
         ).pipe(
           finalize(() => {
-            dataChannel.close();
             connection.close();
           }),
         ),

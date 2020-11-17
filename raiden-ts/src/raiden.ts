@@ -418,6 +418,7 @@ export class Raiden {
       'raiden-ts': Raiden.version,
       'raiden-contracts': Raiden.contractVersion,
       config: this.config,
+      versions: process?.versions,
     });
 
     // Set `epicMiddleware` to `null`, this indicates the instance is not running.
