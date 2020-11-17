@@ -44,6 +44,13 @@
     <v-row v-if="!hasEnoughServiceTokens" class="udc__low-balance" no-gutters>
       {{ $t('udc.balance-too-low', { symbol: serviceToken }) }}
     </v-row>
+    <v-row>
+      <planned-udc-withdrawal-information
+        :planned-withdrawal="plannedUdcWithdrawal"
+        :udc-token="udcToken"
+        :block-number="blockNumber"
+      />
+    </v-row>
     <udc-deposit-dialog
       :visible="showUdcDeposit"
       @cancel="showUdcDeposit = false"
@@ -64,7 +71,9 @@ import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
 import { constants } from 'ethers';
 
+import PlannedUdcWithdrawalInformation from '@/components/PlannedUdcWithdrawalInformation.vue';
 import { Token } from '@/model/types';
+import { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
@@ -80,10 +89,14 @@ import Spinner from '@/components/icons/Spinner.vue';
     AmountDisplay,
     ErrorMessage,
     Spinner,
+    PlannedUdcWithdrawalInformation,
   },
   computed: {
-    ...mapState(['accountBalance', 'raidenAccountBalance']),
-    ...mapState('userDepositContract', { udcToken: 'token' }),
+    ...mapState(['blockNumber', 'accountBalance', 'raidenAccountBalance']),
+    ...mapState('userDepositContract', {
+      udcToken: 'token',
+      plannedUdcWithdrawal: 'plannedWithdrawal',
+    }),
     ...mapGetters(['mainnet', 'usingRaidenAccount']),
   },
 })
@@ -91,10 +104,12 @@ export default class UDC extends Vue {
   amount = '10';
   udcCapacity = constants.Zero;
   hasEnoughServiceTokens = false;
+  blockNumber!: number;
   accountBalance!: string;
   raidenAccountBalance!: string;
   mainnet!: boolean;
   udcToken!: Token;
+  plannedUdcWithdrawal!: PlannedUdcWithdrawal | undefined;
   usingRaidenAccount!: boolean;
   showUdcDeposit = false;
   withdrawFromUdc = false;
