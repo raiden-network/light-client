@@ -151,8 +151,8 @@ hr {
     border-radius: 8px;
     color: #7a7a80;
     background-color: #1c1c1c;
-    font-size: 10px;
-    line-height: 15px;
+    font-size: 12px;
+    line-height: 18px;
 
     &--nested {
       flex-direction: row;
@@ -167,7 +167,7 @@ hr {
     }
 
     &__header {
-      font-size: 12px;
+      font-size: 15px;
       align-self: flex-start;
     }
 
@@ -178,8 +178,8 @@ hr {
 
   &__amount {
     color: #ffffff;
-    font-size: 26px;
-    line-height: 39px;
+    font-size: 31px;
+    line-height: 47px;
   }
 
   &__actions {
