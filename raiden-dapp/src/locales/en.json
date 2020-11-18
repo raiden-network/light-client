@@ -366,7 +366,7 @@
     "uniswap-url-title": "Click here to purchase RDN",
     "uniswap-url": "https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency={rdnToken}&exactAmount=10&exactField=outPUT&recipient={mainAccountAddress}",
     "available-utility-token": "Available {utilityTokenSymbol} to deposit: {utilityTokenBalance}",
-    "available": "Available {currency} to pay for on-chain transaction: {balance} {currency}",
+    "available-eth": "Available ETH for on-chain transaction: {balance} {currency}",
     "error": "The mint and deposit operation failed.",
     "error-main": "The deposit operation failed.",
     "progress": {
