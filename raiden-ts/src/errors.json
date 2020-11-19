@@ -71,6 +71,7 @@
   "RDN_INVALID_SECRETHASH": "Invalid provided secrethash.",
   "RDN_SECRET_SECRETHASH_MISMATCH": "Provided secrethash must match the sha256 hash of provided secret.",
   "RDN_UNKNOWN_TRANSFER": "Unknown transfer.",
+  "RDN_DATABASE_DELETED": "Database deleted!",
 
   "DTA_NEGATIVE_NUMBER": "Encountered negative number while encoding to HEX string.",
   "DTA_NUMBER_TOO_LARGE": "Encountered a number that is too large to be encoded.",

@@ -19,6 +19,7 @@ import isEmpty from 'lodash/isEmpty';
 import type { RaidenState } from './state';
 import type { RaidenAction } from './actions';
 import type { RaidenDatabase } from './db/types';
+import { assert, ErrorCodes } from './utils/error';
 
 /**
  * Create a raiden persister middleware for redux.
@@ -30,12 +31,13 @@ import type { RaidenDatabase } from './db/types';
 export function createPersisterMiddleware(
   db: RaidenDatabase,
 ): Middleware<undefined, RaidenState, Dispatch<RaidenAction>> {
-  const log = db.constructor.__defaults.log;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let dirtyDocs: { [_id: string]: any } = {};
 
   // do not run concurrently
   const saveDatabase = async () => {
+    await db.info();
+    assert(!db.__opts.versionchanged, ErrorCodes.RDN_DATABASE_DELETED);
     while (!isEmpty(dirtyDocs)) {
       const data = dirtyDocs; // copy reference
       dirtyDocs = {};
@@ -98,9 +100,10 @@ export function createPersisterMiddleware(
     }
     if (!db.busy$.value) {
       db.busy$.next(true);
-      saveDatabase()
-        .catch((err) => log?.warn('Persister saveDatabase error', err))
-        .finally(() => db.busy$.next(false));
+      saveDatabase().then(
+        () => db.busy$.next(false),
+        (err) => db.busy$.error(err),
+      );
     }
     return result;
   };

@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- [#2360] Properly error & shutdown if database gets deleted at runtime
+
+[#2360]: https://github.com/raiden-network/light-client/issues/2360
 
 ## [0.13.0] - 2020-11-10
 ### Fixed
