@@ -1,4 +1,4 @@
-import { Observable, from, of, combineLatest, using, throwError } from 'rxjs';
+import { Observable, from, of, combineLatest, using, throwError, merge } from 'rxjs';
 import {
   catchError,
   filter,
@@ -10,6 +10,7 @@ import {
   map,
   scan,
   distinctUntilChanged,
+  ignoreElements,
 } from 'rxjs/operators';
 import { MaxUint256 } from '@ethersproject/constants';
 import negate from 'lodash/negate';
@@ -167,8 +168,9 @@ export function raidenRootEpic(
     // wire deps.latest$ when observableFactory below gets subscribed, and tears down on complete
     () => getLatest$(limitedAction$, limitedState$, deps).subscribe(deps.latest$),
     () =>
-      // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through
-      from(Object.values(RaidenEpics)).pipe(
+      // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through;
+      // also merge deps.db.busy$ errors, in order to shut down epics if they occur
+      merge(from(Object.values(RaidenEpics)), deps.db.busy$.pipe(ignoreElements())).pipe(
         mergeMap((epic) =>
           epic(limitedAction$, limitedState$, deps).pipe(
             catchError((err) => {

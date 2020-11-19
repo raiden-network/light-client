@@ -34,6 +34,7 @@ export interface RaidenDatabaseMeta {
 
 export type RaidenDatabaseOptions = {
   log?: logging.Logger;
+  versionchanged?: boolean;
 } & (
   | PouchDB.Configuration.LocalDatabaseConfiguration
   | PouchDB.Configuration.RemoteDatabaseConfiguration
@@ -43,6 +44,7 @@ export interface RaidenDatabase extends PouchDB.Database {
   storageKeys: Set<string>;
   busy$: BehaviorSubject<boolean>;
   constructor: RaidenDatabaseConstructor;
+  __opts: RaidenDatabaseOptions;
 }
 
 export type RaidenDatabaseConstructor = (new (
