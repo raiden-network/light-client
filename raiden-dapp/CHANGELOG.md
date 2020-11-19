@@ -11,8 +11,11 @@
 
 ### Changed
 
+- [#2369] Overall re-design of accounts UDC screen
+
 [#1693]: https://github.com/raiden-network/light-client/issues/1693
 [#2308]: https://github.com/raiden-network/light-client/issues/2308
+[#2369]: https://github.com/raiden-network/light-client/issues/2369
 
 ## [0.13.0] - 2020-11-10
 
