@@ -16,12 +16,20 @@
     </div>
 
     <div class="udc__actions">
-      <div class="udc__actions__button" @click="showUdcDeposit = true">
+      <div
+        class="udc__actions__button"
+        data-cy="udc__actions__button__deposit"
+        @click="showUdcDeposit = true"
+      >
         <img :src="require('@/assets/icon-deposit.svg')" />
         {{ $t('udc.deposit') }}
       </div>
 
-      <div class="udc__actions__button" @click="withdrawFromUdc = true">
+      <div
+        data-cy="udc__actions__button__withdrawal"
+        class="udc__actions__button"
+        @click="withdrawFromUdc = true"
+      >
         <img :src="require('@/assets/icon-withdraw.svg')" />
         {{ $t('udc.withdrawal') }}
       </div>

@@ -70,7 +70,7 @@ async function createWrapper(
 }
 
 async function clickActionButton(wrapper: Wrapper<UDC>, index: number): Promise<void> {
-  const button = wrapper.findAll('button').at(index);
+  const button = wrapper.findAll('.udc__actions__button').at(index);
   button.trigger('click');
   await wrapper.vm.$nextTick();
 }
