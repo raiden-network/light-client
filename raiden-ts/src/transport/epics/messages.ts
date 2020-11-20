@@ -235,7 +235,7 @@ export function matrixMessageReceivedEpic(
                 {
                   text: line,
                   message,
-                  ts: event.event.origin_server_ts ?? Date.now(),
+                  ts: Date.now(),
                   userId: presence.payload.userId,
                   ...(room ? { roomId: room.roomId } : {}),
                 },

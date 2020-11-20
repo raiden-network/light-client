@@ -92,9 +92,9 @@ export function channelAmounts(channel: Channel): ChannelBalances {
     ownUnlocked = ownTransferred.add(ownOnchainUnlocked) as UInt<32>,
     partnerUnlocked = partnerTransferred.add(partnerOnchainUnlocked) as UInt<32>,
     ownLocked = channel.own.balanceProof.lockedAmount.sub(ownOnchainUnlocked) as UInt<32>,
-    partnerLocked = channel.partner.balanceProof.lockedAmount.sub(partnerOnchainUnlocked) as UInt<
-      32
-    >,
+    partnerLocked = channel.partner.balanceProof.lockedAmount.sub(
+      partnerOnchainUnlocked,
+    ) as UInt<32>,
     ownBalance = partnerUnlocked.sub(ownUnlocked) as Int<32>,
     partnerBalance = ownUnlocked.sub(partnerUnlocked) as Int<32>, // == -ownBalance
     _ownPendingWithdraw = bnMax(
