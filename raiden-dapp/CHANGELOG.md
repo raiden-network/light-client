@@ -6,10 +6,12 @@
 
 ### Added
 
+- [#698] Info overlay
 - [#1693] Customizable privacy policy
 
 ### Changed
 
+[#698]: https://github.com/raiden-network/light-client/issues/698
 [#1693]: https://github.com/raiden-network/light-client/issues/1693
 
 ## [0.13.0] - 2020-11-10
