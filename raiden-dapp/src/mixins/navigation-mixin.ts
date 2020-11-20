@@ -67,7 +67,7 @@ export default class NavigationMixin extends Vue {
     });
   }
 
-  navigateToAccoount() {
+  navigateToAccount() {
     this.$router.push({
       name: RouteNames.ACCOUNT_ROOT,
     });
