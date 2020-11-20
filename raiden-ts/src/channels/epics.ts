@@ -55,8 +55,8 @@ import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
 
 import { createBalanceHash, MessageTypeId } from '../messages/utils';
-import { TokenNetwork } from '../contracts/TokenNetwork';
-import { HumanStandardToken } from '../contracts/HumanStandardToken';
+import type { TokenNetwork, HumanStandardToken } from '../contracts';
+
 import { findBalanceProofMatchingBalanceHash$ } from '../transfers/utils';
 import { Direction } from '../transfers/state';
 import { ChannelState, Channel } from './state';

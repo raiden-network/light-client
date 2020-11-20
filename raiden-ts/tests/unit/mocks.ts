@@ -43,21 +43,22 @@ import { signMessage } from 'raiden-ts/messages/utils';
 export const originalSignMessage = jest.requireActual<any>('raiden-ts/messages/utils').signMessage;
 export const mockedSignMessage = signMessage as jest.MockedFunction<typeof signMessage>;
 
-import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
-import { TokenNetwork } from 'raiden-ts/contracts/TokenNetwork';
-import { HumanStandardToken } from 'raiden-ts/contracts/HumanStandardToken';
-import { ServiceRegistry } from 'raiden-ts/contracts/ServiceRegistry';
-import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
-import { SecretRegistry } from 'raiden-ts/contracts/SecretRegistry';
-
-import { TokenNetworkRegistryFactory } from 'raiden-ts/contracts/TokenNetworkRegistryFactory';
-import { TokenNetworkFactory } from 'raiden-ts/contracts/TokenNetworkFactory';
-import { HumanStandardTokenFactory } from 'raiden-ts/contracts/HumanStandardTokenFactory';
-import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
-import { UserDepositFactory } from 'raiden-ts/contracts/UserDepositFactory';
-import { SecretRegistryFactory } from 'raiden-ts/contracts/SecretRegistryFactory';
-import { MonitoringServiceFactory } from 'raiden-ts/contracts/MonitoringServiceFactory';
-import { MonitoringService } from 'raiden-ts/contracts/MonitoringService';
+import {
+  TokenNetworkRegistry,
+  TokenNetwork,
+  HumanStandardToken,
+  ServiceRegistry,
+  UserDeposit,
+  SecretRegistry,
+  MonitoringService,
+  TokenNetworkRegistry__factory,
+  TokenNetwork__factory,
+  HumanStandardToken__factory,
+  ServiceRegistry__factory,
+  UserDeposit__factory,
+  SecretRegistry__factory,
+  MonitoringService__factory,
+} from 'raiden-ts/contracts';
 
 import { RaidenEpicDeps, ContractsInfo, Latest } from 'raiden-ts/types';
 import { makeInitialState, RaidenState } from 'raiden-ts/state';
@@ -488,7 +489,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   const log = logging.getLogger(`raiden:${address}`);
 
   const registryAddress = '0xregistry';
-  const registryContract = TokenNetworkRegistryFactory.connect(
+  const registryContract = TokenNetworkRegistry__factory.connect(
     registryAddress,
     signer,
   ) as MockedContract<TokenNetworkRegistry>;
@@ -499,9 +500,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
 
   const getTokenNetworkContract = memoize(
     (address: string): MockedContract<TokenNetwork> => {
-      const tokenNetworkContract = TokenNetworkFactory.connect(address, signer) as MockedContract<
-        TokenNetwork
-      >;
+      const tokenNetworkContract = TokenNetwork__factory.connect(
+        address,
+        signer,
+      ) as MockedContract<TokenNetwork>;
       spyContract(tokenNetworkContract);
       tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
         Zero,
@@ -518,7 +520,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
 
   const getTokenContract = memoize(
     (address: string): MockedContract<HumanStandardToken> => {
-      const tokenContract = HumanStandardTokenFactory.connect(address, signer) as MockedContract<
+      const tokenContract = HumanStandardToken__factory.connect(address, signer) as MockedContract<
         HumanStandardToken
       >;
       spyContract(tokenContract);
@@ -527,7 +529,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     },
   );
 
-  const serviceRegistryContract = ServiceRegistryFactory.connect(
+  const serviceRegistryContract = ServiceRegistry__factory.connect(
     registryAddress,
     signer,
   ) as MockedContract<ServiceRegistry>;
@@ -535,7 +537,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   serviceRegistryContract.token.mockResolvedValue('0x0800000000000000000000000000000000000008');
   serviceRegistryContract.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
-  const userDepositContract = UserDepositFactory.connect(address, signer) as MockedContract<
+  const userDepositContract = UserDeposit__factory.connect(address, signer) as MockedContract<
     UserDeposit
   >;
 
@@ -555,13 +557,14 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     1: Zero,
   });
 
-  const secretRegistryContract = SecretRegistryFactory.connect(address, signer) as MockedContract<
-    SecretRegistry
-  >;
+  const secretRegistryContract = SecretRegistry__factory.connect(
+    address,
+    signer,
+  ) as MockedContract<SecretRegistry>;
 
   spyContract(secretRegistryContract);
 
-  const monitoringServiceContract = MonitoringServiceFactory.connect(
+  const monitoringServiceContract = MonitoringService__factory.connect(
     address,
     signer,
   ) as MockedContract<MonitoringService>;
@@ -969,7 +972,7 @@ export async function makeRaiden(
     );
   provider.resetEventsBlock(100);
 
-  const registryContract = TokenNetworkRegistryFactory.connect(
+  const registryContract = TokenNetworkRegistry__factory.connect(
     registryAddress,
     signer,
   ) as MockedContract<TokenNetworkRegistry>;
@@ -978,9 +981,10 @@ export async function makeRaiden(
 
   const getTokenNetworkContract = memoize(
     (address: string): MockedContract<TokenNetwork> => {
-      const tokenNetworkContract = TokenNetworkFactory.connect(address, signer) as MockedContract<
-        TokenNetwork
-      >;
+      const tokenNetworkContract = TokenNetwork__factory.connect(
+        address,
+        signer,
+      ) as MockedContract<TokenNetwork>;
       spyContract(tokenNetworkContract, `TokenNetwork[${address}]`);
       tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
         Zero,
@@ -1016,7 +1020,7 @@ export async function makeRaiden(
 
   const getTokenContract = memoize(
     (address: string): MockedContract<HumanStandardToken> => {
-      const tokenContract = HumanStandardTokenFactory.connect(address, signer) as MockedContract<
+      const tokenContract = HumanStandardToken__factory.connect(address, signer) as MockedContract<
         HumanStandardToken
       >;
       spyContract(tokenContract, `Token[${address}]`);
@@ -1027,7 +1031,7 @@ export async function makeRaiden(
     },
   );
 
-  const serviceRegistryContract = ServiceRegistryFactory.connect(
+  const serviceRegistryContract = ServiceRegistry__factory.connect(
     serviceRegistryAddress,
     signer,
   ) as MockedContract<ServiceRegistry>;
@@ -1035,7 +1039,7 @@ export async function makeRaiden(
   serviceRegistryContract.token.mockResolvedValue(svtAddress);
   serviceRegistryContract.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
-  const userDepositContract = UserDepositFactory.connect(udcAddress, signer) as MockedContract<
+  const userDepositContract = UserDeposit__factory.connect(udcAddress, signer) as MockedContract<
     UserDeposit
   >;
   spyContract(userDepositContract, 'UserDeposit');
@@ -1051,7 +1055,7 @@ export async function makeRaiden(
     1: Zero,
   });
 
-  const secretRegistryContract = SecretRegistryFactory.connect(
+  const secretRegistryContract = SecretRegistry__factory.connect(
     secretRegistryAddress,
     signer,
   ) as MockedContract<SecretRegistry>;
@@ -1072,7 +1076,7 @@ export async function makeRaiden(
     return makeTransaction(undefined, { from: address, hash: transactionHash, data: secret });
   });
 
-  const monitoringServiceContract = MonitoringServiceFactory.connect(
+  const monitoringServiceContract = MonitoringService__factory.connect(
     monitoringServiceAddress,
     signer,
   ) as MockedContract<MonitoringService>;

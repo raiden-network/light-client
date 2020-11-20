@@ -5,13 +5,15 @@ import type { JsonRpcProvider } from '@ethersproject/providers';
 import { MatrixClient } from 'matrix-js-sdk';
 import { Logger } from 'loglevel';
 
-import { TokenNetworkRegistry } from './contracts/TokenNetworkRegistry';
-import { ServiceRegistry } from './contracts/ServiceRegistry';
-import { TokenNetwork } from './contracts/TokenNetwork';
-import { HumanStandardToken } from './contracts/HumanStandardToken';
-import { UserDeposit } from './contracts/UserDeposit';
-import { SecretRegistry } from './contracts/SecretRegistry';
-import { MonitoringService } from './contracts/MonitoringService';
+import type {
+  TokenNetworkRegistry,
+  ServiceRegistry,
+  TokenNetwork,
+  HumanStandardToken,
+  UserDeposit,
+  SecretRegistry,
+  MonitoringService,
+} from './contracts';
 
 import { RaidenAction } from './actions';
 import { RaidenState } from './state';
