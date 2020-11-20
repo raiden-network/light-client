@@ -1,16 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+jest.mock('vue-router');
 import Vue from 'vue';
 import Vuex from 'vuex';
+import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
+import Mocked = jest.Mocked;
 import AccountRoute from '@/views/AccountRoute.vue';
 import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuex);
 Vue.use(Vuetify);
 
+const router = new VueRouter() as Mocked<VueRouter>;
+const vuetify = new Vuetify();
+
 const createWrapper = (): Wrapper<AccountRoute> => {
-  const vuetify = new Vuetify();
   const getters = {
     network: () => 'Selected Network',
     isConnected: () => true,
@@ -23,6 +28,7 @@ const createWrapper = (): Wrapper<AccountRoute> => {
     store,
     mocks: {
       $t: (msg: string) => msg,
+      $router: router,
       $route: {
         name: RouteNames.ACCOUNT_ROOT,
         meta: {
@@ -43,5 +49,15 @@ describe('AccountRoute.vue', () => {
     await wrapper.vm.$nextTick();
 
     expect((wrapper.vm as any).navigateBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('clicking on back button navigates to previously visited route', () => {
+    const wrapper = createWrapper();
+
+    const backButton = wrapper.findAll('button').at(0);
+    backButton.trigger('click');
+
+    expect(router.go).toHaveBeenCalledTimes(1);
+    expect(router.go).toHaveBeenCalledWith(-1);
   });
 });

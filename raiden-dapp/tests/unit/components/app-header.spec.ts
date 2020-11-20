@@ -1,15 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+jest.mock('vue-router');
 import Vue from 'vue';
 import Vuex from 'vuex';
+import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
 import { $identicon } from '../utils/mocks';
+import Mocked = jest.Mocked;
 import AppHeader from '@/components/AppHeader.vue';
 import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuex);
 Vue.use(Vuetify);
 
+const router = new VueRouter() as Mocked<VueRouter>;
+const vuetify = new Vuetify();
 const network = 'Selected Network';
 
 const createWrapper = (
@@ -17,7 +22,6 @@ const createWrapper = (
   newNotifications = false,
   routeName = RouteNames.CHANNELS,
 ): Wrapper<AppHeader> => {
-  const vuetify = new Vuetify();
   const getters = {
     isConnected: () => connected,
     network: () => network,
@@ -26,6 +30,9 @@ const createWrapper = (
     namespaced: true,
     state: {
       newNotifications,
+    },
+    mutations: {
+      notificationsViewed: () => true,
     },
   };
 
@@ -36,6 +43,7 @@ const createWrapper = (
     store,
     mocks: {
       $identicon: $identicon(),
+      $router: router,
       $route: {
         name: routeName,
         meta: {
@@ -46,7 +54,26 @@ const createWrapper = (
   });
 };
 
+beforeEach(() => {
+  router.push = jest.fn();
+});
+
 describe('AppHeader.vue', () => {
+  test('clicking back button routes back to previous screen', async () => {
+    const wrapper = createWrapper();
+    const backButton = wrapper.findAll('button').at(0);
+
+    backButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.HOME,
+      }),
+    );
+  });
+
   test('no new notifications does not display notification badge', () => {
     const wrapper = createWrapper();
     const newNotificationsBadge = wrapper.find('.v-badge');
@@ -72,6 +99,21 @@ describe('AppHeader.vue', () => {
     expect((wrapper.vm as any).notificationPanel).toHaveBeenCalledTimes(1);
   });
 
+  test('clicking notifications icon routes to notifications screen', async () => {
+    const wrapper = createWrapper();
+    const backButton = wrapper.find('.app-header__content__icons__notifications-button');
+
+    backButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.NOTIFICATIONS,
+      }),
+    );
+  });
+
   test('clicking identicon calls accountMenu method', async () => {
     const wrapper = createWrapper();
     (wrapper.vm as any).accountMenu = jest.fn();
@@ -81,6 +123,21 @@ describe('AppHeader.vue', () => {
     await wrapper.vm.$nextTick();
 
     expect((wrapper.vm as any).accountMenu).toHaveBeenCalledTimes(1);
+  });
+
+  test('clicking identicon routes to account screen', async () => {
+    const wrapper = createWrapper();
+    const backButton = wrapper.find('.app-header__content__icons__identicon');
+
+    backButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: RouteNames.ACCOUNT_ROOT,
+      }),
+    );
   });
 
   test('does not display identicon if on disclaimer route', () => {
