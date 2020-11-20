@@ -6,7 +6,7 @@ import VueRouter, { NavigationGuard } from 'vue-router';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { mount, shallowMount, Wrapper } from '@vue/test-utils';
+import { mount, Wrapper } from '@vue/test-utils';
 import { utils } from 'ethers';
 import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
@@ -56,14 +56,14 @@ describe('OpenChannelRoute.vue', () => {
     };
 
     if (shallow) {
-      return shallowMount(OpenChannelRoute, options);
+      return mount(OpenChannelRoute, options);
     }
     return mount(OpenChannelRoute, options);
   }
 
   beforeAll(() => {
     service = new RaidenService(store) as Mocked<RaidenService>;
-    service.fetchTokenData = jest.fn().mockResolvedValue(undefined);
+    service.fetchAndUpdateTokenData = jest.fn().mockResolvedValue(undefined);
     router = new VueRouter() as Mocked<VueRouter>;
   });
 
@@ -164,7 +164,7 @@ describe('OpenChannelRoute.vue', () => {
 
   describe('invalid route', () => {
     beforeAll(() => {
-      service.fetchTokenData = jest.fn().mockResolvedValue(null);
+      service.fetchAndUpdateTokenData = jest.fn().mockResolvedValue(null);
     });
 
     afterEach(() => {

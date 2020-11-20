@@ -190,15 +190,19 @@
     "no-tokens": "The Raiden account has no tokens"
   },
   "udc": {
-    "description": "Your UDC (User Deposit Contract) contains utility tokens for your current account. The tokens are used to pay for services such as pathfinding and monitoring.",
-    "deposit": "Deposit",
-    "mint-deposit": "Mint and deposit",
-    "balance": "Your current UDC balance is:",
+    "balance": "User Deposit Contract Balance",
+    "balance-too-low": "Balance is too low for services. Deposit at least {minAmount} {tokenSymbol} to enable receiving.",
+    "withdrawal-header": "Withdrawal in progress",
     "withdrawal": "Withdrawal",
+    "deposit": "Deposit",
     "asterisk": "*",
     "withdrawal-footnote": "Actual withdrawal amount might vary",
-    "balance-too-low": "Your {symbol} balance is too low to pay for the Monitoring Service. Receiving transfers has been temporarily disabled. Use the button above to mint an deposit more tokens. A minimum amount of 5 {service} is needed to enable receiving.",
-    "withdrawal-planned": "The withdrawal from the user deposit has been planned. You will get notified when the withdrawal is complete."
+    "withdrawal-planned": "The withdrawal from the user deposit has been planned. You will get notified when the withdrawal is complete.",
+    "information": {
+      "no-withdrawal-in-progress": "No withdrawal in progress",
+      "blocks-remaining": "Blocks remaining...",
+      "confirmed-navigation-link": "ready・continue in withdrawal screen"
+    }
   },
   "backup-state": {
     "description": "The state holds all account information except the private key. You can backup your state to make sure the dApp is kept in sync when switching between browsers.",
@@ -410,7 +414,7 @@
     "uniswap-url-title": "Click here to purchase RDN",
     "uniswap-url": "https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency={rdnToken}&exactAmount=10&exactField=outPUT&recipient={mainAccountAddress}",
     "available-utility-token": "Available {utilityTokenSymbol} to deposit: {utilityTokenBalance}",
-    "available": "Available {currency} to pay for on-chain transaction: {balance} {currency}",
+    "available-eth": "Available ETH for on-chain transaction: {balance} {currency}",
     "error": "The mint and deposit operation failed.",
     "error-main": "The deposit operation failed.",
     "progress": {

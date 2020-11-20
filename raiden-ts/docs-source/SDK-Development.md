@@ -52,13 +52,13 @@ In this section we will dive into the the internal machinery of the SDK and outl
 
 Instead of using classes as in object-oriented programming the SDK is written in a functional way and uses functions and type schemas like interfaces to separate logic and data.
 
-The only class in the SDK is the [Raiden](https://github.com/raiden-network/light-client/blob/e3ffb1b24e25ffca1c072a9335b00d47bc148d81/raiden/src/raiden.ts#L66) class which is the main entry point. It is instantiated through the [`async Raiden.create`](https://github.com/raiden-network/light-client/blob/e3ffb1b24e25ffca1c072a9335b00d47bc148d81/raiden/src/raiden.ts#L231) static method. This method returns a ready-to-use `Raiden` client object which instantiates and starts a central Redux `store`.
+The main entrypoint in the SDK is the [Raiden](classes/_src_raiden_.raiden.html) class which is the only relevant class. It is instantiated through the [`async Raiden.create`](classes/_src_raiden_.raiden.html#create) static method. This method returns a ready-to-use `Raiden` client object which instantiates and starts a central Redux `store`.
 
 The Redux `store` is responsible for handling the **actions** that changes the **state** of the **reducers**. The **reducers** are in turn calling the functions which changes the state of your application.
 
 All **actions** goes to the **Epics** middleware where synchronous and asynchronous tasks can be performed with the help of **observables**. Any new action that is outputted gets fed back to the Redux store and continues down this _actions pipeline_.
 
-The `Raiden` client dispatches **request** actions to the `store` and waits for a respective **success** or **error** to flow through the actions pipeline. These actions are created using [typesafe-actions](https://github.com/piotrwitek/typesafe-actions) with the [Flux Standard Action](https://github.com/redux-utilities/flux-standard-action) schema/pattern.
+The `Raiden` client dispatches **request** actions to the `store` and waits for a respective **success** or **failure** to flow through the actions pipeline. These actions are created using [createAction](globals.html#createaction) and [createAsyncAction](globals.html#createasyncaction) with the [Flux Standard Action](https://github.com/redux-utilities/flux-standard-action) schema/pattern.
 
 All the business logic happens in the `Epics`, they accept a dependencies object as a third parameter. This acts as a dependency injector (DI) and contains everything from configuration variables to the Ethers `Provider` instance. The `Epics` are factories that receives the `actions$` and `state$` observables and dependencies and outputs observables of new actions. They can listen and react to any kind of event or observable.
 

@@ -182,7 +182,7 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
       return;
     }
 
-    await this.$raiden.fetchTokenData([address]);
+    await this.$raiden.fetchAndUpdateTokenData([address]);
 
     if (typeof this.token.decimals !== 'number') {
       this.navigateToHome();

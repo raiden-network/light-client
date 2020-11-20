@@ -27,7 +27,6 @@ jest.mock('raiden-ts/helpers', () => {
 
 import { request } from 'matrix-js-sdk';
 
-import 'raiden-ts/polyfills';
 import { Raiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { makeInitialState, RaidenState } from 'raiden-ts/state';
@@ -42,7 +41,7 @@ import { RaidenTransfer, RaidenTransferStatus } from 'raiden-ts/transfers/state'
 import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { matrixSetup } from 'raiden-ts/transport/actions';
 import { jsonStringify } from 'raiden-ts/utils/data';
-import { ServiceRegistryFactory } from 'raiden-ts/contracts/ServiceRegistryFactory';
+import { ServiceRegistry__factory } from 'raiden-ts/contracts';
 import { ErrorCodes } from 'raiden-ts/utils/error';
 import { channelKey } from 'raiden-ts/channels/utils';
 import { confirmationBlocks } from '../unit/fixtures';
@@ -120,7 +119,7 @@ describe('Raiden', () => {
     partner = accounts[1];
     network = await provider.getNetwork();
 
-    const serviceRegistryContract = ServiceRegistryFactory.connect(
+    const serviceRegistryContract = ServiceRegistry__factory.connect(
         contractsInfo.ServiceRegistry.address,
         provider,
       ),
@@ -586,7 +585,10 @@ describe('Raiden', () => {
       ).resolves.toMatchObject({
         // test edge case 1: channel closed at stop block is picked up correctly
         [token]: {
-          [partner]: { state: ChannelState.closed, closeBlock },
+          [partner]: {
+            state: expect.toBeOneOf([ChannelState.closed, ChannelState.settleable]),
+            closeBlock,
+          },
         },
         // test edge case 2: channel opened at restart block is picked up correctly
         [newToken]: { [partner]: { state: ChannelState.open, openBlock: restartBlock } },

@@ -10,6 +10,7 @@
       :placeholder="placeholder"
       :hide-details="hideErrorLabel"
       autocomplete="off"
+      :autofocus="autofocus"
       @paste="onPaste($event)"
       @input="onInput($event)"
     >
@@ -46,6 +47,10 @@ export default class AmountInput extends Vue {
   placeholder!: string;
   @Prop({ required: false, default: () => constants.Zero })
   max!: BigNumber;
+
+  @Prop({ default: false, type: Boolean })
+  autofocus!: boolean;
+
   valid = true;
   amount = '';
   private static numericRegex = /^\d*[.]?\d*$/;

@@ -2,7 +2,7 @@
 
 To connect to the Raiden Network, you simply make a transaction to open a channel on-chain with a given partner on a registered token network. You can also specify a `settleTimeout`, which will be the number of blocks you and your partner will need to wait after closing a channel to be able to settle it and actually get the due tokens back. `settleTimeout` defaults to `500`
 
-```
+```typescript
 import { RaidenChannel } from 'raiden-ts';
 
 # logs channels$ changes

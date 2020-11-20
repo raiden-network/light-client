@@ -22,11 +22,6 @@ describe('TransactionList.vue', () => {
     const transfersState: Transfers = {};
     transferList.forEach((transfer) => (transfersState[transfer.key] = transfer));
 
-    /*
-     * For some reason does the plain 'mount' not work with with lazy list of
-     * Vuetify. Also it looks wrong, the 'shallowMount' fixes this issue and
-     * actually displays the transaction components in the list.
-     */
     return shallowMount(TransactionList, {
       vuetify,
       mocks: {

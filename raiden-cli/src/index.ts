@@ -210,18 +210,18 @@ function createLocalStorage(name: string): LocalStorage {
   return localStorage;
 }
 
-function unrefTimeout(timeout: number | NodeJS.Timeout) {
-  if (typeof timeout === 'number') return;
-  timeout.unref();
-}
-
 function shutdownServer(this: Cli): void {
   if (this.server?.listening) {
     this.log.info('Closing server...');
     this.server.close();
   }
-  // force-exit at most 10s after stopping raiden
-  unrefTimeout(setTimeout(() => process.exit(0), 10000));
+  // it's safe to call stop multiple times; this one to await for db flush;
+  // then we wait a little for any pending request to complete and force-exit cleanly after that,
+  // to skip wrtc segfault on process teardown
+  new Promise((resolve) => setTimeout(resolve, 10))
+    .then(() => this.raiden.stop())
+    .then(() => new Promise((resolve) => setTimeout(resolve, 1000)))
+    .then(() => process.exit(0));
 }
 
 function shutdownRaiden(this: Cli): void {

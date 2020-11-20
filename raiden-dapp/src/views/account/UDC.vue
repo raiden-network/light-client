@@ -1,49 +1,51 @@
 <template>
   <div data-cy="udc" class="udc">
-    <v-row class="udc__description" no-gutters>
-      {{ $t('udc.description') }}
-    </v-row>
-    <v-row class="udc__balance" no-gutters justify="center">
-      {{ $t('udc.balance') }}
-      <amount-display
-        class="udc__balance__amount"
-        inline
-        :amount="udcCapacity"
-        :token="udcToken"
-      />
-    </v-row>
-    <v-row class="udc__actions" no-gutters justify="center">
-      <v-btn
-        text
-        data-cy="udc_actions_button"
+    <div class="udc__content-box">
+      <amount-display class="udc__amount" :amount="udcCapacity" :token="udcToken" />
+
+      <div>
+        {{ $t('udc.balance') | upperCase }}
+      </div>
+
+      <div v-if="!hasEnoughServiceTokens" class="udc__content-box udc__content-box--nested">
+        <v-icon color="#84878A" size="16px">mdi-alert-outline</v-icon>
+        <span>
+          {{ $t('udc.balance-too-low', { minAmount: 5, tokenSymbol: serviceTokenSymbol }) }}
+        </span>
+      </div>
+    </div>
+
+    <div class="udc__actions">
+      <div
         class="udc__actions__button"
+        data-cy="udc__actions__button__deposit"
         @click="showUdcDeposit = true"
       >
-        <v-img width="60px" height="55px" :src="require('../../assets/deposit.svg')" />
-        <span class="udc__actions__button--title">
-          {{ $t('udc.deposit') }}
-        </span>
-      </v-btn>
-      <v-btn
-        text
-        data-cy="udc_actions_button"
+        <img :src="require('@/assets/icon-deposit.svg')" />
+        {{ $t('udc.deposit') }}
+      </div>
+
+      <div
+        data-cy="udc__actions__button__withdrawal"
         class="udc__actions__button"
         @click="withdrawFromUdc = true"
       >
-        <v-img width="60px" height="55px" :src="require('../../assets/withdrawal.svg')" />
-        <span class="udc__actions__button--title">
-          {{ $t('udc.withdrawal') }}
-        </span>
-      </v-btn>
-    </v-row>
-    <v-row no-gutters justify="center">
-      <v-col cols="10">
-        <hr />
-      </v-col>
-    </v-row>
-    <v-row v-if="!hasEnoughServiceTokens" class="udc__low-balance" no-gutters>
-      {{ $t('udc.balance-too-low', { symbol: serviceToken }) }}
-    </v-row>
+        <img :src="require('@/assets/icon-withdraw.svg')" />
+        {{ $t('udc.withdrawal') }}
+      </div>
+    </div>
+
+    <div class="udc__content-box">
+      <div class="udc__content-box__header">
+        {{ $t('udc.withdrawal-header') }}
+      </div>
+
+      <planned-udc-withdrawal-information
+        :planned-withdrawal="plannedUdcWithdrawal"
+        :udc-token="udcToken"
+        :block-number="blockNumber"
+      />
+    </div>
     <udc-deposit-dialog
       :visible="showUdcDeposit"
       @cancel="showUdcDeposit = false"
@@ -64,7 +66,9 @@ import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
 import { constants } from 'ethers';
 
+import PlannedUdcWithdrawalInformation from '@/components/PlannedUdcWithdrawalInformation.vue';
 import { Token } from '@/model/types';
+import { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
@@ -80,25 +84,32 @@ import Spinner from '@/components/icons/Spinner.vue';
     AmountDisplay,
     ErrorMessage,
     Spinner,
+    PlannedUdcWithdrawalInformation,
   },
   computed: {
-    ...mapState(['accountBalance', 'raidenAccountBalance']),
-    ...mapGetters(['mainnet', 'udcToken', 'usingRaidenAccount']),
+    ...mapState(['blockNumber', 'accountBalance', 'raidenAccountBalance']),
+    ...mapState('userDepositContract', {
+      udcToken: 'token',
+      plannedUdcWithdrawal: 'plannedWithdrawal',
+    }),
+    ...mapGetters(['mainnet', 'usingRaidenAccount']),
   },
 })
 export default class UDC extends Vue {
   amount = '10';
   udcCapacity = constants.Zero;
   hasEnoughServiceTokens = false;
+  blockNumber!: number;
   accountBalance!: string;
   raidenAccountBalance!: string;
   mainnet!: boolean;
   udcToken!: Token;
+  plannedUdcWithdrawal!: PlannedUdcWithdrawal | undefined;
   usingRaidenAccount!: boolean;
   showUdcDeposit = false;
   withdrawFromUdc = false;
 
-  get serviceToken(): string {
+  get serviceTokenSymbol(): string {
     return this.udcToken.symbol ?? (this.mainnet ? 'RDN' : 'SVT');
   }
 
@@ -132,46 +143,81 @@ hr {
 }
 
 .udc {
-  &__description {
-    margin: 30px 60px 0 60px;
-    text-align: center;
+  padding: 26px;
+
+  > div {
+    margin-bottom: 16px;
   }
 
-  &__balance {
-    font-size: 24px;
-    margin-top: 80px;
+  &__content-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 16px;
+    border-radius: 8px;
+    color: #7a7a80;
+    background-color: #1c1c1c;
+    font-size: 12px;
+    line-height: 18px;
 
-    &__amount {
-      padding: 1px 0 0 10px;
+    &--nested {
+      flex-direction: row;
+      width: auto;
+      color: #84878a;
+      background-color: #262829;
+      padding: 4px 8px;
+
+      > * {
+        margin: 0 4px;
+      }
     }
+
+    &__header {
+      font-size: 15px;
+      align-self: flex-start;
+    }
+
+    > div {
+      margin-bottom: 8px;
+    }
+  }
+
+  &__amount {
+    color: #ffffff;
+    font-size: 31px;
+    line-height: 47px;
   }
 
   &__actions {
-    margin-top: 30px;
+    display: flex;
 
     &__button {
-      height: 75px !important;
+      display: flex;
+      flex-grow: 1;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
+      border-radius: 8px;
+      color: #44ddff;
+      background-color: #182d32;
+      font-size: 14px;
+      line-height: 16px;
 
-      &--title {
-        font-size: 18px;
-        max-width: 0;
-        overflow: hidden;
-        padding-left: 15px;
-        transition: max-width 0.5s;
+      &:not(:last-child) {
+        margin-right: 16px;
       }
 
       &:hover {
-        span {
-          max-width: 145px;
-        }
+        background-color: #213e45;
+        cursor: pointer;
+      }
+
+      img {
+        margin-right: 5px;
       }
     }
-  }
-
-  &__low-balance {
-    color: $error-color;
-    font-size: 14px;
-    margin: 20px 52px 0 52px;
   }
 }
 </style>

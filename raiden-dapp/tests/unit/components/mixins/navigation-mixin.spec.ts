@@ -1,6 +1,6 @@
 jest.mock('vue-router');
 
-import { shallowMount, Wrapper } from '@vue/test-utils';
+import { mount, Wrapper } from '@vue/test-utils';
 import VueRouter from 'vue-router';
 import { Component, Mixins } from 'vue-property-decorator';
 import { TestData } from '../../data/mock-data';
@@ -19,7 +19,7 @@ describe('NavigationMixin', () => {
     @Component({ template: '<div></div>' })
     class MyComponent extends Mixins(NavigationMixin) {}
 
-    wrapper = shallowMount(MyComponent, {
+    wrapper = mount(MyComponent, {
       mocks: {
         $router: router,
         $route: TestData.mockRoute(),

@@ -1,7 +1,7 @@
 jest.mock('vue-router');
 
 import flushPromises from 'flush-promises';
-import { mount, shallowMount, Wrapper } from '@vue/test-utils';
+import { mount, Wrapper } from '@vue/test-utils';
 import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
@@ -49,7 +49,7 @@ describe('ChannelsRoute.vue', () => {
     };
 
     if (shallow) {
-      return shallowMount(ChannelsRoute, options);
+      return mount(ChannelsRoute, options);
     }
     return mount(ChannelsRoute, options);
   }
@@ -59,7 +59,7 @@ describe('ChannelsRoute.vue', () => {
     $router.push = jest.fn().mockResolvedValue(undefined);
 
     $raiden = new RaidenService(store) as Mocked<RaidenService>;
-    $raiden.fetchTokenData = jest.fn().mockResolvedValue(undefined);
+    $raiden.fetchAndUpdateTokenData = jest.fn().mockResolvedValue(undefined);
     $raiden.connect = jest.fn().mockResolvedValue(undefined);
 
     vuetify = new Vuetify();

@@ -478,9 +478,10 @@ export async function ensureTransferUnlocked(
  * @param clients.0 - We
  * @param clients.1 - Partner
  */
-export async function ensurePresence([raiden, partner]: [MockedRaiden, MockedRaiden]): Promise<
-  void
-> {
+export async function ensurePresence([raiden, partner]: [
+  MockedRaiden,
+  MockedRaiden,
+]): Promise<void> {
   const raidenPromise = raiden.action$
     .pipe(first(isResponseOf(matrixPresence, { address: partner.address })))
     .toPromise();

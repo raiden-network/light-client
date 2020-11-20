@@ -1,8 +1,8 @@
 import { Store } from 'vuex';
 import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
+import { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
-import uniq from 'lodash/uniq';
 import {
   Capabilities,
   ChangeEvent,
@@ -13,7 +13,8 @@ import {
   RaidenPaths,
   RaidenPFS,
 } from 'raiden-ts';
-import { RootState, Tokens } from '@/types';
+import { Tokens } from '@/types';
+import { CombinedStoreState } from '@/store';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
@@ -37,7 +38,7 @@ function raidenActionConfirmationValueToStateTranslation(
 
 export default class RaidenService {
   private _raiden?: Raiden;
-  private store: Store<RootState>;
+  private store: Store<CombinedStoreState>;
   private _userDepositTokenAddress = '';
   private _configuration?: Configuration;
 
@@ -101,10 +102,10 @@ export default class RaidenService {
 
     this.store.commit('updateTokenAddresses', allTokens);
     this.store.commit('updateTokens', placeholders);
-    await this.fetchTokenData(toFetch);
+    await this.fetchAndUpdateTokenData(toFetch);
   }
 
-  constructor(store: Store<RootState>) {
+  constructor(store: Store<CombinedStoreState>) {
     this._raiden = undefined;
     this.store = store;
   }
@@ -153,11 +154,11 @@ export default class RaidenService {
         this._raiden = raiden;
         this._configuration = configuration;
 
-        const account = await this.getAccount();
+        const account = this.getAccount();
         this.store.commit('account', account);
 
         this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
-        this.store.commit('userDepositTokenAddress', this._userDepositTokenAddress);
+        this.store.commit('userDepositContract/setTokenAddress', this._userDepositTokenAddress);
 
         await this.monitorPreSetTokens();
 
@@ -170,14 +171,11 @@ export default class RaidenService {
           .pipe(
             filter((value) => value.type === 'block/new'),
             exhaustMap(() =>
-              this.fetchTokenData(
-                uniq(
-                  this.store.getters.tokens
-                    .map((m: TokenModel) => m.address)
-                    .concat(this._userDepositTokenAddress),
-                ),
+              this.fetchAndUpdateTokenData(
+                this.store.getters.tokens.map((m: TokenModel) => m.address),
               ),
             ),
+            exhaustMap(() => this.updateUserDepositContractToken()),
           )
           .subscribe();
 
@@ -239,6 +237,10 @@ export default class RaidenService {
           } else if (value.type === 'channel/open/failed') {
             await this.notifyChannelOpenFailed(value.payload.message);
           }
+        });
+
+        raiden.events$.subscribe((event) => {
+          this.updatePlannedUserDepositWithdrawals(event);
         });
 
         raiden.channels$.subscribe((value) => {
@@ -314,7 +316,8 @@ export default class RaidenService {
     ) {
       return;
     }
-    const token = this.store.getters.udcToken;
+    // UDC token must be defined here after the initial loading phase.
+    const token = this.store.state.userDepositContract.token!;
     const decimals = token.decimals ?? 18;
     const amount = BalanceUtils.toUnits(plannedAmount, decimals);
 
@@ -343,7 +346,8 @@ export default class RaidenService {
   }
 
   private async notifyWithdrawal(plannedAmount: BigNumber, withdrawal: BigNumber) {
-    const token = this.store.getters.udcToken;
+    // UDC token must be defined here after the initial loading phase.
+    const token = this.store.state.userDepositContract.token!;
     const decimals = token.decimals ?? 18;
     const amount = BalanceUtils.toUnits(plannedAmount, decimals);
     const withdrawn = BalanceUtils.toUnits(withdrawal, decimals);
@@ -366,7 +370,8 @@ export default class RaidenService {
     reward: BigNumber,
     txHash: string,
   ) {
-    const token = this.store.getters.udcToken;
+    // UDC token must be defined here after the initial loading phase.
+    const token = this.store.state.userDepositContract.token!;
     const decimals = token.decimals ?? 18;
     const amount = BalanceUtils.toUnits(reward, decimals);
 
@@ -457,18 +462,36 @@ export default class RaidenService {
     });
   }
 
-  disconnect() {
-    this.raiden.stop();
+  private async updatePlannedUserDepositWithdrawals(event: ObservedValueOf<Raiden['events$']>) {
+    if (event.type === 'udc/withdraw/success') {
+      if (event.payload.confirmed === false) {
+        this.store.commit('userDepositContract/clearPlannedWithdrawal');
+      } else {
+        this.store.commit('userDepositContract/setPlannedWithdrawal', {
+          txHash: event.payload.txHash,
+          txBlock: event.payload.txBlock,
+          amount: event.meta.amount,
+          withdrawBlock: event.payload.block,
+          confirmed: event.payload.confirmed,
+        });
+      }
+    } else if (event.type === 'udc/withdrawn' && event.payload.confirmed) {
+      this.store.commit('userDepositContract/clearPlannedWithdrawal');
+    }
   }
 
-  async getAccount(): Promise<string> {
+  disconnect = (): void => {
+    this.raiden.stop();
+  };
+
+  getAccount = (): string => {
     return this.raiden.address;
-  }
+  };
 
   /* istanbul ignore next */
-  async getMainAccount(): Promise<string | undefined> {
+  getMainAccount = (): string | undefined => {
     return this.raiden.mainAddress;
-  }
+  };
 
   async getBalance(address?: string): Promise<string> {
     const balance = await this.raiden.getBalance(address);
@@ -533,7 +556,12 @@ export default class RaidenService {
     await this.raiden.settleChannel(token, partner);
   }
 
-  async fetchTokenData(tokens: string[]): Promise<void> {
+  async updateUserDepositContractToken(): Promise<void> {
+    const token = await this.getToken(this._userDepositTokenAddress);
+    this.store.commit('userDepositContract/setToken', token);
+  }
+
+  async fetchAndUpdateTokenData(tokens: string[]): Promise<void> {
     if (!tokens.length) return;
     const fetchToken = async (address: string): Promise<void> =>
       this.getToken(address).then((token) => {

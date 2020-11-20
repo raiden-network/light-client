@@ -133,7 +133,8 @@ import Spinner from '@/components/icons/Spinner.vue';
   },
   computed: {
     ...mapState(['raidenAccountBalance']),
-    ...mapGetters(['udcToken', 'allTokens']),
+    ...mapState('userDepositContract', { udcToken: 'token' }),
+    ...mapGetters(['allTokens']),
   },
 })
 export default class Withdrawal extends Mixins(BlockieMixin) {

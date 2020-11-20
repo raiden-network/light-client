@@ -12,10 +12,10 @@ After installing the SDK you can simply import Raiden to your JavaScript or Type
 import { Raiden } from 'raiden-ts';
 
 // async factory
-const raiden = await Raiden.create(web3.currentProvider, 0, localStorage);
+const raiden = await Raiden.create(window.ethereum, 0);
 ```
 
-The async factory is required since a lot of the initialization code is asynchronous. You can always create the instances and fill the constructor parameters yourself, just be aware to persist and rehydrate the state and constants correctly.
+The async factory is required since a lot of the initialization code is asynchronous. You can always create the instances and fill the constructor parameters yourself, just be aware to persist and rehydrate the state and constants correctly. You should also call `raiden.start()` after creation in order to effectivelly start the instance.
 
 When done you can call `raiden.stop()` to trigger for all observables to complete and for the streams to be unsubscribed. This is not required however since state changes are atomic (non-async) and Raiden can be rehydrated from any intermediary state.
 

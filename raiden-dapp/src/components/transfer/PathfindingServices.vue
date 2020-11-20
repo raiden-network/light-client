@@ -45,7 +45,7 @@
           </template>
 
           <template #[`item.price`]="{ item }">
-            <amount-display exact-amount :amount="item.price" :token="token(item.tokem)" />
+            <amount-display exact-amount :amount="item.price" :token="getToken(item.tokem)" />
           </template>
         </v-data-table>
       </v-col>
@@ -55,6 +55,7 @@
 
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
+import { mapGetters } from 'vuex';
 import { RaidenPFS, RaidenError } from 'raiden-ts';
 
 import { Token } from '@/model/types';
@@ -63,8 +64,14 @@ import AmountDisplay from '@/components/AmountDisplay.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 
-@Component({ components: { AmountDisplay, Spinner, ErrorMessage } })
+@Component({
+  components: { AmountDisplay, Spinner, ErrorMessage },
+  computed: {
+    ...mapGetters(['token']),
+  },
+})
 export default class PathfindingServices extends Vue {
+  token!: (tokenAddress: string) => Token | null;
   headers: { text: string; align: string; value: string }[] = [];
 
   error: Error | RaidenError | null = null;
@@ -115,7 +122,7 @@ export default class PathfindingServices extends Vue {
         .map((value) => value.token)
         .filter((value, index, array) => array.indexOf(value) === index);
 
-      await this.$raiden.fetchTokenData(tokens);
+      await this.$raiden.fetchAndUpdateTokenData(tokens);
     } catch (e) {
       this.error = e;
     } finally {
@@ -123,8 +130,8 @@ export default class PathfindingServices extends Vue {
     }
   }
 
-  token(address: string): Token {
-    return this.$store.getters.token(address) || ({ address } as Token);
+  getToken(address: string): Token {
+    return this.token(address) || ({ address } as Token);
   }
 }
 </script>

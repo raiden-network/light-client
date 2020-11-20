@@ -20,23 +20,23 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * other falsy serializable types, and/or ensure it never gets a default
  *
  * - matrixServerLookup - Matrix server URL to fetch existing matrix servers from.
- *      After intializing a [[Raiden]] instance, the matrix server can't be changed later on.
+ *    After intializing a [[Raiden]] instance, the matrix server can't be changed later on.
  * - revealTimeout - Timeout for secrets to be revealed
  * - settleTimeout - Timeout for channels to be settled
  * - httpTimeout - Used in http fetch requests
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
  * - monitoringRoom - MS global room to auto-join and send RequestMonitoring messages;
- *      use null to disable
+ *    use null to disable
  * - pfs - Path Finding Service URL or Address. Set to null to disable, or empty string to enable
- *         automatic fetching from ServiceRegistry.
+ *    automatic fetching from ServiceRegistry.
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10%
- *                     safety margin.
+ *    safety margin.
  * - pfsMaxPaths - Limit number of paths requested from PFS for a route.
  * - pfsMaxFee - Maximum fee we're willing to pay a PFS for a route (in SVT/RDN wei)
  * - pfsIouTimeout - Number of blocks to timeout an IOU to a PFS.
  * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
- *                       Leave LRU beyond this threshold.
+ *    Leave LRU beyond this threshold.
  * - confirmationBlocks - How many blocks to wait before considering a transaction as confirmed
  * - monitoringReward - Reward to be paid to MS, in SVT/RDN; use Zero or null to disable
  * - logger - String specifying the console log level of redux-logger. Use '' to silence.
@@ -44,14 +44,14 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - fallbackIceServers - STUN servers to be used as a fallback for WebRTC
  * - rateToSvt - Exchange rate between tokens and SVT, in wei: e.g. rate[TKN]=2e18 => 1TKN = 2SVT
  * - pollingInterval - Interval at which to poll ETH provider for new blocks/events (milliseconds)
- *      Honored only at start time
+ *    Honored only at start time
  * - minimumAllowance - Minimum value to call `approve` on tokens; default to MaxUint256, so
- *      approving tokens should be needed only once, trusting TokenNetwork's & UDC contracts;
- *      Set to Zero to fallback to approving the strictly needed deposit amounts
+ *    approving tokens should be needed only once, trusting TokenNetwork's & UDC contracts;
+ *    Set to Zero to fallback to approving the strictly needed deposit amounts
  * - autoSettle - Whether to channelSettle.request settleable channels automatically
  * - matrixServer? - Specify a matrix server to use.
  * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly
- *             set in on-chain method calls. false (default) = use main key; true = use subkey
+ *    set in on-chain method calls. false (default) = use main key; true = use subkey
  */
 export const RaidenConfig = t.readonly(
   t.intersection([

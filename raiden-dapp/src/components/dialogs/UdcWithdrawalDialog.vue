@@ -1,7 +1,7 @@
 <template>
   <raiden-dialog
     :visible="visible"
-    data-cy="udc_withdrawal_dialog"
+    data-cy="udc-withdrawal-dialog"
     class="udc-withdrawal-dialog"
     @close="cancel"
   >
@@ -29,36 +29,36 @@
         </v-col>
         <v-col v-else cols="12">
           <v-row no-gutters justify="center">
-            <v-col cols="6">
-              <v-text-field
+            <v-col cols="10">
+              <amount-input
                 v-model="amount"
-                autofocus
-                type="text"
-                :suffix="token.symbol"
-                data-cy="udc_withdrawal_dialog_amount"
                 class="udc-withdrawal-dialog__amount"
+                data-cy="udc-withdrawal-dialog__amount"
+                :token="tokenWithAsteriskAtSymbol"
+                :placeholder="$t('transfer.amount-placeholder')"
+                autofocus
               />
             </v-col>
-            <v-col class="udc-withdrawal-dialog__asterisk" cols="1">
-              <sup>
-                {{ $t('udc.asterisk') }}
-              </sup>
-            </v-col>
           </v-row>
-          <v-row no-gutters class="udc-withdrawal-dialog__available">
-            {{
-              $t('udc-deposit-dialog.available', {
-                balance: accountBalance,
-                currency: $t('app-header.currency'),
-              })
-            }}
+          <v-row no-gutters>
+            <div
+              class="udc-withdrawal-dialog__available-eth"
+              :class="{ 'udc-withdrawal-dialog__available-eth--too-low': accountBalanceTooLow }"
+            >
+              {{
+                $t('udc-deposit-dialog.available-eth', {
+                  balance: accountBalance,
+                  currency: $t('app-header.currency'),
+                }) | upperCase
+              }}
+            </div>
           </v-row>
         </v-col>
       </v-row>
     </v-card-text>
     <v-card-actions v-if="!error && !isDone">
       <action-button
-        data-cy="udc_withdrawal_dialog_button"
+        data-cy="udc-withdrawal-dialog__button"
         class="udc-withdrawal-dialog__button"
         :enabled="isValid"
         :text="$t('general.buttons.confirm')"
@@ -78,29 +78,32 @@
 
 <script lang="ts">
 import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { mapState } from 'vuex';
 import { BigNumber, utils, constants } from 'ethers';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import AmountInput from '@/components/AmountInput.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import { Token } from '@/model/types';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({
   components: {
     ErrorMessage,
     RaidenDialog,
+    AmountInput,
     ActionButton,
     Spinner,
   },
   computed: {
-    ...mapGetters(['udcToken']),
+    ...mapState('userDepositContract', { udcToken: 'token' }),
   },
 })
 export default class UdcWithdrawalDialog extends Vue {
   amount = '0';
   inProgress = false;
-  error: Error | undefined;
+  error: Error | null = null;
   isDone = false;
 
   @Prop({ required: true, type: Boolean })
@@ -118,6 +121,14 @@ export default class UdcWithdrawalDialog extends Vue {
       this.isDone = false;
       this.cancel();
     }, 5000);
+  }
+
+  get accountBalanceTooLow(): boolean {
+    return BalanceUtils.parse(this.accountBalance, 18).lte(constants.Zero);
+  }
+
+  get tokenWithAsteriskAtSymbol(): Token {
+    return { ...this.token, symbol: this.token.symbol + '*' };
   }
 
   get withdrawAmount(): BigNumber {
@@ -154,7 +165,7 @@ export default class UdcWithdrawalDialog extends Vue {
   cancel() {
     this.isDone = false;
     this.inProgress = false;
-    this.error = undefined;
+    this.error = null;
     this.amount = '0';
   }
 }
@@ -169,56 +180,25 @@ export default class UdcWithdrawalDialog extends Vue {
     margin-top: 15px;
     color: $secondary-color;
   }
+
   &__done {
     width: 110px;
     height: 110px;
   }
 
-  &__amount {
-    font-size: 20px;
-    color: $color-white;
+  &__available-eth {
+    border-radius: 8px;
+    color: #84878a;
+    background-color: #262829;
+    padding: 4px 8px;
+    margin-top: 16px;
+    font-size: 12px;
+    line-height: 18px;
 
-    ::v-deep {
-      input {
-        text-align: right;
-      }
-
-      .v-input {
-        &__slot {
-          &::before {
-            border: none !important;
-          }
-
-          &::after {
-            border: none !important;
-          }
-        }
-      }
-
-      .v-text-field {
-        &__details {
-          display: none;
-        }
-
-        &__suffix {
-          padding-left: 8px;
-          color: white;
-        }
-      }
+    &--too-low {
+      color: #ff0000;
+      background-color: #420d0d;
     }
-  }
-
-  &__asterisk {
-    align-items: center;
-    color: $color-white;
-    display: flex;
-    margin-right: 18px;
-    padding-top: 5px;
-  }
-
-  &__available {
-    color: $color-white;
-    margin-top: 25px;
   }
 
   &__footnote {

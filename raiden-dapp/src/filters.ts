@@ -56,6 +56,10 @@ export default class Filters {
     return capitalize(value);
   }
 
+  static upperCase(value: string): string {
+    return value.toUpperCase();
+  }
+
   static toUnits = (wei: BigNumber, decimals?: number) =>
     BalanceUtils.toUnits(wei, decimals ?? 18);
 
@@ -71,5 +75,6 @@ Vue.filter('decimals', Filters.decimals);
 Vue.filter('upper', Filters.upper);
 Vue.filter('displayFormat', Filters.displayFormat);
 Vue.filter('capitalizeFirst', Filters.capitalizeFirst);
+Vue.filter('upperCase', Filters.upperCase);
 Vue.filter('toUnits', Filters.toUnits);
 Vue.filter('formatDate', Filters.formatDate);

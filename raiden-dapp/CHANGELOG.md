@@ -8,11 +8,16 @@
 
 - [#698] Info overlay
 - [#1693] Customizable privacy policy
+- [#2308] Show status of planned user deposit withdrawals
 
 ### Changed
 
+- [#2369] Overall re-design of accounts UDC screen
+
 [#698]: https://github.com/raiden-network/light-client/issues/698
 [#1693]: https://github.com/raiden-network/light-client/issues/1693
+[#2308]: https://github.com/raiden-network/light-client/issues/2308
+[#2369]: https://github.com/raiden-network/light-client/issues/2369
 
 ## [0.13.0] - 2020-11-10
 

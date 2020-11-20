@@ -10,14 +10,17 @@ import { parseUnits } from '@ethersproject/units';
 
 import { ContractsInfo } from 'raiden-ts/types';
 import { Address, last } from 'raiden-ts/utils/types';
-import { TokenNetworkRegistry } from 'raiden-ts/contracts/TokenNetworkRegistry';
-import { CustomToken } from 'raiden-ts/contracts/CustomToken';
-import { ServiceRegistry } from 'raiden-ts/contracts/ServiceRegistry';
-import { TokenNetworkRegistryFactory } from 'raiden-ts/contracts/TokenNetworkRegistryFactory';
-import { UserDeposit } from 'raiden-ts/contracts/UserDeposit';
-import { SecretRegistry } from 'raiden-ts/contracts/SecretRegistry';
-import { MonitoringService } from 'raiden-ts/contracts/MonitoringService';
-import { OneToN } from 'raiden-ts/contracts/OneToN';
+import {
+  TokenNetworkRegistry,
+  CustomToken,
+  ServiceRegistry,
+  UserDeposit,
+  SecretRegistry,
+  MonitoringService,
+  OneToN,
+  TokenNetworkRegistry__factory,
+} from 'raiden-ts/contracts';
+
 import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
 
 const createdProviders: TestProvider[] = [];
@@ -218,7 +221,7 @@ export class TestProvider extends Web3Provider {
     const accounts = await this.listAccounts();
     const signer = this.getSigner(last(accounts)!);
 
-    const registryContract = TokenNetworkRegistryFactory.connect(
+    const registryContract = TokenNetworkRegistry__factory.connect(
       info.TokenNetworkRegistry.address,
       signer,
     );

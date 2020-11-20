@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- [#2361] Workaround wrtc segfault on teardown
+
+[#2361]: https://github.com/raiden-network/light-client/issues/2361
 
 ## [0.13.0] - 2020-11-10
 ### Fixed

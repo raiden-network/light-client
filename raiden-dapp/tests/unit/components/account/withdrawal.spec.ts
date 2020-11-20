@@ -35,16 +35,24 @@ function createWrapper(
   };
 
   const getters = {
-    udcToken: () => {
-      return {
-        address: '0xuserdeposittoken',
-        balance: BigNumber.from('0'),
-      };
-    },
     allTokens: () => [],
   };
 
-  const store = new Vuex.Store({ state, getters });
+  const userDepositContractModule = {
+    namespaced: true,
+    state: {
+      token: {
+        address: '0xuserdeposittoken',
+        balance: BigNumber.from('0'),
+      },
+    },
+  };
+
+  const store = new Vuex.Store({
+    state,
+    getters,
+    modules: { userDepositContract: userDepositContractModule },
+  });
 
   return mount(Withdrawal, {
     vuetify,

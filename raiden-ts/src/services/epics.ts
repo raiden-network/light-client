@@ -60,8 +60,7 @@ import { RaidenError, ErrorCodes, assert, networkErrorRetryPredicate } from '../
 import { pluckDistinct, retryAsync$ } from '../utils/rx';
 import { matrixPresence } from '../transport/actions';
 import { getCap } from '../transport/utils';
-import { UserDeposit } from '../contracts/UserDeposit';
-import { HumanStandardToken } from '../contracts/HumanStandardToken';
+import type { UserDeposit, HumanStandardToken } from '../contracts';
 
 import {
   iouClear,
