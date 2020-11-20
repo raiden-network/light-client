@@ -32,9 +32,12 @@ import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
 import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
-import { UserDepositFactory } from './contracts/UserDepositFactory';
-import { MonitoringServiceFactory } from './contracts/MonitoringServiceFactory';
-import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
+import {
+  UserDeposit__factory,
+  MonitoringService__factory,
+  TokenNetworkRegistry__factory,
+} from './contracts';
+
 import {
   RaidenDatabase,
   RaidenDatabaseMeta,
@@ -385,13 +388,16 @@ export async function fetchContractsInfo(
   provider: JsonRpcProvider,
   userDeposit: Address,
 ): Promise<ContractsInfo> {
-  const userDepositContract = UserDepositFactory.connect(userDeposit, provider);
+  const userDepositContract = UserDeposit__factory.connect(userDeposit, provider);
 
   const monitoringService = (await userDepositContract.msc_address()) as Address;
-  const monitoringServiceContract = MonitoringServiceFactory.connect(monitoringService, provider);
+  const monitoringServiceContract = MonitoringService__factory.connect(
+    monitoringService,
+    provider,
+  );
 
   const tokenNetworkRegistry = (await monitoringServiceContract.token_network_registry()) as Address;
-  const tokenNetworkRegistryContract = TokenNetworkRegistryFactory.connect(
+  const tokenNetworkRegistryContract = TokenNetworkRegistry__factory.connect(
     tokenNetworkRegistry,
     provider,
   );

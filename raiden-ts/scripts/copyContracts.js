@@ -3,6 +3,17 @@ const path = require('path');
 
 const cwd = path.dirname(fs.realpathSync(__filename));
 
+function copyFolderSync(from, to) {
+  if (!fs.existsSync(to)) fs.mkdirSync(to);
+  fs.readdirSync(from).forEach(element => {
+      if (fs.lstatSync(path.join(from, element)).isFile()) {
+          fs.copyFileSync(path.join(from, element), path.join(to, element));
+      } else {
+          copyFolderSync(path.join(from, element), path.join(to, element));
+      }
+  });
+}
+
 /**
  * Copy raiden-contracts's deployment_* to src/deployment, split contracts.json into src/abi's
  *
@@ -57,12 +68,8 @@ function preBuild() {
 function postBuild() {
   ['../dist/contracts', '../dist:cjs/contracts'].forEach(dir => {
     dir = path.join(cwd, dir);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
     const contractsDir = path.join(cwd, '../src/contracts');
-    fs.readdirSync(contractsDir)
-      .forEach(fileName =>
-        fs.copyFileSync(path.join(contractsDir, fileName), path.join(dir, fileName)),
-      );
+    copyFolderSync(contractsDir, dir);
   });
 }
 

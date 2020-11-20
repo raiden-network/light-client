@@ -16,14 +16,16 @@ import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from
 import { first, filter, map, mergeMap, skip, pluck } from 'rxjs/operators';
 import logging from 'loglevel';
 
-import { TokenNetworkRegistryFactory } from './contracts/TokenNetworkRegistryFactory';
-import { TokenNetworkFactory } from './contracts/TokenNetworkFactory';
-import { HumanStandardTokenFactory } from './contracts/HumanStandardTokenFactory';
-import { ServiceRegistryFactory } from './contracts/ServiceRegistryFactory';
-import { CustomTokenFactory } from './contracts/CustomTokenFactory';
-import { UserDepositFactory } from './contracts/UserDepositFactory';
-import { SecretRegistryFactory } from './contracts/SecretRegistryFactory';
-import { MonitoringServiceFactory } from './contracts/MonitoringServiceFactory';
+import {
+  TokenNetworkRegistry__factory,
+  TokenNetwork__factory,
+  HumanStandardToken__factory,
+  ServiceRegistry__factory,
+  CustomToken__factory,
+  UserDeposit__factory,
+  SecretRegistry__factory,
+  MonitoringService__factory,
+} from './contracts';
 
 import versions from './versions.json';
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps, Latest } from './types';
@@ -220,29 +222,29 @@ export class Raiden {
       log: this.log,
       defaultConfig,
       contractsInfo,
-      registryContract: TokenNetworkRegistryFactory.connect(
+      registryContract: TokenNetworkRegistry__factory.connect(
         contractsInfo.TokenNetworkRegistry.address,
         main?.signer ?? signer,
       ),
       getTokenNetworkContract: memoize((address: Address) =>
-        TokenNetworkFactory.connect(address, main?.signer ?? signer),
+        TokenNetwork__factory.connect(address, main?.signer ?? signer),
       ),
       getTokenContract: memoize((address: Address) =>
-        HumanStandardTokenFactory.connect(address, main?.signer ?? signer),
+        HumanStandardToken__factory.connect(address, main?.signer ?? signer),
       ),
-      serviceRegistryContract: ServiceRegistryFactory.connect(
+      serviceRegistryContract: ServiceRegistry__factory.connect(
         contractsInfo.ServiceRegistry.address,
         main?.signer ?? signer,
       ),
-      userDepositContract: UserDepositFactory.connect(
+      userDepositContract: UserDeposit__factory.connect(
         contractsInfo.UserDeposit.address,
         main?.signer ?? signer,
       ),
-      secretRegistryContract: SecretRegistryFactory.connect(
+      secretRegistryContract: SecretRegistry__factory.connect(
         contractsInfo.SecretRegistry.address,
         main?.signer ?? signer,
       ),
-      monitoringServiceContract: MonitoringServiceFactory.connect(
+      monitoringServiceContract: MonitoringService__factory.connect(
         contractsInfo.MonitoringService.address,
         main?.signer ?? signer,
       ),
@@ -1132,7 +1134,7 @@ export class Raiden {
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     // Mint token
-    const customTokenContract = CustomTokenFactory.connect(token, signer);
+    const customTokenContract = CustomToken__factory.connect(token, signer);
 
     const beneficiary = to ?? address;
     assert(
