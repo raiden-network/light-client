@@ -16,7 +16,7 @@ import { Presences } from '../transport/types';
 import { getCap } from '../transport/utils';
 import { ChannelState } from '../channels/state';
 import { channelAmounts, channelKey } from '../channels/utils';
-import { ServiceRegistry } from '../contracts/ServiceRegistry';
+import type { ServiceRegistry } from '../contracts';
 
 import { MessageTypeId } from '../messages/utils';
 import { Capabilities } from '../constants';

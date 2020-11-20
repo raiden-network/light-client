@@ -23,7 +23,7 @@ import { Zero } from '@ethersproject/constants';
 import type { ContractTransaction, ContractReceipt } from '@ethersproject/contracts';
 import logging, { Logger } from 'loglevel';
 
-import { HumanStandardToken } from '../contracts/HumanStandardToken';
+import type { HumanStandardToken } from '../contracts';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { UInt, Address, Hash, Int, bnMax } from '../utils/types';
