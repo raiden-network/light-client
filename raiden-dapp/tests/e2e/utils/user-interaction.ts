@@ -183,9 +183,9 @@ export function enterETHAmountToTransferFromRaidenAccount(uiTimeout: number) {
 export function enterUDCWithdrawalAmount(uiTimeout: number) {
   // cypress selectors: raiden-dapp/src/views/account/UDC.vue
   cy.get('[data-cy=udc]').should('exist');
-  cy.get('[data-cy=udc_actions_button]').eq(1).click();
+  cy.get('[data-cy=udc__actions__button__withdrawal]').click();
   // cypress selectors: raiden-dapp/src/components/dialogs/UdcWithdrawalDialog.vue
-  cy.getWithCustomTimeout('[data-cy=udc_withdrawal_dialog]').should('exist');
-  cy.get('[data-cy=udc_withdrawal_dialog_amount]').type('1');
+  cy.getWithCustomTimeout('[data-cy=udc-withdrawal-dialog]').should('exist');
+  cy.get('[data-cy=udc-withdrawal-dialog__amount]').type('1');
   cy.wait(uiTimeout);
 }

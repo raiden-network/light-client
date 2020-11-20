@@ -100,7 +100,7 @@ export default class PlannedUdcWithdrawalInformation extends NavigationMixin {
 .planned-udc-withdrawal-information {
   width: 100%;
   height: 24px;
-  font-size: 8px;
+  font-size: 12px;
   border-radius: 8px;
 
   &--no-progress {
@@ -124,7 +124,7 @@ export default class PlannedUdcWithdrawalInformation extends NavigationMixin {
   }
 
   &__amount {
-    font-size: 12px;
+    font-size: 15px;
   }
 }
 </style>

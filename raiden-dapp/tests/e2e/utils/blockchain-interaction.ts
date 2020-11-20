@@ -83,9 +83,9 @@ export function withdrawTokensBackToMainAccount() {
  */
 export function withdrawUDCTokens() {
   // cypress selectors: raiden-dapp/src/components/dialogs/UdcWithdrawalDialog.vue
-  cy.get('[data-cy=udc_withdrawal_dialog]').should('exist');
-  cy.get('[data-cy=udc_withdrawal_dialog_button]').click();
-  cy.getWithCustomTimeout('[data-cy=udc_withdrawal_dialog]').should('not.exist');
+  cy.get('[data-cy=udc-withdrawal-dialog]').should('exist');
+  cy.get('[data-cy=udc-withdrawal-dialog__button]').click();
+  cy.getWithCustomTimeout('[data-cy=udc-withdrawal-dialog').should('not.exist');
 }
 
 /**
