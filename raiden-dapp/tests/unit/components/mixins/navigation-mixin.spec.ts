@@ -111,7 +111,7 @@ describe('NavigationMixin', () => {
   });
 
   test('navigate to account', () => {
-    wrapper.vm.navigateToAccoount();
+    wrapper.vm.navigateToAccount();
 
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
@@ -145,7 +145,7 @@ describe('NavigationMixin', () => {
 
   test('general modal back navigation', () => {
     wrapper.vm.$route.name = RouteNames.TRANSFER;
-    wrapper.vm.navigateToAccoount();
+    wrapper.vm.navigateToAccount();
     wrapper.vm.onModalBackClicked();
 
     expect(router.push).toHaveBeenCalledTimes(1);

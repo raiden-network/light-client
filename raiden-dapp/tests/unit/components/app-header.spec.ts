@@ -1,86 +1,106 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Vue from 'vue';
+import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
 import { $identicon } from '../utils/mocks';
-import { connectAccount } from '../utils/store-utils';
-import { TestData } from '../data/mock-data';
-import store from '@/store';
 import AppHeader from '@/components/AppHeader.vue';
 import { RouteNames } from '@/router/route-names';
 
+Vue.use(Vuex);
 Vue.use(Vuetify);
 
-describe('AppHeader.vue', () => {
-  let wrapper: Wrapper<AppHeader>;
-  let vuetify: Vuetify;
+const network = 'Selected Network';
 
-  function createWrapper(name: string) {
-    vuetify = new Vuetify();
-    return mount(AppHeader, {
-      vuetify,
-      store,
-      mocks: {
-        $identicon: $identicon(),
-        $t: (msg: string) => msg,
-        $route: {
-          name,
-          meta: {
-            title: 'title',
-          },
+const createWrapper = (
+  connected = true,
+  newNotifications = false,
+  routeName = RouteNames.CHANNELS,
+): Wrapper<AppHeader> => {
+  const vuetify = new Vuetify();
+  const getters = {
+    isConnected: () => connected,
+    network: () => network,
+  };
+  const notificationsModule = {
+    namespaced: true,
+    state: {
+      newNotifications,
+    },
+  };
+
+  const store = new Vuex.Store({ getters, modules: { notifications: notificationsModule } });
+
+  return mount(AppHeader, {
+    vuetify,
+    store,
+    mocks: {
+      $identicon: $identicon(),
+      $route: {
+        name: routeName,
+        meta: {
+          title: 'title',
         },
       },
-    });
-  }
-
-  test('you cannot go back if not connected', () => {
-    wrapper = createWrapper(RouteNames.CHANNELS);
-    expect((wrapper.vm as any).canGoBack).toBe(false);
+    },
   });
+};
 
-  test('you can go back if connected', () => {
-    connectAccount();
-    wrapper = createWrapper(RouteNames.CHANNELS);
-    expect((wrapper.vm as any).canGoBack).toBe(true);
-  });
-
-  test('new notifications displays notification badge', async () => {
-    wrapper = createWrapper(RouteNames.CHANNELS);
-    let newNotificationsBadge = wrapper.find('.v-badge__badge');
+describe('AppHeader.vue', () => {
+  test('no new notifications does not display notification badge', () => {
+    const wrapper = createWrapper();
+    const newNotificationsBadge = wrapper.find('.v-badge');
 
     expect(newNotificationsBadge.exists()).toBe(false);
+  });
 
-    store.commit('notifications/notificationAddOrReplace', TestData.notifications);
-
-    await wrapper.vm.$nextTick();
-    newNotificationsBadge = wrapper.find('.v-badge__badge');
+  test('new notifications displays notification badge', () => {
+    const wrapper = createWrapper(true, true);
+    const newNotificationsBadge = wrapper.find('.v-badge');
 
     expect(newNotificationsBadge.exists()).toBe(true);
   });
 
-  test('clicking notification icon calls navigates to notifications', async () => {
-    wrapper = createWrapper(RouteNames.CHANNELS);
-    (wrapper.vm as any).navigateToNotifications = jest.fn();
-    const notificationsButton = wrapper.findAll('button').at(1);
+  test('clicking notifications icon calls notificationPanel method', async () => {
+    const wrapper = createWrapper();
+    (wrapper.vm as any).notificationPanel = jest.fn();
 
-    notificationsButton.trigger('click');
+    const notificationsIcon = wrapper.find('.app-header__content__icons__notifications-button');
+    notificationsIcon.trigger('click');
     await wrapper.vm.$nextTick();
 
-    expect((wrapper.vm as any).navigateToNotifications).toHaveBeenCalled();
+    expect((wrapper.vm as any).notificationPanel).toHaveBeenCalledTimes(1);
   });
 
-  test('show title only if on disclaimer route', () => {
-    connectAccount();
-    wrapper = createWrapper(RouteNames.DISCLAIMER);
-    const title = wrapper.find('.app-header__title__route');
-    const networkLabel = wrapper.find('.app-header__top__content__network');
-    const notificationsBadge = wrapper.find('.app-header__notifications-wrapper');
-    const identicon = wrapper.find('.app-header__icons__identicon');
+  test('clicking identicon calls accountMenu method', async () => {
+    const wrapper = createWrapper();
+    (wrapper.vm as any).accountMenu = jest.fn();
 
-    expect((wrapper.vm as any).canGoBack).toBe(false);
-    expect(title.exists()).toBe(true);
-    expect(networkLabel.exists()).toBe(false);
-    expect(notificationsBadge.exists()).toBe(false);
+    const identicon = wrapper.find('.app-header__content__icons__identicon');
+    identicon.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).accountMenu).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not display identicon if on disclaimer route', () => {
+    const wrapper = createWrapper(true, false, RouteNames.DISCLAIMER);
+    const identicon = wrapper.find('.app-header__content__icons__identicon');
+
     expect(identicon.exists()).toBe(false);
+  });
+
+  test('does not display network if on disclaimer route', () => {
+    const wrapper = createWrapper(true, false, RouteNames.DISCLAIMER);
+    const networkName = wrapper.find('.header-content__title__network');
+
+    expect(networkName.exists()).toBe(false);
+  });
+
+  test('does not display network if not connected', () => {
+    const wrapper = createWrapper(false, false);
+    const networkName = wrapper.find('.header-content__title__network');
+
+    expect(networkName.exists()).toBe(false);
   });
 });

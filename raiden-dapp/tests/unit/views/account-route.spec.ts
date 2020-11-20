@@ -1,40 +1,47 @@
-jest.mock('vue-router');
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Vue from 'vue';
-import VueRouter from 'vue-router';
+import Vuex from 'vuex';
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
-
-import { TestData } from '../data/mock-data';
 import AccountRoute from '@/views/AccountRoute.vue';
-import Mocked = jest.Mocked;
+import { RouteNames } from '@/router/route-names';
 
+Vue.use(Vuex);
 Vue.use(Vuetify);
 
-describe('AccountRoute.vue', () => {
-  let wrapper: Wrapper<AccountRoute>;
-  let router: Mocked<VueRouter>;
-  let vuetify: Vuetify;
+const createWrapper = (): Wrapper<AccountRoute> => {
+  const vuetify = new Vuetify();
+  const getters = {
+    network: () => 'Selected Network',
+    isConnected: () => true,
+  };
+  const store = new Vuex.Store({ getters });
 
-  beforeEach(() => {
-    vuetify = new Vuetify();
-    router = new VueRouter() as Mocked<VueRouter>;
-
-    wrapper = mount(AccountRoute, {
-      vuetify,
-      stubs: ['router-view'],
-      mocks: {
-        $router: router,
-        $route: TestData.mockRoute(),
-        $t: (msg: string) => msg,
+  return mount(AccountRoute, {
+    vuetify,
+    stubs: ['router-view'],
+    store,
+    mocks: {
+      $t: (msg: string) => msg,
+      $route: {
+        name: RouteNames.ACCOUNT_ROOT,
+        meta: {
+          title: 'title',
+        },
       },
-    });
+    },
   });
+};
 
-  test('go to previously visited route when back arrow is clicked', () => {
-    const button = wrapper.find('button');
-    button.trigger('click');
+describe('AccountRoute.vue', () => {
+  test('clicking on back button calls navigateBack method', async () => {
+    const wrapper = createWrapper();
+    (wrapper.vm as any).navigateBack = jest.fn();
 
-    expect(router.go).toHaveBeenCalledTimes(1);
-    expect(router.go).toHaveBeenCalledWith(-1);
+    const backButton = wrapper.findAll('button').at(0);
+    backButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).navigateBack).toHaveBeenCalledTimes(1);
   });
 });

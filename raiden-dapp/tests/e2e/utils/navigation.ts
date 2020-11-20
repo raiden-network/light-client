@@ -27,7 +27,7 @@ export function navigateToSelectHub() {
  */
 export function navigateToNotificationPanel() {
   // cypress selectors: raiden-dapp/src/components/AppHeader.vue
-  cy.get('[data-cy=app_header_notifications_button]').click();
+  cy.get('[data-cy=app-header_content_icons_notifications-button]').click();
   // cypress selectors: raiden-dapp/src/views/NotificationPanel.vue
   cy.getWithCustomTimeout('[data-cy=notification_panel]').should('exist');
 }
@@ -37,7 +37,7 @@ export function navigateToNotificationPanel() {
  */
 export function navigateToAccountMenu() {
   // cypress selectors: raiden-dapp/src/components/AppHeader.vue
-  cy.get('[data-cy=app_header_icons_identicon]').click();
+  cy.get('[data-cy=app-header_content_icons_identicon]').click();
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.getWithCustomTimeout('[data-cy=account_root]').should('exist');
 }
@@ -80,7 +80,7 @@ export function navigateToConnectNewTokenFromTokenOverlay() {
  */
 export function navigateBackToTransferScreenFromOverlay() {
   // cypress selectors: raiden-dapp/src/components/AppHeader.vue
-  cy.get('[data-cy=app_header_back_button]').click();
+  cy.get('[data-cy=header-content_back-button]').click();
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
   cy.getWithCustomTimeout('[data-cy=transfer_inputs]').should('exist');
 }
@@ -130,7 +130,7 @@ export function navigateToRaidenAccount() {
  */
 export function navigateBackToAccountMenu() {
   // cypress selectors: raiden-dapp/src/views/AccountRoute.vue
-  cy.get('[data-cy=account_route_header_content_back_button]').click();
+  cy.get('[data-cy=header-content_back-button]').click();
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.getWithCustomTimeout('[data-cy=account_root]').should('exist');
 }
