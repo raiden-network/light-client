@@ -520,9 +520,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
 
   const getTokenContract = memoize(
     (address: string): MockedContract<HumanStandardToken> => {
-      const tokenContract = HumanStandardToken__factory.connect(address, signer) as MockedContract<
-        HumanStandardToken
-      >;
+      const tokenContract = HumanStandardToken__factory.connect(
+        address,
+        signer,
+      ) as MockedContract<HumanStandardToken>;
       spyContract(tokenContract);
       tokenContract.allowance.mockResolvedValue(Zero);
       return tokenContract;
@@ -537,9 +538,10 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
   serviceRegistryContract.token.mockResolvedValue('0x0800000000000000000000000000000000000008');
   serviceRegistryContract.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
-  const userDepositContract = UserDeposit__factory.connect(address, signer) as MockedContract<
-    UserDeposit
-  >;
+  const userDepositContract = UserDeposit__factory.connect(
+    address,
+    signer,
+  ) as MockedContract<UserDeposit>;
 
   spyContract(userDepositContract);
 
@@ -1020,9 +1022,10 @@ export async function makeRaiden(
 
   const getTokenContract = memoize(
     (address: string): MockedContract<HumanStandardToken> => {
-      const tokenContract = HumanStandardToken__factory.connect(address, signer) as MockedContract<
-        HumanStandardToken
-      >;
+      const tokenContract = HumanStandardToken__factory.connect(
+        address,
+        signer,
+      ) as MockedContract<HumanStandardToken>;
       spyContract(tokenContract, `Token[${address}]`);
       tokenContract.approve.mockResolvedValue(makeTransaction(undefined, { to: address }));
       tokenContract.allowance.mockResolvedValue(Zero);
@@ -1039,9 +1042,10 @@ export async function makeRaiden(
   serviceRegistryContract.token.mockResolvedValue(svtAddress);
   serviceRegistryContract.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
-  const userDepositContract = UserDeposit__factory.connect(udcAddress, signer) as MockedContract<
-    UserDeposit
-  >;
+  const userDepositContract = UserDeposit__factory.connect(
+    udcAddress,
+    signer,
+  ) as MockedContract<UserDeposit>;
   spyContract(userDepositContract, 'UserDeposit');
   userDepositContract.token.mockResolvedValue(svtAddress);
   userDepositContract.one_to_n_address.mockResolvedValue(oneToNAddress);

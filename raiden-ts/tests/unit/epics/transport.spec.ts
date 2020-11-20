@@ -558,7 +558,7 @@ describe('matrixInviteEpic', () => {
     const roomId = partnerRoomId;
     raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
     // partner joins when they're invited the second time
-    const promise = new Promise((resolve) =>
+    const promise = new Promise<void>((resolve) =>
       matrix.invite.mockImplementation(async () => {
         matrix.emit(
           'RoomMember.membership',
