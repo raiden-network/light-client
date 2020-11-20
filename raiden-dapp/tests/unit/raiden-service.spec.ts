@@ -1032,4 +1032,62 @@ describe('RaidenService', () => {
       importance: NotificationImportance.HIGH,
     });
   });
+
+  describe('updates planned user deposit withdrawal', () => {
+    test('update state for pending or confirmed withdraw plan', async () => {
+      const subject = new BehaviorSubject({});
+      (raiden as any).events$ = subject;
+      await setupSDK();
+      subject.next({
+        type: 'udc/withdraw/success',
+        payload: {
+          block: 5,
+          txHash: '0xTxHash',
+          txBlock: 1,
+          confirmed: true,
+        },
+        meta: { amount: constants.One },
+      });
+
+      expect(store.commit).toHaveBeenCalledWith('userDepositContract/setPlannedWithdrawal', {
+        txHash: '0xTxHash',
+        txBlock: 1,
+        amount: constants.One,
+        withdrawBlock: 5,
+        confirmed: true,
+      });
+    });
+
+    test('clears state when planned withdraw got reorged', async () => {
+      const subject = new BehaviorSubject({});
+      (raiden as any).events$ = subject;
+      await setupSDK();
+      subject.next({
+        type: 'udc/withdraw/success',
+        payload: {
+          block: 5,
+          txHash: '0xTxHash',
+          txBlock: 1,
+          confirmed: false,
+        },
+        meta: { amount: constants.One },
+      });
+
+      expect(store.commit).toHaveBeenCalledWith('userDepositContract/clearPlannedWithdrawal');
+    });
+
+    test('clears state after confirmed withraw', async () => {
+      const subject = new BehaviorSubject({});
+      (raiden as any).events$ = subject;
+      await setupSDK();
+      subject.next({
+        type: 'udc/withdrawn',
+        payload: {
+          confirmed: true,
+        },
+      });
+
+      expect(store.commit).toHaveBeenCalledWith('userDepositContract/clearPlannedWithdrawal');
+    });
+  });
 });
