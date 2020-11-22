@@ -44,7 +44,6 @@ const _defaultState: RootState = {
   accessDenied: DeniedReason.UNDEFINED,
   channels: {},
   tokens: {},
-  tokenAddresses: [],
   transfers: {},
   presences: {},
   network: PlaceHolderNetwork,
@@ -131,9 +130,6 @@ const store: StoreOptions<CombinedStoreState> = {
           state.tokens[address] = { ...state.tokens[address], ...token };
         else state.tokens = { ...state.tokens, [address]: token };
     },
-    updateTokenAddresses(state: RootState, addresses: string[]) {
-      state.tokenAddresses = [...addresses];
-    },
     updatePresence(state: RootState, presence: Presences) {
       state.presences = { ...state.presences, ...presence };
     },
@@ -196,14 +192,12 @@ const store: StoreOptions<CombinedStoreState> = {
       );
     },
     allTokens: (state: RootState): Token[] =>
-      Object.values(state.tokens)
-        .filter((token) => state.tokenAddresses.includes(token.address))
-        .sort((a: Token, b: Token) => {
-          if (hasNonZeroBalance(a, b)) {
-            return (b.balance! as BigNumber).gt(a.balance! as BigNumber) ? 1 : -1;
-          }
-          return a.symbol && b.symbol ? a.symbol.localeCompare(b.symbol) : 0;
-        }),
+      Object.values(state.tokens).sort((a: Token, b: Token) => {
+        if (hasNonZeroBalance(a, b)) {
+          return (b.balance! as BigNumber).gt(a.balance! as BigNumber) ? 1 : -1;
+        }
+        return a.symbol && b.symbol ? a.symbol.localeCompare(b.symbol) : 0;
+      }),
     channels: (state: RootState) => (tokenAddress: string) => {
       let channels: RaidenChannel[] = [];
       const tokenChannels = state.channels[tokenAddress];

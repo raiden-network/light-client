@@ -582,40 +582,6 @@ describe('RaidenService', () => {
         });
         expect(store.commit).toHaveBeenCalledWith('loadComplete');
       });
-
-      test('checks for the connected token balances when it receives a new block event', async () => {
-        expect.assertions(2);
-
-        providerMock.mockResolvedValue(mockProvider);
-        const subject = new BehaviorSubject({});
-        const testToken = {
-          address: mockToken1 as Address,
-          decimals: 18,
-          name: 'Token 1',
-          symbol: 'TKN1',
-        };
-        raiden.getTokenBalance = jest.fn().mockResolvedValue(constants.One);
-        raiden.getTokenList = jest.fn().mockResolvedValue([mockToken1 as Address]);
-        raiden.getTokenInfo = jest.fn().mockResolvedValue(testToken);
-        (raiden as any).events$ = subject;
-
-        await raidenService.connect();
-        await flushPromises();
-        store.commit.mockReset();
-        subject.next({ type: 'block/new', payload: { blockNumber: 123 } });
-        await flushPromises();
-
-        expect(store.commit).toBeCalledWith(
-          'updateTokens',
-          expect.objectContaining({
-            [mockToken1]: {
-              ...testToken,
-              balance: constants.One,
-            },
-          }),
-        );
-        expect(store.commit).toBeCalledWith('updateBlock', 123);
-      });
     });
 
     test('loads the token list', async () => {
@@ -632,10 +598,6 @@ describe('RaidenService', () => {
       store.commit.mockReset();
       await raidenService.fetchTokenList();
       await flushPromises();
-      expect(store.commit).toHaveBeenCalledWith(
-        'updateTokenAddresses',
-        expect.arrayContaining([mockToken1, mockToken2]),
-      );
       expect(store.commit).toHaveBeenCalledWith(
         'updateTokens',
         expect.objectContaining({

@@ -20,7 +20,6 @@ export interface RootState {
   accessDenied: DeniedReason;
   channels: RaidenChannels;
   tokens: Tokens;
-  tokenAddresses: string[];
   network: providers.Network;
   presences: Presences;
   transfers: Transfers;

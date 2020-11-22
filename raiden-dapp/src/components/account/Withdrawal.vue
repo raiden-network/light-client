@@ -151,6 +151,7 @@ export default class Withdrawal extends Mixins(BlockieMixin, NavigationMixin) {
   withdraw: Token | null = null;
 
   async mounted() {
+    await this.$raiden.fetchAndUpdateTokenData();
     const allTokens = uniqBy(this.allTokens.concat(this.udcToken), (token) => token.address);
     const updatedTokenBalances = await Promise.all(
       allTokens.map(async (token) => ({

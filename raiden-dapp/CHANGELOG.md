@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Fixed
+- [#2376] Fix Raiden Account tokens not showing up for withdrawal
 
 ### Added
 
@@ -16,8 +17,9 @@
 
 [#1693]: https://github.com/raiden-network/light-client/issues/1693
 [#2308]: https://github.com/raiden-network/light-client/issues/2308
-[#2369]: https://github.com/raiden-network/light-client/issues/2369
 [#2307]: https://github.com/raiden-network/light-client/issues/2307
+[#2369]: https://github.com/raiden-network/light-client/issues/2369
+[#2376]: https://github.com/raiden-network/light-client/issues/2376
 
 ## [0.13.0] - 2020-11-10
 

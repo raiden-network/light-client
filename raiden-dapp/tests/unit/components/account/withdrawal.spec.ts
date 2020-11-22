@@ -28,6 +28,7 @@ function createWrapper(
   $raiden = {
     getTokenBalance: jest.fn().mockResolvedValue(tokenBalance),
     transferOnChainTokens: jest.fn(),
+    fetchAndUpdateTokenData: jest.fn().mockResolvedValue(undefined),
   };
 
   const state = {
