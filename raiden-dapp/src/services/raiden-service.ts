@@ -17,7 +17,7 @@ import { Tokens } from '@/types';
 import { CombinedStoreState } from '@/store';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
-import { DeniedReason, Progress, Token, TokenModel } from '@/model/types';
+import { DeniedReason, Progress, Token } from '@/model/types';
 import { ConfigProvider, Configuration } from '@/services/config-provider';
 import i18n from '@/i18n';
 import { NotificationPayload } from '@/store/notifications/types';
@@ -100,7 +100,6 @@ export default class RaidenService {
       placeholders[token] = { address: token };
     }
 
-    this.store.commit('updateTokenAddresses', allTokens);
     this.store.commit('updateTokens', placeholders);
     await this.fetchAndUpdateTokenData(toFetch);
   }
@@ -170,11 +169,6 @@ export default class RaidenService {
         raiden.events$
           .pipe(
             filter((value) => value.type === 'block/new'),
-            exhaustMap(() =>
-              this.fetchAndUpdateTokenData(
-                this.store.getters.tokens.map((m: TokenModel) => m.address),
-              ),
-            ),
             exhaustMap(() => this.updateUserDepositContractToken()),
           )
           .subscribe();
@@ -195,6 +189,7 @@ export default class RaidenService {
             this.store.commit('updateTokens', {
               [value.payload.token]: { address: value.payload.token },
             });
+            this.fetchAndUpdateTokenData([value.payload.token]);
           } else if (value.type === 'matrix/presence/success') {
             // Update presences on matrix presence updates
             this.store.commit('updatePresence', {
@@ -561,7 +556,9 @@ export default class RaidenService {
     this.store.commit('userDepositContract/setToken', token);
   }
 
-  async fetchAndUpdateTokenData(tokens: string[]): Promise<void> {
+  async fetchAndUpdateTokenData(
+    tokens: string[] = Object.values(this.store.state.tokens).map((m) => m.address),
+  ): Promise<void> {
     if (!tokens.length) return;
     const fetchToken = async (address: string): Promise<void> =>
       this.getToken(address).then((token) => {
