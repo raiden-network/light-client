@@ -26,6 +26,7 @@ import Mocked = jest.Mocked;
 import { CombinedStoreState } from '@/store';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { NotificationContext } from '@/store/notifications/notification-context';
+import { RouteNames } from '@/router/route-names';
 const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual('raiden-ts');
 
 describe('RaidenService', () => {
@@ -694,7 +695,7 @@ describe('RaidenService', () => {
     });
   });
 
-  test('notify that withdraw was successful', async () => {
+  test('notify that tokens have been withdrawn from user deposit contract', async () => {
     expect.assertions(1);
     (store.state as any) = {
       userDepositContract: { token: generateToken() },
@@ -715,10 +716,42 @@ describe('RaidenService', () => {
     });
 
     expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
-      description: 'notifications.withdrawal.success.description',
-      title: 'notifications.withdrawal.success.title',
+      icon: 'notifications.withdrawn.icon',
+      title: 'notifications.withdrawn.title',
+      description: 'notifications.withdrawn.description',
       importance: NotificationImportance.HIGH,
       context: NotificationContext.INFO,
+    });
+  });
+
+  test('notification that tokens have been withdrawn from user deposit contract includes link for subkey', async () => {
+    expect.assertions(1);
+    (store.state as any) = {
+      userDepositContract: { token: generateToken() },
+    };
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK({ subkey: true });
+
+    subject.next({
+      type: 'udc/withdrawn',
+      payload: {
+        withdrawal: utils.parseEther('5'),
+        confirmed: true,
+      },
+      meta: {
+        amount: utils.parseEther('5'),
+      },
+    });
+
+    expect(store.commit).toHaveBeenCalledWith('notifications/notificationAddOrReplace', {
+      icon: 'notifications.withdrawn.icon',
+      title: 'notifications.withdrawn.title',
+      description: 'notifications.withdrawn.description',
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.INFO,
+      link: 'notifications.withdrawn.link',
+      dappRoute: RouteNames.ACCOUNT_WITHDRAWAL,
     });
   });
 
