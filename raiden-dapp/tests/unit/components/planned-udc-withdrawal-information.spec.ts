@@ -1,17 +1,12 @@
-jest.mock('vue-router');
-
 import { constants } from 'ethers';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import VueRouter from 'vue-router';
 import { shallowMount, Wrapper } from '@vue/test-utils';
 import { generateToken } from '../utils/data-generator';
-import Mocked = jest.Mocked;
 import Filters from '@/filters';
 import { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
 import PlannedUdcWithdrawalInformation from '@/components/PlannedUdcWithdrawalInformation.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuetify);
 Vue.filter('upperCase', Filters.upperCase);
@@ -30,8 +25,6 @@ const readyPlannedWithdrawal: PlannedUdcWithdrawal = {
   withdrawBlock: 99,
 };
 
-const $router = new VueRouter() as Mocked<VueRouter>;
-
 function createWrapper(props: {
   plannedWithdrawal?: PlannedUdcWithdrawal;
   blockNumber?: number;
@@ -46,17 +39,12 @@ function createWrapper(props: {
       ...props,
     },
     mocks: {
-      $router,
       $t: (msg: string) => msg,
     },
   });
 }
 
 describe('PlannedUdcWithdrawalInformation.vue', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   test('should show that no withdrawal is in progress if withdraw plan property is missing', () => {
     const wrapper = createWrapper({ plannedWithdrawal: undefined });
 
@@ -69,42 +57,35 @@ describe('PlannedUdcWithdrawalInformation.vue', () => {
     const wrapper = createWrapper({ plannedWithdrawal: pendingPlannedWithdrawal });
     const statusIcon = wrapper.find('.planned-udc-withdrawal-information__status-icon');
     const amountDisplay = wrapper.findComponent(AmountDisplay);
-    const pendingMessage = wrapper.find('.planned-udc-withdrawal-information__pending-message');
+    const message = wrapper.find('.planned-udc-withdrawal-information__message');
 
     expect(statusIcon.exists()).toBe(true);
     expect(amountDisplay.exists()).toBe(true);
-    expect(pendingMessage.exists()).toBe(true);
+    expect(message.exists()).toBe(true);
   });
 
   test('should display correct counter of blocks until being ready for pending planned withdrawal', () => {
     const wrapper = createWrapper({ plannedWithdrawal: pendingPlannedWithdrawal });
-    const pendingMessage = wrapper.find('.planned-udc-withdrawal-information__pending-message');
+    const message = wrapper.find('.planned-udc-withdrawal-information__message');
 
-    expect(pendingMessage.text()).toMatch(/^10\s*UDC\.INFORMATION\.BLOCKS-REMAINING$/);
+    expect(message.text()).toMatch(/^10\s*UDC\.INFORMATION\.PENDING-MESSAGE$/);
   });
 
   test('should display all relevant elements for ready planned withdrawal', () => {
     const wrapper = createWrapper({ plannedWithdrawal: readyPlannedWithdrawal });
     const statusIcon = wrapper.find('.planned-udc-withdrawal-information__status-icon');
     const amountDisplay = wrapper.findComponent(AmountDisplay);
-    const navigationLink = wrapper.find('.planned-udc-withdrawal-information__navigation-link');
+    const message = wrapper.find('.planned-udc-withdrawal-information__message');
 
     expect(statusIcon.exists()).toBe(true);
     expect(amountDisplay.exists()).toBe(true);
-    expect(navigationLink.exists()).toBe(true);
+    expect(message.exists()).toBe(true);
   });
 
-  test('should navigate to withdrawal screen when clicking link on ready planned withdrawal', () => {
+  test('should display correct message for ready planned withdrawal', () => {
     const wrapper = createWrapper({ plannedWithdrawal: readyPlannedWithdrawal });
-    const navigationLink = wrapper.find('.planned-udc-withdrawal-information__navigation-link');
+    const message = wrapper.find('.planned-udc-withdrawal-information__message');
 
-    navigationLink.trigger('click');
-
-    expect($router.push).toHaveBeenCalledTimes(1);
-    expect($router.push).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: RouteNames.ACCOUNT_WITHDRAWAL,
-      }),
-    );
+    expect(message.text()).toBe('UDC.INFORMATION.READY-MESSAGE');
   });
 });
