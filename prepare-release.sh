@@ -12,7 +12,7 @@ cd "$( dirname $0 )"
 OLD_VERSION=`yarn versions --json | jq -er '.data."light-client"'`
 yarn version $1 --no-git-tag-version
 NEW_VERSION=`yarn versions --json | jq -er '.data."light-client"'`
-MESSAGE="v$OLD_VERSION -> $NEW_VERSION"
+MESSAGE="$OLD_VERSION -> $NEW_VERSION"
 
 yarn workspace raiden-ts version --no-git-tag-version --new-version "${NEW_VERSION}"
 yarn workspace raiden-dapp version --no-git-tag-version --new-version "${NEW_VERSION}"
