@@ -71,7 +71,7 @@ describe('Withdrawal.vue', () => {
     const wrapper = createWrapper(tokenBalance, raidenBalance);
     await flushPromises();
 
-    wrapper.find('.withdrawal__tokens__button').trigger('click');
+    wrapper.find('.withdrawal__token-list__item__button').trigger('click');
     await wrapper.vm.$nextTick();
 
     const confirmButton = wrapper.findComponent(RaidenDialog).findAll('button').at(1);
@@ -92,7 +92,7 @@ describe('Withdrawal.vue', () => {
     const wrapper = createWrapper(tokenBalance, raidenNoBalance);
     await flushPromises();
 
-    wrapper.find('.withdrawal__tokens__button').trigger('click');
+    wrapper.find('.withdrawal__token-list__item__button').trigger('click');
     await wrapper.vm.$nextTick();
 
     const confirmButton = wrapper.findComponent(RaidenDialog).findAll('button').at(1);

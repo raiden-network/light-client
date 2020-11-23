@@ -130,7 +130,8 @@
     }
   },
   "withdrawal": {
-    "title": "Transfer token amount back to your main account.",
+    "title": "Transfer tokens to your main Ethereum account.",
+    "navigation-link-title": "For service tokens, make sure you withdrew them at the UDC screen first.",
     "dialog": {
       "title": "Withdraw {0}",
       "body": "You are about to withdraw {0} from your Raiden account.",
