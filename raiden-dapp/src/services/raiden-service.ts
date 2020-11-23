@@ -42,7 +42,7 @@ export default class RaidenService {
   private store: Store<CombinedStoreState>;
   private _userDepositTokenAddress = '';
   private _configuration?: Configuration;
-  private usingSubkey: boolean | undefined;
+  public usingSubkey: boolean | undefined;
 
   private static async createRaiden(
     provider: providers.JsonRpcProvider | providers.ExternalProvider | string,

@@ -139,10 +139,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         },
       });
 
-      const mainAccount = this.$raiden.getMainAccount();
-      const raidenAccount = this.$raiden.getAccount();
-      // if sub key is used
-      if (mainAccount && raidenAccount) {
+      if (this.$raiden.usingSubkey) {
         const raidenAccount = {
           icon: 'account_eth.svg',
           title: this.$t('account-content.menu-items.raiden-account.title') as string,
