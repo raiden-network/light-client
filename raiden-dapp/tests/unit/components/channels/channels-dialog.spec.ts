@@ -29,6 +29,7 @@ describe('ChannelDialogs.vue', () => {
   function createWrapper() {
     vuetify = new Vuetify();
     $raiden = new RaidenService(store) as Mocked<RaidenService>;
+    $raiden.fetchAndUpdateTokenData = jest.fn();
     return mount(ChannelDialogs, {
       vuetify,
       store,

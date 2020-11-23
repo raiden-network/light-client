@@ -52,6 +52,10 @@ export default class MintDialog extends Vue {
   error: Error | RaidenError | null = null;
   amount = '1';
 
+  async mount() {
+    await this.$raiden.fetchAndUpdateTokenData([this.token.address]);
+  }
+
   @Emit()
   cancel() {
     this.error = null;

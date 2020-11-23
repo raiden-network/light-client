@@ -28,6 +28,10 @@ export default class TokenList extends Vue {
   forwardTokenSelection(token: Token): Token {
     return token;
   }
+
+  async mounted() {
+    await this.$raiden.fetchAndUpdateTokenData();
+  }
 }
 </script>
 

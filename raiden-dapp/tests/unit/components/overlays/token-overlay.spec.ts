@@ -27,6 +27,9 @@ function createWrapper(tokenAddressParameter = '0xToken'): Wrapper<TokenOverlay>
     $identicon: $identicon(),
     $t: (msg: string) => msg,
     $route: { params: { token: tokenAddressParameter } },
+    $raiden: {
+      fetchAndUpdateTokenData: jest.fn(),
+    },
   };
 
   const wrapper = mount(TokenOverlay, {
