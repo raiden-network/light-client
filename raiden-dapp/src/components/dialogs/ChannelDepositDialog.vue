@@ -111,8 +111,9 @@ export default class ChannelDepositDialog extends Vue {
     this.updateDeposit();
   }
 
-  private updateDeposit() {
+  private async updateDeposit() {
     this.deposit = (this.token.decimals ?? 18) === 0 ? '0' : '0.0';
+    await this.$raiden.fetchAndUpdateTokenData([this.token.address]);
   }
 
   @Emit()

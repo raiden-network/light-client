@@ -114,8 +114,9 @@ export default class ChannelWithdrawDialog extends Vue {
     this.updateWithdraw();
   }
 
-  private updateWithdraw() {
+  private async updateWithdraw() {
     this.withdraw = (this.token.decimals ?? 18) === 0 ? '0' : '0.0';
+    await this.$raiden.fetchAndUpdateTokenData([this.token.address]);
   }
 
   @Emit()

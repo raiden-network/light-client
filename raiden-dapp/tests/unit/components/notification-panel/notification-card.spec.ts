@@ -26,6 +26,9 @@ describe('NotificationCard.vue', () => {
       mocks: {
         $router: router,
         $t: (msg: string) => msg,
+        $raiden: {
+          fetchAndUpdateTokenData: jest.fn(),
+        },
       },
       propsData: { notification: TestData.notifications },
     });

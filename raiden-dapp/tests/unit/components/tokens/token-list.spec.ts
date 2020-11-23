@@ -30,6 +30,9 @@ function createWrapper(
   const mocks = {
     $identicon: $identicon(),
     $t: (msg: string) => msg,
+    $raiden: {
+      fetchAndUpdateTokenData: jest.fn(),
+    },
   };
 
   return mount(TokenList, {

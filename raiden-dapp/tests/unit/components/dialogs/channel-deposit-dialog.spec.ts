@@ -27,6 +27,9 @@ describe('ChannelDeposit.vue', () => {
       stubs: ['raiden-dialog'],
       mocks: {
         $t: (msg: string) => msg,
+        $raiden: {
+          fetchAndUpdateTokenData: jest.fn(),
+        },
       },
     });
   });
