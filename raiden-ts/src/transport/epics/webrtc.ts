@@ -397,6 +397,7 @@ function listenDataChannel(
             pluck('data'),
             filter((d: unknown): d is string => typeof d === 'string'),
             filter((line) => line !== pingMsg), // ignore pingMsg, used only to succeed rtcChannel
+            mergeMap((lines) => from(lines.split('\n'))),
             map((line) =>
               messageReceived(
                 {
