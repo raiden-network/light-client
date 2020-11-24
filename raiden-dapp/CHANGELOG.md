@@ -9,6 +9,7 @@
 
 - [#1693] Customizable privacy policy
 - [#2308] Show status of planned user deposit withdrawals
+- [#2372] Provide navigation link for withdrawn notification
 
 ### Changed
 
@@ -20,6 +21,7 @@
 [#2307]: https://github.com/raiden-network/light-client/issues/2307
 [#2369]: https://github.com/raiden-network/light-client/issues/2369
 [#2376]: https://github.com/raiden-network/light-client/issues/2376
+[#2372]: https://github.com/raiden-network/light-client/issues/2372
 
 ## [0.13.0] - 2020-11-10
 
