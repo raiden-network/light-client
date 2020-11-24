@@ -5,7 +5,7 @@ patchEthersDefineReadOnly();
 patchEthersGetNetwork();
 
 import { AsyncSubject, of, BehaviorSubject, ReplaySubject, Observable } from 'rxjs';
-import { filter, take } from 'rxjs/operators';
+import { filter, finalize, take } from 'rxjs/operators';
 import { MatrixClient } from 'matrix-js-sdk';
 import { EventEmitter } from 'events';
 import { memoize } from 'lodash';
@@ -622,6 +622,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       pfsList: [],
       rtc: {},
       udcBalance: Zero as UInt<32>,
+      blockTime: 1e3,
     }),
     config$ = latest$.pipe(pluckDistinct('config'));
 
@@ -919,7 +920,14 @@ export async function makeRaiden(
   jest
     .spyOn(provider, 'getCode')
     .mockImplementation((addr) => (log.trace('getCode called', addr), Promise.resolve('')));
-  jest.spyOn(provider, 'getBlock');
+  jest.spyOn(provider, 'getBlock').mockImplementation(
+    async (n: string | number | Promise<string | number>) =>
+      ({
+        timestamp: Math.floor(
+          (Date.now() - (provider.blockNumber - +(await n)) * provider.pollingInterval) / 1000,
+        ),
+      } as any),
+  );
   jest.spyOn(provider, 'getTransaction');
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([address]);
   // See: https://github.com/cartant/rxjs-marbles/issues/11
@@ -1214,10 +1222,9 @@ export async function makeRaiden(
     start: async () => {
       if (raiden.started !== undefined) return;
       raiden.started = true;
-      raiden.deps.config$.subscribe({
-        next: (config) => (raiden.config = config),
-        complete: () => (raiden.started = false),
-      });
+      raiden.deps.config$
+        .pipe(finalize(() => (raiden.started = false)))
+        .subscribe((config) => (raiden.config = config));
       epicMiddleware.run(raidenRootEpic);
       await raiden.deps.latest$
         .pipe(
@@ -1233,6 +1240,7 @@ export async function makeRaiden(
       raiden.deps.provider.removeAllListeners();
       const idx = mockedClients.indexOf(raiden);
       if (idx >= 0) mockedClients.splice(idx, 1);
+      assert(!raiden.started, ['node did not stop', { address }]);
     },
   };
 

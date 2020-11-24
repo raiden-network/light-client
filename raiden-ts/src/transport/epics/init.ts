@@ -411,11 +411,11 @@ export function matrixShutdownEpic(
   return matrix$.pipe(
     mergeMap((matrix) =>
       action$.pipe(
-        finalize(() => {
+        finalize(async () => {
           matrix.stopClient();
-          matrix.setPresence({ presence: 'offline', status_msg: '' }).catch(() => {
-            /* stopping, ignore exceptions */
-          });
+          try {
+            await matrix.setPresence({ presence: 'offline', status_msg: '' });
+          } catch (err) {}
         }),
       ),
     ),
