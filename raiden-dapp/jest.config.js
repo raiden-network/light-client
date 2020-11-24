@@ -21,5 +21,5 @@ module.exports = {
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.{ts,vue}', '!**/node_modules/**', '!**/vendor/**'],
   coverageReporters: ['html', 'lcov', 'text-summary'],
-  reporters: ['default', 'jest-junit']
+  reporters: ['default', 'jest-junit'],
 };
