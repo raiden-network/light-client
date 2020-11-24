@@ -1,5 +1,5 @@
 module.exports = {
-  setupFiles: ['./jest.setup.js'],
+  setupFiles: ['./jest.setup.js', 'jest-canvas-mock'],
   setupFilesAfterEnv: ['./jest.setup-after.ts'],
   moduleFileExtensions: ['js', 'jsx', 'json', 'vue', 'ts', 'tsx', 'node'],
   transform: {
@@ -21,5 +21,5 @@ module.exports = {
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.{ts,vue}', '!**/node_modules/**', '!**/vendor/**'],
   coverageReporters: ['html', 'lcov', 'text-summary'],
-  reporters: ['default', ['jest-junit', { outputDirectory: 'coverage' }]],
+  reporters: ['default', 'jest-junit']
 };
