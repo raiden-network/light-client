@@ -1083,10 +1083,10 @@ describe('RaidenService', () => {
         payload: {
           confirmed: true,
           withdrawal: constants.One,
-        }, 
+        },
         meta: {
           amount: constants.One,
-        }
+        },
       });
 
       expect(store.commit).toHaveBeenCalledWith('userDepositContract/clearPlannedWithdrawal');
