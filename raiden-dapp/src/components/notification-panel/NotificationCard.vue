@@ -95,7 +95,7 @@ export default class NotificationCard extends Vue {
 .notification-card {
   background-color: $notification-card-bg;
   border-radius: 16px !important;
-  height: 110px;
+  min-height: 110px;
 
   &__content {
     height: 100%;

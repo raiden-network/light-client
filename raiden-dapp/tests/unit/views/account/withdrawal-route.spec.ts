@@ -1,4 +1,4 @@
-import { mount, Wrapper } from '@vue/test-utils';
+import { shallowMount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import { $identicon } from '../../utils/mocks';
@@ -14,7 +14,7 @@ describe('WithdrawalRoute.vue', () => {
   beforeEach(() => {
     vuetify = new Vuetify();
 
-    wrapper = mount(WithdrawalRoute, {
+    wrapper = shallowMount(WithdrawalRoute, {
       vuetify,
       store,
       stubs: ['withdrawal'],

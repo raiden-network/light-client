@@ -23,6 +23,7 @@ import i18n from '@/i18n';
 import { NotificationPayload } from '@/store/notifications/types';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
+import { RouteNames } from '@/router/route-names';
 
 function raidenActionConfirmationValueToStateTranslation(
   confirmationValue: boolean | undefined,
@@ -41,6 +42,7 @@ export default class RaidenService {
   private store: Store<CombinedStoreState>;
   private _userDepositTokenAddress = '';
   private _configuration?: Configuration;
+  public usingSubkey: boolean | undefined;
 
   private static async createRaiden(
     provider: providers.JsonRpcProvider | providers.ExternalProvider | string,
@@ -152,6 +154,7 @@ export default class RaidenService {
 
         this._raiden = raiden;
         this._configuration = configuration;
+        this.usingSubkey = subkey ?? false;
 
         const account = this.getAccount();
         this.store.commit('account', account);
@@ -340,23 +343,34 @@ export default class RaidenService {
     } as NotificationPayload);
   }
 
-  private async notifyWithdrawal(plannedAmount: BigNumber, withdrawal: BigNumber) {
+  private async notifyWithdrawal(amount: BigNumber, withdrawn: BigNumber) {
     // UDC token must be defined here after the initial loading phase.
     const token = this.store.state.userDepositContract.token!;
     const decimals = token.decimals ?? 18;
-    const amount = BalanceUtils.toUnits(plannedAmount, decimals);
-    const withdrawn = BalanceUtils.toUnits(withdrawal, decimals);
+    const plannedAmount = BalanceUtils.toUnits(amount, decimals);
+    const withdrawnAmount = BalanceUtils.toUnits(withdrawn, decimals);
 
-    this.store.commit('notifications/notificationAddOrReplace', {
-      title: i18n.t('notifications.withdrawal.success.title'),
-      description: i18n.t('notifications.withdrawal.success.description', {
-        amount,
-        withdrawn,
+    let notificationPayload = {
+      icon: i18n.t('notifications.withdrawn.icon'),
+      title: i18n.t('notifications.withdrawn.title'),
+      description: i18n.t('notifications.withdrawn.description', {
+        plannedAmount,
+        withdrawnAmount,
         symbol: token.symbol,
       }),
       context: NotificationContext.INFO,
       importance: NotificationImportance.HIGH,
-    } as NotificationPayload);
+    } as NotificationPayload;
+
+    if (this.usingSubkey) {
+      notificationPayload = {
+        ...notificationPayload,
+        link: i18n.t('notifications.withdrawn.link') as string,
+        dappRoute: RouteNames.ACCOUNT_WITHDRAWAL,
+      };
+    }
+
+    this.store.commit('notifications/notificationAddOrReplace', notificationPayload);
   }
 
   private async notifyBalanceProofSend(

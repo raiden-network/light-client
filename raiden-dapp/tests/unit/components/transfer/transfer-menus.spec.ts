@@ -31,6 +31,9 @@ describe('TransferHeaders.vue', () => {
       mocks: {
         $router: router,
         $t: (msg: string) => msg,
+        $raiden: {
+          fetchAndUpdateTokenData: jest.fn(),
+        },
       },
       propsData: {
         token,

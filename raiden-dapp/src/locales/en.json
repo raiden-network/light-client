@@ -49,7 +49,7 @@
     },
     "withdrawal": {
       "success": {
-        "title": "User Deposit Withdrawal",
+        "title": "User Deposit Withdraw Planned",
         "description": "A planned withdrawal of {amount} {symbol} was successfully completed withdrawing {withdrawal} {symbol}"
       },
       "failure": {
@@ -60,6 +60,12 @@
           "UDC_WITHDRAW_FAILED": "We could not complete the withdrawal of {amount} {symbol} because the transaction failed."
         }
       }
+    },
+    "withdrawn": {
+      "icon": "notification_withdrawn",
+      "title": "User Deposit Tokens Withdrawn",
+      "description": "{withdrawnAmount} {symbol} ({plannedAmount} planned) have been withdrawn from the user deposit contract.",
+      "link": "Click here to transfer them to your main acccount."
     },
     "settlement": {
       "icon": "notification_settle",
@@ -153,8 +159,8 @@
     "withdrawal-planned": "The withdrawal from the user deposit has been planned. You will get notified when the withdrawal is complete.",
     "information": {
       "no-withdrawal-in-progress": "No withdrawal in progress",
-      "blocks-remaining": "Blocks remaining...",
-      "confirmed-navigation-link": "ready・continue in withdrawal screen"
+      "pending-message": "Blocks remaining...",
+      "ready-message": "Ready・Tokens get claimed automatically"
     }
   },
   "backup-state": {

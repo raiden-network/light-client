@@ -15,8 +15,8 @@
       <img
         class="planned-udc-withdrawal-information__status-icon mr-2"
         :src="require(`@/assets/planned-udc-withdrawal/status-icon-${statusIconName}.svg`)"
-        :width="iconSize"
-        :height="iconSize"
+        width="13px"
+        height="13px"
       />
 
       <amount-display
@@ -27,26 +27,14 @@
 
       <v-spacer />
 
-      <span v-if="isPending" class="planned-udc-withdrawal-information__pending-message">
+      <span v-if="isPending" class="planned-udc-withdrawal-information__message">
         {{ remainingBlocksUntilReady }}
-        {{ $t('udc.information.blocks-remaining') | upperCase }}
+        {{ $t('udc.information.pending-message') | upperCase }}
       </span>
 
-      <a
-        v-if="isReady"
-        class="planned-udc-withdrawal-information__navigation-link d-flex align-center"
-        @click="navigateToWithdrawal"
-      >
-        {{ $t('udc.information.confirmed-navigation-link') | upperCase }}
-
-        <img
-          v-if="isReady"
-          class="ml-2"
-          :src="require(`@/assets/planned-udc-withdrawal/navigation-arrow.svg`)"
-          :width="iconSize"
-          :height="iconSize"
-        />
-      </a>
+      <span v-if="isReady" class="planned-udc-withdrawal-information__message">
+        {{ $t('udc.information.ready-message') | upperCase }}
+      </span>
     </template>
   </div>
 </template>
@@ -70,7 +58,6 @@ export default class PlannedUdcWithdrawalInformation extends NavigationMixin {
   blockNumber!: number;
 
   readonly assetSourceDirectory = '@/assets/planned-udc-withdrawal';
-  readonly iconSize = '13.33px';
 
   get noWithdrawInProgress(): boolean {
     return this.plannedWithdrawal === undefined;
@@ -114,13 +101,8 @@ export default class PlannedUdcWithdrawalInformation extends NavigationMixin {
   }
 
   &--ready {
-    $color: #00ff66;
-    color: $color;
+    color: #00ff66;
     background-color: #003214;
-
-    a {
-      color: $color;
-    }
   }
 
   &__amount {

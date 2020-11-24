@@ -38,7 +38,7 @@ async function createWrapper(
   const store = new Vuex.Store({ state, getters });
 
   const $raiden = {
-    getMainAccount: jest.fn(() => '0xMainAccount'),
+    usingSubkey: useSubkey,
     getAccount: jest.fn(() => (useSubkey ? '0xAccount' : undefined)),
   };
 
