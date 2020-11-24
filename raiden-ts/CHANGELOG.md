@@ -4,7 +4,13 @@
 ### Fixed
 - [#2360] Properly error & shutdown if database gets deleted at runtime
 
+### Added
+- [#1256] Disable receiving if blocks don't arrive in a timely manner
+- [#2395] Calculate and expose Raiden.blockTime$ as observable of average block times
+
+[#1256]: https://github.com/raiden-network/light-client/issues/1256
 [#2360]: https://github.com/raiden-network/light-client/issues/2360
+[#2395]: https://github.com/raiden-network/light-client/pull/2395
 
 ## [0.13.0] - 2020-11-10
 ### Fixed

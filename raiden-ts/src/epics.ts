@@ -106,28 +106,72 @@ function getBlockTime$(
   ).pipe(shareReplay(1)); // share observable to reuse subject in case of multiple subscriptions
 }
 
+// Observable of truthy if stale (no new blocks for too long, possibly indicating eth node is out
+// of sync), falsy otherwise/initially
+function getStale$(
+  state$: Observable<RaidenState>,
+  blockTime$: Observable<number>,
+  config: RaidenConfig,
+) {
+  return state$.pipe(
+    pluckDistinct('blockNumber'),
+    withLatestFrom(blockTime$),
+    // forEach block
+    map(([, blockTime]) => Math.max(3 * blockTime, 2 * config.httpTimeout)),
+    startWith(2 * config.httpTimeout), // ensure it works even before state$ emit first
+    // switchMap will "reset" timer every block, restarting the timeout
+    switchMap((staleTimeout) =>
+      concat(
+        of(false),
+        timer(staleTimeout).pipe(
+          mapTo(true),
+          // ensure timer completes output if input completes,
+          // but first element of concat ensures it'll emit at least once (true) when subscribed
+          takeUntil(state$.pipe(ignoreElements(), endWith(null))),
+        ),
+      ),
+    ),
+    distinctUntilChanged(),
+  );
+}
+
+// default value for config.caps[Capabilities.RECEIVE], when it's not user-set
+function defaultCapReceive(
+  stale: boolean,
+  udcBalance: UInt<32>,
+  { monitoringReward }: Pick<RaidenConfig, 'monitoringReward'>,
+): number {
+  return !stale && monitoringReward?.gt(0) && monitoringReward.lte(udcBalance) ? 1 : 0;
+}
+
 // calculate dynamic config, based on default, user and udcBalance (for receiving caps)
 function getConfig$(
   defaultConfig: RaidenConfig,
   state$: Observable<RaidenState>,
-  udcBalance$: Observable<UInt<32>>,
+  {
+    udcBalance$,
+    blockTime$,
+  }: { udcBalance$: Observable<UInt<32>>; blockTime$: Observable<number> },
 ): Observable<RaidenConfig> {
-  const partialConfig$ = state$.pipe(pluckDistinct('config'));
-  return combineLatest([partialConfig$, udcBalance$]).pipe(
-    map(
-      ([userConfig, udcBalance]): RaidenConfig => {
-        const config: Mutable<RaidenConfig> = { ...defaultConfig, ...userConfig };
-        // if user config caps is not disabled, calculate dynamic default values
-        if (config.caps !== null)
-          config.caps = {
-            [Capabilities.RECEIVE]:
-              config.monitoringReward?.gt(0) && config.monitoringReward.lte(udcBalance) ? 1 : 0,
-            ...defaultConfig.caps,
-            ...userConfig.caps,
-          };
-        return config;
-      },
-    ),
+  return state$.pipe(
+    pluckDistinct('config'),
+    switchMap((userConfig) => {
+      const config: Mutable<RaidenConfig> = { ...defaultConfig, ...userConfig };
+      // merge default & user caps
+      if (config.caps !== null) config.caps = { ...defaultConfig.caps, ...userConfig.caps };
+      if (config.caps === null || config.caps[Capabilities.RECEIVE] != null) return of(config);
+      // if user config caps is not disabled, calculate dynamic default values
+      else
+        return combineLatest([udcBalance$, getStale$(state$, blockTime$, config)]).pipe(
+          map(([udcBalance, stale]) => ({
+            ...config,
+            caps: {
+              [Capabilities.RECEIVE]: defaultCapReceive(stale, udcBalance, config),
+              ...config.caps,
+            },
+          })),
+        );
+    }),
     distinctUntilChanged(isEqual),
   );
 }
@@ -154,8 +198,10 @@ export function getLatest$(
     pluck('payload', 'balance'),
     // starts with max, to prevent receiving starting as disabled before actual balance is fetched
     startWith(MaxUint256 as UInt<32>),
+    distinctUntilChanged((a, b) => a.eq(b)),
   );
   const blockTime$ = getBlockTime$(state$, provider);
+  const config$ = getConfig$(defaultConfig, state$, { udcBalance$, blockTime$ });
   const presences$ = getPresences$(action$);
   const pfsList$ = action$.pipe(
     filter(pfsListUpdated.is),
@@ -238,7 +284,12 @@ export function raidenRootEpic(
 
   return using(
     // wire deps.latest$ when observableFactory below gets subscribed, and tears down on complete
-    () => getLatest$(limitedAction$, limitedState$, deps).subscribe(deps.latest$),
+    () => {
+      const sub = getLatest$(limitedAction$, limitedState$, deps).subscribe(deps.latest$);
+      // ensure deps.latest$ is completed if teardown happens before getLatest$ completion
+      sub.add(() => deps.latest$.complete());
+      return sub;
+    },
     () =>
       // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through;
       // also merge deps.db.busy$ errors, in order to shut down epics if they occur

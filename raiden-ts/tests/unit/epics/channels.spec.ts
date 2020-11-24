@@ -40,7 +40,7 @@ import { defaultAbiCoder, Interface } from '@ethersproject/abi';
 import { first, pluck } from 'rxjs/operators';
 
 import { UInt } from 'raiden-ts/utils/types';
-import { LocksrootZero } from 'raiden-ts/constants';
+import { Capabilities, LocksrootZero } from 'raiden-ts/constants';
 import {
   channelMonitored,
   channelOpen,
@@ -982,4 +982,25 @@ test('channelAutoSettleEpic', async () => {
     channelSettle.request(undefined, { tokenNetwork, partner: partner.address }),
   );
   expect(getChannel(raiden, partner)?.state).toBe(ChannelState.settling);
+});
+
+test('stale provider disables receiving', async () => {
+  expect.assertions(3);
+
+  const raiden = await makeRaiden(undefined, false);
+  raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 100 }));
+  await raiden.start();
+
+  // at first, receiving is enabled (since there's UDC deposit)
+  await waitBlock();
+  expect(raiden.config.caps?.[Capabilities.RECEIVE]).toBeTruthy();
+
+  // but after some long enough time, it gets auto-disabled because no new blocks went through
+  await sleep(4 * raiden.config.httpTimeout);
+  expect(raiden.config.caps?.[Capabilities.RECEIVE]).toBe(0);
+
+  // but if a block goes through, it gets re-enabled
+  await waitBlock();
+  await sleep();
+  expect(raiden.config.caps?.[Capabilities.RECEIVE]).toBeTruthy();
 });
