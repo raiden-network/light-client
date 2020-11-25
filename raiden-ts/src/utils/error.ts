@@ -12,7 +12,7 @@ export type ErrorCodes = keyof typeof ErrorCodes;
 export const ErrorDetails = t.record(t.string, t.union([t.string, t.number, t.boolean, t.null]));
 export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
 
-export const networkErrors: readonly string[] = ['invalid response'];
+export const networkErrors: readonly string[] = ['invalid response', 'timeout'];
 
 export class RaidenError extends Error {
   public name = 'RaidenError';

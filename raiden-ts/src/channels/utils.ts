@@ -204,6 +204,7 @@ export const txFailErrors: readonly string[] = [
   'execution failed due to an exception',
   'transaction failed',
   'execution reverted',
+  'cannot estimate gas',
 ];
 
 /**
