@@ -26,7 +26,7 @@ import {
 
 import { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
 
-import { retryWaitWhile } from '../../utils/rx';
+import { retryWhile } from '../../utils/rx';
 import { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { Signed } from '../../utils/types';
@@ -142,7 +142,7 @@ export function matrixMessageGlobalSendEpic(
             '',
           );
         }),
-        retryWaitWhile(
+        retryWhile(
           exponentialBackoff(config.pollingInterval, config.httpTimeout),
           (err, count) => ![429, 500].includes(err?.httpStatus) || count > 3,
         ),

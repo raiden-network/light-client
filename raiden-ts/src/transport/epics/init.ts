@@ -46,7 +46,7 @@ import { RaidenConfig } from '../../config';
 import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
 import { decode } from '../../utils/types';
-import { pluckDistinct, retryAsync$, retryWaitWhile } from '../../utils/rx';
+import { pluckDistinct, retryAsync$, retryWhile } from '../../utils/rx';
 import { exponentialBackoff } from '../../transfers/epics/utils';
 import { matrixSetup } from '../actions';
 import { RaidenMatrixSetup } from '../state';
@@ -136,7 +136,7 @@ function startMatrixSync(
       joinGlobalRooms(config, matrix).pipe(
         mergeMap((roomIds) => createMatrixFilter(matrix, roomIds)),
         mergeMap((filter) => matrix.startClient({ filter })),
-        retryWaitWhile(
+        retryWhile(
           exponentialBackoff(config.pollingInterval, config.httpTimeout),
           (err) => err?.httpStatus !== 429, // retry rate-limit errors only
         ),

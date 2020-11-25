@@ -109,7 +109,7 @@ export function repeatUntil<T>(
  * @param stopPredicate - Receives error and count, stop retry and throw if returns truthy
  * @returns Operator function to retry if stopPredicate not truthy waiting between retries
  */
-export function retryWaitWhile<T>(
+export function retryWhile<T>(
   delayMs: number | Iterator<number>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
@@ -152,7 +152,7 @@ export function retryAsync$<T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
 ): Observable<T> {
-  return defer(func).pipe(retryWaitWhile(delayMs, stopPredicate));
+  return defer(func).pipe(retryWhile(delayMs, stopPredicate));
 }
 
 /**

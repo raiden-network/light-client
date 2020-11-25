@@ -33,7 +33,7 @@ import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { getUserPresence } from '../../utils/matrix';
-import { pluckDistinct, retryWaitWhile } from '../../utils/rx';
+import { pluckDistinct, retryWhile } from '../../utils/rx';
 import { matrixPresence } from '../actions';
 import { channelMonitored } from '../../channels/actions';
 import { parseCaps, stringifyCaps } from '../utils';
@@ -241,7 +241,7 @@ export function matrixPresenceUpdateEpic(
               { address: recovered },
             );
           }),
-          retryWaitWhile(
+          retryWhile(
             exponentialBackoff(pollingInterval, httpTimeout),
             (err) => err?.httpStatus !== 429, // retry rate-limit errors only
           ),
