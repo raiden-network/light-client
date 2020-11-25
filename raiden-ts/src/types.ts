@@ -44,6 +44,7 @@ export interface Latest {
   pfsList: readonly Address[];
   rtc: { [address: string]: RTCDataChannel };
   udcBalance: UInt<32>;
+  blockTime: number;
 }
 
 export interface RaidenEpicDeps {

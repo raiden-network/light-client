@@ -123,6 +123,10 @@ export class Raiden {
   public config!: RaidenConfig;
   /** RaidenConfig observable (for reactive use)  */
   public config$: Observable<RaidenConfig>;
+  /**
+   * Observable of latest average (10) block times
+   */
+  public blockTime$: Observable<number>;
 
   /**
    * Expose ether's Provider.resolveName for ENS support
@@ -193,6 +197,7 @@ export class Raiden {
     this.state$ = latest$.pipe(pluckDistinct('state'));
     // pipe action, skipping cached
     this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
+    this.blockTime$ = latest$.pipe(pluckDistinct('blockTime'));
     this.channels$ = this.state$.pipe(pluckDistinct('channels'), map(mapRaidenChannels));
     this.transfers$ = initTransfers$(this.state$, db);
     this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));

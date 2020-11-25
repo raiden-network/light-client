@@ -1,4 +1,16 @@
-import { Observable, from, of, combineLatest, using, throwError, merge } from 'rxjs';
+import {
+  Observable,
+  from,
+  of,
+  combineLatest,
+  using,
+  throwError,
+  merge,
+  timer,
+  defer,
+  EMPTY,
+  concat,
+} from 'rxjs';
 import {
   catchError,
   filter,
@@ -11,11 +23,18 @@ import {
   scan,
   distinctUntilChanged,
   ignoreElements,
+  switchMap,
+  exhaustMap,
+  mapTo,
+  endWith,
+  shareReplay,
+  withLatestFrom,
 } from 'rxjs/operators';
 import { MaxUint256 } from '@ethersproject/constants';
 import negate from 'lodash/negate';
 import unset from 'lodash/fp/unset';
 import isEqual from 'lodash/isEqual';
+import constant from 'lodash/constant';
 
 import { RaidenState } from './state';
 import { RaidenEpicDeps, Latest } from './types';
@@ -34,6 +53,58 @@ import * as ChannelsEpics from './channels/epics';
 import * as TransportEpics from './transport/epics';
 import * as TransfersEpics from './transfers/epics';
 import * as ServicesEpics from './services/epics';
+
+/**
+ * Returns a shared observable to calculate average block time every [opts.fetchEach] blocks
+ *
+ * @param state$ - Observable of RaidenStates, to fetch blockNumber updates
+ * @param provider - To fetch historic block info
+ * @param opts - Options object
+ * @param opts.initialBlockTime - constant for an initial blockTime (at subscription time)
+ * @param opts.fetchEach - how often to fetch block data (in blocks)
+ * @returns average block time, in milliseconds, from latest [opts.fetchEach] blocks
+ */
+function getBlockTime$(
+  state$: Observable<RaidenState>,
+  provider: RaidenEpicDeps['provider'],
+  { initialBlockTime, fetchEach }: { initialBlockTime: number; fetchEach: number } = {
+    initialBlockTime: 15e3,
+    fetchEach: 10,
+  },
+): Observable<number> {
+  type BlockInfo = readonly [blockNumber: number, timestamp: number, blockTime?: number];
+  let lastInfo: BlockInfo = [-fetchEach, 0]; // previously fetched block info
+
+  // get block info for a given block number
+  const getBlockInfo$ = (blockNumber: number) =>
+    defer(async () =>
+      provider
+        .getBlock(blockNumber)
+        .then((block): BlockInfo => [blockNumber, block.timestamp * 1000]),
+    );
+
+  return concat(
+    // like startWith, but if somehow this gets re-subscribed, uses lastInfo[2] as initialBlockTime
+    defer(() => (lastInfo[0] > 0 && lastInfo[2] ? of(lastInfo[2]) : of(initialBlockTime))),
+    state$.pipe(
+      pluckDistinct('blockNumber'),
+      filter((blockNumber) => blockNumber >= lastInfo[0] + fetchEach),
+      exhaustMap((blockNumber) => {
+        const prevInfo$ =
+          lastInfo[0] > 0 ? of(lastInfo) : getBlockInfo$(Math.max(1, blockNumber - fetchEach));
+        const curInfo$ = getBlockInfo$(blockNumber);
+        return combineLatest([prevInfo$, curInfo$]).pipe(
+          map(([prevInfo, curInfo]) => {
+            const avgBlockTime = (curInfo[1] - prevInfo[1]) / (curInfo[0] - prevInfo[0]);
+            lastInfo = [curInfo[0], curInfo[1], avgBlockTime];
+            return avgBlockTime;
+          }),
+          catchError(constant(EMPTY)), // ignore errors to retry next block
+        );
+      }),
+    ),
+  ).pipe(shareReplay(1)); // share observable to reuse subject in case of multiple subscriptions
+}
 
 // calculate dynamic config, based on default, user and udcBalance (for receiving caps)
 function getConfig$(
@@ -84,7 +155,7 @@ export function getLatest$(
     // starts with max, to prevent receiving starting as disabled before actual balance is fetched
     startWith(MaxUint256 as UInt<32>),
   );
-  const config$ = getConfig$(defaultConfig, state$, udcBalance$);
+  const blockTime$ = getBlockTime$(state$, provider);
   const presences$ = getPresences$(action$);
   const pfsList$ = action$.pipe(
     filter(pfsListUpdated.is),
@@ -121,9 +192,9 @@ export function getLatest$(
       // the nested combineLatest is needed because it can only infer the type of 6 params
       combineLatest([
         combineLatest([action$, state$, config$, presences$, pfsList$, rtc$]),
-        combineLatest([udcBalance$]),
+        combineLatest([udcBalance$, blockTime$]),
       ]).pipe(
-        map(([[action, state, config, presences, pfsList, rtc], [udcBalance]]) => ({
+        map(([[action, state, config, presences, pfsList, rtc], [udcBalance, blockTime]]) => ({
           action,
           state,
           config,
@@ -131,6 +202,7 @@ export function getLatest$(
           pfsList,
           rtc,
           udcBalance,
+          blockTime,
         })),
       ),
   );
