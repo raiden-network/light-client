@@ -35,7 +35,7 @@ import { RaidenState } from '../../state';
 import { channelMonitored } from '../../channels/actions';
 import { messageSend, messageReceived } from '../../messages/actions';
 import { transferSigned } from '../../transfers/actions';
-import { pluckDistinct, retryWaitWhile, takeIf } from '../../utils/rx';
+import { pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
 import { getServerName } from '../../utils/matrix';
 import { Direction } from '../../transfers/state';
 import { exponentialBackoff } from '../../transfers/epics/utils';
@@ -169,7 +169,7 @@ export function matrixCreateRoomEpic(
               }),
             ),
             map(({ room_id: roomId }) => matrixRoom({ roomId }, { address })),
-            retryWaitWhile(
+            retryWhile(
               exponentialBackoff(pollingInterval, httpTimeout),
               (err) => err?.httpStatus !== 429, // retry rate-limit errors only
             ),
@@ -279,7 +279,7 @@ export function matrixHandleInvitesEpic(
       // join room and emit MatrixRoomAction to make it default/first option for sender address
       defer(() => matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
         mapTo(matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
-        retryWaitWhile(
+        retryWhile(
           exponentialBackoff(pollingInterval, httpTimeout),
           (err) => err?.httpStatus !== 429, // retry rate-limit errors only
         ),
