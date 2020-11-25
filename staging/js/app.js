@@ -1938,7 +1938,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /*! exports provided: sdk, contracts, default */
 /***/ (function(module) {
 
-eval("module.exports = JSON.parse(\"{\\\"sdk\\\":\\\"0.13.0\\\",\\\"contracts\\\":\\\"0.37.1\\\"}\");//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiIsImZpbGUiOiIuLi9yYWlkZW4tdHMvZGlzdC92ZXJzaW9ucy5qc29uLmpzIiwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///../raiden-ts/dist/versions.json\n");
+eval("module.exports = JSON.parse(\"{\\\"sdk\\\":\\\"0.14.0\\\",\\\"contracts\\\":\\\"0.37.1\\\"}\");//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiIsImZpbGUiOiIuLi9yYWlkZW4tdHMvZGlzdC92ZXJzaW9ucy5qc29uLmpzIiwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///../raiden-ts/dist/versions.json\n");
 
 /***/ }),
 
