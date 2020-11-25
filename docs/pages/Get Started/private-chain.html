@@ -1,0 +1,547 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Private chains | raiden-ts - v0.14.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="../../assets/css/main.css">
+	<link rel="stylesheet" href="../../assets/css/pages.css">
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="../../assets/js/search.json" data-base="../..">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="../../index.html" class="title">raiden-ts - v0.14.0</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="../../globals.html">Globals</a>
+				</li>
+				<li>
+					<a href="prerequisites.html">Get Started</a>
+				</li>
+				<li>
+					<a href="private-chain.html">Private chains</a>
+				</li>
+			</ul>
+			<h1>Private chains</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<div class="tsd-panel tsd-typography">
+				<a href="#using-the-light-client-in-different-network-setups" id="using-the-light-client-in-different-network-setups" style="color: inherit; text-decoration: none;">
+					<h1>Using the Light Client in different network setups</h1>
+				</a>
+				<a href="#table-of-contents" id="table-of-contents" style="color: inherit; text-decoration: none;">
+					<h2>Table of Contents</h2>
+				</a>
+				<ul>
+					<li><a href="#preface">Preface</a></li>
+					<li><a href="#setting-up-the-light-client-on-a-private-network">Setting up the Light Client on a private network</a><ul>
+							<li><a href="#identifying-the-correct-smart-contract-version">Identifying the correct smart contract version</a></li>
+							<li><a href="#locate-the-smart-contract-version">Locate the smart contract version</a></li>
+						</ul>
+					</li>
+					<li><a href="#setting-up-the-development-environment">Setting up the Development Environment</a><ul>
+							<li><a href="#locating-the-smart-contracts">Locating the Smart Contracts</a></li>
+							<li><a href="#starting-the-sdk">Starting the SDK</a></li>
+							<li><a href="#changing-the-dapp-to-work-on-the-private-setup">Changing the dApp to work on the private setup</a></li>
+						</ul>
+					</li>
+				</ul>
+				<a href="#preface" id="preface" style="color: inherit; text-decoration: none;">
+					<h2>Preface</h2>
+				</a>
+				<p>This guide targets users that want to use the Light Client SDK or dApp with a custom network setup. This includes private chain deployments of the Raiden Network or unsupported networks (e.g., Kovan).</p>
+				<p>To use a private network you first have to deploy the contracts by hand.
+				Start by following this tutorial on how to deploy and run Raiden Network on a private chain:</p>
+				<ul>
+					<li><a href="https://raiden-network.readthedocs.io/en/latest/private_net_tutorial.html">Raiden on Private Network Tutorial</a> </li>
+				</ul>
+				<p>After finishing the guide above you should have a running Raiden node along with a private chain with the Raiden Network smart contracts deployed. Now you can move on to setting up the Light Client on your private network.</p>
+				<a href="#setting-up-the-light-client-on-a-private-network" id="setting-up-the-light-client-on-a-private-network" style="color: inherit; text-decoration: none;">
+					<h2>Setting up the Light Client on a private network</h2>
+				</a>
+				<a href="#identifying-the-correct-smart-contract-version" id="identifying-the-correct-smart-contract-version" style="color: inherit; text-decoration: none;">
+					<h3>Identifying the correct smart contract version</h3>
+				</a>
+				<p>Before starting your private network setup, you first need to:</p>
+				<ol>
+					<li>Select which version of the Light Client you want to use</li>
+					<li>Locate the version of the smart contracts used in that specific version of the Light Client</li>
+				</ol>
+				<a href="#locate-the-smart-contract-version" id="locate-the-smart-contract-version" style="color: inherit; text-decoration: none;">
+					<h3>Locate the smart contract version</h3>
+				</a>
+				<p>You can easily find out the version of the smart contracts used in your version of the Light Client by checking the <code>raiden-contracts</code> submodule in the Light Client GitHub repo.</p>
+				<ol>
+					<li>Navigate to the <a href="https://github.com/raiden-network/light-client">GitHub</a> project page</li>
+					<li>Locate the <code>raiden-ts</code> subdirectory and look for the <code>raiden-contracts</code> submodule <em>(something like<code>raiden-contracts @ dfc0da6</code>)</em></li>
+					<li>Look at the commit message and check if it includes the <code>raiden-contracts</code> version. If not, follow the submodule link to the contracts repository and locate the <code>setup.py</code> file. You&#39;ll find the version of the Raiden Contracts by looking at the version variable <em>(<code>VERSION = &#39;0.33.3&#39;</code>)</em></li>
+				</ol>
+				<p>After finding the <code>contracts</code> version you&#39;ll have to go to the <a href="https://github.com/raiden-network/raiden">Raiden</a> repo and locate a version of the python client compatible with your specific version of the smart contracts.</p>
+				<ol>
+					<li>Navigate to the <a href="https://github.com/raiden-network/raiden/blob/develop/requirements/requirements.txt#L66">requirements.txt</a> in the <code>requirements</code> folder on the Raiden repo <code>develop</code> branch</li>
+					<li>You can see the <code>contracts</code> version used by looking at the <code>raiden-contracts</code> dependency.</li>
+				</ol>
+				<p>If the python client uses a newer version of the Raiden Contracts, you can use the <a href="https://github.com/raiden-network/raiden/blame/81e535808f6f4d047495b76a555f623d3a6838f0/requirements/requirements.txt#L66"><code>Blame</code></a> interface to find a commit with the correct version. By clicking the <code>View blame prior to this change</code> icon button in the <code>Blame</code> interface <em>(The icon displayed before the line number)</em> you can go through the commits until you locate a commit that matches the correct version.</p>
+				<a href="#setting-up-the-development-environment" id="setting-up-the-development-environment" style="color: inherit; text-decoration: none;">
+					<h2>Setting up the Development Environment</h2>
+				</a>
+				<p>You need to check out the correct branch or tag in the Raiden repo that you cloned when deploying Raiden Network on a private chain.</p>
+				<p>For example, if you need to you the <code>v0.200.0-rc2</code> tag, you need to first checkout the tag before continuing with the tutorial.</p>
+				<pre><code class="language-bash">git checkout v0.200.0-rc2</code></pre>
+				<p>If you&#39;ve done everything correctly you should now have <code>Geth</code> running a private chain, with the Raiden contracts deployed, and a Raiden node running.</p>
+				<a href="#locating-the-smart-contracts" id="locating-the-smart-contracts" style="color: inherit; text-decoration: none;">
+					<h3>Locating the Smart contracts</h3>
+				</a>
+				<p>After bootstrapping the network you have to locate the deployment files. The deployment files will point the SDK to the correct smart contracts.</p>
+				<p>Locate <code>env/lib/python3.7/site-packages/raiden_contracts/data_${VERSION}/</code>, in the directory that contains the virtual environment that you created when deploying the Raiden Network on a private chain.</p>
+				<p>You should find the two following files in this directory:</p>
+				<ul>
+					<li><code>deployment_private_net.json</code></li>
+					<li><code>deployment_services_private_net.json</code></li>
+				</ul>
+				<p>Create a <code>deployment</code> directory into your project&#39;s <code>src</code>, copy these files there and proceed with the SDK or dApp initialization.</p>
+				<a href="#starting-the-sdk" id="starting-the-sdk" style="color: inherit; text-decoration: none;">
+					<h3>Starting the SDK</h3>
+				</a>
+				<p>You can start using the SDK in your setup. If you want to learn more about using the SDK in your project you can reference the <a href="../installing-sdk/README.md">SDK installation</a> tutorial. </p>
+				<p>To start the SDK on your private network setup, you need to import the private deployment files. You can find them in the <code>&lt;rootDir&gt;/src/deployment</code> directory.</p>
+				<pre><code class="language-typescript"><span class="hljs-keyword">import</span> privateDeployment <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@/deployment/deployment_private_net.json&#x27;</span>;
+<span class="hljs-keyword">import</span> privateServicesDeployment <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@/deployment/deployment_services_private_net.json&#x27;</span>;
+<span class="hljs-keyword">import</span> { ContractsInfo } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;raiden-ts&#x27;</span>;</code></pre>
+				<p>As soon as the imports exist, you need to construct the <code>contractsInfo</code> object and pass it to the Light Client SDK initialization logic. </p>
+				<p>An example of the SDK initialization function follows:</p>
+				<pre><code class="language-typescript"><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">initialization</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">const</span> contractsInfo = ({
+      ...privateDeployment.contracts,
+      ...privateServicesDeployment.contracts
+    } <span class="hljs-keyword">as</span> unknown) <span class="hljs-keyword">as</span> ContractsInfo;
+
+    <span class="hljs-keyword">const</span> raiden = <span class="hljs-keyword">await</span> Raiden.create(
+        provider,
+        <span class="hljs-number">0</span>,
+        <span class="hljs-built_in">window</span>.localStorage,
+        contractsInfo
+    );
+}</code></pre>
+				<p>Calling the <code>initialization()</code> function should enable the SDK to manage channels and send payments in the development environment, using the previously deployed token.</p>
+				<a href="#changing-the-dapp-to-work-on-the-private-setup" id="changing-the-dapp-to-work-on-the-private-setup" style="color: inherit; text-decoration: none;">
+					<h3>Changing the dApp to work on the private setup</h3>
+				</a>
+				<p>Out of the box the dApp supports the following public test networks <code>Görli</code>, <code>Rinkeby</code> and <code>Ropsten</code>.</p>
+				<p>To run the dApp on any other network setup you need to deploy the smart contracts and change the dApp to use this setup.</p>
+				<p>If you require help running the dApp, you can follow the <a href="../installing-dapp/README.md">instructions</a>.</p>
+				<p>As soon as you have the dApp running you can locate the <a href="https://github.com/raiden-network/light-client/blob/3c2df8e496f329fac6f8b0ceafd4edaf40c1b736/raiden-dapp/src/services/raiden-service.ts#L18"><code>createRaiden</code></a> function and change it accordingly. </p>
+				<p>First, you need to import the deployment information, as with the SDK setup.</p>
+				<pre><code class="language-typescript"><span class="hljs-keyword">import</span> privateDeployment <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@/deployment/deployment_private_net.json&#x27;</span>;
+<span class="hljs-keyword">import</span> privateServicesDeployment <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@/deployment/deployment_services_private_net.json&#x27;</span>;
+<span class="hljs-keyword">import</span> { ContractsInfo } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;raiden-ts&#x27;</span>;</code></pre>
+				<p>Then you need to construct the <code>contractsInfo</code> object. </p>
+				<p>The <a href="https://github.com/raiden-network/light-client/blob/3c2df8e496f329fac6f8b0ceafd4edaf40c1b736/raiden-dapp/src/services/raiden-service.ts#L18"><code>createRaiden</code></a> function should look like the example below:</p>
+				<pre><code class="language-typescript">  <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">async</span> createRaiden(
+    provider: <span class="hljs-built_in">any</span>,
+    <span class="hljs-attr">account</span>: <span class="hljs-built_in">string</span> | <span class="hljs-built_in">number</span> = <span class="hljs-number">0</span>
+  ): <span class="hljs-built_in">Promise</span>&lt;Raiden&gt; {
+    <span class="hljs-keyword">const</span> contractsInfo = ({
+      ...privateDeployment.contracts,
+      ...privateServicesDeployment.contracts
+    } <span class="hljs-keyword">as</span> unknown) <span class="hljs-keyword">as</span> ContractsInfo;
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">await</span> Raiden.create(
+        provider,
+        account,
+        <span class="hljs-built_in">window</span>.localStorage,
+        contractsInfo,
+        { <span class="hljs-attr">pfsSafetyMargin</span>: <span class="hljs-number">1.1</span> }
+      );
+    } <span class="hljs-keyword">catch</span> (e) {
+      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RaidenInitializationFailed(e);
+    }
+  }</code></pre>
+				<p>To finalize the setup, you also need to change MetaMask&#39;s RPC provider. Simply go MetaMask, find the network dropdown and select <code>Localhost 8545</code>. </p>
+				<blockquote>
+					<p>Note! This assumes that <code>Geth</code> runs on <code>http://localhost:8545</code>.</p>
+				</blockquote>
+			</div>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class="label pp-nav pp-group">
+						<span>Get <wbr>Started</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="prerequisites.html">Prerequisites</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="installing-sdk.html">Installing the SDK</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="installing-dapp.html">Installing the d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="connecting.html">Connecting</a>
+					</li>
+					<li class="current pp-nav pp-page">
+						<a href="private-chain.html">Private chains</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Usage</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Usage/opening-channel.html">Opening a channel</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Usage/funding-channel.html">Funding a channel</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Usage/direct-transfer.html">Transferring</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Usage/closing-channel.html">Closing a channel</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Usage/settling-channel.html">Settling a channel</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>API</span>
+					</li>
+					<li class="globals  ">
+						<a href="../../globals.html"><em>Globals</em></a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_actions_.html">&quot;actions&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_channels_actions_.html">&quot;channels/actions&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_channels_epics_.html">&quot;channels/epics&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_channels_index_.html">&quot;channels/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_channels_reducer_.html">&quot;channels/reducer&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_channels_state_.html">&quot;channels/state&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_channels_types_.html">&quot;channels/types&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_channels_utils_.html">&quot;channels/utils&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_config_.html">&quot;config&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_constants_.html">&quot;constants&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_customtoken__factory_.html">&quot;contracts/factories/<wbr>Custom<wbr>Token__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_deposit__factory_.html">&quot;contracts/factories/<wbr>Deposit__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_humanstandardtoken__factory_.html">&quot;contracts/factories/<wbr>Human<wbr>Standard<wbr>Token__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_monitoringservice__factory_.html">&quot;contracts/factories/<wbr>Monitoring<wbr>Service__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_oneton__factory_.html">&quot;contracts/factories/<wbr>One<wbr>ToN__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_secretregistry__factory_.html">&quot;contracts/factories/<wbr>Secret<wbr>Registry__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_serviceregistryconfigurableparameters__factory_.html">&quot;contracts/factories/<wbr>Service<wbr>Registry<wbr>Configurable<wbr>Parameters__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_serviceregistry__factory_.html">&quot;contracts/factories/<wbr>Service<wbr>Registry__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_standardtoken__factory_.html">&quot;contracts/factories/<wbr>Standard<wbr>Token__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_tokennetworkregistry__factory_.html">&quot;contracts/factories/<wbr>Token<wbr>Network<wbr>Registry__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_tokennetwork__factory_.html">&quot;contracts/factories/<wbr>Token<wbr>Network__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_token__factory_.html">&quot;contracts/factories/<wbr>Token__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_udctransfer__factory_.html">&quot;contracts/factories/UDCTransfer__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_userdeposit__factory_.html">&quot;contracts/factories/<wbr>User<wbr>Deposit__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_factories_utils__factory_.html">&quot;contracts/factories/<wbr>Utils__factory&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_contracts_index_.html">&quot;contracts/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_db_adapter_.html">&quot;db/adapter&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_db_epics_.html">&quot;db/epics&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_db_migrations_.html">&quot;db/migrations&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_db_types_.html">&quot;db/types&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_db_utils_.html">&quot;db/utils&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_epics_.html">&quot;epics&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_helpers_.html">&quot;helpers&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_index_.html">&quot;index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_messages_actions_.html">&quot;messages/actions&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_messages_index_.html">&quot;messages/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_messages_types_.html">&quot;messages/types&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_messages_utils_.html">&quot;messages/utils&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_persister_.html">&quot;persister&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_raiden_.html">&quot;raiden&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_reducer_.html">&quot;reducer&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_services_actions_.html">&quot;services/actions&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_services_epics_.html">&quot;services/epics&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_services_reducer_.html">&quot;services/reducer&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_services_types_.html">&quot;services/types&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_services_utils_.html">&quot;services/utils&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_state_.html">&quot;state&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_actions_.html">&quot;transfers/actions&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_expire_.html">&quot;transfers/epics/expire&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_index_.html">&quot;transfers/epics/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_init_.html">&quot;transfers/epics/init&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_locked_.html">&quot;transfers/epics/locked&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_mediate_.html">&quot;transfers/epics/mediate&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_processed_.html">&quot;transfers/epics/processed&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_retry_.html">&quot;transfers/epics/retry&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_secret_.html">&quot;transfers/epics/secret&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_utils_.html">&quot;transfers/epics/utils&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_epics_withdraw_.html">&quot;transfers/epics/withdraw&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_reducer_.html">&quot;transfers/reducer&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_state_.html">&quot;transfers/state&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transfers_utils_.html">&quot;transfers/utils&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_actions_.html">&quot;transport/actions&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_epics_helpers_.html">&quot;transport/epics/helpers&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_epics_index_.html">&quot;transport/epics/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_epics_init_.html">&quot;transport/epics/init&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_epics_messages_.html">&quot;transport/epics/messages&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_epics_presence_.html">&quot;transport/epics/presence&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_epics_rooms_.html">&quot;transport/epics/rooms&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_epics_webrtc_.html">&quot;transport/epics/webrtc&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_reducer_.html">&quot;transport/reducer&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_state_.html">&quot;transport/state&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_types_.html">&quot;transport/types&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_transport_utils_.html">&quot;transport/utils&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_types_.html">&quot;types&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_actions_.html">&quot;utils/actions&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_data_.html">&quot;utils/data&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_error_.html">&quot;utils/error&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_ethers_.html">&quot;utils/ethers&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_index_.html">&quot;utils/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_lru_.html">&quot;utils/lru&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_matrix_.html">&quot;utils/matrix&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_redux_.html">&quot;utils/redux&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_rx_.html">&quot;utils/rx&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../../modules/_utils_types_.html">&quot;utils/types&quot;</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-namespace"><span class="tsd-kind-icon">Namespace</span></li>
+				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
+				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
+				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
+				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="../../assets/js/main.js"></script>
+<script>if (location.protocol == 'file:') document.write('<script src="../../assets/js/search.json"><' + '/script>');</script>
+</body>
+</html>

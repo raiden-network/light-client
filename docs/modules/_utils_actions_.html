@@ -1,0 +1,1259 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>&quot;utils/actions&quot; | raiden-ts - v0.14.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="../assets/css/main.css">
+	<link rel="stylesheet" href="../assets/css/pages.css">
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="../assets/js/search.json" data-base="..">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="../index.html" class="title">raiden-ts - v0.14.0</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="../globals.html">Globals</a>
+				</li>
+				<li>
+					<a href="_utils_actions_.html">&quot;utils/actions&quot;</a>
+				</li>
+			</ul>
+			<h1>Module &quot;utils/actions&quot;</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<section class="tsd-panel-group tsd-index-group">
+				<h2>Index</h2>
+				<section class="tsd-panel tsd-index-panel">
+					<div class="tsd-index-content">
+						<section class="tsd-index-section ">
+							<h3>Type aliases</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#action" class="tsd-kind-icon">Action</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#actioncreator" class="tsd-kind-icon">Action<wbr>Creator</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#actiontype" class="tsd-kind-icon">Action<wbr>Type</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-module"><a href="_utils_actions_.html#anyaac" class="tsd-kind-icon">AnyAAC</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-module"><a href="_utils_actions_.html#anyac" class="tsd-kind-icon">AnyAC</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#asyncactioncreator" class="tsd-kind-icon">Async<wbr>Action<wbr>Creator</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#reducer" class="tsd-kind-icon">Reducer</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#ttypeof" class="tsd-kind-icon">TType<wbr>Of</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Functions</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#asyncactiontopromise" class="tsd-kind-icon">async<wbr>Action<wbr>ToPromise</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#createaction" class="tsd-kind-icon">create<wbr>Action</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#createasyncaction" class="tsd-kind-icon">create<wbr>Async<wbr>Action</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#createreducer" class="tsd-kind-icon">create<wbr>Reducer</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#isactionof" class="tsd-kind-icon">is<wbr>Action<wbr>Of</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#isconfirmationresponseof" class="tsd-kind-icon">is<wbr>Confirmation<wbr>Response<wbr>Of</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_actions_.html#isresponseof" class="tsd-kind-icon">is<wbr>Response<wbr>Of</a></li>
+							</ul>
+						</section>
+					</div>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Type aliases</h2>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="action" class="tsd-anchor"></a>
+					<h3>Action</h3>
+					<div class="tsd-signature tsd-kind-icon">Action&lt;TType&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol"> }</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L15">raiden-ts/src/utils/actions.ts:15</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>The type of a generic action</p>
+						</div>
+					</div>
+					<h4 class="tsd-type-parameters-title">Type parameters</h4>
+					<ul class="tsd-type-parameters">
+						<li>
+							<h4>TType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+						</li>
+					</ul>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter">
+								<h5>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TType</span></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="actioncreator" class="tsd-anchor"></a>
+					<h3>Action<wbr>Creator</h3>
+					<div class="tsd-signature tsd-kind-icon">Action<wbr>Creator&lt;TType, TPayload, TMeta, TError&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ActionFactory</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TError</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">ActionCreatorMembers</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TError</span><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L117">raiden-ts/src/utils/actions.ts:117</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>ActionCreator type, factory function extended (intersection) with members</p>
+						</div>
+					</div>
+					<h4 class="tsd-type-parameters-title">Type parameters</h4>
+					<ul class="tsd-type-parameters">
+						<li>
+							<h4>TType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+						</li>
+						<li>
+							<h4>TPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+						</li>
+						<li>
+							<h4>TMeta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+						</li>
+						<li>
+							<h4>TError<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="actiontype" class="tsd-anchor"></a>
+					<h3>Action<wbr>Type</h3>
+					<div class="tsd-signature tsd-kind-icon">Action<wbr>Type&lt;Creators&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Creators</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-type">ActionCreator</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">infer </span> TType<span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> TPayload<span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> TMeta<span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> TError<span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">_Action</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TError</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">Creators</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-symbol">{}</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">Creators</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-symbol">{}</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-symbol">keyof </span><span class="tsd-signature-type">Creators</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">never</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L132">raiden-ts/src/utils/actions.ts:132</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Type helper to extract the type of an action or a mapping of actions
+							Usage: const action: ActionType<typeof actionCreator>;</p>
+						</div>
+					</div>
+					<h4 class="tsd-type-parameters-title">Type parameters</h4>
+					<ul class="tsd-type-parameters">
+						<li>
+							<h4>Creators</h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module">
+					<a name="anyaac" class="tsd-anchor"></a>
+					<h3>AnyAAC</h3>
+					<div class="tsd-signature tsd-kind-icon">AnyAAC<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L290">raiden-ts/src/utils/actions.ts:290</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module">
+					<a name="anyac" class="tsd-anchor"></a>
+					<h3>AnyAC</h3>
+					<div class="tsd-signature tsd-kind-icon">AnyAC<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L125">raiden-ts/src/utils/actions.ts:125</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="asyncactioncreator" class="tsd-anchor"></a>
+					<h3>Async<wbr>Action<wbr>Creator</h3>
+					<div class="tsd-signature tsd-kind-icon">Async<wbr>Action<wbr>Creator&lt;TMeta, TRequestType, TSuccessType, TFailureType, TRequestPayload, TSuccessPayload, TFailurePayload&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>failure<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TFailureType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TFailurePayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>request<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TRequestType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>success<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TSuccessType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L276">raiden-ts/src/utils/actions.ts:276</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Async Actions</p>
+						</div>
+					</div>
+					<h4 class="tsd-type-parameters-title">Type parameters</h4>
+					<ul class="tsd-type-parameters">
+						<li>
+							<h4>TMeta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span></h4>
+						</li>
+						<li>
+							<h4>TRequestType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+						</li>
+						<li>
+							<h4>TSuccessType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+						</li>
+						<li>
+							<h4>TFailureType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+						</li>
+						<li>
+							<h4>TRequestPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+						</li>
+						<li>
+							<h4>TSuccessPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+						</li>
+						<li>
+							<h4>TFailurePayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+						</li>
+					</ul>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter">
+								<h5>failure<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TFailureType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TFailurePayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol">&gt;</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>request<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TRequestType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">&gt;</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>success<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TSuccessType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">&gt;</span></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="reducer" class="tsd-anchor"></a>
+					<h3>Reducer</h3>
+					<div class="tsd-signature tsd-kind-icon">Reducer&lt;S, A&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>state<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span>, action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">A</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">S</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L16">raiden-ts/src/utils/actions.ts:16</a></li>
+						</ul>
+					</aside>
+					<h4 class="tsd-type-parameters-title">Type parameters</h4>
+					<ul class="tsd-type-parameters">
+						<li>
+							<h4>S</h4>
+						</li>
+						<li>
+							<h4>A<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#action" class="tsd-signature-type">Action</a></h4>
+						</li>
+					</ul>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-signature">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-type-alias">
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>state<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span>, action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">A</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">S</span></li>
+								</ul>
+								<ul class="tsd-descriptions">
+									<li class="tsd-description">
+										<h4 class="tsd-parameters-title">Parameters</h4>
+										<ul class="tsd-parameters">
+											<li>
+												<h5>state: <span class="tsd-signature-type">S</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h5>
+											</li>
+											<li>
+												<h5>action: <span class="tsd-signature-type">A</span></h5>
+											</li>
+										</ul>
+										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">S</span></h4>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="ttypeof" class="tsd-anchor"></a>
+					<h3>TType<wbr>Of</h3>
+					<div class="tsd-signature tsd-kind-icon">TType<wbr>Of&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-type">ActionCreator</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">infer </span> TType<span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">never</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L126">raiden-ts/src/utils/actions.ts:126</a></li>
+						</ul>
+					</aside>
+					<h4 class="tsd-type-parameters-title">Type parameters</h4>
+					<ul class="tsd-type-parameters">
+						<li>
+							<h4>T</h4>
+						</li>
+					</ul>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Functions</h2>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="asyncactiontopromise" class="tsd-anchor"></a>
+					<h3>async<wbr>Action<wbr>ToPromise</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<li class="tsd-signature tsd-kind-icon">async<wbr>Action<wbr>ToPromise&lt;AAC&gt;<span class="tsd-signature-symbol">(</span>asyncAction<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AAC</span>, meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span>, action$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_utils_actions_.html#action" class="tsd-signature-type">Action</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"payload"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">async<wbr>Action<wbr>ToPromise&lt;AAC&gt;<span class="tsd-signature-symbol">(</span>asyncAction<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AAC</span>, meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span>, action$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_utils_actions_.html#action" class="tsd-signature-type">Action</a><span class="tsd-signature-symbol">&gt;</span>, confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">false</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"payload"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">; </span>txBlock<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>txHash<span class="tsd-signature-symbol">: </span><a href="_utils_types_.html#hash-1" class="tsd-signature-type">Hash</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">async<wbr>Action<wbr>ToPromise&lt;AAC&gt;<span class="tsd-signature-symbol">(</span>asyncAction<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AAC</span>, meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span>, action$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_utils_actions_.html#action" class="tsd-signature-type">Action</a><span class="tsd-signature-symbol">&gt;</span>, confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"payload"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol">; </span>txBlock<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>txHash<span class="tsd-signature-symbol">: </span><a href="_utils_types_.html#hash-1" class="tsd-signature-type">Hash</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L514">raiden-ts/src/utils/actions.ts:514</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Watch a stream of actions and resolves on meta-matching success or rejects on failure</p>
+								</div>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>AAC<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>asyncAction: <span class="tsd-signature-type">AAC</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>async actions object to wait for</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>meta: <span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>meta object of a request to wait for the respective response</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>action$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_utils_actions_.html#action" class="tsd-signature-type">Action</a><span class="tsd-signature-symbol">&gt;</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>actions stream to watch for responses</p>
+										</div>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"payload"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Promise which rejects with payload in case of failure, or resolves payload otherwise</p>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L521">raiden-ts/src/utils/actions.ts:521</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Watch a stream of actions and resolves on meta-matching success or rejects on failure</p>
+								</div>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>AAC<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>asyncAction: <span class="tsd-signature-type">AAC</span></h5>
+								</li>
+								<li>
+									<h5>meta: <span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span></h5>
+								</li>
+								<li>
+									<h5>action$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_utils_actions_.html#action" class="tsd-signature-type">Action</a><span class="tsd-signature-symbol">&gt;</span></h5>
+								</li>
+								<li>
+									<h5>confirmed: <span class="tsd-signature-type">false</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"payload"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">; </span>txBlock<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>txHash<span class="tsd-signature-symbol">: </span><a href="_utils_types_.html#hash-1" class="tsd-signature-type">Hash</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Promise which rejects with payload in case of failure, or resolves payload otherwise</p>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L535">raiden-ts/src/utils/actions.ts:535</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Watch a stream of actions and resolves on meta-matching success or rejects on failure</p>
+								</div>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>AAC<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>asyncAction: <span class="tsd-signature-type">AAC</span></h5>
+								</li>
+								<li>
+									<h5>meta: <span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span></h5>
+								</li>
+								<li>
+									<h5>action$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_utils_actions_.html#action" class="tsd-signature-type">Action</a><span class="tsd-signature-symbol">&gt;</span></h5>
+								</li>
+								<li>
+									<h5>confirmed: <span class="tsd-signature-type">true</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"payload"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol">; </span>txBlock<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>txHash<span class="tsd-signature-symbol">: </span><a href="_utils_types_.html#hash-1" class="tsd-signature-type">Hash</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Promise which rejects with payload in case of failure, or resolves payload otherwise</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="createaction" class="tsd-anchor"></a>
+					<h3>create<wbr>Action</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<li class="tsd-signature tsd-kind-icon">create<wbr>Action&lt;TType&gt;<span class="tsd-signature-symbol">(</span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">create<wbr>Action&lt;TType, TPayload&gt;<span class="tsd-signature-symbol">(</span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TType</span>, payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">create<wbr>Action&lt;TType, TPayload, TMeta&gt;<span class="tsd-signature-symbol">(</span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TType</span>, payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TPayload</span>, meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">create<wbr>Action&lt;TType, TPayload, TMeta, TError&gt;<span class="tsd-signature-symbol">(</span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TType</span>, payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TPayload</span>, meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TMeta</span>, error<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TError</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TError</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L207">raiden-ts/src/utils/actions.ts:207</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Create a typesafe, serializable ActionCreator from type, payload codec, meta codec &amp; error flag</p>
+								</div>
+								<p>Pass undefined for indermediary arguments if they aren&#39;t needed
+									e.g. action with meta and without payload:
+								const addTodo = createAction(&#39;ADD_TODO&#39;, undefined, t.type({ folder: t.string }));</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>TType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>type: <span class="tsd-signature-type">TType</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>ActionCreator factory function with useful properties. See [[ActionCreatorMembers]]</p>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L208">raiden-ts/src/utils/actions.ts:208</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Create a typesafe, serializable ActionCreator from type, payload codec, meta codec &amp; error flag</p>
+								</div>
+								<p>Pass undefined for indermediary arguments if they aren&#39;t needed
+									e.g. action with meta and without payload:
+								const addTodo = createAction(&#39;ADD_TODO&#39;, undefined, t.type({ folder: t.string }));</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>TType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+								<li>
+									<h4>TPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>type: <span class="tsd-signature-type">TType</span></h5>
+								</li>
+								<li>
+									<h5>payload: <span class="tsd-signature-type">TPayload</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>ActionCreator factory function with useful properties. See [[ActionCreatorMembers]]</p>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L212">raiden-ts/src/utils/actions.ts:212</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Create a typesafe, serializable ActionCreator from type, payload codec, meta codec &amp; error flag</p>
+								</div>
+								<p>Pass undefined for indermediary arguments if they aren&#39;t needed
+									e.g. action with meta and without payload:
+								const addTodo = createAction(&#39;ADD_TODO&#39;, undefined, t.type({ folder: t.string }));</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>TType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+								<li>
+									<h4>TPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+								<li>
+									<h4>TMeta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>type: <span class="tsd-signature-type">TType</span></h5>
+								</li>
+								<li>
+									<h5>payload: <span class="tsd-signature-type">TPayload</span></h5>
+								</li>
+								<li>
+									<h5>meta: <span class="tsd-signature-type">TMeta</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>ActionCreator factory function with useful properties. See [[ActionCreatorMembers]]</p>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L217">raiden-ts/src/utils/actions.ts:217</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Create a typesafe, serializable ActionCreator from type, payload codec, meta codec &amp; error flag</p>
+								</div>
+								<p>Pass undefined for indermediary arguments if they aren&#39;t needed
+									e.g. action with meta and without payload:
+								const addTodo = createAction(&#39;ADD_TODO&#39;, undefined, t.type({ folder: t.string }));</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>TType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+								<li>
+									<h4>TPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+								<li>
+									<h4>TMeta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+								<li>
+									<h4>TError<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>type: <span class="tsd-signature-type">TType</span></h5>
+								</li>
+								<li>
+									<h5>payload: <span class="tsd-signature-type">TPayload</span></h5>
+								</li>
+								<li>
+									<h5>meta: <span class="tsd-signature-type">TMeta</span></h5>
+								</li>
+								<li>
+									<h5>error: <span class="tsd-signature-type">TError</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TError</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>ActionCreator factory function with useful properties. See [[ActionCreatorMembers]]</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="createasyncaction" class="tsd-anchor"></a>
+					<h3>create<wbr>Async<wbr>Action</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<li class="tsd-signature tsd-kind-icon">create<wbr>Async<wbr>Action&lt;TMeta, TRequestType, TSuccessType, TFailureType, TRequestPayload, TSuccessPayload&gt;<span class="tsd-signature-symbol">(</span>meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TMeta</span>, rtype<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TRequestType</span>, stype<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSuccessType</span>, ftype<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TFailureType</span>, rpayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TRequestPayload</span>, spayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSuccessPayload</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TFailureType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">typeof </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">create<wbr>Async<wbr>Action&lt;TMeta, TRequestType, TSuccessType, TFailureType, TRequestPayload, TSuccessPayload, TFailurePayload&gt;<span class="tsd-signature-symbol">(</span>meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TMeta</span>, rtype<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TRequestType</span>, stype<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSuccessType</span>, ftype<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TFailureType</span>, rpayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TRequestPayload</span>, spayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSuccessPayload</span>, fpayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TFailurePayload</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TFailureType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TFailurePayload</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L293">raiden-ts/src/utils/actions.ts:293</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Create a set of async actions</p>
+								</div>
+								<p>Here, meta is first class citizen, as it&#39;s required and what links a request with its responses
+									(success or failure).
+									An &#39;isResponseOf&#39; member function is provided which accepts &#39;meta&#39; (e.g. from request) and
+									returns a type guard function/filter which returns true only if passed a respective deep-equal
+								&#39;meta&#39; success|failure action.</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>TMeta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span></h4>
+								</li>
+								<li>
+									<h4>TRequestType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+								<li>
+									<h4>TSuccessType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+								<li>
+									<h4>TFailureType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+								<li>
+									<h4>TRequestPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+								<li>
+									<h4>TSuccessPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>meta: <span class="tsd-signature-type">TMeta</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>Meta object common to these async actions</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>rtype: <span class="tsd-signature-type">TRequestType</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>Request literal string tag</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>stype: <span class="tsd-signature-type">TSuccessType</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>Success literal string tag</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>ftype: <span class="tsd-signature-type">TFailureType</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>Failure literal string tag</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>rpayload: <span class="tsd-signature-type">TRequestPayload</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>Request payload codec</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>spayload: <span class="tsd-signature-type">TSuccessPayload</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>Success payload codec</p>
+										</div>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TFailureType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">typeof </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Async actions</p>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L316">raiden-ts/src/utils/actions.ts:316</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Create a set of async actions</p>
+								</div>
+								<p>Here, meta is first class citizen, as it&#39;s required and what links a request with its responses
+									(success or failure).
+									An &#39;isResponseOf&#39; member function is provided which accepts &#39;meta&#39; (e.g. from request) and
+									returns a type guard function/filter which returns true only if passed a respective deep-equal
+								&#39;meta&#39; success|failure action.</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>TMeta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span></h4>
+								</li>
+								<li>
+									<h4>TRequestType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+								<li>
+									<h4>TSuccessType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+								<li>
+									<h4>TFailureType<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h4>
+								</li>
+								<li>
+									<h4>TRequestPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+								<li>
+									<h4>TSuccessPayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+								<li>
+									<h4>TFailurePayload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>meta: <span class="tsd-signature-type">TMeta</span></h5>
+								</li>
+								<li>
+									<h5>rtype: <span class="tsd-signature-type">TRequestType</span></h5>
+								</li>
+								<li>
+									<h5>stype: <span class="tsd-signature-type">TSuccessType</span></h5>
+								</li>
+								<li>
+									<h5>ftype: <span class="tsd-signature-type">TFailureType</span></h5>
+								</li>
+								<li>
+									<h5>rpayload: <span class="tsd-signature-type">TRequestPayload</span></h5>
+								</li>
+								<li>
+									<h5>spayload: <span class="tsd-signature-type">TSuccessPayload</span></h5>
+								</li>
+								<li>
+									<h5>fpayload: <span class="tsd-signature-type">TFailurePayload</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TMeta</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TFailureType</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TRequestPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TSuccessPayload</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TFailurePayload</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Async actions</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="createreducer" class="tsd-anchor"></a>
+					<h3>create<wbr>Reducer</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<li class="tsd-signature tsd-kind-icon">create<wbr>Reducer&lt;S, A&gt;<span class="tsd-signature-symbol">(</span>initialState<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#reducer" class="tsd-signature-type">Reducer</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">A</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>handle<span class="tsd-signature-symbol">: </span>&lt;AC, H, AD&gt;<span class="tsd-signature-symbol">(</span>ac<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">[]</span>, handler<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">H</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">ExtReducer</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ACs</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Iterate</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">X</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L604">raiden-ts/src/utils/actions.ts:604</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Create a reducer which can be extended with additional actions handlers</p>
+								</div>
+								<p>Usage:
+									const reducer = createReducer(State)
+									.handle(action, (s, a): State =&gt; ...)
+									.handle(...)
+								.handle(...);</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>S</h4>
+								</li>
+								<li>
+									<h4>A<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#action" class="tsd-signature-type">Action</a></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>initialState: <span class="tsd-signature-type">S</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>state for initialization (if no state is passed on reducer call)</p>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_utils_actions_.html#reducer" class="tsd-signature-type">Reducer</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">A</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>handle<span class="tsd-signature-symbol">: </span>&lt;AC, H, AD&gt;<span class="tsd-signature-symbol">(</span>ac<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">[]</span>, handler<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">H</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">ExtReducer</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ACs</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Iterate</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">X</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span></h4>
+							<p>A reducer function, extended with a handle method to extend it</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="isactionof" class="tsd-anchor"></a>
+					<h3>is<wbr>Action<wbr>Of</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<li class="tsd-signature tsd-kind-icon">is<wbr>Action<wbr>Of&lt;AC&gt;<span class="tsd-signature-symbol">(</span>ac<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">[]</span>, action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ReturnType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">is<wbr>Action<wbr>Of&lt;AC&gt;<span class="tsd-signature-symbol">(</span>ac<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ReturnType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L150">raiden-ts/src/utils/actions.ts:150</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Curried typeguard function (arity=2) which validates 2nd param is of type of some ActionCreators</p>
+								</div>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>AC<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>ac: <span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">[]</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>Single or array of ActionCreators</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>action: <span class="tsd-signature-type">unknown</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ReturnType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>boolean indicating object is of type of action, if passing 2nd argument,
+							or typeguard function</p>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L154">raiden-ts/src/utils/actions.ts:154</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Curried typeguard function (arity=2) which validates 2nd param is of type of some ActionCreators</p>
+								</div>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>AC<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>ac: <span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-symbol">(</span>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ReturnType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>boolean indicating object is of type of action, if passing 2nd argument,
+							or typeguard function</p>
+							<ul class="tsd-parameters">
+								<li class="tsd-parameter-signature">
+									<ul class="tsd-signatures tsd-kind-type-literal">
+										<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ReturnType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">&gt;</span></li>
+									</ul>
+									<ul class="tsd-descriptions">
+										<li class="tsd-description">
+											<h4 class="tsd-parameters-title">Parameters</h4>
+											<ul class="tsd-parameters">
+												<li>
+													<h5>action: <span class="tsd-signature-type">unknown</span></h5>
+												</li>
+											</ul>
+											<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ReturnType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AC</span><span class="tsd-signature-symbol">&gt;</span></h4>
+										</li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="isconfirmationresponseof" class="tsd-anchor"></a>
+					<h3>is<wbr>Confirmation<wbr>Response<wbr>Of</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<li class="tsd-signature tsd-kind-icon">is<wbr>Confirmation<wbr>Response<wbr>Of&lt;AAC&gt;<span class="tsd-signature-symbol">(</span>asyncAction<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AAC</span>, meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span>, action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">is<wbr>Confirmation<wbr>Response<wbr>Of&lt;AAC&gt;<span class="tsd-signature-symbol">(</span>asyncAction<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AAC</span>, meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L459">raiden-ts/src/utils/actions.ts:459</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Like isResponseOf, but ignores non-confirmed (or removed by a reorg) success action</p>
+								</div>
+								<p>Confirmable success actions are emitted twice: first with payload.confirmed=undefined, then with
+									either confirmed=true, if tx still present after confirmation blocks, or confirmed=false, if tx
+									was removed from blockchain by a reorg.
+								This curied helper filter function ensures only one of the later causes a positive filter.</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>AAC<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>asyncAction: <span class="tsd-signature-type">AAC</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>AsyncActionCreator object</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>meta: <span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>meta object to filter matching actions</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>action: <span class="tsd-signature-type">unknown</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>type guard function to filter deep-equal meta success|failure actions</p>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L468">raiden-ts/src/utils/actions.ts:468</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Like isResponseOf, but ignores non-confirmed (or removed by a reorg) success action</p>
+								</div>
+								<p>Confirmable success actions are emitted twice: first with payload.confirmed=undefined, then with
+									either confirmed=true, if tx still present after confirmation blocks, or confirmed=false, if tx
+									was removed from blockchain by a reorg.
+								This curied helper filter function ensures only one of the later causes a positive filter.</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>AAC<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>asyncAction: <span class="tsd-signature-type">AAC</span></h5>
+								</li>
+								<li>
+									<h5>meta: <span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-symbol">(</span>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>type guard function to filter deep-equal meta success|failure actions</p>
+							<ul class="tsd-parameters">
+								<li class="tsd-parameter-signature">
+									<ul class="tsd-signatures tsd-kind-type-literal">
+										<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></li>
+									</ul>
+									<ul class="tsd-descriptions">
+										<li class="tsd-description">
+											<h4 class="tsd-parameters-title">Parameters</h4>
+											<ul class="tsd-parameters">
+												<li>
+													<h5>action: <span class="tsd-signature-type">unknown</span></h5>
+												</li>
+											</ul>
+											<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></h4>
+										</li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="isresponseof" class="tsd-anchor"></a>
+					<h3>is<wbr>Response<wbr>Of</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<li class="tsd-signature tsd-kind-icon">is<wbr>Response<wbr>Of&lt;AAC&gt;<span class="tsd-signature-symbol">(</span>asyncAction<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AAC</span>, meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span>, action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">is<wbr>Response<wbr>Of&lt;AAC&gt;<span class="tsd-signature-symbol">(</span>asyncAction<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AAC</span>, meta<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L422">raiden-ts/src/utils/actions.ts:422</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Given an AsyncActionCreator and a respective &#39;meta&#39; object, returns a type guard function for
+									responses actions (success|failure) matching given &#39;meta&#39;</p>
+								</div>
+								<p>This function receives 2-3 params. If it receives 2, it returns the type guard function, to be
+								used for filtering. Otherwise, it performs the check on the 3rd param.</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>AAC<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>asyncAction: <span class="tsd-signature-type">AAC</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>AsyncActionCreator object</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>meta: <span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>meta object to filter matching actions</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5>action: <span class="tsd-signature-type">unknown</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>type guard function to filter deep-equal meta success|failure actions</p>
+						</li>
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/actions.ts#L429">raiden-ts/src/utils/actions.ts:429</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Given an AsyncActionCreator and a respective &#39;meta&#39; object, returns a type guard function for
+									responses actions (success|failure) matching given &#39;meta&#39;</p>
+								</div>
+								<p>This function receives 2-3 params. If it receives 2, it returns the type guard function, to be
+								used for filtering. Otherwise, it performs the check on the 3rd param.</p>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>AAC<span class="tsd-signature-symbol">: </span><a href="_utils_actions_.html#asyncactioncreator" class="tsd-signature-type">AsyncActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Mixed</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>asyncAction: <span class="tsd-signature-type">AAC</span></h5>
+								</li>
+								<li>
+									<h5>meta: <span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"request"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"meta"</span><span class="tsd-signature-symbol">]</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-symbol">(</span>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>type guard function to filter deep-equal meta success|failure actions</p>
+							<ul class="tsd-parameters">
+								<li class="tsd-parameter-signature">
+									<ul class="tsd-signatures tsd-kind-type-literal">
+										<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></li>
+									</ul>
+									<ul class="tsd-descriptions">
+										<li class="tsd-description">
+											<h4 class="tsd-parameters-title">Parameters</h4>
+											<ul class="tsd-parameters">
+												<li>
+													<h5>action: <span class="tsd-signature-type">unknown</span></h5>
+												</li>
+											</ul>
+											<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">action</span><span class="tsd-signature-symbol"> is </span><span class="tsd-signature-type">ActionType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"success"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">AAC</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"failure"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span></h4>
+										</li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</section>
+			</section>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class="label pp-nav pp-group">
+						<span>Get <wbr>Started</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/prerequisites.html">Prerequisites</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/installing-sdk.html">Installing the SDK</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/installing-dapp.html">Installing the d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/connecting.html">Connecting</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/private-chain.html">Private chains</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Usage</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/opening-channel.html">Opening a channel</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/funding-channel.html">Funding a channel</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/direct-transfer.html">Transferring</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/closing-channel.html">Closing a channel</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/settling-channel.html">Settling a channel</a>
+					</li>
+					<li class="globals  ">
+						<a href="../globals.html"><em>Globals</em></a>
+					</li>
+					<li class="current tsd-kind-module">
+						<a href="_utils_actions_.html">&quot;utils/actions&quot;</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#action" class="tsd-kind-icon">Action</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#actioncreator" class="tsd-kind-icon">Action<wbr>Creator</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#actiontype" class="tsd-kind-icon">Action<wbr>Type</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module">
+						<a href="_utils_actions_.html#anyaac" class="tsd-kind-icon">AnyAAC</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module">
+						<a href="_utils_actions_.html#anyac" class="tsd-kind-icon">AnyAC</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#asyncactioncreator" class="tsd-kind-icon">Async<wbr>Action<wbr>Creator</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#reducer" class="tsd-kind-icon">Reducer</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#ttypeof" class="tsd-kind-icon">TType<wbr>Of</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#asyncactiontopromise" class="tsd-kind-icon">async<wbr>Action<wbr>ToPromise</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#createaction" class="tsd-kind-icon">create<wbr>Action</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#createasyncaction" class="tsd-kind-icon">create<wbr>Async<wbr>Action</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#createreducer" class="tsd-kind-icon">create<wbr>Reducer</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#isactionof" class="tsd-kind-icon">is<wbr>Action<wbr>Of</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#isconfirmationresponseof" class="tsd-kind-icon">is<wbr>Confirmation<wbr>Response<wbr>Of</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_actions_.html#isresponseof" class="tsd-kind-icon">is<wbr>Response<wbr>Of</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-namespace"><span class="tsd-kind-icon">Namespace</span></li>
+				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
+				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
+				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
+				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="../assets/js/main.js"></script>
+<script>if (location.protocol == 'file:') document.write('<script src="../assets/js/search.json"><' + '/script>');</script>
+</body>
+</html>

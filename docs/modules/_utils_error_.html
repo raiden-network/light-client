@@ -1,0 +1,635 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>&quot;utils/error&quot; | raiden-ts - v0.14.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="../assets/css/main.css">
+	<link rel="stylesheet" href="../assets/css/pages.css">
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="../assets/js/search.json" data-base="..">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="../index.html" class="title">raiden-ts - v0.14.0</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="../globals.html">Globals</a>
+				</li>
+				<li>
+					<a href="_utils_error_.html">&quot;utils/error&quot;</a>
+				</li>
+			</ul>
+			<h1>Module &quot;utils/error&quot;</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<section class="tsd-panel-group tsd-index-group">
+				<h2>Index</h2>
+				<section class="tsd-panel tsd-index-panel">
+					<div class="tsd-index-content">
+						<section class="tsd-index-section ">
+							<h3>Classes</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-class tsd-parent-kind-module"><a href="../classes/_utils_error_.raidenerror.html" class="tsd-kind-icon">Raiden<wbr>Error</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Interfaces</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_utils_error_.errordetails.html" class="tsd-kind-icon">Error<wbr>Details</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Type aliases</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-type-alias tsd-parent-kind-module"><a href="_utils_error_.html#errorcodes" class="tsd-kind-icon">Error<wbr>Codes</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Variables</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_utils_error_.html#errorcodec" class="tsd-kind-icon">Error<wbr>Codec</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_utils_error_.html#errorcodes-1" class="tsd-kind-icon">Error<wbr>Codes</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_utils_error_.html#errordetails-1" class="tsd-kind-icon">Error<wbr>Details</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_utils_error_.html#networkerrors" class="tsd-kind-icon">network<wbr>Errors</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Functions</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_error_.html#assert" class="tsd-kind-icon">assert</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_utils_error_.html#networkerrorretrypredicate" class="tsd-kind-icon">network<wbr>Error<wbr>Retry<wbr>Predicate</a></li>
+							</ul>
+						</section>
+					</div>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Type aliases</h2>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module">
+					<a name="errorcodes" class="tsd-anchor"></a>
+					<h3>Error<wbr>Codes</h3>
+					<div class="tsd-signature tsd-kind-icon">Error<wbr>Codes<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">keyof </span><span class="tsd-signature-symbol">typeof </span><a href="_utils_error_.html#errorcodes-1" class="tsd-signature-type">ErrorCodes</a></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/error.ts#L10">raiden-ts/src/utils/error.ts:10</a></li>
+						</ul>
+					</aside>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Variables</h2>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
+					<a name="errorcodec" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> Error<wbr>Codec</h3>
+					<div class="tsd-signature tsd-kind-icon">Error<wbr>Codec<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Type</span><span class="tsd-signature-symbol">&lt;</span><a href="../classes/_utils_error_.raidenerror.html#error" class="tsd-signature-type">Error</a><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">{ </span>details<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_utils_error_.errordetails.html" class="tsd-signature-type">ErrorDetails</a><span class="tsd-signature-symbol">; </span>message<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>name<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>stack<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = new t.Type&lt;Error,{ name: string; message?: string; stack?: string; details?: ErrorDetails }&gt;(&#x27;Error&#x27;,// if it quacks like a duck... without relying on instanceof(u: unknown): u is Error &#x3D;&gt; typeof u &#x3D;&#x3D;&#x3D; &#x27;object&#x27; &amp;&amp; !!u &amp;&amp; &#x27;name&#x27; in u &amp;&amp; &#x27;message&#x27; in u,(u) &#x3D;&gt;pipe(serializedErr.decode(u),map((error) &#x3D;&gt; {if (&#x27;details&#x27; in error) {return Object.assign(new RaidenError(error.message, error.details), {name: error.name,stack: error.stack,});} else {return Object.assign(new Error(error.message), { name: error.name, stack: error.stack });}}),),(error: RaidenError | Error) &#x3D;&gt; ({name: error.name,message: error.message,stack: error.stack,...(&#x27;details&#x27; in error ? { details: error.details } : {}),}),)</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/error.ts#L72">raiden-ts/src/utils/error.ts:72</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Simple Error codec</p>
+						</div>
+						<p>This codec doesn&#39;t decode to an instance of the exact same error class object, but instead to
+							a generic Error, but assigning &#39;name&#39;, &#39;stack&#39; &amp; &#39;message&#39; properties, more as an informative
+						object.</p>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
+					<a name="errorcodes-1" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> Error<wbr>Codes</h3>
+					<div class="tsd-signature tsd-kind-icon">Error<wbr>Codes<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>CNL_APPROVE_TRANSACTION_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_CLOSECHANNEL_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_INVALID_STATE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_NO_OPEN_CHANNEL_FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_NO_OPEN_OR_CLOSING_CHANNEL_FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_ONCHAIN_UNLOCK_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_OPENCHANNEL_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_SETTLECHANNEL_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_SETTLECHANNEL_INVALID_BALANCEHASH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_SETTOTALDEPOSIT_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_UPDATE_NONCLOSING_BP_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_WITHDRAW_AMOUNT_TOO_HIGH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_WITHDRAW_AMOUNT_TOO_LOW<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_WITHDRAW_EXPIRED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_WITHDRAW_EXPIRES_SOON<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_WITHDRAW_PARTNER_OFFLINE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>CNL_WITHDRAW_TRANSACTION_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_ARRAY_LENGTH_DIFFERENCE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_INVALID_ADDRESS<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_INVALID_AMOUNT<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_INVALID_DEPOSIT<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_INVALID_PATH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_INVALID_PAYMENT_ID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_INVALID_PFS<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_INVALID_TIMEOUT<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_NEGATIVE_NUMBER<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_NON_POSITIVE_NUMBER<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_NUMBER_TOO_LARGE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>DTA_UNENCODABLE_DATA<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_DISABLED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_EMPTY_URL<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_ERROR_RESPONSE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_INVALID_INFO<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_INVALID_URL<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_IOU_SIGNATURE_MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_LAST_IOU_REQUEST_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_NO_ROUTES_BETWEEN_NODES<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_NO_ROUTES_FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_TARGET_NO_RECEIVE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_TARGET_OFFLINE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_TOO_EXPENSIVE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>PFS_UNKNOWN_TOKEN_NETWORK<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_ACCOUNT_NOT_FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_ALREADY_STARTED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_APPROVE_TRANSACTION_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_ASSERT_ERROR<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_DATABASE_DELETED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_DEPOSIT_TRANSACTION_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_GENERAL_ERROR<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_INSUFFICIENT_ALLOWANCE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_INSUFFICIENT_BALANCE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_INVALID_SECRET<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_INVALID_SECRETHASH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_MINT_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_MINT_MAINNET<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_NOT_A_TOKEN<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_SECRET_SECRETHASH_MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_SIGNER_NOT_CONNECTED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_STATE_ADDRESS_MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_STATE_MIGRATION<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_STATE_NETWORK_MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_STRING_ACCOUNT_INVALID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_SUBKEY_NOT_SET<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_TRANSACTION_REORG<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_TRANSFER_ONCHAIN_BALANCE_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_TRANSFER_ONCHAIN_TOKENS_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_UNKNOWN_TOKEN_NETWORK<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_UNKNOWN_TRANSFER<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>RDN_UNRECOGNIZED_NETWORK<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>TRNS_MESSAGE_SIGNATURE_MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>TRNS_NO_MATRIX_SERVERS<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>TRNS_NO_SERVERNAME<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>TRNS_NO_VALID_USER<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>UDC_DEPOSIT_OUTDATED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>UDC_PLAN_WITHDRAW_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>UDC_PLAN_WITHDRAW_GT_ZERO<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>UDC_WITHDRAW_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>UDC_WITHDRAW_NO_BALANCE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>XFER_ALREADY_COMPLETED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>XFER_CHANNEL_CLOSED_PREMATURELY<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>XFER_EXPIRED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>XFER_INVALID_SECRETREQUEST<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>XFER_REFUNDED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>XFER_REGISTERSECRET_TX_FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> = errorCodes</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/error.ts#L9">raiden-ts/src/utils/error.ts:9</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>APPROVE_<wbr>TRANSACTION_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>CLOSECHANNEL_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>INVALID_<wbr>STATE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>NO_<wbr>OPEN_<wbr>CHANNEL_<wbr>FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>NO_<wbr>OPEN_<wbr>OR_<wbr>CLOSING_<wbr>CHANNEL_<wbr>FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>NO_<wbr>SETTLEABLE_<wbr>OR_<wbr>SETTLING_<wbr>CHANNEL_<wbr>FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>ONCHAIN_<wbr>UNLOCK_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>OPENCHANNEL_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>SETTLECHANNEL_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>SETTLECHANNEL_<wbr>INVALID_<wbr>BALANCEHASH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>SETTOTALDEPOSIT_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>UPDATE_<wbr>NONCLOSING_<wbr>BP_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>WITHDRAW_<wbr>AMOUNT_<wbr>TOO_<wbr>HIGH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>WITHDRAW_<wbr>AMOUNT_<wbr>TOO_<wbr>LOW<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>WITHDRAW_<wbr>EXPIRED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>WITHDRAW_<wbr>EXPIRES_<wbr>SOON<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>WITHDRAW_<wbr>PARTNER_<wbr>OFFLINE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>CNL_<wbr>WITHDRAW_<wbr>TRANSACTION_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>ARRAY_<wbr>LENGTH_<wbr>DIFFERENCE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>INVALID_<wbr>ADDRESS<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>INVALID_<wbr>AMOUNT<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>INVALID_<wbr>DEPOSIT<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>INVALID_<wbr>PATH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>INVALID_<wbr>PAYMENT_<wbr>ID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>INVALID_<wbr>PFS<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>INVALID_<wbr>TIMEOUT<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>NEGATIVE_<wbr>NUMBER<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>NON_<wbr>POSITIVE_<wbr>NUMBER<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>NUMBER_<wbr>TOO_<wbr>LARGE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>DTA_<wbr>UNENCODABLE_<wbr>DATA<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>DISABLED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>EMPTY_<wbr>URL<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>ERROR_<wbr>RESPONSE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>INVALID_<wbr>INFO<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>INVALID_<wbr>URL<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>IOU_<wbr>SIGNATURE_<wbr>MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>LAST_<wbr>IOU_<wbr>REQUEST_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>NO_<wbr>ROUTES_<wbr>BETWEEN_<wbr>NODES<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>NO_<wbr>ROUTES_<wbr>FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>TARGET_<wbr>NO_<wbr>RECEIVE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>TARGET_<wbr>OFFLINE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>TOO_<wbr>EXPENSIVE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>PFS_<wbr>UNKNOWN_<wbr>TOKEN_<wbr>NETWORK<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>ACCOUNT_<wbr>NOT_<wbr>FOUND<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>ALREADY_<wbr>STARTED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>APPROVE_<wbr>TRANSACTION_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>ASSERT_<wbr>ERROR<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>DATABASE_<wbr>DELETED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>DEPOSIT_<wbr>TRANSACTION_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>GENERAL_<wbr>ERROR<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>INSUFFICIENT_<wbr>ALLOWANCE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>INSUFFICIENT_<wbr>BALANCE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>INVALID_<wbr>SECRET<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>INVALID_<wbr>SECRETHASH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>MINT_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>MINT_<wbr>MAINNET<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>NOT_<wbr><wbr>A_TOKEN<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>SECRET_<wbr>SECRETHASH_<wbr>MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>SIGNER_<wbr>NOT_<wbr>CONNECTED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>STATE_<wbr>ADDRESS_<wbr>MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>STATE_<wbr>MIGRATION<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>STATE_<wbr>NETWORK_<wbr>MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>STRING_<wbr>ACCOUNT_<wbr>INVALID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>SUBKEY_<wbr>NOT_<wbr>SET<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>TRANSACTION_<wbr>REORG<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>TRANSFER_<wbr>ONCHAIN_<wbr>BALANCE_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>TRANSFER_<wbr>ONCHAIN_<wbr>TOKENS_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>UNKNOWN_<wbr>TOKEN_<wbr>NETWORK<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>UNKNOWN_<wbr>TRANSFER<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>RDN_<wbr>UNRECOGNIZED_<wbr>NETWORK<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>TRNS_<wbr>MESSAGE_<wbr>SIGNATURE_<wbr>MISMATCH<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>TRNS_<wbr>NO_<wbr>MATRIX_<wbr>SERVERS<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>TRNS_<wbr>NO_<wbr>SERVERNAME<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>TRNS_<wbr>NO_<wbr>VALID_<wbr>USER<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>UDC_<wbr>DEPOSIT_<wbr>OUTDATED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>UDC_<wbr>PLAN_<wbr>WITHDRAW_<wbr>EXCEEDS_<wbr>AVAILABLE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>UDC_<wbr>PLAN_<wbr>WITHDRAW_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>UDC_<wbr>PLAN_<wbr>WITHDRAW_<wbr>GT_<wbr>ZERO<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>UDC_<wbr>WITHDRAW_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>UDC_<wbr>WITHDRAW_<wbr>NO_<wbr>BALANCE<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>XFER_<wbr>ALREADY_<wbr>COMPLETED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>XFER_<wbr>CHANNEL_<wbr>CLOSED_<wbr>PREMATURELY<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>XFER_<wbr>EXPIRED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>XFER_<wbr>INVALID_<wbr>SECRETREQUEST<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>XFER_<wbr>REFUNDED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>XFER_<wbr>REGISTERSECRET_<wbr>TX_<wbr>FAILED<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
+					<a name="errordetails-1" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> Error<wbr>Details</h3>
+					<div class="tsd-signature tsd-kind-icon">Error<wbr>Details<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">RecordC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">UnionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">BooleanC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">NullC</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = t.record(t.string, t.union([t.string, t.number, t.boolean, t.null]))</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/error.ts#L12">raiden-ts/src/utils/error.ts:12</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
+					<a name="networkerrors" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> network<wbr>Errors</h3>
+					<div class="tsd-signature tsd-kind-icon">network<wbr>Errors<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">readonly </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> = [&#x27;invalid response&#x27;]</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/error.ts#L15">raiden-ts/src/utils/error.ts:15</a></li>
+						</ul>
+					</aside>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Functions</h2>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="assert" class="tsd-anchor"></a>
+					<h3>assert</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<li class="tsd-signature tsd-kind-icon">assert&lt;E&gt;<span class="tsd-signature-symbol">(</span>condition<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, error<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">E</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">(</span>condition<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">E</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">never</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ConstructorParameters</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">typeof </span><a href="../classes/_utils_error_.raidenerror.html" class="tsd-signature-type">RaidenError</a><span class="tsd-signature-symbol">&gt;</span>, log<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">...</span>args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">asserts</span><span class="tsd-signature-type">condition</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/error.ts#L39">raiden-ts/src/utils/error.ts:39</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Type-safe assertion function (TS3.7)</p>
+								</div>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>E<span class="tsd-signature-symbol">: </span><a href="../classes/_utils_error_.raidenerror.html#error" class="tsd-signature-type">Error</a></h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>condition: <span class="tsd-signature-type">any</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Condition to validate as truthy</p>
+									</div>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> error: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">E</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">(</span>condition<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">E</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">never</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ConstructorParameters</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">typeof </span><a href="../classes/_utils_error_.raidenerror.html" class="tsd-signature-type">RaidenError</a><span class="tsd-signature-symbol">&gt;</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Message, Error, error factory or tuple of RaidenError constructor parameters
+										to throw if condition is falsy</p>
+									</div>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> log: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">...</span>args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Logger to log error to</p>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-symbol">asserts</span><span class="tsd-signature-type">condition</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
+					<a name="networkerrorretrypredicate" class="tsd-anchor"></a>
+					<h3>network<wbr>Error<wbr>Retry<wbr>Predicate</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
+						<li class="tsd-signature tsd-kind-icon">network<wbr>Error<wbr>Retry<wbr>Predicate<span class="tsd-signature-symbol">(</span>error<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/error.ts#L107">raiden-ts/src/utils/error.ts:107</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Predicate to that fiters errors for retrieable network problems. To be used with <code>retryAsync$</code>.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>error: <span class="tsd-signature-type">any</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Error in question</p>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+							<p><code>False</code>, if there was a retrieable network error.</p>
+						</li>
+					</ul>
+				</section>
+			</section>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class="label pp-nav pp-group">
+						<span>Get <wbr>Started</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/prerequisites.html">Prerequisites</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/installing-sdk.html">Installing the SDK</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/installing-dapp.html">Installing the d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/connecting.html">Connecting</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Get Started/private-chain.html">Private chains</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Usage</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/opening-channel.html">Opening a channel</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/funding-channel.html">Funding a channel</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/direct-transfer.html">Transferring</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/closing-channel.html">Closing a channel</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Usage/settling-channel.html">Settling a channel</a>
+					</li>
+					<li class="globals  ">
+						<a href="../globals.html"><em>Globals</em></a>
+					</li>
+					<li class="current tsd-kind-module">
+						<a href="_utils_error_.html">&quot;utils/error&quot;</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+					<li class=" tsd-kind-class tsd-parent-kind-module">
+						<a href="../classes/_utils_error_.raidenerror.html" class="tsd-kind-icon">Raiden<wbr>Error</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-parent-kind-module">
+						<a href="../interfaces/_utils_error_.errordetails.html" class="tsd-kind-icon">Error<wbr>Details</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module">
+						<a href="_utils_error_.html#errorcodes" class="tsd-kind-icon">Error<wbr>Codes</a>
+					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-module">
+						<a href="_utils_error_.html#errorcodec" class="tsd-kind-icon">Error<wbr>Codec</a>
+					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-module">
+						<a href="_utils_error_.html#errorcodes-1" class="tsd-kind-icon">Error<wbr>Codes</a>
+					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-module">
+						<a href="_utils_error_.html#errordetails-1" class="tsd-kind-icon">Error<wbr>Details</a>
+					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-module">
+						<a href="_utils_error_.html#networkerrors" class="tsd-kind-icon">network<wbr>Errors</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_error_.html#assert" class="tsd-kind-icon">assert</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module">
+						<a href="_utils_error_.html#networkerrorretrypredicate" class="tsd-kind-icon">network<wbr>Error<wbr>Retry<wbr>Predicate</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-namespace"><span class="tsd-kind-icon">Namespace</span></li>
+				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
+				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
+				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
+				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="../assets/js/main.js"></script>
+<script>if (location.protocol == 'file:') document.write('<script src="../assets/js/search.json"><' + '/script>');</script>
+</body>
+</html>
