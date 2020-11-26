@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- [#2391] Fix notification icon handling for special scenarios
+
+[#2391]: https://github.com/raiden-network/light-client/issues/2391
+
+
 ## [0.14.0] - 2020-11-25
 
 ### Fixed
