@@ -111,8 +111,8 @@ type PredicateFunc = (err: any, count: number) => boolean | undefined;
  *
  * @param delayMs - Interval or iterator of intervals to wait between retries
  * @param options - Retry options, conditions are ANDed
- * @param options.maxRetries - Throw (give up) after this many retries
- *    (default to 10, pass 0 to retry indefinitely or as long iterator yields positive intervals)
+ * @param options.maxRetries - Throw (give up) after this many retries (defaults to 10,
+ *    pass 0 to retry indefinitely or as long as iterator yields positive intervals)
  * @param options.onErrors - Retry if error.message or error.httpStatus matches any of these
  * @param options.neverOnErrors - Throw if error.message or error.httpStatus matches any of these
  * @param options.predicate - Retry if this function, receiving error+count returns truthy
