@@ -98,13 +98,10 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
 
   for (const log of [logging, ...additionalLoggers.map(logging.getLogger)]) {
     const origFactory = log.methodFactory;
-    log.methodFactory = (
-      methodName: string,
-      level: 0 | 1 | 2 | 3 | 4 | 5,
-      loggerName: string,
-    ): logging.LoggingMethod => {
+    log.methodFactory = (methodName, level, loggerName) => {
       const rawMethod = origFactory(methodName, level, loggerName);
-      setDbForLogger(loggerName);
+      const name = loggerName.toString();
+      setDbForLogger(name);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (...message: any[]): void => {
@@ -114,7 +111,7 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
         db.put(
           storeName,
           {
-            logger: loggerName,
+            logger: name,
             level: methodName,
             message: filtered,
             ...(lastBlockNumber ? { block: lastBlockNumber } : {}),
@@ -124,7 +121,7 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
           db.put(
             storeName,
             {
-              logger: loggerName,
+              logger: name,
               level: methodName,
               message: message.map(serialize),
               ...(lastBlockNumber ? { block: lastBlockNumber } : {}),
