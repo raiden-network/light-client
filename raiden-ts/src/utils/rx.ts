@@ -7,6 +7,7 @@ import {
   throwError,
   timer,
   race,
+  ObservableInput,
 } from 'rxjs';
 import {
   pluck,
@@ -23,7 +24,7 @@ import {
   mergeMapTo,
 } from 'rxjs/operators';
 import { isntNil } from './types';
-import { ErrorMatches, matchError, networkErrors } from './error';
+import { ErrorMatches, matchError } from './error';
 
 /**
  * Maps each source value (an object) to its specified nested property,
@@ -111,6 +112,7 @@ type PredicateFunc = (err: any, count: number) => boolean | undefined;
  * @param delayMs - Interval or iterator of intervals to wait between retries
  * @param options - Retry options, conditions are ANDed
  * @param options.maxRetries - Throw (give up) after this many retries
+ *    (default to 10, pass 0 to retry indefinitely or as long iterator yields positive intervals)
  * @param options.onErrors - Retry if error.message or error.httpStatus matches any of these
  * @param options.neverOnErrors - Throw if error.message or error.httpStatus matches any of these
  * @param options.predicate - Retry if this function, receiving error+count returns truthy
@@ -127,7 +129,7 @@ export function retryWhile<T>(
     predicate?: PredicateFunc;
     stopPredicate?: PredicateFunc;
     log?: (...args: any[]) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
-  } = { maxRetries: 10 },
+  } = {},
 ): MonoTypeOperatorFunction<T> {
   return (input$) =>
     input$.pipe(
@@ -143,14 +145,11 @@ export function retryWhile<T>(
 
             let retry = interval >= 0;
 
-            if (options.maxRetries) retry &&= count < options.maxRetries;
+            if (options.maxRetries !== 0) retry &&= count < (options.maxRetries ?? 10);
             if (options.onErrors) retry &&= matchError(options.onErrors, error);
             if (options.neverOnErrors) retry &&= !matchError(options.neverOnErrors, error);
             if (options.predicate) retry &&= !!options.predicate(error, count);
             if (options.stopPredicate) retry &&= !options.stopPredicate(error, count);
-
-            // networkErrors are always retried (ORed), as long as 'interval' is available
-            retry ||= interval >= 0 && matchError(networkErrors, error);
 
             options.log?.(`retryWhile: ${retry ? 'retrying' : 'giving up'}`, {
               count,
@@ -173,18 +172,14 @@ export function retryWhile<T>(
  * JsonRpcProvider._doPoll also catches, suppresses & retry
  *
  * @param func - An async function (e.g. a Promise factory, like a defer callback)
- * @param delayMs - Interval to retry in case of rejection, or iterator yielding intervals
- * @param stopPredicate - Stops retrying and throws if this function returns a truty value;
- *      Receives error and retry count; Default: stops after 10 retries
+ * @param retryWhileArgs - Rest arguments as received by [[retryWhile]] operator
  * @returns Observable version of async function, with retries
  */
 export function retryAsync$<T>(
-  func: () => Promise<T>,
-  delayMs: number | Iterator<number> = 1e3,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
+  func: () => ObservableInput<T>,
+  ...retryWhileArgs: Parameters<typeof retryWhile>
 ): Observable<T> {
-  return defer(func).pipe(retryWhile(delayMs, { stopPredicate }));
+  return defer(func).pipe(retryWhile(...retryWhileArgs));
 }
 
 /**

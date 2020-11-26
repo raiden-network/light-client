@@ -15,13 +15,13 @@ import {
 } from 'rxjs/operators';
 
 import { Capabilities } from '../../constants';
-import { channelKey, assertTx, commonTxErrors } from '../../channels/utils';
+import { channelKey, assertTx } from '../../channels/utils';
 import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { ChannelState } from '../../channels';
 import { isActionOf } from '../../utils/actions';
-import { assert, ErrorCodes } from '../../utils/error';
+import { assert, ErrorCodes, commonTxErrors } from '../../utils/error';
 import { Signed } from '../../utils/types';
 import { LruCache } from '../../utils/lru';
 import { retryWhile } from '../../utils/rx';

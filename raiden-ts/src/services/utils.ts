@@ -9,7 +9,7 @@ import memoize from 'lodash/memoize';
 import { retryAsync$ } from '../utils/rx';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
-import { networkErrorRetryPredicate, RaidenError, ErrorCodes, assert } from '../utils/error';
+import { RaidenError, ErrorCodes, assert, networkErrors } from '../utils/error';
 import { Address, UInt, decode, Signed, Signature } from '../utils/types';
 import { jsonParse, encode } from '../utils/data';
 import { Presences } from '../transport/types';
@@ -58,11 +58,9 @@ export function channelCanRoute(
 
 const serviceRegistryToken = memoize(
   async (serviceRegistryContract: ServiceRegistry, pollingInterval: number) =>
-    retryAsync$(
-      () => serviceRegistryContract.callStatic.token(),
-      pollingInterval,
-      networkErrorRetryPredicate,
-    ).toPromise() as Promise<Address>,
+    retryAsync$(() => serviceRegistryContract.callStatic.token(), pollingInterval, {
+      onErrors: networkErrors,
+    }).toPromise() as Promise<Address>,
 );
 
 /**
@@ -101,7 +99,7 @@ export function pfsInfo(
     ? retryAsync$(
         () => serviceRegistryContract.callStatic.urls(pfsAddrOrUrl),
         provider.pollingInterval,
-        networkErrorRetryPredicate,
+        { onErrors: networkErrors },
       )
     : of(pfsAddrOrUrl);
   return url$.pipe(

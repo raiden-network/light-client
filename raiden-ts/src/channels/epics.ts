@@ -46,7 +46,15 @@ import { RaidenEpicDeps } from '../types';
 import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
 import { RaidenState } from '../state';
 import { ShutdownReason } from '../constants';
-import { networkErrorRetryPredicate, RaidenError, ErrorCodes, assert } from '../utils/error';
+import {
+  RaidenError,
+  ErrorCodes,
+  assert,
+  networkErrors,
+  commonAndFailTxErrors,
+  commonTxErrors,
+  matchError,
+} from '../utils/error';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
 import { isActionOf } from '../utils/actions';
@@ -71,15 +79,7 @@ import {
   channelSettleable,
   channelWithdrawn,
 } from './actions';
-import {
-  assertTx,
-  channelKey,
-  groupChannel$,
-  channelUniqueKey,
-  approveIfNeeded$,
-  commonTxErrors,
-  commonAndFailTxErrors,
-} from './utils';
+import { assertTx, channelKey, groupChannel$, channelUniqueKey, approveIfNeeded$ } from './utils';
 
 /**
  * Fetch current blockNumber, register for new block events and emit newBlock actions
@@ -222,7 +222,7 @@ export function initMonitorProviderEpic(
         if (error?.message?.includes('network changed'))
           return raidenShutdown({ reason: ShutdownReason.NETWORK_CHANGED });
         // ignore network errors, so they're retried by timer
-        if (!networkErrorRetryPredicate(error)) return;
+        if (matchError(networkErrors, error)) return;
         throw error;
       }
     }),
@@ -1186,7 +1186,7 @@ export function channelSettleEpic(
             ),
           ]),
         provider.pollingInterval,
-        networkErrorRetryPredicate,
+        { onErrors: networkErrors },
       ).pipe(
         mergeMap(([{ 3: ownBH }, { 3: partnerBH }]) => {
           let ownBP$;

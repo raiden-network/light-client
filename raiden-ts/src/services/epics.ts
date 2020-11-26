@@ -45,18 +45,12 @@ import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '..
 import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
 import { ChannelState, Channel } from '../channels/state';
 import { newBlock } from '../channels/actions';
-import {
-  channelAmounts,
-  groupChannel$,
-  assertTx,
-  approveIfNeeded$,
-  commonTxErrors,
-} from '../channels/utils';
+import { channelAmounts, groupChannel$, assertTx, approveIfNeeded$ } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
-import { RaidenError, ErrorCodes, assert, networkErrorRetryPredicate } from '../utils/error';
+import { RaidenError, ErrorCodes, assert, networkErrors, commonTxErrors } from '../utils/error';
 import { pluckDistinct, retryAsync$, retryWhile } from '../utils/rx';
 import { matrixPresence } from '../transport/actions';
 import { getCap } from '../transport/utils';
@@ -469,7 +463,7 @@ export function monitorUdcBalanceEpic(
             userDepositContract.callStatic.total_deposit(address) as Promise<UInt<32>>,
           ]),
         provider.pollingInterval,
-        networkErrorRetryPredicate,
+        { onErrors: networkErrors },
       ).pipe(catchError(constant(EMPTY))),
     ),
     withLatestFrom(latest$),
@@ -495,7 +489,7 @@ function makeUdcDeposit$(
         userDepositContract.callStatic.total_deposit(address),
       ]),
     pollingInterval,
-    networkErrorRetryPredicate,
+    { onErrors: networkErrors },
   ).pipe(
     mergeMap(([balance, allowance, deposited]) => {
       assert(deposited.add(deposit).eq(totalDeposit), [
@@ -556,7 +550,7 @@ export function udcDepositEpic(
       retryAsync$(
         () => userDepositContract.callStatic.token() as Promise<Address>,
         provider.pollingInterval,
-        networkErrorRetryPredicate,
+        { onErrors: networkErrors },
       ).pipe(
         withLatestFrom(config$),
         mergeMap(([token, config]) => {
@@ -579,7 +573,7 @@ export function udcDepositEpic(
           retryAsync$(
             () => userDepositContract.callStatic.effectiveBalance(address) as Promise<UInt<32>>,
             provider.pollingInterval,
-            networkErrorRetryPredicate,
+            { onErrors: networkErrors },
           ).pipe(
             map((balance) =>
               udcDeposit.success(
@@ -765,7 +759,7 @@ export function udcWithdrawRequestEpic(
             .balances(address)
             .then((balance) => [action, balance] as const),
         provider.pollingInterval,
-        networkErrorRetryPredicate,
+        { onErrors: networkErrors },
       ),
     ),
     concatMap(([action, balance]) => {
@@ -798,7 +792,7 @@ export function udcWithdrawRequestEpic(
               retryAsync$(
                 () => userDepositContract.callStatic.withdraw_plans(address),
                 provider.pollingInterval,
-                networkErrorRetryPredicate,
+                { onErrors: networkErrors },
               ),
             ),
             first(({ amount }) => amount.gte(action.meta.amount)),
@@ -843,11 +837,9 @@ export function udcCheckWithdrawPlannedEpic(
   return config$.pipe(
     first(),
     mergeMap(({ pollingInterval }) =>
-      retryAsync$(
-        () => userDepositContract.withdraw_plans(address),
-        pollingInterval,
-        networkErrorRetryPredicate,
-      ),
+      retryAsync$(() => userDepositContract.withdraw_plans(address), pollingInterval, {
+        onErrors: networkErrors,
+      }),
     ),
     filter((value) => value.withdraw_block.gt(Zero)),
     map(({ amount, withdraw_block }) =>
@@ -894,7 +886,7 @@ export function udcWithdrawPlannedEpic(
             .balances(address)
             .then((balance) => [action, balance] as const),
         provider.pollingInterval,
-        networkErrorRetryPredicate,
+        { onErrors: networkErrors },
       ),
     ),
     concatMap(([action, balance]) => {
@@ -914,11 +906,9 @@ export function udcWithdrawPlannedEpic(
           state$.pipe(
             pluckDistinct('blockNumber'),
             exhaustMap(() =>
-              retryAsync$(
-                () => contract.callStatic.balances(address),
-                provider.pollingInterval,
-                networkErrorRetryPredicate,
-              ),
+              retryAsync$(() => contract.callStatic.balances(address), provider.pollingInterval, {
+                onErrors: networkErrors,
+              }),
             ),
             first((newBalance) => newBalance.lt(balance)),
             map((newBalance) =>
