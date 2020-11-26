@@ -12,10 +12,13 @@ import { createLogger } from 'redux-logger';
 
 import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
+import isUndefined from 'lodash/isUndefined';
+import omitBy from 'lodash/omitBy';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import { first, filter, map, mergeMap, skip, pluck } from 'rxjs/operators';
+import { first, filter, map, mergeMap, skip, pluck, timeout } from 'rxjs/operators';
 import logging from 'loglevel';
 
+import { fromFetch } from 'rxjs/fetch';
 import {
   TokenNetworkRegistry__factory,
   TokenNetwork__factory,
@@ -63,7 +66,15 @@ import {
   transferKeyToMeta,
 } from './transfers/utils';
 import { pathFind, udcWithdraw, udcDeposit } from './services/actions';
-import { Paths, RaidenPaths, PFS, RaidenPFS, IOU } from './services/types';
+import {
+  Paths,
+  RaidenPaths,
+  PFS,
+  RaidenPFS,
+  IOU,
+  SuggestedPartner,
+  SuggestedPartners,
+} from './services/types';
 import { pfsListInfo } from './services/utils';
 import { Address, Secret, Storage, Hash, UInt, decode } from './utils/types';
 import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
@@ -85,6 +96,7 @@ import { RaidenError, ErrorCodes } from './utils/error';
 import { RaidenDatabase } from './db/types';
 import { dumpDatabaseToArray } from './db/utils';
 import { createPersisterMiddleware } from './persister';
+import { jsonParse } from './utils/data';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -183,10 +195,7 @@ export class Raiden {
     this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
     this.log = logging.getLogger(`raiden:${address}`);
 
-    const defaultConfig = makeDefaultConfig(
-      { network },
-      config && decode(PartialRaidenConfig, config),
-    );
+    const defaultConfig = makeDefaultConfig({ network }, config);
 
     // use next from latest known blockNumber as start block when polling
     provider.resetEventsBlock(state.blockNumber + 1);
@@ -341,7 +350,7 @@ export class Raiden {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     storage?: { state?: any; storage?: Storage; adapter?: any; prefix?: string },
     contractsOrUDCAddress?: ContractsInfo | string,
-    config?: PartialRaidenConfig,
+    config?: { [k: string]: unknown },
     subkey?: true,
   ): Promise<InstanceType<R>> {
     let provider: JsonRpcProvider;
@@ -399,13 +408,14 @@ export class Raiden {
         },
       ],
     );
+    const cleanConfig = config && decode(PartialRaidenConfig, omitBy(config, isUndefined));
 
     return new this(
       provider,
       network,
       signer,
       contractsInfo,
-      { db, state, config },
+      { db, state, config: cleanConfig },
       main,
     ) as InstanceType<R>;
   }
@@ -1386,6 +1396,35 @@ export class Raiden {
     );
     this.store.dispatch(withdraw.request(undefined, meta));
     return promise;
+  }
+
+  /**
+   * Fetches an ordered list of suggested partners from provided, configured or first found PFS
+   *
+   * @param token - Token address to get partners for
+   * @param options - Request options
+   * @param options.pfs - PFS to use, instead of configured or automatic
+   * @returns Ordered array of suggested partners, with address and scoring values according to PFS
+   */
+  public async suggestPartners(
+    token: string,
+    options: { pfs?: RaidenPFS } = {},
+  ): Promise<SuggestedPartner[]> {
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+    const tokenNetwork = this.state.tokens[token];
+    assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
+    const pfs = decode(PFS, options.pfs ?? (await this.findPFS())[0]);
+
+    return await fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/suggest_partner`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .pipe(
+        timeout(this.config.httpTimeout),
+        mergeMap((response) => response.text()),
+        map((text) => decode(SuggestedPartners, jsonParse(text))),
+      )
+      .toPromise();
   }
 }
 

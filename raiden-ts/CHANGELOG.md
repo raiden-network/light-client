@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#211] 'suggestPartners' method to fetch suggested partners from PFS
+
+[#211]: https://github.com/raiden-network/light-client/issues/211
 
 ## [0.14.0] - 2020-11-25
 ### Fixed
