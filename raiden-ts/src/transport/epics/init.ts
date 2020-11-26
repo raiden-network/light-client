@@ -138,7 +138,7 @@ function startMatrixSync(
         mergeMap((filter) => matrix.startClient({ filter })),
         retryWhile(
           exponentialBackoff(config.pollingInterval, config.httpTimeout),
-          (err) => err?.httpStatus !== 429, // retry rate-limit errors only
+          { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
         ),
       ),
     ),

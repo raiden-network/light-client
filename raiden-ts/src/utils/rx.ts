@@ -23,6 +23,7 @@ import {
   mergeMapTo,
 } from 'rxjs/operators';
 import { isntNil } from './types';
+import { ErrorMatches, matchError, networkErrors } from './error';
 
 /**
  * Maps each source value (an object) to its specified nested property,
@@ -100,19 +101,33 @@ export function repeatUntil<T>(
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PredicateFunc = (err: any, count: number) => boolean | undefined;
 /**
  * Operator to retry/re-subscribe input$ until a stopPredicate returns truthy or delayMs iterator
  * completes, waiting delayMs milliseconds between retries.
  * Input observable must be re-subscribable/retriable.
  *
  * @param delayMs - Interval or iterator of intervals to wait between retries
- * @param stopPredicate - Receives error and count, stop retry and throw if returns truthy
+ * @param options - Retry options, conditions are ANDed
+ * @param options.maxRetries - Throw (give up) after this many retries
+ * @param options.onErrors - Retry if error.message or error.httpStatus matches any of these
+ * @param options.neverOnErrors - Throw if error.message or error.httpStatus matches any of these
+ * @param options.predicate - Retry if this function, receiving error+count returns truthy
+ * @param options.stopPredicate - Throw if this function, receiving error+count returns truthy
+ * @param options.log - Log with this function on every retry or when throwing, e.g. log.info
  * @returns Operator function to retry if stopPredicate not truthy waiting between retries
  */
 export function retryWhile<T>(
   delayMs: number | Iterator<number>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
+  options: {
+    maxRetries?: number;
+    onErrors?: ErrorMatches;
+    neverOnErrors?: ErrorMatches;
+    predicate?: PredicateFunc;
+    stopPredicate?: PredicateFunc;
+    log?: (...args: any[]) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
+  } = { maxRetries: 10 },
 ): MonoTypeOperatorFunction<T> {
   return (input$) =>
     input$.pipe(
@@ -125,8 +140,25 @@ export function retryWhile<T>(
               const next = delayMs.next();
               interval = !next.done ? next.value : -1;
             }
-            if (stopPredicate(error, count) || interval < 0) return throwError(error);
-            return timer(interval);
+
+            let retry = interval >= 0;
+
+            if (options.maxRetries) retry &&= count < options.maxRetries;
+            if (options.onErrors) retry &&= matchError(options.onErrors, error);
+            if (options.neverOnErrors) retry &&= !matchError(options.neverOnErrors, error);
+            if (options.predicate) retry &&= !!options.predicate(error, count);
+            if (options.stopPredicate) retry &&= !options.stopPredicate(error, count);
+
+            // networkErrors are always retried (ORed), as long as 'interval' is available
+            retry ||= interval >= 0 && matchError(networkErrors, error);
+
+            options.log?.(`retryWhile: ${retry ? 'retrying' : 'giving up'}`, {
+              count,
+              interval,
+              error,
+            });
+
+            return retry ? timer(interval) : throwError(error);
           }),
         ),
       ),
@@ -152,7 +184,7 @@ export function retryAsync$<T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stopPredicate: (err: any, count: number) => boolean | undefined = (_, count) => count >= 10,
 ): Observable<T> {
-  return defer(func).pipe(retryWhile(delayMs, stopPredicate));
+  return defer(func).pipe(retryWhile(delayMs, { stopPredicate }));
 }
 
 /**

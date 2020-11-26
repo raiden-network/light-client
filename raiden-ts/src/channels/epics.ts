@@ -50,7 +50,7 @@ import { networkErrorRetryPredicate, RaidenError, ErrorCodes, assert } from '../
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
 import { isActionOf } from '../utils/actions';
-import { pluckDistinct, distinctRecordValues, retryAsync$, takeIf } from '../utils/rx';
+import { pluckDistinct, distinctRecordValues, retryAsync$, takeIf, retryWhile } from '../utils/rx';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
 
@@ -76,10 +76,9 @@ import {
   channelKey,
   groupChannel$,
   channelUniqueKey,
-  retryTx,
-  txNonceErrors,
-  txFailErrors,
   approveIfNeeded$,
+  commonTxErrors,
+  commonAndFailTxErrors,
 } from './utils';
 
 /**
@@ -664,8 +663,9 @@ export function channelOpenEpic(
         ).pipe(
           assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log, provider }),
           // also retry txFailErrors: if it's caused by partner having opened, takeUntil will see
-          retryTx(provider.pollingInterval, undefined, txNonceErrors.concat(txFailErrors), {
-            log,
+          retryWhile(provider.pollingInterval, {
+            onErrors: commonAndFailTxErrors,
+            log: log.debug,
           }),
           // if channel gets opened while retrying (e.g. by partner), give up to avoid erroring
           takeUntil(
@@ -693,7 +693,7 @@ function makeDeposit$(
   channelId$: Observable<number>,
   { log, provider, config$ }: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$'>,
 ) {
-  // retryTx from here
+  // retryWhile from here
   return defer(() =>
     Promise.all([
       tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
@@ -728,12 +728,10 @@ function makeDeposit$(
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
-    retryTx(
-      (tokenNetworkContract.provider as JsonRpcProvider).pollingInterval,
-      undefined,
-      txNonceErrors.concat(txFailErrors),
-      { log },
-    ),
+    retryWhile((tokenNetworkContract.provider as JsonRpcProvider).pollingInterval, {
+      onErrors: commonAndFailTxErrors,
+      log: log.debug,
+    }),
   );
 }
 
@@ -941,7 +939,10 @@ export function channelCloseEpic(
             ),
           ).pipe(
             assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log, provider }),
-            retryTx(provider.pollingInterval, undefined, undefined, { log }),
+            retryWhile(provider.pollingInterval, {
+              onErrors: commonTxErrors,
+              log: log.debug,
+            }),
           ),
         ),
         // if succeeded, return a empty/completed observable
@@ -1049,7 +1050,10 @@ export function channelUpdateEpic(
               log,
               provider,
             }),
-            retryTx(provider.pollingInterval, undefined, undefined, { log }),
+            retryWhile(provider.pollingInterval, {
+              onErrors: commonTxErrors,
+              log: log.debug,
+            }),
           ),
         ),
         // if succeeded, return a empty/completed observable
@@ -1264,7 +1268,10 @@ export function channelSettleEpic(
                 ),
               ).pipe(
                 assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log, provider }),
-                retryTx(provider.pollingInterval, undefined, undefined, { log }),
+                retryWhile(provider.pollingInterval, {
+                  onErrors: commonTxErrors,
+                  log: log.debug,
+                }),
               ),
             ),
           );
@@ -1366,7 +1373,10 @@ export function channelUnlockEpic(
         tokenNetworkContract.unlock(action.payload.id, address, partner, locks),
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log, provider }),
-        retryTx(provider.pollingInterval, undefined, undefined, { log }),
+        retryWhile(provider.pollingInterval, {
+          onErrors: commonTxErrors,
+          log: log.debug,
+        }),
         ignoreElements(),
         catchError((error) => {
           log.error('Error unlocking pending locks on-chain, ignoring', error);

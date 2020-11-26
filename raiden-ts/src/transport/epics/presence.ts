@@ -243,7 +243,7 @@ export function matrixPresenceUpdateEpic(
           }),
           retryWhile(
             exponentialBackoff(pollingInterval, httpTimeout),
-            (err) => err?.httpStatus !== 429, // retry rate-limit errors only
+            { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
           ),
           catchError(
             (err) => (

@@ -1,24 +1,5 @@
-import {
-  OperatorFunction,
-  Observable,
-  ReplaySubject,
-  throwError,
-  timer,
-  MonoTypeOperatorFunction,
-  of,
-  defer,
-} from 'rxjs';
-import {
-  tap,
-  mergeMap,
-  map,
-  pluck,
-  filter,
-  groupBy,
-  takeUntil,
-  retryWhen,
-  mapTo,
-} from 'rxjs/operators';
+import { OperatorFunction, Observable, ReplaySubject, of, defer } from 'rxjs';
+import { tap, mergeMap, map, pluck, filter, groupBy, takeUntil, mapTo } from 'rxjs/operators';
 import { Zero } from '@ethersproject/constants';
 import type { ContractTransaction, ContractReceipt } from '@ethersproject/contracts';
 import logging, { Logger } from 'loglevel';
@@ -32,9 +13,11 @@ import {
   assert,
   ErrorCodes,
   networkErrorRetryPredicate,
+  txNonceErrors,
   networkErrors,
+  txFailErrors,
 } from '../utils/error';
-import { distinctRecordValues, retryAsync$ } from '../utils/rx';
+import { distinctRecordValues, retryWhile } from '../utils/rx';
 import { MessageType } from '../messages/types';
 import { Channel, ChannelBalances } from './state';
 import { ChannelKey, ChannelUniqueKey } from './types';
@@ -149,6 +132,9 @@ export function channelAmounts(channel: Channel): ChannelBalances {
   };
 }
 
+export const commonTxErrors = [...txNonceErrors, ...networkErrors];
+export const commonAndFailTxErrors = [...txNonceErrors, ...txFailErrors, ...networkErrors];
+
 /**
  * Custom operator to wait & assert transaction success
  *
@@ -171,7 +157,8 @@ export function assertTx(
     tx$.pipe(
       tap((tx) => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
       mergeMap((tx) =>
-        retryAsync$(() => tx.wait(), provider.pollingInterval, networkErrorRetryPredicate).pipe(
+        defer(() => tx.wait()).pipe(
+          retryWhile(provider.pollingInterval, { stopPredicate: networkErrorRetryPredicate }),
           map((txReceipt) => [tx, txReceipt] as const),
         ),
       ),
@@ -188,58 +175,6 @@ export function assertTx(
           ContractReceipt & { transactionHash: Hash; blockNumber: number },
         ];
       }),
-    );
-}
-
-export const txNonceErrors: readonly string[] = [
-  'replacement fee too low',
-  'gas price supplied is too low',
-  'nonce is too low',
-  'nonce has already been used',
-  'already known',
-  'Transaction with the same hash was already imported',
-];
-export const txFailErrors: readonly string[] = [
-  'always failing transaction',
-  'execution failed due to an exception',
-  'transaction failed',
-  'execution reverted',
-  'cannot estimate gas',
-];
-
-/**
- * RxJS pipeable operator to re-subscribe/retry a transaction observable on recoverable errors
- *
- * For this to work, the input$ transaction observable must be re-subscribable:
- * e.g. a promise wrapped in a `defer` callback.
- *
- * @param interval - interval between retries
- * @param count - Maximum number of retries
- * @param errors - Retry if error.message includes some string in this array (recoverable errors)
- * @param options - Options object
- * @param options.log - Logger instance
- * @returns Monotype operator to re-subscribe to input observable
- */
-export function retryTx<T>(
-  interval = 1000,
-  count = 10,
-  errors: readonly string[] = txNonceErrors,
-  { log }: { log: logging.Logger } = { log: logging },
-): MonoTypeOperatorFunction<T> {
-  // retry on network erros as well
-  const allErrors = errors.concat(networkErrors);
-  return (input$) =>
-    input$.pipe(
-      retryWhen((err$) =>
-        err$.pipe(
-          mergeMap((err, i) => {
-            log.debug(`__retryTx ${i + 1}/${count} every ${interval}, error: `, err);
-            if (i < count && allErrors.some((error) => err.message?.includes(error)))
-              return timer(interval);
-            return throwError(err);
-          }),
-        ),
-      ),
     );
 }
 
