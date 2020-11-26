@@ -68,15 +68,15 @@ import {
 import { pathFind, udcWithdraw, udcDeposit } from './services/actions';
 import {
   Paths,
-  RaidenPaths,
   PFS,
-  RaidenPFS,
   IOU,
   SuggestedPartner,
   SuggestedPartners,
+  RaidenPaths,
+  RaidenPFS,
 } from './services/types';
 import { pfsListInfo } from './services/utils';
-import { Address, Secret, Storage, Hash, UInt, decode } from './utils/types';
+import { Address, Secret, Storage, Hash, UInt, decode, Decodable } from './utils/types';
 import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
 import { pluckDistinct } from './utils/rx';
 import {
@@ -350,7 +350,7 @@ export class Raiden {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     storage?: { state?: any; storage?: Storage; adapter?: any; prefix?: string },
     contractsOrUDCAddress?: ContractsInfo | string,
-    config?: { [k: string]: unknown },
+    config?: Decodable<PartialRaidenConfig>,
     subkey?: true,
   ): Promise<InstanceType<R>> {
     let provider: JsonRpcProvider;
