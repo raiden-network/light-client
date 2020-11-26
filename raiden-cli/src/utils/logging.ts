@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import util from 'util';
-import logging, { LoggingMethod } from 'loglevel';
+import logging from 'loglevel';
 
 util.inspect.defaultOptions.depth = 3; // +1 from default of 2
 
@@ -11,11 +11,7 @@ util.inspect.defaultOptions.depth = 3; // +1 from default of 2
 export function setupLoglevel(output?: string): void {
   const originalFactory = logging.methodFactory;
 
-  logging.methodFactory = (
-    methodName: string,
-    level: 0 | 1 | 2 | 3 | 4 | 5,
-    loggerName: string,
-  ): LoggingMethod => {
+  logging.methodFactory = (methodName, level, loggerName) => {
     const rawMethod = originalFactory(methodName, level, loggerName);
     return (...message: any[]): void => {
       const prefix = `${new Date(Date.now()).toISOString()} [${methodName}]`;
