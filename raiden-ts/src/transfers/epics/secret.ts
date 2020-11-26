@@ -17,7 +17,7 @@ import {
   endWith,
 } from 'rxjs/operators';
 
-import { assertTx, commonTxErrors } from '../../channels/utils';
+import { assertTx } from '../../channels/utils';
 import { RaidenAction } from '../../actions';
 import { messageSend } from '../../messages/actions';
 import { MessageType, SecretRequest, SecretReveal } from '../../messages/types';
@@ -25,7 +25,7 @@ import { signMessage, isMessageReceivedOfType } from '../../messages/utils';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
-import { RaidenError, ErrorCodes, assert } from '../../utils/error';
+import { RaidenError, ErrorCodes, assert, commonTxErrors } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
 import { pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
 import { Hash, Secret, Signed, UInt, isntNil, untime } from '../../utils/types';

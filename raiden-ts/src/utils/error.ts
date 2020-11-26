@@ -3,7 +3,6 @@ import * as t from 'io-ts';
 import { map } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 import findKey from 'lodash/findKey';
-import negate from 'lodash/negate';
 
 import errorCodes from '../errors.json';
 
@@ -48,7 +47,7 @@ export function matchError(match: ErrorMatch | ErrorMatches, error?: any) {
 }
 
 export const networkErrors: ErrorMatches = ['invalid response', { code: 'TIMEOUT' }];
-export const txNonceErrors: readonly string[] = [
+export const txNonceErrors: ErrorMatches = [
   'replacement fee too low',
   'gas price supplied is too low',
   'nonce is too low',
@@ -56,13 +55,15 @@ export const txNonceErrors: readonly string[] = [
   'already known',
   'Transaction with the same hash was already imported',
 ];
-export const txFailErrors: readonly string[] = [
+export const txFailErrors: ErrorMatches = [
   'always failing transaction',
   'execution failed due to an exception',
   'transaction failed',
   'execution reverted',
   'cannot estimate gas',
 ];
+export const commonTxErrors: ErrorMatches = [...txNonceErrors, ...networkErrors];
+export const commonAndFailTxErrors: ErrorMatches = [...commonTxErrors, ...txFailErrors];
 
 export class RaidenError extends Error {
   public name = 'RaidenError';
@@ -147,11 +148,3 @@ export const ErrorCodec = new t.Type<
     ...('details' in error ? { details: error.details } : {}),
   }),
 );
-
-/**
- * Predicate to that fiters errors for retrieable network problems. To be used with `retryAsync$`.
- *
- * @param error - Error in question
- * @returns `False`, if there was a retrieable network error.
- */
-export const networkErrorRetryPredicate = negate(matchError(networkErrors));

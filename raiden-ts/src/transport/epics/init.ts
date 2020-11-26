@@ -251,7 +251,7 @@ function setupMatrixClient$(
                   device_id: DEVICE_ID,
                 }),
               pollingInterval,
-              (err) => err?.httpStatus !== 429, // retry only if rate-limit error
+              { onErrors: [429] }, // retry only if rate-limit error
             ).pipe(
               catchError((err) =>
                 matrix.register(userName, password).catch(() => {
@@ -290,18 +290,15 @@ function setupMatrixClient$(
     // the APIs below are authenticated, and therefore also act as validator
     mergeMap(({ matrix, server, setup, pollingInterval }) =>
       // set these properties before starting sync
-      combineLatest([
-        retryAsync$(
-          () => matrix.setDisplayName(setup.displayName),
-          pollingInterval,
-          (err) => err?.httpStatus !== 429,
-        ),
-        retryAsync$(
-          () => matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
-          pollingInterval,
-          (err) => err?.httpStatus !== 429,
-        ),
-      ]).pipe(
+      retryAsync$(
+        () =>
+          Promise.all([
+            matrix.setDisplayName(setup.displayName),
+            matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
+          ]),
+        pollingInterval,
+        { onErrors: [429] },
+      ).pipe(
         mapTo({ matrix, server, setup }), // return triplet again
       ),
     ),

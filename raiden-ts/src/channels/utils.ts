@@ -8,16 +8,8 @@ import type { HumanStandardToken } from '../contracts';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
 import { UInt, Address, Hash, Int, bnMax } from '../utils/types';
-import {
-  RaidenError,
-  assert,
-  ErrorCodes,
-  networkErrorRetryPredicate,
-  txNonceErrors,
-  networkErrors,
-  txFailErrors,
-} from '../utils/error';
-import { distinctRecordValues, retryWhile } from '../utils/rx';
+import { RaidenError, assert, ErrorCodes, networkErrors } from '../utils/error';
+import { distinctRecordValues, retryAsync$ } from '../utils/rx';
 import { MessageType } from '../messages/types';
 import { Channel, ChannelBalances } from './state';
 import { ChannelKey, ChannelUniqueKey } from './types';
@@ -132,9 +124,6 @@ export function channelAmounts(channel: Channel): ChannelBalances {
   };
 }
 
-export const commonTxErrors = [...txNonceErrors, ...networkErrors];
-export const commonAndFailTxErrors = [...txNonceErrors, ...txFailErrors, ...networkErrors];
-
 /**
  * Custom operator to wait & assert transaction success
  *
@@ -157,8 +146,7 @@ export function assertTx(
     tx$.pipe(
       tap((tx) => log.debug(`sent ${method} tx "${tx.hash}" to "${tx.to}"`)),
       mergeMap((tx) =>
-        defer(() => tx.wait()).pipe(
-          retryWhile(provider.pollingInterval, { stopPredicate: networkErrorRetryPredicate }),
+        retryAsync$(() => tx.wait(), provider.pollingInterval, { onErrors: networkErrors }).pipe(
           map((txReceipt) => [tx, txReceipt] as const),
         ),
       ),
