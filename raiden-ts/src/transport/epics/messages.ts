@@ -142,10 +142,10 @@ export function matrixMessageGlobalSendEpic(
             '',
           );
         }),
-        retryWhile(
-          exponentialBackoff(config.pollingInterval, config.httpTimeout),
-          (err, count) => ![429, 500].includes(err?.httpStatus) || count > 3,
-        ),
+        retryWhile(exponentialBackoff(config.pollingInterval, config.httpTimeout), {
+          maxRetries: 3,
+          onErrors: [429, 500],
+        }),
         catchError((err) => {
           log.error(
             'Error sending message to global room',

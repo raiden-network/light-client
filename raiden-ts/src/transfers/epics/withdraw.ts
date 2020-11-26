@@ -15,7 +15,7 @@ import {
 } from 'rxjs/operators';
 
 import { Capabilities } from '../../constants';
-import { channelKey, assertTx, retryTx } from '../../channels/utils';
+import { channelKey, assertTx, commonTxErrors } from '../../channels/utils';
 import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
@@ -24,6 +24,7 @@ import { isActionOf } from '../../utils/actions';
 import { assert, ErrorCodes } from '../../utils/error';
 import { Signed } from '../../utils/types';
 import { LruCache } from '../../utils/lru';
+import { retryWhile } from '../../utils/rx';
 import { Processed, MessageType, signMessage, isMessageReceivedOfType } from '../../messages';
 import { messageSend } from '../../messages/actions';
 import { newBlock } from '../../channels/actions';
@@ -199,7 +200,7 @@ export function withdrawSendTxEpic(
               log,
               provider,
             }),
-            retryTx(provider.pollingInterval, undefined, undefined, { log }),
+            retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
           );
         }),
         map(([, receipt]) =>

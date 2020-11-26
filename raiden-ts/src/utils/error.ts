@@ -3,6 +3,7 @@ import * as t from 'io-ts';
 import { map } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 import findKey from 'lodash/findKey';
+import negate from 'lodash/negate';
 
 import errorCodes from '../errors.json';
 
@@ -12,7 +13,56 @@ export type ErrorCodes = keyof typeof ErrorCodes;
 export const ErrorDetails = t.record(t.string, t.union([t.string, t.number, t.boolean, t.null]));
 export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
 
-export const networkErrors: readonly string[] = ['invalid response', 'timeout'];
+export type ErrorMatch = string | number | { [k: string]: string | number };
+export type ErrorMatches = readonly ErrorMatch[];
+
+// overloads
+export function matchError(match: ErrorMatch | ErrorMatches): (error: any) => boolean;
+export function matchError(match: ErrorMatch | ErrorMatches, error: any): boolean;
+/**
+ * Matches an error, or creates a matcher for the error
+ * The matcher is curried on the left side, meaning that it'll return a function to check errors
+ * against the provided match or matches if error isn't provided as 2nd parameter.
+ * Matches can be strings (to be checked as substrings of error.message), numbers (to be checked
+ * for equality with error.httpStatus), or an arbitrary mapping of { key: values }, to check
+ * for strict property equality on the error object.
+ *
+ * @param match - Match or array of Matches to check
+ * @param error - Error to check
+ * @returns boolean if 'error' matches 'match' or some 'match', or a matcher function for 'error',
+ *   if 2nd param is undefined
+ */
+export function matchError(match: ErrorMatch | ErrorMatches, error?: any) {
+  const _errorMatcher = (match: ErrorMatch, error: any): boolean => {
+    return typeof match === 'string'
+      ? error?.message?.includes(match)
+      : typeof match === 'number'
+      ? error?.httpStatus === match
+      : Object.entries(match).every(([k, v]) => error?.[k] === v);
+  };
+  const errorMatcher = Array.isArray(match)
+    ? (error: any): boolean => match.some((m) => _errorMatcher(m, error))
+    : (error: any): boolean => _errorMatcher(match, error);
+  if (arguments.length < 2) return errorMatcher;
+  else return errorMatcher(error);
+}
+
+export const networkErrors: ErrorMatches = ['invalid response', { code: 'TIMEOUT' }];
+export const txNonceErrors: readonly string[] = [
+  'replacement fee too low',
+  'gas price supplied is too low',
+  'nonce is too low',
+  'nonce has already been used',
+  'already known',
+  'Transaction with the same hash was already imported',
+];
+export const txFailErrors: readonly string[] = [
+  'always failing transaction',
+  'execution failed due to an exception',
+  'transaction failed',
+  'execution reverted',
+  'cannot estimate gas',
+];
 
 export class RaidenError extends Error {
   public name = 'RaidenError';
@@ -104,8 +154,4 @@ export const ErrorCodec = new t.Type<
  * @param error - Error in question
  * @returns `False`, if there was a retrieable network error.
  */
-export function networkErrorRetryPredicate(error: any): boolean {
-  return !(
-    typeof error?.message === 'string' && networkErrors.some((msg) => error.message.includes(msg))
-  );
-}
+export const networkErrorRetryPredicate = negate(matchError(networkErrors));

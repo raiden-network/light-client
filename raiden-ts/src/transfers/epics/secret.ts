@@ -17,7 +17,7 @@ import {
   endWith,
 } from 'rxjs/operators';
 
-import { assertTx, retryTx } from '../../channels/utils';
+import { assertTx, commonTxErrors } from '../../channels/utils';
 import { RaidenAction } from '../../actions';
 import { messageSend } from '../../messages/actions';
 import { MessageType, SecretRequest, SecretReveal } from '../../messages/types';
@@ -27,7 +27,7 @@ import { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { RaidenError, ErrorCodes, assert } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
-import { pluckDistinct, takeIf } from '../../utils/rx';
+import { pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
 import { Hash, Secret, Signed, UInt, isntNil, untime } from '../../utils/types';
 import { getCap } from '../../transport/utils';
 import {
@@ -472,7 +472,7 @@ export function transferSecretRegisterEpic(
 
       return defer(() => contract.registerSecret(action.payload.secret)).pipe(
         assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log, provider }),
-        retryTx(provider.pollingInterval, undefined, undefined, { log }),
+        retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
         // transferSecretRegister.success handled by monitorSecretRegistryEpic
         ignoreElements(),
         catchError((err) => of(transferSecretRegister.failure(err, action.meta))),

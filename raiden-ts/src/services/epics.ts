@@ -49,15 +49,15 @@ import {
   channelAmounts,
   groupChannel$,
   assertTx,
-  retryTx,
   approveIfNeeded$,
+  commonTxErrors,
 } from '../channels/utils';
 import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert, networkErrorRetryPredicate } from '../utils/error';
-import { pluckDistinct, retryAsync$ } from '../utils/rx';
+import { pluckDistinct, retryAsync$, retryWhile } from '../utils/rx';
 import { matrixPresence } from '../transport/actions';
 import { getCap } from '../transport/utils';
 import type { UserDeposit, HumanStandardToken } from '../contracts';
@@ -516,7 +516,7 @@ function makeUdcDeposit$(
     assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
-    retryTx(pollingInterval, undefined, undefined, { log }),
+    retryWhile(pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
   );
 }
 
@@ -790,7 +790,7 @@ export function udcWithdrawRequestEpic(
         return contract.planWithdraw(amount);
       }).pipe(
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
-        retryTx(provider.pollingInterval, undefined, undefined, { log }),
+        retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
         mergeMap(([, { transactionHash: txHash, blockNumber: txBlock }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),
@@ -909,7 +909,7 @@ export function udcWithdrawPlannedEpic(
         return contract.withdraw(action.meta.amount);
       }).pipe(
         assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log, provider }),
-        retryTx(provider.pollingInterval, undefined, undefined, { log }),
+        retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
         concatMap(([, { transactionHash, blockNumber }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),

@@ -171,7 +171,7 @@ export function matrixCreateRoomEpic(
             map(({ room_id: roomId }) => matrixRoom({ roomId }, { address })),
             retryWhile(
               exponentialBackoff(pollingInterval, httpTimeout),
-              (err) => err?.httpStatus !== 429, // retry rate-limit errors only
+              { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
             ),
             catchError((err) => (log.error('Error creating room, ignoring', err), EMPTY)),
           ),
@@ -281,7 +281,7 @@ export function matrixHandleInvitesEpic(
         mapTo(matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
         retryWhile(
           exponentialBackoff(pollingInterval, httpTimeout),
-          (err) => err?.httpStatus !== 429, // retry rate-limit errors only
+          { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
         ),
         catchError((err) => (log.error('Error joining invited room, ignoring', err), EMPTY)),
       ),
