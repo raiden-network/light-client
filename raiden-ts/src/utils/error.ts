@@ -33,11 +33,11 @@ export function matchError(match: ErrorMatch | ErrorMatches, error: any): boolea
  */
 export function matchError(match: ErrorMatch | ErrorMatches, error?: any) {
   const _errorMatcher = (match: ErrorMatch, error: any): boolean => {
-    return typeof match === 'string'
-      ? error?.message?.includes(match)
-      : typeof match === 'number'
-      ? error?.httpStatus === match
-      : Object.entries(match).every(([k, v]) => error?.[k] === v);
+    let res;
+    if (typeof match === 'string') res = error?.message?.includes(match);
+    else if (typeof match === 'number') res = error?.httpStatus === match;
+    else res = Object.entries(match).every(([k, v]) => error?.[k] === v);
+    return res;
   };
   const errorMatcher = Array.isArray(match)
     ? (error: any): boolean => match.some((m) => _errorMatcher(m, error))
