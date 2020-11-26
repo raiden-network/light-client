@@ -1,6 +1,5 @@
 import * as t from 'io-ts';
-import type { BigNumberish } from '@ethersproject/bignumber';
-import { Address, Int, Signed, UInt } from '../utils/types';
+import { Address, Decodable, Int, Signed, UInt } from '../utils/types';
 
 /**
  * Codec for PFS API returned data
@@ -38,7 +37,7 @@ export type Paths = t.TypeOf<typeof Paths>;
 /**
  * Public Raiden interface for routes data
  */
-export type RaidenPaths = { readonly path: readonly string[]; readonly fee: BigNumberish }[];
+export type RaidenPaths = Decodable<Paths>;
 
 /**
  * A PFS server/service instance info
@@ -57,13 +56,7 @@ export interface PFS extends t.TypeOf<typeof PFS> {}
 /**
  * Public Raiden interface for PFS info
  */
-export interface RaidenPFS {
-  address: string;
-  url: string;
-  rtt: number;
-  price: BigNumberish;
-  token: string;
-}
+export type RaidenPFS = Decodable<PFS>;
 
 /**
  * An IOU used to pay the services

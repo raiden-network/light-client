@@ -3,7 +3,7 @@ import * as t from 'io-ts';
 import { Either, isLeft, Right } from 'fp-ts/lib/Either';
 import { PathReporter } from 'io-ts/lib/PathReporter';
 
-import { BigNumber } from '@ethersproject/bignumber';
+import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
 import { getAddress } from '@ethersproject/address';
 import { isHexString, hexDataLength } from '@ethersproject/bytes';
 import { Two, Zero } from '@ethersproject/constants';
@@ -343,3 +343,20 @@ export function last<T extends any[]>(arr: T): Last<T> {
 export function bnMax<T extends BigNumber>(...args: [T, ...T[]]): T {
   return args.reduce((a, b) => (a.lt(b) ? b : a));
 }
+
+/**
+ * Type helper to recursively map decodable properties to their simpler encoded types;
+ * This allows e.g. types decodable as BigNumbers to be passed in [recursive] properties where
+ * BigNumbers are expected at runtime, as long as the object is decoded/validated before use.
+ */
+export type Decodable<T> = T extends BigNumber
+  ? BigNumberish
+  : T extends string
+  ? string
+  : T extends boolean
+  ? boolean
+  : T extends number
+  ? number
+  : T extends null | symbol
+  ? T
+  : { [K in keyof T]: Decodable<T[K]> };
