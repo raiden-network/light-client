@@ -84,3 +84,16 @@ export interface IOU extends t.TypeOf<typeof IOU> {}
 export const LastIOUResults = t.readonly(t.type({ last_iou: Signed(IOU) }));
 
 export interface LastIOUResults extends t.TypeOf<typeof LastIOUResults> {}
+
+export const SuggestedPartner = t.readonly(
+  t.type({
+    address: Address,
+    capacity: UInt(32),
+    centrality: t.union([t.number, t.string]),
+    score: t.union([t.number, t.string]),
+    uptime: t.union([t.number, t.string]),
+  }),
+  'SuggestedPartner',
+);
+export interface SuggestedPartner extends t.TypeOf<typeof SuggestedPartner> {}
+export const SuggestedPartners = t.array(SuggestedPartner, 'SuggestedPartners');
