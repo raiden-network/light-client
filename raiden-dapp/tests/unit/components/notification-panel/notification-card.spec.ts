@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('vue-router');
 
 import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import VueRouter from 'vue-router';
-import Vuex  from 'vuex';
+import Vuex from 'vuex';
 import { TestData } from '../../data/mock-data';
 import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';
@@ -20,9 +21,7 @@ const $router = new VueRouter() as Mocked<VueRouter>;
 const $raiden = { fetchAndUpdateTokenData: jest.fn() };
 const notificationDelete = jest.fn((_id: number) => null);
 
-function createWrapper(
-  notification = TestData.notifications
-): Wrapper<NotificationCard> {
+function createWrapper(notification = TestData.notifications): Wrapper<NotificationCard> {
   const state = { blockNumber: 100 };
   const notificationsModule = {
     namespaced: true,
@@ -31,7 +30,7 @@ function createWrapper(
 
   const store = new Vuex.Store({
     state,
-    modules: { notifications: notificationsModule }
+    modules: { notifications: notificationsModule },
   });
 
   return mount(NotificationCard, {
@@ -119,5 +118,19 @@ describe('NotificationCard.vue', () => {
     await wrapper.vm.$nextTick();
 
     expect(notificationDelete).toHaveBeenCalledTimes(1);
+  });
+
+  test('displays icon as specified in the notification payload', () => {
+    const wrapper = createWrapper({ ...TestData.notifications, icon: 'notification_channels' });
+
+    // TODO:  It would be cooler if it was possible to check the applied image source.
+    expect((wrapper.vm as any).iconName).toBe('notification_channels');
+  });
+
+  test('displays fallbacl icon if the notification payload does not define one', () => {
+    const wrapper = createWrapper({ ...TestData.notifications, icon: undefined });
+
+    // TODO:  It would be cooler if it was possible to check the applied image source.
+    expect((wrapper.vm as any).iconName).toBe('notification_fallback');
   });
 });

@@ -2,7 +2,7 @@
   <v-card data-cy="notification_card" class="notification-card" flat>
     <v-row class="notification-card__content" no-gutters>
       <v-avatar class="notification-card__content__icon" size="44" rounded>
-        <img :src="require(`@/assets/notifications/${notification.icon}.svg`)" />
+        <img :src="require(`@/assets/notifications/${iconName}.svg`)" />
       </v-avatar>
       <div class="notification-card__content__details">
         <span class="notification-card__content__details__title">
@@ -68,6 +68,10 @@ export default class NotificationCard extends Vue {
 
   @Prop({ required: true })
   notification!: NotificationPayload;
+
+  get iconName(): string {
+    return this.notification.icon ?? 'notification_fallback';
+  }
 
   get blocksUntilTxConfirmation(): number | undefined {
     const { txConfirmationBlock } = this.notification;
