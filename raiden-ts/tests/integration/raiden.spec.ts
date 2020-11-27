@@ -1479,4 +1479,49 @@ describe('Raiden', () => {
     // subkey is emptied of ETH
     expect((await sub.getBalance()).isZero()).toBe(true);
   });
+
+  test('suggestPartners', async () => {
+    expect.assertions(2);
+    await raiden.monitorToken(token);
+
+    // pfsInfo
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => pfsInfoResponse),
+      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    });
+    raiden.updateConfig({ pfs: pfsUrl }); // pfs set
+
+    const suggestResponse = [
+      {
+        address: accounts[1],
+        capacity: '17',
+        centrality: '0.01',
+        score: '99',
+        uptime: 120000,
+      },
+    ];
+    // suggest_partner
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: jest.fn(async () => suggestResponse),
+      text: jest.fn(async () => jsonStringify(suggestResponse)),
+    });
+
+    await expect(raiden.suggestPartners(token)).resolves.toEqual([
+      {
+        address: suggestResponse[0].address,
+        capacity: BigNumber.from(suggestResponse[0].capacity),
+        centrality: suggestResponse[0].centrality,
+        score: suggestResponse[0].score,
+        uptime: suggestResponse[0].uptime,
+      },
+    ]);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/suggest_partner$/),
+      expect.anything(),
+    );
+  });
 });
