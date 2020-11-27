@@ -10,7 +10,7 @@
           :key="index"
           class="transaction-history__transactions__list__item"
         >
-          <v-lazy transition="fade-transition" :options="{ threshold: 0.7 }" min-height="74">
+          <v-lazy transition="fade-transition" :options="{ threshold: 0.5 }" min-height="74">
             <transaction :transfer="transfer" />
           </v-lazy>
         </div>
