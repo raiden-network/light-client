@@ -5,8 +5,10 @@
 ### Fixed
 
 - [#2391] Fix notification icon handling for special scenarios
+- [#2410] Fix transfer history list not showing third entry initially
 
 [#2391]: https://github.com/raiden-network/light-client/issues/2391
+[#2410]: https://github.com/raiden-network/light-client/issues/2410
 
 
 ## [0.14.0] - 2020-11-25
