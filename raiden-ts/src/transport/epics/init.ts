@@ -42,12 +42,11 @@ import { assert } from '../../utils';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
-import { RaidenConfig } from '../../config';
+import { intervalFromConfig, RaidenConfig } from '../../config';
 import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
 import { decode } from '../../utils/types';
 import { pluckDistinct, retryAsync$, retryWhile } from '../../utils/rx';
-import { exponentialBackoff } from '../../transfers/epics/utils';
 import { matrixSetup } from '../actions';
 import { RaidenMatrixSetup } from '../state';
 import { Caps } from '../types';
@@ -137,7 +136,7 @@ function startMatrixSync(
         mergeMap((roomIds) => createMatrixFilter(matrix, roomIds)),
         mergeMap((filter) => matrix.startClient({ filter })),
         retryWhile(
-          exponentialBackoff(config.pollingInterval, config.httpTimeout),
+          intervalFromConfig(config$),
           { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
         ),
       ),

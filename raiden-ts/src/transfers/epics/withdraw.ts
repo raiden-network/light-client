@@ -32,7 +32,8 @@ import { getCap } from '../../transport/utils';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { withdrawExpire, withdrawMessage, withdraw, withdrawCompleted } from '../actions';
 import { Direction } from '../state';
-import { retrySendUntil$, matchWithdraw, exponentialBackoff } from './utils';
+import { intervalFromConfig } from '../../config';
+import { retrySendUntil$, matchWithdraw } from './utils';
 
 /**
  * Emits withdraw action once for each own non-confirmed message at startup
@@ -101,8 +102,7 @@ export function withdrawSendRequestMessageEpic(
   return action$.pipe(
     filter(withdrawMessage.request.is),
     filter((action) => action.meta.direction === Direction.SENT),
-    withLatestFrom(config$),
-    mergeMap(([action, { pollingInterval, httpTimeout }]) => {
+    mergeMap((action) => {
       const message = action.payload.message;
       const send = messageSend.request(
         { message },
@@ -125,12 +125,7 @@ export function withdrawSendRequestMessageEpic(
         }),
       );
       // emit request once immediatelly, then wait until success, then retry every 30s
-      return retrySendUntil$(
-        send,
-        action$,
-        notifier,
-        exponentialBackoff(pollingInterval, httpTimeout * 2),
-      );
+      return retrySendUntil$(send, action$, notifier, intervalFromConfig(config$));
     }),
   );
 }
@@ -348,8 +343,7 @@ export function withdrawSendExpireMessageEpic(
   return action$.pipe(
     filter(withdrawExpire.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
-    withLatestFrom(config$),
-    mergeMap(([action, { pollingInterval, httpTimeout }]) => {
+    mergeMap((action) => {
       const message = action.payload.message;
       const send = messageSend.request(
         { message },
@@ -369,12 +363,7 @@ export function withdrawSendExpireMessageEpic(
       );
       // besides using notifier to stop retry, also merge the withdrawCompleted output action
       return merge(
-        retrySendUntil$(
-          send,
-          action$,
-          notifier,
-          exponentialBackoff(pollingInterval, httpTimeout * 2),
-        ),
+        retrySendUntil$(send, action$, notifier, intervalFromConfig(config$)),
         notifier,
       );
     }),
