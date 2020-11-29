@@ -143,12 +143,22 @@ export function withdrawSendRequestMessageEpic(
  * @param deps.log - Logger instance
  * @param deps.getTokenNetworkContract - TokenNetwork contract getter
  * @param deps.latest$ - Latest observable
+ * @param deps.config$ - Config observable
  * @returns Observable of withdrawExpired actions
  */
 export function withdrawSendTxEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { address, signer, main, provider, log, getTokenNetworkContract, latest$ }: RaidenEpicDeps,
+  {
+    address,
+    signer,
+    main,
+    provider,
+    log,
+    getTokenNetworkContract,
+    latest$,
+    config$,
+  }: RaidenEpicDeps,
 ): Observable<withdraw.success | withdraw.failure> {
   return action$.pipe(
     filter(withdrawMessage.success.is),
@@ -195,7 +205,7 @@ export function withdrawSendTxEpic(
               log,
               provider,
             }),
-            retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
+            retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
           );
         }),
         map(([, receipt]) =>
