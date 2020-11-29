@@ -24,7 +24,6 @@ import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 
-import { exponentialBackoff } from '../../transfers/epics/utils';
 import { assert } from '../../utils';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Address, isntNil } from '../../utils/types';
@@ -37,6 +36,7 @@ import { pluckDistinct, retryWhile } from '../../utils/rx';
 import { matrixPresence } from '../actions';
 import { channelMonitored } from '../../channels/actions';
 import { parseCaps, stringifyCaps } from '../utils';
+import { intervalFromConfig } from '../../config';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available/online then
@@ -205,12 +205,11 @@ export function matrixPresenceUpdateEpic(
           scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<Address>()),
           startWith(new Set<Address>()),
         ),
-        config$,
       ),
       // filter out events from users we don't care about
       // i.e.: presence monitoring never requested
       filter(([{ address }, toMonitor]) => toMonitor.has(address)),
-      mergeMap(([{ matrix, user, address }, , { pollingInterval, httpTimeout }]) =>
+      mergeMap(([{ matrix, user, address }]) =>
         defer(async () =>
           // always fetch profile info, to get up-to-date displayname, avatar_url & presence
           Promise.all([matrix.getProfileInfo(user.userId), getUserPresence(matrix, user.userId)]),
@@ -242,7 +241,7 @@ export function matrixPresenceUpdateEpic(
             );
           }),
           retryWhile(
-            exponentialBackoff(pollingInterval, httpTimeout),
+            intervalFromConfig(config$),
             { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
           ),
           catchError(

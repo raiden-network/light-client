@@ -26,7 +26,7 @@ import {
 import { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
 
 import { Capabilities } from '../../constants';
-import { RaidenConfig } from '../../config';
+import { intervalFromConfig, RaidenConfig } from '../../config';
 import { Address, isntNil } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
 import { RaidenEpicDeps } from '../../types';
@@ -38,7 +38,6 @@ import { transferSigned } from '../../transfers/actions';
 import { pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
 import { getServerName } from '../../utils/matrix';
 import { Direction } from '../../transfers/state';
-import { exponentialBackoff } from '../../transfers/epics/utils';
 import { matrixRoom, matrixRoomLeave, matrixPresence } from '../actions';
 import { getCap } from '../utils';
 import { globalRoomNames, getRoom$, roomMatch } from './helpers';
@@ -143,11 +142,10 @@ export function matrixCreateRoomEpic(
       grouped$.pipe(
         // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
         mergeMap((address) => matrix$.pipe(map((matrix) => ({ address, matrix })))),
-        withLatestFrom(config$),
         // exhaustMap is used to prevent bursts of actions for a given address (eg. on startup)
         // of creating multiple rooms for same address, so we ignore new address items while
         // previous is being processed. If user roams, matrixInviteEpic will re-invite
-        exhaustMap(([{ address, matrix }, { pollingInterval, httpTimeout }]) =>
+        exhaustMap(({ address, matrix }) =>
           // presencesStateReplay$+take(1) acts like withLatestFrom with cached result
           latest$.pipe(
             // wait for user to be monitored
@@ -170,7 +168,7 @@ export function matrixCreateRoomEpic(
             ),
             map(({ room_id: roomId }) => matrixRoom({ roomId }, { address })),
             retryWhile(
-              exponentialBackoff(pollingInterval, httpTimeout),
+              intervalFromConfig(config$),
               { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
             ),
             catchError((err) => (log.error('Error creating room, ignoring', err), EMPTY)),
@@ -274,13 +272,12 @@ export function matrixHandleInvitesEpic(
         );
       return senderPresence$.pipe(map((senderPresence) => ({ matrix, member, senderPresence })));
     }),
-    withLatestFrom(config$),
-    mergeMap(([{ matrix, member, senderPresence }, { pollingInterval, httpTimeout }]) =>
+    mergeMap(({ matrix, member, senderPresence }) =>
       // join room and emit MatrixRoomAction to make it default/first option for sender address
       defer(() => matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
         mapTo(matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
         retryWhile(
-          exponentialBackoff(pollingInterval, httpTimeout),
+          intervalFromConfig(config$),
           { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
         ),
         catchError((err) => (log.error('Error joining invited room, ignoring', err), EMPTY)),

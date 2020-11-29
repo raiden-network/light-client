@@ -18,7 +18,8 @@ import {
 } from '../actions';
 import { Direction } from '../state';
 import { transferKey } from '../utils';
-import { retrySendUntil$, exponentialBackoff } from './utils';
+import { intervalFromConfig } from '../../config';
+import { retrySendUntil$ } from './utils';
 
 /**
  * Retry sending protocol messages until stop conditions are met.
@@ -45,7 +46,7 @@ export function transferRetryMessageEpic(
       ]),
     ),
     withLatestFrom(state$, config$),
-    mergeMap(([action, state, { pollingInterval, httpTimeout, revealTimeout }]) => {
+    mergeMap(([action, state, { revealTimeout }]) => {
       const transfer = state.transfers[transferKey(action.meta)];
       const transfer$ = state$.pipe(pluckDistinct('transfers', transferKey(action.meta)));
 
@@ -118,7 +119,7 @@ export function transferRetryMessageEpic(
         ),
         action$,
         stop$,
-        exponentialBackoff(pollingInterval, httpTimeout * 2),
+        intervalFromConfig(config$),
       );
     }),
   );
