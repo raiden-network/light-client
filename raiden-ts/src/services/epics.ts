@@ -36,7 +36,7 @@ import constant from 'lodash/constant';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps, Latest } from '../types';
-import { RaidenConfig } from '../config';
+import { intervalFromConfig, RaidenConfig } from '../config';
 import { Capabilities } from '../constants';
 import { getContractWithSigner, chooseOnchainAccount } from '../helpers';
 import { Presences } from '../transport/types';
@@ -477,7 +477,7 @@ function makeUdcDeposit$(
   [sender, address]: [Address, Address],
   [deposit, totalDeposit]: [UInt<32>, UInt<32>],
   { pollingInterval, minimumAllowance }: RaidenConfig,
-  { log, provider }: Pick<RaidenEpicDeps, 'log' | 'provider'>,
+  { log, provider, config$ }: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$'>,
 ) {
   return retryAsync$(
     () =>
@@ -510,7 +510,7 @@ function makeUdcDeposit$(
     assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
-    retryWhile(pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
+    retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
   );
 }
 
@@ -566,7 +566,7 @@ export function udcDepositEpic(
             [onchainAddress, address],
             [action.payload.deposit, action.meta.totalDeposit],
             config,
-            { log, provider },
+            { log, provider, config$ },
           );
         }),
         mergeMap(([, receipt]) =>
@@ -743,12 +743,13 @@ export function monitorRequestEpic(
  * @param deps.log - Logger instance
  * @param deps.signer - Signer instance
  * @param deps.provider - Provider instance
+ * @param deps.config$ - Config observable
  * @returns Observable of udcWithdraw.success|udcWithdraw.failure actions
  */
 export function udcWithdrawRequestEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { userDepositContract, address, log, signer, provider }: RaidenEpicDeps,
+  { userDepositContract, address, log, signer, provider, config$ }: RaidenEpicDeps,
 ): Observable<udcWithdraw.success | udcWithdraw.failure> {
   return action$.pipe(
     filter(udcWithdraw.request.is),
@@ -784,7 +785,7 @@ export function udcWithdrawRequestEpic(
         return contract.planWithdraw(amount);
       }).pipe(
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
-        retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
+        retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
         mergeMap(([, { transactionHash: txHash, blockNumber: txBlock }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),
@@ -862,12 +863,13 @@ export function udcCheckWithdrawPlannedEpic(
  * @param deps.address - Our address
  * @param deps.signer - Signer instance
  * @param deps.provider - Provider instance
+ * @param deps.config$ - Config observable
  * @returns Observable of udcWithdrawn|udcWithdraw.failure actions
  */
 export function udcWithdrawPlannedEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, userDepositContract, address, signer, provider }: RaidenEpicDeps,
+  { log, userDepositContract, address, signer, provider, config$ }: RaidenEpicDeps,
 ): Observable<udcWithdrawn | udcWithdraw.failure> {
   return action$.pipe(
     filter(udcWithdraw.success.is),
@@ -901,7 +903,7 @@ export function udcWithdrawPlannedEpic(
         return contract.withdraw(action.meta.amount);
       }).pipe(
         assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log, provider }),
-        retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
+        retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
         concatMap(([, { transactionHash, blockNumber }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),

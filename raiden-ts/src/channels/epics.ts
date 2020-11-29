@@ -40,7 +40,7 @@ import { Zero } from '@ethersproject/constants';
 import { concat as concatBytes } from '@ethersproject/bytes';
 import { defaultAbiCoder, Interface } from '@ethersproject/abi';
 import type { Event } from '@ethersproject/contracts';
-import type { Filter, Log, JsonRpcProvider } from '@ethersproject/providers';
+import type { Filter, Log } from '@ethersproject/providers';
 
 import { RaidenEpicDeps } from '../types';
 import { RaidenAction, raidenShutdown, ConfirmableAction } from '../actions';
@@ -67,6 +67,7 @@ import type { TokenNetwork, HumanStandardToken } from '../contracts';
 
 import { findBalanceProofMatchingBalanceHash$ } from '../transfers/utils';
 import { Direction } from '../transfers/state';
+import { intervalFromConfig } from '../config';
 import { ChannelState, Channel } from './state';
 import {
   newBlock,
@@ -663,7 +664,7 @@ export function channelOpenEpic(
         ).pipe(
           assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log, provider }),
           // also retry txFailErrors: if it's caused by partner having opened, takeUntil will see
-          retryWhile(provider.pollingInterval, {
+          retryWhile(intervalFromConfig(config$), {
             onErrors: commonAndFailTxErrors,
             log: log.debug,
           }),
@@ -728,10 +729,7 @@ function makeDeposit$(
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
-    retryWhile((tokenNetworkContract.provider as JsonRpcProvider).pollingInterval, {
-      onErrors: commonAndFailTxErrors,
-      log: log.debug,
-    }),
+    retryWhile(intervalFromConfig(config$), { onErrors: commonAndFailTxErrors, log: log.debug }),
   );
 }
 
@@ -939,7 +937,7 @@ export function channelCloseEpic(
             ),
           ).pipe(
             assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log, provider }),
-            retryWhile(provider.pollingInterval, {
+            retryWhile(intervalFromConfig(config$), {
               onErrors: commonTxErrors,
               log: log.debug,
             }),
@@ -1050,10 +1048,7 @@ export function channelUpdateEpic(
               log,
               provider,
             }),
-            retryWhile(provider.pollingInterval, {
-              onErrors: commonTxErrors,
-              log: log.debug,
-            }),
+            retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
           ),
         ),
         // if succeeded, return a empty/completed observable
@@ -1268,7 +1263,7 @@ export function channelSettleEpic(
                 ),
               ).pipe(
                 assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log, provider }),
-                retryWhile(provider.pollingInterval, {
+                retryWhile(intervalFromConfig(config$), {
                   onErrors: commonTxErrors,
                   log: log.debug,
                 }),
@@ -1373,10 +1368,7 @@ export function channelUnlockEpic(
         tokenNetworkContract.unlock(action.payload.id, address, partner, locks),
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log, provider }),
-        retryWhile(provider.pollingInterval, {
-          onErrors: commonTxErrors,
-          log: log.debug,
-        }),
+        retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
         ignoreElements(),
         catchError((error) => {
           log.error('Error unlocking pending locks on-chain, ignoring', error);

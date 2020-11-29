@@ -42,6 +42,7 @@ import { getSecrethash, makeMessageId, transferKey } from '../utils';
 import { Direction } from '../state';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { Capabilities } from '../../constants';
+import { intervalFromConfig } from '../../config';
 import { dispatchAndWait$ } from './utils';
 
 /**
@@ -472,7 +473,7 @@ export function transferSecretRegisterEpic(
 
       return defer(() => contract.registerSecret(action.payload.secret)).pipe(
         assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log, provider }),
-        retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
+        retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
         // transferSecretRegister.success handled by monitorSecretRegistryEpic
         ignoreElements(),
         catchError((err) => of(transferSecretRegister.failure(err, action.meta))),
