@@ -410,11 +410,7 @@ function listenDataChannel(
               ),
             ),
           ),
-        ).pipe(
-          finalize(() => {
-            connection.close();
-          }),
-        ),
+        ).pipe(finalize(() => connection.close())),
       ),
     );
 }

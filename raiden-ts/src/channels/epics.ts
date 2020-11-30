@@ -30,6 +30,7 @@ import {
   concatMap,
   takeUntil,
   groupBy,
+  toArray,
 } from 'rxjs/operators';
 import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
@@ -59,7 +60,7 @@ import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
 import { isActionOf } from '../utils/actions';
 import { pluckDistinct, distinctRecordValues, retryAsync$, takeIf, retryWhile } from '../utils/rx';
-import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
+import { fromEthersEvent, getLogsByChunk$, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
 
 import { createBalanceHash, MessageTypeId } from '../messages/utils';
@@ -116,55 +117,45 @@ export function initNewBlockEpic(
  * @returns Observable of tokenMonitored actions
  */
 export function initTokensRegistryEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { address, provider, registryContract, contractsInfo }: RaidenEpicDeps,
 ): Observable<tokenMonitored> {
-  return state$.pipe(
+  return action$.pipe(
+    filter(newBlock.is),
+    withLatestFrom(state$),
     take(1),
-    filter((state) => isEmpty(state.tokens)), // proceed to scan only if state.tokens isEmpty
-    mergeMap(() =>
-      retryAsync$(
-        () =>
-          provider.getLogs({
-            ...registryContract.filters.TokenNetworkCreated(null, null),
-            fromBlock: contractsInfo.TokenNetworkRegistry.block_number,
-            toBlock: 'latest',
-          }),
-        provider.pollingInterval,
-      ),
+    filter(([, state]) => isEmpty(state.tokens)), // proceed to scan only if state.tokens isEmpty
+    mergeMap(([action]) =>
+      getLogsByChunk$(provider, {
+        ...registryContract.filters.TokenNetworkCreated(null, null),
+        fromBlock: contractsInfo.TokenNetworkRegistry.block_number,
+        toBlock: action.payload.blockNumber,
+      }),
     ),
-    mergeMap(from),
     map((log) => ({ log, parsed: registryContract.interface.parseLog(log) })),
     filter(({ parsed }) => !!parsed.args['token_network_address']),
     // for each TokenNetwork found, scan for channels with us
+    withLatestFrom(state$),
     mergeMap(
-      ({ log, parsed }) => {
+      ([{ log, parsed }, { blockNumber }]) => {
         const encodedAddress = defaultAbiCoder.encode(['address'], [address]);
         return concat(
           // concat channels opened by us and to us separately
           // take(1) won't subscribe the later if something is found on former
-          retryAsync$(
-            () =>
-              provider.getLogs({
-                // filter equivalent to tokenNetworkContract.filter.ChannelOpened()
-                address: parsed.args.token_network_address,
-                topics: [null, null, encodedAddress] as string[], // channels from us
-                fromBlock: log.blockNumber!,
-                toBlock: 'latest',
-              }),
-            provider.pollingInterval,
-          ).pipe(mergeMap(from)),
-          retryAsync$(
-            () =>
-              provider.getLogs({
-                address: parsed.args.token_network_address,
-                topics: [null, null, null, encodedAddress] as string[], // channels to us
-                fromBlock: log.blockNumber!,
-                toBlock: 'latest',
-              }),
-            provider.pollingInterval,
-          ).pipe(mergeMap(from)),
+          getLogsByChunk$(provider, {
+            // filter equivalent to tokenNetworkContract.filter.ChannelOpened()
+            address: parsed.args.token_network_address,
+            topics: [null, null, encodedAddress] as string[], // channels from us
+            fromBlock: log.blockNumber!,
+            toBlock: blockNumber,
+          }),
+          getLogsByChunk$(provider, {
+            address: parsed.args.token_network_address,
+            topics: [null, null, null, encodedAddress] as string[], // channels to us
+            fromBlock: log.blockNumber!,
+            toBlock: blockNumber,
+          }),
         ).pipe(
           // if found at least one, register this TokenNetwork as of interest
           // else, do nothing
@@ -380,27 +371,23 @@ function fetchPastChannelEvents$(
   const { openTopic } = getChannelEventsTopics(tokenNetworkContract);
 
   // start by scanning [fromBlock, toBlock] interval for ChannelOpened events limited to or from us
-  return retryAsync$(
-    () =>
-      Promise.all([
-        provider.getLogs({
-          ...tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
-          fromBlock,
-          toBlock,
-        }),
-        provider.getLogs({
-          ...tokenNetworkContract.filters.ChannelOpened(null, null, address, null),
-          fromBlock,
-          toBlock,
-        }),
-      ]),
-    provider.pollingInterval,
+  return merge(
+    getLogsByChunk$(provider, {
+      ...tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
+      fromBlock,
+      toBlock,
+    }),
+    getLogsByChunk$(provider, {
+      ...tokenNetworkContract.filters.ChannelOpened(null, null, address, null),
+      fromBlock,
+      toBlock,
+    }),
   ).pipe(
+    toArray(),
     withLatestFrom(latest$),
-    mergeMap(([[logs1, logs2], { state }]) => {
+    mergeMap(([logs, { state }]) => {
       // map Log to ContractEvent and filter out channels which we know are already gone
-      const openEvents = logs1
-        .concat(logs2)
+      const openEvents = logs
         .map(logToContractEvent<ChannelOpenedEvent>(tokenNetworkContract))
         .filter(isntNil)
         .filter(([_id, p1, p2]) => {
@@ -422,22 +409,19 @@ function fetchPastChannelEvents$(
       if (channelIds.length === 0) return EMPTY;
 
       // get all events of interest in the block range for all channelIds from open events above
-      return retryAsync$(
-        () =>
-          provider.getLogs({
-            address: tokenNetwork,
-            topics: [
-              // events of interest as topics[0], without open events (already fetched above)
-              Object.values(getChannelEventsTopics(tokenNetworkContract)).filter(
-                (t) => t !== openTopic,
-              ),
-              channelIds, // ORed channelIds set as topics[1]=channelId
-            ],
-            fromBlock,
-            toBlock,
-          }),
-        provider.pollingInterval,
-      ).pipe(
+      return getLogsByChunk$(provider, {
+        address: tokenNetwork,
+        topics: [
+          // events of interest as topics[0], without open events (already fetched above)
+          Object.values(getChannelEventsTopics(tokenNetworkContract)).filter(
+            (topic) => topic !== openTopic,
+          ),
+          channelIds, // ORed channelIds set as topics[1]=channelId
+        ],
+        fromBlock,
+        toBlock,
+      }).pipe(
+        toArray(),
         // synchronously sort/interleave open|(deposit|withdraw|close|settle) events, and unwind
         mergeMap((logs) => {
           const otherEvents = logs
@@ -556,7 +540,12 @@ export function channelEventsEpic(
                   [fromBlock, toBlock],
                   [token as Address, tokenNetwork],
                   deps,
-                ).pipe(finalize(() => (pastDone$.next(true), pastDone$.complete()))),
+                ).pipe(
+                  finalize(() => {
+                    pastDone$.next(true);
+                    pastDone$.complete();
+                  }),
+                ),
                 fetchNewChannelEvents$(toBlock + 1, [token as Address, tokenNetwork], deps).pipe(
                   delayWhen(() => pastDone$), // holds new events until pastEvents fetching ends
                 ),

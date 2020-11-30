@@ -15,7 +15,7 @@ import memoize from 'lodash/memoize';
 import isUndefined from 'lodash/isUndefined';
 import omitBy from 'lodash/omitBy';
 import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import { first, filter, map, mergeMap, skip, pluck, timeout } from 'rxjs/operators';
+import { first, filter, map, mergeMap, skip, pluck, timeout, toArray } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { fromFetch } from 'rxjs/fetch';
@@ -97,6 +97,7 @@ import { RaidenDatabase } from './db/types';
 import { dumpDatabaseToArray } from './db/utils';
 import { createPersisterMiddleware } from './persister';
 import { jsonParse } from './utils/data';
+import { getLogsByChunk$ } from './utils/ethers';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;
@@ -604,18 +605,18 @@ export class Raiden {
    * @returns Promise to list of token addresses
    */
   public async getTokenList(): Promise<Address[]> {
-    return this.deps.provider
-      .getLogs({
-        ...this.deps.registryContract.filters.TokenNetworkCreated(null, null),
-        fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
-        toBlock: 'latest',
-      })
-      .then((logs) =>
-        logs
-          .map((log) => this.deps.registryContract.interface.parseLog(log))
-          .filter((parsed) => !!parsed.args.token_address)
-          .map((parsed) => parsed.args.token_address as Address),
-      );
+    return await getLogsByChunk$(this.deps.provider, {
+      ...this.deps.registryContract.filters.TokenNetworkCreated(null, null),
+      fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
+      toBlock: await this.getBlockNumber(),
+    })
+      .pipe(
+        map((log) => this.deps.registryContract.interface.parseLog(log)),
+        filter((parsed) => !!parsed.args.token_address),
+        map((parsed) => parsed.args.token_address as Address),
+        toArray(),
+      )
+      .toPromise();
   }
 
   /**
