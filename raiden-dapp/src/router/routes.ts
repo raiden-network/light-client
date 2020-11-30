@@ -11,6 +11,7 @@ export const routes: RouteConfig[] = [
     name: RouteNames.DISCLAIMER,
     meta: {
       title: 'Disclaimer',
+      cannotNavigateBack: true,
     },
     component: DisclaimerRoute,
   },
@@ -23,6 +24,7 @@ export const routes: RouteConfig[] = [
     name: RouteNames.HOME,
     meta: {
       title: 'Raiden dApp',
+      cannotNavigateBack: true,
     },
     component: Home,
   },
@@ -31,8 +33,9 @@ export const routes: RouteConfig[] = [
     name: RouteNames.TRANSFER,
     meta: {
       title: 'Transfer',
+      cannotNavigateBack: true,
       infoOverlay: {
-        headerImage: 'info-overlay.transfer.header-image',
+        headerImage: 'transfer_info.svg',
         header: 'info-overlay.transfer.header',
         body: 'info-overlay.transfer.body',
       },
@@ -45,7 +48,7 @@ export const routes: RouteConfig[] = [
     meta: {
       title: 'Transfer',
       infoOverlay: {
-        headerImage: 'info-overlay.transfer-steps.header-image',
+        headerImage: 'transfer_steps_info.svg',
         header: 'info-overlay.transfer-steps.header',
         body: 'info-overlay.transfer-steps.body',
       },
@@ -66,7 +69,7 @@ export const routes: RouteConfig[] = [
     meta: {
       title: 'Select Hub',
       infoOverlay: {
-        headerImage: 'info-overlay.select-hub.header-image',
+        headerImage: 'select_hub_info.svg',
         header: 'info-overlay.select-hub.header',
         body: 'info-overlay.select-hub.body',
       },
@@ -79,7 +82,7 @@ export const routes: RouteConfig[] = [
     meta: {
       title: 'Open Channel',
       infoOverlay: {
-        headerImage: 'info-overlay.open-channel.header-image',
+        headerImage: 'open_channel_info.svg',
         header: 'info-overlay.open-channel.header',
         body: 'info-overlay.open-channel.body',
       },
@@ -92,7 +95,7 @@ export const routes: RouteConfig[] = [
     meta: {
       title: 'Channels',
       infoOverlay: {
-        headerImage: 'info-overlay.channels.header-image',
+        headerImage: 'channels_info.svg',
         header: 'info-overlay.channels.header',
         body: 'info-overlay.channels.body',
       },
@@ -122,7 +125,7 @@ export const routes: RouteConfig[] = [
         meta: {
           title: 'Backup State',
           infoOverlay: {
-            headerImage: 'info-overlay.account-backup.header-image',
+            headerImage: 'backup_state_info.svg',
             header: 'info-overlay.account-backup.header',
             body: 'info-overlay.account-backup.body',
           },
@@ -135,7 +138,7 @@ export const routes: RouteConfig[] = [
         meta: {
           title: 'Raiden Account',
           infoOverlay: {
-            headerImage: 'info-overlay.account-raiden.header-image',
+            headerImage: 'transfer_eth_info.svg',
             header: 'info-overlay.account-raiden.header',
             body: 'info-overlay.account-raiden.body',
           },
@@ -156,7 +159,7 @@ export const routes: RouteConfig[] = [
         meta: {
           title: 'Withdrawal',
           infoOverlay: {
-            headerImage: 'info-overlay.account-withdrawal.header-image',
+            headerImage: 'withdraw_tokens_info.svg',
             header: 'info-overlay.account-withdrawal.header',
             body: 'info-overlay.account-withdrawal.body',
           },
@@ -169,7 +172,7 @@ export const routes: RouteConfig[] = [
         meta: {
           title: 'UDC',
           infoOverlay: {
-            headerImage: 'info-overlay.account-udc.header-image',
+            headerImage: 'udc_info.svg',
             header: 'info-overlay.account-udc.header',
             body: 'info-overlay.account-udc.body',
           },

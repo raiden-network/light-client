@@ -16,6 +16,7 @@ const createWrapper = (
   connected = true,
   showNetwork = true,
   disableBackButton = false,
+  disableInfoButton = false,
 ): Wrapper<HeaderContent> => {
   const vuetify = new Vuetify();
   const getters = {
@@ -33,13 +34,14 @@ const createWrapper = (
         name: routeName,
         meta: {
           title: 'title',
+          infoOverlay: {},
         },
       },
     },
     propsData: {
-      showInfoOverlay: false,
       showNetwork,
       disableBackButton,
+      disableInfoButton,
     },
   });
 };
@@ -82,14 +84,21 @@ describe('HeaderContent.vue', () => {
     expect(networkName.exists()).toBe(false);
   });
 
-  test('emits toggleOverlay when information icon is clicked', async () => {
+  test('emits showInfo when information icon is clicked', async () => {
     const wrapper = createWrapper();
-    (wrapper.vm as any).toggleOverlay = jest.fn();
+    (wrapper.vm as any).showInfo = jest.fn();
 
-    const informationButton = wrapper.find('.header-content__title__route__info__icon');
+    const informationButton = wrapper.get('.header-content__title__route__info__icon');
     informationButton.trigger('click');
     await wrapper.vm.$nextTick();
 
-    expect((wrapper.vm as any).toggleOverlay).toHaveBeenCalledTimes(1);
+    expect((wrapper.vm as any).showInfo).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not display showInfo icon if disabled', () => {
+    const wrapper = createWrapper(RouteNames.CHANNELS, true, false, false, true);
+    const networkName = wrapper.find('.header-content__title__route__info__icon');
+
+    expect(networkName.exists()).toBe(false);
   });
 });

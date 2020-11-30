@@ -16,7 +16,7 @@
       <div class="header-content__title__route">
         <span class="header-content__title__route__name">{{ $route.meta.title }}</span>
         <v-btn
-          v-if="availableInfoOverlay"
+          v-if="availableInfoOverlay && !disableInfoButton"
           class="header-content__title__route__info"
           icon
           height="20px"
@@ -25,7 +25,7 @@
           <v-img
             class="header-content__title__route__info__icon"
             :src="require('@/assets/app-header/info.svg')"
-            @click="toggleOverlay()"
+            @click="showInfo()"
           />
         </v-btn>
       </div>
@@ -40,7 +40,6 @@
 <script lang="ts">
 import { Component, Emit, Vue, Prop } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { RouteNames } from '@/router/route-names';
 
 @Component({
   computed: {
@@ -51,16 +50,6 @@ export default class HeaderContent extends Vue {
   network!: string;
   isConnected!: boolean;
 
-  @Emit()
-  toggleOverlay(): boolean {
-    return this.showInfoOverlay ? false : true;
-  }
-
-  @Emit()
-  navigateBack(): void {
-    // pass
-  }
-
   @Prop({ type: Boolean, default: false })
   disableBackButton!: boolean;
 
@@ -68,37 +57,24 @@ export default class HeaderContent extends Vue {
   showNetwork!: boolean;
 
   @Prop({ type: Boolean, default: false })
-  showInfoOverlay!: boolean;
+  disableInfoButton!: boolean;
+
+  @Emit()
+  showInfo(): void {
+    // pass
+  }
+
+  @Emit()
+  navigateBack(): void {
+    // pass
+  }
 
   get availableInfoOverlay(): boolean {
-    const infoOverlayRoutes: string[] = [
-      RouteNames.SELECT_HUB,
-      RouteNames.OPEN_CHANNEL,
-      RouteNames.TRANSFER,
-      RouteNames.TRANSFER_STEPS,
-      RouteNames.CHANNELS,
-      RouteNames.ACCOUNT_RAIDEN,
-      RouteNames.ACCOUNT_WITHDRAWAL,
-      RouteNames.ACCOUNT_UDC,
-      RouteNames.ACCOUNT_BACKUP,
-    ];
-
-    return infoOverlayRoutes.includes(this.$route.name!);
+    return !!this.$route.meta.infoOverlay;
   }
 
   get canNavigateBack(): boolean {
-    const routesWithoutBackBtn: string[] = [
-      RouteNames.DISCLAIMER,
-      RouteNames.HOME,
-      RouteNames.TRANSFER,
-    ];
-
-    return (
-      this.isConnected &&
-      !this.disableBackButton &&
-      !this.showInfoOverlay &&
-      !routesWithoutBackBtn.includes(this.$route.name!)
-    );
+    return this.isConnected && !this.disableBackButton && !this.$route.meta.cannotNavigateBack;
   }
 }
 </script>

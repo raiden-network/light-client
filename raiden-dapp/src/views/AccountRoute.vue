@@ -1,13 +1,9 @@
 <template>
   <div id="account-route-wrapper">
     <div class="account-route">
-      <info-overlay v-if="showInfoOverlay" @close-overlay="showInfoOverlay = $event" />
+      <info-overlay v-if="showInfoOverlay" @close-overlay="showInfoOverlay = false" />
       <div class="account-route__header">
-        <header-content
-          :show-info-overlay="showInfoOverlay"
-          @toggle-overlay="showInfoOverlay = $event"
-          @navigate-back="navigateBack()"
-        />
+        <header-content @show-info="showInfoOverlay = true" @navigate-back="navigateBack()" />
       </div>
       <router-view />
       <div v-if="version" class="account-route__footer">

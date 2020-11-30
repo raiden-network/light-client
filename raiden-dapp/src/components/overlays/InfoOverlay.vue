@@ -1,7 +1,7 @@
 <template>
   <div class="info-overlay">
     <div class="info-overlay__header">
-      <header-content disable-back-button @toggle-overlay="closeOverlay()" />
+      <header-content disable-back-button disable-info-button />
     </div>
     <div class="info-overlay__close-icon">
       <v-icon icon @click="closeOverlay()"> mdi-close </v-icon>
@@ -30,8 +30,8 @@ import ActionButton from '@/components/ActionButton.vue';
 })
 export default class InfoOverlay extends Vue {
   @Emit()
-  closeOverlay() {
-    return false;
+  closeOverlay(): void {
+    // pass
   }
 }
 </script>

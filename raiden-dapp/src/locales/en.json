@@ -12,47 +12,38 @@
   "info-overlay": {
     "done": "Close",
     "transfer": {
-      "header-image": "transfer_info",
       "header": "About Transfer",
       "body": "Enter a recipient address and a token amount to make a transfer. You need to have an open channel with the recipient or with a hub that is connected to the recipient."
     },
     "transfer-steps": {
-      "header-image": "transfer_steps_info",
       "header": "About Direct and Mediated Transfers",
       "body": "A direct transfer will be possible if you have an open channel with the recipient. In any other case, the PFS will try to find the best way to route your transfer to the recipient."
     },
     "select-hub": {
-      "header-image": "select_hub_info",
       "header": "About Selecting a Hub",
       "body": "A Hub is a well-connected node. You can connect to a hub or to any other node. Make sure you have enough service tokens to pay for the monitoring and pathfinding service as well as a balance of your selected token."
     },
     "open-channel": {
-      "header-image": "open_channel_info",
       "header": "About Opening a Channel",
       "body": "Opening a channel will connect you to your selected hub or node. You need to choose an amount to deposit in the channel. Later you can transfer small amounts of this deposit to any recipient in the network."
     },
     "channels": {
-      "header-image": "channels_info",
       "header": "About Channels",
       "body": "This is an overview of all your open channels for the selected token. You can choose to close and settle any channel to withdraw your tokens."
     },
     "account-backup": {
-      "header-image": "backup_state_info",
       "header": "About Backing Up the State",
       "body": "Your state is stored in the browser. You should continuously keep a backup of your state by downloading the latest JSON file and storing it somewhere safe."
     },
     "account-raiden": {
-      "header-image": "transfer_eth_info",
       "header": "About Transferring ETH",
       "body": "You need ETH on your Raiden Account to withdraw your tokens. You can add ETH by transferring it from your main account."
     },
     "account-withdrawal": {
-      "header-image": "withdraw_tokens_info",
       "header": "About Withdrawing Tokens",
       "body": "Withdraw tokens from your Raiden account back to your main account."
     },
     "account-udc": {
-      "header-image": "udc_info",
       "header": "About UDC",
       "body": "Your User Deposit Contract stores the utility tokens necessary for paying the Pathfinding and Monitoring Service."
     }

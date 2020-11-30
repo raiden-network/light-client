@@ -1,11 +1,10 @@
 <template>
   <div class="app-header">
-    <info-overlay v-if="showInfoOverlay" @close-overlay="showInfoOverlay = $event" />
+    <info-overlay v-if="showInfoOverlay" @close-overlay="showInfoOverlay = false" />
     <header-content
       class="app-header__content"
-      :show-info-overlay="showInfoOverlay"
       :show-network="!showTitleOnly"
-      @toggle-overlay="showInfoOverlay = $event"
+      @show-info="showInfoOverlay = true"
       @navigate-back="navigateBack()"
     >
       <div class="app-header__content__icons">
