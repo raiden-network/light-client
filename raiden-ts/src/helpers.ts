@@ -9,7 +9,7 @@ import { sha256 } from '@ethersproject/sha2';
 import { MaxUint256 } from '@ethersproject/constants';
 
 import { Observable, defer, merge } from 'rxjs';
-import { filter, map, pluck, withLatestFrom, first, exhaustMap } from 'rxjs/operators';
+import { filter, map, pluck, withLatestFrom, first, exhaustMap, take } from 'rxjs/operators';
 import logging from 'loglevel';
 
 import { RaidenState, makeInitialState } from './state';
@@ -21,7 +21,7 @@ import { channelAmounts } from './channels/utils';
 import { RaidenChannels, RaidenChannel } from './channels/state';
 import { distinctRecordValues, pluckDistinct } from './utils/rx';
 import { Address, PrivateKey, isntNil, Hash, UInt, decode, Storage } from './utils/types';
-import { getNetworkName } from './utils/ethers';
+import { getLogsByChunk$, getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
 import ropstenDeploy from './deployment/deployment_ropsten.json';
@@ -405,13 +405,15 @@ export async function fetchContractsInfo(
   const secretRegistry = (await tokenNetworkRegistryContract.secret_registry_address()) as Address;
   const serviceRegistry = (await monitoringServiceContract.service_registry()) as Address;
 
-  const logs = await provider.getLogs({
+  const toBlock = await provider.getBlockNumber();
+  let firstBlock = await getLogsByChunk$(provider, {
     ...tokenNetworkRegistryContract.filters.TokenNetworkCreated(null, null),
     fromBlock: 1,
-    toBlock: 'latest',
-  });
-  const logBlocks = logs.map((log) => log.blockNumber).filter(isntNil);
-  const firstBlock = logBlocks.length ? Math.min(...logBlocks) : 0;
+    toBlock,
+  })
+    .pipe(pluck('blockNumber'), filter(isntNil), take(1))
+    .toPromise();
+  firstBlock ??= 0;
 
   const oneToN = (await userDepositContract.one_to_n_address()) as Address;
 
