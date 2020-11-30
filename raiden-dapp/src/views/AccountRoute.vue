@@ -1,51 +1,46 @@
 <template>
   <div id="account-route-wrapper">
     <div class="account-route">
-      <v-row class="account-route__header" no-gutters>
-        <div class="account-route__header__content">
-          <div class="account-route__header__content__back">
-            <v-btn
-              data-cy="account_route_header_content_back_button"
-              class="account-route__header__content__back__button"
-              height="40px"
-              text
-              icon
-              width="40px"
-              @click="onModalBackClicked()"
-            >
-              <v-img :src="require('@/assets/back_arrow.svg')" max-width="34px" />
-            </v-btn>
-          </div>
-          <div class="account-route__header__content__title">
-            {{ $route.meta.title }}
-          </div>
-        </div>
-      </v-row>
+      <info-overlay v-if="showInfoOverlay" @close-overlay="showInfoOverlay = false" />
+      <div class="account-route__header">
+        <header-content @show-info="showInfoOverlay = true" @navigate-back="navigateBack()" />
+      </div>
       <router-view />
-      <v-row class="account-route__footer" no-gutters>
-        <div v-if="version">
-          <span>{{ $t('versions.sdk', { version }) }}</span>
-          <span class="account-route__footer__contracts-version">
-            {{ $t('versions.contracts', { version: contractVersion }) }}
-          </span>
-        </div>
-      </v-row>
+      <div v-if="version" class="account-route__footer">
+        <span>{{ $t('versions.sdk', { version }) }}</span>
+        <span class="account-route__footer__contracts-version">
+          {{ $t('versions.contracts', { version: contractVersion }) }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { Raiden } from 'raiden-ts';
 import NavigationMixin from '@/mixins/navigation-mixin';
+import InfoOverlay from '@/components/overlays/InfoOverlay.vue';
+import HeaderContent from '@/components/HeaderContent.vue';
+import { Raiden } from 'raiden-ts';
 
-@Component({})
+@Component({
+  components: {
+    InfoOverlay,
+    HeaderContent,
+  },
+})
 export default class AccountRoute extends Mixins(NavigationMixin) {
-  get version() {
+  showInfoOverlay = false;
+
+  navigateBack(): void {
+    this.onModalBackClicked();
+  }
+
+  get version(): string {
     return Raiden.version;
   }
 
-  get contractVersion() {
+  get contractVersion(): string {
     return Raiden.contractVersion;
   }
 }
@@ -53,14 +48,12 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '@/scss/mixins';
-@import '@/scss/fonts';
 @import '@/scss/colors';
 
 #account-route-wrapper {
   align-items: center;
   display: flex;
   height: 100%;
-  justify-content: center;
   position: absolute;
   z-index: 20;
   @include respond-to(handhelds) {
@@ -70,7 +63,7 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
 }
 
 .account-route {
-  background-color: $card-background;
+  background: $card-background;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -85,39 +78,19 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
   }
 
   &__header {
-    flex: none;
-    margin-top: 13px;
-    width: 620px;
-    @include respond-to(handhelds) {
-      width: 100%;
-    }
-
-    &__content {
-      align-items: center;
-      display: flex;
-      flex: 1;
-
-      &__back {
-        margin-left: 18px;
-      }
-
-      &__title {
-        flex: 1;
-        font-family: $main-font;
-        font-size: 24px;
-        margin-right: 58px;
-        padding-bottom: 18px;
-        text-align: center;
-      }
-    }
+    display: flex;
+    height: 80px;
   }
 
   &__footer {
     align-items: flex-end;
     color: $secondary-button-color;
+    display: flex;
+    flex: 1;
     font-size: 13px;
     justify-content: center;
     padding-bottom: 25px;
+    text-align: center;
 
     &__contracts-version {
       padding-left: 15px;

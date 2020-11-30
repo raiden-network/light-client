@@ -19,6 +19,7 @@
 
 ### Added
 
+- [#698] Info overlay
 - [#1693] Customizable privacy policy
 - [#2308] Show status of planned user deposit withdrawals
 - [#2372] Provide navigation link for withdrawn notification
@@ -28,6 +29,7 @@
 - [#2369] Overall re-design of accounts UDC screen
 - [#2307] Enhanced user flow and information for withdrawal screen
 
+[#698]: https://github.com/raiden-network/light-client/issues/698
 [#1693]: https://github.com/raiden-network/light-client/issues/1693
 [#2308]: https://github.com/raiden-network/light-client/issues/2308
 [#2307]: https://github.com/raiden-network/light-client/issues/2307
