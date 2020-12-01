@@ -45,6 +45,8 @@ import {
   RaidenEvent,
   raidenShutdown,
   raidenConfigUpdate,
+  raidenStarted,
+  raidenSynced,
 } from './actions';
 import { assert } from './utils';
 import {
@@ -145,6 +147,11 @@ export class Raiden {
    * Expose ether's Provider.resolveName for ENS support
    */
   public readonly resolveName: (name: string) => Promise<Address>;
+
+  /**
+   * When started, is set to a promise which resolves when node finishes syncing
+   */
+  public synced: Promise<raidenSynced['payload'] | undefined>;
 
   /**
    * The address of the token that is used to pay the services.
@@ -265,6 +272,7 @@ export class Raiden {
       ),
       main,
       db,
+      init$: new ReplaySubject(),
     };
 
     this.userDepositTokenAddress = memoize(
@@ -300,6 +308,21 @@ export class Raiden {
       state as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       applyMiddleware(loggerMiddleware, persisterMiddleware, this.epicMiddleware),
     );
+
+    this.synced = this.action$
+      .pipe(
+        first(isActionOf([raidenSynced, raidenShutdown])),
+        map((action) => {
+          if (raidenShutdown.is(action)) {
+            // don't reject if not stopped by an error
+            if (Object.values(ShutdownReason).some((reason) => reason === action.payload.reason))
+              return;
+            throw action.payload;
+          }
+          return action.payload;
+        }),
+      )
+      .toPromise();
 
     // populate deps.latest$, to ensure config, logger && pollingInterval are setup before start
     getLatest$(
@@ -426,7 +449,7 @@ export class Raiden {
    *
    * No event should be emitted before start is called
    */
-  public start(): void {
+  public async start(): Promise<void> {
     assert(this.epicMiddleware, ErrorCodes.RDN_ALREADY_STARTED, this.log.info);
     this.log.info('Starting Raiden Light-Client', {
       prevBlockNumber: this.state.blockNumber,
@@ -440,16 +463,16 @@ export class Raiden {
     });
 
     // Set `epicMiddleware` to `null`, this indicates the instance is not running.
-    const observerComplete = {
+    this.deps.latest$.subscribe({
       complete: () => (this.epicMiddleware = null),
-    };
-    this.deps.latest$.subscribe(observerComplete);
+    });
 
     this.epicMiddleware.run(raidenRootEpic);
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
     // dispatch a first, noop action, to next first state$ as current/initial state
-    this.store.dispatch(raidenConfigUpdate({}));
+    this.store.dispatch(raidenStarted());
+    await this.synced;
   }
 
   /**

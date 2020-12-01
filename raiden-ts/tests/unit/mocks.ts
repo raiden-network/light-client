@@ -654,6 +654,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     secretRegistryContract,
     monitoringServiceContract,
     db,
+    init$: new ReplaySubject(),
   };
 }
 
@@ -1180,6 +1181,7 @@ export async function makeRaiden(
     secretRegistryContract,
     monitoringServiceContract,
     db,
+    init$: new ReplaySubject<Observable<any>>(),
   };
 
   const epicMiddleware = createEpicMiddleware<
