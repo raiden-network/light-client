@@ -17,12 +17,18 @@ import { makeTokensRouter } from './tokens';
 export function makeApiV1Router(this: Cli): Router {
   const router = Router();
 
-  router.use('/channels', makeChannelsRouter.call(this));
-  router.use('/tokens', makeTokensRouter.call(this));
-  router.use('/pending_transfers', makePendingTransfersRouter.call(this));
-  router.use('/connections', makeConnectionsRouter.call(this));
-  router.use('/payments', makePaymentsRouter.call(this));
-  router.use('/_testing', makeTestingRouter.call(this));
+  let status = 'syncing';
+  this.raiden.synced.then(() => {
+    status = 'ready';
+
+    // register these routes only when finished syncing
+    router.use('/channels', makeChannelsRouter.call(this));
+    router.use('/tokens', makeTokensRouter.call(this));
+    router.use('/pending_transfers', makePendingTransfersRouter.call(this));
+    router.use('/connections', makeConnectionsRouter.call(this));
+    router.use('/payments', makePaymentsRouter.call(this));
+    router.use('/_testing', makeTestingRouter.call(this));
+  });
 
   router.get('/version', (_request: Request, response: Response) => {
     response.json({ version: Raiden.version });
@@ -47,11 +53,7 @@ export function makeApiV1Router(this: Cli): Router {
 
   router.get('/status', (_request: Request, response: Response) => {
     response.json({
-      status: this.raiden.started
-        ? 'ready'
-        : this.raiden.started === undefined // not yet started
-        ? 'syncing'
-        : 'unavailable',
+      status: this.raiden.started ? status : 'unavailable',
       blocks_to_sync: '0', // LC don't sync block-by-block, it syncs immediately once started
     });
   });
