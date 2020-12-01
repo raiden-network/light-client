@@ -67,6 +67,7 @@ export interface RaidenEpicDeps {
   monitoringServiceContract: MonitoringService;
   main?: { signer: Signer; address: Address };
   db: RaidenDatabase;
+  init$: Subject<Observable<any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export interface ChangeEvent<T extends string, P> {

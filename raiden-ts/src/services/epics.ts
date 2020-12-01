@@ -1,5 +1,15 @@
 import * as t from 'io-ts';
-import { defer, EMPTY, from, merge, Observable, of, combineLatest, timer } from 'rxjs';
+import {
+  defer,
+  EMPTY,
+  from,
+  merge,
+  Observable,
+  of,
+  combineLatest,
+  timer,
+  AsyncSubject,
+} from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -356,76 +366,81 @@ export function pfsFeeUpdateEpic(
  * @param deps.contractsInfo - Contracts info mapping
  * @param deps.config$ - Config observable
  * @param deps.latest$ - Latest observable
+ * @param deps.init$ - Init$ tasks subject
  * @returns Observable of pfsListUpdated actions
  */
 export function pfsServiceRegistryMonitorEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { provider, serviceRegistryContract, contractsInfo, config$, latest$ }: RaidenEpicDeps,
+  { provider, serviceRegistryContract, contractsInfo, config$, latest$, init$ }: RaidenEpicDeps,
 ): Observable<pfsListUpdated> {
   return combineLatest([
     // monitors config.pfs, and only monitors contract if it's empty
     config$.pipe(pluckDistinct('pfs')),
     config$.pipe(pluckDistinct('confirmationBlocks')),
   ]).pipe(
-    switchMap(([pfs, confirmationBlocks]) =>
-      pfs !== '' && pfs !== undefined
-        ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
-          EMPTY
-        : fromEthersEvent(
-            provider,
-            serviceRegistryContract.filters.RegisteredService(null, null, null, null),
-            undefined,
-            confirmationBlocks,
-            contractsInfo.ServiceRegistry.block_number,
-          )
-            .pipe(
-              withLatestFrom(latest$),
-              // filter only confirmed logs
-              filter(
-                ([{ blockNumber }, { state }]) =>
-                  !!blockNumber && blockNumber + confirmationBlocks <= state.blockNumber,
-              ),
-              pluck(0),
-              map(
-                // [service, valid_till, deposit_amount, deposit_contract, Event]
-                logToContractEvent<[Address, BigNumber, UInt<32>, Address, Event]>(
-                  serviceRegistryContract,
-                ),
-              ),
-              filter(isntNil),
-            )
-            .pipe(
-              groupBy(([service]) => service),
-              mergeMap((grouped$) =>
-                grouped$.pipe(
-                  // switchMap ensures new events for each server (grouped$) picks latest event
-                  switchMap(([service, valid_till]) => {
-                    const now = Date.now(),
-                      validTill = valid_till.mul(1000); // milliseconds valid_till
-                    if (validTill.lt(now)) return EMPTY; // this event already expired
-                    // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
-                    const end$ = validTill.sub(now).lt(Two.pow(31))
-                      ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
-                      : EMPTY;
-                    return merge(of({ service, valid: true }), end$);
-                  }),
-                ),
-              ),
-              scan(
-                (acc, { service, valid }) =>
-                  !valid && acc.includes(service)
-                    ? acc.filter((s) => s !== service)
-                    : valid && !acc.includes(service)
-                    ? [...acc, service]
-                    : acc,
-                [] as readonly Address[],
-              ),
-              distinctUntilChanged(),
-              debounceTime(1e3), // debounce burst of updates on initial fetch
-              map((pfsList) => pfsListUpdated({ pfsList })),
+    switchMap(([pfs, confirmationBlocks]) => {
+      // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
+      if (pfs !== '' && pfs !== undefined) return EMPTY;
+      const initSub = new AsyncSubject<null>();
+      init$.next(initSub);
+      return fromEthersEvent(
+        provider,
+        serviceRegistryContract.filters.RegisteredService(null, null, null, null),
+        undefined,
+        confirmationBlocks,
+        contractsInfo.ServiceRegistry.block_number,
+      )
+        .pipe(
+          withLatestFrom(latest$),
+          // filter only confirmed logs
+          filter(
+            ([{ blockNumber }, { state }]) =>
+              !!blockNumber && blockNumber + confirmationBlocks <= state.blockNumber,
+          ),
+          pluck(0),
+          map(
+            // [service, valid_till, deposit_amount, deposit_contract, Event]
+            logToContractEvent<[Address, BigNumber, UInt<32>, Address, Event]>(
+              serviceRegistryContract,
             ),
-    ),
+          ),
+          filter(isntNil),
+        )
+        .pipe(
+          groupBy(([service]) => service),
+          mergeMap((grouped$) =>
+            grouped$.pipe(
+              // switchMap ensures new events for each server (grouped$) picks latest event
+              switchMap(([service, valid_till]) => {
+                const now = Date.now(),
+                  validTill = valid_till.mul(1000); // milliseconds valid_till
+                if (validTill.lt(now)) return EMPTY; // this event already expired
+                // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
+                const end$ = validTill.sub(now).lt(Two.pow(31))
+                  ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
+                  : EMPTY;
+                return merge(of({ service, valid: true }), end$);
+              }),
+            ),
+          ),
+          scan(
+            (acc, { service, valid }) =>
+              !valid && acc.includes(service)
+                ? acc.filter((s) => s !== service)
+                : valid && !acc.includes(service)
+                ? [...acc, service]
+                : acc,
+            [] as readonly Address[],
+          ),
+          distinctUntilChanged(),
+          debounceTime(1e3), // debounce burst of updates on initial fetch
+          map((pfsList) => {
+            initSub.complete(); // complete initSub on first emition, following completes are noop
+            return pfsListUpdated({ pfsList });
+          }),
+        );
+    }),
   );
 }
 

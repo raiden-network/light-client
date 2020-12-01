@@ -36,6 +36,15 @@ export interface raidenShutdown extends ActionType<typeof raidenShutdown> {}
 export const raidenConfigUpdate = createAction('raiden/config/update', PartialRaidenConfig);
 export interface raidenConfigUpdate extends ActionType<typeof raidenConfigUpdate> {}
 
+export const raidenStarted = createAction('raiden/started');
+export interface raidenStarted extends ActionType<typeof raidenStarted> {}
+
+export const raidenSynced = createAction(
+  'raiden/synced',
+  t.type({ tookMs: t.number, initialBlock: t.number, currentBlock: t.number }),
+);
+export interface raidenSynced extends ActionType<typeof raidenSynced> {}
+
 const RaidenActions = {
   raidenShutdown,
   raidenConfigUpdate,
