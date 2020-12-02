@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- [#2415] Fix sorting latest transaction on top in transactions list
 - [#2391] Fix notification icon handling for special scenarios
 - [#2410] Fix transfer history list not showing third entry initially
 
@@ -12,6 +13,7 @@
 - [#2379] Illustrations for info overlays
 
 [#2379]: https://github.com/raiden-network/light-client/issues/2379
+[#2415]: https://github.com/raiden-network/light-client/issues/2415
 [#2391]: https://github.com/raiden-network/light-client/issues/2391
 [#2410]: https://github.com/raiden-network/light-client/issues/2410
 
