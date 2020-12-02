@@ -1,19 +1,23 @@
 import { shallowMount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { generateToken, generateTransfer } from '../../utils/data-generator';
-import { RaidenTransfer } from 'raiden-ts';
+import { generateToken, generateTransfer, TRANSFER_DATES } from '../../utils/data-generator';
 import Transaction from '@/components/transaction-history/Transaction.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import { Token } from '@/model/types';
 import { Transfers } from '@/types';
+import { RaidenTransfer } from 'raiden-ts';
 
 Vue.use(Vuetify);
 
 describe('TransactionList.vue', () => {
   const vuetify = new Vuetify();
   const token = generateToken();
-  const transfers = [generateTransfer({}, token), generateTransfer({}, token)];
+  const transfers = [
+    generateTransfer({ changedAt: TRANSFER_DATES[1] }, token),
+    generateTransfer({ changedAt: TRANSFER_DATES[2] }, token),
+    generateTransfer({ changedAt: TRANSFER_DATES[0] }, token),
+  ];
 
   const createWrapper = (
     tokenProp?: Token,
@@ -38,7 +42,7 @@ describe('TransactionList.vue', () => {
     const wrapper = createWrapper();
     const transactionEntries = wrapper.findAllComponents(Transaction);
 
-    expect(transactionEntries.length).toEqual(2);
+    expect(transactionEntries.length).toEqual(3);
   });
 
   test('transaction list applies token filter', () => {
