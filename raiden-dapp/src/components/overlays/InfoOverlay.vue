@@ -7,7 +7,7 @@
       <v-icon icon @click="closeOverlay()"> mdi-close </v-icon>
     </div>
     <div class="info-overlay__image">
-      <img :src="require('@/assets/info-overlay/placeholder.svg')" />
+      <img :src="require(`@/assets/info-overlay/${$route.meta.infoOverlay.headerImage}`)" />
     </div>
     <span class="info-overlay__title">{{ $t($route.meta.infoOverlay.header) }}</span>
     <span class="info-overlay__body">{{ $t($route.meta.infoOverlay.body) }}</span>
@@ -47,7 +47,7 @@ export default class InfoOverlay extends Vue {
   display: flex;
   flex-direction: column;
   height: calc(844px);
-  padding: 0 38px 0 38px;
+  padding: 0 46px;
   position: absolute;
   width: 100%;
   z-index: 102;
@@ -69,13 +69,15 @@ export default class InfoOverlay extends Vue {
   }
 
   &__image {
-    margin-top: 78px;
+    margin-top: 46px;
+    height: auto;
+    width: 300px;
   }
 
   &__title {
     color: $color-gray;
     font-size: 24px;
-    margin: 36px 0 36px 0;
+    margin: 36px 0;
   }
 
   &__body {
