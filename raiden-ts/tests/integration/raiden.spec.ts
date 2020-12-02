@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { timer } from 'rxjs';
-import { first, filter, takeUntil, take, toArray } from 'rxjs/operators';
+import { first, filter, takeUntil, take, toArray, finalize } from 'rxjs/operators';
 import { Zero } from '@ethersproject/constants';
 import { parseEther, parseUnits } from '@ethersproject/units';
 import { BigNumber } from '@ethersproject/bignumber';
 import { keccak256 } from '@ethersproject/keccak256';
 import type { Network } from '@ethersproject/networks';
+import ganache from 'ganache-cli';
 import logging from 'loglevel';
 logging.setDefaultLevel(logging.levels.DEBUG);
 
@@ -27,10 +28,10 @@ jest.mock('raiden-ts/helpers', () => {
 
 import { request } from 'matrix-js-sdk';
 
-import { Raiden } from 'raiden-ts/raiden';
+import { Raiden as OrigRaiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
 import { makeInitialState, RaidenState } from 'raiden-ts/state';
-import { raidenShutdown, ConfirmableAction } from 'raiden-ts/actions';
+import { raidenShutdown, ConfirmableAction, raidenStarted } from 'raiden-ts/actions';
 import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
 import { Storage, Secret, Address, UInt } from 'raiden-ts/utils/types';
@@ -47,8 +48,26 @@ import { channelKey } from 'raiden-ts/channels/utils';
 import { confirmationBlocks } from '../unit/fixtures';
 import { udcWithdrawn } from 'raiden-ts/services/actions';
 
+type Raiden = OrigRaiden;
+const Raiden = OrigRaiden as typeof OrigRaiden & {
+  create: jest.Mock<Promise<Raiden>, Parameters<typeof OrigRaiden['create']>>;
+};
+
+function makeServer(chainId: number) {
+  return ganache.provider({
+    total_accounts: 5,
+    default_balance_ether: 5,
+    seed: 'testrpc_provider',
+    network_id: chainId,
+    _chainId: chainId,
+    _chainIdRpc: chainId,
+    // logger: console,
+  });
+}
+
 describe('Raiden', () => {
-  let provider = new TestProvider();
+  const server = makeServer(1338);
+  let provider = new TestProvider(server);
   let accounts: string[],
     contractsInfo: ContractsInfo,
     snapId: number | undefined,
@@ -66,14 +85,34 @@ describe('Raiden', () => {
     confirmationBlocks: 2,
     pollingInterval: 10,
   };
-  const raidens: Raiden[] = [];
 
   let httpBackend: MockMatrixRequestFn;
   const matrixServer = 'matrix.raiden.test';
 
-  async function flushPromises() {
-    return new Promise(setImmediate);
-  }
+  const raidens: Raiden[] = [];
+  const origCreate = OrigRaiden.create;
+  jest.spyOn(Raiden, 'create').mockImplementation(async function (...args) {
+    const raiden = (await origCreate.call(Raiden, ...args)) as Raiden;
+    raiden.action$
+      .pipe(
+        finalize(() => {
+          const idx = raidens.indexOf(raiden);
+          if (idx >= 0) raidens.splice(idx, 1);
+        }),
+        filter(raidenStarted.is),
+      )
+      .subscribe(() => raidens.push(raiden));
+    raiden.action$
+      .pipe(
+        filter(ConfirmableAction.is),
+        filter((a) => a.payload.confirmed === undefined),
+      )
+      .subscribe((a) =>
+        provider.mineUntil(a.payload.txBlock + raiden.config.confirmationBlocks + 1),
+      );
+    Object.assign(raiden, { _test: expect.getState().currentTestName });
+    return raiden;
+  });
 
   function getStorageOpts() {
     // prefix is needed in order to isolate state storage per test
@@ -85,26 +124,16 @@ describe('Raiden', () => {
     storage?: { state?: any; storage?: Storage; adapter?: any; prefix?: string },
     subkey?: true,
   ): Promise<Raiden> {
-    const raiden = await Raiden.create(
+    return await Raiden.create(
       // we need to create a new test provider, to avoid sharing provider instances,
       // but with same underlying ganache instance
-      new TestProvider(provider.provider),
+      new TestProvider(server),
       account,
       { ...getStorageOpts(), ...storage },
       contractsInfo,
       config,
       subkey,
     );
-    raiden.action$
-      .pipe(
-        filter(ConfirmableAction.is),
-        filter((a) => a.payload.confirmed === undefined),
-      )
-      .subscribe((a) =>
-        provider.mineUntil(a.payload.txBlock + raiden.config.confirmationBlocks + 1),
-      );
-    raidens.push(raiden);
-    return raiden;
   }
 
   const fetch = jest.fn();
@@ -166,22 +195,23 @@ describe('Raiden', () => {
     request(httpBackend.requestFn.bind(httpBackend));
 
     raiden = await createRaiden(0);
-    raiden.start();
+    await raiden.start();
   });
 
   afterEach(async () => {
-    let _raiden;
-    while ((_raiden = raidens.pop())) await _raiden.stop();
+    while (raidens.length) {
+      await Promise.all(raidens.map((r) => r.stop()));
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
     httpBackend.stop();
     fetch.mockRestore();
-    await flushPromises();
   });
 
   test('create from other params and RaidenState', async () => {
     expect.assertions(15);
 
     const raiden0State = await raiden.state$.pipe(first()).toPromise();
-    raiden.stop();
+    await raiden.stop();
 
     // state & storage object
     await expect(
@@ -313,11 +343,12 @@ describe('Raiden', () => {
     // ensure Raiden.constructor set pollingInterval in the end as per 'config', before 'start'
     expect(provider.pollingInterval).toBe(config.pollingInterval);
 
+    logging.warn('Starting raiden1', raiden1.address);
     // test Raiden.started, not yet started
     expect(raiden1.started).toBeUndefined();
     raiden1.start();
     expect(raiden1.started).toBe(true);
-    raiden1.stop();
+    await raiden1.stop();
     expect(raiden1.started).toBe(false);
 
     // success when creating using subkey
@@ -774,10 +805,7 @@ describe('Raiden', () => {
         ),
       });
       expect(raiden1).toBeInstanceOf(Raiden);
-      raiden1.start();
-
-      // await raiden1 client matrix initialization
-      await raiden1.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
+      await raiden1.start();
 
       await expect(raiden.getAvailability(accounts[2])).resolves.toMatchObject({
         userId: `@${accounts[2].toLowerCase()}:${matrixServer}`,
@@ -856,33 +884,14 @@ describe('Raiden', () => {
       let raiden1: Raiden;
 
       beforeEach(async () => {
-        raiden1 = await createRaiden(partner, {
-          state: makeInitialState(
-            { network, contractsInfo, address: partner as Address },
-            { config },
-          ),
-        });
-        raiden1.start();
-
-        // await raiden1 client matrix initialization
-        await raiden1.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
-        await raiden1.state$
-          .pipe(
-            first(
-              (state) =>
-                state.channels[
-                  channelKey({ tokenNetwork: tokenNetwork as Address, partner: raiden.address })
-                ]?.state === ChannelState.open,
-            ),
-          )
-          .toPromise();
+        raiden1 = await createRaiden(partner);
+        await raiden1.start();
 
         await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
           userId: `@${partner.toLowerCase()}:${matrixServer}`,
           available: true,
           ts: expect.any(Number),
         });
-        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       test('fail: direct channel without enough capacity, pfs disabled', async () => {
@@ -893,8 +902,7 @@ describe('Raiden', () => {
         const partner3 = accounts[3];
         await raiden.openChannel(token, partner3, { deposit: 300 });
         const raiden3 = await createRaiden(partner3);
-        raiden3.start();
-        await raiden3.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
+        await raiden3.start();
         await expect(raiden.getAvailability(partner3)).resolves.toBeDefined();
 
         await expect(raiden.transfer(token, partner, 201)).rejects.toThrowError(
@@ -927,14 +935,9 @@ describe('Raiden', () => {
         expect.assertions(7);
 
         const target = accounts[2],
-          raiden2 = await createRaiden(target),
-          matrix2Promise = raiden2.action$
-            .pipe(filter(isActionOf(matrixSetup)), first())
-            .toPromise();
+          raiden2 = await createRaiden(target);
 
-        raiden2.start();
-        // await raiden2 client matrix initialization
-        await matrix2Promise;
+        await raiden2.start();
 
         await expect(raiden.getAvailability(target)).resolves.toMatchObject({
           userId: `@${target.toLowerCase()}:${matrixServer}`,
@@ -1065,14 +1068,7 @@ describe('Raiden', () => {
 
       raiden1 = await createRaiden(partner);
       raiden2 = await createRaiden(target);
-      raiden1.start();
-      raiden2.start();
-
-      // await client's matrix initialization
-      await Promise.all([
-        raiden1.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise(),
-        raiden2.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise(),
-      ]);
+      await Promise.all([raiden1.start(), raiden2.start()]);
 
       await expect(raiden.getAvailability(partner)).resolves.toMatchObject({
         userId: `@${partner.toLowerCase()}:${matrixServer}`,
@@ -1208,8 +1204,7 @@ describe('Raiden', () => {
       const partner3 = accounts[3];
       await raiden.openChannel(token, partner3, { deposit: 300 });
       const raiden3 = await createRaiden(partner3);
-      raiden3.start();
-      await raiden3.action$.pipe(filter(isActionOf(matrixSetup)), first()).toPromise();
+      await raiden3.start();
       await expect(raiden.getAvailability(partner3)).resolves.toBeDefined();
 
       fetch.mockResolvedValueOnce({
@@ -1270,12 +1265,11 @@ describe('Raiden', () => {
     test('should throw exception on main net', async () => {
       expect.assertions(3);
 
-      const provider = new TestProvider(undefined, { network_id: 1 });
+      const provider = new TestProvider(makeServer(1));
       await expect(provider.getNetwork()).resolves.toMatchObject({ chainId: 1 });
 
       const raiden = await Raiden.create(provider, 0, getStorageOpts(), contractsInfo, config);
       expect(raiden.network).toMatchObject({ chainId: 1 });
-      raidens.push(raiden);
 
       await expect(
         raiden.mint('0x3a989D97388a39A0B5796306C615d10B7416bE77', 50),

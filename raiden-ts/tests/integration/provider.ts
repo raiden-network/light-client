@@ -1,4 +1,3 @@
-import ganache, { GanacheServerOptions } from 'ganache-cli';
 import { range } from 'lodash';
 import asyncPool from 'tiny-async-pool';
 import log from 'loglevel';
@@ -31,19 +30,8 @@ afterEach(() => {
 });
 
 export class TestProvider extends Web3Provider {
-  public constructor(web3?: ExternalProvider, opts?: GanacheServerOptions) {
-    const chainId = opts?.network_id ?? 1338;
-    const server = ganache.provider({
-      total_accounts: 5,
-      default_balance_ether: 5,
-      seed: 'testrpc_provider',
-      network_id: chainId,
-      _chainId: chainId,
-      _chainIdRpc: chainId,
-      // logger: console,
-      ...opts,
-    });
-    super(web3 ?? server);
+  public constructor(web3: ExternalProvider) {
+    super(web3);
     createdProviders.push(this);
   }
 
