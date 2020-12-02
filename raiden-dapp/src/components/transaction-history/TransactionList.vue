@@ -23,9 +23,9 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
 import { Transfers } from '../../types';
-import { RaidenTransfer } from 'raiden-ts';
 import { Token } from '@/model/types';
 import Transaction from '@/components/transaction-history/Transaction.vue';
+import { RaidenTransfer } from 'raiden-ts';
 
 @Component({
   components: {
@@ -53,8 +53,7 @@ export default class TransactionLists extends Vue {
 
   get orderedTransfers(): RaidenTransfer[] {
     return this.filteredTransfersForToken.sort(
-      (a: RaidenTransfer, b: RaidenTransfer) =>
-        b.changedAt.getMilliseconds() - a.changedAt.getMilliseconds(),
+      (a: RaidenTransfer, b: RaidenTransfer) => b.changedAt.getTime() - a.changedAt.getTime(),
     );
   }
 }
