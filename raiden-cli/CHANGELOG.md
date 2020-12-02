@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#2417] Register sensible endpoints on 'synced' SDK promise, updates /status API accordingly
+
+[#2417]: https://github.com/raiden-network/light-client/pull/2417
 
 ## [0.14.0] - 2020-11-25
 ### Fixed
