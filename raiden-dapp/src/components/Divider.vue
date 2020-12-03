@@ -23,7 +23,7 @@ export default class Divider extends Vue {}
   &__line {
     box-sizing: border-box;
     height: 1px;
-    width: 520px;
+    width: 100%;
     border: 1.5px solid $secondary-color;
   }
 }

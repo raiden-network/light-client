@@ -6,40 +6,33 @@
     class="open-channel"
     @submit.prevent="openChannel()"
   >
-    <v-row align="center" justify="center">
-      <v-col cols="10">
-        <amount-input
-          v-model="deposit"
-          :token="token"
-          :max="token.balance"
-          :placeholder="$t('transfer.amount-placeholder')"
-          limit
-        ></amount-input>
-      </v-col>
-    </v-row>
-
-    <divider></divider>
-
-    <token-information :token="token"></token-information>
-
-    <divider></divider>
-
-    <v-row align="center" justify="center" no-gutters class="open-channel__hub">
-      <v-col cols="2" class="open-channel__hub__label text-left">
+    <div class="open-channel__amount">
+      <amount-input
+        v-model="deposit"
+        :token="token"
+        :max="token.balance"
+        :placeholder="$t('transfer.amount-placeholder')"
+        limit
+      />
+    </div>
+    <divider />
+    <div class="open-channel__token-information">
+      <token-information :token="token" />
+    </div>
+    <div class="open-channel__hub">
+      <span class="open-channel__hub__label">
         {{ $t('open-channel.hub') }}
-      </v-col>
-      <v-col cols="8" class="open-channel__hub__address text-left">
+      </span>
+      <div class="open-channel__hub__address">
         <address-display :address="partner" />
-      </v-col>
-    </v-row>
-
+      </div>
+    </div>
     <action-button
       data-cy="open_channel_button"
       class="open-channel__button"
       :enabled="valid"
       :text="$t('open-channel.open-button')"
-    ></action-button>
-
+    />
     <open-channel-dialog
       :visible="loading"
       :steps="steps"
@@ -47,8 +40,7 @@
       :done="done"
       :done-step="doneStep"
       @cancel="dismiss()"
-    ></open-channel-dialog>
-
+    />
     <error-dialog :error="error" @dismiss="error = null" />
   </v-form>
 </template>
@@ -205,33 +197,42 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
-@import '@/scss/fonts';
-
 .open-channel {
-  height: 100%;
-  width: 100%;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  margin: 0 26px;
+  width: 100%;
+
+  &__amount {
+    display: flex;
+    flex-direction: column;
+    height: 300px;
+    justify-content: center;
+  }
+
+  &__token-information {
+    display: flex;
+    justify-content: flex-start;
+  }
 
   &__hub {
-    max-height: 30px;
+    align-items: center;
+    display: flex;
+    margin-top: 16px;
+    padding: 0 22px 0 16px;
+
     &__label {
-      color: #ffffff;
-      font-family: $main-font;
-      font-size: 16px;
-      font-weight: bold;
-      line-height: 19px;
-      text-transform: uppercase;
+      flex: 1;
     }
 
     &__address {
-      color: #ffffff;
-      font-family: $main-font;
-      font-size: 16px;
-      line-height: 20px;
-      overflow-x: hidden;
-      text-overflow: ellipsis;
+      flex: none;
     }
+  }
+
+  &__button {
+    margin-top: 110px;
   }
 }
 </style>
