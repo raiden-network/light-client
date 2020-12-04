@@ -1,11 +1,15 @@
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
+if (!('IntersectionObserver' in global)) {
+  class IntersectionObserver {
+    constructor() {}
 
-  observe() {
-    return null;
+    observe() {
+      return null;
+    }
+
+    unobserve() {
+      return null;
+    }
   }
 
-  unobserve() {
-    return null;
-  }
-};
+  Object.assign(global, { IntersectionObserver });
+}

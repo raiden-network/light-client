@@ -9,7 +9,7 @@ jest.mock('@/i18n', () => ({
 }));
 jest.mock('@/services/config-provider');
 
-import { Store } from 'vuex';
+import { CommitOptions, Store } from 'vuex';
 import flushPromises from 'flush-promises';
 import { BigNumber, providers, utils, constants } from 'ethers';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
@@ -22,7 +22,6 @@ import { DeniedReason, Token, TokenModel } from '@/model/types';
 import RaidenService from '@/services/raiden-service';
 import { Web3Provider } from '@/services/web3-provider';
 import { Tokens } from '@/types';
-import Mocked = jest.Mocked;
 import { CombinedStoreState } from '@/store';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { NotificationContext } from '@/store/notifications/notification-context';
@@ -31,8 +30,10 @@ const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual('raiden-ts'
 
 describe('RaidenService', () => {
   let raidenService: RaidenService;
-  let raiden: Mocked<Raiden>;
-  let store: Mocked<Store<CombinedStoreState>>;
+  let raiden: jest.Mocked<Raiden>;
+  let store: jest.Mocked<Store<CombinedStoreState>> & {
+    commit: jest.Mock<void, [string, any?, CommitOptions?]>;
+  };
   let providerMock: jest.Mock;
   let factory: jest.Mock;
   const mockProvider = {
@@ -87,11 +88,11 @@ describe('RaidenService', () => {
   }
 
   beforeEach(() => {
-    raiden = new (Raiden as any)() as Mocked<Raiden>;
+    raiden = new (Raiden as any)() as jest.Mocked<Raiden>;
     setupMock(raiden);
     factory = Raiden.create = jest.fn();
     providerMock = Web3Provider.provider = jest.fn();
-    store = new Store({}) as Mocked<Store<CombinedStoreState>>;
+    store = new Store({}) as typeof store;
     (store.state as any) = {
       userDepositContract: { token: undefined },
     };
@@ -117,7 +118,7 @@ describe('RaidenService', () => {
       stateBackup: '',
       subkey: true,
     });
-    expect(store.commit).toBeCalledWith('balance', '1.0');
+    expect(store.commit).toHaveBeenCalledWith('balance', '1.0');
     expect(store.commit).toBeCalledWith('raidenAccountBalance', '0.1');
   });
 
