@@ -42,12 +42,10 @@ export function getLogsByChunk$(
 export function fromEthersEvent<T>(
   target: JsonRpcProvider,
   event: string | string[],
-  resultSelector?: (...args: any[]) => T,
 ): Observable<T>;
 export function fromEthersEvent<T extends Log>(
   target: JsonRpcProvider,
   event: Filter,
-  resultSelector?: (...args: any[]) => T,
   confirmations?: number,
   fromBlock?: number,
 ): Observable<T>;
@@ -56,8 +54,6 @@ export function fromEthersEvent<T extends Log>(
  *
  * @param target - Object to hook event listener, maybe a Provider or Contract
  * @param event - EventFilter or string representing the event to listen to
- * @param resultSelector - A map of events arguments to output parameters
- *      Default is to pass only first parameter
  * @param confirmations - After how many blocks a tx is considered confirmed
  * @param fromBlock - Block since when to fetch events from
  * @returns Observable of target.on(event) events
@@ -65,7 +61,6 @@ export function fromEthersEvent<T extends Log>(
 export function fromEthersEvent<T>(
   target: JsonRpcProvider,
   event: EventType,
-  resultSelector?: (...args: any[]) => T,
   confirmations = 5,
   fromBlock?: number,
 ) {
@@ -73,7 +68,6 @@ export function fromEthersEvent<T>(
     return fromEventPattern<T>(
       (handler: Listener) => target.on(event, handler),
       (handler: Listener) => target.removeListener(event, handler),
-      resultSelector,
     ) as Observable<T>;
 
   const range = confirmations * 2; // half for confirmed, half for unconfirmed logs
