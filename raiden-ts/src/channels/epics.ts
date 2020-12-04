@@ -506,7 +506,7 @@ function fetchNewChannelEvents$(
   return config$.pipe(
     first(),
     mergeMap(({ confirmationBlocks }) =>
-      fromEthersEvent<Log>(provider, channelFilter, undefined, confirmationBlocks, fromBlock),
+      fromEthersEvent<Log>(provider, channelFilter, confirmationBlocks, fromBlock),
     ),
     map(logToContractEvent<ChannelEvents>(tokenNetworkContract)),
     filter(isntNil),

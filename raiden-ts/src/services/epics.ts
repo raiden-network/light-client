@@ -387,7 +387,6 @@ export function pfsServiceRegistryMonitorEpic(
       return fromEthersEvent(
         provider,
         serviceRegistryContract.filters.RegisteredService(null, null, null, null),
-        undefined,
         confirmationBlocks,
         contractsInfo.ServiceRegistry.block_number,
       )
@@ -986,7 +985,6 @@ export function msMonitorNewBPEpic(
           null,
           address,
         ),
-        undefined,
         confirmationBlocks,
       ),
     ),

@@ -315,7 +315,6 @@ export function monitorSecretRegistryEpic(
       fromEthersEvent(
         provider,
         secretRegistryContract.filters.SecretRevealed(null, null),
-        undefined,
         confirmationBlocks,
       ),
     ),
