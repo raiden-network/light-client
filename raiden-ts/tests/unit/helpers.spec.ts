@@ -4,6 +4,7 @@ import { Wallet } from '@ethersproject/wallet';
 
 import { getContracts, getSigner, isValidUrl } from 'raiden-ts/helpers';
 import Raiden from 'raiden-ts/raiden';
+import { Address } from 'raiden-ts/utils/types';
 
 describe('getContracts', () => {
   test('return contracts if network is ropsten, rinkeby or goerli', async () => {
@@ -61,7 +62,7 @@ describe('getSigner', () => {
   test('returns signer from provider if account is a number', async () => {
     const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
     const account = 0;
-    const address = '0x0000000000000000000000000000000000020001';
+    const address = '0x0000000000000000000000000000000000020001' as Address;
 
     jest.spyOn(provider, 'send').mockResolvedValueOnce([address]);
 

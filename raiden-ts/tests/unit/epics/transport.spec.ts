@@ -582,7 +582,7 @@ describe('matrixInviteEpic', () => {
 
     await promise;
     expect(matrix.invite).toHaveBeenCalledTimes(2);
-    expect(matrix.invite).toHaveBeenCalledWith(roomId, partnerMatrix.getUserId());
+    expect(matrix.invite).toHaveBeenCalledWith(roomId, partnerMatrix.getUserId()!);
   });
 });
 
@@ -1734,7 +1734,7 @@ describe('rtcConnectEpic', () => {
     );
 
     // assert candidates
-    expect(rtcConnection.addIceCandidate).toHaveBeenCalledWith('partnerCandidate');
+    expect(rtcConnection.addIceCandidate).toHaveBeenCalledWith('partnerCandidate' as any);
     expect(matrix.sendEvent).toHaveBeenCalledWith(
       partnerRoomId,
       'm.room.message',

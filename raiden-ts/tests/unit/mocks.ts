@@ -330,7 +330,7 @@ export const fetch = jest.fn<
     json: jest.MockedFunction<() => Promise<any>>;
     text?: jest.MockedFunction<() => Promise<string>>;
   }>,
-  [string?]
+  [string?, any?]
 >();
 Object.assign(globalThis, { fetch });
 
