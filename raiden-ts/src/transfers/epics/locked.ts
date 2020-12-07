@@ -101,6 +101,7 @@ function getOpenChannel(
  * @param config - Config object
  * @param config.revealTimeout - The reveal timeout for the transfer.
  * @param config.confirmationBlocks - Confirmations block config
+ * @param config.expiryFactor - The factor that the reveal timeouts gets multiplied with to calculate the lock expiration
  * @param deps - {@link RaidenEpicDeps}
  * @param deps.log - Logger instance
  * @param deps.address - Our address
@@ -111,7 +112,7 @@ function getOpenChannel(
 function makeAndSignTransfer$(
   state: RaidenState,
   action: transfer.request,
-  { revealTimeout, confirmationBlocks }: RaidenConfig,
+  { revealTimeout, confirmationBlocks, expiryFactor }: RaidenConfig,
   { log, address, network, signer }: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned> {
   // assume paths are valid and recipient is first hop of first route
@@ -134,7 +135,7 @@ function makeAndSignTransfer$(
   const expiration = BigNumber.from(
     action.payload.expiration ||
       Math.min(
-        state.blockNumber + revealTimeout * 2,
+        state.blockNumber + Math.round(revealTimeout * expiryFactor),
         state.blockNumber + channel.settleTimeout - confirmationBlocks,
       ),
   ) as UInt<32>;

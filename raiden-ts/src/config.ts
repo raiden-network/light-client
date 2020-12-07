@@ -62,6 +62,7 @@ export const RaidenConfig = t.readonly(
       matrixServerLookup: t.string,
       revealTimeout: t.number,
       settleTimeout: t.number,
+      expiryFactor: t.number, // must be >= 1.1
       httpTimeout: t.number,
       discoveryRoom: t.union([t.string, t.null]),
       pfsRoom: t.union([t.string, t.null]),
@@ -126,6 +127,7 @@ export function makeDefaultConfig(
     matrixServerLookup: matrixServerInfos,
     settleTimeout: 500,
     revealTimeout: 50,
+    expiryFactor: 2.0,
     httpTimeout: 30e3,
     discoveryRoom: `raiden_${networkName}_discovery`,
     pfsRoom: `raiden_${networkName}_path_finding`,
