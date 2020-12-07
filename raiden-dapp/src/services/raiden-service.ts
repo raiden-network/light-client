@@ -74,6 +74,9 @@ export default class RaidenService {
           ...(process.env.VUE_APP_CONFIRMATION_BLOCKS && +process.env.VUE_APP_CONFIRMATION_BLOCKS
             ? { confirmationBlocks: +process.env.VUE_APP_CONFIRMATION_BLOCKS }
             : undefined),
+          ...(process.env.VUE_APP_EXPIRY_FACTOR && +process.env.VUE_APP_EXPIRY_FACTOR
+            ? { expiryFactor: +process.env.VUE_APP_EXPIRY_FACTOR }
+            : undefined),
         },
         subkey,
       );

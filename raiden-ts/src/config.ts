@@ -127,7 +127,7 @@ export function makeDefaultConfig(
     matrixServerLookup: matrixServerInfos,
     settleTimeout: 500,
     revealTimeout: 50,
-    expiryFactor: 2.0,
+    expiryFactor: 1.1, // must be >= 1.1
     httpTimeout: 30e3,
     discoveryRoom: `raiden_${networkName}_discovery`,
     pfsRoom: `raiden_${networkName}_path_finding`,
