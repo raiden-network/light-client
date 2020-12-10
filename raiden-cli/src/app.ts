@@ -30,11 +30,10 @@ export function makeApp(this: Cli, corsOrigin?: string): Express {
   const app = express();
   app.use(express.json());
   if (corsOrigin) app.use(cors({ origin: corsOrigin }));
-  app.use(
-    logger(
-      ':remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
-    ),
+  const loggerMiddleware = logger(
+    ':remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',
   );
+  app.use(loggerMiddleware);
   app.use('/api/v1', makeApiV1Router.call(this));
   app.use(notFoundHandler);
   app.use(internalErrorHandler.bind(this));
