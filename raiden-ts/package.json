@@ -20,7 +20,7 @@
     "contracts:post": "node ./scripts/copyContracts.js postbuild",
     "contracts": "yarn run contracts:pre && yarn run contracts:build",
     "versions": "node ./scripts/versions.js",
-    "docs": "typedoc",
+    "docs": "typedoc --media ./docs-source/images",
     "prepack": "yarn clean && yarn build && yarn run docs"
   },
   "repository": {

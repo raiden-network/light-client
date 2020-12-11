@@ -65,6 +65,23 @@
             "source": "./docs-source/settling-channel.md"
           }
         ]
+      },
+      {
+        "title": "Using Raiden Dapp",
+        "pages": [
+          {
+            "title": "Overview",
+            "source": "./docs-source/using-dapp.md"
+          },
+          {
+            "title": "Navigate the Dapp",
+            "source": "./docs-source/navigate-dapp.md"
+          },
+          {
+            "title": "Hub Selection and Channel Opening",
+            "source": "./docs-source/hub-selection-channel-opening.md"
+          }
+        ]
       }
     ]
   }
