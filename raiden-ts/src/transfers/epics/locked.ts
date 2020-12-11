@@ -127,9 +127,7 @@ function makeAndSignTransfer$(
   const channel = getOpenChannel(state, { tokenNetwork, partner });
 
   assert(
-    !action.payload.expiration ||
-      // require mediated transfers to have at least confirmationBlocks before danger zone
-      action.payload.expiration >= state.blockNumber + revealTimeout + confirmationBlocks,
+    !action.payload.expiration || action.payload.expiration > state.blockNumber + revealTimeout,
     'expiration too soon',
   );
   const expiration = BigNumber.from(
