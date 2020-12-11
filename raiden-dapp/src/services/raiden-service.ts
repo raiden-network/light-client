@@ -3,7 +3,7 @@ import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
 import { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
-import { Tokens } from '@/types';
+import { Tokens, SuggestedPartner } from '@/types';
 import { CombinedStoreState } from '@/store';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
@@ -24,7 +24,6 @@ import {
   RaidenPaths,
   RaidenPFS,
 } from 'raiden-ts';
-import { SuggestedPartner } from 'raiden-ts/dist/services/types';
 
 function raidenActionConfirmationValueToStateTranslation(
   confirmationValue: boolean | undefined,

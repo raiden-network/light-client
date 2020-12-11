@@ -5,8 +5,7 @@ import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
 import { generateSuggestedPartner } from '../utils/data-generator';
 import HubList from '@/components/HubList.vue';
-import { SuggestedPartner } from 'raiden-ts/src/services/types';
-import { Address } from 'raiden-ts/src/utils/types';
+import { SuggestedPartner } from '@/types';
 
 Vue.use(Vuetify);
 
@@ -14,9 +13,9 @@ const addressOne = '0x123';
 const addressTwo = '0x456';
 const addressThree = '0x789';
 const suggestedPartners = [
-  generateSuggestedPartner({ address: addressOne as Address }),
-  generateSuggestedPartner({ address: addressTwo as Address }),
-  generateSuggestedPartner({ address: addressThree as Address }),
+  generateSuggestedPartner({ address: addressOne }),
+  generateSuggestedPartner({ address: addressTwo }),
+  generateSuggestedPartner({ address: addressThree }),
 ];
 
 const createWrapper = (suggestedPartners: SuggestedPartner[] | undefined): Wrapper<HubList> => {
