@@ -18,7 +18,7 @@ const suggestedPartners = [
   generateSuggestedPartner({ address: addressThree }),
 ];
 
-const createWrapper = (suggestedPartners: SuggestedPartner[] | undefined): Wrapper<HubList> => {
+const createWrapper = (suggestedPartners: SuggestedPartner[]): Wrapper<HubList> => {
   const vuetify = new Vuetify();
 
   return mount(HubList, {
@@ -45,7 +45,7 @@ describe('HubList', () => {
   });
 
   test('displays message if no hubs available', async () => {
-    const wrapper = createWrapper(undefined);
+    const wrapper = createWrapper([]);
     await flushPromises();
 
     const hubList = wrapper.find('.hub-list__no-hubs');

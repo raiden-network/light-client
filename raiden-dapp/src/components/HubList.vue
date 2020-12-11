@@ -2,7 +2,7 @@
   <div class="hub-list">
     <span class="hub-list__header">{{ $t('hub-list.header') }}</span>
     <spinner v-if="loadingHubs" class="hub-list__loading" />
-    <div v-else-if="!loadingHubs && !suggestedHubs" class="hub-list__no-hubs">
+    <div v-else-if="!loadingHubs && !suggestedHubs.length" class="hub-list__no-hubs">
       {{ $t('hub-list.error') }}
     </div>
     <div v-for="(suggestedHub, index) in suggestedHubs.slice(0, 3)" v-else :key="index">
