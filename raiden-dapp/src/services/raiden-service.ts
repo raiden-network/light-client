@@ -3,16 +3,6 @@ import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
 import { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
-import {
-  Capabilities,
-  ChangeEvent,
-  ErrorCodes,
-  EventTypes,
-  Raiden,
-  RaidenError,
-  RaidenPaths,
-  RaidenPFS,
-} from 'raiden-ts';
 import { Tokens } from '@/types';
 import { CombinedStoreState } from '@/store';
 import { Web3Provider } from '@/services/web3-provider';
@@ -24,6 +14,17 @@ import { NotificationPayload } from '@/store/notifications/types';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { RouteNames } from '@/router/route-names';
+import {
+  Capabilities,
+  ChangeEvent,
+  ErrorCodes,
+  EventTypes,
+  Raiden,
+  RaidenError,
+  RaidenPaths,
+  RaidenPFS,
+} from 'raiden-ts';
+import { SuggestedPartner } from 'raiden-ts/dist/services/types';
 
 function raidenActionConfirmationValueToStateTranslation(
   confirmationValue: boolean | undefined,
@@ -737,6 +738,10 @@ export default class RaidenService {
   async getTokenBalance(tokenAddress: string, raidenAccount?: string): Promise<BigNumber> {
     const tokenBalance = await this.raiden.getTokenBalance(tokenAddress, raidenAccount);
     return tokenBalance;
+  }
+
+  async getSuggestedPartners(token: string): Promise<SuggestedPartner[]> {
+    return await this.raiden.suggestPartners(token);
   }
 }
 
