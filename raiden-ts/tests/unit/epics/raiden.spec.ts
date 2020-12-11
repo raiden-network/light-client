@@ -15,7 +15,7 @@ import { defaultAbiCoder } from '@ethersproject/abi';
 import { HashZero, One } from '@ethersproject/constants';
 import { first, pluck } from 'rxjs/operators';
 
-import { raidenShutdown } from 'raiden-ts/actions';
+import { raidenShutdown, raidenSynced } from 'raiden-ts/actions';
 import {
   newBlock,
   tokenMonitored,
@@ -37,8 +37,8 @@ describe('raiden init epics', () => {
     expect(raiden.output).toContainEqual(newBlock({ blockNumber: expect.any(Number) }));
   });
 
-  test('init tokenMonitored with scanned tokenNetwork, retryAsync$ retry', async () => {
-    expect.assertions(3);
+  test('init tokenMonitored with scanned tokenNetwork, retry and wait synced', async () => {
+    expect.assertions(4);
     const raiden = await makeRaiden(undefined, false);
     const { registryContract } = raiden.deps;
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
@@ -77,7 +77,7 @@ describe('raiden init epics', () => {
     );
 
     // ensure one getLogs error doesn't fail and is retried by retryAsync$
-    raiden.deps.provider.getLogs.mockRejectedValueOnce(new Error('network error;'));
+    raiden.deps.provider.getLogs.mockRejectedValueOnce(new Error('invalid response'));
     const promise = raiden.deps.latest$
       .pipe(pluck('action'), first(tokenMonitored.is))
       .toPromise();
@@ -90,6 +90,7 @@ describe('raiden init epics', () => {
     expect(raiden.output).toContainEqual(
       tokenMonitored({ token, tokenNetwork, fromBlock: expect.any(Number) }),
     );
+    expect(raiden.output).toContainEqual(raidenSynced(expect.anything()));
     // output shouldn't contain anything about otherTokenNetwork; not of interest
     expect(raiden.output).not.toContainEqual(
       tokenMonitored(expect.objectContaining({ token: otherToken })),

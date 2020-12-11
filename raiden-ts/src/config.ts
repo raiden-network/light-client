@@ -1,12 +1,15 @@
 import * as t from 'io-ts';
+import { Observable } from 'rxjs';
 import type { Network } from '@ethersproject/networks';
 import { parseEther } from '@ethersproject/units';
 import { MaxUint256 } from '@ethersproject/constants';
 
+import { first } from 'rxjs/operators';
 import { Capabilities } from './constants';
 import { Address, UInt } from './utils/types';
 import { getNetworkName } from './utils/ethers';
 import { Caps } from './transport/types';
+import { exponentialBackoff } from './transfers/epics/utils';
 
 const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
 
@@ -150,4 +153,37 @@ export function makeDefaultConfig(
     autoSettle: false,
     ...overwrites,
   };
+}
+
+/**
+ * A function which returns an Iterable of intervals based on parameters in config$
+ * By default, it returns an iterable which, on every iterator call, will return a new
+ * exponentialBackoff iterator ranging from config.pollingInterval to 2 * config.httpTimeout
+ *
+ * @param config$ - Config-like observable, emiting objects with pollingInterval & httpTimeout
+ * @returns Iterable (resettable) of intervals
+ */
+export function intervalFromConfig(
+  config$: Observable<Pick<RaidenConfig, 'pollingInterval' | 'httpTimeout'>>,
+): Iterable<number> & Iterator<number> {
+  const self = {
+    _iter: undefined as Iterator<number> | undefined,
+    [Symbol.iterator]() {
+      this._iter = undefined;
+      return this;
+    },
+    next() {
+      if (!this._iter) {
+        let lowerInterval = 5e3;
+        let upperInterval = 60e3;
+        config$.pipe(first()).subscribe(({ pollingInterval, httpTimeout }) => {
+          lowerInterval = pollingInterval;
+          upperInterval = 2 * httpTimeout;
+        });
+        this._iter = exponentialBackoff(lowerInterval, upperInterval);
+      }
+      return this._iter.next();
+    },
+  };
+  return self;
 }

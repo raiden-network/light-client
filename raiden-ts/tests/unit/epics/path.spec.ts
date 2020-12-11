@@ -1153,9 +1153,8 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
 
     // enable config.pfs auto ('')
     raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
-    await raiden.start();
+    raiden.start();
 
-    await waitBlock();
     const validTill = BigNumber.from(Math.floor(Date.now() / 1000) + 86400), // tomorrow
       registeredEncoded = defaultAbiCoder.encode(
         ['uint256', 'uint256', 'address'],

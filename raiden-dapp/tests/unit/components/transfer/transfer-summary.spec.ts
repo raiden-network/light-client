@@ -35,7 +35,7 @@ describe('TransferSummary.vue', () => {
   test('show direct transfer breakdown', () => {
     wrapper = createWrapper(directTransfer);
 
-    expect(wrapper.text()).toContain(paymentId);
+    expect(wrapper.text()).toContain(paymentId.toString());
 
     // Shows direct transfer header
     expect(wrapper.find('.transfer-summary__header').text()).toContain(

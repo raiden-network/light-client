@@ -20,6 +20,7 @@ const createWrapper = (): Wrapper<InfoOverlay> => {
       $route: {
         meta: {
           infoOverlay: {
+            headerImage: 'transfer_info.svg',
             header,
             body,
           },

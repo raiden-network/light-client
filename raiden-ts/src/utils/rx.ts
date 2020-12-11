@@ -22,6 +22,7 @@ import {
   map,
   switchMap,
   mergeMapTo,
+  tap,
 } from 'rxjs/operators';
 import { isntNil } from './types';
 import { ErrorMatches, matchError } from './error';
@@ -102,6 +103,11 @@ export function repeatUntil<T>(
     );
 }
 
+// guard an Iterable between an iterable and iterator union
+function isIterable<T>(interval: Iterable<T> | Iterator<T>): interval is Iterable<T> {
+  return Symbol.iterator in interval;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PredicateFunc = (err: any, count: number) => boolean | undefined;
 /**
@@ -109,7 +115,8 @@ type PredicateFunc = (err: any, count: number) => boolean | undefined;
  * completes, waiting delayMs milliseconds between retries.
  * Input observable must be re-subscribable/retriable.
  *
- * @param delayMs - Interval or iterator of intervals to wait between retries
+ * @param interval - Interval, iterable or iterator of intervals to wait between retries;
+ *    if it's an iterable, it resets (iterator recreated) if input$ emits
  * @param options - Retry options, conditions are ANDed
  * @param options.maxRetries - Throw (give up) after this many retries (defaults to 10,
  *    pass 0 to retry indefinitely or as long as iterator yields positive intervals)
@@ -121,7 +128,7 @@ type PredicateFunc = (err: any, count: number) => boolean | undefined;
  * @returns Operator function to retry if stopPredicate not truthy waiting between retries
  */
 export function retryWhile<T>(
-  delayMs: number | Iterator<number>,
+  interval: number | Iterator<number> | Iterable<number>,
   options: {
     maxRetries?: number;
     onErrors?: ErrorMatches;
@@ -131,19 +138,26 @@ export function retryWhile<T>(
     log?: (...args: any[]) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
   } = {},
 ): MonoTypeOperatorFunction<T> {
+  let iter: Iterator<number> | undefined;
   return (input$) =>
     input$.pipe(
+      // if input$ emits, reset iter (only useful if delayMs is an Iterable)
+      tap(() => (iter = undefined)),
       retryWhen((error$) =>
         error$.pipe(
           mergeMap((error, count) => {
-            let interval;
-            if (typeof delayMs === 'number') interval = delayMs;
+            let delayMs;
+            if (typeof interval === 'number') delayMs = interval;
             else {
-              const next = delayMs.next();
-              interval = !next.done ? next.value : -1;
+              if (!iter) {
+                if (isIterable(interval)) iter = interval[Symbol.iterator]();
+                else iter = interval;
+              }
+              const next = iter.next();
+              delayMs = !next.done ? next.value : -1;
             }
 
-            let retry = interval >= 0;
+            let retry = delayMs >= 0;
 
             if (options.maxRetries !== 0) retry &&= count < (options.maxRetries ?? 10);
             if (options.onErrors) retry &&= matchError(options.onErrors, error);
@@ -153,11 +167,11 @@ export function retryWhile<T>(
 
             options.log?.(`retryWhile: ${retry ? 'retrying' : 'giving up'}`, {
               count,
-              interval,
+              interval: delayMs,
               error,
             });
 
-            return retry ? timer(interval) : throwError(error);
+            return retry ? timer(delayMs) : throwError(error);
           }),
         ),
       ),

@@ -71,6 +71,9 @@ export default class RaidenService {
           ...(process.env.VUE_APP_SETTLE_TIMEOUT && +process.env.VUE_APP_SETTLE_TIMEOUT
             ? { settleTimeout: +process.env.VUE_APP_SETTLE_TIMEOUT }
             : undefined),
+          ...(process.env.VUE_APP_CONFIRMATION_BLOCKS && +process.env.VUE_APP_CONFIRMATION_BLOCKS
+            ? { confirmationBlocks: +process.env.VUE_APP_CONFIRMATION_BLOCKS }
+            : undefined),
         },
         subkey,
       );

@@ -1,5 +1,15 @@
 import * as t from 'io-ts';
-import { defer, EMPTY, from, merge, Observable, of, combineLatest, timer } from 'rxjs';
+import {
+  defer,
+  EMPTY,
+  from,
+  merge,
+  Observable,
+  of,
+  combineLatest,
+  timer,
+  AsyncSubject,
+} from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -36,7 +46,7 @@ import constant from 'lodash/constant';
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps, Latest } from '../types';
-import { RaidenConfig } from '../config';
+import { intervalFromConfig, RaidenConfig } from '../config';
 import { Capabilities } from '../constants';
 import { getContractWithSigner, chooseOnchainAccount } from '../helpers';
 import { Presences } from '../transport/types';
@@ -356,76 +366,80 @@ export function pfsFeeUpdateEpic(
  * @param deps.contractsInfo - Contracts info mapping
  * @param deps.config$ - Config observable
  * @param deps.latest$ - Latest observable
+ * @param deps.init$ - Init$ tasks subject
  * @returns Observable of pfsListUpdated actions
  */
 export function pfsServiceRegistryMonitorEpic(
   {}: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { provider, serviceRegistryContract, contractsInfo, config$, latest$ }: RaidenEpicDeps,
+  { provider, serviceRegistryContract, contractsInfo, config$, latest$, init$ }: RaidenEpicDeps,
 ): Observable<pfsListUpdated> {
   return combineLatest([
     // monitors config.pfs, and only monitors contract if it's empty
     config$.pipe(pluckDistinct('pfs')),
     config$.pipe(pluckDistinct('confirmationBlocks')),
   ]).pipe(
-    switchMap(([pfs, confirmationBlocks]) =>
-      pfs !== '' && pfs !== undefined
-        ? // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
-          EMPTY
-        : fromEthersEvent(
-            provider,
-            serviceRegistryContract.filters.RegisteredService(null, null, null, null),
-            undefined,
-            confirmationBlocks,
-            contractsInfo.ServiceRegistry.block_number,
-          )
-            .pipe(
-              withLatestFrom(latest$),
-              // filter only confirmed logs
-              filter(
-                ([{ blockNumber }, { state }]) =>
-                  !!blockNumber && blockNumber + confirmationBlocks <= state.blockNumber,
-              ),
-              pluck(0),
-              map(
-                // [service, valid_till, deposit_amount, deposit_contract, Event]
-                logToContractEvent<[Address, BigNumber, UInt<32>, Address, Event]>(
-                  serviceRegistryContract,
-                ),
-              ),
-              filter(isntNil),
-            )
-            .pipe(
-              groupBy(([service]) => service),
-              mergeMap((grouped$) =>
-                grouped$.pipe(
-                  // switchMap ensures new events for each server (grouped$) picks latest event
-                  switchMap(([service, valid_till]) => {
-                    const now = Date.now(),
-                      validTill = valid_till.mul(1000); // milliseconds valid_till
-                    if (validTill.lt(now)) return EMPTY; // this event already expired
-                    // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
-                    const end$ = validTill.sub(now).lt(Two.pow(31))
-                      ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
-                      : EMPTY;
-                    return merge(of({ service, valid: true }), end$);
-                  }),
-                ),
-              ),
-              scan(
-                (acc, { service, valid }) =>
-                  !valid && acc.includes(service)
-                    ? acc.filter((s) => s !== service)
-                    : valid && !acc.includes(service)
-                    ? [...acc, service]
-                    : acc,
-                [] as readonly Address[],
-              ),
-              distinctUntilChanged(),
-              debounceTime(1e3), // debounce burst of updates on initial fetch
-              map((pfsList) => pfsListUpdated({ pfsList })),
+    switchMap(([pfs, confirmationBlocks]) => {
+      // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
+      if (pfs !== '' && pfs !== undefined) return EMPTY;
+      const initSub = new AsyncSubject<null>();
+      init$.next(initSub);
+      return fromEthersEvent(
+        provider,
+        serviceRegistryContract.filters.RegisteredService(null, null, null, null),
+        confirmationBlocks,
+        contractsInfo.ServiceRegistry.block_number,
+      )
+        .pipe(
+          withLatestFrom(latest$),
+          // filter only confirmed logs
+          filter(
+            ([{ blockNumber }, { state }]) =>
+              !!blockNumber && blockNumber + confirmationBlocks <= state.blockNumber,
+          ),
+          pluck(0),
+          map(
+            // [service, valid_till, deposit_amount, deposit_contract, Event]
+            logToContractEvent<[Address, BigNumber, UInt<32>, Address, Event]>(
+              serviceRegistryContract,
             ),
-    ),
+          ),
+          filter(isntNil),
+        )
+        .pipe(
+          groupBy(([service]) => service),
+          mergeMap((grouped$) =>
+            grouped$.pipe(
+              // switchMap ensures new events for each server (grouped$) picks latest event
+              switchMap(([service, valid_till]) => {
+                const now = Date.now(),
+                  validTill = valid_till.mul(1000); // milliseconds valid_till
+                if (validTill.lt(now)) return EMPTY; // this event already expired
+                // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
+                const end$ = validTill.sub(now).lt(Two.pow(31))
+                  ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
+                  : EMPTY;
+                return merge(of({ service, valid: true }), end$);
+              }),
+            ),
+          ),
+          scan(
+            (acc, { service, valid }) =>
+              !valid && acc.includes(service)
+                ? acc.filter((s) => s !== service)
+                : valid && !acc.includes(service)
+                ? [...acc, service]
+                : acc,
+            [] as readonly Address[],
+          ),
+          distinctUntilChanged(),
+          debounceTime(1e3), // debounce burst of updates on initial fetch
+          map((pfsList) => {
+            initSub.complete(); // complete initSub on first emition, following completes are noop
+            return pfsListUpdated({ pfsList });
+          }),
+        );
+    }),
   );
 }
 
@@ -477,7 +491,7 @@ function makeUdcDeposit$(
   [sender, address]: [Address, Address],
   [deposit, totalDeposit]: [UInt<32>, UInt<32>],
   { pollingInterval, minimumAllowance }: RaidenConfig,
-  { log, provider }: Pick<RaidenEpicDeps, 'log' | 'provider'>,
+  { log, provider, config$ }: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$'>,
 ) {
   return retryAsync$(
     () =>
@@ -510,7 +524,7 @@ function makeUdcDeposit$(
     assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
-    retryWhile(pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
+    retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
   );
 }
 
@@ -566,7 +580,7 @@ export function udcDepositEpic(
             [onchainAddress, address],
             [action.payload.deposit, action.meta.totalDeposit],
             config,
-            { log, provider },
+            { log, provider, config$ },
           );
         }),
         mergeMap(([, receipt]) =>
@@ -743,12 +757,13 @@ export function monitorRequestEpic(
  * @param deps.log - Logger instance
  * @param deps.signer - Signer instance
  * @param deps.provider - Provider instance
+ * @param deps.config$ - Config observable
  * @returns Observable of udcWithdraw.success|udcWithdraw.failure actions
  */
 export function udcWithdrawRequestEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { userDepositContract, address, log, signer, provider }: RaidenEpicDeps,
+  { userDepositContract, address, log, signer, provider, config$ }: RaidenEpicDeps,
 ): Observable<udcWithdraw.success | udcWithdraw.failure> {
   return action$.pipe(
     filter(udcWithdraw.request.is),
@@ -784,7 +799,7 @@ export function udcWithdrawRequestEpic(
         return contract.planWithdraw(amount);
       }).pipe(
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
-        retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
+        retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
         mergeMap(([, { transactionHash: txHash, blockNumber: txBlock }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),
@@ -862,12 +877,13 @@ export function udcCheckWithdrawPlannedEpic(
  * @param deps.address - Our address
  * @param deps.signer - Signer instance
  * @param deps.provider - Provider instance
+ * @param deps.config$ - Config observable
  * @returns Observable of udcWithdrawn|udcWithdraw.failure actions
  */
 export function udcWithdrawPlannedEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, userDepositContract, address, signer, provider }: RaidenEpicDeps,
+  { log, userDepositContract, address, signer, provider, config$ }: RaidenEpicDeps,
 ): Observable<udcWithdrawn | udcWithdraw.failure> {
   return action$.pipe(
     filter(udcWithdraw.success.is),
@@ -901,7 +917,7 @@ export function udcWithdrawPlannedEpic(
         return contract.withdraw(action.meta.amount);
       }).pipe(
         assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log, provider }),
-        retryWhile(provider.pollingInterval, { onErrors: commonTxErrors, log: log.debug }),
+        retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
         concatMap(([, { transactionHash, blockNumber }]) =>
           state$.pipe(
             pluckDistinct('blockNumber'),
@@ -969,7 +985,6 @@ export function msMonitorNewBPEpic(
           null,
           address,
         ),
-        undefined,
         confirmationBlocks,
       ),
     ),

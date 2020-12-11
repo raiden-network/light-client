@@ -9,6 +9,12 @@ const HEXADECIMAL_CHARACTERS = '0123456789abcdefABCDEF';
 const ALPHABET_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz';
 const NUMBER_CHARACTERS = '0123456789';
 
+export const TRANSFER_DATES = [
+  new Date('June 5, 1986 21:00:00:700'),
+  new Date('June 5, 1986 22:00:00:900'),
+  new Date('June 5, 1986 23:00:00:800'),
+];
+
 function getRandomString(charSet: string, length: number, prefix = ''): string {
   let output = prefix;
 
@@ -67,7 +73,7 @@ export function generateTransfer(
     key: getRandomTransactionKey(),
     token: token ? (token.address as Address) : getRandomEthereumAddress(),
     amount: BigNumber.from(10 ** 8),
-    changedAt: new Date('June 5, 1986 23:59:59'),
+    changedAt: new Date('June 5, 1986 23:00:00'),
     direction: 'sent',
     partner: getRandomEthereumAddress(),
     initiator: getRandomEthereumAddress(),

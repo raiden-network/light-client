@@ -70,7 +70,6 @@ describe('Transaction.vue', () => {
   test('transaction item display correctly formatted date', () => {
     const wrapper = createWrapper();
     const transactionTimeStamp = wrapper.find('.transaction__item__details-left__time-stamp');
-    expect(transactionTimeStamp.text()).toContain('6/5/1986');
-    expect(transactionTimeStamp.text()).toContain('11:59:59 PM');
+    expect(transactionTimeStamp.text()).toContain('6/5/1986 11:00:00 PM');
   });
 });

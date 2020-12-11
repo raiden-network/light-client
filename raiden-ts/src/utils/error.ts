@@ -46,7 +46,12 @@ export function matchError(match: ErrorMatch | ErrorMatches, error?: any) {
   else return errorMatcher(error);
 }
 
-export const networkErrors: ErrorMatches = ['invalid response', { code: 'TIMEOUT' }];
+export const networkErrors: ErrorMatches = [
+  'invalid response',
+  'missing response',
+  { code: 'TIMEOUT' },
+  { code: 'SERVER_ERROR' },
+];
 export const txNonceErrors: ErrorMatches = [
   'replacement fee too low',
   'gas price supplied is too low',

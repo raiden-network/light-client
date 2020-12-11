@@ -66,7 +66,13 @@ import { assert } from 'raiden-ts/utils';
 import { Address, Signature, UInt, Hash, decode, Secret } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
-import { raidenConfigUpdate, RaidenAction, raidenShutdown } from 'raiden-ts/actions';
+import {
+  raidenConfigUpdate,
+  RaidenAction,
+  raidenShutdown,
+  raidenStarted,
+  raidenSynced,
+} from 'raiden-ts/actions';
 import { makeDefaultConfig, RaidenConfig } from 'raiden-ts/config';
 import { getSecrethash, makeSecret } from 'raiden-ts/transfers/utils';
 import { raidenReducer } from 'raiden-ts/reducer';
@@ -324,7 +330,7 @@ export const fetch = jest.fn<
     json: jest.MockedFunction<() => Promise<any>>;
     text?: jest.MockedFunction<() => Promise<string>>;
   }>,
-  [string?]
+  [string?, any?]
 >();
 Object.assign(globalThis, { fetch });
 
@@ -654,6 +660,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     secretRegistryContract,
     monitoringServiceContract,
     db,
+    init$: new ReplaySubject(),
   };
 }
 
@@ -1180,6 +1187,7 @@ export async function makeRaiden(
     secretRegistryContract,
     monitoringServiceContract,
     db,
+    init$: new ReplaySubject<Observable<any>>(),
   };
 
   const epicMiddleware = createEpicMiddleware<
@@ -1226,13 +1234,9 @@ export async function makeRaiden(
         .pipe(finalize(() => (raiden.started = false)))
         .subscribe((config) => (raiden.config = config));
       epicMiddleware.run(raidenRootEpic);
-      await raiden.deps.latest$
-        .pipe(
-          filter(({ state }) => state.blockNumber >= raiden.deps.provider.blockNumber),
-          take(1),
-        )
-        .toPromise();
-      // raiden.store.dispatch(newBlock({ blockNumber: provider.blockNumber }));
+      const synced = raiden.action$.pipe(filter(raidenSynced.is), take(1)).toPromise();
+      raiden.store.dispatch(raidenStarted());
+      await synced;
     },
     started: undefined,
     stop: () => {
