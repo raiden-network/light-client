@@ -27,6 +27,9 @@
             />
           </v-btn>
         </template>
+        <span>
+          {{ $t('mint-dialog.title', { symbol: token.symbol || '' }) }}
+        </span>
       </v-tooltip>
     </div>
     <mint-dialog
