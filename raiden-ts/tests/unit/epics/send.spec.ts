@@ -64,6 +64,7 @@ describe('send transfer', () => {
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsDeposited([raiden, partner]);
 
+    const requestBlock = raiden.deps.provider.blockNumber;
     const request = transfer.request(
       {
         tokenNetwork,
@@ -87,7 +88,9 @@ describe('send transfer', () => {
       lock: {
         secrethash,
         amount: value.add(fee),
-        expiration: expect.any(BigNumber),
+        expiration: BigNumber.from(Math.round(1.1 * raiden.config.revealTimeout)).add(
+          requestBlock,
+        ),
       },
       signature: expect.any(String),
     });
