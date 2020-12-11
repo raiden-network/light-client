@@ -1,8 +1,10 @@
 import times from 'lodash/times';
 import { BigNumber, constants } from 'ethers';
-import { RaidenTransfer, Address, RaidenChannel, ChannelState } from 'raiden-ts';
 import { Token } from '@/model/types';
 import { NotificationPayload } from '@/store/notifications/types';
+import { RaidenTransfer, Address, RaidenChannel, ChannelState } from 'raiden-ts';
+import { SuggestedPartner } from 'raiden-ts/src/services/types';
+import { Address as AddressC, UInt } from 'raiden-ts/src/utils/types';
 
 const HEXADECIMAL_CHARACTERS = '0123456789abcdefABCDEF';
 const ALPHABET_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz';
@@ -114,4 +116,21 @@ export function generateNotificationPayload(
     description: 'Used for unit tests',
     ...partialPayload,
   } as NotificationPayload;
+}
+
+/**
+ * @param partialSuggestedPartner - SuggestedPartner overrides
+ * @returns SuggestedPartner mocked object
+ */
+export function generateSuggestedPartner(
+  partialSuggestedPartner: Partial<SuggestedPartner> = {},
+): SuggestedPartner {
+  return {
+    address: '0x123' as AddressC,
+    capacity: BigNumber.from(10 * 2) as UInt<32>,
+    centrality: '0.0000',
+    score: '0.0000',
+    uptime: 788,
+    ...partialSuggestedPartner,
+  } as SuggestedPartner;
 }
