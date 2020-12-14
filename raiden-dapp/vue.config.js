@@ -1,5 +1,9 @@
 const path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const { InjectManifest } = require('workbox-webpack-plugin');
+
+const sourceDirectoryPath = path.resolve(__dirname, 'src');
+const distributionDirectoryPath = path.resolve(__dirname, 'dist');
 
 module.exports = {
   productionSourceMap: false,
@@ -66,11 +70,11 @@ module.exports = {
       patterns.push(
         {
           from: path.resolve(process.env.DEPLOYMENT_INFO),
-          to: path.resolve(__dirname, 'dist'),
+          to: distributionDirectoryPath,
         },
         {
           from: path.resolve(process.env.DEPLOYMENT_SERVICES_INFO),
-          to: path.resolve(__dirname, 'dist'),
+          to: distributionDirectoryPath,
         },
       );
     }
@@ -78,7 +82,7 @@ module.exports = {
     if (process.env.E2E) {
       patterns.push({
         from: path.resolve(__dirname, 'tests', 'e2e', 'e2e.json'),
-        to: path.resolve(__dirname, 'dist'),
+        to: distributionDirectoryPath,
       });
     }
 
@@ -89,12 +93,14 @@ module.exports = {
         }),
       );
     }
-  },
-  pwa: {
-    workboxPluginMode: 'InjectManifest',
-    workboxOptions: {
-      swSrc: './src/sw.js',
-      swDest: 'service-worker.js',
-    },
+
+    if (process.env.NODE_ENV === 'production') {
+      config.plugins.push(
+        new InjectManifest({
+          swSrc: path.join(sourceDirectoryPath, 'sw.js'),
+          swDest: 'service-worker.js',
+        }),
+      );
+    }
   },
 };
