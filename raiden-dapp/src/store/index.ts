@@ -6,7 +6,6 @@ import flatMap from 'lodash/flatMap';
 import filter from 'lodash/filter';
 import clone from 'lodash/clone';
 import reduce from 'lodash/reduce';
-import orderBy from 'lodash/orderBy';
 import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
 import { BigNumber, providers } from 'ethers';
@@ -225,7 +224,15 @@ const store: StoreOptions<CombinedStoreState> = {
     channelWithBiggestCapacity: (_, getters) => (tokenAddress: string) => {
       const channels: RaidenChannel[] = getters.channels(tokenAddress);
       const openChannels = channels.filter((value) => value.state === ChannelState.open);
-      return orderBy(openChannels, ['capacity'], ['desc'])[0];
+
+      const ordered = openChannels.sort((a, b) => {
+        const diff = a.capacity.sub(b.capacity);
+        if (diff.lt(0)) return 1;
+        else if (diff.gt(0)) return -1;
+        else return 0;
+      });
+
+      return ordered[0];
     },
     pendingTransfers: ({ transfers }: RootState) =>
       Object.keys(transfers)

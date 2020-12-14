@@ -263,6 +263,30 @@ describe('store', () => {
     });
   });
 
+  test('return the channel with the biggest capacity when there are multiple channels open, once more', () => {
+    const smallerChannel = {
+      ...TestData.openChannel,
+      capacity: BigNumber.from('0x09407931E1D4A000'), // 0.666666 T
+      partner: '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103',
+    };
+    const biggestChannel = {
+      ...TestData.openChannel,
+      capacity: BigNumber.from('0x0DE0B6B3A7640000'), // 1 T
+      partner: '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103',
+    };
+    const mockChannels = {
+      '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {
+        '0x1D36124C90f53d491b6832F1c073F43E2550E35b': smallerChannel,
+        '0x82641569b2062B545431cF6D7F0A418582865ba7': TestData.settlingChannel,
+        '0xaDBa6B0CC7176De032A887232EB59Bb3B1402103': biggestChannel,
+      },
+    };
+    store.commit('updateChannels', mockChannels);
+    expect(
+      store.getters.channelWithBiggestCapacity('0xd0A1E359811322d97991E03f863a0C30C2cF029C'),
+    ).toEqual(biggestChannel);
+  });
+
   test('the channels getter returns an empty array when the token has no channels', () => {
     const channels = {
       '0xd0A1E359811322d97991E03f863a0C30C2cF029C': {},

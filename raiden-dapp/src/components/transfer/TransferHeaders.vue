@@ -43,7 +43,7 @@
       {{ $t('transfer.transfer-menus.no-channels') }}
     </span>
     <span v-else>
-      <amount-display exact-amount :amount="capacity" :token="token" />
+      <amount-display exact-amount :amount="totalCapacity" :token="token" />
     </span>
     <token-overlay v-if="showTokenOverlay" @cancel="showTokenOverlay = false" />
     <channel-deposit-dialog
@@ -62,7 +62,7 @@
 <script lang="ts">
 import { Component, Prop, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { BigNumber, constants } from 'ethers';
+import { BigNumber } from 'ethers';
 import NavigationMixin from '../../mixins/navigation-mixin';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
@@ -94,11 +94,9 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
   @Prop({ required: true })
   token!: Token;
   @Prop({ required: true })
-  capacity!: BigNumber;
-
-  get noChannels(): boolean {
-    return this.capacity === constants.Zero;
-  }
+  noChannels!: boolean;
+  @Prop({ required: true })
+  totalCapacity!: BigNumber;
 
   depositDialogOpen() {
     this.showDepositDialog = true;

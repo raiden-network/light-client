@@ -2,8 +2,18 @@
   <v-container class="transfer" fluid>
     <no-tokens v-if="noTokens" />
     <template v-else>
-      <transfer-headers class="transfer__menus" :token="token" :capacity="capacity" />
-      <transfer-inputs class="transfer__inputs" :token="token" :capacity="capacity" />
+      <transfer-headers
+        class="transfer__menus"
+        :token="token"
+        :no-channels="noChannels"
+        :total-capacity="totalCapacity"
+      />
+      <transfer-inputs
+        class="transfer__inputs"
+        :token="token"
+        :no-channels="noChannels"
+        :max-channel-capacity="maxChannelCapacity"
+      />
       <transaction-list class="transfer__list" :token="token" />
       <no-channels-dialog :visible="!openChannels" />
     </template>
@@ -38,12 +48,13 @@ const ONE_DAY = new Date(0).setUTCHours(24);
   },
   computed: {
     ...mapState(['stateBackupReminderDateMs']),
-    ...mapGetters(['tokens', 'channelWithBiggestCapacity', 'openChannels']),
+    ...mapGetters(['tokens', 'channels', 'channelWithBiggestCapacity', 'openChannels']),
   },
 })
 export default class TransferRoute extends Vue {
   stateBackupReminderDateMs!: number;
   tokens!: TokenModel[];
+  channels!: (tokenAddress: string) => RaidenChannel[];
   channelWithBiggestCapacity!: (tokenAddress: string) => RaidenChannel | undefined;
 
   mounted() {
@@ -87,10 +98,25 @@ export default class TransferRoute extends Vue {
     }
   }
 
-  get capacity(): BigNumber {
+  get noChannels(): boolean {
+    return this.channels.length === 0;
+  }
+
+  get maxChannelCapacity(): BigNumber {
     if (this.token) {
       const channelWithBiggestCapacity = this.channelWithBiggestCapacity(this.token.address);
       return channelWithBiggestCapacity?.capacity ?? constants.Zero;
+    } else {
+      return constants.Zero;
+    }
+  }
+
+  get totalCapacity(): BigNumber {
+    if (this.token) {
+      const channels = this.channels(this.token.address);
+      return channels
+        .map((channel) => channel.capacity)
+        .reduce((previousValue, currentValue) => previousValue.add(currentValue), constants.Zero);
     } else {
       return constants.Zero;
     }
