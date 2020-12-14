@@ -97,7 +97,7 @@ module.exports = {
     if (process.env.NODE_ENV === 'production') {
       config.plugins.push(
         new InjectManifest({
-          swSrc: path.join(sourceDirectoryPath, 'sw.js'),
+          swSrc: path.join(sourceDirectoryPath, 'service-worker', 'worker'),
           swDest: 'service-worker.js',
         }),
       );
