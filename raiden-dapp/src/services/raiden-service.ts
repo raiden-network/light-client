@@ -1,4 +1,5 @@
 import { Store } from 'vuex';
+import Router from 'vue-router';
 import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
 import { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
@@ -40,6 +41,7 @@ function raidenActionConfirmationValueToStateTranslation(
 export default class RaidenService {
   private _raiden?: Raiden;
   private store: Store<CombinedStoreState>;
+  private router: Router;
   private _userDepositTokenAddress = '';
   private _configuration?: Configuration;
   public usingSubkey: boolean | undefined;
@@ -113,9 +115,10 @@ export default class RaidenService {
     await this.fetchAndUpdateTokenData(toFetch);
   }
 
-  constructor(store: Store<CombinedStoreState>) {
+  constructor(store: Store<CombinedStoreState>, router: Router) {
     this._raiden = undefined;
     this.store = store;
+    this.router = router;
   }
 
   /* istanbul ignore next */
@@ -183,9 +186,10 @@ export default class RaidenService {
           )
           .subscribe();
 
-        raiden.events$
-          .pipe(filter((value) => value.type === 'raiden/shutdown'))
-          .subscribe(() => this.store.commit('reset'));
+        raiden.events$.pipe(filter((value) => value.type === 'raiden/shutdown')).subscribe(() => {
+          this.store.commit('reset');
+          this.router.push({ name: RouteNames.HOME });
+        });
 
         raiden.config$.subscribe(async (config) => {
           this.store.commit('updateConfig', config);
