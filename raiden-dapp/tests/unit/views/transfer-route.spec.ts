@@ -52,6 +52,7 @@ describe('TransferRoute.vue', () => {
       // This simplified version that expects one open channel per token none
       channelWithBiggestCapacity: () => (tokenAddress: string) =>
         channels.filter(({ token }) => token === tokenAddress)?.[0] ?? null,
+      channels: () => (_: string) => channels,
       openChannels: () => channels,
     };
     const mutations = {
@@ -85,7 +86,7 @@ describe('TransferRoute.vue', () => {
     expect(wrapper.findComponent(TransactionList).exists()).toBe(false);
   });
 
-  test('do not displays no tokens component if there are no tokens, but rest', () => {
+  test('does not display no tokens component if there are no tokens, but rest', () => {
     const wrapper = createWrapper();
     expect(wrapper.findComponent(NoTokens).exists()).toBe(false);
     expect(wrapper.findComponent(TransferHeaders).exists()).toBe(true);
@@ -93,7 +94,7 @@ describe('TransferRoute.vue', () => {
     expect(wrapper.findComponent(TransactionList).exists()).toBe(true);
   });
 
-  test('show dialog if there are no open channels', () => {
+  test('shows dialog if there are no open channels', () => {
     const wrapper = createWrapper(token.address, [token], []);
     expect(wrapper.findComponent(NoChannelsDialog).exists()).toBe(true);
   });
@@ -115,12 +116,12 @@ describe('TransferRoute.vue', () => {
 
   test('component can get channel capacity from route parameter', () => {
     const wrapper = createWrapper();
-    expect((wrapper.vm as any).capacity).toEqual(channel.capacity);
+    expect((wrapper.vm as any).totalCapacity).toEqual(channel.capacity);
   });
 
   test('capacity is zero if there is the token is undefined', () => {
     const wrapper = createWrapper('', [], []);
-    expect((wrapper.vm as any).capacity).toEqual(constants.Zero);
+    expect((wrapper.vm as any).totalCapacity).toEqual(constants.Zero);
   });
 
   test('notifies about backing up state if user has never been notified', () => {

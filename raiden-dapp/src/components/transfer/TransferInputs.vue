@@ -40,7 +40,7 @@
           hide-error-label
           :disabled="noChannels"
           :token="token"
-          :max="capacity"
+          :max="maxChannelCapacity"
           :placeholder="$t('transfer.amount-placeholder')"
           @input-error="amountError = $event"
         />
@@ -58,7 +58,7 @@
 <script lang="ts">
 import { Component, Prop, Watch, Mixins } from 'vue-property-decorator';
 import { mapState, mapGetters } from 'vuex';
-import { BigNumber, constants } from 'ethers';
+import { BigNumber } from 'ethers';
 import { VForm } from 'vuetify/lib';
 import NavigationMixin from '../../mixins/navigation-mixin';
 import AddressInput from '@/components/AddressInput.vue';
@@ -93,7 +93,9 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
   @Prop({ required: true })
   token!: Token;
   @Prop({ required: true })
-  capacity!: BigNumber;
+  noChannels!: boolean;
+  @Prop({ required: true })
+  maxChannelCapacity!: BigNumber;
 
   $refs!: {
     transfer: VForm;
@@ -124,10 +126,6 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
     if (this.token.decimals === 0 && this.amount.indexOf('.') > -1) {
       this.amount = this.amount.split('.')[0];
     }
-  }
-
-  get noChannels(): boolean {
-    return this.capacity === constants.Zero;
   }
 
   get blockedHubs(): string[] {
