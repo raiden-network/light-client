@@ -1,5 +1,18 @@
+const fs = require('fs')
 const path = require('path');
+const { DefinePlugin } = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const VersionFile = require('webpack-version-file-plugin');
+const { InjectManifest } = require('workbox-webpack-plugin');
+
+const sourceDirectoryPath = path.resolve(__dirname, 'src');
+const distributionDirectoyPath = path.resolve(__dirname, 'dist');
+
+function getPackageVersion() {
+  const packageFilePath = path.resolve(__dirname, 'package.json');
+  const packageJson = fs.readFileSync(packageFilePath);
+  return JSON.parse(packageJson).version ?? '0.0.0';
+}
 
 module.exports = {
   productionSourceMap: false,
@@ -23,7 +36,6 @@ module.exports = {
       .loader('@kazupon/vue-i18n-loader')
       .end();
   },
-
   pluginOptions: {
     i18n: {
       locale: 'en',
@@ -66,11 +78,11 @@ module.exports = {
       patterns.push(
         {
           from: path.resolve(process.env.DEPLOYMENT_INFO),
-          to: path.resolve(__dirname, 'dist'),
+          to: distributionDirectoyPath,
         },
         {
           from: path.resolve(process.env.DEPLOYMENT_SERVICES_INFO),
-          to: path.resolve(__dirname, 'dist'),
+          to: distributionDirectoyPath,
         },
       );
     }
@@ -78,7 +90,7 @@ module.exports = {
     if (process.env.E2E) {
       patterns.push({
         from: path.resolve(__dirname, 'tests', 'e2e', 'e2e.json'),
-        to: path.resolve(__dirname, 'dist'),
+        to: distributionDirectoyPath,
       });
     }
 
@@ -89,12 +101,28 @@ module.exports = {
         }),
       );
     }
-  },
-  pwa: {
-    workboxPluginMode: 'InjectManifest',
-    workboxOptions: {
-      swSrc: './src/sw.js',
-      swDest: 'service-worker.js',
-    },
+
+    if (process.env.NODE_ENV === 'production') {
+      // Note that we don't need to exclude the version file from the to cache
+      // assets. The version file gets generated during the build and is
+      // therefore not included in the manifest anyways. The same goes for the
+      // worker script itself.
+      config.plugins.push(
+        new VersionFile({
+          packageFile: path.join(__dirname, 'package.json'),
+          template: path.join(__dirname, 'version.ejs'),
+          outputFile: path.join(distributionDirectoyPath, 'version.json'),
+        }),
+        new DefinePlugin({
+          'process.env': {
+            PACKAGE_VERSION: "'" + getPackageVersion() + "'",
+          }
+        }),
+        new InjectManifest({
+          swSrc: path.join(sourceDirectoryPath, 'service-worker', 'worker'),
+          swDest: 'service-worker.js',
+        }),
+      );
+    }
   },
 };

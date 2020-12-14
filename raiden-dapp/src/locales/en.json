@@ -182,8 +182,9 @@
     "transfer-from-raiden-account": "Transfer ETH from Raiden Account to Main Account"
   },
   "update": {
-    "available": "A new version is available.",
-    "update": "Refresh"
+    "optional": "A new version is available.",
+    "mandatory": "Something happended to the local cached version. Eventually the browser storage got cleared. You must update to get the app working again. You will not loose your current state.",
+    "update": "Update"
   },
   "address-input": {
     "input": {

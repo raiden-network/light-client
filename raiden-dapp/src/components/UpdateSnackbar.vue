@@ -1,11 +1,13 @@
 <template>
-  <span v-if="updateAvailable">
-    <blurred-overlay :show="updateAvailable" :fullscreen="true" />
-    <v-snackbar v-model="updateAvailable" :timeout="-1" color="primary">
-      {{ $t('update.available') }}
-      <v-btn dark text :loading="isUpdating" @click="update">
-        {{ $t('update.update') }}
-      </v-btn>
+  <span v-if="visible">
+    <blurred-overlay :show="blocking" :fullscreen="true" />
+    <v-snackbar class="update-snackbar" v-model="visible" :timeout="-1" color="primary">
+      <v-container class="d-flex align-center py-0">
+        <div class="update-snackbar__message">{{ message }}</div>
+        <v-btn class="ml-5" dark text :loading="isUpdating" @click="update">
+          {{ $t('update.update') }}
+        </v-btn>
+      </v-container>
     </v-snackbar>
   </span>
 </template>
@@ -13,39 +15,56 @@
 <script lang="ts">
 /* istanbul ignore file */
 import { Component, Vue } from 'vue-property-decorator';
+import { mapState, mapGetters } from 'vuex';
 import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
+import { VersionInfo } from '@/types';
 
-@Component({ components: { BlurredOverlay } })
+@Component({
+  components: { BlurredOverlay },
+  computed: {
+    ...mapState(['versionInfo']),
+    ...mapGetters(['isConnected', 'versionUpdateAvailable']),
+  },
+})
 export default class UpdateSnackbar extends Vue {
+  versionInfo!: VersionInfo;
+  isConnected!: boolean;
+  versionUpdateAvailable!: boolean;
   isUpdating = false;
-  updateAvailable = false;
-  swRegistration: ServiceWorkerRegistration | null = null;
 
-  created() {
-    window.addEventListener('swUpdated', this.handleSWUpdate, { once: true });
-
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      setTimeout(() => {
-        this.updateAvailable = false;
-        window.location.reload();
-      }, 1500);
-    });
-  }
-  beforeDestroy() {
-    window.removeEventListener('swUpdated', this.handleSWUpdate);
+  get visible(): boolean {
+    return this.versionUpdateAvailable || this.versionInfo.updateMandatory;
   }
 
-  handleSWUpdate(event: ServiceWorkerUpdatedEvent) {
-    this.swRegistration = event.detail;
-    this.updateAvailable = true;
+  get blocking(): boolean {
+    return this.versionInfo.updateMandatory;
   }
 
-  update() {
-    this.isUpdating = true;
-    if (!this.swRegistration || !this.swRegistration.waiting) {
-      return;
+  get message(): string {
+    if (this.visible) {
+      const subKey = this.versionInfo.updateMandatory ? 'mandatory' : 'optional';
+      return this.$t(`update.${subKey}`) as string;
+    } else {
+      return '';
     }
-    this.swRegistration.waiting.postMessage('skipWaiting');
+  }
+
+  async update(): Promise<void> {
+    this.isUpdating = true;
+
+    if (this.isConnected) {
+      await this.$raiden.disconnect();
+    }
+
+    this.$serviceWorkerAssistant.update();
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.update-snackbar {
+  &__message {
+    text-align: justify;
+  }
+}
+</style>

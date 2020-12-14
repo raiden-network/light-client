@@ -10,6 +10,7 @@ import orderBy from 'lodash/orderBy';
 import isEqual from 'lodash/isEqual';
 import isEmpty from 'lodash/isEmpty';
 import { BigNumber, providers } from 'ethers';
+import compareVersions from 'compare-versions';
 import { NotificationsState } from './notifications/types';
 import {
   AccTokenModel,
@@ -56,6 +57,11 @@ const _defaultState: RootState = {
   disclaimerAccepted: false,
   stateBackupReminderDateMs: 0,
   persistDisclaimerAcceptance: false,
+  versionInfo: {
+    activeVersion: process.env.PACKAGE_VERSION ?? '0.0.0',
+    availableVersion: undefined,
+    updateMandatory: false,
+  }
 };
 
 /**
@@ -167,6 +173,12 @@ const store: StoreOptions<CombinedStoreState> = {
     updateStateBackupReminderDate(state: RootState, newReminderDate: number) {
       state.stateBackupReminderDateMs = newReminderDate;
     },
+    setAvailableVersion(state: RootState, version: string) {
+      state.versionInfo.availableVersion = version;
+    },
+    setUpdateIsMandatory(state: RootState) {
+      state.versionInfo.updateMandatory = true;
+    }
   },
   actions: {},
   getters: {
@@ -248,6 +260,14 @@ const store: StoreOptions<CombinedStoreState> = {
     usingRaidenAccount: (state: RootState): boolean => {
       return !!state.settings.useRaidenAccount;
     },
+    versionUpdateAvailable: (state: RootState): boolean => {
+      const { activeVersion, availableVersion } = state.versionInfo;
+      return (
+        !!activeVersion &&
+        !!availableVersion &&
+        compareVersions.compare(availableVersion, activeVersion, '>')
+      );
+    }
   },
   plugins: [settingsLocalStorage.plugin, miscellaneousLocalStorage.plugin],
   modules: {

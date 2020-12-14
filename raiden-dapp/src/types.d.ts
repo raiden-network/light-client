@@ -10,6 +10,12 @@ export type Transfers = { [key: string]: RaidenTransfer };
 export type ChannelAction = 'close' | 'deposit' | 'withdraw' | 'settle';
 export type Settings = { [setting: string]: boolean | number | string };
 
+export interface VersionInfo {
+  activeVersion: string;
+  availableVersion: string | undefined;
+  updateMandatory: boolean;
+}
+
 export interface RootState {
   loading: boolean;
   blockNumber: number;
@@ -29,18 +35,13 @@ export interface RootState {
   disclaimerAccepted: boolean;
   stateBackupReminderDateMs: number;
   persistDisclaimerAcceptance: boolean;
-}
+  versionInfo: VersionInfo;
+} 
 
 declare global {
   interface Window {
     web3: any;
     ethereum: any;
-  }
-
-  type ServiceWorkerUpdatedEvent = CustomEvent<ServiceWorkerRegistration>;
-
-  interface WindowEventMap {
-    swUpdated: ServiceWorkerUpdatedEvent;
   }
 }
 
@@ -49,14 +50,14 @@ declare module 'vue/types/vue' {
     $raiden: RaidenService;
   }
 }
-
+ 
 declare module 'vuetify/lib' {
   export interface VTextField extends Vue {
     valid: boolean;
     validate: () => void;
   }
 
-  export interface VForm extends Vue {
+export interface VForm extends Vue {
     reset: () => void;
   }
 }
