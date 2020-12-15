@@ -500,8 +500,8 @@ export default class RaidenService {
     }
   }
 
-  disconnect = (): void => {
-    this.raiden.stop();
+  disconnect = async (): Promise<void> => {
+    await this.raiden.stop();
   };
 
   getAccount = (): string => {

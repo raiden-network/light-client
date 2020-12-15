@@ -1,7 +1,6 @@
 <template>
-  <span v-if="updateAvailable">
-    <blurred-overlay :show="updateAvailable" :fullscreen="true" />
-    <v-snackbar v-model="updateAvailable" :timeout="-1" color="primary">
+  <span v-if="visible">
+    <v-snackbar v-model="visible" class="update-snackbar" :timeout="-1" color="primary">
       {{ $t('update.available') }}
       <v-btn dark text :loading="isUpdating" @click="update">
         {{ $t('update.update') }}
@@ -13,39 +12,32 @@
 <script lang="ts">
 /* istanbul ignore file */
 import { Component, Vue } from 'vue-property-decorator';
+import { mapGetters } from 'vuex';
 import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
 
-@Component({ components: { BlurredOverlay } })
+@Component({
+  components: { BlurredOverlay },
+  computed: {
+    ...mapGetters(['isConnected', 'versionUpdateAvailable']),
+  },
+})
 export default class UpdateSnackbar extends Vue {
+  isConnected!: boolean;
+  versionUpdateAvailable!: boolean;
   isUpdating = false;
-  updateAvailable = false;
-  swRegistration: ServiceWorkerRegistration | null = null;
 
-  created() {
-    window.addEventListener('swUpdated', this.handleSWUpdate, { once: true });
-
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      setTimeout(() => {
-        this.updateAvailable = false;
-        window.location.reload();
-      }, 1500);
-    });
-  }
-  beforeDestroy() {
-    window.removeEventListener('swUpdated', this.handleSWUpdate);
+  get visible(): boolean {
+    return this.versionUpdateAvailable;
   }
 
-  handleSWUpdate(event: ServiceWorkerUpdatedEvent) {
-    this.swRegistration = event.detail;
-    this.updateAvailable = true;
-  }
-
-  update() {
+  async update(): Promise<void> {
     this.isUpdating = true;
-    if (!this.swRegistration || !this.swRegistration.waiting) {
-      return;
+
+    if (this.isConnected) {
+      await this.$raiden.disconnect();
     }
-    this.swRegistration.waiting.postMessage('skipWaiting');
+
+    // TODO: trigger actual update.
   }
 }
 </script>

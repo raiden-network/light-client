@@ -50,12 +50,6 @@ declare global {
     web3: any;
     ethereum: any;
   }
-
-  type ServiceWorkerUpdatedEvent = CustomEvent<ServiceWorkerRegistration>;
-
-  interface WindowEventMap {
-    swUpdated: ServiceWorkerUpdatedEvent;
-  }
 }
 
 declare module 'vue/types/vue' {
