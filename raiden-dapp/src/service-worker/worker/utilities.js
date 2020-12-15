@@ -68,3 +68,15 @@ export async function update() {
   await sendMessageToClients.call(this, ServiceWorkerMessages.RELOAD_WINDOW);
   await this.registration.unregister();
 }
+
+/**
+ * Checks if the cache is still valid.
+ * It will send a message to the clients if this is not the case (anymore).
+ * This is always triggerd by the client itself. Therefore it is not necessary
+ * to handle the case that no client is available.
+ */
+export async function verifyCacheValidity() {
+  if (await isCacheInvalid.call(this)) {
+    sendMessageToClients.call(this, ServiceWorkerMessages.CACHE_IS_INVALID);
+  }
+}

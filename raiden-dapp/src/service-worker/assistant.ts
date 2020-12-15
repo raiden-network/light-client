@@ -11,6 +11,7 @@ export default class ServiceWorkerAssistant {
     navigator.serviceWorker.onmessage = this.onMessage;
     this.updateAvailableVersion();
     setInterval(this.updateAvailableVersion, 1000 * 60 * 60);
+    setInterval(this.verifyCacheValidity, 1000 * 10);
   }
 
   public update = (): void => {
@@ -48,6 +49,10 @@ export default class ServiceWorkerAssistant {
     } catch (error) {
       console.warn(`Failed to get (a valid) version: ${error.message}`); // eslint-disable-line no-console
     }
+  };
+
+  private verifyCacheValidity = (): void => {
+    navigator.serviceWorker.controller?.postMessage(ServiceWorkerAssistantMessages.VERIFY_CACHE);
   };
 
   private reloadWindow = (): void => {

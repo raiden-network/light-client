@@ -7,6 +7,7 @@ import {
   isCacheInvalid,
   isAnyClientAvailable,
   update,
+  verifyCacheValidity,
   sendMessageToClients,
 } from './utilities';
 
@@ -33,6 +34,10 @@ async function onMessage(event) {
   switch (event.data) {
     case ServiceWorkerAssistantMessages.UPDATE:
       await update.call(this);
+      break;
+
+    case ServiceWorkerAssistantMessages.VERIFY_CACHE:
+      await verifyCacheValidity.call(this);
       break;
 
     default:

@@ -11,4 +11,5 @@ export enum ServiceWorkerMessages {
 
 export enum ServiceWorkerAssistantMessages {
   UPDATE = 'update',
+  VERIFY_CACHE = 'verify_cache',
 }
