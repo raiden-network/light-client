@@ -130,7 +130,7 @@ export function navigateToRaidenAccount() {
  */
 export function navigateBackToAccountMenu() {
   // cypress selectors: raiden-dapp/src/views/AccountRoute.vue
-  cy.get('[data-cy=header-content_back-button]').click();
+  cy.get('[data-cy=header-content_back-button]').first().click();
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.getWithCustomTimeout('[data-cy=account_root]').should('exist');
 }

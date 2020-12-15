@@ -1,57 +1,37 @@
 <template>
-  <div>
-    <v-row align="start" justify="center" no-gutters class="token-information">
-      <v-col cols="2">
-        <div class="token-information__label">
-          {{ $t('token-information.title') }}
-        </div>
-      </v-col>
-      <v-col cols="8">
-        <div class="token-information__description">
-          {{
-            $t('token-information.description', {
-              symbol: token.symbol,
-              name: token.name,
-            })
-          }}
-        </div>
-        <div class="token-information__address">
-          <address-display :address="token.address" />
-        </div>
-      </v-col>
-    </v-row>
-    <v-row align="start" justify="center" no-gutters class="token-information">
-      <v-col cols="2">
-        <div class="token-information__label">
-          {{ $t('token-information.balance') }}
-        </div>
-      </v-col>
-      <v-col cols="8">
-        <div class="token-information__description">
-          <span class="token-information__balance">
-            {{ (token.balance || 0) | displayFormat(token.decimals) }}
-          </span>
-          <v-tooltip v-if="!mainnet" bottom>
-            <template #activator="{ on }">
-              <v-btn
-                text
-                icon
-                small
-                data-cy="token_information_mint"
-                class="token-information__mint"
-                @click="showMintDialog = true"
-                v-on="on"
-              >
-                <v-icon color="primary">play_for_work</v-icon>
-              </v-btn>
-            </template>
-            <span>
-              {{ $t('mint-dialog.title', { symbol: token.symbol || '' }) }}
-            </span>
-          </v-tooltip>
-        </div>
-      </v-col>
-    </v-row>
+  <div class="token-information">
+    <span class="token-information__details">
+      {{
+        $t('token-information.description', {
+          symbol: token.symbol,
+        })
+      }}
+      <address-display class="token-information__details__address" :address="token.address" />
+    </span>
+    <div class="token-information__balance">
+      <span class="token-information__balance__amount">
+        {{ (token.balance || 0) | displayFormat(token.decimals) }}
+      </span>
+      <v-tooltip v-if="!mainnet" bottom>
+        <template #activator="{ on }">
+          <v-btn
+            icon
+            small
+            data-cy="token_information_mint"
+            @click="showMintDialog = true"
+            v-on="on"
+          >
+            <img
+              :src="require('@/assets/icon-deposit.svg')"
+              class="token-information__balance__mint"
+            />
+          </v-btn>
+        </template>
+        <span>
+          {{ $t('mint-dialog.title', { symbol: token.symbol || '' }) }}
+        </span>
+      </v-tooltip>
+    </div>
     <mint-dialog
       :token="token"
       :visible="showMintDialog"
@@ -60,6 +40,7 @@
     />
   </div>
 </template>
+
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
@@ -90,45 +71,30 @@ export default class TokenInformation extends Vue {
 }
 </script>
 <style scoped lang="scss">
-@import '@/scss/fonts';
-@import '@/scss/mixins';
-
 .token-information {
-  height: auto;
-  margin-top: 25px;
+  align-items: center;
+  display: flex;
+  height: 100%;
+  padding: 0 16px;
+  width: 100%;
 
-  &__label {
-    color: #ffffff;
-    font-family: $main-font;
-    font-size: 16px;
-    font-weight: bold;
-    text-transform: uppercase;
-    line-height: 28px;
-  }
-
-  &__description {
+  &__details {
     display: flex;
-    align-items: flex-start;
-    color: #ffffff;
-    font-family: $main-font;
-    font-size: 16px;
-    overflow-x: visible;
-    text-overflow: ellipsis;
-    line-height: 28px;
-    @include respond-to(handhelds) {
-      margin-left: 20px;
-      width: 100%;
-    }
-  }
+    flex: none;
 
-  &__address {
-    @include respond-to(handhelds) {
-      margin-left: 20px;
+    &__address {
+      margin-left: 4px;
     }
   }
 
   &__balance {
-    margin-right: 10px;
+    flex: 1;
+    text-align: right;
+
+    &__mint {
+      height: 24px;
+      padding-bottom: 6px;
+    }
   }
 }
 </style>

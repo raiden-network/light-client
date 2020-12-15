@@ -530,8 +530,12 @@
     "select-button": "Select Hub",
     "service-token-tooltip": "Mint and deposit {token} to the User Deposit Contract to pay for the Monitoring Service.",
     "service-token-tooltip-main": "Deposit {token} to the User Deposit Contract to pay for the Monitoring Service.",
-    "service-token-balance-too-low": "Your {token} balance is too low to pay for the Monitoring Service. Use the button above to mint and deposit more tokens.",
-    "service-token-description": "Balance to pay the Monitoring Service"
+    "service-token-description": "balance for monitoring service"
+  },
+  "hub-list": {
+    "header": "Current top 3 suggested hubs (best first)",
+    "error": "Error: List cannot be fetched",
+    "select-button": "Select"
   },
   "open-channel": {
     "error": {

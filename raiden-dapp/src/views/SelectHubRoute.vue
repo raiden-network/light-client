@@ -7,34 +7,19 @@
     class="select-hub"
     @submit.prevent="selectHub()"
   >
-    <v-row justify="center" align-content="center" no-gutters class="udc-balance__container">
-      <v-col cols="10">
-        <span
-          class="udc-balance__amount"
-          :class="{
-            'low-balance': !hasEnoughServiceTokens,
-          }"
-        >
-          <amount-display exact-amount :amount="udcCapacity" :token="udcToken" />
-          <v-text-field
-            v-model="udcCapacity"
-            :rules="[() => hasEnoughServiceTokens || '']"
-            class="d-none"
-            required
-          />
-        </span>
+    <div class="select-hub__udc">
+      <div class="select-hub__udc__balance" :class="{ 'low-balance': !hasEnoughServiceTokens }">
+        <amount-display exact-amount :amount="udcCapacity" :token="udcToken" />
         <v-tooltip bottom>
           <template #activator="{ on }">
             <v-btn
-              text
               icon
-              x-large
               data-cy="select_hub_udc_balance_deposit"
-              class="udc-balance__deposit"
+              class="select-hub__udc__balance__deposit"
               @click="showUdcDeposit = true"
               v-on="on"
             >
-              <v-icon color="primary">play_for_work</v-icon>
+              <v-img :src="require('@/assets/icon-deposit.svg')" />
             </v-btn>
           </template>
           <span>
@@ -50,46 +35,36 @@
             }}
           </span>
         </v-tooltip>
-        <udc-deposit-dialog
-          :visible="showUdcDeposit"
-          @cancel="showUdcDeposit = false"
-          @done="mintDone()"
-        />
-      </v-col>
-    </v-row>
-    <v-row justify="center" no-gutters class="udc-balance__container">
-      <v-col cols="10">
-        <span v-if="!hasEnoughServiceTokens" class="udc-balance__description low-balance">
-          {{
-            $t('select-hub.service-token-balance-too-low', {
-              token: serviceToken,
-            })
-          }}
-        </span>
-        <span v-else class="udc-balance__description">
-          {{ $t('select-hub.service-token-description') }}
-        </span>
-      </v-col>
-    </v-row>
-    <v-row align="center" justify="center" no-gutters>
-      <v-col cols="10">
-        <address-input
-          v-model="partner"
-          :value="partner"
-          :exclude="[token.address, defaultAccount]"
-        ></address-input>
-      </v-col>
-    </v-row>
-
-    <divider></divider>
-    <token-information :token="token"></token-information>
-
-    <action-button
-      data-cy="select_hub_button"
-      class="select-hub__button"
-      :enabled="valid"
-      :text="$t('select-hub.select-button')"
-    ></action-button>
+      </div>
+      <span class="select-hub__udc__description">
+        {{ $t('select-hub.service-token-description').toUpperCase() }}
+      </span>
+    </div>
+    <div class="select-hub__address-input">
+      <address-input
+        v-model="partner"
+        :value="partner"
+        :exclude="[token.address, defaultAccount]"
+      />
+    </div>
+    <div class="select-hub__hub-list">
+      <hub-list :token-address="token.address" @select-hub="setSuggestedPartner($event)" />
+    </div>
+    <div class="select-hub__token-balance">
+      <token-information :token="token" />
+    </div>
+    <div class="select-hub__button">
+      <action-button
+        data-cy="select_hub_button"
+        :enabled="valid"
+        :text="$t('select-hub.select-button')"
+      />
+    </div>
+    <udc-deposit-dialog
+      :visible="showUdcDeposit"
+      @cancel="showUdcDeposit = false"
+      @done="mintDone()"
+    />
   </v-form>
 </template>
 
@@ -98,7 +73,6 @@ import { Component, Mixins } from 'vue-property-decorator';
 import isEmpty from 'lodash/isEmpty';
 import { mapGetters, mapState } from 'vuex';
 import { constants, providers } from 'ethers';
-import { RaidenChannels } from 'raiden-ts';
 
 import { Token } from '@/model/types';
 import AddressInput from '@/components/AddressInput.vue';
@@ -109,6 +83,8 @@ import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
 import ActionButton from '@/components/ActionButton.vue';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
+import HubList from '@/components/HubList.vue';
+import { RaidenChannels } from 'raiden-ts';
 
 @Component({
   components: {
@@ -118,6 +94,7 @@ import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
     ActionButton,
     UdcDepositDialog,
     AmountDisplay,
+    HubList,
   },
   computed: {
     ...mapState(['defaultAccount', 'channels', 'network']),
@@ -153,6 +130,14 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
 
   selectHub() {
     this.navigateToOpenChannel(this.token.address, this.partner);
+  }
+
+  setSuggestedPartner(selectedPartner: string): void {
+    if (!selectedPartner) {
+      (this.$refs.form as Vue & { reset: () => boolean }).reset();
+    } else {
+      this.partner = selectedPartner;
+    }
   }
 
   private async updateUDCCapacity() {
@@ -200,48 +185,98 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
 </script>
 
 <style lang="scss" scoped>
-@import '@/scss/fonts';
 @import '@/scss/colors';
+@import '@/scss/mixins';
 
 .select-hub {
-  height: 100%;
-  width: 100%;
   display: flex;
   flex-direction: column;
-}
-.udc-balance {
-  &__container {
-    text-align: center;
+  height: 100%;
+  margin: 0 26px;
+  width: 100%;
+  @include respond-to(handhelds) {
+    overflow-y: auto;
   }
 
-  &__amount {
-    font-size: 24px;
-    font-weight: bold;
-    font-family: $main-font;
-    color: $color-white;
-    vertical-align: middle;
-    ::v-deep {
-      div {
-        display: inline-block;
+  &__udc,
+  &__hub-list,
+  &__token-balance {
+    background-color: $transfer-screen-bg-color;
+    border-radius: 8px;
+  }
+
+  &__address-input,
+  &__hub-list,
+  &__token-balance {
+    margin-top: 16px;
+  }
+
+  &__udc {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    height: 120px;
+
+    &__balance {
+      display: flex;
+      font-size: 36px;
+      font-weight: 500;
+      padding-top: 22px;
+
+      &.low-balance {
+        color: $error-color;
+      }
+
+      &__deposit {
+        height: 32px;
+        margin: 8px 0 0 6px;
       }
     }
-    &.low-balance {
-      color: $error-color;
+
+    &__description {
+      color: $color-gray;
+      font-size: 12px;
+      padding: 4px 6px 0 0;
     }
   }
 
-  &__description {
-    font-size: 16px;
-    font-family: $main-font;
-    color: $secondary-text-color;
-
-    &.low-balance {
-      color: $error-color;
-    }
+  &__address-input {
+    flex: none;
   }
 
-  &__deposit {
-    vertical-align: middle;
+  &__hub-list {
+    height: auto;
+    padding-bottom: 16px;
+  }
+
+  &__token-balance {
+    height: 48px;
+  }
+
+  &__button {
+    align-items: flex-end;
+    display: flex;
+    flex: 1;
+    margin-bottom: 38px;
+    @include respond-to(handhelds) {
+      flex: none;
+      margin-bottom: none;
+
+      ::v-deep {
+        .col-10 {
+          padding-top: 28px;
+          @include respond-to(handhelds) {
+            min-width: 100%;
+          }
+        }
+
+        .v-btn {
+          @include respond-to(handhelds) {
+            min-width: 100%;
+          }
+        }
+      }
+    }
   }
 }
 </style>

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'vuetify/types/lib.d';
-import { providers } from 'ethers';
+import { BigNumber, providers } from 'ethers';
 import RaidenService from '@/services/raiden-service';
-import { RaidenChannels, RaidenTransfer, RaidenConfig } from 'raiden-ts';
 import { DeniedReason, Token, Presences } from '@/model/types';
+import { RaidenChannels, RaidenTransfer, RaidenConfig } from 'raiden-ts';
 
 export type Tokens = { [token: string]: Token };
 export type Transfers = { [key: string]: RaidenTransfer };
@@ -29,6 +29,14 @@ export interface RootState {
   disclaimerAccepted: boolean;
   stateBackupReminderDateMs: number;
   persistDisclaimerAcceptance: boolean;
+}
+
+export interface SuggestedPartner {
+  address: string;
+  capacity: BigNumber;
+  centrality: string | number;
+  score: string | number;
+  uptime: string | number;
 }
 
 declare global {

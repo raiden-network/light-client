@@ -3,7 +3,7 @@ import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
 import { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
-import { Tokens } from '@/types';
+import { Tokens, SuggestedPartner } from '@/types';
 import { CombinedStoreState } from '@/store';
 import { Web3Provider } from '@/services/web3-provider';
 import { BalanceUtils } from '@/utils/balance-utils';
@@ -740,6 +740,10 @@ export default class RaidenService {
   async getTokenBalance(tokenAddress: string, raidenAccount?: string): Promise<BigNumber> {
     const tokenBalance = await this.raiden.getTokenBalance(tokenAddress, raidenAccount);
     return tokenBalance;
+  }
+
+  async getSuggestedPartners(token: string): Promise<SuggestedPartner[]> {
+    return await this.raiden.suggestPartners(token);
   }
 }
 

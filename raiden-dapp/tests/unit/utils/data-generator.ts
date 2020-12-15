@@ -1,6 +1,7 @@
 import times from 'lodash/times';
 import { BigNumber, constants } from 'ethers';
 import { Token } from '@/model/types';
+import { SuggestedPartner } from '@/types';
 import { NotificationPayload } from '@/store/notifications/types';
 import { RaidenTransfer, Address, RaidenChannel, ChannelState } from 'raiden-ts';
 
@@ -120,4 +121,21 @@ export function generateNotificationPayload(
     description: 'Used for unit tests',
     ...partialPayload,
   } as NotificationPayload;
+}
+
+/**
+ * @param partialSuggestedPartner - SuggestedPartner overrides
+ * @returns SuggestedPartner mocked object
+ */
+export function generateSuggestedPartner(
+  partialSuggestedPartner: Partial<SuggestedPartner> = {},
+): SuggestedPartner {
+  return {
+    address: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
+    capacity: BigNumber.from(10 * 2),
+    centrality: '0.0000',
+    score: '0.0000',
+    uptime: 788,
+    ...partialSuggestedPartner,
+  } as SuggestedPartner;
 }
