@@ -1,8 +1,8 @@
 # Overview
 
-The Raiden Dapp is a reference frontend web implementation which uses the raiden-sdk which is a fully compliant with the raiden protocol and can be used to open channels and make micropayments. Seeing this developers can create their own frontend implementation's in wide varieties of mobile and web technologies. The Raiden Dapp is also compliant with the PWA standard in chrome.
+The Raiden dApp is a reference implementation of the Raiden SDK. The Raiden SDK  is a fully compliant with the Raiden protocol and can be used for opening channels and making micropayments. Developers can use the Raiden SDK to create their own dApp in various mobile and web technologies. The Raiden dApp is also compliant with the PWA standard in chrome.
 
-## Run the Raiden Dapp
+## Run the Raiden dApp
 
-Installing and running the raiden-dapp locally has been discussed
+Instructions on how to install and run the Raiden dApp locally can be found here:
 [_here_](../Get%20Started/installing-dapp.html#build-the-sdk)
