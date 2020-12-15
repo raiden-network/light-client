@@ -13,6 +13,7 @@ export type Settings = { [setting: string]: boolean | number | string };
 export interface VersionInfo {
   activeVersion: string;
   availableVersion: string | undefined;
+  updateIsMandatory: boolean;
 }
 
 export interface RootState {

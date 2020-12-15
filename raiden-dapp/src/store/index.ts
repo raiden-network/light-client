@@ -59,6 +59,7 @@ const _defaultState: RootState = {
   versionInfo: {
     activeVersion: process.env.PACKAGE_VERSION ?? '0.0.0',
     availableVersion: undefined,
+    updateIsMandatory: false,
   },
 };
 
@@ -179,6 +180,9 @@ const store: StoreOptions<CombinedStoreState> = {
       if (compareVersions.validate(version)) {
         state.versionInfo = { ...state.versionInfo, availableVersion: version };
       }
+    },
+    setUpdateIsMandatory(state: RootState) {
+      state.versionInfo = { ...state.versionInfo, updateIsMandatory: true };
     },
   },
   actions: {},

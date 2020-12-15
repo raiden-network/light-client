@@ -244,6 +244,14 @@ describe('store', () => {
     expect(store.state.versionInfo.availableVersion).toBeUndefined();
   });
 
+  test('the set update is mandatory mutation does update the version info', () => {
+    expect(store.state.versionInfo.updateIsMandatory).toBe(false);
+
+    store.commit('setUpdateIsMandatory');
+
+    expect(store.state.versionInfo.updateIsMandatory).toBe(true);
+  });
+
   describe('channelWithBiggestCapacity', () => {
     test('return the open channel when there is only one open channel', () => {
       const mockChannels = TestData.mockChannels;

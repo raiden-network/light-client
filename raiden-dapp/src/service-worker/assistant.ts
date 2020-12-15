@@ -25,6 +25,10 @@ export default class ServiceWorkerAssistant {
         this.reloadWindow();
         break;
 
+      case ServiceWorkerMessages.CACHE_IS_INVALID:
+        this.setUpdateIsMandatory();
+        break;
+
       default:
         break;
     }
@@ -49,5 +53,9 @@ export default class ServiceWorkerAssistant {
   private reloadWindow = (): void => {
     // Delay reload so that the service worker can unregister safely if necessary.
     setTimeout(() => window.location.reload(), 1000);
+  };
+
+  private setUpdateIsMandatory = (): void => {
+    this.store.commit('setUpdateIsMandatory');
   };
 }

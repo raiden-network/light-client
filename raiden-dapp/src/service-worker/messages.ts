@@ -6,6 +6,7 @@
 
 export enum ServiceWorkerMessages {
   RELOAD_WINDOW = 'reload_window',
+  CACHE_IS_INVALID = 'cache_is_invalid',
 }
 
 export enum ServiceWorkerAssistantMessages {
