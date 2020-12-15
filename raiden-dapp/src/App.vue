@@ -1,5 +1,6 @@
 <template>
   <v-app dark>
+    <install-banner />
     <div id="application-wrapper">
       <router-view name="modal" />
       <transition name="slide">
@@ -34,6 +35,7 @@ import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
 import ReceivingOngoingSnackbar from '@/components/ReceivingOngoingSnackbar.vue';
 import NotificationSnackbar from '@/components/notification-panel/NotificationSnackbar.vue';
+import InstallBanner from '@/components/InstallBanner.vue';
 
 @Component({
   components: {
@@ -42,6 +44,7 @@ import NotificationSnackbar from '@/components/notification-panel/NotificationSn
     UpdateSnackbar,
     NotificationSnackbar,
     ReceivingOngoingSnackbar,
+    InstallBanner,
   },
 })
 export default class App extends Mixins(NavigationMixin) {

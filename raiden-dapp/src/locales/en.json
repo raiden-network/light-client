@@ -736,5 +736,11 @@
       "blockie-alt": "Token address blockie",
       "information-template": "{symbol} | {name}"
     }
+  },
+  "install-banner": {
+    "install": "Install",
+    "dismiss": "Dismiss",
+    "message-mobile": "Add the Raiden dApp to your Home screen",
+    "message-desktop": "Install the Raiden dApp on your desktop"
   }
 }
