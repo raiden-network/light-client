@@ -40,7 +40,8 @@ describe('TransferInputs.vue', () => {
     },
     propsData: {
       token,
-      capacity: constants.One,
+      noChannels: false,
+      maxChannelCapacity: constants.One,
     },
   });
 

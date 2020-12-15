@@ -21,7 +21,7 @@
         <div class="transfer-menus__dot-menu__menu">
           <v-btn
             text
-            :disabled="noChannels"
+            :disabled="noChannelOrCapacity"
             data-cy="transfer_menus_dot_menu_menu_deposit"
             class="transfer-menus__dot-menu__menu__deposit"
             @click="depositDialogOpen()"
@@ -39,11 +39,11 @@
         </div>
       </v-menu>
     </div>
-    <span v-if="noChannels">
+    <span v-if="noChannelOrCapacity">
       {{ $t('transfer.transfer-menus.no-channels') }}
     </span>
     <span v-else>
-      <amount-display exact-amount :amount="capacity" :token="token" />
+      <amount-display exact-amount :amount="totalCapacity" :token="token" />
     </span>
     <token-overlay v-if="showTokenOverlay" @cancel="showTokenOverlay = false" />
     <channel-deposit-dialog
@@ -94,11 +94,9 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
   @Prop({ required: true })
   token!: Token;
   @Prop({ required: true })
-  capacity!: BigNumber;
-
-  get noChannels(): boolean {
-    return this.capacity === constants.Zero;
-  }
+  noChannels!: boolean;
+  @Prop({ required: true })
+  totalCapacity!: BigNumber;
 
   depositDialogOpen() {
     this.showDepositDialog = true;
@@ -106,6 +104,10 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
 
   depositDialogClosed() {
     this.showDepositDialog = false;
+  }
+
+  get noChannelOrCapacity(): boolean {
+    return this.noChannels || this.totalCapacity.lte(constants.Zero);
   }
 
   /* istanbul ignore next */

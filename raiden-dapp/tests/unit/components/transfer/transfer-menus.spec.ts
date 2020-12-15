@@ -21,7 +21,10 @@ describe('TransferHeaders.vue', () => {
   let router: Mocked<VueRouter>;
   const token = generateToken();
 
-  const createWrapper = (capacity: BigNumber): Wrapper<TransferHeaders> => {
+  const createWrapper = (
+    noChannels: boolean,
+    totalCapacity: BigNumber,
+  ): Wrapper<TransferHeaders> => {
     router = new VueRouter() as Mocked<VueRouter>;
 
     return mount(TransferHeaders, {
@@ -37,34 +40,35 @@ describe('TransferHeaders.vue', () => {
       },
       propsData: {
         token,
-        capacity,
+        noChannels,
+        totalCapacity,
       },
     });
   };
 
   test('displays "no open channels" if channel capacity is zero', () => {
-    const wrapper = createWrapper(constants.Zero);
+    const wrapper = createWrapper(true, constants.Zero);
     const amountDisplay = wrapper.findAll('span').at(3);
 
     expect(amountDisplay.text()).toContain('transfer.transfer-menus.no-channels');
   });
 
   test('disables deposit button if channel capacity is zero', () => {
-    const wrapper = createWrapper(constants.Zero);
+    const wrapper = createWrapper(false, constants.Zero);
     const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
 
     expect(depositButton.attributes()['disabled']).toBe('disabled');
   });
 
   test('displays amount if channel has capacity', () => {
-    const wrapper = createWrapper(constants.One);
+    const wrapper = createWrapper(false, constants.One);
     const amountDisplay = wrapper.findAll('span').at(3);
 
     expect(amountDisplay.find('div').text()).toContain('0.000001');
   });
 
-  test('deposit button is enabled if channel has capacity', () => {
-    const wrapper = createWrapper(constants.One);
+  test('deposit button is enabled if channel has capacityxxxx', () => {
+    const wrapper = createWrapper(false, constants.One);
     const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
 
     expect(depositButton.attributes()).not.toMatchObject(
@@ -73,7 +77,7 @@ describe('TransferHeaders.vue', () => {
   });
 
   test('deposit button opens deposit dialog', async () => {
-    const wrapper = createWrapper(constants.One);
+    const wrapper = createWrapper(false, constants.One);
     const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
 
     depositButton.trigger('click');
@@ -87,7 +91,7 @@ describe('TransferHeaders.vue', () => {
   });
 
   test('clicking change token button displays token overlay', async () => {
-    const wrapper = createWrapper(constants.One);
+    const wrapper = createWrapper(false, constants.One);
 
     const tokenSelectButton = wrapper.findAll('span').at(0);
 
@@ -101,7 +105,7 @@ describe('TransferHeaders.vue', () => {
   test('clicking channels button navigates to channels screen', async () => {
     router.push = jest.fn().mockImplementation(() => Promise.resolve());
 
-    const wrapper = createWrapper(constants.One);
+    const wrapper = createWrapper(false, constants.One);
     const channelsButton = wrapper.find('.transfer-menus__dot-menu__menu__channels');
 
     channelsButton.trigger('click');

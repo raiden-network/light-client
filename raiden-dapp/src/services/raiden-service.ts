@@ -261,7 +261,7 @@ export default class RaidenService {
           return ''; // Some engines like Chrome expect this.
         });
 
-        raiden.start();
+        await raiden.start();
         this.store.commit('balance', await this.getBalance());
         if (subkey) {
           this.store.commit('raidenAccountBalance', await this.getBalance(raiden.address));

@@ -24,6 +24,12 @@
       >
         {{ text }}
         <v-icon v-if="arrow" right>keyboard_arrow_right</v-icon>
+        <template v-if="syncing" #loader>
+          <div class="action-button__syncing">
+            <span>{{ $t('home.connect-button-syncing') }}</span>
+            <v-progress-linear class="action-button__syncing__indicator" indeterminate rounded />
+          </div>
+        </template>
       </v-btn>
     </v-col>
   </v-row>
@@ -38,6 +44,9 @@ export default class ActionButton extends Vue {
 
   @Prop({ required: true })
   text!: string;
+
+  @Prop({ type: Boolean, default: false })
+  syncing!: boolean;
 
   @Prop({ type: Boolean, default: false })
   loading!: boolean;
@@ -143,6 +152,17 @@ export default class ActionButton extends Vue {
     bottom: 0;
     left: 0;
     width: 100%;
+  }
+
+  &__syncing {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+
+    &__indicator {
+      margin-top: 4px;
+      width: 100px;
+    }
   }
 }
 
