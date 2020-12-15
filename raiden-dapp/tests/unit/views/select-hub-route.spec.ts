@@ -116,7 +116,7 @@ describe('SelectHubRoute.vue', () => {
     );
   });
 
-  test('disable button if UDC capacity is not sufficient', async () => {
+  test('disables button if UDC capacity is not sufficient', async () => {
     const wrapper = await createWrapper(undefined, BigNumber.from('2'), BigNumber.from('1'));
 
     expect(wrapper.find('.action-button__button').element.getAttribute('disabled')).toBe(

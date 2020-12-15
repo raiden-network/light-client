@@ -131,7 +131,7 @@ export function generateSuggestedPartner(
   partialSuggestedPartner: Partial<SuggestedPartner> = {},
 ): SuggestedPartner {
   return {
-    address: '0x123',
+    address: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
     capacity: BigNumber.from(10 * 2),
     centrality: '0.0000',
     score: '0.0000',

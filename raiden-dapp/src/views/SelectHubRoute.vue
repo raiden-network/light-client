@@ -37,7 +37,7 @@
         </v-tooltip>
       </div>
       <span class="select-hub__udc__description">
-        {{ $t('select-hub.service-token-description') }}
+        {{ $t('select-hub.service-token-description').toUpperCase() }}
       </span>
     </div>
     <div class="select-hub__address-input">

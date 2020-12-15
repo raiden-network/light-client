@@ -58,8 +58,8 @@ export default class HubList extends Vue {
   async mounted() {
     try {
       this.suggestedHubs = await this.$raiden.getSuggestedPartners(this.tokenAddress);
-      this.loadingHubs = false;
     } catch (err) {
+    } finally {
       this.loadingHubs = false;
     }
   }

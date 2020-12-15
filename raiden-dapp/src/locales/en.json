@@ -529,7 +529,7 @@
     "select-button": "Select Hub",
     "service-token-tooltip": "Mint and deposit {token} to the User Deposit Contract to pay for the Monitoring Service.",
     "service-token-tooltip-main": "Deposit {token} to the User Deposit Contract to pay for the Monitoring Service.",
-    "service-token-description": "BALANCE FOR MONITORING SERVICE"
+    "service-token-description": "balance for monitoring service"
   },
   "hub-list": {
     "header": "Current top 3 suggested hubs (best first)",
