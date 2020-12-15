@@ -37,7 +37,7 @@ export default class UpdateSnackbar extends Vue {
       await this.$raiden.disconnect();
     }
 
-    // TODO: trigger actual update.
+    this.$serviceWorkerAssistant.update();
   }
 }
 </script>

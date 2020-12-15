@@ -11,6 +11,10 @@ const $raiden = {
   disconnect: jest.fn(async () => undefined),
 };
 
+const $serviceWorkerAssistant = {
+  update: jest.fn(),
+};
+
 function createWrapper(
   isConnected = false,
   versionUpdateAvailable = false,
@@ -28,9 +32,15 @@ function createWrapper(
     store,
     mocks: {
       $raiden,
+      $serviceWorkerAssistant,
       $t: (msg: string) => msg,
     },
   });
+}
+
+function clickUpdateButton(wrapper: Wrapper<UpdateSnackbar>): void {
+  const button = wrapper.get('button');
+  button.trigger('click');
 }
 
 describe('UpdateSnackbar.vue', () => {
@@ -52,20 +62,26 @@ describe('UpdateSnackbar.vue', () => {
     expect(snackbar.exists()).toBe(true);
   });
 
+  test('trigger update does trigger the service worker assistant', () => {
+    const wrapper = createWrapper(false, true);
+
+    clickUpdateButton(wrapper);
+
+    expect($serviceWorkerAssistant.update).toHaveBeenCalledTimes(1);
+  });
+
   test('trigger update does not disconnect raiden service if not connected', () => {
     const wrapper = createWrapper(false, true);
-    const button = wrapper.get('button');
 
-    button.trigger('click');
+    clickUpdateButton(wrapper);
 
     expect($raiden.disconnect).toHaveBeenCalledTimes(0);
   });
 
   test('trigger update does disconnect raiden service if connected', () => {
     const wrapper = createWrapper(true, true);
-    const button = wrapper.get('button');
 
-    button.trigger('click');
+    clickUpdateButton(wrapper);
 
     expect($raiden.disconnect).toHaveBeenCalledTimes(1);
   });
