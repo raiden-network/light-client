@@ -3,16 +3,6 @@ import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
 import { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
-import {
-  Capabilities,
-  ChangeEvent,
-  ErrorCodes,
-  EventTypes,
-  Raiden,
-  RaidenError,
-  RaidenPaths,
-  RaidenPFS,
-} from 'raiden-ts';
 import { Tokens } from '@/types';
 import { CombinedStoreState } from '@/store';
 import { Web3Provider } from '@/services/web3-provider';
@@ -24,6 +14,16 @@ import { NotificationPayload } from '@/store/notifications/types';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { RouteNames } from '@/router/route-names';
+import {
+  Capabilities,
+  ChangeEvent,
+  ErrorCodes,
+  EventTypes,
+  Raiden,
+  RaidenError,
+  RaidenPaths,
+  RaidenPFS,
+} from 'raiden-ts';
 
 function raidenActionConfirmationValueToStateTranslation(
   confirmationValue: boolean | undefined,
@@ -261,7 +261,7 @@ export default class RaidenService {
           return ''; // Some engines like Chrome expect this.
         });
 
-        raiden.start();
+        await raiden.start();
         this.store.commit('balance', await this.getBalance());
         if (subkey) {
           this.store.commit('raidenAccountBalance', await this.getBalance(raiden.address));

@@ -41,6 +41,7 @@
       class="home__connect-button"
       :text="$t('home.connect-button')"
       :loading="connecting"
+      syncing
       :enabled="!connecting"
       sticky
       @click="connect"
