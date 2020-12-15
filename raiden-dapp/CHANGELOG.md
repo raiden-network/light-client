@@ -11,8 +11,10 @@
 
 ### Added
 
+- [#2435] Sync indicator when connecting to dApp
 - [#2379] Illustrations for info overlays
 
+[#2435]: https://github.com/raiden-network/light-client/issues/2435
 [#2379]: https://github.com/raiden-network/light-client/issues/2379
 [#2415]: https://github.com/raiden-network/light-client/issues/2415
 [#2391]: https://github.com/raiden-network/light-client/issues/2391
