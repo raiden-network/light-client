@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { cacheNames } from 'workbox-core';
 
 /**

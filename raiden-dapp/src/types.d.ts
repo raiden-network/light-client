@@ -10,6 +10,11 @@ export type Transfers = { [key: string]: RaidenTransfer };
 export type ChannelAction = 'close' | 'deposit' | 'withdraw' | 'settle';
 export type Settings = { [setting: string]: boolean | number | string };
 
+export interface VersionInfo {
+  activeVersion: string;
+  availableVersion: string | undefined;
+}
+
 export interface RootState {
   loading: boolean;
   blockNumber: number;
@@ -29,6 +34,7 @@ export interface RootState {
   disclaimerAccepted: boolean;
   stateBackupReminderDateMs: number;
   persistDisclaimerAcceptance: boolean;
+  versionInfo: VersionInfo;
 }
 
 export interface SuggestedPartner {

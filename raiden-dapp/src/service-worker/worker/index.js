@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { PrecacheController, PrecacheRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { isCacheEmpty } from './utilities';

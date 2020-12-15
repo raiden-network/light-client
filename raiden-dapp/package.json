@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "core-js": "^3.8.3",
+    "compare-versions": "^3.6.0",
     "ethereum-blockies-base64": "^1.0.2",
     "ethers": "^5.0.26",
     "fontsource-roboto": "^4.0.0",
