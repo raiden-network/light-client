@@ -28,6 +28,8 @@
 
 - [#2409] Lower default payment expiration to 1.1 × reveal timeout
 - [#2448] Align basic route design in open channel user flow
+- [#2414] Allow the dApp do be served from cache after first load
+- [#2440] Establish a strict and secure update mechanism 
 
 [#211]: https://github.com/raiden-network/light-client/issues/211
 [#2379]: https://github.com/raiden-network/light-client/issues/2379
@@ -47,6 +49,8 @@
 [#2446]: https://github.com/raiden-network/light-client/issues/2446
 [#2485]: https://github.com/raiden-network/light-client/issues/2485
 [#2418]: https://github.com/raiden-network/light-client/issues/2418
+[#2414]: https://github.com/raiden-network/light-client/issues/2414
+[#2440]: https://github.com/raiden-network/light-client/issues/2440
 
 ## [0.14.0] - 2020-11-25
 
