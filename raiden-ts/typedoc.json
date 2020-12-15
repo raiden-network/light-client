@@ -80,6 +80,10 @@
           {
             "title": "Hub Selection and Channel Opening",
             "source": "./docs-source/hub-selection-channel-opening.md"
+          },
+          {
+            "title": "Transfers",
+            "source": "./docs-source/transfers.md"
           }
         ]
       }
