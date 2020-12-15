@@ -1,9 +1,16 @@
 const path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const VersionFile = require('webpack-version-file-plugin');
+const { DefinePlugin } = require('webpack'); // eslint-disable-line import/no-extraneous-dependencies
 const { InjectManifest } = require('workbox-webpack-plugin');
 
 const sourceDirectoryPath = path.resolve(__dirname, 'src');
 const distributionDirectoryPath = path.resolve(__dirname, 'dist');
+
+function getPackageVersion() {
+  const packageInfo = require('./package.json');
+  return packageInfo.version ?? '0.0.0';
+}
 
 module.exports = {
   productionSourceMap: false,
@@ -95,7 +102,21 @@ module.exports = {
     }
 
     if (process.env.NODE_ENV === 'production') {
+      // Note that it is not necessary to exclude the version file from the to
+      // cache assets. The version file gets generated during the build and is
+      // thereby not included in the pre-cache manifest. The same goes for the
+      // worker script itself.
       config.plugins.push(
+        new VersionFile({
+          packageFile: path.join(__dirname, 'package.json'),
+          template: path.join(__dirname, 'version.ejs'),
+          outputFile: path.join(distributionDirectoryPath, 'version.json'),
+        }),
+        new DefinePlugin({
+          'process.env': {
+            PACKAGE_VERSION: "'" + getPackageVersion() + "'",
+          },
+        }),
         new InjectManifest({
           swSrc: path.join(sourceDirectoryPath, 'service-worker', 'worker'),
           swDest: 'service-worker.js',

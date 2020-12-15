@@ -102,6 +102,7 @@
     "vue-jest": "^3.0.7",
     "vue-template-compiler": "^2.6.12",
     "vuetify-loader": "^1.6.0",
+    "webpack-version-file-plugin": "^0.4.0",
     "workbox-webpack-plugin": "^6.0.2"
   },
   "bugs": {
