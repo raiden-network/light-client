@@ -84,6 +84,14 @@
           {
             "title": "Transfers",
             "source": "./docs-source/transfers.md"
+          },
+          {
+            "title": "Channels",
+            "source": "./docs-source/channels.md"
+          },
+          {
+            "title": "Accounts",
+            "source": "./docs-source/account.md"
           }
         ]
       }
