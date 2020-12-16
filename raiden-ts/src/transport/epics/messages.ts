@@ -69,27 +69,21 @@ function getMessageBody(message: string | Signed<Message>): string {
 export function matrixMessageSendEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, matrix$, config$, latest$ }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<RaidenAction> {
   return action$.pipe(
     filter(isActionOf(messageSend.request)),
-    // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
-    mergeMap((action) => matrix$.pipe(map((matrix) => ({ action, matrix })))),
     // merge all inner/grouped observables, so different user's "queues" can be parallel
-    mergeMap(({ action, matrix }) => {
-      const content = { body: getMessageBody(action.payload.message), msgtype: 'm.text' };
+    mergeMap((action) => {
+      const content = {
+        body: getMessageBody(action.payload.message),
+        msgtype: action.payload.msgtype ?? 'm.text',
+      };
       // wait for address to be monitored, online & have joined a non-global room with us
-      return waitMemberAndSend$(
-        action.meta.address,
-        matrix,
-        'm.room.message',
-        content,
-        { log, latest$, config$ },
-        true, // allowRtc
-      ).pipe(
+      return waitMemberAndSend$(action.meta.address, 'm.room.message', content, deps).pipe(
         map((via) => messageSend.success({ via }, action.meta)),
         catchError((err) => {
-          log.error('messageSend error', err, action.meta);
+          deps.log.error('messageSend error', err, action.meta);
           return of(messageSend.failure(err, action.meta));
         }),
       );
@@ -163,9 +157,7 @@ function isValidMessage([{ matrix, event, room }, config]: [
   RaidenConfig,
 ]): boolean {
   const isTextMessage =
-    event.getType() === 'm.room.message' &&
-    event.getContent().msgtype === 'm.text' &&
-    event.getSender() !== matrix.getUserId();
+    event.getType() === 'm.room.message' && event.getSender() !== matrix.getUserId();
   const isPrivateRoom =
     !!room &&
     !globalRoomNames(config).some((g) =>
@@ -226,14 +218,17 @@ export function matrixMessageReceivedEpic(
           const lines: string[] = (event.getContent().body ?? '').split('\n');
           return scheduled(lines, asapScheduler).pipe(
             map((line) => {
-              const message = parseMessage(line, presence.meta.address, { log });
+              let message;
+              if (event.getContent().msgtype === 'm.text')
+                message = parseMessage(line, presence.meta.address, { log });
               return messageReceived(
                 {
                   text: line,
-                  message,
+                  ...(message ? { message } : {}),
                   ts: Date.now(),
                   userId: presence.payload.userId,
                   ...(room ? { roomId: room.roomId } : {}),
+                  ...(event.getContent().msgtype ? { msgtype: event.getContent().msgtype } : {}),
                 },
                 presence.meta,
               );

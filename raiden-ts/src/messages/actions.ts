@@ -11,7 +11,10 @@ export const messageSend = createAsyncAction(
   'message/send/request',
   'message/send/success',
   'message/send/failure',
-  t.type({ message: t.union([t.string, Signed(Message)]) }),
+  t.intersection([
+    t.type({ message: t.union([t.string, Signed(Message)]) }),
+    t.partial({ msgtype: t.string }),
+  ]),
   t.union([t.undefined, t.partial({ via: t.string })]),
 );
 export namespace messageSend {
@@ -43,6 +46,7 @@ export const messageReceived = createAction(
       message: t.union([Message, Signed(Message)]),
       userId: t.string,
       roomId: t.string,
+      msgtype: t.string,
     }),
   ]),
   t.type({ address: Address }),
