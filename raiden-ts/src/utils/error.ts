@@ -40,8 +40,8 @@ export function matchError(match: ErrorMatch | ErrorMatches, error?: any) {
     return res;
   };
   const errorMatcher = Array.isArray(match)
-    ? (error: any): boolean => match.some((m) => _errorMatcher(m, error))
-    : (error: any): boolean => _errorMatcher(match, error);
+    ? (error: any): boolean => (match as ErrorMatches).some((m) => _errorMatcher(m, error))
+    : (error: any): boolean => _errorMatcher(match as ErrorMatch, error);
   if (arguments.length < 2) return errorMatcher;
   else return errorMatcher(error);
 }
