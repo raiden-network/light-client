@@ -5,6 +5,7 @@ import memoize from 'lodash/memoize';
 import { RaidenAction } from '../actions';
 import { Capabilities, CapsFallback } from '../constants';
 import { jsonParse } from '../utils/data';
+import { Address } from '../utils/types';
 import { Presences, Caps, CapsPrimitive } from './types';
 import { matrixPresence } from './actions';
 
@@ -106,4 +107,14 @@ export function parseCaps(caps?: string | null): Caps | undefined {
  */
 export function getCap<C extends Capabilities>(caps: Caps | undefined | null, cap: C): Caps[C] {
   return caps?.[cap] ?? CapsFallback[cap];
+}
+
+/**
+ * Return addresses sorted in lexical order
+ *
+ * @param addresses - Addresses to sort
+ * @returns Addresses sorted in lexical order
+ */
+export function getSortedAddresses<A extends [Address, ...Address[]]>(...addresses: A) {
+  return addresses.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())) as A;
 }
