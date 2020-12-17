@@ -8,35 +8,66 @@ import type {
   Log,
   Network,
 } from '@ethersproject/providers';
-import { Observable, fromEventPattern, from, defer } from 'rxjs';
-import { mergeMap, debounceTime, exhaustMap, concatMap, tap } from 'rxjs/operators';
-
-import { networkErrors } from './error';
-import { retryWhile } from './rx';
+import { Observable, fromEventPattern, from, defer, throwError, timer } from 'rxjs';
+import {
+  mergeMap,
+  debounceTime,
+  exhaustMap,
+  tap,
+  catchError,
+  repeatWhen,
+  takeWhile,
+  ignoreElements,
+} from 'rxjs/operators';
 
 /**
  * @param provider - Provider to getLogs from
  * @param filter - getLogs filter
- * @param chunk - Chunk size
+ * @param chunk - Initial chunk size
+ * @param minChunk - Minimum chunk size in case of getLogs errors
  * @returns Observable of fetched logs
  */
 export function getLogsByChunk$(
   provider: JsonRpcProvider,
   filter: Filter & { fromBlock: number; toBlock: number },
   chunk = 1e5,
+  minChunk = 1e3,
 ): Observable<Log> {
   const { fromBlock, toBlock } = filter;
-  const ranges: [number, number][] = [];
-  for (let i = fromBlock; i <= toBlock; i += chunk)
-    ranges.push([i, Math.min(i + chunk - 1, toBlock)]);
-  return from(ranges).pipe(
-    concatMap(([fromBlock, toBlock]) =>
-      defer(async () => provider.getLogs({ ...filter, fromBlock, toBlock })).pipe(
-        retryWhile(provider.pollingInterval, { onErrors: networkErrors }),
-        mergeMap((logs) => from(logs)),
+  // this defer ensures consistent behavior upon re-subscription
+  return defer(() => {
+    let start = fromBlock;
+    let curChunk = chunk;
+    let retry = 3;
+    // every time repeatWhen re-subscribes to this defer, yield (current/retried/next) range/chunk
+    return defer(async () =>
+      provider.getLogs({
+        ...filter,
+        fromBlock: start,
+        toBlock: Math.min(start + curChunk - 1, toBlock),
+      }),
+    ).pipe(
+      tap({
+        complete: () => (start += curChunk), // on success, increment range start
+        error: () => {
+          // on error, halven curChunk (retried), with minChunk as lower bound;
+          curChunk = Math.round(curChunk / 2);
+          if (curChunk < minChunk) {
+            curChunk = minChunk;
+            retry--;
+          }
+        },
+      }),
+      mergeMap((logs) => from(logs)), // unwind
+      // if it still fail [retry] times on lower bound, give up;
+      // otherwise wait pollingInterval before retrying
+      catchError((err) =>
+        retry >= 0 ? timer(provider.pollingInterval).pipe(ignoreElements()) : throwError(err),
       ),
-    ),
-  );
+      // repeat from inner defer while there's still ranges to scan
+      repeatWhen((complete$) => complete$.pipe(takeWhile(() => start <= toBlock))),
+    );
+  });
 }
 
 export function fromEthersEvent<T>(
