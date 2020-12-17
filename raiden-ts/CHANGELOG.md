@@ -4,14 +4,15 @@
 ### Added
 - [#211] 'suggestPartners' method to fetch suggested partners from PFS
 - [#2417] Make 'start' async, introduce 'synced' promise, both resolves when syncing finishes
+- [#2444] Add adaptative sync for chunked getLogs
 
 ### Changed
-
 - [#2409] Lower default payment expiration to 1.1 × reveal timeout
 
 [#211]: https://github.com/raiden-network/light-client/issues/211
 [#2409]: https://github.com/raiden-network/light-client/issues/2409
 [#2417]: https://github.com/raiden-network/light-client/pull/2417
+[#2444]: https://github.com/raiden-network/light-client/issues/2444
 
 ## [0.14.0] - 2020-11-25
 ### Fixed
