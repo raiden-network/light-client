@@ -54,7 +54,7 @@ import { RaidenConfig } from '../../config';
 import { messageReceived, messageSend } from '../../messages/actions';
 import { RaidenState } from '../../state';
 import { matrixPresence, rtcChannel } from '../actions';
-import { getCap } from '../utils';
+import { getCap, getSortedAddresses } from '../utils';
 import { makeMessageId } from '../../transfers/utils';
 import { isResponseOf } from '../../utils/actions';
 import { matchError } from '../../utils/error';
@@ -422,11 +422,6 @@ function listenDataChannel(
     );
     return merge(sendReq$, handleChannel$);
   };
-}
-
-type AddressPair = [Address, Address];
-function getSortedAddresses(...addresses: AddressPair) {
-  return addresses.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())) as AddressPair;
 }
 
 function makeCallId(our: Address, partner: Address) {

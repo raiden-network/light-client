@@ -39,7 +39,7 @@ import { pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
 import { getServerName } from '../../utils/matrix';
 import { Direction } from '../../transfers/state';
 import { matrixRoom, matrixRoomLeave, matrixPresence } from '../actions';
-import { getCap } from '../utils';
+import { getCap, getSortedAddresses } from '../utils';
 import { globalRoomNames, getRoom$, roomMatch } from './helpers';
 
 /**
@@ -132,41 +132,42 @@ export function matrixCreateRoomEpic(
           peer = action.meta.address;
           break;
       }
-      return peer;
+      // proceed to create room only if we're the room creator (lower address)
+      if (peer && getSortedAddresses(address, peer)[0] === address) return peer;
     }),
     filter(isntNil),
     // groupby+mergeMap ensures different addresses are processed in parallel, and also
     // prevents one stuck address observable (e.g. presence delayed) from holding whole queue
-    groupBy((address) => address),
+    groupBy((peer) => peer),
     mergeMap((grouped$) =>
       grouped$.pipe(
         // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
-        mergeMap((address) => matrix$.pipe(map((matrix) => ({ address, matrix })))),
+        mergeMap((peer) => matrix$.pipe(map((matrix) => ({ peer, matrix })))),
         // exhaustMap is used to prevent bursts of actions for a given address (eg. on startup)
         // of creating multiple rooms for same address, so we ignore new address items while
         // previous is being processed. If user roams, matrixInviteEpic will re-invite
-        exhaustMap(({ address, matrix }) =>
+        exhaustMap(({ peer, matrix }) =>
           // presencesStateReplay$+take(1) acts like withLatestFrom with cached result
           latest$.pipe(
             // wait for user to be monitored
-            filter(({ presences }) => address in presences),
+            filter(({ presences }) => peer in presences),
             take(1),
             // skip room creation/invite if both partner and us have ToDevice capability set
             filter(
               ({ presences, config }) =>
                 !getCap(config.caps, Capabilities.TO_DEVICE) ||
-                !getCap(presences[address].payload.caps, Capabilities.TO_DEVICE),
+                !getCap(presences[peer].payload.caps, Capabilities.TO_DEVICE),
             ),
             // if there's already a room in state for address, skip
-            filter(({ state }) => !state.transport.rooms?.[address]?.[0]),
+            filter(({ state }) => !state.transport.rooms?.[peer]?.[0]),
             // else, create a room, invite known user and persist roomId in state
             mergeMap(({ presences }) =>
               matrix.createRoom({
                 visibility: 'private',
-                invite: [presences[address].payload.userId],
+                invite: [presences[peer].payload.userId],
               }),
             ),
-            map(({ room_id: roomId }) => matrixRoom({ roomId }, { address })),
+            map(({ room_id: roomId }) => matrixRoom({ roomId }, { address: peer })),
             retryWhile(
               intervalFromConfig(config$),
               { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
