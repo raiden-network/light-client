@@ -4,11 +4,11 @@ import { pipe } from 'fp-ts/lib/pipeable';
 import { first } from 'rxjs/operators';
 
 import { BigNumber } from '@ethersproject/bignumber';
-import { Web3Provider } from '@ethersproject/providers';
+import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 import { keccak256 } from '@ethersproject/keccak256';
 import { hexDataLength } from '@ethersproject/bytes';
 
-import { fromEthersEvent, getNetworkName } from 'raiden-ts/utils/ethers';
+import { fromEthersEvent, getLogsByChunk$, getNetworkName } from 'raiden-ts/utils/ethers';
 import {
   Address,
   BigNumberC,
@@ -25,6 +25,51 @@ import { encode } from 'raiden-ts/utils/data';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { Lock } from 'raiden-ts/channels';
 import { LocksrootZero } from 'raiden-ts/constants';
+
+describe('getLogsByChunk$', () => {
+  let provider: jest.Mocked<JsonRpcProvider>;
+  const error = new Error('getLogs error');
+
+  beforeEach(() => {
+    provider = ({
+      pollingInterval: 10,
+      getLogs: jest.fn(async () => []),
+    } as unknown) as jest.Mocked<JsonRpcProvider>;
+  });
+
+  test('success: fail to minChunk', async () => {
+    expect.assertions(7);
+
+    // errors twice before succeeding
+    provider.getLogs.mockRejectedValueOnce(error);
+    provider.getLogs.mockRejectedValueOnce(error);
+
+    await expect(
+      getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 5).toPromise(),
+    ).resolves.toBeUndefined();
+    expect(provider.getLogs).toHaveBeenCalledTimes(5);
+    expect(provider.getLogs).toHaveBeenNthCalledWith(1, { fromBlock: 20, toBlock: 29 });
+    expect(provider.getLogs).toHaveBeenNthCalledWith(2, { fromBlock: 20, toBlock: 24 });
+
+    expect(provider.getLogs).toHaveBeenNthCalledWith(3, { fromBlock: 20, toBlock: 24 });
+    expect(provider.getLogs).toHaveBeenNthCalledWith(4, { fromBlock: 25, toBlock: 29 });
+    expect(provider.getLogs).toHaveBeenNthCalledWith(5, { fromBlock: 30, toBlock: 30 });
+  });
+
+  test('fail: max retries', async () => {
+    expect.assertions(5);
+
+    provider.getLogs.mockRejectedValue(error);
+
+    await expect(
+      getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 4).toPromise(),
+    ).rejects.toBe(error);
+    expect(provider.getLogs).toHaveBeenCalledTimes(5);
+    expect(provider.getLogs).toHaveBeenCalledWith({ fromBlock: 20, toBlock: 29 });
+    expect(provider.getLogs).toHaveBeenCalledWith({ fromBlock: 20, toBlock: 24 });
+    expect(provider.getLogs).toHaveBeenCalledWith({ fromBlock: 20, toBlock: 23 });
+  });
+});
 
 test('fromEthersEvent', async () => {
   expect.assertions(3);
