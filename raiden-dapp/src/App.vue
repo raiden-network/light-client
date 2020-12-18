@@ -21,6 +21,7 @@
     </div>
     <offline-snackbar />
     <update-snackbar />
+    <receiving-ongoing-snackbar />
     <notification-snackbar />
   </v-app>
 </template>
@@ -31,6 +32,7 @@ import NavigationMixin from './mixins/navigation-mixin';
 import AppHeader from '@/components/AppHeader.vue';
 import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
+import ReceivingOngoingSnackbar from '@/components/ReceivingOngoingSnackbar.vue';
 import NotificationSnackbar from '@/components/notification-panel/NotificationSnackbar.vue';
 
 @Component({
@@ -39,6 +41,7 @@ import NotificationSnackbar from '@/components/notification-panel/NotificationSn
     OfflineSnackbar,
     UpdateSnackbar,
     NotificationSnackbar,
+    ReceivingOngoingSnackbar,
   },
 })
 export default class App extends Mixins(NavigationMixin) {

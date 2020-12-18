@@ -423,6 +423,7 @@
     }
   },
   "transfer": {
+    "receiving-transfer-snackbar": "Receiving transfer, do not close browser.",
     "capacity-label": "Capacity",
     "recipient-label": "Recipient",
     "amount-label": "Amount",
