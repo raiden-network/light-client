@@ -1,53 +1,52 @@
-# Managing various Account Related functions
+# Managing Various Account Related Functions
 
-As we saw previously there are two accounts one is our main account and other is the raiden account.
+As we saw previously there are two accounts, our main account and the raiden account.
 
-- _Main Account_ is the account which is currently your metamask account and the account which you use to generate the subkey or raiden account on the connect screen.
-- _RAIDEN Account_ is the account which is generated deterministically each time at the start of the light client by signing a combination of the below information by the _Main Account_
-  1. **network id** (like goerli, mainnet etc)
-  2. **Raiden dApp URL** (like `https://lightclient.raiden.network/staging`, `https://lightclient.raiden.network` or even `http://localhost:8080`)
+- _Main Account_ is your current MetaMask account and the account which is used for generating the Subkey or Raiden account.
+- The _Raiden Account_ is generated deterministically on each start of the Light Client by letting the _Main Account_ sign a combination of the below information:
+  1. **network id** (Goerli, Mainnet, etc.)
+  2. **Raiden dApp URL** (i.e. `https://lightclient.raiden.network/staging`, `https://lightclient.raiden.network` or even `http://localhost:8080`)
 
-It is the _RAIDEN Account_ which is used to sign the _balance proofs_ as well as any other message which is used to make micro-payments on the raiden network. If you wish to receive micro-payments in a particular token network you would give them the address of your _RAIDEN Account_ to receive the tokens. If you send someone micro-payments in the raiden network they would see the address of your _RAIDEN Account_ as the sender of the payment and not the _Main Account_.
+The _Raiden Account_ is used to sign the _balance proofs_ and any other messages when making micro-payments on the Raiden network. The address of the Raiden Account is used when sending and receiving micro-payments in the Raiden network.
 
-## Account screen
+## Account Screen
 
-If you click the coloured identicon on the top right hand corner of the raiden dApp you will get the account screen
+Access the account screen by clicking the identicon on the top right hand corner of the dApp.
 
 ![account-screen](https://user-images.githubusercontent.com/15123108/102340538-ac2d8d00-3fbc-11eb-83bd-b5624a3c574f.png 'Account Screen')
 
-On the account screen we see the address of the _RAIDEN Account_, the _Main Account_ ETH Balance as well as _RAIDEN Account_ ETH Balance along with following screens for specific functions:
+On the account screen the address of the _Raiden Account_, the _Main Account_ ETH Balance as well as _RAIDEN Account_ ETH Balance is displayed along with the following menu items:
 
 ### Transfer ETH
 
-You require ETH to withdraw either of these tokens:
+ETH is required for withdrawing either of the following tokens from a Raiden Account back to the Main Account:
 
-- _service tokens_ (like _SVT_ on goerli or _RDN_ on mainnet) or
-- tokens that you've used to open a channel with your partners (_TTT_ or any TestToken on testnets or _DAI_ _WETH_ on the mainnet).
+- _Service tokens_ (like _SVT_ on Goerli or _RDN_ on Mainnet) or
+- tokens that have been used to open any channels, i.e. (_TTT_ or any other TestToken on testnets or _DAI_ and _WETH_ on Mainnet).
 
-The transaction of withdrawing or deposting tokens would be an on-chain transaction.
-Using the cyclical arrow keys next to the amount you could control which account is the payor or payee.
+You can transfer ETH in either direction, from your Main Account to you Raiden Account or vice versa.
 
 ![transfer-eth-account](https://user-images.githubusercontent.com/15123108/102342273-0596bb80-3fbf-11eb-952c-c65b61a9d47a.png 'Transfer ETH Account')
 
 ### Withdraw Tokens
 
-You may not see tokens at the present moment. You will see tokens here in two cases:
+Tokens are displayed on this screen if:
 
-1. Withdrawing tokens from any of the channels you have open. You make payments to your partners in these tokens anywhere in the raiden network.
-2. Withdrawing tokens from the _UDC contract_ which is used as an escrow to pay the [raiden services](https://raiden-network.readthedocs.io/en/latest/raiden_services.html) namely the _PFS_ and the _MS_
+1. Any tokens have been withdrawn from a channel.
+2. Any tokens have been withdrawn from the UDC.
 
 ![withdraw-tokens](https://user-images.githubusercontent.com/15123108/102354467-9de96c00-3fd0-11eb-8f3e-27a473abe335.png 'Withdraw tokens')
 
 ### Manage UDC Tokens
 
-This screen shows you the amount of the service tokens you have deposited in escrow in the _UDC Contract_ to pay for the raiden services.
+This screen shows the amount of service tokens deposited in the _UDC_ which are used for paying the Raiden services.
 
 ![manage-udc-tokens](https://user-images.githubusercontent.com/15123108/102347600-9fae3200-3fc6-11eb-9815-212095be0b96.png 'Manage UDC Tokens')
 
-The actions you can do on this screen are:
+On the UDC screen you can choose to:
 
-1. _Deposit_ which is an on-chain transaction to replenish your service token balance to pay for raiden services.
-2. _Withdraw_ which is an on-chain transaction by which you can get back your service tokens to the _RAIDEN Account_. These tokens will show up on the _Withdraw Tokens_ screen which we described earlier. On the _Withdraw Tokens_ screen you can transfer the tokens to your _Main Account_
+1. _*Deposit*_: This is an on-chain transaction in which to top-up the service token balance.
+2. _*Withdraw*_: This is an on-chain transaction  which would withdraw service tokens back on to the _Raiden Account_. These tokens will appear on the _Withdraw Tokens_ screen from where they can be transfered back on to the _Main Account_.
 
 ### Backup State
 
@@ -56,4 +55,4 @@ All the off-chain transfers, ethereum events data along with all the account inf
 
 ### Download logs
 
-This will usually trigger a download for the logs of the raiden dApp. You can use this anytime you encounter an error while using the dApp and open an issue.
+This triggers a download of the logs for the dApp. You can use this anytime you encounter an error and open an [issue](https://github.com/raiden-network/light-client/issues/new/choose).
