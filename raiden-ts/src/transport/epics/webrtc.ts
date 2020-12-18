@@ -16,7 +16,6 @@ import {
   catchError,
   distinctUntilChanged,
   filter,
-  groupBy,
   ignoreElements,
   map,
   mergeMap,
@@ -37,6 +36,7 @@ import {
   mapTo,
   observeOn,
   share,
+  distinct,
 } from 'rxjs/operators';
 import * as t from 'io-ts';
 import constant from 'lodash/constant';
@@ -56,8 +56,11 @@ import { RaidenState } from '../../state';
 import { matrixPresence, rtcChannel } from '../actions';
 import { getCap, getSortedAddresses } from '../utils';
 import { makeMessageId } from '../../transfers/utils';
-import { isResponseOf } from '../../utils/actions';
+import { isActionOf, isResponseOf } from '../../utils/actions';
 import { matchError } from '../../utils/error';
+import { transferSigned } from '../../transfers/actions';
+import { channelMonitored } from '../../channels/actions';
+import { Direction } from '../../transfers/state';
 import { parseMessage } from './helpers';
 
 interface CallInfo {
@@ -529,18 +532,35 @@ export function rtcConnectEpic(
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<rtcChannel | messageSend.request | messageReceived> {
+  const { latest$, config$, address } = deps;
   return action$.pipe(
-    filter(matrixPresence.success.is),
-    groupBy((action) => action.meta.address),
-    mergeMap((grouped$) =>
-      grouped$.pipe(
+    // allow RTC connect to neighbors, initiators for received and targets for sent transfers
+    filter(isActionOf([transferSigned, channelMonitored])),
+    mergeMap(function* (action) {
+      if (channelMonitored.is(action)) yield action.meta.partner;
+      else if (
+        action.meta.direction === Direction.SENT &&
+        action.payload.message.initiator === address
+      )
+        yield action.payload.message.target;
+      else if (
+        action.meta.direction === Direction.RECEIVED &&
+        action.payload.message.target === address
+      )
+        yield action.payload.message.initiator;
+    }),
+    distinct(),
+    mergeMap((peer) =>
+      latest$.pipe(
+        pluck('presences', peer),
+        filter(isntNil),
         distinctUntilChanged(
           (a, b) =>
             a.payload.userId === b.payload.userId &&
             !!getCap(a.payload.caps, Capabilities.WEBRTC) ===
               !!getCap(b.payload.caps, Capabilities.WEBRTC),
         ),
-        withLatestFrom(deps.config$),
+        withLatestFrom(config$),
         filter(
           ([action, { caps }]) =>
             !!getCap(action.payload.caps, Capabilities.WEBRTC) &&
