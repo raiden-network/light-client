@@ -22,7 +22,7 @@ import isEqual from 'lodash/isEqual';
 import pick from 'lodash/pick';
 import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
-import { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
+import { MatrixClient, MatrixEvent, User } from 'matrix-js-sdk';
 
 import { assert } from '../../utils';
 import { RaidenError, ErrorCodes } from '../../utils/error';
@@ -32,7 +32,7 @@ import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { getUserPresence } from '../../utils/matrix';
-import { retryWhile } from '../../utils/rx';
+import { pluckDistinct, retryWhile } from '../../utils/rx';
 import { matrixPresence } from '../actions';
 import { channelMonitored } from '../../channels/actions';
 import { parseCaps, stringifyCaps } from '../utils';
@@ -161,6 +161,68 @@ type MatrixPresenceEvent = Omit<MatrixEvent, 'getContent'> & {
   getContent: () => PresenceContent;
 };
 
+// observable of all addresses whose presence monitoring was requested since init
+function toMonitor$(action$: Observable<RaidenAction>) {
+  const toMonitor = new Set<Address>();
+  return action$.pipe(
+    filter(matrixPresence.request.is),
+    scan((toMonitor, request) => toMonitor.add(request.meta.address), toMonitor),
+    startWith(toMonitor),
+  );
+}
+
+function fetchPresence$(
+  user: User,
+  address: Address,
+  event: MatrixPresenceEvent,
+  {
+    log,
+    config$,
+    latest$,
+    matrix$,
+  }: Pick<RaidenEpicDeps, 'log' | 'config$' | 'latest$' | 'matrix$'>,
+) {
+  return matrix$.pipe(
+    switchMap((matrix) =>
+      combineLatest([
+        // always fetch profile info, to get up-to-date displayname, avatar_url & presence
+        defer(async () => matrix.getProfileInfo(user.userId)),
+        defer(async () =>
+          AVAILABLE.includes(event.getContent().presence)
+            ? event.getContent()
+            : getUserPresence(matrix, user.userId),
+        ),
+        latest$.pipe(pluckDistinct('rtc', address)),
+      ]),
+    ),
+    map(([profile, { presence, last_active_ago }, rtc]) => {
+      // errors raised here will be logged and ignored on catchError below
+      assert(profile?.displayname, 'no displayname');
+      // ecrecover address, validating displayName is the signature of the userId
+      const recovered = verifyMessage(user.userId, profile.displayname) as Address | undefined;
+      assert(recovered === address, `invalid displayname signature: ${recovered} !== ${address}`);
+      if (presence !== user.presence)
+        log.warn('Presence mismatch', { user, presence, last_active_ago });
+      // react on both presence events and rtc channel presence
+      const available = AVAILABLE.includes(presence) || !!rtc;
+      return matrixPresence.success(
+        {
+          userId: user.userId,
+          available,
+          ts: last_active_ago ? Date.now() - last_active_ago : user.lastPresenceTs ?? Date.now(),
+          caps: parseCaps(profile.avatar_url),
+        },
+        { address: recovered },
+      );
+    }),
+    retryWhile(intervalFromConfig(config$), { onErrors: [429] }),
+    catchError((err) => {
+      log.warn('Error validating presence event, ignoring', user.userId, err);
+      return EMPTY;
+    }),
+  );
+}
+
 /**
  * Monitor peers matrix presence from User.presence events
  * We aggregate all users of interest (i.e. for which a monitor request was emitted at some point)
@@ -178,108 +240,60 @@ type MatrixPresenceEvent = Omit<MatrixEvent, 'getContent'> & {
 export function matrixPresenceUpdateEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, matrix$, latest$, config$ }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<matrixPresence.success> {
-  // observable of all addresses whose presence monitoring was requested since init
-  const toMonitor$ = action$.pipe(
-    filter(matrixPresence.request.is),
-    scan((toMonitor, request) => toMonitor.add(request.meta.address), new Set<Address>()),
-    startWith(new Set<Address>()),
+  const { matrix$, latest$ } = deps;
+  return matrix$.pipe(
+    // when matrix finishes initialization, register to matrix presence events
+    switchMap((matrix) =>
+      // matrix's 'User.presence' sometimes fail to fire, but generic 'event' is always fired,
+      // and User (retrieved via matrix.getUser) is up-to-date before 'event' emits
+      fromEvent<MatrixPresenceEvent>(matrix, 'event').pipe(
+        filter((event) => event.getType() === 'm.presence'),
+        // parse peer address from userId
+        mergeMap(function* (event) {
+          try {
+            // as 'event' is emitted after user is (created and) updated, getUser always returns it
+            const user = matrix.getUser(event.getSender());
+            assert(user?.presence);
+            const peerAddress = userRe.exec(user.userId)?.[1];
+            assert(peerAddress);
+            // getAddress will convert any valid address into checksummed-format
+            const address = getAddress(peerAddress) as Address;
+            // filter out events from users we don't care about
+            // i.e.: presence monitoring never requested
+            yield { user, address, event };
+          } catch (err) {}
+        }),
+      ),
+    ),
+    withLatestFrom(toMonitor$(action$)),
+    filter(([{ address }, toMonitor]) => toMonitor.has(address)),
+    groupBy(([{ address }]) => address),
+    mergeMap((grouped$) =>
+      grouped$.pipe(
+        switchMap(([{ user, address, event }]) => fetchPresence$(user, address, event, deps)),
+      ),
+    ),
+    withLatestFrom(latest$),
+    // filter out if presence update is to offline, and address became online in another user
+    filter(
+      ([action, { presences }]) =>
+        action.payload.available ||
+        !(action.meta.address in presences) ||
+        !presences[action.meta.address].payload.available ||
+        action.payload.userId === presences[action.meta.address].payload.userId,
+    ),
+    // deduplicate updates
+    filter(
+      ([action, { presences }]) =>
+        !isEqual(
+          pick(action.payload, comparePresencesFields),
+          pick(presences[action.meta.address]?.payload, comparePresencesFields),
+        ),
+    ),
+    pluck(0),
   );
-  return matrix$
-    .pipe(
-      // when matrix finishes initialization, register to matrix presence events
-      switchMap((matrix) =>
-        // matrix's 'User.presence' sometimes fail to fire, but generic 'event' is always fired,
-        // and User (retrieved via matrix.getUser) is up-to-date before 'event' emits
-        fromEvent<MatrixPresenceEvent>(matrix, 'event').pipe(
-          filter((event) => event.getType() === 'm.presence'),
-          map((event) => ({ event, matrix })),
-        ),
-      ),
-      // parse peer address from userId
-      mergeMap(function* ({ event, matrix }) {
-        try {
-          // as 'event' is emitted after user is (created and) updated, getUser always returns it
-          const user = matrix.getUser(event.getSender());
-          assert(user?.presence);
-          const peerAddress = userRe.exec(user.userId)?.[1];
-          assert(peerAddress);
-          // getAddress will convert any valid address into checksummed-format
-          const address = getAddress(peerAddress) as Address | undefined;
-          assert(address);
-          yield { matrix, user, address, event };
-        } catch (err) {}
-      }),
-      withLatestFrom(toMonitor$),
-      // filter out events from users we don't care about
-      // i.e.: presence monitoring never requested
-      filter(([{ address }, toMonitor]) => toMonitor.has(address)),
-      mergeMap(([{ matrix, user, address, event }]) =>
-        combineLatest([
-          // always fetch profile info, to get up-to-date displayname, avatar_url & presence
-          defer(async () => matrix.getProfileInfo(user.userId)),
-          defer(async () =>
-            AVAILABLE.includes(event.getContent().presence)
-              ? event.getContent()
-              : getUserPresence(matrix, user.userId),
-          ),
-        ]).pipe(
-          map(([profile, { presence, last_active_ago }]) => {
-            // errors raised here will be logged and ignored on catchError below
-            assert(profile?.displayname, 'no displayname');
-            // ecrecover address, validating displayName is the signature of the userId
-            const recovered = verifyMessage(user.userId, profile.displayname) as
-              | Address
-              | undefined;
-            assert(
-              recovered === address,
-              `invalid displayname signature: ${recovered} !== ${address}`,
-            );
-            const available = AVAILABLE.includes(presence);
-            if (presence !== user.presence)
-              log.warn('Presence mismatch', { user, presence, last_active_ago });
-            return matrixPresence.success(
-              {
-                userId: user.userId,
-                available,
-                ts: last_active_ago
-                  ? Date.now() - last_active_ago
-                  : user.lastPresenceTs ?? Date.now(),
-                caps: parseCaps(profile.avatar_url),
-              },
-              { address: recovered },
-            );
-          }),
-          retryWhile(
-            intervalFromConfig(config$),
-            { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
-          ),
-          catchError(
-            (err) => (
-              log.warn('Error validating presence event, ignoring', user.userId, err), EMPTY
-            ),
-          ),
-        ),
-      ),
-    )
-    .pipe(
-      withLatestFrom(latest$),
-      filter(
-        ([action, { presences }]) =>
-          // filter out if presence update is to offline, and address became online in another user
-          (action.payload.available ||
-            !(action.meta.address in presences) ||
-            !presences[action.meta.address].payload.available ||
-            action.payload.userId === presences[action.meta.address].payload.userId) &&
-          // pass only if some relevant field changed
-          !isEqual(
-            pick(action.payload, comparePresencesFields),
-            pick(presences[action.meta.address]?.payload, comparePresencesFields),
-          ),
-      ),
-      pluck(0),
-    );
 }
 
 /**
