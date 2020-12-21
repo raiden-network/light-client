@@ -14,11 +14,32 @@ import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
 import isUndefined from 'lodash/isUndefined';
 import omitBy from 'lodash/omitBy';
-import { Observable, AsyncSubject, merge, defer, EMPTY, ReplaySubject, of } from 'rxjs';
-import { first, filter, map, mergeMap, skip, pluck, timeout, toArray } from 'rxjs/operators';
+import {
+  Observable,
+  AsyncSubject,
+  merge,
+  defer,
+  EMPTY,
+  ReplaySubject,
+  of,
+  from,
+  throwError,
+} from 'rxjs';
+import {
+  first,
+  filter,
+  map,
+  mergeMap,
+  skip,
+  pluck,
+  timeout,
+  toArray,
+  concatMap,
+  catchError,
+} from 'rxjs/operators';
+import { fromFetch } from 'rxjs/fetch';
 import logging from 'loglevel';
 
-import { fromFetch } from 'rxjs/fetch';
 import {
   TokenNetworkRegistry__factory,
   TokenNetwork__factory,
@@ -29,7 +50,6 @@ import {
   SecretRegistry__factory,
   MonitoringService__factory,
 } from './contracts';
-
 import versions from './versions.json';
 import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps, Latest } from './types';
 import { ShutdownReason } from './constants';
@@ -1437,16 +1457,29 @@ export class Raiden {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     const tokenNetwork = this.state.tokens[token];
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
-    const pfs = decode(PFS, options.pfs ?? (await this.findPFS())[0]);
+    const pfss = options.pfs ? [decode(PFS, options.pfs)] : await this.findPFS();
 
-    return await fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/suggest_partner`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    })
+    let firstError: Error | undefined;
+    return from(pfss)
       .pipe(
-        timeout(this.config.httpTimeout),
-        mergeMap((response) => response.text()),
-        map((text) => decode(SuggestedPartners, jsonParse(text))),
+        concatMap((pfs) =>
+          fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/suggest_partner`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          }).pipe(
+            timeout(this.config.httpTimeout),
+            mergeMap(async (response) => response.text()),
+            map((text) => decode(SuggestedPartners, jsonParse(text))),
+            catchError((err) => {
+              // store first error and omit to retry next pfs in list
+              if (!firstError) firstError = err;
+              return EMPTY;
+            }),
+          ),
+        ),
+        first(), // throws if no first result can be fetched/decoded
+        // if first errored, throw first seen error or pass current through
+        catchError((err) => throwError(firstError ?? err)),
       )
       .toPromise();
   }
