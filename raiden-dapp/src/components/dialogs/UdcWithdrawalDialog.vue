@@ -60,7 +60,7 @@
       <action-button
         data-cy="udc-withdrawal-dialog__button"
         class="udc-withdrawal-dialog__button"
-        :enabled="isValid"
+        :enabled="isValid && !accountBalanceTooLow"
         :text="$t('general.buttons.confirm')"
         @click="planWithdraw"
       />
