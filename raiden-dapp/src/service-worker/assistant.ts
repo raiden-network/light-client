@@ -22,12 +22,13 @@ export default class ServiceWorkerAssistant {
     if (!event.data) return;
 
     switch (event.data) {
-      case ServiceWorkerMessages.RELOAD_WINDOW:
-        this.reloadWindow();
-        break;
-
+      case ServiceWorkerMessages.INSTALLATION_ERROR:
       case ServiceWorkerMessages.CACHE_IS_INVALID:
         this.setUpdateIsMandatory();
+        break;
+
+      case ServiceWorkerMessages.RELOAD_WINDOW:
+        this.reloadWindow();
         break;
 
       default:

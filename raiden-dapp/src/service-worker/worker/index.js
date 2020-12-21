@@ -3,29 +3,58 @@ import { PrecacheController, PrecacheRoute } from 'workbox-precaching';
 import { registerRoute, setCatchHandler } from 'workbox-routing';
 import { ServiceWorkerMessages, ServiceWorkerAssistantMessages } from '../messages';
 import {
-  isCacheEmpty,
-  isCacheInvalid,
-  isAnyClientAvailable,
-  update,
-  verifyCacheValidity,
-  sendMessageToClients,
-} from './utilities';
+  getPreservedPrecacheEntries,
+  saveToPreservePrecacheEntries,
+  deletePreservedPrecacheEntries,
+} from './database';
+import { isAnyClientAvailable, sendMessageToClients } from './clients';
+import { doesCacheExist, isCacheInvalid, deleteCache } from './cache';
+
+self.controller = new PrecacheController({ fallbackToNetwork: false });
+self.route = new PrecacheRoute(self.controller);
+
+async function update() {
+  await deleteCache();
+  await deletePreservedPrecacheEntries();
+  await sendMessageToClients.call(this, ServiceWorkerMessages.RELOAD_WINDOW);
+  await this.registration.unregister();
+}
+
+async function verifyCacheValidity() {
+  if (await isCacheInvalid.call(this)) {
+    sendMessageToClients.call(this, ServiceWorkerMessages.CACHE_IS_INVALID);
+  }
+}
 
 async function onInstall(event) {
-  this.initialCacheWasEmpty = await isCacheEmpty();
+  const cacheExists = await doesCacheExist();
+  const preservedPrecacheEntries = await getPreservedPrecacheEntries();
 
-  // Do not update if there is still a(n old) version cached.
-  if (this.initialCacheWasEmpty) {
+  if (!cacheExists) {
+    this.shouldUpdate = true;
+    this.precacheEntries = self.__WB_MANIFEST;
+    this.controller.addToCacheList(this.precacheEntries);
     this.controller.install(event);
+  } else if (cacheExists && preservedPrecacheEntries) {
+    this.shouldUpdate = false;
+    this.precacheEntries = preservedPrecacheEntries;
+    this.controller.addToCacheList(this.precacheEntries);
+  } else {
+    this.installError = new Error('Cache given, but precache entries are missing!');
   }
 }
 
 async function onActivate(event) {
-  if (this.initialCacheWasEmpty) {
+  if (this.shouldUpdate) {
+    await saveToPreservePrecacheEntries(this.precacheEntries);
     this.controller.activate(event);
   }
 
   await this.clients.claim();
+
+  if (this.installError) {
+    sendMessageToClients.call(this, ServiceWorkerMessages.INSTALLATION_ERROR, this.installError);
+  }
 }
 
 async function onMessage(event) {
@@ -58,12 +87,6 @@ async function onRouteError() {
 
   return Response.error();
 }
-
-self.initialCacheWasEmpty = false; // Be pessimistic to prevent uninteded updates.
-self.toCacheEntries = self.__WB_MANIFEST; // Workaround since it is allowed to use the manifest only once.
-self.controller = new PrecacheController({ fallbackToNetwork: false });
-self.controller.addToCacheList(self.toCacheEntries);
-self.route = new PrecacheRoute(self.controller);
 
 self.oninstall = (event) => event.waitUntil(onInstall.call(self, event));
 self.onactivate = (event) => event.waitUntil(onActivate.call(self, event));
