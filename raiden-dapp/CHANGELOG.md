@@ -8,6 +8,7 @@
 - [#2391] Fix notification icon handling for special scenarios
 - [#2410] Fix transfer history list not showing third entry initially
 - [#2426] Display total available capacity in transfer view
+- [#2431] Disable UDC 'withdraw' button when no eth is is raiden account
 
 ### Added
 
@@ -27,6 +28,7 @@
 [#2415]: https://github.com/raiden-network/light-client/issues/2415
 [#2426]: https://github.com/raiden-network/light-client/issues/2426
 [#2435]: https://github.com/raiden-network/light-client/issues/2435
+[#2431]: https://github.com/raiden-network/light-client/issues/2431
 
 ## [0.14.0] - 2020-11-25
 
@@ -515,7 +517,7 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.14.0...HEAD
+[unreleased]: https://github.com/raiden-network/light-client/compare/v0.14.0...HEAD
 [0.14.0]: https://github.com/raiden-network/light-client/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/raiden-network/light-client/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/raiden-network/light-client/compare/v0.11.1...v0.12.0
