@@ -1469,9 +1469,14 @@ export class Raiden {
           }).pipe(
             timeout(this.config.httpTimeout),
             mergeMap(async (response) => response.text()),
-            map((text) => decode(SuggestedPartners, jsonParse(text))),
+            map((text) => {
+              const suggestions = decode(SuggestedPartners, jsonParse(text));
+              assert(suggestions.length, ['empty partner suggestion from PFS', { pfs: pfs.url }]);
+              return suggestions;
+            }),
             catchError((err) => {
               // store first error and omit to retry next pfs in list
+              this.log.info('Could not fetch PFS suggested partners', pfs, err);
               if (!firstError) firstError = err;
               return EMPTY;
             }),
