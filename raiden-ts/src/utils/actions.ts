@@ -617,53 +617,15 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
   // allows to constrain a generic to not already be part of an union
   type NotHandled<ACs, AC extends AnyAC> = AC extends ACs ? never : AC;
 
-  // workaround for "Type instantiation is excessively deep and possibly infinite" error
-  // see https://stackoverflow.com/questions/60265325/using-recursive-type-alias-in-generic-results-in-error
-  type I = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
-  type Iterate<A extends I = 0> = A extends 0
-    ? 1
-    : A extends 1
-    ? 2
-    : A extends 2
-    ? 3
-    : A extends 3
-    ? 4
-    : A extends 4
-    ? 5
-    : A extends 5
-    ? 6
-    : A extends 6
-    ? 7
-    : A extends 7
-    ? 8
-    : A extends 8
-    ? 9
-    : A extends 9
-    ? 10
-    : A extends 10
-    ? 11
-    : A extends 11
-    ? 12
-    : A extends 12
-    ? 13
-    : A extends 13
-    ? 14
-    : A extends 14
-    ? 15
-    : 15;
-
-  type ExtReducer<ACs, X extends I = 0> = X extends 15
-    ? Reducer<S, A>
-    : Reducer<S, A> & {
-        handle: <
-          AC extends AnyAC & NotHandled<ACs, AD>,
-          H extends Handler<AC>,
-          AD extends AnyAC = AC
-        >(
-          ac: AC | AC[],
-          handler: H,
-        ) => ExtReducer<ACs | AC, Iterate<X>>;
-      };
+  type HandleNew<ACs> = <
+    AC extends AnyAC & NotHandled<ACs, AD>,
+    H extends Handler<AC>,
+    AD extends AnyAC = AC
+  >(
+    ac: AC | AC[],
+    handler: H,
+  ) => ExtReducer<ACs | AC>;
+  type ExtReducer<ACs> = Reducer<S, A> & { handle: HandleNew<ACs> };
 
   /**
    * Make a reducer function for given handlers
@@ -671,7 +633,7 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
    * @param handlers - handlers to put into the reducer
    * @returns reducer function for given handlers
    */
-  function makeReducer<ACs, X extends I = 0>(handlers: Handlers): ExtReducer<ACs, X> {
+  function makeReducer<ACs>(handlers: Handlers): ExtReducer<ACs> {
     const reducer: Reducer<S, A> = (state: S = initialState, action: A) => {
       if (action.type in handlers && handlers[action.type][0].is(action))
         return handlers[action.type][1](state, action); // calls registered handler
@@ -692,12 +654,12 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
     >(ac: AC | AC[], handler: H) {
       const arr = Array.isArray(ac) ? ac : [ac];
       assert(!arr.some((a) => a.type in handlers), 'Already handled');
-      return makeReducer<ACs | AC, Iterate<X>>(
+      return makeReducer<ACs | AC>(
         Object.assign({}, handlers, ...arr.map((ac) => ({ [ac.type]: [ac, handler] }))),
       );
     }
     // grow reducer function with our `handle` extender
-    return Object.assign(reducer, { handle }) as ExtReducer<ACs, X>;
+    return Object.assign(reducer, { handle }) as ExtReducer<ACs>;
   }
   // initially makes a reducer which doesn't handle anything (just returns unchanged state)
   return makeReducer<never>({});
