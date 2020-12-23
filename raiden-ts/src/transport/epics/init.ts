@@ -34,12 +34,13 @@ import {
 import { fromFetch } from 'rxjs/fetch';
 import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
+import constant from 'lodash/constant';
 
-import { createClient, MatrixClient, MatrixEvent, Filter } from 'matrix-js-sdk';
+import { createClient, MatrixClient, MatrixEvent, Filter, LoginPayload } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 
 import { assert } from '../../utils';
-import { RaidenError, ErrorCodes } from '../../utils/error';
+import { RaidenError, ErrorCodes, networkErrors } from '../../utils/error';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
 import { intervalFromConfig, RaidenConfig } from '../../config';
@@ -219,8 +220,8 @@ function setupMatrixClient$(
   { address, signer, config$ }: Pick<RaidenEpicDeps, 'address' | 'signer' | 'config$'>,
   caps: Caps | null,
 ) {
-  const serverName = getServerName(server);
-  if (!serverName) throw new RaidenError(ErrorCodes.TRNS_NO_SERVERNAME, { server });
+  const homeserver = getServerName(server);
+  assert(homeserver, [ErrorCodes.TRNS_NO_SERVERNAME, { server }]);
 
   return config$.pipe(
     first(),
@@ -236,30 +237,34 @@ function setupMatrixClient$(
         return of({ matrix, server, setup, pollingInterval });
       } else {
         const matrix = createClient({ baseUrl: server });
-        const userName = address.toLowerCase(),
-          userId = `@${userName}:${serverName}`;
+        const username = address.toLowerCase();
+        const userId = `@${username}:${homeserver}`;
 
         // create password as signature of serverName, then try login or register
-        return from(signer.signMessage(serverName)).pipe(
+        return from(signer.signMessage(homeserver)).pipe(
           mergeMap((password) =>
-            retryAsync$(
-              () =>
-                matrix.login('m.login.password', {
-                  user: userName,
-                  password,
-                  device_id: DEVICE_ID,
-                }),
-              pollingInterval,
-              { onErrors: [429] }, // retry only if rate-limit error
+            defer(async () =>
+              matrix.login('m.login.password', {
+                identifier: { type: 'm.id.user', user: username },
+                password,
+                device_id: DEVICE_ID,
+              }),
             ).pipe(
-              catchError((err) =>
-                matrix.register(userName, password).catch(() => {
-                  throw err; // if register fails, throw first error as it's more informative
-                }),
-              ),
+              catchError(async (err) => {
+                return matrix
+                  .registerRequest({
+                    username,
+                    password,
+                    device_id: DEVICE_ID,
+                  })
+                  .catch(constant(err)) as Promise<LoginPayload>;
+                // if register fails, throws login error as it's more informative
+              }),
+              retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
             ),
           ),
-          mergeMap(({ access_token, device_id }) => {
+          mergeMap(({ access_token, device_id, user_id }) => {
+            assert(user_id === userId, ['Wrong login/register user_id', { user_id, userId }]);
             // matrix.register implementation doesn't set returned credentials
             // which would require an unnecessary additional login request if we didn't
             // set it here, and login doesn't set deviceId, so we set all credential
