@@ -132,6 +132,28 @@ export async function flushPromises() {
   return new Promise(setImmediate);
 }
 
+type ZipTuple<
+  T extends readonly [string, ...string[]],
+  U extends [any, ...any[]] & { length: T['length'] }
+> = {
+  [K in keyof T]: [T[K], K extends keyof U ? U[K] : never];
+};
+
+/**
+ * @param keys - Tuple of literals for keys
+ * @param values - Values array
+ * @returns Array with named properties
+ */
+export function makeStruct<
+  Keys extends readonly [string, ...string[]],
+  Values extends [any, ...any[]] & { length: Keys['length'] }
+>(keys: Keys, values: Values) {
+  return Object.assign(
+    [...values],
+    Object.fromEntries(keys.map((k, i) => [k, values[i]])),
+  ) as Values & { [T in ZipTuple<Keys, Values>[number] as T[0]]: T[1] };
+}
+
 /**
  * Returns some valid signature
  *
@@ -558,12 +580,9 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
     makeTransaction(undefined, { to: userDepositContract.address }),
   );
   userDepositContract.effectiveBalance.mockResolvedValue(parseEther('5'));
-  userDepositContract.withdraw_plans.mockResolvedValue({
-    amount: Zero,
-    withdraw_block: Zero,
-    0: Zero,
-    1: Zero,
-  });
+  userDepositContract.withdraw_plans.mockResolvedValue(
+    makeStruct(['amount', 'withdraw_block'] as const, [Zero, Zero]),
+  );
 
   const secretRegistryContract = SecretRegistry__factory.connect(
     address,
@@ -1067,12 +1086,9 @@ export async function makeRaiden(
   userDepositContract.balances.mockResolvedValue(parseEther('5'));
   userDepositContract.total_deposit.mockResolvedValue(parseEther('5'));
   userDepositContract.effectiveBalance.mockResolvedValue(parseEther('5'));
-  userDepositContract.withdraw_plans.mockResolvedValue({
-    amount: Zero,
-    withdraw_block: Zero,
-    0: Zero,
-    1: Zero,
-  });
+  userDepositContract.withdraw_plans.mockResolvedValue(
+    makeStruct(['amount', 'withdraw_block'] as const, [Zero, Zero]),
+  );
 
   const secretRegistryContract = SecretRegistry__factory.connect(
     secretRegistryAddress,
