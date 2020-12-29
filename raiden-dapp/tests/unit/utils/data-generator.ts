@@ -105,6 +105,7 @@ export function generateChannel(
     balance: constants.Zero,
     capacity: BigNumber.from(10 ** 8),
     ownWithdrawable: BigNumber.from(10 ** 8),
+    completed: true,
     ...partialChannel,
   } as RaidenChannel;
 }
