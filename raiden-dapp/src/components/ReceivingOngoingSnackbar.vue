@@ -1,18 +1,18 @@
 <template>
-  <v-snackbar v-model="snackbarVisible" :timeout="-1" color="primary">
-    <span class="receiving-ongoing-snackbar__warning">
-      {{ $t('transfer.receiving-transfer-snackbar') }}
-    </span>
-  </v-snackbar>
+  <transition v-if="show" name="delay">
+    <v-snackbar v-model="show" class="receiving-ongoing-snackbar" timeout="-1" color="primary">
+      <span class="receiving-ongoing-snackbar__warning">
+        {{ $t('transfer.receiving-transfer-snackbar') }}
+      </span>
+    </v-snackbar>
+  </transition>
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { of, Subject, Subscription, timer } from 'rxjs';
-import { debounce, distinctUntilChanged } from 'rxjs/operators';
-import { Transfers } from '@/types';
 import { RaidenTransfer } from 'raiden-ts';
+import { Transfers } from '@/types';
 
 @Component({
   computed: {
@@ -21,33 +21,15 @@ import { RaidenTransfer } from 'raiden-ts';
 })
 export default class ReceivingOngoingSnackbar extends Vue {
   pendingTransfers!: Transfers;
-  $receivingTransfersPending!: Subject<boolean>;
-  snackbarVisible = false;
-  sub!: Subscription;
 
-  get pendingReceivingTransfers(): RaidenTransfer[] {
-    const pendingTransfers = Object.values(this.pendingTransfers) as RaidenTransfer[];
-    return pendingTransfers.filter((transfer) => transfer.direction === 'received');
+  get pendingReceivedTransfers(): RaidenTransfer[] {
+    return Object.values(this.pendingTransfers).filter(
+      (transfer) => transfer.direction === 'received',
+    );
   }
 
-  @Watch('pendingReceivingTransfers')
-  updatedPendingReceivedTransfers(transfers: RaidenTransfer[]) {
-    this.$receivingTransfersPending.next(transfers.length > 0);
-  }
-
-  created(): void {
-    this.$receivingTransfersPending = new Subject<boolean>();
-
-    this.sub = this.$receivingTransfersPending
-      .pipe(
-        distinctUntilChanged(),
-        debounce((pending) => (pending ? of(1) : timer(5000))),
-      )
-      .subscribe((pending) => (this.snackbarVisible = pending));
-  }
-
-  destroyed(): void {
-    this.sub.unsubscribe();
+  get show(): boolean {
+    return Object.keys(this.pendingReceivedTransfers).length > 0;
   }
 }
 </script>
@@ -61,9 +43,14 @@ export default class ReceivingOngoingSnackbar extends Vue {
   }
 }
 
+// This makes sure that the component is shown a little bit longer.
+// This is meant to prevent flickering as transfers are blazing fast.
+.delay-leave-active {
+  transition-delay: 1.5s;
+}
+
 .receiving-ongoing-snackbar {
   &__warning {
-    flex: 1;
     font-size: 16px;
     margin-left: 8px;
   }
