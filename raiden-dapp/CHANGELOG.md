@@ -10,6 +10,7 @@
 - [#2426] Display total available capacity in transfer view
 - [#2431] Disable UDC 'withdraw' button when no eth is is raiden account
 - [#2476] Fix persitence to remember disclaimer acceptance if selected
+- [#2430] Remember token selection during navigation
 
 ### Added
 
@@ -33,6 +34,7 @@
 [#2431]: https://github.com/raiden-network/light-client/issues/2431
 [#2476]: https://github.com/raiden-network/light-client/issues/2476
 [#2448]: https://github.com/raiden-network/light-client/issues/2448
+[#2430]: https://github.com/raiden-network/light-client/issues/2430
 
 ## [0.14.0] - 2020-11-25
 
