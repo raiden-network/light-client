@@ -7,13 +7,22 @@ export default class NavigationMixin extends Vue {
     this.$router.push({
       name: RouteNames.SELECT_HUB,
       params: {
-        token: token,
+        token,
       },
     });
   }
 
   navigateToHome() {
     this.$router.push({ name: RouteNames.HOME });
+  }
+
+  navigateToTransfer(token: string) {
+    this.$router.push({
+      name: RouteNames.TRANSFER,
+      params: {
+        token,
+      },
+    });
   }
 
   navigateToOpenChannel(token: string, partner: string) {
@@ -116,16 +125,19 @@ export default class NavigationMixin extends Vue {
           this.$route.params.amount,
         );
         break;
-      case RouteNames.TRANSFER:
       case RouteNames.CHANNELS:
+        this.navigateToTransfer(this.$route.params.token);
+        break;
       case RouteNames.SELECT_TOKEN:
-        this.navigateToHome();
+        this.$router.go(-1); // Preserve current token without knowing it.
         break;
       case RouteNames.SELECT_HUB:
         this.navigateToTokenSelect();
         break;
       case RouteNames.OPEN_CHANNEL:
         this.navigateToSelectHub(this.$route.params.token);
+        break;
+      default:
         break;
     }
   }

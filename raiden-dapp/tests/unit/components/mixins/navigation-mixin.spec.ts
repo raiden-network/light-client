@@ -155,28 +155,12 @@ describe('NavigationMixin', () => {
   });
 
   describe('back navigation', () => {
-    test('from select target', async () => {
-      wrapper.vm.$route.name = RouteNames.TRANSFER;
-      wrapper.vm.onBackClicked();
-
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.HOME,
-        }),
-      );
-    });
-
     test('from select token', async () => {
       wrapper.vm.$route.name = RouteNames.SELECT_TOKEN;
       wrapper.vm.onBackClicked();
 
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.HOME,
-        }),
-      );
+      expect(router.go).toHaveBeenCalledTimes(1);
+      expect(router.go).toHaveBeenCalledWith(-1);
     });
 
     test('from select hub', async () => {
@@ -193,12 +177,18 @@ describe('NavigationMixin', () => {
 
     test('from channels', async () => {
       wrapper.vm.$route.name = RouteNames.CHANNELS;
+      wrapper.vm.$route.params = {
+        token: '0xtoken',
+      };
       wrapper.vm.onBackClicked();
 
       expect(router.push).toHaveBeenCalledTimes(1);
       expect(router.push).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: RouteNames.HOME,
+          name: RouteNames.TRANSFER,
+          params: {
+            token: '0xtoken',
+          },
         }),
       );
     });

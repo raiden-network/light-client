@@ -49,6 +49,9 @@ const createWrapper = (
         meta: {
           title: 'title',
         },
+        params: {
+          token: '0xtoken',
+        },
       },
     },
   });
@@ -69,7 +72,10 @@ describe('AppHeader.vue', () => {
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: RouteNames.HOME,
+        name: RouteNames.TRANSFER,
+        params: {
+          token: '0xtoken',
+        },
       }),
     );
   });
