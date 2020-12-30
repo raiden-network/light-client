@@ -18,6 +18,7 @@
 - [#2379] Illustrations for info overlays
 - [#2435] Sync indicator when connecting to dApp
 - [#2399] Hint for user to stay online while receving transfers
+- [#2458] Click on notification snackbar to open notification panel
 
 ### Changed
 
@@ -37,6 +38,7 @@
 [#2448]: https://github.com/raiden-network/light-client/issues/2448
 [#2430]: https://github.com/raiden-network/light-client/issues/2430
 [#2399]: https://github.com/raiden-network/light-client/issues/2399
+[#2458]: https://github.com/raiden-network/light-client/issues/2458
 
 ## [0.14.0] - 2020-11-25
 
