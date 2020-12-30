@@ -79,14 +79,18 @@ const settingsLocalStorage = new VuexPersistence<RootState>({
   key: 'raiden_dapp_settings',
 });
 
-const miscellaneousLocalStorage = new VuexPersistence<RootState>({
+const disclaimerLocalStorage = new VuexPersistence<RootState>({
   reducer: (state) => ({
     disclaimerAccepted: state.persistDisclaimerAcceptance ? state.disclaimerAccepted : false,
-    stateBackupReminderDateMs: state.stateBackupReminderDateMs,
   }),
-  filter: (mutation) =>
-    mutation.type === 'acceptDisclaimer' || mutation.type === 'updateStateBackupReminderDate',
-  key: 'miscellaneous',
+  filter: (mutation) => mutation.type === 'acceptDisclaimer',
+  key: 'disclaimer',
+});
+
+const backupReminderLocalStorage = new VuexPersistence<RootState>({
+  reducer: (state) => ({ stateBackupReminderDateMs: state.stateBackupReminderDateMs }),
+  filter: (mutation) => mutation.type === 'updateStateBackupReminderDate',
+  key: 'backupReminder',
 });
 
 export type CombinedStoreState = RootState & {
@@ -256,7 +260,11 @@ const store: StoreOptions<CombinedStoreState> = {
       return !!state.settings.useRaidenAccount;
     },
   },
-  plugins: [settingsLocalStorage.plugin, miscellaneousLocalStorage.plugin],
+  plugins: [
+    settingsLocalStorage.plugin,
+    disclaimerLocalStorage.plugin,
+    backupReminderLocalStorage.plugin,
+  ],
   modules: {
     notifications,
     userDepositContract,
