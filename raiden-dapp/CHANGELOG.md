@@ -20,6 +20,7 @@
 ### Changed
 
 - [#2409] Lower default payment expiration to 1.1 × reveal timeout
+- [#2448] Align basic route design in open channel user flow
 
 [#211]: https://github.com/raiden-network/light-client/issues/211
 [#2379]: https://github.com/raiden-network/light-client/issues/2379
@@ -31,6 +32,7 @@
 [#2435]: https://github.com/raiden-network/light-client/issues/2435
 [#2431]: https://github.com/raiden-network/light-client/issues/2431
 [#2476]: https://github.com/raiden-network/light-client/issues/2476
+[#2448]: https://github.com/raiden-network/light-client/issues/2448
 
 ## [0.14.0] - 2020-11-25
 
