@@ -9,6 +9,7 @@
 - [#2410] Fix transfer history list not showing third entry initially
 - [#2426] Display total available capacity in transfer view
 - [#2431] Disable UDC 'withdraw' button when no eth is is raiden account
+- [#2476] Fix persitence to remember disclaimer acceptance if selected
 
 ### Added
 
@@ -29,6 +30,7 @@
 [#2426]: https://github.com/raiden-network/light-client/issues/2426
 [#2435]: https://github.com/raiden-network/light-client/issues/2435
 [#2431]: https://github.com/raiden-network/light-client/issues/2431
+[#2476]: https://github.com/raiden-network/light-client/issues/2476
 
 ## [0.14.0] - 2020-11-25
 
