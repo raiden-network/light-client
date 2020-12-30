@@ -1,6 +1,8 @@
 <template>
   <v-snackbar
+    v-if="notification.display"
     v-model="notification.display"
+    class="notification-snackbar"
     :timeout="notification.duration"
     app
     rounded
@@ -8,11 +10,11 @@
     color="primary"
     @input="setNotificationShown(notification.id)"
   >
-    <v-row no-gutters class="notification-area">
+    <v-row no-gutters class="notification-snackbar__area" @click="open">
       <v-col cols="2">
         <img :src="require('@/assets/notifications/notification_block.svg')" />
       </v-col>
-      <v-col class="notification-area__title">
+      <v-col class="notification-snackbar__area__title">
         <span>
           {{ notification.title }}
         </span>
@@ -27,8 +29,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator';
+import { Component, Mixins, Watch } from 'vue-property-decorator';
 import { mapGetters, mapMutations } from 'vuex';
+import NavigationMixin from '@/mixins/navigation-mixin';
 import { NotificationPayload } from '@/store/notifications/types';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { NotificationContext } from '@/store/notifications/notification-context';
@@ -53,13 +56,13 @@ const emptyNotification: NotificationPayload = {
     ...mapMutations('notifications', ['setNotificationShown']),
   },
 })
-export default class NotificationSnackbar extends Vue {
+export default class NotificationSnackbar extends Mixins(NavigationMixin) {
   notification: NotificationPayload = emptyNotification;
   notificationQueue!: NotificationPayload[];
   setNotificationShown!: (notificationId: number) => void;
 
-  @Watch('notificationQueue', { deep: true })
-  onQueueChange() {
+  @Watch('notificationQueue', { immediate: true, deep: true })
+  onQueueChange(): void {
     if (!this.notification.display && this.notificationQueue.length > 0) {
       const nextNotification = this.notificationQueue.shift();
       if (!nextNotification) {
@@ -69,13 +72,18 @@ export default class NotificationSnackbar extends Vue {
     }
   }
 
-  created() {
+  created(): void {
     this.notification = emptyNotification;
   }
 
-  dismiss() {
+  dismiss(): void {
     this.setNotificationShown(this.notification.id);
     this.notification = { ...this.notification, display: false };
+  }
+
+  open(): void {
+    this.navigateToNotifications();
+    this.dismiss();
   }
 }
 </script>
@@ -83,11 +91,15 @@ export default class NotificationSnackbar extends Vue {
 <style scoped lang="scss">
 @import '@/scss/scroll';
 
-.notification-area {
-  &__title {
-    font-size: 16px;
-    font-weight: 500;
-    padding-top: 3px;
+.notification-snackbar {
+  &__area {
+    cursor: pointer;
+
+    &__title {
+      font-size: 16px;
+      font-weight: 500;
+      padding-top: 3px;
+    }
   }
 }
 </style>
