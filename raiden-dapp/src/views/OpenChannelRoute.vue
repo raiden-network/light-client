@@ -15,7 +15,6 @@
         limit
       />
     </div>
-    <divider />
     <div class="open-channel__token-information">
       <token-information :token="token" />
     </div>
@@ -27,12 +26,13 @@
         <address-display :address="partner" />
       </div>
     </div>
-    <action-button
-      data-cy="open_channel_button"
-      class="open-channel__button"
-      :enabled="valid"
-      :text="$t('open-channel.open-button')"
-    />
+    <div class="open-channel__button">
+      <action-button
+        data-cy="open_channel_button"
+        :enabled="valid"
+        :text="$t('open-channel.open-button')"
+      />
+    </div>
     <open-channel-dialog
       :visible="loading"
       :steps="steps"
@@ -197,6 +197,9 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
+@import '@/scss/colors';
+@import '@/scss/mixins';
+
 .open-channel {
   display: flex;
   flex-direction: column;
@@ -207,8 +210,15 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
   &__amount {
     display: flex;
     flex-direction: column;
-    height: 300px;
+    height: 200px;
     justify-content: center;
+  }
+
+  &__token-information,
+  &__hub {
+    background-color: $transfer-screen-bg-color;
+    border-radius: 8px;
+    min-height: 48px;
   }
 
   &__token-information {
@@ -232,7 +242,30 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
   }
 
   &__button {
-    margin-top: 110px;
+    align-items: flex-end;
+    display: flex;
+    flex: 1;
+    margin-bottom: 38px;
+
+    @include respond-to(handhelds) {
+      flex: none;
+      margin-bottom: none;
+
+      ::v-deep {
+        .col-10 {
+          padding-top: 28px;
+          @include respond-to(handhelds) {
+            min-width: 100%;
+          }
+        }
+
+        .v-btn {
+          @include respond-to(handhelds) {
+            min-width: 100%;
+          }
+        }
+      }
+    }
   }
 }
 </style>
