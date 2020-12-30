@@ -171,7 +171,7 @@ export class TestData {
     icon: 'notification_settle',
     link: 'Visit the Withdrawal menu',
     dappRoute: RouteNames.ACCOUNT_WITHDRAWAL,
-    display: false,
+    display: true,
     duration: 5000,
     importance: NotificationImportance.HIGH,
     context: NotificationContext.NONE,
