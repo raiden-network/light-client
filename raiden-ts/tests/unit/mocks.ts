@@ -264,6 +264,16 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
         access_token: `${userName}_access_token`,
       };
     }),
+    registerRequest: jest.fn(
+      async ({ username, device_id }: { username: string; device_id?: string }) => {
+        userId = `@${username}:${server}`;
+        return {
+          user_id: userId,
+          device_id: device_id ?? `${username}_device_id`,
+          access_token: `${username}_access_token`,
+        };
+      },
+    ),
     searchUserDirectory: jest.fn(async ({ term }) => ({
       results: [{ user_id: `@${term}:${server}`, display_name: `${term}_display_name` }],
     })),
@@ -712,7 +722,7 @@ function mockedMatrixCreateClient({
   }
 
   let stopped: typeof mockedMatrixUsers[string] | undefined;
-  return (Object.assign(new EventEmitter(), {
+  const matrix = (Object.assign(new EventEmitter(), {
     startClient: jest.fn(async () => {
       if (!(userId in mockedMatrixUsers) && stopped) mockedMatrixUsers[userId] = stopped;
       stopped = undefined;
@@ -731,19 +741,33 @@ function mockedMatrixCreateClient({
     // reject to test register
     login: jest.fn().mockRejectedValue(new Error('invalid password')),
     register: jest.fn(async (user, password) => {
-      address = getAddress(user);
-      assert(verifyMessage(server, password) === address, 'wrong password');
-      userId = `@${user}:${server}`;
-      mockedMatrixUsers[userId] = {
-        userId,
-        presence: 'offline',
-      };
-      return {
-        user_id: userId,
-        device_id: `${user}_device_id`,
-        access_token: `${user}_access_token`,
-      };
+      return matrix.registerRequest({ username: user, password });
     }),
+    registerRequest: jest.fn(
+      async ({
+        username,
+        password,
+        device_id,
+      }: {
+        username: string;
+        password: string;
+        device_id?: string;
+      }) => {
+        address = getAddress(username);
+        assert(verifyMessage(server, password) === address, 'wrong password');
+        userId = `@${username}:${server}`;
+        mockedMatrixUsers[userId] = {
+          userId,
+          presence: 'offline',
+        };
+        userId = `@${username}:${server}`;
+        return {
+          user_id: userId,
+          device_id: device_id ?? `${username}_device_id`,
+          access_token: `${username}_access_token`,
+        };
+      },
+    ),
     searchUserDirectory: jest.fn(async ({ term }) => ({
       results: Object.values(mockedMatrixUsers)
         .filter((u) => u.userId.includes(term))
@@ -865,6 +889,7 @@ function mockedMatrixCreateClient({
     },
     createFilter: jest.fn(async () => true),
   }) as unknown) as jest.Mocked<MatrixClient>;
+  return matrix;
 }
 
 jest.mock('matrix-js-sdk', () => ({
