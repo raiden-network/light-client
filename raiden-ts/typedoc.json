@@ -94,6 +94,15 @@
             "source": "./docs-source/account.md"
           }
         ]
+      },
+      {
+        "title": "Using the Raiden CLI",
+        "pages": [
+          {
+            "title": "Overview",
+            "source": "../raiden-cli/README.md"
+          }
+        ]
       }
     ]
   }
