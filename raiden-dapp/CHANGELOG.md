@@ -11,6 +11,7 @@
 - [#2431] Disable UDC 'withdraw' button when no eth is is raiden account
 - [#2476] Fix persitence to remember disclaimer acceptance if selected
 - [#2430] Remember token selection during navigation
+- [#2474] Fix TransferHeader behaviour with no available capacity
 
 ### Added
 
@@ -39,6 +40,7 @@
 [#2430]: https://github.com/raiden-network/light-client/issues/2430
 [#2399]: https://github.com/raiden-network/light-client/issues/2399
 [#2458]: https://github.com/raiden-network/light-client/issues/2458
+[#2474]: https://github.com/raiden-network/light-client/issues/2474
 
 ## [0.14.0] - 2020-11-25
 
