@@ -399,26 +399,23 @@ describe('matrixPresenceUpdateEpic', () => {
     const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
 
     raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
-    raiden.store.dispatch(
-      matrixPresence.success(
-        { userId: partnerMatrix.getUserId()!, available: true, ts: 123 },
-        { address: partner.address },
-      ),
-    );
+    await sleep(2 * raiden.config.pollingInterval);
 
     matrix.getProfileInfo.mockResolvedValueOnce({
       displayname: `${matrix.getUserId()}_display_name`,
       avatar_url: `mxc://raiden.network/cap?Delivery=0`,
     });
 
-    matrix._http.authedRequest.mockResolvedValueOnce({
+    const presence = {
       presence: 'offline',
       last_active_ago: 123,
-    });
+    };
+    matrix._http.authedRequest.mockResolvedValueOnce(presence);
 
     matrix.emit('event', {
       getType: () => 'm.presence',
       getSender: () => partnerMatrix.getUserId(),
+      getContent: () => presence,
     });
 
     await sleep(2 * raiden.config.pollingInterval);
@@ -428,7 +425,7 @@ describe('matrixPresenceUpdateEpic', () => {
           userId: partnerMatrix.getUserId()!,
           available: false,
           ts: expect.any(Number),
-          caps: { [Capabilities.DELIVERY]: 0 },
+          caps: expect.objectContaining({ [Capabilities.DELIVERY]: 0 }),
         },
         { address: partner.address },
       ),
@@ -487,7 +484,7 @@ test('matrixUpdateCapsEpic', async () => {
   );
 
   await sleep(2 * raiden.config.pollingInterval);
-  expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(2);
+  expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(3);
   expect(matrix.setAvatarUrl).toHaveBeenCalledWith(
     expect.stringMatching(`mxc://raiden.network/cap?.*${Capabilities.DELIVERY}=1`),
   );
@@ -495,7 +492,7 @@ test('matrixUpdateCapsEpic', async () => {
   raiden.store.dispatch(raidenConfigUpdate({ caps: { customCap: 'abc' } }));
 
   await sleep(2 * raiden.config.pollingInterval);
-  expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(3);
+  expect(matrix.setAvatarUrl).toHaveBeenCalledTimes(4);
   expect(matrix.setAvatarUrl).toHaveBeenCalledWith(
     expect.stringMatching(`mxc://raiden.network/cap?.*${Capabilities.DELIVERY}=0&.*customCap=abc`),
   );
