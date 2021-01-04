@@ -46,18 +46,18 @@ describe('TransferHeaders.vue', () => {
     });
   };
 
-  test('displays "no open channels" if channel capacity is zero', () => {
+  test('displays "no open channels" if no channels exist', () => {
     const wrapper = createWrapper(true, constants.Zero);
     const amountDisplay = wrapper.findAll('span').at(3);
 
     expect(amountDisplay.text()).toContain('transfer.transfer-menus.no-channels');
   });
 
-  test('disables deposit button if channel capacity is zero', () => {
+  test('displays zero amount if channel has no capacity', () => {
     const wrapper = createWrapper(false, constants.Zero);
-    const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
+    const amountDisplay = wrapper.findAll('span').at(3);
 
-    expect(depositButton.attributes()['disabled']).toBe('disabled');
+    expect(amountDisplay.find('div').text()).toContain('0');
   });
 
   test('displays amount if channel has capacity', () => {
@@ -67,7 +67,23 @@ describe('TransferHeaders.vue', () => {
     expect(amountDisplay.find('div').text()).toContain('0.000001');
   });
 
-  test('deposit button is enabled if channel has capacityxxxx', () => {
+  test('disables deposit button if no channels exist', () => {
+    const wrapper = createWrapper(true, constants.Zero);
+    const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
+
+    expect(depositButton.attributes()['disabled']).toBe('disabled');
+  });
+
+  test('enables deposit button if channel capacity is zero', () => {
+    const wrapper = createWrapper(false, constants.Zero);
+    const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
+
+    expect(depositButton.attributes()).not.toMatchObject(
+      expect.objectContaining({ disabled: 'disabled' }),
+    );
+  });
+
+  test('enables deposit button if channel has capacity', () => {
     const wrapper = createWrapper(false, constants.One);
     const depositButton = wrapper.find('.transfer-menus__dot-menu__menu__deposit');
 

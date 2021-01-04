@@ -21,7 +21,7 @@
         <div class="transfer-menus__dot-menu__menu">
           <v-btn
             text
-            :disabled="noChannelOrCapacity"
+            :disabled="noChannels"
             data-cy="transfer_menus_dot_menu_menu_deposit"
             class="transfer-menus__dot-menu__menu__deposit"
             @click="depositDialogOpen()"
@@ -39,7 +39,7 @@
         </div>
       </v-menu>
     </div>
-    <span v-if="noChannelOrCapacity">
+    <span v-if="noChannels">
       {{ $t('transfer.transfer-menus.no-channels') }}
     </span>
     <span v-else>
@@ -62,7 +62,7 @@
 <script lang="ts">
 import { Component, Prop, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { BigNumber, constants } from 'ethers';
+import { BigNumber } from 'ethers';
 import NavigationMixin from '../../mixins/navigation-mixin';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
@@ -104,10 +104,6 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
 
   depositDialogClosed() {
     this.showDepositDialog = false;
-  }
-
-  get noChannelOrCapacity(): boolean {
-    return this.noChannels || this.totalCapacity.lte(constants.Zero);
   }
 
   /* istanbul ignore next */
