@@ -1475,7 +1475,7 @@ describe('Raiden', () => {
   });
 
   describe('suggestPartners', () => {
-    test('success', async () => {
+    test('success with one PFS', async () => {
       expect.assertions(2);
       await raiden.monitorToken(token);
 
@@ -1520,7 +1520,42 @@ describe('Raiden', () => {
       );
     });
 
-    test('fail', async () => {
+    test('success with empty response from one PFS', async () => {
+      expect.assertions(2);
+      await raiden.monitorToken(token);
+
+      // pfsInfo
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => pfsInfoResponse),
+        text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+      });
+      raiden.updateConfig({ pfs: pfsUrl }); // pfs set
+
+      const suggestResponse: {
+        address: string;
+        capacity: string;
+        centrality: string;
+        score: string;
+        uptime: number;
+      }[] = [];
+      // suggest_partner
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => suggestResponse),
+        text: jest.fn(async () => jsonStringify(suggestResponse)),
+      });
+
+      await expect(raiden.suggestPartners(token)).resolves.toEqual([]);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/suggest_partner$/),
+        expect.anything(),
+      );
+    });
+
+    test('throws with error from one PFS', async () => {
       expect.assertions(2);
       await raiden.monitorToken(token);
 
@@ -1543,6 +1578,151 @@ describe('Raiden', () => {
       await expect(raiden.suggestPartners(token)).rejects.toMatchObject({
         message: expect.stringMatching('Invalid value'),
       });
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/suggest_partner$/),
+        expect.anything(),
+      );
+    });
+
+    test('returns data when second PFS replies', async () => {
+      expect.assertions(2);
+      await raiden.monitorToken(token);
+
+      raiden.findPFS = jest.fn().mockResolvedValueOnce(['pfs1', 'pfs2']);
+      raiden.updateConfig({ pfs: '' }); // set empty PFS, will trigger `findPFS`
+
+      const suggestResponse1: {
+        address: string;
+        capacity: string;
+        centrality: string;
+        score: string;
+        uptime: number;
+      }[] = [];
+      // suggest_partner
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => suggestResponse1),
+        text: jest.fn(async () => jsonStringify(suggestResponse1)),
+      });
+      const suggestResponse = [
+        {
+          address: accounts[1],
+          capacity: '17',
+          centrality: '0.01',
+          score: '99',
+          uptime: 120000,
+        },
+      ];
+      // suggest_partner
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => suggestResponse),
+        text: jest.fn(async () => jsonStringify(suggestResponse)),
+      });
+
+      await expect(raiden.suggestPartners(token)).resolves.toEqual([
+        {
+          address: suggestResponse[0].address,
+          capacity: BigNumber.from(suggestResponse[0].capacity),
+          centrality: suggestResponse[0].centrality,
+          score: suggestResponse[0].score,
+          uptime: suggestResponse[0].uptime,
+        },
+      ]);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/suggest_partner$/),
+        expect.anything(),
+      );
+    });
+
+    test('returns empty list when second PFS answers after failure', async () => {
+      expect.assertions(2);
+      await raiden.monitorToken(token);
+
+      raiden.findPFS = jest.fn().mockResolvedValueOnce(['pfs1', 'pfs2']);
+      raiden.updateConfig({ pfs: '' }); // set empty PFS, will trigger `findPFS`
+
+      // suggest_partner
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: jest.fn(async () => ({ error: 'not found' })),
+        text: jest.fn(async () => '{"error":"not found"}'),
+      });
+
+      const suggestResponse2: {
+        address: string;
+        capacity: string;
+        centrality: string;
+        score: string;
+        uptime: number;
+      }[] = [];
+      // suggest_partner
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => suggestResponse2),
+        text: jest.fn(async () => jsonStringify(suggestResponse2)),
+      });
+
+      await expect(raiden.suggestPartners(token)).resolves.toEqual([]);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/suggest_partner$/),
+        expect.anything(),
+      );
+    });
+
+    test("returns best result when PFS' return different data", async () => {
+      expect.assertions(2);
+      await raiden.monitorToken(token);
+
+      raiden.findPFS = jest.fn().mockResolvedValueOnce(['pfs1', 'pfs2']);
+      raiden.updateConfig({ pfs: '' }); // set empty PFS, will trigger `findPFS`
+
+      const suggestResponseEmpty: {
+        address: string;
+        capacity: string;
+        centrality: string;
+        score: string;
+        uptime: number;
+      }[] = [];
+      // suggest_partner
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => suggestResponseEmpty),
+        text: jest.fn(async () => jsonStringify(suggestResponseEmpty)),
+      });
+
+      const suggestResponse = [
+        {
+          address: accounts[1],
+          capacity: '17',
+          centrality: '0.01',
+          score: '99',
+          uptime: 120000,
+        },
+      ];
+      // suggest_partner
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => suggestResponse),
+        text: jest.fn(async () => jsonStringify(suggestResponse)),
+      });
+
+      await expect(raiden.suggestPartners(token)).resolves.toEqual([
+        {
+          address: suggestResponse[0].address,
+          capacity: BigNumber.from(suggestResponse[0].capacity),
+          centrality: suggestResponse[0].centrality,
+          score: suggestResponse[0].score,
+          uptime: suggestResponse[0].uptime,
+        },
+      ]);
+
       expect(fetch).toHaveBeenCalledWith(
         expect.stringMatching(/\/suggest_partner$/),
         expect.anything(),

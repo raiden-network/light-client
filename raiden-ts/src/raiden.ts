@@ -1462,7 +1462,7 @@ export class Raiden {
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
     const pfss = options.pfs ? [decode(PFS, options.pfs)] : await this.findPFS();
 
-    let firstError: Error | undefined;
+    let firstResponse: Error | SuggestedPartner[] | undefined;
     return from(pfss)
       .pipe(
         concatMap((pfs) =>
@@ -1474,20 +1474,30 @@ export class Raiden {
             mergeMap(async (response) => response.text()),
             map((text) => {
               const suggestions = decode(SuggestedPartners, jsonParse(text));
-              assert(suggestions.length, ['empty partner suggestion from PFS', { pfs: pfs.url }]);
+
+              if (!suggestions.length) {
+                firstResponse = [];
+                throw new Error('PFS returned no suggested partners');
+              }
               return suggestions;
             }),
             catchError((err) => {
               // store first error and omit to retry next pfs in list
               this.log.info('Could not fetch PFS suggested partners', pfs, err);
-              if (!firstError) firstError = err;
+              if (!firstResponse) firstResponse = err;
               return EMPTY;
             }),
           ),
         ),
         first(), // throws if no first result can be fetched/decoded
         // if first errored, throw first seen error or pass current through
-        catchError((err) => throwError(firstError ?? err)),
+        catchError((err) => {
+          if (Array.isArray(firstResponse)) {
+            return of(firstResponse);
+          } else {
+            return throwError(firstResponse ?? err);
+          }
+        }),
       )
       .toPromise();
   }
