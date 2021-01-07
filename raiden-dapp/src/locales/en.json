@@ -535,7 +535,8 @@
   },
   "hub-list": {
     "header": "Current top 3 suggested hubs (best first)",
-    "error": "Error: List cannot be fetched",
+    "error": "Error: List of hubs cannot be fetched from the Pathfinding Service.",
+    "no-results": "In this token network, the Pathfinding Service does not find a node which is online. Try again later.",
     "select-button": "Select"
   },
   "open-channel": {

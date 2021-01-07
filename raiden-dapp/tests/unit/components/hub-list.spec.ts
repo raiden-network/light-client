@@ -18,7 +18,10 @@ const suggestedPartners = [
   generateSuggestedPartner({ address: addressThree }),
 ];
 
-const createWrapper = (suggestedPartners: SuggestedPartner[]): Wrapper<HubList> => {
+const createWrapper = (
+  suggestedPartners: SuggestedPartner[],
+  request_error = false,
+): Wrapper<HubList> => {
   const vuetify = new Vuetify();
 
   return mount(HubList, {
@@ -26,7 +29,9 @@ const createWrapper = (suggestedPartners: SuggestedPartner[]): Wrapper<HubList> 
     mocks: {
       $t: (msg: string) => msg,
       $raiden: {
-        getSuggestedPartners: jest.fn().mockResolvedValue(suggestedPartners),
+        getSuggestedPartners: request_error
+          ? jest.fn().mockRejectedValue(new Error('Error'))
+          : jest.fn().mockResolvedValue(suggestedPartners),
       },
     },
     propsData: {
@@ -44,8 +49,17 @@ describe('HubList', () => {
     expect(spinner.exists()).toBe(true);
   });
 
-  test('displays message if no hubs available', async () => {
+  test('displays message when no hubs available', async () => {
     const wrapper = createWrapper([]);
+    await flushPromises();
+
+    const hubList = wrapper.find('.hub-list__no-hubs');
+
+    expect(hubList.text()).toContain('hub-list.no-results');
+  });
+
+  test('displays error if request fails', async () => {
+    const wrapper = createWrapper([], true);
     await flushPromises();
 
     const hubList = wrapper.find('.hub-list__no-hubs');

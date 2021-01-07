@@ -2,8 +2,11 @@
   <div class="hub-list">
     <span class="hub-list__header">{{ $t('hub-list.header') }}</span>
     <spinner v-if="loadingHubs" class="hub-list__loading" />
-    <div v-else-if="!loadingHubs && !suggestedHubs.length" class="hub-list__no-hubs">
+    <div v-else-if="!loadingHubs && requestFailed" class="hub-list__no-hubs">
       {{ $t('hub-list.error') }}
+    </div>
+    <div v-else-if="!loadingHubs && suggestedHubs.length === 0" class="hub-list__no-hubs">
+      {{ $t('hub-list.no-results') }}
     </div>
     <div v-for="(suggestedHub, index) in suggestedHubs.slice(0, 3)" v-else :key="index">
       <div class="hub-list__item">
@@ -44,6 +47,7 @@ import { SuggestedPartner } from '@/types';
 export default class HubList extends Vue {
   truncate = Filters.truncate;
   loadingHubs = true;
+  requestFailed = false;
   suggestedHubs: SuggestedPartner[] = [];
   selectedHub = '';
 
@@ -59,6 +63,7 @@ export default class HubList extends Vue {
     try {
       this.suggestedHubs = await this.$raiden.getSuggestedPartners(this.tokenAddress);
     } catch (err) {
+      this.requestFailed = true;
     } finally {
       this.loadingHubs = false;
     }

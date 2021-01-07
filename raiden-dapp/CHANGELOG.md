@@ -12,6 +12,7 @@
 - [#2476] Fix persitence to remember disclaimer acceptance if selected
 - [#2430] Remember token selection during navigation
 - [#2474] Fix TransferHeader behaviour with no available capacity
+- [#2485] Show better message in case the PFS doesn't suggest partners
 
 ### Added
 
@@ -43,6 +44,7 @@
 [#2458]: https://github.com/raiden-network/light-client/issues/2458
 [#2474]: https://github.com/raiden-network/light-client/issues/2474
 [#2446]: https://github.com/raiden-network/light-client/issues/2446
+[#2485]: https://github.com/raiden-network/light-client/issues/2485
 
 ## [0.14.0] - 2020-11-25
 
