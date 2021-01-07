@@ -1,5 +1,6 @@
 import type { Network } from '@ethersproject/networks';
 import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers';
+import { toUtf8String } from '@ethersproject/strings';
 import { Wallet } from '@ethersproject/wallet';
 
 import { getContracts, getSigner, isValidUrl } from 'raiden-ts/helpers';
@@ -84,6 +85,36 @@ describe('getSigner', () => {
       address: expect.stringMatching(/^0x/),
       main: { signer: account, address: account.address },
     });
+  });
+
+  test('subkey generation uses default origin for missing global context', async () => {
+    const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
+    const account = new Wallet(walletPK, provider);
+    const signMessageSpy = jest.spyOn(account, 'signMessage');
+    jest.spyOn(provider, 'getNetwork').mockResolvedValueOnce({ name: 'test', chainId: 1338 });
+
+    await getSigner(account, provider, true);
+
+    expect(signMessageSpy).toHaveBeenCalledTimes(1);
+    const messageBytes = signMessageSpy.mock.calls[0][0];
+    const messageText = toUtf8String(messageBytes);
+    expect(messageText.includes('Raiden dApp URL: unknown')).toBeTrue();
+  });
+
+  // TODO: test case for subkey generatino with globalThis.location.origin
+
+  test('subkey generation uses specific origin url if defined', async () => {
+    const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
+    const account = new Wallet(walletPK, provider);
+    const signMessageSpy = jest.spyOn(account, 'signMessage');
+    jest.spyOn(provider, 'getNetwork').mockResolvedValueOnce({ name: 'test', chainId: 1338 });
+
+    await getSigner(account, provider, true, 'https://test.it');
+
+    expect(signMessageSpy).toHaveBeenCalledTimes(1);
+    const messageBytes = signMessageSpy.mock.calls[0][0];
+    const messageText = toUtf8String(messageBytes);
+    expect(messageText.includes('Raiden dApp URL: https://test.it')).toBeTrue();
   });
 });
 

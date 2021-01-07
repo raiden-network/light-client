@@ -385,6 +385,8 @@ export class Raiden {
    * @param contractsOrUDCAddress - Contracts deployment info, or UserDeposit contract address
    * @param config - Raiden configuration
    * @param subkey - Whether to use a derived subkey or not
+   * @param subkeyOriginUrl - URL of origin to generate a subkey for (defaults
+   *    to global context)
    * @returns Promise to Raiden SDK client instance
    */
   public static async create<R extends typeof Raiden>(
@@ -396,6 +398,7 @@ export class Raiden {
     contractsOrUDCAddress?: ContractsInfo | string,
     config?: Decodable<PartialRaidenConfig>,
     subkey?: true,
+    subkeyOriginUrl?: string,
   ): Promise<InstanceType<R>> {
     let provider: JsonRpcProvider;
     if (typeof connection === 'string') {
@@ -424,7 +427,7 @@ export class Raiden {
       contractsInfo = contractsOrUDCAddress;
     }
 
-    const { signer, address, main } = await getSigner(account, provider, subkey);
+    const { signer, address, main } = await getSigner(account, provider, subkey, subkeyOriginUrl);
 
     // Build initial state or parse from database
     const { state, db } = await getState(
