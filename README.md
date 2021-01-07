@@ -12,7 +12,9 @@
 </h2>
 
 <h4 align="center">
-  JavaScript SDK, CLI and dApp to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients on Ethereum testnets and mainnet.</a>.
+  JavaScript SDK, CLI and dApp to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
+  
+ I would delete it here
 </h4>
 
 <p align="center">
