@@ -20,6 +20,7 @@
 - [#2435] Sync indicator when connecting to dApp
 - [#2399] Hint for user to stay online while receving transfers
 - [#2458] Click on notification snackbar to open notification panel
+- [#2446] Add `VUE_APP_SUBKEY_ORIGIN_URL` env variable to recover backups
 
 ### Changed
 
@@ -41,6 +42,7 @@
 [#2399]: https://github.com/raiden-network/light-client/issues/2399
 [#2458]: https://github.com/raiden-network/light-client/issues/2458
 [#2474]: https://github.com/raiden-network/light-client/issues/2474
+[#2446]: https://github.com/raiden-network/light-client/issues/2446
 
 ## [0.14.0] - 2020-11-25
 
