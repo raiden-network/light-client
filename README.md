@@ -13,8 +13,6 @@
 
 <h4 align="center">
   JavaScript SDK, CLI and dApp to carry out fast, cheap, scalable off-chain token transfers with other <a href="https://github.com/raiden-network/raiden">Raiden Clients</a>.
-  
- I would delete it here
 </h4>
 
 <p align="center">
@@ -60,9 +58,11 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
   - [Raiden Light Client SDK](#raiden-light-client-sdk)
   - [Architecture diagram](#architecture-diagram)
 - [Learn about Raiden](#learn-about-raiden)
-- [Try Out the Raiden Demo dApp](#try-out-the-raiden-demo-dapp)
+- [Try Out the Raiden dApp](#try-out-the-raiden-dapp)
   - [Prerequisites](#prerequisites)
-  - [Making a First Transfer](#making-a-first-transfer)
+  - [Making a First Transfer on Mainnet](#making-a-first-transfer-on-mainnet)
+  - [Making a First Transfer on Testnet](#making-a-first-transfer-on-testnet)
+  - [Receiving Transfers](#receiving-transfers)
   - [Backup the State to Keep Your Tokens](#backup-the-state-to-keep-your-tokens)
 - [Run the Repository Code](#run-the-repository-code)
   - [Prerequisites](#prerequisites)
@@ -147,7 +147,7 @@ If you are new to Raiden, we recommend:
 - Watching the explanatory [videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg).
 - Reading our blog posts on [Medium](https://medium.com/@raiden_network).
 
-## Try Out the Raiden Demo dApp
+## Try Out the Raiden dApp
 
 The Raiden dApp is a demo and the first dApp to be built on the SDK. It's a single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and uses [vuetify](https://vuetifyjs.com) Material Design as UI framework.
 
@@ -165,52 +165,57 @@ Fot a more in depth user guide, see the [Light Client documentation](https://lig
   1. By visiting a Goerli faucet either at [https://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/).
   2. Follow the instructions on respective faucet on how to acquire the ETH.
 
-### Making a First Transfer
+### Making a First Transfer on Mainnet
 
 1. **Connect to the dApp**  
 
-   - Mainnet  
-     1. Visit the [Light Client](https://lightclient.raiden.network).
-     2. Make sure **Ethereum Mainnet** is selected in MetaMask and click connect.
-
-   - Testnet  
-     1. Visit the [Raiden Hub page](https://hub.raiden.network).
-     2. Click on the **Open Channel with Hub** button.
-     3. When redirected to the Light Client make sure **Goerli Test Network** is selected in MetaMask and click connect.
+   1. Visit the [Light Client](https://lightclient.raiden.network).
+   2. Make sure **Ethereum Mainnet** is selected in MetaMask and click connect.
 
 2. **Select a Hub and Open a Channel**  
 
-   - Mainnet  
-     1. Click the **+** icon and select a mainnet token to use. You need to have a balance of the token.
-     2. If you don't have any **RDN** (utility tokens), you can click the icon to open a dialog with a link for exchanging RDN and a button for depositing.
-     3. Enter a address of your choice to connect to or select a suggested hub if any are available.
-     4. Click the **Select Hub** button
-     5. Enter the amount of tokens you want to deposit when opening the channel.
-     6. Click the **Open Channel** button and sign with MetaMask
+   1. Click the **+** icon and select a mainnet token to use. You need to have a balance of the token.
+   2. If you don't have any **RDN** (utility tokens), you can click the icon to open a dialog with a link for exchanging RDN and a button for depositing.
+   3. Enter an address of your choice to connect to or select a suggested hub if any are available.
+   4. Click the **Select Hub** button
+   5. Enter the amount of tokens you want to deposit when opening the channel.
+   6. Click the **Open Channel** button and sign with MetaMask.
 
-   - Testnet  
-     1. If you don't have any **SVT** (utility tokens), you can click the icon to mint and deposit **SVT**.
-     2. Click on the icon at the very bottom to the right of the **TTT** symbol to mint **TTT** tokens.
-     3. Click the **Select Hub** button.
-     4. Enter the amount of tokens you want to deposit when opening the channel.
-     5. Click **Open Channel** and sign with MetaMask.
+3. **Make a Transfer**  
 
-3. **Making a Transfer**  
+   1. Enter the address of the node receiving your transfer.
+   2. Enter the amount you want to transfer.
+   3. Click the **Transfer** button.
 
-   - Mainnet and Testnet  
-     1. Enter the address of the node receiving your transfer.
-     2. Enter the amount you want to transfer.
-     3. Click the **Transfer** button.
+### Making a First Transfer on Testnet
 
-4. **Receiving a Transfer**  
+1. **Connect to the dApp**  
 
-   - Mainnet and Testnet  
-     
-     Receiving of transfers will be disabled if the utility token (RND on mainnet and SVT on testnet) balance is too low.
-     
-     To enable receiving again, make sure to add a utility token balance by either making an exchange and deposit if using the Light Client on mainnet or by minting and depositing if using the Light Client on testnet.
+   1. Visit the [Raiden Hub page](https://hub.raiden.network).
+   2. Click on the **Open Channel with Hub** button.
+   3. When redirected to the Light Client make sure **Goerli Test Network** is selected in MetaMask and click connect.
 
-5. **Backup the State to Keep Your Tokens**  
+2. **Select a Hub and Open a Channel**  
+
+   1. If you don't have any **SVT** (utility tokens), you can click the icon to mint and deposit **SVT**.
+   2. Click on the icon at the very bottom to the right of the **TTT** symbol to mint **TTT** tokens.
+   3. Click the **Select Hub** button.
+   4. Enter the amount of tokens you want to deposit when opening the channel.
+   5. Click **Open Channel** and sign with MetaMask.
+
+3. **Make a Transfer**  
+
+   1. Enter the address of the node receiving your transfer.
+   2. Enter the amount you want to transfer.
+   3. Click the **Transfer** button.
+
+### Receiving Transfers  
+
+Receiving of transfers will be disabled if the utility token (RND on mainnet and SVT on testnet) balance is too low.
+
+To enable receiving again, make sure to add a utility token balance by either making an exchange and deposit if using the Light Client on mainnet or by minting and depositing if using the Light Client on testnet.
+
+### **Backup the State to Keep Your Tokens**  
 
    You should store a backup of your state to **avoid losing tokens** in case:
 
