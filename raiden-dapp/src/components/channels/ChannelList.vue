@@ -33,7 +33,7 @@
               text
               data-cy="channel_action_button"
               class="channel-action-button"
-              :disabled="channel.state !== 'open' || busy"
+              :disabled="channel.state !== 'open' || !!busy[channel.id]"
               @click="action(['deposit', channel])"
             >
               <v-img width="27" height="25px" :src="require('@/assets/deposit.svg')" />
@@ -46,7 +46,7 @@
               text
               data-cy="channel_action_button"
               class="channel-action-button"
-              :disabled="channel.state !== 'open' || busy"
+              :disabled="channel.state !== 'open' || !!busy[channel.id]"
               @click="action(['withdraw', channel])"
             >
               <v-img width="27px" height="25px" :src="require('@/assets/withdrawal.svg')" />
@@ -57,7 +57,7 @@
           </v-list-item-icon>
           <v-list-item-icon data-cy="channel_action" class="channel-action">
             <v-btn
-              v-if="selectedChannel && channel.id === selectedChannel.id && busy"
+              v-if="selectedChannel && channel.id === selectedChannel.id && !!busy[channel.id]"
               :id="`busy-${channel.id}`"
               disabled
               class="channel-action__button text-capitalize channel-action__button__secondary"
@@ -67,7 +67,7 @@
             <v-btn
               v-else-if="channel.state === 'open' || channel.state === 'closing'"
               :id="`close-${channel.id}`"
-              :disabled="busy"
+              :disabled="!!busy[channel.id]"
               class="channel-action__button text-capitalize channel-action__button__secondary"
               @click="action(['close', channel])"
             >
@@ -76,7 +76,7 @@
             <v-btn
               v-else
               :id="`settle-${channel.id}`"
-              :disabled="channel.state === 'closed' || busy"
+              :disabled="channel.state === 'closed' || !!busy[channel.id]"
               class="channel-action__button text-capitalize channel-action__button__primary"
               @click="action(['settle', channel])"
             >
@@ -119,8 +119,8 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
   @Prop({ default: null })
   selectedChannel!: RaidenChannel | null;
-  @Prop({ default: false })
-  busy!: boolean;
+  @Prop()
+  busy!: { [key: number]: boolean };
 
   @Emit()
   action(action: [ChannelAction, RaidenChannel]) {
