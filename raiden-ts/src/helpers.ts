@@ -95,10 +95,11 @@ export const getContracts = (network: Network): ContractsInfo => {
  *
  * @param network - Network to include in message
  * @param main - Main signer to derive subkey from
+ * @param originUrl - URL of the origin to generate the subkey for
  * @returns Subkey's signer & address
  */
-async function genSubkey(network: Network, main: Signer) {
-  const url = globalThis?.location?.origin ?? 'unknown';
+async function genSubkey(network: Network, main: Signer, originUrl?: string) {
+  const url = originUrl ?? globalThis?.location?.origin ?? 'unknown';
   const message = `=== RAIDEN SUBKEY GENERATION ===
 
 Network: ${getNetworkName(network).toUpperCase()}
@@ -121,12 +122,14 @@ Signing this message at any other address WILL give it FULL control of this subk
  * @param account - an account used for signing
  * @param provider - a provider
  * @param subkey - Whether to generate a subkey
+ * @param subkeyOriginUrl - URL of the origin to generate a subkey for
  * @returns a [[Signer]] or [[Wallet]] that can be used for signing
  */
 export const getSigner = async (
   account: string | number | Signer,
   provider: JsonRpcProvider,
   subkey?: boolean,
+  subkeyOriginUrl?: string,
 ) => {
   let signer;
   let address: Address;
@@ -169,7 +172,11 @@ export const getSigner = async (
 
   if (subkey) {
     main = { signer, address };
-    ({ signer, address } = await genSubkey(await provider.getNetwork(), main.signer));
+    ({ signer, address } = await genSubkey(
+      await provider.getNetwork(),
+      main.signer,
+      subkeyOriginUrl,
+    ));
   }
 
   return { signer, address, main };
