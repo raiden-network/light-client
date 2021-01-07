@@ -79,6 +79,7 @@ export default class RaidenService {
             : undefined),
         },
         subkey,
+        process.env.VUE_APP_SUBKEY_ORIGIN_URL,
       );
     } catch (e) {
       throw new RaidenInitializationFailed(e);
