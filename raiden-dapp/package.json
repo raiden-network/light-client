@@ -72,7 +72,7 @@
     "babel-loader": "^8.2.2",
     "babel-plugin-istanbul": "^6.0.0",
     "canvas": "^2.6.1",
-    "copy-webpack-plugin": "^7.0.0",
+    "copy-webpack-plugin": "^6.4.1",
     "cypress": "3.8.3",
     "cypress-jest-adapter": "^0.1.1",
     "cypress-plugin-retries": "^1.5.2",
