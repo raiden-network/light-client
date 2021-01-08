@@ -41,6 +41,7 @@ describe('ChannelList.vue', () => {
         } as Token,
         channels: TestData.mockChannelArray,
         expanded,
+        busy: { undefined: false },
       },
       stubs: ['raiden-dialog'],
       mocks: {
@@ -84,20 +85,21 @@ describe('ChannelList.vue', () => {
 
   test('disable actions while "busy", show spinner on "selectedChannel"', async () => {
     const selectedChannel = TestData.mockChannelArray[1]; // settling channel
-    wrapper.setProps({ selectedChannel, busy: true });
+    let busy = { [selectedChannel.id]: true };
+    wrapper.setProps({ selectedChannel, busy });
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.find('#close-278').attributes('disabled')).toBeTruthy();
-    expect(wrapper.find('#deposit-278').attributes('disabled')).toBeTruthy();
-    expect(wrapper.find('#withdraw-278').attributes('disabled')).toBeTruthy();
-    expect(wrapper.find('#settle-280').attributes('disabled')).toBeTruthy();
+    expect(wrapper.find('#close-278').attributes('disabled')).toBeFalsy();
+    expect(wrapper.find('#deposit-278').attributes('disabled')).toBeFalsy();
+    expect(wrapper.find('#withdraw-278').attributes('disabled')).toBeFalsy();
+    expect(wrapper.find('#settle-280').attributes('disabled')).toBeFalsy();
 
     // busy button replaces settle button
     expect(wrapper.find('#settle-279').exists()).toBeFalsy();
     expect(wrapper.find('#busy-279').exists()).toBeTruthy();
 
     // busy false, but same selectedChannel, re-enable buttons
-    wrapper.setProps({ busy: false });
+    wrapper.setProps({ busy: { [selectedChannel.id]: false } });
     await wrapper.vm.$nextTick();
     expect(wrapper.find('#settle-279').exists()).toBeTruthy();
     expect(wrapper.find('#busy-279').exists()).toBeFalsy();
