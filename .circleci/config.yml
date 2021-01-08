@@ -95,12 +95,12 @@ jobs:
       - restore_cache:
           name: Restore Yarn Package Cache
           keys:
-            - raiden-v2-yarn-{{ checksum "yarn.lock" }}
-            - raiden-v2-yarn-
+            - raiden-v3-yarn-{{ checksum "yarn.lock" }}
+            - raiden-v3-yarn-
       - run: yarn install
       - save_cache:
           name: Save Yarn Package Cache
-          key: raiden-v2-yarn-{{ checksum "yarn.lock" }}
+          key: raiden-v3-yarn-{{ checksum "yarn.lock" }}
           paths:
             - ./node_modules
             - ~/.cache # Cypress stores its stuff here.
@@ -390,14 +390,14 @@ workflows:
             - deploy_gh_pages
 
   nightly:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-
+    # triggers:
+    #   - schedule:
+    #       cron: "0 0 * * *"
+    #       filters:
+    #         branches:
+    #           only:
+    #             - master
+    # 
     jobs:
       - install:
           executor: e2e-environment-executor
