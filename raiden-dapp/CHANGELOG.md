@@ -13,6 +13,7 @@
 - [#2430] Remember token selection during navigation
 - [#2474] Fix TransferHeader behaviour with no available capacity
 - [#2485] Show better message in case the PFS doesn't suggest partners
+- [#2418] Channel close button incorrectly inactivated
 
 ### Added
 
@@ -45,6 +46,7 @@
 [#2474]: https://github.com/raiden-network/light-client/issues/2474
 [#2446]: https://github.com/raiden-network/light-client/issues/2446
 [#2485]: https://github.com/raiden-network/light-client/issues/2485
+[#2418]: https://github.com/raiden-network/light-client/issues/2418
 
 ## [0.14.0] - 2020-11-25
 

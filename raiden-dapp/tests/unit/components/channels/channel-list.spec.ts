@@ -83,9 +83,9 @@ describe('ChannelList.vue', () => {
     expect(wrapper.find('#settle-280').attributes('disabled')).toBeFalsy();
   });
 
-  test('disable actions while "busy", show spinner on "selectedChannel"', async () => {
+  test('only "selectedChannel" to be busy all other channels enabled', async () => {
     const selectedChannel = TestData.mockChannelArray[1]; // settling channel
-    let busy = { [selectedChannel.id]: true };
+    const busy = { [selectedChannel.id]: true };
     wrapper.setProps({ selectedChannel, busy });
     await wrapper.vm.$nextTick();
 
@@ -98,7 +98,7 @@ describe('ChannelList.vue', () => {
     expect(wrapper.find('#settle-279').exists()).toBeFalsy();
     expect(wrapper.find('#busy-279').exists()).toBeTruthy();
 
-    // busy false, but same selectedChannel, re-enable buttons
+    // busy false, re-enable buttons only for the "selectedChannel"
     wrapper.setProps({ busy: { [selectedChannel.id]: false } });
     await wrapper.vm.$nextTick();
     expect(wrapper.find('#settle-279').exists()).toBeTruthy();
