@@ -22,6 +22,7 @@ import {
   take,
   takeUntil,
   tap,
+  timeout,
 } from 'rxjs/operators';
 
 import { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
@@ -79,9 +80,10 @@ export function matrixMessageSendEpic(
         body: getMessageBody(action.payload.message),
         msgtype: action.payload.msgtype ?? 'm.text',
       };
+      const start = Date.now();
       // wait for address to be monitored, online & have joined a non-global room with us
       return waitMemberAndSend$(action.meta.address, 'm.room.message', content, deps).pipe(
-        map((via) => messageSend.success({ via }, action.meta)),
+        map((via) => messageSend.success({ via, tookMs: Date.now() - start }, action.meta)),
         catchError((err) => {
           deps.log.error('messageSend error', err, action.meta);
           return of(messageSend.failure(err, action.meta));
@@ -123,11 +125,14 @@ export function matrixMessageGlobalSendEpic(
         );
         return EMPTY;
       }
-      const serverName = getServerName(matrix.getHomeserverUrl()),
-        roomAlias = `#${action.meta.roomName}:${serverName}`;
+      const serverName = getServerName(matrix.getHomeserverUrl());
+      const roomAlias = `#${action.meta.roomName}:${serverName}`;
+      const start = Date.now();
+      let retries = 0;
       return getRoom$(matrix, roomAlias).pipe(
         // send message!
-        mergeMap((room) => {
+        mergeMap(async (room) => {
+          retries++;
           return matrix.sendEvent(
             room.roomId,
             'm.room.message',
@@ -135,14 +140,23 @@ export function matrixMessageGlobalSendEpic(
             '',
           );
         }),
-        retryWhile(intervalFromConfig(config$), { maxRetries: 3, onErrors: [429, 500] }),
+        timeout(config.httpTimeout),
+        retryWhile(intervalFromConfig(config$), {
+          maxRetries: 3,
+          onErrors: [429, 500, 'Timeout', 'timeout'],
+        }),
+        tap(() =>
+          log.info('messageGlobalSend success', {
+            tookMs: Date.now() - start,
+            retries,
+            ...action.meta,
+          }),
+        ),
         catchError((err) => {
-          log.error(
-            'Error sending message to global room',
-            action.meta,
-            action.payload.message,
-            err,
-          );
+          log.error('Error sending message to global room', action.payload.message, err, {
+            retries,
+            ...action.meta,
+          });
           return EMPTY;
         }),
       );
