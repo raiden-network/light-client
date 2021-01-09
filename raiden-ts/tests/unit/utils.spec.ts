@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
-import { first } from 'rxjs/operators';
+import { first, mapTo, toArray } from 'rxjs/operators';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
@@ -25,6 +25,9 @@ import { encode } from 'raiden-ts/utils/data';
 import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
 import { Lock } from 'raiden-ts/channels';
 import { LocksrootZero } from 'raiden-ts/constants';
+import { of, timer } from 'rxjs';
+import { concatBuffer } from 'raiden-ts/utils/rx';
+import { getSortedAddresses } from 'raiden-ts/transport/utils';
 
 describe('getLogsByChunk$', () => {
   let provider: jest.Mocked<JsonRpcProvider>;
@@ -344,4 +347,49 @@ test('getNetworkName', () => {
   expect(getNetworkName({ name: 'unknown', chainId: 1337 })).toBe('1337');
   expect(getNetworkName({ name: 'homestead', chainId: 1 })).toBe('mainnet');
   expect(getNetworkName({ name: 'goerli', chainId: 5 })).toBe('goerli');
+});
+
+test('concatBuffer', async () => {
+  await expect(
+    of(1, 2, 3)
+      .pipe(
+        concatBuffer((values) => timer(10).pipe(mapTo(values))),
+        toArray(),
+      )
+      .toPromise(),
+  ).resolves.toStrictEqual([[1], [2, 3]]);
+});
+
+test('getSortedAddresses', () => {
+  expect(
+    getSortedAddresses(
+      '0x00000000000000000000000000000000000004Aa' as Address,
+      '0x00000000000000000000000000000000000003Aa' as Address,
+    ),
+  ).toEqual([
+    '0x00000000000000000000000000000000000003Aa',
+    '0x00000000000000000000000000000000000004Aa',
+  ]);
+  expect(
+    getSortedAddresses(
+      '0x0000000000000000000000000000000000000A00' as Address,
+      '0x000000000000000000000000000000000000000A' as Address,
+      '0x000000000000000000000000000000000000A000' as Address,
+    ),
+  ).toEqual([
+    '0x000000000000000000000000000000000000000A',
+    '0x0000000000000000000000000000000000000A00',
+    '0x000000000000000000000000000000000000A000',
+  ]);
+  expect(
+    getSortedAddresses(
+      '0x000000000000000000000000000000000000000b' as Address,
+      '0x000000000000000000000000000000000000000A' as Address,
+      '0x0000000000000000000000000000000000000009' as Address,
+    ),
+  ).toEqual([
+    '0x0000000000000000000000000000000000000009',
+    '0x000000000000000000000000000000000000000A',
+    '0x000000000000000000000000000000000000000b',
+  ]);
 });
