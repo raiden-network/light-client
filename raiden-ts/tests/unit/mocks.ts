@@ -83,6 +83,7 @@ import { migrateDatabase, putRaidenState, getRaidenState } from 'raiden-ts/db/ut
 import { RaidenDatabaseConstructor } from 'raiden-ts/db/types';
 import { getNetworkName } from 'raiden-ts/utils/ethers';
 import { createPersisterMiddleware } from 'raiden-ts/persister';
+import { getSortedAddresses } from 'raiden-ts/transport/utils';
 
 const RaidenPouchDB = PouchDB.defaults({
   adapter: 'memory',
@@ -318,38 +319,6 @@ export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixCl
       password: 'password',
     })),
   }) as unknown) as jest.Mocked<MatrixClient>;
-}
-
-/**
- * Spies and mocks classes constructors on globalThis
- *
- * @returns Mocked spies
- */
-export function mockRTC() {
-  const rtcDataChannel = (Object.assign(new EventEmitter(), {
-    close: jest.fn(),
-    send: jest.fn(),
-  }) as unknown) as jest.Mocked<RTCDataChannel & EventEmitter>;
-
-  const rtcConnection = (Object.assign(new EventEmitter(), {
-    createDataChannel: jest.fn(() => rtcDataChannel),
-    createOffer: jest.fn(async () => ({ type: 'offer', sdp: 'offerSdp' })),
-    createAnswer: jest.fn(async () => ({ type: 'answer', sdp: 'answerSdp' })),
-    setLocalDescription: jest.fn(async () => {
-      /* local */
-    }),
-    setRemoteDescription: jest.fn(async () => {
-      /* remote */
-    }),
-    addIceCandidate: jest.fn(),
-    close: jest.fn(),
-  }) as unknown) as jest.Mocked<RTCPeerConnection & EventEmitter>;
-
-  const RTCPeerConnection = jest
-    .spyOn(globalThis, 'RTCPeerConnection')
-    .mockImplementation(() => rtcConnection);
-
-  return { rtcDataChannel, rtcConnection, RTCPeerConnection };
 }
 
 // array of cleanup functions registered on current test
@@ -702,6 +671,44 @@ const mockedMatrixUsers: {
   };
 } = {};
 
+const mockedRooms: {
+  [roomId: string]: {
+    readonly roomId: string;
+    readonly room_id: string;
+    members: { [userId: string]: string };
+    aliases: string[];
+    getMember: (userId: string) => { membership: string; roomId: string; userId: string } | null;
+    getCanonicalAlias: () => string | null | undefined;
+    getAliases: () => string[];
+    currentState: { setStateEvents: (state: any) => void };
+  };
+} = {};
+
+function mockedGetOrMakeRoom(roomId: string) {
+  if (!(roomId in mockedRooms)) {
+    mockedRooms[roomId] = {
+      roomId,
+      get room_id() {
+        return this.roomId;
+      },
+      members: {},
+      aliases: [],
+      getMember(userId) {
+        if (!(userId in this.members)) return null;
+        return { membership: this.members[userId], roomId, userId };
+      },
+      getCanonicalAlias() {
+        return null;
+      },
+      getAliases() {
+        return this.aliases;
+      },
+      currentState: { setStateEvents: jest.fn() },
+    };
+  }
+  return mockedRooms[roomId];
+}
+
 function mockedMatrixCreateClient({
   baseUrl,
   userId: providedUserId,
@@ -732,12 +739,6 @@ function mockedMatrixCreateClient({
       stopped = mockedMatrixUsers[userId];
       delete mockedMatrixUsers[userId];
     }),
-    joinRoom: jest.fn(async (alias) => ({
-      roomId: `!${alias}_room_id:${server}`,
-      currentState: { setStateEvents: jest.fn() },
-      getCanonicalAlias: jest.fn(),
-      getAliases: jest.fn(() => [alias]),
-    })),
     // reject to test register
     login: jest.fn().mockRejectedValue(new Error('invalid password')),
     register: jest.fn(async (user, password) => {
@@ -791,51 +792,98 @@ function mockedMatrixCreateClient({
     setAvatarUrl: jest.fn(async (avatarUrl) => {
       assert(userId in mockedMatrixUsers);
       mockedMatrixUsers[userId].avatarUrl = avatarUrl;
-      for (const client of mockedClients) {
-        if (client.address === address) continue;
-        const matrix = await client.deps.matrix$.toPromise();
-        matrix.emit('event', { getType: () => 'm.presence', getSender: () => userId });
-      }
+      mockedMatrixUsers[userId].presence = 'online';
     }),
     setPresence: jest.fn(async ({ presence }: { presence: string }) => {
       assert(userId in mockedMatrixUsers);
       mockedMatrixUsers[userId].presence = presence;
+      for (const client of mockedClients) {
+        if (client.address === address) continue;
+        const matrix = await client.deps.matrix$.toPromise();
+        matrix.emit('event', {
+          getType: () => 'm.presence',
+          getSender: () => userId,
+          getContent: () => ({ presence }),
+        });
+      }
     }),
     createRoom: jest.fn(async ({ invite }) => {
       let pair = [address, '0x'];
       try {
         const peerAddr = getAddress((invite[0] as string).substr(1, 42));
-        pair =
-          address.toLowerCase() < peerAddr.toLowerCase()
-            ? [address, peerAddr]
-            : [peerAddr, address];
+        pair = getSortedAddresses(...([address, peerAddr] as Address[]));
       } catch (e) {}
-      return {
-        room_id: `!roomId_${pair[0]}_${pair[1]}:${server}`,
-        getMember: jest.fn(),
-        getCanonicalAlias: jest.fn(() => null),
-        getAliases: jest.fn(() => []),
-      };
+      const roomId = `!roomId_${pair[0]}_${pair[1]}:${server}`;
+      if (!(roomId in mockedRooms)) {
+        const room = mockedGetOrMakeRoom(roomId);
+        room.members[userId] = 'join';
+      }
+      const room = mockedRooms[roomId];
+      if (invite?.[0]) await matrix.invite(room.roomId, invite[0]);
+      matrix.emit('Room.myMembership', room, room.members[userId]);
+      return room;
     }),
-    getRoom: jest.fn((roomId) => ({
-      roomId,
-      getMember: jest.fn(() => ({ membership: 'join', roomId })),
-      getCanonicalAlias: jest.fn(() => null),
-      getAliases: jest.fn(() => []),
-    })),
-    getRooms: jest.fn(() => []),
-    getHomeserverUrl: jest.fn(() => server),
-    invite: jest.fn(async () => true),
-    leave: jest.fn(async () => true),
-    sendEvent: jest.fn(async (roomId: string, type: string, content: any) => {
-      const match = roomId.match(/0x[0-9a-f]{40}/gi);
-      assert(address, 'matrix.sendEvent but client not started');
-      if (!match || stopped) return true;
-      const [p1, p2] = match;
-      const partner = p1 === address ? p2 : p1;
+    getRoom: jest.fn((roomId) => {
+      if (!(roomId in mockedRooms) || !(userId in mockedRooms[roomId].members)) return null;
+      return mockedRooms[roomId];
+    }),
+    joinRoom: jest.fn(async (aliasOrId: string) => {
+      let room;
+      if (aliasOrId.startsWith('#raiden_')) {
+        const roomId = `!${aliasOrId}_room_id:${server}`;
+        if (!(roomId in mockedRooms)) mockedGetOrMakeRoom(roomId);
+        room = mockedRooms[roomId];
+        if (!room.aliases.includes(aliasOrId)) room.aliases.push(aliasOrId);
+      } else {
+        assert(aliasOrId in mockedRooms, ['unknown room', { roomId: aliasOrId }]);
+        room = mockedRooms[aliasOrId];
+      }
+      room.members[userId] = 'join';
       for (const client of mockedClients) {
-        if (client.address !== partner) continue;
         const matrix = await client.deps.matrix$.toPromise();
+        if (!room.getMember(matrix.getUserId()!)) continue;
+        matrix.emit('RoomMember.membership', { getSender: () => userId }, room.getMember(userId));
+      }
+      matrix.emit('Room.myMembership', room, room.members[userId]);
+      return room;
+    }),
+    getRooms: jest.fn(() => Object.values(mockedRooms).filter((room) => userId in room.members)),
+    getHomeserverUrl: jest.fn(() => server),
+    invite: jest.fn(async (roomId: string, peerId: string) => {
+      assert(roomId in mockedRooms, ['unknown room', { roomId }]);
+      const room = mockedRooms[roomId];
+      assert(room.getMember(userId)?.membership === 'join', [
+        'not member',
+        room.getMember(userId)!,
+      ]);
+      assert(room.getMember(peerId)?.membership !== 'join', 'Peer is already in the room');
+      room.members[peerId] = 'invite';
+      for (const client of mockedClients) {
+        const matrix = await client.deps.matrix$.toPromise();
+        if (!room.getMember(matrix.getUserId()!)) continue;
+        matrix.emit('RoomMember.membership', { getSender: () => userId }, room.getMember(peerId));
+      }
+    }),
+    leave: jest.fn(async (roomId: string) => {
+      assert(roomId in mockedRooms, ['unknown room', { roomId }]);
+      const room = mockedRooms[roomId];
+      assert(room.getMember(userId), 'not member');
+      room.members[userId] = 'leave';
+      for (const client of mockedClients) {
+        const matrix = await client.deps.matrix$.toPromise();
+        if (!room.getMember(matrix.getUserId()!)) continue;
+        matrix.emit('RoomMember.membership', { getSender: () => userId }, room.getMember(userId));
+      }
+      matrix.emit('Room.myMembership', room, room.members[userId]);
+    }),
+    sendEvent: jest.fn(async (roomId: string, type: string, content: any) => {
+      assert(address, 'matrix.sendEvent but client not started');
+      if (stopped) return true;
+      assert(roomId in mockedRooms, ['unknown room', { roomId }]);
+      const room = mockedRooms[roomId];
+      for (const client of mockedClients) {
+        const matrix = await client.deps.matrix$.toPromise();
+        if (!room.getMember(matrix.getUserId()!)) continue;
         matrix.emit(
           'Room.timeline',
           {
@@ -872,11 +920,19 @@ function mockedMatrixCreateClient({
     _http: {
       opts: {},
       // mock request done by raiden/utils::getUserPresence
-      authedRequest: jest.fn(async () => ({
-        user_id: 'user_id',
-        last_active_ago: 1,
-        presence: 'online',
-      })),
+      authedRequest: jest.fn(async (_1: any, _method: string, url: string) => {
+        const match = /\/([^\/]+)\/status/.exec(url);
+        if (match) {
+          const peerId = decodeURIComponent(match[1]);
+          if (peerId in mockedMatrixUsers) {
+            return {
+              user_id: peerId,
+              last_active_ago: 1,
+              presence: mockedMatrixUsers[peerId].presence,
+            };
+          }
+        }
+      }),
     },
     turnServer: jest.fn(async () => ({
       uris: 'https://turn.raiden.test',
