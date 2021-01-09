@@ -15,7 +15,7 @@ export const messageSend = createAsyncAction(
     t.type({ message: t.union([t.string, Signed(Message)]) }),
     t.partial({ msgtype: t.string }),
   ]),
-  t.union([t.undefined, t.partial({ via: t.string, tookMs: t.number })]),
+  t.union([t.undefined, t.type({ via: t.string, tookMs: t.number, retries: t.number })]),
 );
 export namespace messageSend {
   export interface request extends ActionType<typeof messageSend.request> {}

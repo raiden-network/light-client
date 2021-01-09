@@ -83,13 +83,10 @@ export function matrixMessageSendEpic(
           const msgtype = actions[0].payload.msgtype ?? 'm.text';
           const body = actions.map((action) => getMessageBody(action.payload.message)).join('\n');
           const content = { body, msgtype };
-          const start = Date.now();
           // wait for address to be monitored, online & have joined a non-global room with us
           return waitMemberAndSend$(peer, 'm.room.message', content, deps).pipe(
-            mergeMap((via) =>
-              actions.map((action) =>
-                messageSend.success({ via, tookMs: Date.now() - start }, action.meta),
-              ),
+            mergeMap((success) =>
+              actions.map((action) => messageSend.success(success, action.meta)),
             ),
             catchError((err) => {
               deps.log.error('messageSend error', err, actions[0].meta);

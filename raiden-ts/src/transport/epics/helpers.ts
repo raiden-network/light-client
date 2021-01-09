@@ -23,6 +23,7 @@ import { pluckDistinct, retryWhile } from '../../utils/rx';
 import { Message } from '../../messages/types';
 import { decodeJsonMessage, getMessageSigner } from '../../messages/utils';
 import { getCap } from '../utils';
+import { messageSend } from '../../messages/actions';
 
 /**
  * Return the array of configured global rooms
@@ -88,7 +89,7 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
     config$,
     matrix$,
   }: Pick<RaidenEpicDeps, 'log' | 'latest$' | 'config$' | 'matrix$'>,
-): Observable<string> {
+): Observable<NonNullable<messageSend.success['payload']>> {
   const rtcChannel$ =
     content.msgtype === 'm.text' ? latest$.pipe(pluckDistinct('rtc', address)) : of(null);
   const presence$ = latest$.pipe(pluckDistinct('presences', address));
@@ -109,10 +110,16 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
     }),
     distinctUntilChanged(),
   );
-  return via$.pipe(
+  let start = 0;
+  let retries = -1;
+  return defer(() => {
+    if (!start) start = Date.now();
+    return via$;
+  }).pipe(
     switchMap((via) => {
       if (!via) return EMPTY;
-      else if (typeof via !== 'string')
+      retries++;
+      if (typeof via !== 'string')
         return defer(async () => {
           via.send(content.body);
           return via.label; // via RTC channel, complete immediately
@@ -146,6 +153,7 @@ export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
       log: log.warn,
     }),
     take(1),
+    map((via) => ({ via, tookMs: Date.now() - start, retries })),
   );
 }
 
