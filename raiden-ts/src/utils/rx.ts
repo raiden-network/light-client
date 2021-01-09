@@ -8,6 +8,7 @@ import {
   timer,
   race,
   ObservableInput,
+  EMPTY,
 } from 'rxjs';
 import {
   pluck,
@@ -23,6 +24,7 @@ import {
   switchMap,
   mergeMapTo,
   tap,
+  concatMap,
 } from 'rxjs/operators';
 import { isntNil } from './types';
 import { ErrorMatches, matchError } from './error';
@@ -232,4 +234,35 @@ export function takeIf<T>(
 export function timeoutFirst<T>(timeout: number): MonoTypeOperatorFunction<T> {
   return (input$) =>
     race(timer(timeout).pipe(mergeMapTo(throwError(new Error('timeout waiting first')))), input$);
+}
+
+/**
+ * Like a concatMap, but input values emitted while a subscription is active are buffered and
+ * passed to project callback as an array when previous subscription completes.
+ * This means a value emitted by input while there's no active subscription will cause project to
+ * be called with a single-element array (value), while multiple values going through will get
+ * buffered and project called with all of them only once previous completes.
+ *
+ * @param project - Callback to generate the inner ObservableInput
+ * @param maxBatchSize - Limit emitted batches to this size; non-emitted values will stay in queue
+ * and be passed on next project call and subscription
+ * @returns Observable of values emitted by inner subscription
+ */
+export function concatBuffer<T, R>(
+  project: (values: [T, ...T[]]) => ObservableInput<R>,
+  maxBatchSize?: number,
+): OperatorFunction<T, R> {
+  return (input$) => {
+    const buffer: T[] = [];
+    return input$.pipe(
+      tap((value) => buffer.push(value)),
+      concatMap(() =>
+        defer(() =>
+          buffer.length
+            ? project(buffer.splice(0, maxBatchSize ?? buffer.length) as [T, ...T[]])
+            : EMPTY,
+        ),
+      ),
+    );
+  };
 }
