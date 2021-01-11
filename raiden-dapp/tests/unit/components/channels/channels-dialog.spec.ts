@@ -153,6 +153,11 @@ describe('ChannelDialogs.vue', () => {
       const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.close.success');
       expect(wrapper.emitted('dismiss')).toHaveLength(1);
+      // Testing for busy event emit
+      const busyEvent = wrapper.emitted('busy');
+      expect(busyEvent).toBeTruthy();
+      const [firstBusyEvent] = busyEvent?.shift();
+      expect(firstBusyEvent).toEqual([true, TestData.openChannel.id]);
     });
 
     test('fail', async () => {
@@ -182,6 +187,11 @@ describe('ChannelDialogs.vue', () => {
       const [firstMessageArg] = messageEvent?.shift();
       expect(firstMessageArg).toEqual('channel-list.messages.settle.success');
       expect(wrapper.emitted('dismiss')).toHaveLength(1);
+      // Testing for busy event emit
+      const busyEvent = wrapper.emitted('busy');
+      expect(busyEvent).toBeTruthy();
+      const [firstBusyEvent] = busyEvent?.shift();
+      expect(firstBusyEvent).toEqual([true, TestData.settlableChannel.id]);
     });
 
     test('fail', async () => {

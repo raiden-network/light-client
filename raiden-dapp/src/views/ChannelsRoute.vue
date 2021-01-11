@@ -76,7 +76,7 @@
         selectedChannel = null;
       "
       @message="showMessage($event)"
-      @busy="busy = $event"
+      @busy="setBusyState($event)"
     ></channel-dialogs>
   </div>
 </template>
@@ -107,9 +107,13 @@ export default class ChannelsRoute extends Mixins(NavigationMixin) {
 
   selectedChannel: RaidenChannel | null = null;
   action: ChannelAction | null = null;
-  busy = false;
+  busy: { [key: number]: boolean } = {};
 
   truncate = Filters.truncate;
+
+  setBusyState([state, id]: [boolean, number]) {
+    this.busy[id] = state;
+  }
 
   onAction([action, channel]: [ChannelAction, RaidenChannel]) {
     this.selectedChannel = channel;

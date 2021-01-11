@@ -99,74 +99,74 @@ export default class ChannelDialogs extends Vue {
   }
 
   @Emit()
-  dismiss() {
+  dismiss(id: number) {
     this.depositInProgress = false;
-    this.busy(false);
+    this.busy([false, id]);
   }
 
   @Emit()
-  busy(busy: boolean): boolean {
+  busy(busy: [boolean, number]): [boolean, number] {
     return busy;
   }
 
   async deposit(deposit: BigNumber) {
-    const { token, partner } = this.channel!;
-    this.busy(true);
+    const { token, partner, id } = this.channel!;
+    this.busy([true, id]);
     try {
       this.depositInProgress = true;
       await this.$raiden.deposit(token, partner, deposit);
       this.message(this.$t('channel-list.messages.deposit.success') as string);
-      this.dismiss();
+      this.dismiss(id);
     } catch (e) {
       this.message(this.$t('channel-list.messages.deposit.failure') as string);
       this.error = e;
     }
-    this.busy(false);
+    this.busy([false, id]);
   }
 
   async withdraw(amount: BigNumber) {
-    const { token, partner } = this.channel!;
-    this.busy(true);
+    const { token, partner, id } = this.channel!;
+    this.busy([true, id]);
     try {
       this.withdrawInProgress = true;
       await this.$raiden.withdraw(token, partner, amount);
       this.message(this.$t('channel-list.messages.withdraw.success') as string);
-      this.dismiss();
+      this.dismiss(id);
     } catch (e) {
       this.message(this.$t('channel-list.messages.withdraw.failure') as string);
       this.error = e;
     }
-    this.busy(false);
+    this.busy([false, id]);
   }
 
   async close() {
-    const { token, partner } = this.channel!;
-    this.busy(true);
+    const { token, partner, id } = this.channel!;
+    this.busy([true, id]);
     this.visible = false;
     try {
       await this.$raiden.closeChannel(token, partner);
       this.message(this.$t('channel-list.messages.close.success') as string);
-      this.dismiss();
+      this.dismiss(id);
     } catch (e) {
       this.message(this.$t('channel-list.messages.close.failure') as string);
       this.error = e;
     }
-    this.busy(false);
+    this.busy([false, id]);
   }
 
   async settle() {
-    const { token, partner } = this.channel!;
-    this.busy(true);
+    const { token, partner, id } = this.channel!;
+    this.busy([true, id]);
     this.visible = false;
     try {
       await this.$raiden.settleChannel(token, partner);
       this.message(this.$t('channel-list.messages.settle.success') as string);
-      this.dismiss();
+      this.dismiss(id);
     } catch (e) {
       this.message(this.$t('channel-list.messages.settle.failure') as string);
       this.error = e;
     }
-    this.busy(false);
+    this.busy([false, id]);
   }
 }
 </script>
