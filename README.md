@@ -49,7 +49,7 @@ The Raiden CLI is a reference implementation that provides a HTTP REST server wh
 
 The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
-> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects. All three projects have been released for mainnet and all code is available in the [Light Client repository](https://github.com/raiden-network/light-client). As this release still has its limitations and is a beta release, it is crucial to read this readme including the security notes carefully before using the software.
+> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects. 
 
 ## Table of Contents
 
