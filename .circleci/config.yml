@@ -95,12 +95,12 @@ jobs:
       - restore_cache:
           name: Restore Yarn Package Cache
           keys:
-            - raiden-v2-yarn-{{ checksum "yarn.lock" }}
-            - raiden-v2-yarn-
+            - raiden-v4-yarn-{{ checksum "yarn.lock" }}
+            - raiden-v4-yarn-
       - run: yarn install
       - save_cache:
           name: Save Yarn Package Cache
-          key: raiden-v2-yarn-{{ checksum "yarn.lock" }}
+          key: raiden-v4-yarn-{{ checksum "yarn.lock" }}
           paths:
             - ./node_modules
             - ~/.cache # Cypress stores its stuff here.
@@ -275,7 +275,7 @@ jobs:
       - attach_workspace: *attach_options
       - add_ssh_keys:
           fingerprints:
-            - "ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3"
+            - 'ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3'
       - run: ./deploy.sh << parameters.public_path >>
 
   publish_artifact:
@@ -385,14 +385,14 @@ workflows:
             - generate_documentation
       - publish_artifact:
           <<: *filter_release_tag
-          context: "Raiden Context"
+          context: 'Raiden Context'
           requires:
             - deploy_gh_pages
 
   nightly:
     triggers:
       - schedule:
-          cron: "0 0 * * *"
+          cron: '0 0 * * *'
           filters:
             branches:
               only:
