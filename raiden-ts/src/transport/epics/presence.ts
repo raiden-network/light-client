@@ -218,7 +218,7 @@ function fetchPresence$(
     }),
     retryWhile(intervalFromConfig(config$), { onErrors: [429] }),
     catchError((err) => {
-      log.warn('Error validating presence event, ignoring', user.userId, err);
+      log.warn('Error validating presence event, ignoring', user.userId, event, err);
       return EMPTY;
     }),
   );

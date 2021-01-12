@@ -292,7 +292,7 @@ export const instanceOf: <C extends Newable>(C: C) => t.Type<InstanceType<C>> = 
   <C extends Newable>(C: C): t.Type<InstanceType<C>> =>
     new t.Type<InstanceType<C>>(
       `instanceOf(${C.name})`,
-      (v): v is InstanceType<C> => v instanceof C,
+      (v): v is InstanceType<C> => 'name' in (v as any) && (v as any).name === C.name,
       (i, c) => (i instanceof C ? t.success<InstanceType<C>>(i) : t.failure(i, c)),
       t.identity,
     ),
