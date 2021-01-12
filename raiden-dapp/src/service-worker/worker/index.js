@@ -16,8 +16,9 @@ self.route = new PrecacheRoute(self.controller);
 async function update() {
   await deleteCache();
   await deletePreservedPrecacheEntries();
-  await sendMessageToClients.call(this, ServiceWorkerMessages.RELOAD_WINDOW);
   await this.registration.unregister();
+  // Note that despite we unregistered, we can still send a message.
+  await sendMessageToClients.call(this, ServiceWorkerMessages.RELOAD_WINDOW);
 }
 
 async function verifyCacheValidity() {

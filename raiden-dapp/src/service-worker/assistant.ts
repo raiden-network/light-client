@@ -57,8 +57,7 @@ export default class ServiceWorkerAssistant {
   };
 
   private reloadWindow = (): void => {
-    // Delay reload so that the service worker can unregister safely if necessary.
-    setTimeout(() => window.location.reload(), 1000);
+    window.location.reload();
   };
 
   private setUpdateIsMandatory = (): void => {
