@@ -115,6 +115,6 @@ export function getCap<C extends Capabilities>(caps: Caps | undefined | null, ca
  * @param addresses - Addresses to sort
  * @returns Addresses sorted in lexical order
  */
-export function getSortedAddresses<A extends [Address, ...Address[]]>(...addresses: A) {
+export function getSortedAddresses<A extends Address[]>(...addresses: A) {
   return addresses.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())) as A;
 }

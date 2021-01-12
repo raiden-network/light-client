@@ -164,7 +164,7 @@ function matrixWebrtcEvents$<T extends RtcEventType>(
 
 type RtcConnPair = readonly [RTCPeerConnection, RTCDataChannel];
 function isRtcConnPair(value: unknown): value is RtcConnPair {
-  return Array.isArray(value) && value.length === 2 && value[0] instanceof RTCPeerConnection;
+  return Array.isArray(value) && value.length === 2 && value[1]?.readyState;
 }
 
 // setup candidates$ handlers
