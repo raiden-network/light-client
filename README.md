@@ -49,7 +49,7 @@ The Raiden CLI is a reference implementation that provides a HTTP REST server wh
 
 The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
-> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects. All three projects have been released for mainnet and all code is available in the [Light Client repository](https://github.com/raiden-network/light-client). As this release still has its limitations and is a beta release, it is crucial to read this readme including the security notes carefully before using the software.
+> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects and only released for testnet.
 
 ## Table of Contents
 
@@ -60,7 +60,6 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
 - [Learn about Raiden](#learn-about-raiden)
 - [Try Out the Raiden dApp](#try-out-the-raiden-dapp)
   - [Prerequisites](#prerequisites)
-  - [Making a First Transfer on Mainnet](#making-a-first-transfer-on-mainnet)
   - [Making a First Transfer on Testnet](#making-a-first-transfer-on-testnet)
   - [Receiving Transfers](#receiving-transfers)
   - [Backup the State to Keep Your Tokens](#backup-the-state-to-keep-your-tokens)
@@ -71,7 +70,6 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
   - [Install and Run the dApp](#install-and-run-the-dapp)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
-- [Bug Bounty](#bug-bounty)
 - [License](#license)
 - [Contact](#contact)
 
@@ -165,28 +163,6 @@ Fot a more in depth user guide, see the [Light Client documentation](https://lig
   1. By visiting a Goerli faucet either at [https://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/).
   2. Follow the instructions on respective faucet on how to acquire the ETH.
 
-### Making a First Transfer on Mainnet
-
-1. **Connect to the dApp**  
-
-   1. Visit the [Light Client](https://lightclient.raiden.network).
-   2. Make sure **Ethereum Mainnet** is selected in MetaMask and click connect.
-
-2. **Select a Hub and Open a Channel**  
-
-   1. Click the **+** icon and select a mainnet token to use. You need to have a balance of the token.
-   2. If you don't have any **RDN** (utility tokens), you can click the icon to open a dialog with a link for exchanging RDN and a button for depositing.
-   3. Enter an address of your choice to connect to or select a suggested hub if any are available.
-   4. Click the **Select Hub** button
-   5. Enter the amount of tokens you want to deposit when opening the channel.
-   6. Click the **Open Channel** button and sign with MetaMask.
-
-3. **Make a Transfer**  
-
-   1. Enter the address of the node receiving your transfer.
-   2. Enter the amount you want to transfer.
-   3. Click the **Transfer** button.
-
 ### Making a First Transfer on Testnet
 
 1. **Connect to the dApp**  
@@ -211,9 +187,9 @@ Fot a more in depth user guide, see the [Light Client documentation](https://lig
 
 ### Receiving Transfers  
 
-Receiving of transfers will be disabled if the utility token (RND on mainnet and SVT on testnet) balance is too low.
+Receiving of transfers will be disabled if the utility token (SVT) balance is too low.
 
-To enable receiving again, make sure to add a utility token balance by either making an exchange and deposit if using the Light Client on mainnet or by minting and depositing if using the Light Client on testnet.
+To enable receiving again, make sure to add a utility token balance by minting and depositing if using the Light Client.
 
 ### **Backup the State to Keep Your Tokens**  
 
@@ -300,10 +276,6 @@ We are working in [2 weekly iterations](https://github.com/raiden-network/light-
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
 Also have a look at the [Raiden Light Client Development Guide](./CONTRIBUTING.md) for more info.
-
-## Bug Bounty
-
-The Raiden team has undertaken several risk mitigation measures to limit any potential damage caused by bugs or misuse of the software. In addition, a bug bounty is run in order to make sure the software lives up to the highest standards possible. For more information and to participate visit the [Raiden Bug Bounty website](https://raiden.network/bug-bounty.html).
 
 ## License
 
