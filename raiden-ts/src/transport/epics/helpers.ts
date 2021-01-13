@@ -1,29 +1,14 @@
-import { Observable, of, fromEvent, combineLatest, EMPTY, defer } from 'rxjs';
-import {
-  distinctUntilChanged,
-  filter,
-  map,
-  mergeMap,
-  take,
-  switchMap,
-  mapTo,
-  withLatestFrom,
-  delayWhen,
-} from 'rxjs/operators';
-import { Room, MatrixClient, EventType } from 'matrix-js-sdk';
+import { Observable, of, fromEvent } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
+import { Room, MatrixClient } from 'matrix-js-sdk';
 import curry from 'lodash/curry';
-import constant from 'lodash/constant';
 
-import { Capabilities } from '../../constants';
-import { intervalFromConfig, RaidenConfig } from '../../config';
+import { RaidenConfig } from '../../config';
 import { RaidenEpicDeps } from '../../types';
 import { isntNil, Address, Signed } from '../../utils/types';
 import { RaidenError, ErrorCodes } from '../../utils/error';
-import { pluckDistinct, retryWhile } from '../../utils/rx';
 import { Message } from '../../messages/types';
 import { decodeJsonMessage, getMessageSigner } from '../../messages/utils';
-import { getCap } from '../utils';
-import { messageSend } from '../../messages/actions';
 
 /**
  * Return the array of configured global rooms
@@ -64,97 +49,6 @@ export function getRoom$(matrix: MatrixClient, roomIdOrAlias: string): Observabl
   if (!room) room = matrix.getRooms().find(roomMatch(roomIdOrAlias));
   if (room) return of(room);
   return fromEvent<Room>(matrix, 'Room').pipe(filter(roomMatch(roomIdOrAlias)), take(1));
-}
-
-/**
- * Waits for address to have joined a room with us (or webRTC channel) and sends a message
- *
- * @param address - Eth Address of peer/receiver
- * @param type - EventType (if allowRtc=false)
- * @param content - Event content
- * @param deps - Some members of RaidenEpicDeps needed
- * @param deps.log - Logger instance
- * @param deps.latest$ - Latest observable
- * @param deps.config$ - Config observable
- * @param deps.matrix$ - Matrix async subject
- * @returns Observable of a string containing the roomAlias or channel label
- */
-export function waitMemberAndSend$<C extends { msgtype: string; body: string }>(
-  address: Address,
-  type: EventType,
-  content: C,
-  {
-    log,
-    latest$,
-    config$,
-    matrix$,
-  }: Pick<RaidenEpicDeps, 'log' | 'latest$' | 'config$' | 'matrix$'>,
-): Observable<NonNullable<messageSend.success['payload']>> {
-  const rtcChannel$ =
-    content.msgtype === 'm.text' ? latest$.pipe(pluckDistinct('rtc', address)) : of(null);
-  const presence$ = latest$.pipe(pluckDistinct('presences', address));
-  const roomId$ = latest$.pipe(
-    map(({ state }) => state.transport.rooms?.[address]?.[0]),
-    distinctUntilChanged(),
-  );
-  const via$ = combineLatest([rtcChannel$, presence$, roomId$]).pipe(
-    withLatestFrom(config$),
-    map(([[rtcChannel, presence, roomId], { caps }]) => {
-      if (rtcChannel?.readyState === 'open') return rtcChannel;
-      else if (
-        getCap(caps, Capabilities.TO_DEVICE) &&
-        getCap(presence?.payload.caps, Capabilities.TO_DEVICE)
-      )
-        return presence!.payload.userId;
-      else if (roomId) return roomId;
-    }),
-    distinctUntilChanged(),
-  );
-  let start = 0;
-  let retries = -1;
-  return defer(() => {
-    if (!start) start = Date.now();
-    return via$;
-  }).pipe(
-    switchMap((via) => {
-      if (!via) return EMPTY;
-      retries++;
-      if (typeof via !== 'string')
-        return defer(async () => {
-          via.send(content.body);
-          return via.label; // via RTC channel, complete immediately
-        });
-      else if (via.startsWith('@'))
-        return matrix$.pipe(
-          mergeMap(async (matrix) => matrix.sendToDevice(type, { [via]: { '*': content } })),
-          mapTo(via), // via toDevice message
-          // complete only when peer is online
-          delayWhen(
-            constant(
-              presence$.pipe(
-                filter(
-                  (presence) => presence?.payload.userId === via && presence.payload.available,
-                ),
-              ),
-            ),
-          ),
-        );
-      else
-        return matrix$.pipe(
-          mergeMap(async (matrix) => matrix.sendEvent(via, type, content, '')),
-          mapTo(via), // via room
-          // complete only when peer is online
-          delayWhen(constant(presence$.pipe(filter((presence) => !!presence?.payload.available)))),
-        );
-    }),
-    retryWhile(intervalFromConfig(config$), {
-      maxRetries: 3,
-      onErrors: [429, 500],
-      log: log.warn,
-    }),
-    take(1),
-    map((via) => ({ via, tookMs: Date.now() - start, retries })),
-  );
 }
 
 /**

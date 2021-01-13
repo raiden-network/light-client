@@ -45,6 +45,7 @@ import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
 import { intervalFromConfig, RaidenConfig } from '../../config';
 import { RaidenState } from '../../state';
+import { RAIDEN_DEVICE_ID } from '../../constants';
 import { getServerName } from '../../utils/matrix';
 import { decode } from '../../utils/types';
 import { pluckDistinct, retryAsync$, retryWhile } from '../../utils/rx';
@@ -53,8 +54,6 @@ import { RaidenMatrixSetup } from '../state';
 import { Caps } from '../types';
 import { stringifyCaps } from '../utils';
 import { globalRoomNames } from './helpers';
-
-const DEVICE_ID = 'RAIDEN';
 
 /**
  * Joins the global broadcast rooms and returns the room ids.
@@ -255,7 +254,7 @@ function setupMatrixClient$(
               matrix.login('m.login.password', {
                 identifier: { type: 'm.id.user', user: username },
                 password,
-                device_id: DEVICE_ID,
+                device_id: RAIDEN_DEVICE_ID,
               }),
             ).pipe(
               catchError(async (err) => {
@@ -263,7 +262,7 @@ function setupMatrixClient$(
                   .registerRequest({
                     username,
                     password,
-                    device_id: DEVICE_ID,
+                    device_id: RAIDEN_DEVICE_ID,
                   })
                   .catch(constant(err)) as Promise<LoginPayload>;
                 // if register fails, throws login error as it's more informative

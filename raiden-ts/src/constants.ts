@@ -29,3 +29,5 @@ export const CapsFallback = {
   [Capabilities.WEBRTC]: 0,
   [Capabilities.TO_DEVICE]: 0,
 } as const;
+
+export const RAIDEN_DEVICE_ID = 'RAIDEN';
