@@ -124,7 +124,10 @@ function fetchLastIou$(
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         },
-      ).pipe(timeout(httpTimeout)),
+      ).pipe(
+        timeout(httpTimeout),
+        retryWhile(intervalFromConfig(config$), { onErrors: [429, 500, 'timeout', 'Timeout'] }),
+      ),
     ),
     withLatestFrom(latest$.pipe(pluck('state', 'blockNumber')), config$),
     mergeMap(async ([response, blockNumber, { pfsIouTimeout }]) => {
@@ -1256,8 +1259,9 @@ function requestPfs$(
   address: Address,
   target: Address,
   value: UInt<32>,
-  { httpTimeout, pfsMaxPaths }: Pick<RaidenConfig, 'httpTimeout' | 'pfsMaxPaths'>,
+  config: RaidenConfig,
 ): Observable<{ pfsResponse: Response; responseText: string; iou: Signed<IOU> | undefined }> {
+  const { httpTimeout, pfsMaxPaths } = config;
   const body = jsonStringify({
     from: address,
     to: target,
@@ -1279,6 +1283,9 @@ function requestPfs$(
     body,
   }).pipe(
     timeout(httpTimeout),
+    retryWhile(intervalFromConfig(of(config)), {
+      onErrors: [429, 500, 'timeout', 'Timeout'],
+    }),
     mergeMap(async (pfsResponse) => ({
       pfsResponse,
       responseText: await pfsResponse.text(),
