@@ -20,6 +20,7 @@ import minBy from 'lodash/minBy';
 import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import pick from 'lodash/pick';
+import getOr from 'lodash/fp/getOr';
 import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import { MatrixClient, MatrixEvent, User } from 'matrix-js-sdk';
@@ -97,7 +98,7 @@ function searchAddressPresence$(
     // updates, and sort by most recently seen user
     map((presences) => {
       if (!presences.length) throw new RaidenError(ErrorCodes.TRNS_NO_VALID_USER, { address });
-      return minBy(presences, 'last_active_ago')!;
+      return minBy(presences, getOr(Number.POSITIVE_INFINITY, 'last_active_ago'))!;
     }),
     map(({ presence, user_id: userId, avatar_url }) =>
       matrixPresence.success(
