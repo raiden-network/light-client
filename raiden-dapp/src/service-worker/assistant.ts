@@ -8,14 +8,18 @@ const VERSION_FILE_PATH = (process.env.BASE_URL ?? '/') + 'version.json';
 
 export default class ServiceWorkerAssistant {
   constructor(private store: Store<CombinedStoreState>) {
-    navigator.serviceWorker.onmessage = this.onMessage;
-    this.updateAvailableVersion();
-    setInterval(this.updateAvailableVersion, 1000 * 60 * 60);
-    setInterval(this.verifyCacheValidity, 1000 * 10);
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.onmessage = this.onMessage;
+      this.updateAvailableVersion();
+      setInterval(this.updateAvailableVersion, 1000 * 60 * 60);
+      setInterval(this.verifyCacheValidity, 1000 * 10);
+    }
   }
 
   public update = (): void => {
-    navigator.serviceWorker.controller?.postMessage(ServiceWorkerAssistantMessages.UPDATE);
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.controller?.postMessage(ServiceWorkerAssistantMessages.UPDATE);
+    }
   };
 
   private onMessage = (event: MessageEvent): void => {
