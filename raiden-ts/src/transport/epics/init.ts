@@ -136,6 +136,14 @@ function startMatrixSync(
       joinGlobalRooms(config, matrix).pipe(
         mergeMap((roomIds) => createMatrixFilter(matrix, roomIds)),
         mergeMap((filter) => matrix.startClient({ filter })),
+        mergeMap(() => {
+          // after [15-45]s (default) random delay after starting, update/reload presence
+          return timer(Math.round((Math.random() + 0.5) * config.httpTimeout)).pipe(
+            mergeMap(async () =>
+              matrix.setPresence({ presence: 'online', status_msg: Date.now().toString() }),
+            ),
+          );
+        }),
         retryWhile(
           intervalFromConfig(config$),
           { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
