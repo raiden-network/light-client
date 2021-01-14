@@ -8,11 +8,11 @@ Once you sign the MetaMask prompt to create a Raiden Account you will come to a 
 
 ---
 
-![Select-Hub](https://user-images.githubusercontent.com/15123108/102077805-e0277780-3e2f-11eb-86ab-cdbf060aba6b.gif 'Select Hub gif')
+![Select-Hub](https://user-images.githubusercontent.com/15123108/103350295-824c8e00-4ac5-11eb-86e5-99aec9533d8e.gif 'Select Hub gif')
 
 ## Select Hub
 
-![Select-Hub-screen](https://user-images.githubusercontent.com/15123108/102077868-faf9ec00-3e2f-11eb-8a5d-a5df28c4f860.png 'Select Hub screen')
+![Select-Hub-screen](https://user-images.githubusercontent.com/15123108/103347552-4e6d6a80-4abd-11eb-869f-2d98e65caf2a.png 'Select Hub screen')
 
 On the _Select Hub_ screen There are two tokens available which will briefly be described here:
 
@@ -28,20 +28,20 @@ If well connected hubs are available for the token network, a list of the top th
 
 ## Mint or Acquire Tokens
 
-![Mint-SVT-TTT](https://user-images.githubusercontent.com/15123108/102077942-15cc6080-3e30-11eb-964b-90e0441fa6e7.png 'Mint SVT and TTT tokens')
+![Mint-SVT-TTT](https://user-images.githubusercontent.com/15123108/103345560-b6b94d80-4ab7-11eb-847a-d8f08bc96c23.png 'Mint SVT and TTT tokens')
 
 Minting tokens can only be done on testnets.
 On Goerli, for instance, that would be the _SVT_ and _TTT_ token (or any other token which supports minting).
 
 On mainnet, the tokens needs to be acquired independently. The dApp assists in this by providing a link to Uniswap where tokens can be exchanged.
 
-![After-minting-select-hub](https://user-images.githubusercontent.com/15123108/102078028-41e7e180-3e30-11eb-90bf-9c5b7df8ed2c.png 'After minting select hub screen')
+![After-minting-select-hub](https://user-images.githubusercontent.com/15123108/103347569-59c09600-4abd-11eb-9197-5d9a7e628267.png 'After minting select hub screen')
 
 After minting the screen should look something like above.
 
 ## Opening a Channel With the Hub
 
-![select-hub-button-click](https://user-images.githubusercontent.com/15123108/102078097-5b892900-3e30-11eb-9061-10205ee6fd78.gif 'Select hub button click')
+![select-hub-button-click](https://user-images.githubusercontent.com/15123108/103350414-e66f5200-4ac5-11eb-8339-5e3ecb564d5f.gif 'Select hub button click')
 
 After entering the address of the hub click on _Select hub_ and on the next screen enter the amount to be allocated in the channel. Sign the required transactions on MetaMask. When a channel has been opened you will end up on the _Transfer_ screen.
 
