@@ -74,7 +74,7 @@
   "dependencies": {
     "@ethersproject/abi": "^5.0.10",
     "@ethersproject/abstract-provider": "^5.0.8",
-    "@ethersproject/abstract-signer": "^5.0.10",
+    "@ethersproject/abstract-signer": "^5.0.11",
     "@ethersproject/address": "^5.0.9",
     "@ethersproject/bignumber": "^5.0.13",
     "@ethersproject/bytes": "^5.0.9",
@@ -83,7 +83,7 @@
     "@ethersproject/keccak256": "^5.0.7",
     "@ethersproject/networks": "^5.0.7",
     "@ethersproject/properties": "^5.0.7",
-    "@ethersproject/providers": "^5.0.18",
+    "@ethersproject/providers": "^5.0.19",
     "@ethersproject/random": "^5.0.7",
     "@ethersproject/rlp": "^5.0.7",
     "@ethersproject/sha2": "^5.0.7",
