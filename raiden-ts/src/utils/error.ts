@@ -52,6 +52,7 @@ export const networkErrors: ErrorMatches = [
   { code: 'TIMEOUT' },
   { code: 'SERVER_ERROR' },
   { code: 'NETWORK_ERROR' },
+  { code: 'ENOTFOUND' },
 ];
 export const txNonceErrors: ErrorMatches = [
   'replacement fee too low',
