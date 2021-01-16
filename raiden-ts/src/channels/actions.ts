@@ -15,6 +15,10 @@ const ChannelId = t.type({
 export const newBlock = createAction('block/new', t.type({ blockNumber: t.number }));
 export interface newBlock extends ActionType<typeof newBlock> {}
 
+/* A new blockTime (average time between latest X blocks) was detected */
+export const blockTime = createAction('block/time', t.type({ blockTime: t.number }));
+export interface blockTime extends ActionType<typeof blockTime> {}
+
 /**
  * A new token network is detected in the TokenNetworkRegistry instance
  * fromBlock is only set on the first time, to fetch and handle past events
