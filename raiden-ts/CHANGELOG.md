@@ -9,6 +9,7 @@
 
 ### Changed
 - [#2409] Lower default payment expiration to 1.1 × reveal timeout
+- [#2505] Properly shut down epics on stop and wait for teardown/cleanup tasks
 
 ### Fixed
 - [#2352] Presence bug, transport fixes and performance improvements
@@ -19,6 +20,7 @@
 [#2417]: https://github.com/raiden-network/light-client/pull/2417
 [#2444]: https://github.com/raiden-network/light-client/issues/2444
 [#2446]: https://github.com/raiden-network/light-client/issues/2446
+[#2505]: https://github.com/raiden-network/light-client/pull/2505
 
 ## [0.14.0] - 2020-11-25
 ### Fixed

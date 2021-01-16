@@ -4,7 +4,11 @@
 ### Added
 - [#2417] Register sensible endpoints on 'synced' SDK promise, updates /status API accordingly
 
+### Changed
+- [#2505] Wait for background tasks to gracefully complete before exiting
+
 [#2417]: https://github.com/raiden-network/light-client/pull/2417
+[#2505]: https://github.com/raiden-network/light-client/pull/2505
 
 ## [0.14.0] - 2020-11-25
 ### Fixed
