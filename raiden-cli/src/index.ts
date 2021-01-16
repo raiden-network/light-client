@@ -215,13 +215,6 @@ function shutdownServer(this: Cli): void {
     this.log.info('Closing server...');
     this.server.close();
   }
-  // it's safe to call stop multiple times; this one to await for db flush;
-  // then we wait a little for any pending request to complete and force-exit cleanly after that,
-  // to skip wrtc segfault on process teardown
-  new Promise((resolve) => setTimeout(resolve, 10))
-    .then(() => this.raiden.stop())
-    .then(() => new Promise((resolve) => setTimeout(resolve, 1000)))
-    .then(() => process.exit(0));
 }
 
 function shutdownRaiden(this: Cli): void {
@@ -241,6 +234,13 @@ function registerShutdownHooks(this: Cli): void {
   });
   process.on('SIGINT', shutdownRaiden.bind(this));
   process.on('SIGTERM', shutdownRaiden.bind(this));
+  // 'beforeExit' is emitted after all background tasks are finished;
+  // we need to call process.exit explicitly in order to avoid 'wrtc'
+  // cleanup from segfaulting the process
+  process.on('beforeExit', (code) => {
+    this.log.info('Exiting', code);
+    process.exit(code);
+  });
 }
 
 async function createRaidenConfig(
