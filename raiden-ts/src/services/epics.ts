@@ -61,7 +61,7 @@ import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { RaidenError, ErrorCodes, assert, networkErrors, commonTxErrors } from '../utils/error';
-import { pluckDistinct, retryAsync$, retryWhile } from '../utils/rx';
+import { completeWith, pluckDistinct, retryAsync$, retryWhile } from '../utils/rx';
 import { matrixPresence } from '../transport/actions';
 import { getCap } from '../transport/utils';
 import type { UserDeposit, HumanStandardToken } from '../contracts';
@@ -373,7 +373,7 @@ export function pfsFeeUpdateEpic(
  * @returns Observable of pfsListUpdated actions
  */
 export function pfsServiceRegistryMonitorEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { provider, serviceRegistryContract, contractsInfo, config$, latest$, init$ }: RaidenEpicDeps,
 ): Observable<pfsListUpdated> {
@@ -443,6 +443,7 @@ export function pfsServiceRegistryMonitorEpic(
           }),
         );
     }),
+    completeWith(action$),
   );
 }
 
@@ -717,11 +718,10 @@ function makeMonitoringRequest$({
  */
 export function monitorRequestEpic(
   {}: Observable<RaidenAction>,
-  {}: Observable<RaidenState>,
+  state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<messageGlobalSend> {
-  return deps.latest$.pipe(
-    pluck('state'),
+  return state$.pipe(
     groupChannel$,
     withLatestFrom(deps.config$),
     mergeMap(([grouped$, { httpTimeout }]) =>
@@ -894,7 +894,8 @@ export function udcWithdrawPlannedEpic(
     mergeMap((action) =>
       state$.pipe(
         pluck('blockNumber'),
-        first((blockNumber) => action.payload.block < blockNumber),
+        filter((blockNumber) => action.payload.block < blockNumber),
+        take(1),
         mapTo(action),
       ),
     ),
@@ -929,7 +930,8 @@ export function udcWithdrawPlannedEpic(
                 onErrors: networkErrors,
               }),
             ),
-            first((newBalance) => newBalance.lt(balance)),
+            filter((newBalance) => newBalance.lt(balance)),
+            take(1),
             map((newBalance) =>
               udcWithdrawn(
                 {
@@ -991,6 +993,7 @@ export function msMonitorNewBPEpic(
         confirmationBlocks,
       ),
     ),
+    completeWith(state$),
     map(
       logToContractEvent<[Address, UInt<32>, UInt<32>, UInt<8>, Address, Address, Event]>(
         monitoringServiceContract,

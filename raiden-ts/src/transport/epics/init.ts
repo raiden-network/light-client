@@ -23,7 +23,6 @@ import {
   tap,
   toArray,
   mapTo,
-  finalize,
   first,
   timeout,
   pluck,
@@ -48,7 +47,7 @@ import { RaidenState } from '../../state';
 import { RAIDEN_DEVICE_ID } from '../../constants';
 import { getServerName } from '../../utils/matrix';
 import { decode } from '../../utils/types';
-import { pluckDistinct, retryWhile } from '../../utils/rx';
+import { completeWith, lastMap, pluckDistinct, retryWhile } from '../../utils/rx';
 import { matrixSetup } from '../actions';
 import { RaidenMatrixSetup } from '../state';
 import { Caps } from '../types';
@@ -396,6 +395,7 @@ export function initMatrixEpic(
         ),
       ),
     ),
+    completeWith(action$),
   );
 }
 
@@ -413,17 +413,16 @@ export function matrixShutdownEpic(
   {}: Observable<RaidenState>,
   { matrix$ }: RaidenEpicDeps,
 ): Observable<RaidenAction> {
-  return matrix$.pipe(
-    mergeMap((matrix) =>
-      action$.pipe(
-        finalize(async () => {
-          matrix.stopClient();
-          try {
-            await matrix.setPresence({ presence: 'offline', status_msg: '' });
-          } catch (err) {}
-        }),
-      ),
-    ),
-    ignoreElements(), // dont re-emit action$, but keep it subscribed so finalize works
+  return action$.pipe(
+    withLatestFrom(matrix$),
+    lastMap(async (pair) => {
+      if (!pair) return;
+      const matrix = pair[1];
+      matrix.stopClient();
+      try {
+        await matrix.setPresence({ presence: 'offline', status_msg: '' });
+      } catch (err) {}
+    }),
+    ignoreElements(),
   );
 }

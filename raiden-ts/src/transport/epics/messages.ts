@@ -32,7 +32,7 @@ import constant from 'lodash/constant';
 
 import { EventType, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
 
-import { concatBuffer, pluckDistinct, retryWhile } from '../../utils/rx';
+import { completeWith, concatBuffer, pluckDistinct, retryWhile } from '../../utils/rx';
 import { intervalFromConfig, RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { Address, Signed } from '../../utils/types';
@@ -188,6 +188,9 @@ export function matrixMessageSendEpic(
               deps.log.error('messageSend error', err, actions[0].meta);
               return from(actions.map((action) => messageSend.failure(err, action.meta)));
             }),
+            // when shutting down, give up the 'wait' phase of sendAndWait$, but still give some
+            // time to concatBuffer to deplete buffer sending pending requests
+            completeWith(action$, 10),
           );
         }, 10),
       ),
@@ -217,17 +220,18 @@ function sendGlobalMessages(
     // send message!
     mergeMap(async (room) => {
       retries++;
-      return matrix.sendEvent(room.roomId, 'm.room.message', { body, msgtype: 'm.text' }, '');
+      return matrix
+        .sendEvent(room.roomId, 'm.room.message', { body, msgtype: 'm.text' }, '')
+        .then(() =>
+          log.info('messageGlobalSend success', {
+            tookMs: Date.now() - start,
+            retries,
+            roomName,
+            batchSize: actions.length,
+          }),
+        );
     }),
     retryWhile(intervalFromConfig(config$), { maxRetries: 3, onErrors: networkErrors }),
-    tap(() =>
-      log.info('messageGlobalSend success', {
-        tookMs: Date.now() - start,
-        retries,
-        roomName,
-        batchSize: actions.length,
-      }),
-    ),
     catchError((err) => {
       log.error('Error sending messages to global room', err, {
         retries,
@@ -265,6 +269,7 @@ export function matrixMessageGlobalSendEpic(
           return matrix$.pipe(
             withLatestFrom(config$),
             mergeMap(([matrix, config]) => sendGlobalMessages(actions, matrix, config, deps)),
+            completeWith(action$, 10),
           );
         }, 20),
       ),
@@ -304,7 +309,7 @@ function isValidMessage([{ matrix, event, room }, config]: [
  * @returns Observable of messageReceived actions
  */
 export function matrixMessageReceivedEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, matrix$, config$, latest$ }: RaidenEpicDeps,
 ): Observable<messageReceived> {
@@ -321,6 +326,7 @@ export function matrixMessageReceivedEpic(
         ),
       ),
     ),
+    completeWith(action$),
     withLatestFrom(config$),
     filter(isValidMessage),
     mergeMap(([{ event, room }, { httpTimeout }]) =>
@@ -331,6 +337,7 @@ export function matrixMessageReceivedEpic(
           const rooms = state.transport.rooms?.[presence.meta.address] ?? [];
           return !room || rooms.includes(room.roomId);
         }),
+        completeWith(action$),
         take(1),
         // take up to an arbitrary timeout to presence status for the sender
         // AND the room in which this message was sent to be in sender's address room queue

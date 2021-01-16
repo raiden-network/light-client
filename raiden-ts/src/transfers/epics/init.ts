@@ -22,7 +22,7 @@ import { RaidenEpicDeps } from '../../types';
 import { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
 import { Hash, untime } from '../../utils/types';
-import { distinctRecordValues, pluckDistinct } from '../../utils/rx';
+import { completeWith, distinctRecordValues, pluckDistinct } from '../../utils/rx';
 import {
   transferExpire,
   transferSigned,
@@ -213,6 +213,7 @@ export function transferClearCompletedEpic(
             startWith({ meta: pick(['secrethash', 'direction'], transfer) }),
           ),
         ),
+        completeWith(action$),
         // after some time with no action for this transfer going through (e.g. Processed retries)
         debounceTime(3 * httpTimeout),
         map(({ meta }) => transferClear(undefined, meta)), // clear transfer

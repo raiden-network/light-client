@@ -30,7 +30,7 @@ import { RaidenState } from '../../state';
 import { channelMonitored } from '../../channels/actions';
 import { messageReceived } from '../../messages/actions';
 import { transferSigned } from '../../transfers/actions';
-import { pluckDistinct, retryWhile } from '../../utils/rx';
+import { completeWith, pluckDistinct, retryWhile } from '../../utils/rx';
 import { getServerName } from '../../utils/matrix';
 import { Direction } from '../../transfers/state';
 import { matrixRoom, matrixRoomLeave, matrixPresence } from '../actions';
@@ -148,6 +148,7 @@ export function matrixCreateRoomEpic(
           latest$.pipe(
             // wait for user to be monitored
             filter(({ presences }) => peer in presences),
+            completeWith(action$),
             take(1),
             // skip room creation/invite if both partner and us have ToDevice capability set
             filter(
@@ -214,6 +215,7 @@ export function matrixInviteEpic(
           if (!action.payload.available || !roomId) return EMPTY;
           return inviteLoop$(matrix, roomId, action.payload.userId, config, { log });
         }),
+        completeWith(action$),
       ),
     ),
   );
@@ -232,7 +234,7 @@ export function matrixInviteEpic(
  * @returns Observable of matrixRoom actions
  */
 export function matrixHandleInvitesEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, matrix$, config$, latest$ }: RaidenEpicDeps,
 ): Observable<matrixRoom> {
@@ -241,6 +243,7 @@ export function matrixHandleInvitesEpic(
     switchMap((matrix) =>
       fromEvent<[MatrixEvent, RoomMember]>(matrix, 'RoomMember.membership').pipe(
         map(([event, member]) => ({ event, member, matrix })),
+        completeWith(action$),
       ),
     ),
     filter(
@@ -256,6 +259,7 @@ export function matrixHandleInvitesEpic(
           Object.values(presences).find((p) => p.payload.userId === event.getSender()),
         ),
         filter(isntNil),
+        completeWith(action$),
         take(1),
         // Don't wait more than some arbitrary time for this sender presence update to show
         // up; completes without emitting anything otherwise, ending this pipeline.
@@ -353,6 +357,7 @@ export function matrixLeaveUnknownRoomsEpic(
         mergeMap(({ httpTimeout }) => timer(httpTimeout)),
       ),
     ),
+    completeWith(state$),
     withLatestFrom(state$, config$),
     // filter for leave events to us
     filter(([{ matrix, room }, { transport }, config]) => {
@@ -399,6 +404,7 @@ export function matrixCleanLeftRoomsEpic(
     switchMap((matrix) =>
       fromEvent<[Room, string]>(matrix, 'Room.myMembership').pipe(
         map(([room, membership]) => ({ room, membership, matrix })),
+        completeWith(state$),
       ),
     ),
     // filter for leave events to us

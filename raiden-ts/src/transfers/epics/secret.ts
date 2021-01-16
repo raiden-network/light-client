@@ -27,7 +27,7 @@ import { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { RaidenError, ErrorCodes, assert, commonTxErrors } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
-import { pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
+import { completeWith, pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
 import { Hash, Secret, Signed, UInt, isntNil, untime } from '../../utils/types';
 import { getCap } from '../../transport/utils';
 import {
@@ -318,6 +318,7 @@ export function monitorSecretRegistryEpic(
         confirmationBlocks,
       ),
     ),
+    completeWith(state$),
     map(logToContractEvent<[Hash, Secret, Event]>(secretRegistryContract)),
     filter(isntNil),
     withLatestFrom(state$, config$),

@@ -43,7 +43,7 @@ import { RaidenState } from '../../state';
 import { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { LruCache } from '../../utils/lru';
-import { pluckDistinct } from '../../utils/rx';
+import { completeWith, pluckDistinct } from '../../utils/rx';
 import { Hash, Signed, UInt, Int, Address, untime, decode } from '../../utils/types';
 import { RaidenError, ErrorCodes } from '../../utils/error';
 import { Capabilities } from '../../constants';
@@ -1084,7 +1084,7 @@ export function transferGenerateAndSignEnvelopeMessageEpic(
   deps: RaidenEpicDeps,
 ) {
   const processedCache = new LruCache<string, Signed<Processed>>(32);
-  const state$ = deps.latest$.pipe(pluckDistinct('state')); // replayed(1)' state$
+  const state$ = deps.latest$.pipe(pluckDistinct('state'), completeWith(action$)); // replayed(1)' state$
   return merge(
     action$.pipe(
       filter(
