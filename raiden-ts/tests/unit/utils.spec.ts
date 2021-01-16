@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
-import { first, mapTo, toArray } from 'rxjs/operators';
+import { delay, first, ignoreElements, mapTo, tap, toArray } from 'rxjs/operators';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
@@ -26,7 +26,7 @@ import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/uti
 import { Lock } from 'raiden-ts/channels';
 import { LocksrootZero } from 'raiden-ts/constants';
 import { of, timer } from 'rxjs';
-import { concatBuffer } from 'raiden-ts/utils/rx';
+import { completeWith, concatBuffer, lastMap } from 'raiden-ts/utils/rx';
 import { getSortedAddresses } from 'raiden-ts/transport/utils';
 
 describe('getLogsByChunk$', () => {
@@ -392,4 +392,54 @@ test('getSortedAddresses', () => {
     '0x000000000000000000000000000000000000000A',
     '0x000000000000000000000000000000000000000b',
   ]);
+});
+
+test('completeWith', async () => {
+  expect.assertions(5);
+
+  const completeBefore = jest.fn();
+  const completeAfter = jest.fn();
+  await expect(
+    timer(20)
+      .pipe(
+        tap({ complete: completeBefore }),
+        completeWith(timer(10)),
+        tap({ complete: completeAfter }),
+      )
+      .toPromise(),
+  ).resolves.toBeUndefined();
+  // since completeWith completed the output before the input timer, it seems like it was
+  // unsubscribed instead, but second tap sees proper completion
+  expect(completeBefore).not.toHaveBeenCalled();
+  expect(completeAfter).toHaveBeenCalled();
+
+  // since completeWith emits synchronously, it should unsubscribe from (even synchronous) input
+  // before first emition
+  await expect(
+    of(1)
+      .pipe(completeWith(of(2)))
+      .toPromise(),
+  ).resolves.toBeUndefined();
+
+  // timer(0) is immediate but asynchronous, synchronous input should still go through
+  await expect(
+    of(1)
+      .pipe(completeWith(timer(0)))
+      .toPromise(),
+  ).resolves.toBe(1);
+});
+
+test('lastMap', async () => {
+  const project = jest.fn(async () => true);
+  await expect(of(1, 2, 3).pipe(lastMap(project)).toPromise()).resolves.toBe(true);
+  expect(project).toHaveBeenCalledTimes(1); // only last emition passes
+  expect(project).toHaveBeenCalledWith(3, expect.anything());
+
+  const project2 = jest.fn((v) => of([v]).pipe(delay(20)));
+  await expect(timer(10).pipe(ignoreElements(), lastMap(project2)).toPromise()).resolves.toEqual([
+    null,
+  ]);
+  expect(project2).toHaveBeenCalledTimes(1); // only last emition passed
+  // ignoreElements calls project with null
+  expect(project2).toHaveBeenCalledWith(null, expect.anything());
 });

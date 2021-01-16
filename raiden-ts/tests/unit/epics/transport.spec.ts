@@ -499,16 +499,16 @@ describe('matrixPresenceUpdateEpic', () => {
     const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
 
     raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
-    await sleep();
+    await sleep(raiden.config.httpTimeout);
     expect(raiden.output).toContainEqual(
       matrixPresence.success(
         expect.objectContaining({ available: true, userId: partnerMatrix.getUserId()! }),
         { address: partner.address },
       ),
     );
-    raiden.output = [];
+    raiden.output.splice(0, raiden.output.length);
 
-    matrix.getProfileInfo.mockRejectedValueOnce(new Error('could not get user profile'));
+    matrix.getProfileInfo.mockRejectedValue(new Error('could not get user profile'));
     matrix.emit('event', {
       getType: () => 'm.presence',
       getSender: () => partnerMatrix.getUserId(),
@@ -847,7 +847,7 @@ describe('matrixMessageSendEpic', () => {
       ),
     );
 
-    await sleep(raiden.config.httpTimeout);
+    await sleep(100);
     expect(raiden.output).toContainEqual(
       messageSend.success(expect.objectContaining({ via: expect.stringMatching(/^!/) }), {
         address: partner.address,
@@ -887,7 +887,7 @@ describe('matrixMessageSendEpic', () => {
       messageSend.request({ message }, { address: partner.address, msgId: message }),
     );
 
-    await sleep(3 * raiden.config.httpTimeout);
+    await sleep(200);
     expect(raiden.output).toContainEqual(
       messageSend.failure(expect.objectContaining({ message: 'Failed 4' }), {
         address: partner.address,

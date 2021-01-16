@@ -1031,7 +1031,7 @@ export async function makeRaiden(
     async (n: string | number | Promise<string | number>) =>
       ({
         timestamp: Math.floor(
-          (Date.now() - (provider.blockNumber - +(await n)) * provider.pollingInterval) / 1000,
+          (Date.now() - (provider.blockNumber - +(await n) + 1) * provider.pollingInterval) / 1000,
         ),
       } as any),
   );
@@ -1299,7 +1299,6 @@ export async function makeRaiden(
     raidenReducer,
     initialState as any,
     applyMiddleware(
-      epicMiddleware,
       () => (next) => (action) => {
         // don't output before starting, so we can change state without side-effects
         if (raiden.started) {
@@ -1310,6 +1309,7 @@ export async function makeRaiden(
         }
         return next(action);
       },
+      epicMiddleware,
       createPersisterMiddleware(db),
     ),
   );
@@ -1336,8 +1336,9 @@ export async function makeRaiden(
       await synced;
     },
     started: undefined,
-    stop: () => {
+    stop: async () => {
       raiden.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
+      await raiden.deps.db.busy$.toPromise();
       raiden.deps.provider.removeAllListeners();
       const idx = mockedClients.indexOf(raiden);
       if (idx >= 0) mockedClients.splice(idx, 1);
