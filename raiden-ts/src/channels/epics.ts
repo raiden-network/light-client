@@ -62,7 +62,14 @@ import {
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
 import { isActionOf } from '../utils/actions';
-import { pluckDistinct, distinctRecordValues, retryAsync$, takeIf, retryWhile } from '../utils/rx';
+import {
+  pluckDistinct,
+  distinctRecordValues,
+  retryAsync$,
+  takeIf,
+  retryWhile,
+  completeWith,
+} from '../utils/rx';
 import { fromEthersEvent, getLogsByChunk$, logToContractEvent } from '../utils/ethers';
 import { encode } from '../utils/data';
 
@@ -133,13 +140,14 @@ export function initEpic(
  * @returns Observable of newBlock actions
  */
 export function initNewBlockEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { provider }: RaidenEpicDeps,
 ): Observable<newBlock> {
   return retryAsync$(() => provider.getBlockNumber(), provider.pollingInterval).pipe(
     mergeMap((blockNumber) => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
     map((blockNumber) => newBlock({ blockNumber })),
+    completeWith(action$),
   );
 }
 
@@ -232,13 +240,14 @@ export function initTokensRegistryEpic(
  * @returns Observable of raidenShutdown actions
  */
 export function initMonitorProviderEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { address, main, network, provider }: RaidenEpicDeps,
 ): Observable<raidenShutdown> {
   const mainAddress = main?.address ?? address;
   let isProviderAccount: boolean | undefined;
   return timer(0, provider.pollingInterval).pipe(
+    completeWith(action$),
     exhaustMap(async () => {
       try {
         const [accounts, currentNetwork] = await Promise.all([
@@ -601,6 +610,7 @@ export function channelEventsEpic(
         }),
       ),
     ),
+    completeWith(action$),
   );
 }
 
@@ -1479,7 +1489,7 @@ export function confirmationEpic(
   return combineLatest([
     state$.pipe(pluckDistinct('blockNumber')),
     state$.pipe(pluck('pendingTxs')),
-    config$.pipe(pluckDistinct('confirmationBlocks')),
+    config$.pipe(pluckDistinct('confirmationBlocks'), completeWith(state$)),
   ]).pipe(
     filter(([, pendingTxs]) => pendingTxs.length > 0),
     // exhaust will ignore blocks while concat$ is busy

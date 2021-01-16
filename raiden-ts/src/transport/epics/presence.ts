@@ -33,7 +33,7 @@ import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
 import { RaidenState } from '../../state';
 import { getUserPresence } from '../../utils/matrix';
-import { pluckDistinct, retryWhile } from '../../utils/rx';
+import { completeWith, pluckDistinct, retryWhile } from '../../utils/rx';
 import { matrixPresence } from '../actions';
 import { channelMonitored } from '../../channels/actions';
 import { parseCaps, stringifyCaps } from '../utils';
@@ -250,6 +250,7 @@ export function matrixPresenceUpdateEpic(
       // matrix's 'User.presence' sometimes fail to fire, but generic 'event' is always fired,
       // and User (retrieved via matrix.getUser) is up-to-date before 'event' emits
       fromEvent<MatrixPresenceEvent>(matrix, 'event').pipe(
+        completeWith(action$),
         filter((event) => event.getType() === 'm.presence'),
         // parse peer address from userId
         mergeMap(function* (event) {
@@ -274,6 +275,7 @@ export function matrixPresenceUpdateEpic(
     mergeMap((grouped$) =>
       grouped$.pipe(
         switchMap(([{ user, address, event }]) => fetchPresence$(user, address, event, deps)),
+        completeWith(action$),
       ),
     ),
     withLatestFrom(latest$),
@@ -323,11 +325,12 @@ export function matrixMonitorChannelPresenceEpic(
  * @returns Observable which never emits
  */
 export function matrixUpdateCapsEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { matrix$, config$ }: RaidenEpicDeps,
 ): Observable<never> {
   return config$.pipe(
+    completeWith(action$),
     pluck('caps'),
     distinctUntilChanged(isEqual),
     skip(1), // skip replay(1) and act only on changes

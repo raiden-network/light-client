@@ -4,7 +4,7 @@ import { filter, ignoreElements, take } from 'rxjs/operators';
 
 import { messageSend } from '../../messages/actions';
 import { isResponseOf } from '../../utils/actions';
-import { repeatUntil } from '../../utils/rx';
+import { completeWith, repeatUntil } from '../../utils/rx';
 import { RaidenAction } from '../../actions';
 import {
   MessageType,
@@ -73,6 +73,7 @@ export function retrySendUntil$(
 ): Observable<messageSend.request> {
   return dispatchAndWait$(action$, send, isResponseOf(messageSend, send.meta)).pipe(
     repeatUntil(notifier, delayMs),
+    completeWith(action$),
   );
 }
 

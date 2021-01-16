@@ -46,7 +46,7 @@ import { MatrixClient } from 'matrix-js-sdk';
 import { Capabilities } from '../../constants';
 import { Address, decode, isntNil } from '../../utils/types';
 import { jsonParse, jsonStringify } from '../../utils/data';
-import { timeoutFirst } from '../../utils/rx';
+import { completeWith, timeoutFirst } from '../../utils/rx';
 import { RaidenEpicDeps } from '../../types';
 import { RaidenAction } from '../../actions';
 import { dispatchAndWait$, exponentialBackoff } from '../../transfers/epics/utils';
@@ -585,6 +585,7 @@ export function rtcConnectEpic(
             !!getCap(caps, Capabilities.WEBRTC),
         ),
         switchMap(([action, config]) => handlePresenceChange$(action, action$, config, deps)),
+        completeWith(action$),
       ),
     ),
   );
