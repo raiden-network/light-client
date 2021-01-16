@@ -25,6 +25,10 @@ import {
   mergeMapTo,
   tap,
   concatMap,
+  ignoreElements,
+  endWith,
+  last,
+  delay,
 } from 'rxjs/operators';
 import { isntNil } from './types';
 import { ErrorMatches, matchError } from './error';
@@ -222,7 +226,42 @@ export function takeIf<T>(
       takeUntil(distinctCond$.pipe(filter((cond): cond is false => !cond))),
       // re-subscribe input$ when cond becomes truty
       repeatWhen(() => distinctCond$.pipe(filter((cond): cond is true => cond))),
+      completeWith(input$),
     );
+}
+
+/**
+ * Complete an input when another observable completes
+ *
+ * @param complete$ - Observable which will complete input when completed
+ * @param delayMs - Delay completion by some time after complete$ completes
+ * @returns Operator returning observable mirroring input, but completes when complete$ completes
+ */
+export function completeWith<T>(
+  complete$: Observable<unknown>,
+  delayMs?: number,
+): MonoTypeOperatorFunction<T> {
+  return (input$) => {
+    let output$ = input$.pipe(takeUntil(complete$.pipe(ignoreElements(), endWith(null))));
+    if (delayMs !== undefined) output$ = output$.pipe(delay(delayMs));
+    return output$;
+  };
+}
+
+/**
+ * Like a mergeMap which only subscribes to the inner observable once the input completes;
+ * Intermediary values are ignored; project receives optionally the last value emitted by input,
+ * or null if no value was emitted
+ *
+ * @param project - callback to generate the inner observable, receives last emitted value or null
+ * @returns Operator returning observable mirroring inner observable
+ */
+export function lastMap<T, R>(
+  project: (lastValue: T | null) => ObservableInput<R>,
+): OperatorFunction<T, R> {
+  return (input$) => {
+    return input$.pipe(last(undefined, null), mergeMap(project));
+  };
 }
 
 /**
