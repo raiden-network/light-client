@@ -38,6 +38,7 @@ import {
 import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
 import findKey from 'lodash/findKey';
+import constant from 'lodash/constant';
 
 import type { BigNumber } from '@ethersproject/bignumber';
 import { Zero } from '@ethersproject/constants';
@@ -90,6 +91,7 @@ import {
   channelSettle,
   channelSettleable,
   channelWithdrawn,
+  blockTime,
 } from './actions';
 import { assertTx, channelKey, groupChannel$, channelUniqueKey, approveIfNeeded$ } from './utils';
 
@@ -148,6 +150,54 @@ export function initNewBlockEpic(
     mergeMap((blockNumber) => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
     map((blockNumber) => newBlock({ blockNumber })),
     completeWith(action$),
+  );
+}
+
+/**
+ * Every fetchEach=20 blocks, update average block time since previous request
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps members
+ * @param deps.provider - Eth provider
+ * @returns Observable of blockTime actions
+ */
+export function blockTimeEpic(
+  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { provider }: RaidenEpicDeps,
+): Observable<blockTime> {
+  const fetchEach = 20;
+  type BlockInfo = readonly [blockNumber: number, timestamp: number, blockTime?: number];
+  let lastInfo: BlockInfo = [-fetchEach, 0]; // previously fetched block info
+
+  // get block info for a given block number
+  const getBlockInfo$ = (blockNumber: number) =>
+    defer(async () =>
+      provider
+        .getBlock(blockNumber)
+        .then(({ timestamp }): BlockInfo => [blockNumber, timestamp * 1000]),
+    );
+
+  return action$.pipe(
+    filter(newBlock.is),
+    pluck('payload', 'blockNumber'),
+    filter((blockNumber) => blockNumber >= lastInfo[0] + fetchEach),
+    exhaustMap((blockNumber) => {
+      const prevInfo$ =
+        lastInfo[0] > 0 ? of(lastInfo) : getBlockInfo$(Math.max(1, blockNumber - fetchEach));
+      const curInfo$ = getBlockInfo$(blockNumber);
+      return combineLatest([prevInfo$, curInfo$]).pipe(
+        mergeMap(function* ([prevInfo, curInfo]) {
+          const avgBlockTime = (curInfo[1] - prevInfo[1]) / (curInfo[0] - prevInfo[0]);
+          // emit a new avg blockTime only if it changed
+          if (avgBlockTime !== lastInfo[2]) yield avgBlockTime;
+          lastInfo = [curInfo[0], curInfo[1], avgBlockTime]; // persist last BlockInfo
+        }),
+        catchError(constant(EMPTY)), // ignore errors to retry next block
+      );
+    }),
+    map((avgBlockTime) => blockTime({ blockTime: avgBlockTime })),
   );
 }
 
