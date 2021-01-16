@@ -116,6 +116,7 @@ describe('send transfer', () => {
       channel: channelUniqueKey(getChannel(raiden, partner)),
       secrethash,
     });
+    await sleep(100);
 
     expectChannelsAreInSync([raiden, partner]);
   });
