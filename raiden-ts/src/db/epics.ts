@@ -1,12 +1,13 @@
 import { Observable } from 'rxjs';
-import { ignoreElements, first, finalize } from 'rxjs/operators';
+import { ignoreElements } from 'rxjs/operators';
 
 import { RaidenAction } from '../actions';
 import { RaidenState } from '../state';
 import { RaidenEpicDeps } from '../types';
+import { completeWith } from '../utils/rx';
 
 /**
- * Shutdown database instance when raiden shuts down
+ * An epic to error globally in case db.busy$ errors (i.e. database errors)
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
@@ -14,22 +15,10 @@ import { RaidenEpicDeps } from '../types';
  * @param deps.db - Database instance
  * @returns observable to shutdown db instance on raidenShutdown
  */
-export function dbShutdownEpic(
+export function dbErrorsEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { db }: RaidenEpicDeps,
 ): Observable<never> {
-  return action$.pipe(
-    ignoreElements(),
-    finalize(async () => {
-      await db.busy$.pipe(first((busy) => !busy)).toPromise();
-      db.busy$.next(true);
-      try {
-        await db.close();
-      } finally {
-        db.busy$.next(false);
-        db.busy$.complete();
-      }
-    }),
-  );
+  return db.busy$.pipe(ignoreElements(), completeWith(action$));
 }

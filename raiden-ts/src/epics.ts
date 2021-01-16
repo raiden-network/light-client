@@ -1,16 +1,4 @@
-import {
-  Observable,
-  from,
-  of,
-  combineLatest,
-  using,
-  throwError,
-  merge,
-  timer,
-  defer,
-  EMPTY,
-  concat,
-} from 'rxjs';
+import { Observable, from, of, combineLatest, using, timer, defer, EMPTY, concat } from 'rxjs';
 import {
   catchError,
   filter,
@@ -29,6 +17,11 @@ import {
   endWith,
   shareReplay,
   withLatestFrom,
+  delayWhen,
+  take,
+  first,
+  tap,
+  finalize,
 } from 'rxjs/operators';
 import { MaxUint256 } from '@ethersproject/constants';
 import negate from 'lodash/negate';
@@ -46,7 +39,6 @@ import { getPresences$ } from './transport/utils';
 import { rtcChannel } from './transport/actions';
 import { pfsListUpdated, udcDeposit } from './services/actions';
 import { Address, UInt } from './utils/types';
-import { isActionOf } from './utils/actions';
 
 import * as DatabaseEpics from './db/epics';
 import * as ChannelsEpics from './channels/epics';
@@ -274,36 +266,59 @@ export function raidenRootEpic(
   deps: RaidenEpicDeps,
 ): Observable<RaidenAction> {
   // observable which emits once when a raidenShutdown action goes through actions pipeline
-  const shutdownNotification = action$.pipe(filter(isActionOf(raidenShutdown))),
+  const shutdownNotification = action$.pipe(filter(raidenShutdown.is), take(1)),
     // actions pipeline, but ends with (including) a raidenShutdown action
-    limitedAction$ = action$.pipe(
-      takeWhile<RaidenAction>(negate(isActionOf(raidenShutdown)), true),
-    ),
+    limitedAction$ = action$.pipe(takeWhile<RaidenAction>(negate(raidenShutdown.is), true)),
     // states pipeline, but ends when shutdownNotification emits
     limitedState$ = state$.pipe(takeUntil(shutdownNotification));
 
+  // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through;
   return using(
     // wire deps.latest$ when observableFactory below gets subscribed, and tears down on complete
     () => {
-      const sub = getLatest$(limitedAction$, limitedState$, deps).subscribe(deps.latest$);
+      const sub = getLatest$(action$, state$, deps).subscribe(deps.latest$);
       // ensure deps.latest$ is completed if teardown happens before getLatest$ completion
       sub.add(() => deps.latest$.complete());
       return sub;
     },
-    () =>
-      // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through;
-      // also merge deps.db.busy$ errors, in order to shut down epics if they occur
-      merge(from(Object.values(RaidenEpics)), deps.db.busy$.pipe(ignoreElements())).pipe(
-        mergeMap((epic) =>
-          epic(limitedAction$, limitedState$, deps).pipe(
+    () => {
+      const subscribedEpics = new Set<string>();
+      // main epics output
+      const output$ = from(Object.values(RaidenEpics)).pipe(
+        mergeMap((epic) => {
+          subscribedEpics.add(epic.name);
+          return epic(limitedAction$, limitedState$, deps).pipe(
             catchError((err) => {
               deps.log.error('Epic error', epic.name, epic, err);
-              return throwError(err);
+              return of(raidenShutdown({ reason: err }));
             }),
+            finalize(() => subscribedEpics.delete(epic.name)),
+          );
+        }),
+        takeUntil(
+          shutdownNotification.pipe(
+            withLatestFrom(deps.config$),
+            // give up to httpTimeout for the epics to complete on their own
+            delayWhen(([_, { httpTimeout }]) => timer(httpTimeout)),
+            tap(() => deps.log.warn('Pending Epics :', subscribedEpics)),
           ),
         ),
-        catchError((err) => of(raidenShutdown({ reason: err }))),
-        takeUntil(shutdownNotification),
-      ),
+      );
+      // also concat db teardown tasks, to be done after main epic completes
+      const teardown$ = deps.db.busy$.pipe(
+        first((busy) => !busy),
+        tap(() => deps.db.busy$.next(true)),
+        // ignore db.busy$ errors, they're merged in the output by dbErrorsEpic
+        catchError(() => of(null)),
+        mergeMap(async () => deps.db.close()),
+        ignoreElements(),
+        finalize(() => {
+          deps.db.busy$.next(false);
+          deps.db.busy$.complete();
+        }),
+      );
+      // subscribe to teardown$ only after output$ completes
+      return concat(output$, teardown$);
+    },
   );
 }
