@@ -35,7 +35,7 @@ import { getServerName } from '../../utils/matrix';
 import { Direction } from '../../transfers/state';
 import { matrixRoom, matrixRoomLeave, matrixPresence } from '../actions';
 import { getCap, getSortedAddresses } from '../utils';
-import { matchError } from '../../utils/error';
+import { matchError, networkErrors } from '../../utils/error';
 import { globalRoomNames, getRoom$, roomMatch } from './helpers';
 
 /**
@@ -165,10 +165,7 @@ export function matrixCreateRoomEpic(
               }),
             ),
             map(({ room_id: roomId }) => matrixRoom({ roomId }, { address: peer })),
-            retryWhile(
-              intervalFromConfig(config$),
-              { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
-            ),
+            retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
             catchError((err) => (log.error('Error creating room, ignoring', err), EMPTY)),
           ),
         ),
@@ -273,7 +270,7 @@ export function matrixHandleInvitesEpic(
             log.info("Leaving invited room because we don't know the inviter", event);
             return matrix.leave(member.roomId);
           }).pipe(
-            retryWhile(intervalFromConfig(config$), { onErrors: [429] }),
+            retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
             catchError((err) => (log.warn('Error leaving invited room, ignoring', err), EMPTY)),
             ignoreElements(),
           ),
@@ -284,7 +281,7 @@ export function matrixHandleInvitesEpic(
       // join room and emit MatrixRoomAction to make it default/first option for sender address
       defer(async () => matrix.joinRoom(member.roomId, { syncRoom: true })).pipe(
         mapTo(matrixRoom({ roomId: member.roomId }, { address: senderPresence.meta.address })),
-        retryWhile(intervalFromConfig(config$), { onErrors: [429] }),
+        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
         catchError((err) => (log.warn('Error joining invited room, ignoring', err), EMPTY)),
       ),
     ),

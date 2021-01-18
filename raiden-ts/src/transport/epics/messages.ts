@@ -53,6 +53,7 @@ import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
 import { LruCache } from '../../utils/lru';
 import { getPresenceByUserId, getCap } from '../utils';
+import { networkErrors } from '../../utils/error';
 import { globalRoomNames, roomMatch, getRoom$, parseMessage } from './helpers';
 
 function getMessageBody(message: string | Signed<Message>): string {
@@ -141,7 +142,7 @@ function sendAndWait$<C extends { msgtype: string; body: string }>(
     }),
     retryWhile(intervalFromConfig(config$), {
       maxRetries: 3,
-      onErrors: [429, 500],
+      onErrors: networkErrors,
       log: log.warn,
     }),
     take(1),
@@ -218,7 +219,7 @@ function sendGlobalMessages(
       retries++;
       return matrix.sendEvent(room.roomId, 'm.room.message', { body, msgtype: 'm.text' }, '');
     }),
-    retryWhile(intervalFromConfig(config$), { maxRetries: 3, onErrors: [429, 500] }),
+    retryWhile(intervalFromConfig(config$), { maxRetries: 3, onErrors: networkErrors }),
     tap(() =>
       log.info('messageGlobalSend success', {
         tookMs: Date.now() - start,

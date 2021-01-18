@@ -126,7 +126,7 @@ function fetchLastIou$(
         },
       ).pipe(
         timeout(httpTimeout),
-        retryWhile(intervalFromConfig(config$), { onErrors: [429, 500, 'timeout', 'Timeout'] }),
+        retryWhile(intervalFromConfig(config$), { onErrors: [...networkErrors, 'TimeoutError'] }),
       ),
     ),
     withLatestFrom(latest$.pipe(pluck('state', 'blockNumber')), config$),
@@ -1284,7 +1284,7 @@ function requestPfs$(
   }).pipe(
     timeout(httpTimeout),
     retryWhile(intervalFromConfig(of(config)), {
-      onErrors: [429, 500, 'timeout', 'Timeout'],
+      onErrors: [...networkErrors, 'TimeoutError'],
     }),
     mergeMap(async (pfsResponse) => ({
       pfsResponse,

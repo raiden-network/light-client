@@ -26,7 +26,7 @@ import { verifyMessage } from '@ethersproject/wallet';
 import { MatrixClient, MatrixEvent, User } from 'matrix-js-sdk';
 
 import { assert } from '../../utils';
-import { RaidenError, ErrorCodes } from '../../utils/error';
+import { RaidenError, ErrorCodes, networkErrors } from '../../utils/error';
 import { Address } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
 import { RaidenEpicDeps } from '../../types';
@@ -61,7 +61,7 @@ function searchAddressPresence$(
 ) {
   // search for any user containing the address of interest in its userId
   return defer(async () => matrix.searchUserDirectory({ term: address.toLowerCase() })).pipe(
-    retryWhile(intervalFromConfig(config$), { onErrors: [429, 500] }),
+    retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
     // for every result matches, verify displayName signature is address of interest
     mergeMap(function* ({ results }) {
       for (const user of results) {
@@ -81,7 +81,7 @@ function searchAddressPresence$(
       (user) =>
         defer(async () => getUserPresence(matrix, user.user_id)).pipe(
           map((presence) => ({ ...presence, ...user })),
-          retryWhile(intervalFromConfig(config$), { onErrors: [429, 500] }),
+          retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
           catchError((err) => {
             log.info('Error fetching user presence, ignoring:', err);
             return EMPTY;
@@ -216,7 +216,7 @@ function fetchPresence$(
         { address: recovered },
       );
     }),
-    retryWhile(intervalFromConfig(config$), { onErrors: [429] }),
+    retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
     catchError((err) => {
       log.warn('Error validating presence event, ignoring', user.userId, event, err);
       return EMPTY;
