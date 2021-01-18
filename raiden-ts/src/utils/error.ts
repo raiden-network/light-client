@@ -34,7 +34,7 @@ export function matchError(match: ErrorMatch | ErrorMatches, error: any): boolea
 export function matchError(match: ErrorMatch | ErrorMatches, error?: any) {
   const _errorMatcher = (match: ErrorMatch, error: any): boolean => {
     let res;
-    if (typeof match === 'string') res = error?.message?.includes(match);
+    if (typeof match === 'string') res = error?.name === match || error?.message?.includes(match);
     else if (typeof match === 'number') res = error?.httpStatus === match;
     else res = Object.entries(match).every(([k, v]) => error?.[k] === v);
     return res;
@@ -53,6 +53,9 @@ export const networkErrors: ErrorMatches = [
   { code: 'SERVER_ERROR' },
   { code: 'NETWORK_ERROR' },
   { code: 'ENOTFOUND' },
+  429,
+  500,
+  503,
 ];
 export const txNonceErrors: ErrorMatches = [
   'replacement fee too low',

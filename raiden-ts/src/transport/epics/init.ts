@@ -48,7 +48,7 @@ import { RaidenState } from '../../state';
 import { RAIDEN_DEVICE_ID } from '../../constants';
 import { getServerName } from '../../utils/matrix';
 import { decode } from '../../utils/types';
-import { pluckDistinct, retryAsync$, retryWhile } from '../../utils/rx';
+import { pluckDistinct, retryWhile } from '../../utils/rx';
 import { matrixSetup } from '../actions';
 import { RaidenMatrixSetup } from '../state';
 import { Caps } from '../types';
@@ -143,10 +143,7 @@ function startMatrixSync(
             ),
           );
         }),
-        retryWhile(
-          intervalFromConfig(config$),
-          { maxRetries: 10, onErrors: [429] }, // retry rate-limit errors only
-        ),
+        retryWhile(intervalFromConfig(config$), { maxRetries: 10, onErrors: networkErrors }),
       ),
     ),
     ignoreElements(),
@@ -291,7 +288,6 @@ function setupMatrixClient$(
                   deviceId: device_id,
                   displayName: signedUserId,
                 },
-                pollingInterval,
               })),
             );
           }),
@@ -299,17 +295,15 @@ function setupMatrixClient$(
       }
     }),
     // the APIs below are authenticated, and therefore also act as validator
-    mergeMap(({ matrix, server, setup, pollingInterval }) =>
+    mergeMap(({ matrix, server, setup }) =>
       // set these properties before starting sync
-      retryAsync$(
-        () =>
-          Promise.all([
-            matrix.setDisplayName(setup.displayName),
-            matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
-          ]),
-        pollingInterval,
-        { onErrors: [429] },
+      defer(() =>
+        Promise.all([
+          matrix.setDisplayName(setup.displayName),
+          matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
+        ]),
       ).pipe(
+        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
         mapTo({ matrix, server, setup }), // return triplet again
       ),
     ),
