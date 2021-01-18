@@ -146,7 +146,8 @@ function matrixWebrtcEvents$<T extends RtcEventType>(
   action$: Observable<RaidenAction>,
   type: T,
   sender: Address,
-  callId?: string,
+  callId: string | undefined,
+  { log }: Partial<Pick<RaidenEpicDeps, 'log'>> = {},
 ) {
   return action$.pipe(
     filter(messageReceived.is),
@@ -156,7 +157,14 @@ function matrixWebrtcEvents$<T extends RtcEventType>(
     mergeMap(function* (action) {
       try {
         yield decode(rtcCodecs[type], jsonParse(action.payload.text));
-      } catch (e) {}
+      } catch (error) {
+        log?.info('Failed to decode WebRTC signaling message, ignoring', {
+          text: action.payload.text,
+          peerAddr: action.meta.address,
+          peerId: action.payload.userId!,
+          error,
+        });
+      }
     }),
     filter((e) => !callId || e.call_id === callId),
   );
@@ -176,7 +184,9 @@ function handleCandidates$(
 ) {
   return merge(
     // when receiving candidates from peer, add it locally
-    matrixWebrtcEvents$(action$, RtcEventType.candidates, info.peerAddress, info.callId).pipe(
+    matrixWebrtcEvents$(action$, RtcEventType.candidates, info.peerAddress, info.callId, {
+      log,
+    }).pipe(
       tap((e) => log.debug('RTC: received candidates', info.callId, e.candidates)),
       mergeMap((event) => from((event.candidates ?? []) as RTCIceCandidateInit[])),
       mergeMap(async (candidate) => {
@@ -255,7 +265,13 @@ function setupCallerDataChannel$(
             let emitted = 0;
             return merge(
               // wait for answer
-              matrixWebrtcEvents$(action$, RtcEventType.answer, peerAddress, info.callId).pipe(
+              matrixWebrtcEvents$(
+                action$,
+                RtcEventType.answer,
+                peerAddress,
+                info.callId,
+                deps,
+              ).pipe(
                 take(1),
                 mergeMap(async (event) => {
                   deps.log.info('RTC: got answer', event.call_id);
@@ -290,7 +306,7 @@ function setupCalleeDataChannel$(
   deps: Pick<RaidenEpicDeps, 'matrix$' | 'log' | 'latest$' | 'config$'>,
 ): Observable<RtcConnPair | messageSend.request> {
   const { peerAddress } = info;
-  return matrixWebrtcEvents$(action$, RtcEventType.offer, peerAddress).pipe(
+  return matrixWebrtcEvents$(action$, RtcEventType.offer, peerAddress, undefined, deps).pipe(
     tap((event) => deps.log.info('RTC: got invite', event.call_id)),
     mergeMap((event) =>
       deps.matrix$.pipe(
@@ -475,7 +491,9 @@ function handlePresenceChange$(
       merge(
         dataChannel$,
         // throws and restart if peer hangs up
-        matrixWebrtcEvents$(action$, RtcEventType.hangup, info.peerAddress, info.callId).pipe(
+        matrixWebrtcEvents$(action$, RtcEventType.hangup, info.peerAddress, info.callId, {
+          log,
+        }).pipe(
           // no need for specific error since this is just logged and ignored
           mergeMapTo(throwError(new Error(hangUpError))),
         ),
