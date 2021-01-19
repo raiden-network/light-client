@@ -68,6 +68,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
   - [SDK Documentation](#sdk-documentation)
   - [CLI Documentation](#cli-documentation)
   - [Install and Run the dApp](#install-and-run-the-dapp)
+- [Requirements for Safe Usage](#requirements-for-safe-usage)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
 - [License](#license)
@@ -146,6 +147,8 @@ If you are new to Raiden, we recommend:
 - Reading our blog posts on [Medium](https://medium.com/@raiden_network).
 
 ## Try Out the Raiden dApp
+
+> Before trying out the dApp, make sure that you've read and understood the [requirements for safe usage](#requirements-for-safe-usage)
 
 The Raiden dApp is a demo and the first dApp to be built on the SDK. It's a single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and uses [vuetify](https://vuetifyjs.com) Material Design as UI framework.
 
@@ -266,6 +269,14 @@ Go to the [CLI README](https://github.com/raiden-network/light-client/tree/maste
    ```
 
    After the development server starts, navigate to `http://localhost:8080` to use the Raiden dApp.
+
+## Requirements for Safe Usage
+
+In order to use Raiden correctly and safely there are some things that need to be taken care of by the user:
+
+- **Layer 1 works reliably:** That means that you have got a web3 provider (eg. MetaMask) that is always synced and working reliably. If there are any problems or bugs on the client then Raiden can not work reliably.
+
+- **Persistency of local DB:** Your local state database is stored in your browser storage (IndexedDB). This data should not be deleted by the user or tampered with in any way. Frequent backups are also recommended. Deleting this storage could mean losing funds.
 
 ## Roadmap and Timeline
 
