@@ -55,6 +55,7 @@ export const networkErrors: ErrorMatches = [
   { code: 'ENOTFOUND' },
   429,
   500,
+  502,
   503,
 ];
 export const txNonceErrors: ErrorMatches = [
