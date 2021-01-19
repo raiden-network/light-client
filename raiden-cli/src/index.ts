@@ -5,7 +5,7 @@ import inquirer from 'inquirer';
 import yargs from 'yargs/yargs';
 import { LocalStorage } from 'node-localstorage';
 import { Wallet, ethers } from 'ethers';
-import { Raiden, Address, RaidenConfig, assert, UInt } from 'raiden-ts';
+import { Raiden, Address, RaidenConfig, assert, UInt, Capabilities } from 'raiden-ts';
 
 import DISCLAIMER from './disclaimer.json';
 import DEFAULT_RAIDEN_CONFIG from './config.json';
@@ -16,6 +16,7 @@ import { setupLoglevel } from './utils/logging';
 function parseArguments() {
   const argv = yargs(process.argv.slice(2));
   return argv
+    .env('RAIDEN')
     .usage('Usage: $0 [options]')
     .options({
       datadir: {
@@ -132,8 +133,13 @@ function parseArguments() {
         default: false,
         desc: "Enables monitoring if there's a UDC deposit",
       },
+      enableMediation: {
+        type: 'boolean',
+        default: false,
+        desc: 'Enables support for mediated payments (unsupported).',
+        hidden: true, // hidden from help because not officially supported
+      },
     })
-    .env('RAIDEN')
     .help()
     .alias('h', 'help')
     .version()
@@ -268,6 +274,15 @@ async function createRaidenConfig(
     config = { ...config, pfs: argv.pathfindingServiceAddress };
 
   if (!argv.enableMonitoring) config = { ...config, monitoringReward: null };
+
+  if (argv.enableMediation)
+    config = {
+      ...config,
+      caps: {
+        ...config.caps,
+        [Capabilities.MEDIATE]: 1,
+      },
+    };
 
   return config;
 }
