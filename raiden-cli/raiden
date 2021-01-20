@@ -1,5 +1,9 @@
 #!/bin/sh
 
+set -a
+ENV="$( dirname $0 )/.env"
+[ -e "$ENV" ] && . "${ENV}"
+
 RAIDEN="$( dirname $0 )/index.js"
 [ ! -e "$RAIDEN" ] && RAIDEN="$( dirname $0 )/build/index.js"
 [ ! -e "$RAIDEN" ] && RAIDEN="$( dirname $0 )/bundle/index.js"
