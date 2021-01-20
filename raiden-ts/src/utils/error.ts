@@ -37,6 +37,8 @@ export function matchError(match: ErrorMatch | ErrorMatches, error?: any) {
     if (typeof match === 'string') res = error?.name === match || error?.message?.includes(match);
     else if (typeof match === 'number') res = error?.httpStatus === match;
     else res = Object.entries(match).every(([k, v]) => error?.[k] === v);
+    // some errors include a sub-error; match it here as well, if needed
+    if (!res && error && 'error' in error) res = _errorMatcher(match, error.error);
     return res;
   };
   const errorMatcher = Array.isArray(match)
@@ -58,7 +60,12 @@ export const networkErrors: ErrorMatches = [
   502,
   503,
 ];
-export const txNonceErrors: ErrorMatches = [
+const txEstimateErrors: ErrorMatches = [
+  'always failing transaction',
+  'cannot estimate gas',
+  { code: 'UNPREDICTABLE_GAS_LIMIT' },
+];
+const txNonceErrors: ErrorMatches = [
   'replacement fee too low',
   'gas price supplied is too low',
   'nonce is too low',
@@ -66,14 +73,16 @@ export const txNonceErrors: ErrorMatches = [
   'already known',
   'Transaction with the same hash was already imported',
 ];
-export const txFailErrors: ErrorMatches = [
-  'always failing transaction',
+const txFailErrors: ErrorMatches = [
   'execution failed due to an exception',
   'transaction failed',
   'execution reverted',
-  'cannot estimate gas',
 ];
-export const commonTxErrors: ErrorMatches = [...txNonceErrors, ...networkErrors];
+export const commonTxErrors: ErrorMatches = [
+  ...txEstimateErrors,
+  ...txNonceErrors,
+  ...networkErrors,
+];
 export const commonAndFailTxErrors: ErrorMatches = [...commonTxErrors, ...txFailErrors];
 
 export class RaidenError extends Error {
