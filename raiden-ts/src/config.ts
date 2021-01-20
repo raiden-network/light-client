@@ -123,11 +123,22 @@ export function makeDefaultConfig(
       ? 'https://raw.githubusercontent.com/raiden-network/raiden-service-bundle/master/known_servers/known_servers-production-v1.2.0.json'
       : 'https://raw.githubusercontent.com/raiden-network/raiden-service-bundle/master/known_servers/known_servers-development-v1.2.0.json';
 
+  // merge caps independently
+  const caps =
+    overwrites?.caps === null
+      ? null
+      : {
+          [Capabilities.DELIVERY]: 0,
+          [Capabilities.MEDIATE]: 0,
+          [Capabilities.WEBRTC]: 1,
+          [Capabilities.TO_DEVICE]: 1,
+          ...overwrites?.caps,
+        };
   return {
     matrixServerLookup: matrixServerInfos,
     settleTimeout: 500,
     revealTimeout: 50,
-    expiryFactor: 1.1, // must be >= 1.1
+    expiryFactor: 1.1, // must be > 1.0
     httpTimeout: 30e3,
     discoveryRoom: `raiden_${networkName}_discovery`,
     pfsRoom: `raiden_${networkName}_path_finding`,
@@ -142,18 +153,13 @@ export function makeDefaultConfig(
     // SVT also uses 18 decimals, like Ether, so parseEther works
     monitoringReward: parseEther('5') as UInt<32>,
     logger: 'info',
-    caps: {
-      [Capabilities.DELIVERY]: 0,
-      [Capabilities.MEDIATE]: 0,
-      [Capabilities.WEBRTC]: 1,
-      [Capabilities.TO_DEVICE]: 1,
-    },
     fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     rateToSvt: {},
     pollingInterval: 5000,
     minimumAllowance: MaxUint256 as UInt<32>,
     autoSettle: false,
     ...overwrites,
+    caps, // merged caps overwrites 'overwrites.caps'
   };
 }
 
