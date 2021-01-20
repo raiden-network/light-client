@@ -156,7 +156,8 @@ function matrixWebrtcEvents$<T extends RtcEventType>(
     ),
     mergeMap(function* (action) {
       try {
-        yield decode(rtcCodecs[type], jsonParse(action.payload.text));
+        const json = jsonParse(action.payload.text);
+        if (json['type'] === type) yield decode(rtcCodecs[type], json);
       } catch (error) {
         log?.info('Failed to decode WebRTC signaling message, ignoring', {
           text: action.payload.text,
@@ -291,7 +292,10 @@ function setupCallerDataChannel$(
               // merge emits connection pair on either (or both) request sent or answer received;
               // this filter ensures connection pair is emitted only once, while keeping observable
               // from completing until all merged observables complete
-            ).pipe(filter((value) => (isRtcConnPair(value) ? !emitted++ : true)));
+            ).pipe(
+              filter((value) => (isRtcConnPair(value) ? !emitted++ : true)),
+              finalize(() => (!emitted ? connection.close() : null)),
+            );
           }),
         ),
       );
