@@ -7,12 +7,16 @@ import { CombinedStoreState } from '@/store/index';
 const VERSION_FILE_PATH = (process.env.BASE_URL ?? '/') + 'version.json';
 
 export default class ServiceWorkerAssistant {
-  constructor(private store: Store<CombinedStoreState>) {
+  constructor(
+    private store: Store<CombinedStoreState>,
+    updateAvailableVersionInterval = 1000 * 60 * 60,
+    verifyCacheValidityInverval = 1000 * 10,
+  ) {
     if (navigator.serviceWorker) {
-      navigator.serviceWorker.onmessage = this.onMessage;
+      navigator.serviceWorker.addEventListener('message', this.onMessage);
       this.updateAvailableVersion();
-      setInterval(this.updateAvailableVersion, 1000 * 60 * 60);
-      setInterval(this.verifyCacheValidity, 1000 * 10);
+      setInterval(this.updateAvailableVersion, updateAvailableVersionInterval);
+      setInterval(this.verifyCacheValidity, verifyCacheValidityInverval);
     }
   }
 
@@ -56,7 +60,8 @@ export default class ServiceWorkerAssistant {
     }
   };
 
-  private verifyCacheValidity = (): void => {
+  // This function declared as asynchrounous for more reliable interval tests.
+  private verifyCacheValidity = async (): Promise<void> => {
     navigator.serviceWorker.controller?.postMessage(ServiceWorkerAssistantMessages.VERIFY_CACHE);
   };
 
