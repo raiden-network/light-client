@@ -60,8 +60,7 @@ export default class ServiceWorkerAssistant {
     }
   };
 
-  // This function declared as asynchrounous for more reliable interval tests.
-  private verifyCacheValidity = async (): Promise<void> => {
+  private verifyCacheValidity = (): void => {
     navigator.serviceWorker.controller?.postMessage(ServiceWorkerAssistantMessages.VERIFY_CACHE);
   };
 
