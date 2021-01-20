@@ -1239,7 +1239,12 @@ export async function makeRaiden(
       revealTimeout: 50,
       confirmationBlocks: 5,
       logger: 'debug',
-      caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 0, [Capabilities.MEDIATE]: 1 },
+      caps: {
+        [Capabilities.DELIVERY]: 0,
+        [Capabilities.WEBRTC]: 0,
+        [Capabilities.TO_DEVICE]: 0,
+        [Capabilities.MEDIATE]: 1,
+      },
     },
   );
   const latest$ = new ReplaySubject<Latest>(1);
