@@ -57,7 +57,6 @@ import {
   assert,
   networkErrors,
   commonAndFailTxErrors,
-  commonTxErrors,
   matchError,
 } from '../utils/error';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
@@ -761,7 +760,7 @@ export function channelOpenEpic(
           // also retry txFailErrors: if it's caused by partner having opened, takeUntil will see
           retryWhile(intervalFromConfig(config$), {
             onErrors: commonAndFailTxErrors,
-            log: log.debug,
+            log: log.info,
           }),
           // if channel gets opened while retrying (e.g. by partner), give up to avoid erroring
           takeUntil(
@@ -824,7 +823,7 @@ function makeDeposit$(
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
-    retryWhile(intervalFromConfig(config$), { onErrors: commonAndFailTxErrors, log: log.debug }),
+    retryWhile(intervalFromConfig(config$), { onErrors: commonAndFailTxErrors, log: log.info }),
   );
 }
 
@@ -1033,9 +1032,19 @@ export function channelCloseEpic(
           ).pipe(
             assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log, provider }),
             retryWhile(intervalFromConfig(config$), {
-              onErrors: commonTxErrors,
-              log: log.debug,
+              onErrors: commonAndFailTxErrors,
+              log: log.info,
             }),
+            // if channel gets closed while retrying (e.g. by partner), give up
+            takeUntil(
+              action$.pipe(
+                filter(channelClose.success.is),
+                filter(
+                  (action) =>
+                    action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
+                ),
+              ),
+            ),
           ),
         ),
         // if succeeded, return a empty/completed observable
@@ -1143,7 +1152,10 @@ export function channelUpdateEpic(
               log,
               provider,
             }),
-            retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
+            retryWhile(intervalFromConfig(config$), {
+              onErrors: commonAndFailTxErrors,
+              log: log.info,
+            }),
           ),
         ),
         // if succeeded, return a empty/completed observable
@@ -1260,24 +1272,14 @@ export function channelSettleEpic(
         return of(channelSettle.failure(error, action.meta));
       }
 
-      return retryAsync$(
-        () =>
-          // fetch closing/updated balanceHash for each end
-          Promise.all([
-            tokenNetworkContract.callStatic.getChannelParticipantInfo(
-              channel.id,
-              address,
-              partner,
-            ),
-            tokenNetworkContract.callStatic.getChannelParticipantInfo(
-              channel.id,
-              partner,
-              address,
-            ),
-          ]),
-        provider.pollingInterval,
-        { onErrors: networkErrors },
+      // fetch closing/updated balanceHash for each end
+      return defer(() =>
+        Promise.all([
+          tokenNetworkContract.callStatic.getChannelParticipantInfo(channel.id, address, partner),
+          tokenNetworkContract.callStatic.getChannelParticipantInfo(channel.id, partner, address),
+        ]),
       ).pipe(
+        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
         mergeMap(([{ 3: ownBH }, { 3: partnerBH }]) => {
           let ownBP$;
           if (ownBH === createBalanceHash(channel.own.balanceProof)) {
@@ -1359,9 +1361,20 @@ export function channelSettleEpic(
               ).pipe(
                 assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log, provider }),
                 retryWhile(intervalFromConfig(config$), {
-                  onErrors: commonTxErrors,
-                  log: log.debug,
+                  onErrors: commonAndFailTxErrors,
+                  log: log.info,
                 }),
+                // if channel gets settled while retrying (e.g. by partner), give up
+                takeUntil(
+                  action$.pipe(
+                    filter(channelSettle.success.is),
+                    filter(
+                      (action) =>
+                        action.meta.tokenNetwork === tokenNetwork &&
+                        action.meta.partner === partner,
+                    ),
+                  ),
+                ),
               ),
             ),
           );
@@ -1463,7 +1476,10 @@ export function channelUnlockEpic(
         tokenNetworkContract.unlock(action.payload.id, address, partner, locks),
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log, provider }),
-        retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
+        retryWhile(intervalFromConfig(config$), {
+          onErrors: commonAndFailTxErrors,
+          log: log.info,
+        }),
         ignoreElements(),
         catchError((error) => {
           log.error('Error unlocking pending locks on-chain, ignoring', error);
