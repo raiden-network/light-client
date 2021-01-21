@@ -23,7 +23,7 @@ yarn workspace raiden-dapp run serve
 
 Once the development server has been started, navigate to `http://localhost:8080` to start using the Raiden dApp.
 
-> Note that for the Raiden dApp to work it requires MetaMask or some other Web3 provider (wallet apps with dApp support) to be installed on your browser.
+> Note that the Raiden dApp requires MetaMask or another Web3 provider (wallet apps with dApp support) to be installed on your browser.
 
 ## Recover Backup locally
 
