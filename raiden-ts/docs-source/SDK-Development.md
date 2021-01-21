@@ -264,6 +264,7 @@ The SDK being a TypeScript/JavaScript library, debugging it can use a lot of the
 6. State can be inspected and even edited as a JSON (while the SDK is **not** running) from the app's `localStorage`, in the `Storage` or `Application` tabs.
 7. While most epics variables and dependencies aren't persisted in the Raiden instance, but only used contextually in its epic, one can log them in any step and access it by right-clicking in the logged out object. If the need arises, the [RaidenEpicDeps](https://github.com/raiden-network/light-client/blob/84afc0939d267e99636147e8241d7bda4f55cbb1/raiden/src/types.ts#L32) object can be saved in a `Raiden` property in the constructor and acessed from the console as well, giving full access to the instance details and variables.
 8. Looking at the in-browser sourcecode can be tricky, as even with proper maps, it'll be the `webpack`ed version of the `tsc`ed sourcecode. Comparing the sources in `webpack-internal` to the actual `.ts` sourcecode can give good hints on what's failing.
+9. The Redux store can be visualized and even be modified with the Redux DevTools Extension. Install it for [Firefox](https://addons.mozilla.org/en-US/firefox/addon/reduxdevtools/) or [Chrome](https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd) and go to the `Redux` tab in your Dev Tools.
 
 ### With tests
 
