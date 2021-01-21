@@ -15,23 +15,25 @@ version of the Raiden dApp at [https://lightclient.raiden.network/](https://ligh
 
 Perform the following steps from the root directory:
 
-1. **Install dependencies**  
-   
+1. **Install dependencies**
+
    ```bash
    yarn install
    ```
 
-2. **Build the SKD**  
+2. **Build the SKD**
 
    ```bash
    yarn workspace raiden-ts build
    ```
 
-3. **Serve the dApp for development**  
+3. **Serve the dApp for development**
 
    ```bash
    yarn workspace raiden-dapp serve
    ```
+
+   **Note**: You need use the `localhost` based address to access the dApp. The dApp uses service workers which require an encrypted connection, therefore the network address will not work.
 
 ## Compile the Raiden dApp for Production
 
@@ -45,13 +47,13 @@ yarn workspace raiden-dapp build
 
 From the root directory run:
 
-- **Unit Tests**  
+- **Unit Tests**
 
   ```bash
   yarn workspace raiden-dapp
   ```
 
-- **E2E Tests**  
+- **E2E Tests**
 
   ```bash
   yarn workspace raiden-dapp test:e2e:docker
