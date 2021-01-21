@@ -25,6 +25,24 @@ It requires the latest [Node.js LTS (14.x - Fermium)](https://github.com/nodejs/
 
 > **INFO:** The Light Client SDK, dApp and CLI are **work in progress** and can only be used on the Ethereum **Testnets**.
 
+## Requirements for Safe Usage
+
+- **Layer 1 works reliably:** That means that you have got a web3 provider (eg. MetaMask) that is always synced and working reliably. If there are any problems or bugs on the client then Raiden can not work reliably.
+
+- **Persistency of local DB:** Your local state database is stored in your browser storage (IndexedDB). This data should not be deleted by the user or tampered with in any way. Frequent backups are also recommended. Deleting this storage could mean losing funds.
+
+- **Dedicated account for Raiden:** We need to have a specific Ethereum account dedicated to Raiden. Creating any manual transaction with the account that Raiden uses, while the Raiden client is running, can result in undefined behavior.
+
+- **Raiden account has sufficient ETH:** Raiden will try to warn you if there is not enough ETH in your Raiden account in order to maintain your current open channels and go through their entire cycle. But it is your job as the user to refill your account with ETH and always have it filled.
+
+- **Raiden always online:** Make sure that your node is always working, your network connection is stable and that the Raiden node is always online. If it crashes for whatever reason you are responsible to restart it and keep it always online. We recommend running it inside some form of monitor that will restart if for some reason the Raiden node crashes.
+
+- **Ethereum client always online:** Make sure that your Ethereum client is always running and is synced. We recommend running it inside some form of monitor that will restart if for some reason it crashes.
+
+- **Ethereum client is not changed:** Swapping the Ethereum client while transactions are not mined is considered unsafe. We recommend avoiding switching Ethereum clients once the Raiden node is running.
+
+- **Raiden REST API is never exposed to the public:** For Raiden's operation, the client needs to be able to sign transactions at any point in time. Therefore you should never expose the Raiden Rest API to the public. Be very careful when changing the --rpc and --rpccorsdomain values.
+
 ## Try it out
 
 ### Build the SDK
