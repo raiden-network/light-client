@@ -9,7 +9,7 @@ import { MatrixClient } from 'matrix-js-sdk';
 import { applyMiddleware, createStore, Store } from 'redux';
 import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
 import { createLogger } from 'redux-logger';
-import { composeWithDevTools } from 'redux-devtools-extension/logOnlyInProduction';
+import { composeWithDevTools } from 'redux-devtools-extension/developmentOnly';
 
 import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
