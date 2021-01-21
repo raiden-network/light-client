@@ -15,11 +15,9 @@
   Node.js command line application using the <a href="https://github.com/raiden-network/light-client/tree/master/raiden-ts">Raiden Light-Client SDK</a>
 </h4>
 
-The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
+The goal of the CLI is to provide a HTTP REST server that is fully compatible with the [Raiden API specification](https://raiden-network.readthedocs.io/en/latest/rest_api.html). It uses the Raiden Light Client SDK internally.
 
-The goal of the CLI is provide a HTTP REST server that is fully compatible with the [Raiden API specification](https://raiden-network.readthedocs.io/en/latest/rest_api.html). 
-
-The CLI is considered experimental and mostly used for testing internally, not yet stable enough for production usage. Be aware that not all endpoints the specification defines are already implemented yet.
+The CLI is considered experimental and mostly used for testing internally, not yet stable enough for production usage. Be aware that not all endpoints the specification defines are implemented yet.
 
 It requires the latest [Node.js LTS (14.x - Fermium)](https://github.com/nodejs/Release)
 
@@ -41,7 +39,7 @@ It requires the latest [Node.js LTS (14.x - Fermium)](https://github.com/nodejs/
 
 - **Ethereum client is not changed:** Swapping the Ethereum client while transactions are not mined is considered unsafe. We recommend avoiding switching Ethereum clients once the Raiden node is running.
 
-- **Raiden REST API is never exposed to the public:** For Raiden's operation, the client needs to be able to sign transactions at any point in time. Therefore you should never expose the Raiden Rest API to the public. Be very careful when changing the --rpc and --rpccorsdomain values.
+- **Raiden REST API is never exposed to the public:** For Raiden's operation, the client needs to be able to sign transactions at any point in time. Therefore you should never expose the Raiden Rest API to the public. Be very careful when changing the `--rpc` and `--rpccorsdomain` values.
 
 ## Try it out
 
@@ -59,8 +57,10 @@ yarn workspace raiden-cli build # build the dependent output
 yarn workspace raiden-cli build:bundle # build the bundled output
 ```
 
-The `build` script will output `./build/index.js`, which requires dependencies in place in `../raiden-ts/node_modules`, `../raiden-ts/dist*/` and `./node_modules/` folders.
-The `build:bundle` script will output `./build/bundle.js`, which depends only on `*.node` native libraries copied to the same output folder, therefore is a portable bundle which can be moved around (as long as the native libraries are in the same folder). Again, if getting out-of-memory errors, you can build these files on a more capable machine, just be careful to copy the correct native libraries to the output folder if on a different architecture (e.g. copy `./node_modules/wrtc/build/Release/wrtc.node` to `./build`)
+The `build` script will output `./build/index.js`, which requires that the dependencies are in place in the `../raiden-ts/node_modules`, `../raiden-ts/dist*/` and `./node_modules/` folders.
+The `build:bundle` script will output `./build/bundle.js`, which depends only on `*.node` native libraries copied to the same output folder, therefore is a portable bundle which can be moved around (as long as the native libraries are in the same folder).
+
+Again, if getting out-of-memory errors, you can build these files on a more capable machine, just be careful to copy the correct native libraries to the output folder if on a different architecture (e.g. copy `./node_modules/wrtc/build/Release/wrtc.node` to `./build`)
 
 ### Run the CLI
 
@@ -79,9 +79,11 @@ To run the CLI for the very first time, the only two thing necessary are a keyst
 node build/index.js -e https://provider.web3:8545 -k /path/privkey.json
 ```
 
-This starts the Raiden node and connects to a REST interface. The state is stored in `./storage` as JSON files. It's expected that the account is already funded with ETH to pay for on-chain transactions.
+This starts the Raiden node and connects to a REST interface. The state is stored in `./storage` as JSON files. It is expected that the account is already funded with ETH to pay for on-chain transactions.
 
-How the REST interface looks like and how the request and respond messages look like, please investigate on the [Raiden API documentation](https://raiden-network.readthedocs.io/en/latest/rest_api.html).
+### Documentation
+
+The [Raiden API documentation](https://raiden-network.readthedocs.io/en/latest/rest_api.html) describes the available API endpoints and provides example requests and responses.
 
 ## Contributing
 
