@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Added
 - [#211] 'suggestPartners' method to fetch suggested partners from PFS
+- [#485] Enable the Redux DevTools Extension in development for monitoring the Redux store
 - [#2417] Make 'start' async, introduce 'synced' promise, both resolves when syncing finishes
 - [#2444] Add adaptative sync for chunked getLogs
 - [#2446] Add parameter for subkey generation to overwrite origin URL
@@ -15,6 +16,7 @@
 - [#2352] Presence bug, transport fixes and performance improvements
 
 [#211]: https://github.com/raiden-network/light-client/issues/211
+[#485]: https://github.com/raiden-network/light-client/issues/485
 [#2352]: https://github.com/raiden-network/light-client/issues/2352
 [#2409]: https://github.com/raiden-network/light-client/issues/2409
 [#2417]: https://github.com/raiden-network/light-client/pull/2417
