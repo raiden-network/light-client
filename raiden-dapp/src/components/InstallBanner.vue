@@ -1,5 +1,5 @@
 <template>
-  <v-banner v-if="visible" color="#1e1e1e" two-line>
+  <v-banner v-if="visible" class="install-banner" color="#1e1e1e" two-line>
     <template v-if="$vuetify.breakpoint.mobile">
       {{ $t('install-banner.message-mobile') }}
     </template>
@@ -9,11 +9,11 @@
     </template>
 
     <template #actions="{ dismiss }">
-      <v-btn dark text outlined @click="install">
+      <v-btn dark text outlined class="install-banner__install-button" @click="install">
         {{ $t('install-banner.install') }}
       </v-btn>
 
-      <v-btn dark text outlined @click="dismiss">
+      <v-btn dark text outlined class="install-banner__dismiss-button" @click="dismiss">
         {{ $t('install-banner.dismiss') }}
       </v-btn>
     </template>
