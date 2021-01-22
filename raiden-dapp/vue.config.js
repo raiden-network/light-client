@@ -12,6 +12,39 @@ function getPackageVersion() {
   return packageInfo.version ?? '0.0.0';
 }
 
+/*
+ * Note that it is not necessary to exclude the version file from the to
+ * cache assets. The version file gets generated during the build and is
+ * thereby not included in the pre-cache manifest. The same goes for the
+ * worker script itself.
+ */
+function setupServiceWorkerRelatedPlugins(config) {
+  if (process.env.NODE_ENV !== 'production') return;
+
+  const versionFilePlugin = new VersionFile({
+    packageFile: path.join(__dirname, 'package.json'),
+    template: path.join(__dirname, 'version.ejs'),
+    outputFile: path.join(distributionDirectoryPath, 'version.json'),
+  });
+
+  const versionEnvironmentVariablePlugin = new DefinePlugin({
+    'process.env': {
+      PACKAGE_VERSION: "'" + getPackageVersion() + "'",
+    },
+  });
+
+  const injectServiceWorkerPlugin = new InjectManifest({
+    swSrc: path.join(sourceDirectoryPath, 'service-worker', 'worker'),
+    swDest: 'service-worker.js',
+  });
+
+  config.plugins.push(
+    versionFilePlugin,
+    versionEnvironmentVariablePlugin,
+    injectServiceWorkerPlugin,
+  );
+}
+
 module.exports = {
   productionSourceMap: false,
   // https://forum.vuejs.org/t/solution-to-building-error-in-circleci-or-any-other-machine-with-cpu-limitations/40862
@@ -101,27 +134,6 @@ module.exports = {
       );
     }
 
-    if (process.env.NODE_ENV === 'production') {
-      // Note that it is not necessary to exclude the version file from the to
-      // cache assets. The version file gets generated during the build and is
-      // thereby not included in the pre-cache manifest. The same goes for the
-      // worker script itself.
-      config.plugins.push(
-        new VersionFile({
-          packageFile: path.join(__dirname, 'package.json'),
-          template: path.join(__dirname, 'version.ejs'),
-          outputFile: path.join(distributionDirectoryPath, 'version.json'),
-        }),
-        new DefinePlugin({
-          'process.env': {
-            PACKAGE_VERSION: "'" + getPackageVersion() + "'",
-          },
-        }),
-        new InjectManifest({
-          swSrc: path.join(sourceDirectoryPath, 'service-worker', 'worker'),
-          swDest: 'service-worker.js',
-        }),
-      );
-    }
+    setupServiceWorkerRelatedPlugins(config);
   },
 };
