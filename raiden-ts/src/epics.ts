@@ -1,4 +1,4 @@
-import { Observable, from, of, combineLatest, using, timer, concat } from 'rxjs';
+import { Observable, from, of, combineLatest, using, timer, concat, merge } from 'rxjs';
 import {
   catchError,
   filter,
@@ -11,10 +11,6 @@ import {
   scan,
   distinctUntilChanged,
   ignoreElements,
-  switchMap,
-  mapTo,
-  endWith,
-  shareReplay,
   withLatestFrom,
   delayWhen,
   take,
@@ -29,10 +25,10 @@ import isEqual from 'lodash/isEqual';
 
 import { RaidenState } from './state';
 import { RaidenEpicDeps, Latest } from './types';
-import { RaidenAction, raidenShutdown } from './actions';
+import { RaidenAction, raidenConfigCaps, raidenShutdown } from './actions';
 import { RaidenConfig } from './config';
 import { Capabilities } from './constants';
-import { pluckDistinct } from './utils/rx';
+import { completeWith, pluckDistinct } from './utils/rx';
 import { getPresences$ } from './transport/utils';
 import { rtcChannel } from './transport/actions';
 import { pfsListUpdated, udcDeposit } from './services/actions';
@@ -43,77 +39,93 @@ import * as ChannelsEpics from './channels/epics';
 import * as TransportEpics from './transport/epics';
 import * as TransfersEpics from './transfers/epics';
 import * as ServicesEpics from './services/epics';
-import { blockTime } from './channels/actions';
+import { blockStale, blockTime } from './channels/actions';
+import { Caps } from './transport/types';
 
-// Observable of truthy if stale (no new blocks for too long, possibly indicating eth node is out
-// of sync), falsy otherwise/initially
-function getStale$(
+// default values for dynamic capabilities not specified on defaultConfig nor userConfig
+function dynamicCaps({
+  stale,
+  udcBalance,
+  config: { monitoringReward },
+}: Pick<Latest, 'stale' | 'udcBalance'> & {
+  config: Pick<RaidenConfig, 'monitoringReward'>;
+}): Caps {
+  return {
+    [Capabilities.RECEIVE]:
+      !stale && monitoringReward?.gt(0) && monitoringReward.lte(udcBalance) ? 1 : 0,
+  };
+}
+
+function mergeCaps(
+  dynamicCaps: Caps,
+  defaultCaps: Caps | null,
+  userCaps?: Caps | null,
+): Caps | null {
+  // if userCaps is disabled, disables everything
+  if (userCaps === null) return userCaps;
+  // if userCaps is an object, merge all caps
+  else if (userCaps !== undefined) return { ...dynamicCaps, ...defaultCaps, ...userCaps };
+  // if userCaps isn't set and defaultCaps is null, disables everything
+  else if (defaultCaps === null) return defaultCaps;
+  // if userCaps isn't set and defaultCaps is an object, merge it with dynamicCaps
+  else return { ...dynamicCaps, ...defaultCaps };
+}
+
+/**
+ * Aggregate dynamic (runtime-values dependent), default and user capabilities and emit
+ * raidenConfigCaps actions when it changes
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.defaultConfig - Default config object
+ * @param deps.latest$ - latest observable
+ * @returns Observable of raidenConfigCaps actions
+ */
+function configCapsEpic(
+  {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  blockTime$: Observable<number>,
-  config: RaidenConfig,
-) {
-  return state$.pipe(
-    pluckDistinct('blockNumber'),
-    withLatestFrom(blockTime$),
-    // forEach block
-    map(([, blockTime]) => Math.max(3 * blockTime, 2 * config.httpTimeout)),
-    startWith(2 * config.httpTimeout), // ensure it works even before state$ emit first
-    // switchMap will "reset" timer every block, restarting the timeout
-    switchMap((staleTimeout) =>
-      concat(
-        of(false),
-        timer(staleTimeout).pipe(
-          mapTo(true),
-          // ensure timer completes output if input completes,
-          // but first element of concat ensures it'll emit at least once (true) when subscribed
-          takeUntil(state$.pipe(ignoreElements(), endWith(null))),
-        ),
-      ),
+  { defaultConfig, latest$ }: RaidenEpicDeps,
+): Observable<raidenConfigCaps> {
+  return combineLatest([state$.pipe(pluckDistinct('config', 'caps')), latest$]).pipe(
+    map(([userCaps, latest]) => mergeCaps(dynamicCaps(latest), defaultConfig.caps, userCaps)),
+    distinctUntilChanged<Caps | null>(isEqual),
+    map((caps) => raidenConfigCaps({ caps })),
+    completeWith(state$),
+  );
+}
+
+/**
+ * React on certain config property changes and act accordingly:
+ * Currently, reflect config.logger on deps.log's level, and config.pollingInterval on provider's
+ * pollingInterval.
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.config$ - Config observable
+ * @param deps.log - Logger instance
+ * @param deps.provider - Provider instance
+ * @returns Observable which never emits
+ */
+function configReactEpic(
+  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { config$, log, provider }: RaidenEpicDeps,
+): Observable<never> {
+  return merge(
+    config$.pipe(
+      pluckDistinct('logger'),
+      tap((level) => log.setLevel(level || 'silent', false)),
     ),
-    distinctUntilChanged(),
-  );
+    config$.pipe(
+      pluckDistinct('pollingInterval'),
+      tap((pollingInterval) => (provider.pollingInterval = pollingInterval)),
+    ),
+  ).pipe(ignoreElements(), completeWith(action$));
 }
 
-// default value for config.caps[Capabilities.RECEIVE], when it's not user-set
-function defaultCapReceive(
-  stale: boolean,
-  udcBalance: UInt<32>,
-  { monitoringReward }: Pick<RaidenConfig, 'monitoringReward'>,
-): number {
-  return !stale && monitoringReward?.gt(0) && monitoringReward.lte(udcBalance) ? 1 : 0;
-}
-
-// calculate dynamic config, based on default, user and udcBalance (for receiving caps)
-function getConfig$(
-  defaultConfig: RaidenConfig,
-  state$: Observable<RaidenState>,
-  {
-    udcBalance$,
-    blockTime$,
-  }: { udcBalance$: Observable<UInt<32>>; blockTime$: Observable<number> },
-): Observable<RaidenConfig> {
-  return state$.pipe(
-    pluckDistinct('config'),
-    switchMap((userConfig) => {
-      const config: Mutable<RaidenConfig> = { ...defaultConfig, ...userConfig };
-      // merge default & user caps
-      if (config.caps !== null) config.caps = { ...defaultConfig.caps, ...userConfig.caps };
-      if (config.caps === null || config.caps[Capabilities.RECEIVE] != null) return of(config);
-      // if user config caps is not disabled, calculate dynamic default values
-      else
-        return combineLatest([udcBalance$, getStale$(state$, blockTime$, config)]).pipe(
-          map(([udcBalance, stale]) => ({
-            ...config,
-            caps: {
-              [Capabilities.RECEIVE]: defaultCapReceive(stale, udcBalance, config),
-              ...config.caps,
-            },
-          })),
-        );
-    }),
-    distinctUntilChanged(isEqual),
-  );
-}
+const ConfigEpics = { configCapsEpic, configReactEpic };
 
 /**
  * This function maps cached/latest relevant values from action$ & state$
@@ -122,30 +134,55 @@ function getConfig$(
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies, minus 'latest$' & 'config$' (outputs)
  * @param deps.defaultConfig - defaultConfig mapping
- * @param deps.log - Logger instance
- * @param deps.provider - Provider instance
  * @returns latest$ observable
  */
 export function getLatest$(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   // do not use latest$ or dependents (e.g. config$), as they're defined here
-  { defaultConfig, log, provider }: Pick<RaidenEpicDeps, 'defaultConfig' | 'log' | 'provider'>,
+  { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
 ): Observable<Latest> {
+  const initialUdcBalance = MaxUint256 as UInt<32>;
+  const iniitialStale = false;
   const udcBalance$ = action$.pipe(
     filter(udcDeposit.success.is),
     pluck('payload', 'balance'),
     // starts with max, to prevent receiving starting as disabled before actual balance is fetched
-    startWith(MaxUint256 as UInt<32>),
+    startWith(initialUdcBalance),
     distinctUntilChanged((a, b) => a.eq(b)),
   );
   const blockTime$ = action$.pipe(
     filter(blockTime.is),
     pluck('payload', 'blockTime'),
     startWith(15e3), // default initial blockTime of 15s
-    shareReplay(1),
   );
-  const config$ = getConfig$(defaultConfig, state$, { udcBalance$, blockTime$ });
+  const stale$ = action$.pipe(
+    filter(blockStale.is),
+    pluck('payload', 'stale'),
+    startWith(iniitialStale),
+  );
+  const caps$ = merge(
+    state$.pipe(
+      take(1), // initial caps depends on first state$ emit (initial)
+      pluck('config'),
+      map(({ caps: userCaps, monitoringReward }) =>
+        mergeCaps(
+          dynamicCaps({
+            udcBalance: initialUdcBalance,
+            stale: iniitialStale,
+            config: { monitoringReward: monitoringReward ?? defaultConfig.monitoringReward },
+          }),
+          defaultConfig.caps,
+          userCaps,
+        ),
+      ),
+    ),
+    // after that, pick from raidenConfigCaps actions
+    action$.pipe(filter(raidenConfigCaps.is), pluck('payload', 'caps')),
+  );
+  const config$ = combineLatest([state$.pipe(pluckDistinct('config')), caps$]).pipe(
+    map(([userConfig, caps]) => ({ ...defaultConfig, ...userConfig, caps })),
+  );
   const presences$ = getPresences$(action$);
   const pfsList$ = action$.pipe(
     filter(pfsListUpdated.is),
@@ -163,42 +200,26 @@ export function getLatest$(
     startWith({} as Latest['rtc']),
   );
 
-  return using(
-    // using will ensure these subscriptions only happen at output's subscription time
-    // and are properly teared down upon output's unsubscribe, complete or error
-    // subscription.add will add child subscriptions to teardown when parent does
-    () => {
-      const sub = config$
-        .pipe(pluckDistinct('logger'))
-        .subscribe((logger) => log.setLevel(logger || 'silent', false));
-      sub.add(
-        config$
-          .pipe(pluckDistinct('pollingInterval'))
-          .subscribe((pollingInterval) => (provider.pollingInterval = pollingInterval)),
-      );
-      return sub;
-    },
-    () =>
-      // the nested combineLatest is needed because it can only infer the type of 6 params
-      combineLatest([
-        combineLatest([action$, state$, config$, presences$, pfsList$, rtc$]),
-        combineLatest([udcBalance$, blockTime$]),
-      ]).pipe(
-        map(([[action, state, config, presences, pfsList, rtc], [udcBalance, blockTime]]) => ({
-          action,
-          state,
-          config,
-          presences,
-          pfsList,
-          rtc,
-          udcBalance,
-          blockTime,
-        })),
-      ),
+  return combineLatest([
+    combineLatest([action$, state$, config$, presences$, pfsList$, rtc$]),
+    combineLatest([udcBalance$, blockTime$, stale$]),
+  ]).pipe(
+    map(([[action, state, config, presences, pfsList, rtc], [udcBalance, blockTime, stale]]) => ({
+      action,
+      state,
+      config,
+      presences,
+      pfsList,
+      rtc,
+      udcBalance,
+      blockTime,
+      stale,
+    })),
   );
 }
 
 const RaidenEpics = {
+  ...ConfigEpics,
   ...DatabaseEpics,
   ...ChannelsEpics,
   ...TransportEpics,

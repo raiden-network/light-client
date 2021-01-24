@@ -340,14 +340,13 @@ describe('Raiden', () => {
         block_number: expect.any(Number),
       },
     });
-    // ensure Raiden.constructor set pollingInterval in the end as per 'config', before 'start'
-    expect(provider.pollingInterval).toBe(config.pollingInterval);
 
     logging.warn('Starting raiden1', raiden1.address);
     // test Raiden.started, not yet started
     expect(raiden1.started).toBeUndefined();
     raiden1.start();
     expect(raiden1.started).toBe(true);
+    expect(provider.pollingInterval).toBe(config.pollingInterval);
     await raiden1.stop();
     expect(raiden1.started).toBe(false);
 
