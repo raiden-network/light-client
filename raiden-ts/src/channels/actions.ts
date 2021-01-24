@@ -19,6 +19,9 @@ export interface newBlock extends ActionType<typeof newBlock> {}
 export const blockTime = createAction('block/time', t.type({ blockTime: t.number }));
 export interface blockTime extends ActionType<typeof blockTime> {}
 
+export const blockStale = createAction('block/stale', t.type({ stale: t.boolean }));
+export interface blockStale extends ActionType<typeof blockStale> {}
+
 /**
  * A new token network is detected in the TokenNetworkRegistry instance
  * fromBlock is only set on the first time, to fetch and handle past events
