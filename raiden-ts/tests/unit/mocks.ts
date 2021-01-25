@@ -769,6 +769,7 @@ function mockedMatrixCreateClient({
         };
       },
     ),
+    setPushRuleEnabled: jest.fn(async () => true),
     searchUserDirectory: jest.fn(async ({ term }) => ({
       results: Object.values(mockedMatrixUsers)
         .filter((u) => u.userId.includes(term))

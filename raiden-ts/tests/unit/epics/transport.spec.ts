@@ -108,7 +108,7 @@ describe('initMatrixEpic', () => {
   afterEach(() => jest.restoreAllMocks());
 
   test('matrix stored setup', async () => {
-    expect.assertions(4);
+    expect.assertions(5);
 
     const userId = `@${raiden.address.toLowerCase()}:${matrixServer}`;
     const displayName = await raiden.deps.signer.signMessage(userId);
@@ -130,6 +130,12 @@ describe('initMatrixEpic', () => {
     const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
 
     expect(raiden.output).toContainEqual(matrixSetup(setupPayload));
+    expect(matrix.setPushRuleEnabled).toHaveBeenCalledWith(
+      'global',
+      'override',
+      '.m.rule.master',
+      true,
+    );
     // ensure if stored setup works, servers list don't need to be fetched
     expect(fetch).not.toHaveBeenCalled();
 
