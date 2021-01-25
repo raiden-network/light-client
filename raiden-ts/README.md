@@ -35,7 +35,7 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 > - [Read the blog posts on Medium](https://medium.com/@raiden_network)
 >
 > **Terms of Use**
-> By accessing the Raiden Light Client SDK through our website you agree to the Terms of Use
+> By accessing the Raiden Light Client SDK through our website you agree to the [Terms of Use](https://github.com/raiden-network/light-client/blob/master/TERMS.md)
 > and [Privacy Policy](https://raiden.network/privacy.html).
 >
 > **Disclaimer**
