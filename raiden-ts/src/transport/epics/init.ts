@@ -132,8 +132,12 @@ function startMatrixSync(
     delayWhen(([, { pollingInterval }]) => timer(Math.ceil(pollingInterval / 5))),
     mergeMap(([, config]) =>
       joinGlobalRooms(config, matrix).pipe(
-        mergeMap((roomIds) => createMatrixFilter(matrix, roomIds)),
-        mergeMap((filter) => matrix.startClient({ filter })),
+        mergeMap(async (roomIds) => createMatrixFilter(matrix, roomIds)),
+        mergeMap(async (filter) => {
+          await matrix.setPushRuleEnabled('global', 'override', '.m.rule.master', true);
+          return filter;
+        }),
+        mergeMap(async (filter) => matrix.startClient({ filter })),
         mergeMap(() => {
           // after [15-45]s (default) random delay after starting, update/reload presence
           return timer(Math.round((Math.random() + 0.5) * config.httpTimeout)).pipe(
@@ -142,7 +146,7 @@ function startMatrixSync(
             ),
           );
         }),
-        retryWhile(intervalFromConfig(config$), { maxRetries: 10, onErrors: networkErrors }),
+        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
       ),
     ),
     ignoreElements(),
