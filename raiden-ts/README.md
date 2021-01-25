@@ -26,33 +26,42 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 - [Contributing](#contributing)
 - [License](#license)
 
-> **Disclaimer:**
+> Important information for users
+> The Raiden Light Client SDK  is an application that allows you to interact with the Raiden
+> network. If you haven't used Raiden before we recommend that you:
+> - [Checkout the developer portal](https://developer.raiden.network)
+> - [Look at the documentation](https://docs.raiden.network)
+> - [Learn more by watching explanatory videos](https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg)
+> - [Read the blog posts on Medium](https://medium.com/@raiden_network)
 >
-> This is a Beta version of experimental open source software released as a test
-> version under an MIT license and may contain errors and/or bugs. No guarantee or
-> representation whatsoever is made regarding its suitability (or its use) for any
-> purpose or regarding its compliance with any applicable laws and regulations.
-> Use of the software is at your own risk and discretion and by using the software
-> you warrant and represent that you have read this disclaimer, understand its
-> contents, assume all risk related thereto and hereby release, waive, discharge
-> and covenant not to hold liable Brainbot Labs Establishment or any of its
-> officers, employees or affiliates from and for any direct or indirect damage
-> resulting from the software or the use thereof. Such to the extent as
-> permissible by applicable laws and regulations.
+> **Terms of Use**
+> By accessing the Raiden Light Client SDK through our website you agree to the Terms of Use
+> and [Privacy Policy](https://raiden.network/privacy.html).
 >
-> Privacy warning: Please be aware, that by using the Raiden Client, among others
-> your Ethereum address, channels, channel deposits, settlements and the Ethereum
-> address of your channel counterparty will be stored on the Ethereum chain, i.e.
-> on servers of Ethereum node operators and ergo are to a certain extent publicly
-> available. The same might also be stored on systems of parties running Raiden
-> nodes connected to the same token network. Data present in the Ethereum chain is
-> very unlikely to be able to be changed, removed or deleted from the public
-> arena.
+> **Disclaimer**
+> The Raiden Light Client SDK is a beta version of experimental open source software released
+> as a test version under an MIT license and may contain errors and/or bugs. No guarantee
+> or representation whatsoever is made regarding its suitability (or its use) for any purpose
+> or regarding its compliance with any applicable laws and regulations. Use of the Raiden
+> Light Client SDK is at your own risk and discretion and by using the software you warrant and
+> represent that you have read this disclaimer, understand its contents, assume all risk
+> related thereto and hereby release, waive, discharge and covenant not to hold us or any of
+> our officers, employees or affiliates from and for any direct or indirect damage resulting
+> from the Raiden Light Client SDK or the use thereof. Such to the extent as permissible by
+> applicable laws and regulations.
 >
-> Also be aware, that data on individual Raiden token transfers will be made
-> available via the Matrix protocol to the recipient, intermediating nodes of
-> a specific transfer as well as to the Matrix server operators, see Raiden
-> Transport Specification.
+> **Privacy warning**
+> Please be aware, that by using the Raiden Light Client SDK, among others your Ethereum
+> address, channels, channel deposits, settlements and the Ethereum address of your
+> channel counterparty will be stored on the Ethereum chain, i.e. on servers of Ethereum
+> node operators and ergo are to a certain extent publicly available. The same might also be
+> stored on systems of parties running Raiden nodes connected to the same token network.
+> Data present in the Ethereum chain is very unlikely to be able to be changed, removed or
+> deleted from the public arena.
+>
+> Also be aware, that data on individual Raiden token transfers will be made available via
+> the Matrix protocol to the recipient, intermediating nodes of a specific transfer as well as to
+> the Matrix server operators, see Raiden Transport Specification.
 
 ## About The Project
 

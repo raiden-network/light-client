@@ -1,10 +1,52 @@
 <template>
   <div data-cy="disclaimer" class="disclaimer">
     <div class="disclaimer__content">
-      <div class="disclaimer__content__paragraphs font-weight-light">
-        <p v-for="(paragraph, index) in $t('disclaimer.paragraphs')" :key="index">
-          {{ paragraph }}
-        </p>
+      <div class="disclaimer__content__text">
+        <span class="disclaimer__content__text__header">
+          {{ $t('disclaimer.user-info.header') }}
+        </span>
+        <span class="disclaimer__content__text__body">{{ $t('disclaimer.user-info.body') }}</span>
+        <div>
+          <ul
+            v-for="(bulletPoint, index) in $t('disclaimer.user-info.bullet-points')"
+            :key="index"
+            class="disclaimer__content__text__bullet-points"
+          >
+            <li>
+              {{ bulletPoint.text }}
+              <a :href="disclaimerUrlMappings[bulletPoint.url]" target="_blank">
+                {{ bulletPoint.link }}
+              </a>
+            </li>
+          </ul>
+        </div>
+        <span v-if="imprint" class="disclaimer__content__text__header">
+          {{ $t('disclaimer.terms.header') }}
+        </span>
+        <i18n
+          v-if="imprint"
+          path="disclaimer.terms.body"
+          tag="span"
+          class="disclaimer__content__text__body"
+        >
+          <a :href="disclaimerUrlMappings.policy" target="_blank">
+            {{ $t('disclaimer.terms.link-name') }}
+          </a>
+        </i18n>
+        <span class="disclaimer__content__text__header">
+          {{ $t('disclaimer.disclaimer.header') }}
+        </span>
+        <span class="disclaimer__content__text__body">{{ $t('disclaimer.disclaimer.body') }}</span>
+        <span class="disclaimer__content__text__header">
+          {{ $t('disclaimer.privacy.header') }}
+        </span>
+        <div
+          v-for="(paragraph, index) in $t('disclaimer.privacy.body')"
+          :key="index"
+          class="disclaimer__content__text__body"
+        >
+          <span>{{ paragraph }}</span>
+        </div>
       </div>
       <v-checkbox
         v-model="checkedAccept"
@@ -46,6 +88,17 @@ import { RouteNames } from '@/router/route-names';
 export default class Disclaimer extends Vue {
   checkedAccept = false;
   checkedPersist = false;
+  disclaimerUrlMappings = {
+    portal: 'https://developer.raiden.network',
+    docs: 'https://docs.raiden.network',
+    videos: 'https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg',
+    medium: 'https://medium.com/@raiden_network',
+    policy: 'https://raiden.network/privacy.html',
+  };
+
+  get imprint(): string | undefined {
+    return process.env.VUE_APP_IMPRINT;
+  }
 
   get navigationTarget(): Location {
     const redirectTo = this.$route.query.redirectTo as string;
@@ -73,6 +126,10 @@ export default class Disclaimer extends Vue {
   height: 100%;
   width: 100%;
 
+  a {
+    text-decoration: none;
+  }
+
   &__content {
     border-top: solid 1px $primary-color;
     display: flex;
@@ -83,12 +140,30 @@ export default class Disclaimer extends Vue {
       padding: 10px 15px 0 15px;
     }
 
-    &__paragraphs {
-      flex: 1;
-      font-size: 15px;
+    &__text {
+      display: flex;
+      flex-direction: column;
       overflow-y: auto;
       text-align: justify;
       @extend .themed-scrollbar;
+
+      &__body,
+      &__bullet-points {
+        font-size: 14px;
+      }
+
+      &__header {
+        font-weight: 500;
+        padding-bottom: 6px;
+      }
+
+      &__body {
+        padding: 0 4px 12px 0;
+      }
+
+      &__bullet-points {
+        padding-bottom: 12px;
+      }
     }
 
     &__accept-checkbox,
