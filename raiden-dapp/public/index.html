@@ -12,7 +12,40 @@
     <noscript>
       <strong>We're sorry, but Raiden dApp doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
     </noscript>
+
+    <div id="browser-unsupported-message" style="display: none">
+      <strong>We're sorry, but the RaidendApp doesn't work properly in your web-browser. Please update to the latest version.</strong>
+    </div>
+
     <div id="app"></div>
+
+    <script type="text/javascript">
+      function areAllNecessaryFeaturesAvailable() {
+        return (
+          'serviceWorker' in navigator &&
+          'IntersectionObserver' in window &&
+          'indexedDB' in window &&
+          'localStorage' in window &&
+          'RTCPeerConnection' in window
+        );
+      }
+
+      function removeApp() {
+        const appElement = document.getElementById('app');
+        appElement.parentNode.removeChild(appElement);
+      }
+
+      function showMessage() {
+        const messageElement = document.getElementById('browser-unsupported-message');
+        messageElement.style.display = 'block';
+      }
+
+      if (!areAllNecessaryFeaturesAvailable()) {
+        removeApp();
+        showMessage();
+      }
+    </script>
+
     <!-- Start Single Page Apps for GitHub Pages -->
     <script type="text/javascript">
       // Single Page Apps for GitHub Pages
