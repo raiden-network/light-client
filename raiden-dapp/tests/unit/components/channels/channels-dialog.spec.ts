@@ -6,6 +6,7 @@ import { constants } from 'ethers';
 import { mount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import VueRouter from 'vue-router';
 import Vuex from 'vuex';
 import { TestData } from '../../data/mock-data';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
@@ -21,6 +22,8 @@ Vue.use(Vuetify);
 Vue.use(Vuex);
 Vue.filter('truncate', Filters.truncate);
 
+const router = new VueRouter({});
+
 describe('ChannelDialogs.vue', () => {
   let wrapper: Wrapper<ChannelDialogs>;
   let vuetify: Vuetify;
@@ -28,7 +31,7 @@ describe('ChannelDialogs.vue', () => {
 
   function createWrapper() {
     vuetify = new Vuetify();
-    $raiden = new RaidenService(store) as Mocked<RaidenService>;
+    $raiden = new RaidenService(store, router) as Mocked<RaidenService>;
     $raiden.fetchAndUpdateTokenData = jest.fn();
     return mount(ChannelDialogs, {
       vuetify,

@@ -11,7 +11,7 @@ import i18n from './i18n';
 import { RaidenPlugin } from '@/plugins/raiden';
 import { IdenticonPlugin } from '@/plugins/identicon-plugin';
 import vuetify from '@/plugins/vuetify';
-import './registerServiceWorker';
+import { ServiceWorkerAssistantPlugin } from '@/plugins/service-worker-assistant-plugin';
 
 Vue.config.productionTip = false;
 
@@ -19,6 +19,7 @@ setupLogStore();
 
 Vue.use(RaidenPlugin);
 Vue.use(IdenticonPlugin);
+Vue.use(ServiceWorkerAssistantPlugin);
 
 new Vue({
   vuetify,

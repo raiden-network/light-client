@@ -10,6 +10,12 @@ export type Transfers = { [key: string]: RaidenTransfer };
 export type ChannelAction = 'close' | 'deposit' | 'withdraw' | 'settle';
 export type Settings = { [setting: string]: boolean | number | string };
 
+export interface VersionInfo {
+  activeVersion: string;
+  availableVersion: string | undefined;
+  updateIsMandatory: boolean;
+}
+
 export interface RootState {
   loading: boolean;
   blockNumber: number;
@@ -29,6 +35,7 @@ export interface RootState {
   disclaimerAccepted: boolean;
   stateBackupReminderDateMs: number;
   persistDisclaimerAcceptance: boolean;
+  versionInfo: VersionInfo;
 }
 
 export interface SuggestedPartner {
@@ -45,10 +52,18 @@ declare global {
     ethereum: any;
   }
 
-  type ServiceWorkerUpdatedEvent = CustomEvent<ServiceWorkerRegistration>;
+  interface BeforeInstallPromptEvent extends Event {
+    readonly platforms: Array<string>;
+    readonly userChoice: Promise<{
+      outcome: 'accepted' | 'dismissed';
+      platform: string;
+    }>;
+
+    prompt(): Promise<void>;
+  }
 
   interface WindowEventMap {
-    swUpdated: ServiceWorkerUpdatedEvent;
+    beforeinstallprompt: BeforeInstallPromptEvent;
   }
 }
 

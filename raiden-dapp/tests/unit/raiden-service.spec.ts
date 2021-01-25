@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('vuex');
+jest.mock('vue-router');
 jest.mock('raiden-ts');
 jest.mock('@/i18n', () => ({
   __esModule: true as const,
@@ -10,6 +11,7 @@ jest.mock('@/i18n', () => ({
 jest.mock('@/services/config-provider');
 
 import { CommitOptions, Store } from 'vuex';
+import VueRouter from 'vue-router';
 import flushPromises from 'flush-promises';
 import { BigNumber, providers, utils, constants } from 'ethers';
 import { BehaviorSubject, EMPTY, of } from 'rxjs';
@@ -31,6 +33,7 @@ const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual('raiden-ts'
 describe('RaidenService', () => {
   let raidenService: RaidenService;
   let raiden: jest.Mocked<Raiden>;
+  let router: jest.Mocked<VueRouter>;
   let store: jest.Mocked<Store<CombinedStoreState>> & {
     commit: jest.Mock<void, [string, any?, CommitOptions?]>;
   };
@@ -96,7 +99,9 @@ describe('RaidenService', () => {
     (store.state as any) = {
       userDepositContract: { token: undefined },
     };
-    raidenService = new RaidenService(store);
+    router = new VueRouter() as jest.Mocked<VueRouter>;
+    router.push = jest.fn();
+    raidenService = new RaidenService(store, router);
   });
 
   afterEach(() => {
@@ -641,6 +646,18 @@ describe('RaidenService', () => {
     await flushPromises();
 
     expect(store.commit).toHaveBeenLastCalledWith('reset');
+  });
+
+  test('navigates to home screen when it receives a raidenShutdown event', async () => {
+    expect.assertions(1);
+
+    const subject = new BehaviorSubject({});
+    (raiden as any).events$ = subject;
+    await setupSDK();
+    subject.next({ type: 'raiden/shutdown' });
+    await flushPromises();
+
+    expect(router.push).toHaveBeenCalledWith({ name: RouteNames.HOME });
   });
 
   test('update the store with the proper reason when the factory throws an exception', async () => {

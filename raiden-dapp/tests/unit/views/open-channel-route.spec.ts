@@ -5,6 +5,7 @@ jest.useFakeTimers();
 import VueRouter, { NavigationGuard } from 'vue-router';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
+
 import Vuetify from 'vuetify';
 import { mount, Wrapper } from '@vue/test-utils';
 import { utils } from 'ethers';
@@ -62,7 +63,7 @@ describe('OpenChannelRoute.vue', () => {
   }
 
   beforeAll(() => {
-    service = new RaidenService(store) as Mocked<RaidenService>;
+    service = new RaidenService(store, router) as Mocked<RaidenService>;
     service.fetchAndUpdateTokenData = jest.fn().mockResolvedValue(undefined);
     router = new VueRouter() as Mocked<VueRouter>;
   });

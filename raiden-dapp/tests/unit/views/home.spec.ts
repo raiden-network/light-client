@@ -33,7 +33,7 @@ describe('Home.vue', () => {
     vuetify = new Vuetify();
     router = new VueRouter() as Mocked<VueRouter>;
     router.push = jest.fn().mockResolvedValue(null);
-    $raiden = new RaidenService(store);
+    $raiden = new RaidenService(store, router);
     $raiden.connect = jest.fn();
     wrapper = mount(Home, {
       vuetify,

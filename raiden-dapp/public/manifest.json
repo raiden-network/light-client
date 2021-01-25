@@ -1,6 +1,12 @@
 {
-  "name": "raiden-dapp",
-  "short_name": "raiden-dapp",
+  "name": "Raiden Light Client dApp",
+  "short_name": "Raiden",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "English",
+  "background_color": "#000000",
+  "theme_color": "#28a5c8",
   "icons": [
     {
       "src": "./img/icons/android-chrome-192x192.png",
@@ -12,9 +18,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#4DBA87"
+  ]
 }

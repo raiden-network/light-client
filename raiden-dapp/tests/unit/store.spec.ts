@@ -228,6 +228,30 @@ describe('store', () => {
     expect(store.state.loading).toBe(true);
   });
 
+  test('the set available version mutation updates the version info', () => {
+    expect(store.state.versionInfo.availableVersion).toBeUndefined();
+
+    store.commit('setAvailableVersion', '1.0.0');
+
+    expect(store.state.versionInfo.availableVersion).toBe('1.0.0');
+  });
+
+  test('the set available version mutation does not update version info if version is invalid', () => {
+    expect(store.state.versionInfo.availableVersion).toBeUndefined();
+
+    store.commit('setAvailableVersion', 'ein.zwei');
+
+    expect(store.state.versionInfo.availableVersion).toBeUndefined();
+  });
+
+  test('the set update is mandatory mutation does update the version info', () => {
+    expect(store.state.versionInfo.updateIsMandatory).toBe(false);
+
+    store.commit('setUpdateIsMandatory');
+
+    expect(store.state.versionInfo.updateIsMandatory).toBe(true);
+  });
+
   describe('channelWithBiggestCapacity', () => {
     test('return the open channel when there is only one open channel', () => {
       const mockChannels = TestData.mockChannels;
@@ -344,5 +368,25 @@ describe('store', () => {
       store.commit('updateSettings', { useRaidenAccount });
       expect(store.getters.usingRaidenAccount).toEqual(useRaidenAccount);
     });
+  });
+
+  test('version update is available if available version is higher than active one', () => {
+    expect(store.getters.versionUpdateAvailable).toBe(false);
+
+    store.commit('setAvailableVersion', '1.0.0');
+
+    expect(store.getters.versionUpdateAvailable).toBe(true);
+  });
+
+  test('version update is not available if available version is lower or equal than active one', () => {
+    store.commit('setAvailableVersion', '0.0.0');
+
+    expect(store.getters.versionUpdateAvailable).toBe(false);
+  });
+
+  test('version update is not available if available version undefined', () => {
+    store.commit('setAvailableVersion', undefined);
+
+    expect(store.getters.versionUpdateAvailable).toBe(false);
   });
 });

@@ -29,7 +29,7 @@ const createWrapper = (imprint: string): Wrapper<App> => {
   vuetify = new Vuetify();
   router = new VueRouter() as Mocked<VueRouter>;
   router.push = jest.fn().mockResolvedValue(null);
-  $raiden = new RaidenService(store);
+  $raiden = new RaidenService(store, router);
   $raiden.disconnect = jest.fn();
 
   return shallowMount(App, {

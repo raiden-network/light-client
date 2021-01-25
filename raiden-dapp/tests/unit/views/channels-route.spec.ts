@@ -58,7 +58,7 @@ describe('ChannelsRoute.vue', () => {
     $router = new VueRouter() as Mocked<VueRouter>;
     $router.push = jest.fn().mockResolvedValue(undefined);
 
-    $raiden = new RaidenService(store) as Mocked<RaidenService>;
+    $raiden = new RaidenService(store, $router) as Mocked<RaidenService>;
     $raiden.fetchAndUpdateTokenData = jest.fn().mockResolvedValue(undefined);
     $raiden.connect = jest.fn().mockResolvedValue(undefined);
 

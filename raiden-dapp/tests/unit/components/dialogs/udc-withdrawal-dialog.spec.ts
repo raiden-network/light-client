@@ -7,6 +7,7 @@ import { constants, utils } from 'ethers';
 import { shallowMount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vue from 'vue';
+import VueRouter from 'vue-router';
 import { $identicon } from '../../utils/mocks';
 import Filters from '@/filters';
 import store from '@/store';
@@ -16,6 +17,8 @@ import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
 
 Vue.use(Vuetify);
 Vue.filter('upperCase', Filters.upperCase);
+
+const router = new VueRouter({});
 
 describe('UdcWithdrawalDialog.vue', function () {
   let wrapper: Wrapper<UdcWithdrawalDialog>;
@@ -49,7 +52,7 @@ describe('UdcWithdrawalDialog.vue', function () {
   }
 
   beforeEach(() => {
-    $raiden = new RaidenService(store) as Mocked<RaidenService>;
+    $raiden = new RaidenService(store, router) as Mocked<RaidenService>;
     wrapper = createWrapper();
     jest.resetAllMocks();
   });

@@ -1,5 +1,49 @@
 const path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const VersionFile = require('webpack-version-file-plugin');
+const { DefinePlugin } = require('webpack'); // eslint-disable-line import/no-extraneous-dependencies
+const { InjectManifest } = require('workbox-webpack-plugin');
+
+const sourceDirectoryPath = path.resolve(__dirname, 'src');
+const distributionDirectoryPath = path.resolve(__dirname, 'dist');
+
+function getPackageVersion() {
+  const packageInfo = require('./package.json');
+  return packageInfo.version ?? '0.0.0';
+}
+
+/*
+ * Note that it is not necessary to exclude the version file from the to
+ * cache assets. The version file gets generated during the build and is
+ * thereby not included in the pre-cache manifest. The same goes for the
+ * worker script itself.
+ */
+function setupServiceWorkerRelatedPlugins(config) {
+  if (process.env.NODE_ENV !== 'production') return;
+
+  const versionFilePlugin = new VersionFile({
+    packageFile: path.join(__dirname, 'package.json'),
+    template: path.join(__dirname, 'version.ejs'),
+    outputFile: path.join(distributionDirectoryPath, 'version.json'),
+  });
+
+  const versionEnvironmentVariablePlugin = new DefinePlugin({
+    'process.env': {
+      PACKAGE_VERSION: "'" + getPackageVersion() + "'",
+    },
+  });
+
+  const injectServiceWorkerPlugin = new InjectManifest({
+    swSrc: path.join(sourceDirectoryPath, 'service-worker', 'worker'),
+    swDest: 'service-worker.js',
+  });
+
+  config.plugins.push(
+    versionFilePlugin,
+    versionEnvironmentVariablePlugin,
+    injectServiceWorkerPlugin,
+  );
+}
 
 module.exports = {
   productionSourceMap: false,
@@ -66,11 +110,11 @@ module.exports = {
       patterns.push(
         {
           from: path.resolve(process.env.DEPLOYMENT_INFO),
-          to: path.resolve(__dirname, 'dist'),
+          to: distributionDirectoryPath,
         },
         {
           from: path.resolve(process.env.DEPLOYMENT_SERVICES_INFO),
-          to: path.resolve(__dirname, 'dist'),
+          to: distributionDirectoryPath,
         },
       );
     }
@@ -78,7 +122,7 @@ module.exports = {
     if (process.env.E2E) {
       patterns.push({
         from: path.resolve(__dirname, 'tests', 'e2e', 'e2e.json'),
-        to: path.resolve(__dirname, 'dist'),
+        to: distributionDirectoryPath,
       });
     }
 
@@ -89,12 +133,7 @@ module.exports = {
         }),
       );
     }
-  },
-  pwa: {
-    workboxPluginMode: 'InjectManifest',
-    workboxOptions: {
-      swSrc: './src/sw.js',
-      swDest: 'service-worker.js',
-    },
+
+    setupServiceWorkerRelatedPlugins(config);
   },
 };
