@@ -20,6 +20,7 @@ import { UInt } from '../../utils/types';
  * @param start - First yielded value
  * @param max - Ceiling of values, won't increase above this number
  * @param multiplier - Multiply yielded value by this factor on each iteration
+ * @yields Numbers representing delays in exponential backoff strategy of growth
  */
 export function* exponentialBackoff(start = 1e3, max = 60e3, multiplier = 1.4) {
   let delay = start;
