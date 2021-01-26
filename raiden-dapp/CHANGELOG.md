@@ -23,6 +23,7 @@
 - [#2399] Hint for user to stay online while receving transfers
 - [#2458] Click on notification snackbar to open notification panel
 - [#2446] Add `VUE_APP_SUBKEY_ORIGIN_URL` env variable to recover backups
+- [#2527] Add check if browser supports all necessary features or block dApp
 
 ### Changed
 
@@ -51,6 +52,7 @@
 [#2418]: https://github.com/raiden-network/light-client/issues/2418
 [#2414]: https://github.com/raiden-network/light-client/issues/2414
 [#2440]: https://github.com/raiden-network/light-client/issues/2440
+[#2527]: https://github.com/raiden-network/light-client/issues/2527
 
 ## [0.14.0] - 2020-11-25
 
