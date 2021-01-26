@@ -143,7 +143,7 @@ export function getLatest$(
   { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
 ): Observable<Latest> {
   const initialUdcBalance = MaxUint256 as UInt<32>;
-  const iniitialStale = false;
+  const initialStale = false;
   const udcBalance$ = action$.pipe(
     filter(udcDeposit.success.is),
     pluck('payload', 'balance'),
@@ -159,7 +159,7 @@ export function getLatest$(
   const stale$ = action$.pipe(
     filter(blockStale.is),
     pluck('payload', 'stale'),
-    startWith(iniitialStale),
+    startWith(initialStale),
   );
   const caps$ = merge(
     state$.pipe(
@@ -169,7 +169,7 @@ export function getLatest$(
         mergeCaps(
           dynamicCaps({
             udcBalance: initialUdcBalance,
-            stale: iniitialStale,
+            stale: initialStale,
             config: { monitoringReward: monitoringReward ?? defaultConfig.monitoringReward },
           }),
           defaultConfig.caps,
