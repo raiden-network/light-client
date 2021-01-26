@@ -51,37 +51,38 @@ type MockedPeerConnection = jest.Mocked<RTCPeerConnection & EventEmitter>;
  */
 function mockRTC() {
   const RTCPeerConnection = jest.spyOn(globalThis, 'RTCPeerConnection').mockImplementation(() => {
-    const channel = (Object.assign(new EventEmitter(), {
-      readyState: 'unknown',
-      close: jest.fn(),
-      send: jest.fn(),
-      name: 'RTCDataChannel',
-    }) as unknown) as MockedDataChannel;
+    class RTCDataChannel extends EventEmitter {
+      readyState = 'unknown';
+      close = jest.fn();
+      send = jest.fn();
+    }
+    const channel = (new RTCDataChannel() as unknown) as MockedDataChannel;
 
-    const connection = (Object.assign(new EventEmitter(), {
-      createDataChannel: jest.fn(() => channel),
-      createOffer: jest.fn(async () => ({ type: 'offer', sdp: 'offerSdp' })),
-      createAnswer: jest.fn(async () => ({ type: 'answer', sdp: 'answerSdp' })),
-      setLocalDescription: jest.fn(async () => {
+    class RTCPeerConnection extends EventEmitter {
+      createDataChannel = jest.fn(() => channel);
+      createOffer = jest.fn(async () => ({ type: 'offer', sdp: 'offerSdp' }));
+      createAnswer = jest.fn(async () => ({ type: 'answer', sdp: 'answerSdp' }));
+      setLocalDescription = jest.fn(async () => {
         setTimeout(() => {
           connection.emit('icecandidate', { candidate: 'candidate1Fail' });
           connection.emit('icecandidate', { candidate: 'myCandidate' });
           connection.emit('icecandidate', { candidate: null });
         }, 5);
-      }),
-      setRemoteDescription: jest.fn(async () => {
+      });
+      setRemoteDescription = jest.fn(async () => {
         /* remote */
-      }),
-      addIceCandidate: jest.fn(async () => {
+      });
+      addIceCandidate = jest.fn(async () => {
         setTimeout(() => connection.emit('datachannel', { channel }), 2);
         setTimeout(() => {
           Object.assign(channel, { readyState: 'open' });
           channel.emit('open', true);
         }, 5);
         setTimeout(() => channel.emit('message', { data: 'ping' }), 12);
-      }),
-      close: jest.fn(),
-    }) as unknown) as MockedPeerConnection;
+      });
+      close = jest.fn();
+    }
+    const connection = (new RTCPeerConnection() as unknown) as MockedPeerConnection;
     connection.addIceCandidate.mockRejectedValueOnce(new Error('addIceCandidate failed'));
 
     return connection;
