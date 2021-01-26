@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;transport/actions&quot; | raiden-ts - v0.14.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<title>&quot;transport/actions&quot; | raiden-ts - v0.15.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.15.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
 	<link rel="stylesheet" href="../assets/css/pages.css">
@@ -23,7 +23,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">raiden-ts - v0.14.0</a>
+					<a href="../index.html" class="title">raiden-ts - v0.15.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -102,7 +102,7 @@
 					<div class="tsd-signature tsd-kind-icon">matrix<wbr>Room<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"matrix/room"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>roomId<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;matrix/room&#x27;, t.type({ roomId: t.string }), NodeId)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/transport/actions.ts#L39">raiden-ts/src/transport/actions.ts:39</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/transport/actions.ts#L39">raiden-ts/src/transport/actions.ts:39</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -112,7 +112,7 @@
 					<div class="tsd-signature tsd-kind-icon">matrix<wbr>Room<wbr>Leave<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"matrix/room/leave"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>roomId<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;matrix/room/leave&#x27;,t.type({ roomId: t.string }),NodeId,)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/transport/actions.ts#L43">raiden-ts/src/transport/actions.ts:43</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/transport/actions.ts#L43">raiden-ts/src/transport/actions.ts:43</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -122,7 +122,7 @@
 					<div class="tsd-signature tsd-kind-icon">matrix<wbr>Setup<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"matrix/setup"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>server<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">; </span>setup<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>accessToken<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">; </span>deviceId<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">; </span>displayName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">; </span>userId<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;matrix/setup&#x27;,t.type({server: t.string,setup: RaidenMatrixSetup,}),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/transport/actions.ts#L11">raiden-ts/src/transport/actions.ts:11</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/transport/actions.ts#L11">raiden-ts/src/transport/actions.ts:11</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -132,7 +132,7 @@
 					<div class="tsd-signature tsd-kind-icon">rtc<wbr>Channel<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"rtc/channel"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">UnionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">UndefinedC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Type</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">RTCDataChannel</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">RTCDataChannel</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;rtc/channel&#x27;,t.union([t.undefined, instanceOf(RTCDataChannel)]),NodeId,)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/transport/actions.ts#L50">raiden-ts/src/transport/actions.ts:50</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/transport/actions.ts#L50">raiden-ts/src/transport/actions.ts:50</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -176,6 +176,33 @@
 					</li>
 					<li class=" pp-nav pp-page">
 						<a href="../pages/Usage/settling-channel.html">Settling a channel</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden d<wbr>App</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/using-dapp.html">Overview</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/navigate-dapp.html">Navigate the <wbr>Raiden d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/hub-selection-channel-opening.html">Hub <wbr>Selection and <wbr>Channel <wbr>Opening</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/transfers.html">Transfers</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/channels.html">Channels</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/account.html">Accounts</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden CLI</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden CLI/README.html">Overview</a>
 					</li>
 					<li class="globals  ">
 						<a href="../globals.html"><em>Globals</em></a>

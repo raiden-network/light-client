@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;utils/types&quot; | raiden-ts - v0.14.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<title>&quot;utils/types&quot; | raiden-ts - v0.15.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.15.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
 	<link rel="stylesheet" href="../assets/css/pages.css">
@@ -23,7 +23,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">raiden-ts - v0.14.0</a>
+					<a href="../index.html" class="title">raiden-ts - v0.15.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -90,6 +90,7 @@
 							<h3>Type aliases</h3>
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-type-alias tsd-parent-kind-module"><a href="_utils_types_.html#address" class="tsd-kind-icon">Address</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_types_.html#decodable" class="tsd-kind-icon">Decodable</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-module"><a href="_utils_types_.html#hash" class="tsd-kind-icon">Hash</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_types_.html#hexstring" class="tsd-kind-icon">Hex<wbr>String</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_types_.html#int" class="tsd-kind-icon">Int</a></li>
@@ -141,9 +142,32 @@
 					<div class="tsd-signature tsd-kind-icon">Address<span class="tsd-signature-symbol">:</span> <a href="_utils_types_.html#hexstring" class="tsd-signature-type">HexString</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">20</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">Brand</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_utils_types_.addressb.html" class="tsd-signature-type">AddressB</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L206">raiden-ts/src/utils/types.ts:206</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L206">raiden-ts/src/utils/types.ts:206</a></li>
 						</ul>
 					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="decodable" class="tsd-anchor"></a>
+					<h3>Decodable</h3>
+					<div class="tsd-signature tsd-kind-icon">Decodable&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-type">BigNumber</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">BigNumberish</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">symbol</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-symbol">{}</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L352">raiden-ts/src/utils/types.ts:352</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Type helper to recursively map decodable properties to their simpler encoded types;
+								This allows e.g. types decodable as BigNumbers to be passed in [recursive] properties where
+							BigNumbers are expected at runtime, as long as the object is decoded/validated before use.</p>
+						</div>
+					</div>
+					<h4 class="tsd-type-parameters-title">Type parameters</h4>
+					<ul class="tsd-type-parameters">
+						<li>
+							<h4>T</h4>
+						</li>
+					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module">
 					<a name="hash" class="tsd-anchor"></a>
@@ -151,7 +175,7 @@
 					<div class="tsd-signature tsd-kind-icon">Hash<span class="tsd-signature-symbol">:</span> <a href="_utils_types_.html#hexstring" class="tsd-signature-type">HexString</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L190">raiden-ts/src/utils/types.ts:190</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L190">raiden-ts/src/utils/types.ts:190</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -161,7 +185,7 @@
 					<div class="tsd-signature tsd-kind-icon">Hex<wbr>String&lt;S&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">Brand</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_utils_types_.hexstringb.html" class="tsd-signature-type">HexStringB</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L101">raiden-ts/src/utils/types.ts:101</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L101">raiden-ts/src/utils/types.ts:101</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -177,7 +201,7 @@
 					<div class="tsd-signature tsd-kind-icon">Int&lt;S&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">BigNumber</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">Brand</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_utils_types_.intb.html" class="tsd-signature-type">IntB</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L129">raiden-ts/src/utils/types.ts:129</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L129">raiden-ts/src/utils/types.ts:129</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -193,7 +217,7 @@
 					<div class="tsd-signature tsd-kind-icon">Last&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> L<span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">L</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> L<span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">L</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> L<span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">L</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> L<span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">L</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> L<span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">L</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> L<span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">L</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> L<span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">L</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">infer </span> L<span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">L</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> extends </span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-symbol">infer </span> L<span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> ? </span><span class="tsd-signature-type">L</span><span class="tsd-signature-symbol"> : </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L307">raiden-ts/src/utils/types.ts:307</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L307">raiden-ts/src/utils/types.ts:307</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -216,7 +240,7 @@
 					<div class="tsd-signature tsd-kind-icon">Private<wbr>Key<span class="tsd-signature-symbol">:</span> <a href="_utils_types_.html#hexstring" class="tsd-signature-type">HexString</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L198">raiden-ts/src/utils/types.ts:198</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L198">raiden-ts/src/utils/types.ts:198</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -226,7 +250,7 @@
 					<div class="tsd-signature tsd-kind-icon">Secret<span class="tsd-signature-symbol">:</span> <a href="_utils_types_.html#hexstring" class="tsd-signature-type">HexString</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L194">raiden-ts/src/utils/types.ts:194</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L194">raiden-ts/src/utils/types.ts:194</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -236,7 +260,7 @@
 					<div class="tsd-signature tsd-kind-icon">Signature<span class="tsd-signature-symbol">:</span> <a href="_utils_types_.html#hexstring" class="tsd-signature-type">HexString</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">65</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L186">raiden-ts/src/utils/types.ts:186</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L186">raiden-ts/src/utils/types.ts:186</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -246,7 +270,7 @@
 					<div class="tsd-signature tsd-kind-icon">Signed&lt;M&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">M</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>signature<span class="tsd-signature-symbol">: </span><a href="_utils_types_.html#signature" class="tsd-signature-type">Signature</a><span class="tsd-signature-symbol"> }</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L272">raiden-ts/src/utils/types.ts:272</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L272">raiden-ts/src/utils/types.ts:272</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -262,7 +286,7 @@
 					<div class="tsd-signature tsd-kind-icon">Timed&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span>ts<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> }</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L233">raiden-ts/src/utils/types.ts:233</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L233">raiden-ts/src/utils/types.ts:233</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -283,7 +307,7 @@
 					<div class="tsd-signature tsd-kind-icon">UInt&lt;S&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">BigNumber</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">Brand</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_utils_types_.uintb.html" class="tsd-signature-type">UIntB</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L158">raiden-ts/src/utils/types.ts:158</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L158">raiden-ts/src/utils/types.ts:158</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -302,7 +326,7 @@
 					<div class="tsd-signature tsd-kind-icon">Address<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> = new t.RefinementType&lt;HexStringC&lt;20&gt;, Address, string&gt;(&#x27;Address&#x27;,isAddress,(u, c) &#x3D;&gt; {try {return t.success(getAddress(u as string) as Address);} catch (e) {return t.failure(u, c);}},t.identity,HexString(20),isAddress,)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L215">raiden-ts/src/utils/types.ts:215</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L215">raiden-ts/src/utils/types.ts:215</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -312,7 +336,7 @@
 					<div class="tsd-signature tsd-kind-icon">Big<wbr>NumberC<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_utils_types_.bignumberc.html" class="tsd-signature-type">BigNumberC</a><span class="tsd-signature-symbol"> = new t.Type&lt;BigNumber, string&gt;(&#x27;BigNumber&#x27;,BigNumber.isBigNumber,(u, c) &#x3D;&gt; {try {// BigNumber.from is able to decode number, strings and JSON.parse&#x27;d {_hex:&lt;str&gt;} objectsreturn t.success(BigNumber.from(u as any));} catch (err) {return t.failure(u, c);}},(a) &#x3D;&gt; a.toString(),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L77">raiden-ts/src/utils/types.ts:77</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L77">raiden-ts/src/utils/types.ts:77</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -322,7 +346,7 @@
 					<div class="tsd-signature tsd-kind-icon">Hash<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_utils_types_.hexstringc.html" class="tsd-signature-type">HexStringC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = HexString(32)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L189">raiden-ts/src/utils/types.ts:189</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L189">raiden-ts/src/utils/types.ts:189</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -332,7 +356,7 @@
 					<div class="tsd-signature tsd-kind-icon">Hex<wbr>String<span class="tsd-signature-symbol">:</span> &lt;S&gt;<span class="tsd-signature-symbol">(</span>size<span class="tsd-signature-symbol">?: </span><a href="" class="tsd-signature-type">S</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><a href="../interfaces/_utils_types_.hexstringc.html" class="tsd-signature-type">HexStringC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = memoize(function &lt;S extends number &#x3D; number&gt;(size?: S) {return t.brand(t.string,(n): n is HexString&lt;S&gt; &#x3D;&gt;typeof n &#x3D;&#x3D;&#x3D; &#x27;string&#x27; &amp;&amp; (size ? hexDataLength(n) &#x3D;&#x3D;&#x3D; size : isHexString(n)),&#x27;HexString&#x27;,);})</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L113">raiden-ts/src/utils/types.ts:113</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L113">raiden-ts/src/utils/types.ts:113</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -383,7 +407,7 @@
 					<div class="tsd-signature tsd-kind-icon">Int<span class="tsd-signature-symbol">:</span> &lt;S&gt;<span class="tsd-signature-symbol">(</span>size<span class="tsd-signature-symbol">?: </span><a href="" class="tsd-signature-type">S</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><a href="../interfaces/_utils_types_.intc.html" class="tsd-signature-type">IntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = memoize(function &lt;S extends number &#x3D; number&gt;(size?: S) {const min &#x3D; size ? Zero.sub(Two.pow(size * 8 - 1)) : undefined,max &#x3D; size ? Two.pow(size * 8 - 1) : undefined;return t.brand(BigNumberC,(n): n is Int&lt;S&gt; &#x3D;&gt; BigNumberC.is(n) &amp;&amp; (!min || !max || (n.gte(min) &amp;&amp; n.lt(max))),&#x27;Int&#x27;,);})</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L141">raiden-ts/src/utils/types.ts:141</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L141">raiden-ts/src/utils/types.ts:141</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -434,7 +458,7 @@
 					<div class="tsd-signature tsd-kind-icon">Private<wbr>Key<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_utils_types_.hexstringc.html" class="tsd-signature-type">HexStringC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = HexString(32)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L197">raiden-ts/src/utils/types.ts:197</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L197">raiden-ts/src/utils/types.ts:197</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -444,7 +468,7 @@
 					<div class="tsd-signature tsd-kind-icon">Secret<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_utils_types_.hexstringc.html" class="tsd-signature-type">HexStringC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = HexString(32)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L193">raiden-ts/src/utils/types.ts:193</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L193">raiden-ts/src/utils/types.ts:193</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -454,7 +478,7 @@
 					<div class="tsd-signature tsd-kind-icon">Signature<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_utils_types_.hexstringc.html" class="tsd-signature-type">HexStringC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">65</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = HexString(65)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L185">raiden-ts/src/utils/types.ts:185</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L185">raiden-ts/src/utils/types.ts:185</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -464,7 +488,7 @@
 					<div class="tsd-signature tsd-kind-icon">Signed<span class="tsd-signature-symbol">:</span> &lt;C&gt;<span class="tsd-signature-symbol">(</span>codec<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">C</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><a href="../interfaces/_utils_types_.signedc.html" class="tsd-signature-type">SignedC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">C</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = memoize(&lt;C extends t.Mixed&gt;(codec: C) &#x3D;&gt;t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L275">raiden-ts/src/utils/types.ts:275</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L275">raiden-ts/src/utils/types.ts:275</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -501,7 +525,7 @@
 					<div class="tsd-signature tsd-kind-icon">Timed<span class="tsd-signature-symbol">:</span> &lt;T&gt;<span class="tsd-signature-symbol">(</span>codec<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><a href="../interfaces/_utils_types_.timedc.html" class="tsd-signature-type">TimedC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = memoize(&lt;T extends t.Mixed&gt;(codec: T) &#x3D;&gt;t.intersection([codec, t.readonly(t.type({ ts: t.number }))]),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L242">raiden-ts/src/utils/types.ts:242</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L242">raiden-ts/src/utils/types.ts:242</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -551,7 +575,7 @@
 					<div class="tsd-signature tsd-kind-icon">UInt<span class="tsd-signature-symbol">:</span> &lt;S&gt;<span class="tsd-signature-symbol">(</span>size<span class="tsd-signature-symbol">?: </span><a href="" class="tsd-signature-type">S</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = memoize(function &lt;S extends number &#x3D; number&gt;(size?: S) {const min &#x3D; size ? Zero : undefined,max &#x3D; size ? Two.pow(size * 8) : undefined;return t.brand(BigNumberC,(n): n is UInt&lt;S&gt; &#x3D;&gt; BigNumberC.is(n) &amp;&amp; (!min || !max || (n.gte(min) &amp;&amp; n.lt(max))),&#x27;UInt&#x27;,);})</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L170">raiden-ts/src/utils/types.ts:170</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L170">raiden-ts/src/utils/types.ts:170</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -599,10 +623,10 @@
 				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
 					<a name="instanceof" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagConst">Const</span> instance<wbr>Of</h3>
-					<div class="tsd-signature tsd-kind-icon">instance<wbr>Of<span class="tsd-signature-symbol">:</span> &lt;C&gt;<span class="tsd-signature-symbol">(</span>C<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">C</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Type</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">InstanceType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">C</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = memoize(&lt;C extends Newable&gt;(C: C): t.Type&lt;InstanceType&lt;C&gt;&gt; &#x3D;&gt;new t.Type&lt;InstanceType&lt;C&gt;&gt;(&#x60;instanceOf(${C.name})&#x60;,(v): v is InstanceType&lt;C&gt; &#x3D;&gt; v instanceof C,(i, c) &#x3D;&gt; (i instanceof C ? t.success&lt;InstanceType&lt;C&gt;&gt;(i) : t.failure(i, c)),t.identity,),)</span></div>
+					<div class="tsd-signature tsd-kind-icon">instance<wbr>Of<span class="tsd-signature-symbol">:</span> &lt;C&gt;<span class="tsd-signature-symbol">(</span>C<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">C</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Type</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">InstanceType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">C</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = memoize(&lt;C extends Newable&gt;(C: C): t.Type&lt;InstanceType&lt;C&gt;&gt; &#x3D;&gt;new t.Type&lt;InstanceType&lt;C&gt;&gt;(&#x60;instanceOf(${C.name})&#x60;,(v): v is InstanceType&lt;C&gt; &#x3D;&gt; (v as any)?.constructor?.name &#x3D;&#x3D;&#x3D; C.name,(i, c) &#x3D;&gt; (i instanceof C ? t.success&lt;InstanceType&lt;C&gt;&gt;(i) : t.failure(i, c)),t.identity,),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L291">raiden-ts/src/utils/types.ts:291</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L291">raiden-ts/src/utils/types.ts:291</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -659,7 +683,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L343">raiden-ts/src/utils/types.ts:343</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L343">raiden-ts/src/utils/types.ts:343</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -697,7 +721,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L37">raiden-ts/src/utils/types.ts:37</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L37">raiden-ts/src/utils/types.ts:37</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -753,7 +777,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L65">raiden-ts/src/utils/types.ts:65</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L65">raiden-ts/src/utils/types.ts:65</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -792,7 +816,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L333">raiden-ts/src/utils/types.ts:333</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L333">raiden-ts/src/utils/types.ts:333</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -830,7 +854,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L254">raiden-ts/src/utils/types.ts:254</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L254">raiden-ts/src/utils/types.ts:254</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -868,7 +892,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/utils/types.ts#L264">raiden-ts/src/utils/types.ts:264</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/utils/types.ts#L264">raiden-ts/src/utils/types.ts:264</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -937,6 +961,33 @@
 					<li class=" pp-nav pp-page">
 						<a href="../pages/Usage/settling-channel.html">Settling a channel</a>
 					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden d<wbr>App</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/using-dapp.html">Overview</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/navigate-dapp.html">Navigate the <wbr>Raiden d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/hub-selection-channel-opening.html">Hub <wbr>Selection and <wbr>Channel <wbr>Opening</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/transfers.html">Transfers</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/channels.html">Channels</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/account.html">Accounts</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden CLI</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden CLI/README.html">Overview</a>
+					</li>
 					<li class="globals  ">
 						<a href="../globals.html"><em>Globals</em></a>
 					</li>
@@ -991,6 +1042,9 @@
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-module">
 						<a href="_utils_types_.html#address" class="tsd-kind-icon">Address</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_types_.html#decodable" class="tsd-kind-icon">Decodable</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-module">
 						<a href="_utils_types_.html#hash" class="tsd-kind-icon">Hash</a>

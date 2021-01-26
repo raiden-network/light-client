@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Raiden | raiden-ts - v0.14.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<title>Raiden | raiden-ts - v0.15.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.15.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
 	<link rel="stylesheet" href="../assets/css/pages.css">
@@ -23,7 +23,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">raiden-ts - v0.14.0</a>
+					<a href="../index.html" class="title">raiden-ts - v0.15.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -96,6 +96,7 @@
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_raiden_.raiden.html#gettokeninfo" class="tsd-kind-icon">get<wbr>Token<wbr>Info</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_raiden_.raiden.html#resolvename" class="tsd-kind-icon">resolve<wbr>Name</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_raiden_.raiden.html#state_" class="tsd-kind-icon">state$</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_raiden_.raiden.html#synced" class="tsd-kind-icon">synced</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_raiden_.raiden.html#transfers_" class="tsd-kind-icon">transfers$</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_raiden_.raiden.html#userdeposittokenaddress" class="tsd-kind-icon">user<wbr>Deposit<wbr>Token<wbr>Address</a></li>
 							</ul>
@@ -136,6 +137,7 @@
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_raiden_.raiden.html#settlechannel" class="tsd-kind-icon">settle<wbr>Channel</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_raiden_.raiden.html#start" class="tsd-kind-icon">start</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_raiden_.raiden.html#stop" class="tsd-kind-icon">stop</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_raiden_.raiden.html#suggestpartners" class="tsd-kind-icon">suggest<wbr>Partners</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_raiden_.raiden.html#transfer" class="tsd-kind-icon">transfer</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_raiden_.raiden.html#transferonchainbalance" class="tsd-kind-icon">transfer<wbr>Onchain<wbr>Balance</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_raiden_.raiden.html#transferonchaintokens" class="tsd-kind-icon">transfer<wbr>Onchain<wbr>Tokens</a></li>
@@ -160,7 +162,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L168">raiden-ts/src/raiden.ts:168</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L209">raiden-ts/src/raiden.ts:209</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -208,7 +210,7 @@
 					<div class="tsd-signature tsd-kind-icon">action$<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../modules/_actions_.html#raidenaction" class="tsd-signature-type">RaidenAction</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L97">raiden-ts/src/raiden.ts:97</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L133">raiden-ts/src/raiden.ts:133</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -224,7 +226,7 @@
 					<div class="tsd-signature tsd-kind-icon">block<wbr>Time$<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L129">raiden-ts/src/raiden.ts:129</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L165">raiden-ts/src/raiden.ts:165</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -239,7 +241,7 @@
 					<div class="tsd-signature tsd-kind-icon">channels$<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_channels_state_.raidenchannels.html" class="tsd-signature-type">RaidenChannels</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L107">raiden-ts/src/raiden.ts:107</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L143">raiden-ts/src/raiden.ts:143</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -255,7 +257,7 @@
 					<div class="tsd-signature tsd-kind-icon">config<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_config_.raidenconfig.html" class="tsd-signature-type">RaidenConfig</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L123">raiden-ts/src/raiden.ts:123</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L159">raiden-ts/src/raiden.ts:159</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -270,7 +272,7 @@
 					<div class="tsd-signature tsd-kind-icon">config$<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_config_.raidenconfig.html" class="tsd-signature-type">RaidenConfig</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L125">raiden-ts/src/raiden.ts:125</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L161">raiden-ts/src/raiden.ts:161</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -285,7 +287,7 @@
 					<div class="tsd-signature tsd-kind-icon">events$<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../modules/_actions_.html#raidenevent" class="tsd-signature-type">RaidenEvent</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L113">raiden-ts/src/raiden.ts:113</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L149">raiden-ts/src/raiden.ts:149</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -302,7 +304,7 @@
 					<div class="tsd-signature tsd-kind-icon">get<wbr>Token<wbr>Info<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>this<span class="tsd-signature-symbol">: </span><a href="_raiden_.raiden.html" class="tsd-signature-type">Raiden</a>, token<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>decimals<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>name<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>symbol<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>totalSupply<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BigNumber</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L150">raiden-ts/src/raiden.ts:150</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L191">raiden-ts/src/raiden.ts:191</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -352,7 +354,7 @@
 					<div class="tsd-signature tsd-kind-icon">resolve<wbr>Name<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>name<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L134">raiden-ts/src/raiden.ts:134</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L170">raiden-ts/src/raiden.ts:170</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -388,7 +390,7 @@
 					<div class="tsd-signature tsd-kind-icon">state$<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_state_.raidenstate.html" class="tsd-signature-type">RaidenState</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L102">raiden-ts/src/raiden.ts:102</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L138">raiden-ts/src/raiden.ts:138</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -399,12 +401,27 @@
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="synced" class="tsd-anchor"></a>
+					<h3>synced</h3>
+					<div class="tsd-signature tsd-kind-icon">synced<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">raidenSynced</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"payload"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L175">raiden-ts/src/raiden.ts:175</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>When started, is set to a promise which resolves when node finishes syncing</p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
 					<a name="transfers_" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagReadonly">Readonly</span> transfers$</h3>
 					<div class="tsd-signature tsd-kind-icon">transfers$<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_transfers_state_.raidentransfer.html" class="tsd-signature-type">RaidenTransfer</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L120">raiden-ts/src/raiden.ts:120</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L156">raiden-ts/src/raiden.ts:156</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -421,7 +438,7 @@
 					<div class="tsd-signature tsd-kind-icon">user<wbr>Deposit<wbr>Token<wbr>Address<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L139">raiden-ts/src/raiden.ts:139</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L180">raiden-ts/src/raiden.ts:180</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -458,7 +475,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L479">raiden-ts/src/raiden.ts:479</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L539">raiden-ts/src/raiden.ts:539</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -481,7 +498,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L539">raiden-ts/src/raiden.ts:539</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L599">raiden-ts/src/raiden.ts:599</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -504,7 +521,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L488">raiden-ts/src/raiden.ts:488</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L548">raiden-ts/src/raiden.ts:548</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -527,7 +544,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L497">raiden-ts/src/raiden.ts:497</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L557">raiden-ts/src/raiden.ts:557</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -550,7 +567,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L449">raiden-ts/src/raiden.ts:449</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L509">raiden-ts/src/raiden.ts:509</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -573,7 +590,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L470">raiden-ts/src/raiden.ts:470</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L530">raiden-ts/src/raiden.ts:530</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -596,7 +613,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L530">raiden-ts/src/raiden.ts:530</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L590">raiden-ts/src/raiden.ts:590</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -619,7 +636,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L521">raiden-ts/src/raiden.ts:521</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L581">raiden-ts/src/raiden.ts:581</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -645,7 +662,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L763">raiden-ts/src/raiden.ts:763</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L823">raiden-ts/src/raiden.ts:823</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -697,7 +714,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L725">raiden-ts/src/raiden.ts:725</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L785">raiden-ts/src/raiden.ts:785</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -749,7 +766,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1205">raiden-ts/src/raiden.ts:1205</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1265">raiden-ts/src/raiden.ts:1265</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -804,7 +821,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1064">raiden-ts/src/raiden.ts:1064</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1124">raiden-ts/src/raiden.ts:1124</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -849,7 +866,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L557">raiden-ts/src/raiden.ts:557</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L617">raiden-ts/src/raiden.ts:617</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -872,7 +889,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1096">raiden-ts/src/raiden.ts:1096</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1156">raiden-ts/src/raiden.ts:1156</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -893,13 +910,13 @@
 					<a name="findroutes" class="tsd-anchor"></a>
 					<h3>find<wbr>Routes</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">find<wbr>Routes<span class="tsd-signature-symbol">(</span>token<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, target<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BigNumberish</span>, options<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-symbol">{ </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_services_types_.raidenpfs.html" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../modules/_services_types_.html#paths-1" class="tsd-signature-type">Paths</a><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">find<wbr>Routes<span class="tsd-signature-symbol">(</span>token<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, target<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BigNumberish</span>, options<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-symbol">{ </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpfs" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../modules/_services_types_.html#paths-1" class="tsd-signature-type">Paths</a><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1034">raiden-ts/src/raiden.ts:1034</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1094">raiden-ts/src/raiden.ts:1094</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -931,13 +948,13 @@
 									</div>
 								</li>
 								<li>
-									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> options: <span class="tsd-signature-symbol">{ </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_services_types_.raidenpfs.html" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> = {}</span></h5>
+									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> options: <span class="tsd-signature-symbol">{ </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpfs" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> = {}</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>Optional parameters</p>
 									</div>
 									<ul class="tsd-parameters">
 										<li class="tsd-parameter">
-											<h5><span class="tsd-flag ts-flagOptional">Optional</span> pfs<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_services_types_.raidenpfs.html" class="tsd-signature-type">RaidenPFS</a></h5>
+											<h5><span class="tsd-flag ts-flagOptional">Optional</span> pfs<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpfs" class="tsd-signature-type">RaidenPFS</a></h5>
 											<div class="tsd-comment tsd-typography">
 												<p>Use this PFS instead of configured or automatically choosen ones</p>
 											</div>
@@ -960,7 +977,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L827">raiden-ts/src/raiden.ts:827</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L887">raiden-ts/src/raiden.ts:887</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -994,7 +1011,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L569">raiden-ts/src/raiden.ts:569</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L629">raiden-ts/src/raiden.ts:629</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1026,7 +1043,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L506">raiden-ts/src/raiden.ts:506</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L566">raiden-ts/src/raiden.ts:566</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1049,7 +1066,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L582">raiden-ts/src/raiden.ts:582</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L642">raiden-ts/src/raiden.ts:642</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1087,7 +1104,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L596">raiden-ts/src/raiden.ts:596</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L656">raiden-ts/src/raiden.ts:656</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1110,7 +1127,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1170">raiden-ts/src/raiden.ts:1170</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1230">raiden-ts/src/raiden.ts:1230</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1133,7 +1150,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1128">raiden-ts/src/raiden.ts:1128</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1188">raiden-ts/src/raiden.ts:1188</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1188,7 +1205,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L620">raiden-ts/src/raiden.ts:620</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L680">raiden-ts/src/raiden.ts:680</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1222,7 +1239,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L653">raiden-ts/src/raiden.ts:653</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L713">raiden-ts/src/raiden.ts:713</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1293,7 +1310,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1324">raiden-ts/src/raiden.ts:1324</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1384">raiden-ts/src/raiden.ts:1384</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1316,7 +1333,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L798">raiden-ts/src/raiden.ts:798</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L858">raiden-ts/src/raiden.ts:858</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1361,13 +1378,13 @@
 					<a name="start" class="tsd-anchor"></a>
 					<h3>start</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">start<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">start<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L418">raiden-ts/src/raiden.ts:418</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L478">raiden-ts/src/raiden.ts:478</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1376,7 +1393,7 @@
 								</div>
 								<p>No event should be emitted before start is called</p>
 							</div>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -1390,7 +1407,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L458">raiden-ts/src/raiden.ts:458</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L518">raiden-ts/src/raiden.ts:518</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1403,16 +1420,62 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
-					<a name="transfer" class="tsd-anchor"></a>
-					<h3>transfer</h3>
+					<a name="suggestpartners" class="tsd-anchor"></a>
+					<h3>suggest<wbr>Partners</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">transfer<span class="tsd-signature-symbol">(</span>token<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, target<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BigNumberish</span>, options<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-symbol">{ </span>lockTimeout<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>paths<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpaths" class="tsd-signature-type">RaidenPaths</a><span class="tsd-signature-symbol">; </span>paymentId<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">BigNumberish</span><span class="tsd-signature-symbol">; </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_services_types_.raidenpfs.html" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol">; </span>secret<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>secrethash<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">suggest<wbr>Partners<span class="tsd-signature-symbol">(</span>token<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, options<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-symbol">{ </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpfs" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_services_types_.suggestedpartner.html" class="tsd-signature-type">SuggestedPartner</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L860">raiden-ts/src/raiden.ts:860</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1459">raiden-ts/src/raiden.ts:1459</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Fetches an ordered list of suggested partners from provided, configured or first found PFS</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>token: <span class="tsd-signature-type">string</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Token address to get partners for</p>
+									</div>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> options: <span class="tsd-signature-symbol">{ </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpfs" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> = {}</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Request options</p>
+									</div>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter">
+											<h5><span class="tsd-flag ts-flagOptional">Optional</span> pfs<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpfs" class="tsd-signature-type">RaidenPFS</a></h5>
+											<div class="tsd-comment tsd-typography">
+												<p>PFS to use, instead of configured or automatic</p>
+											</div>
+										</li>
+									</ul>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_services_types_.suggestedpartner.html" class="tsd-signature-type">SuggestedPartner</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Ordered array of suggested partners, with address and scoring values according to PFS</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="transfer" class="tsd-anchor"></a>
+					<h3>transfer</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">transfer<span class="tsd-signature-symbol">(</span>token<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, target<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BigNumberish</span>, options<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-symbol">{ </span>lockTimeout<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>paths<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpaths" class="tsd-signature-type">RaidenPaths</a><span class="tsd-signature-symbol">; </span>paymentId<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">BigNumberish</span><span class="tsd-signature-symbol">; </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpfs" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol">; </span>secret<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>secrethash<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L920">raiden-ts/src/raiden.ts:920</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1445,7 +1508,7 @@
 									</div>
 								</li>
 								<li>
-									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> options: <span class="tsd-signature-symbol">{ </span>lockTimeout<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>paths<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpaths" class="tsd-signature-type">RaidenPaths</a><span class="tsd-signature-symbol">; </span>paymentId<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">BigNumberish</span><span class="tsd-signature-symbol">; </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_services_types_.raidenpfs.html" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol">; </span>secret<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>secrethash<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> = {}</span></h5>
+									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> options: <span class="tsd-signature-symbol">{ </span>lockTimeout<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>paths<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpaths" class="tsd-signature-type">RaidenPaths</a><span class="tsd-signature-symbol">; </span>paymentId<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">BigNumberish</span><span class="tsd-signature-symbol">; </span>pfs<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpfs" class="tsd-signature-type">RaidenPFS</a><span class="tsd-signature-symbol">; </span>secret<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>secrethash<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> = {}</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>Optional parameters for transfer:</p>
 									</div>
@@ -1469,7 +1532,7 @@
 											</div>
 										</li>
 										<li class="tsd-parameter">
-											<h5><span class="tsd-flag ts-flagOptional">Optional</span> pfs<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_services_types_.raidenpfs.html" class="tsd-signature-type">RaidenPFS</a></h5>
+											<h5><span class="tsd-flag ts-flagOptional">Optional</span> pfs<span class="tsd-signature-symbol">?: </span><a href="../modules/_services_types_.html#raidenpfs" class="tsd-signature-type">RaidenPFS</a></h5>
 											<div class="tsd-comment tsd-typography">
 												<p>Use this PFS instead of configured or automatically choosen ones.
 													Is ignored if paths were already provided. If neither are set and config.pfs is not
@@ -1508,7 +1571,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1252">raiden-ts/src/raiden.ts:1252</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1312">raiden-ts/src/raiden.ts:1312</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1564,7 +1627,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1297">raiden-ts/src/raiden.ts:1297</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1357">raiden-ts/src/raiden.ts:1357</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1618,7 +1681,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L548">raiden-ts/src/raiden.ts:548</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L608">raiden-ts/src/raiden.ts:608</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1649,7 +1712,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L982">raiden-ts/src/raiden.ts:982</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1042">raiden-ts/src/raiden.ts:1042</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1682,7 +1745,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L1351">raiden-ts/src/raiden.ts:1351</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L1411">raiden-ts/src/raiden.ts:1411</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1727,13 +1790,13 @@
 					<a name="create" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagStatic">Static</span> create</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-has-type-parameter tsd-is-static">
-						<li class="tsd-signature tsd-kind-icon">create&lt;R&gt;<span class="tsd-signature-symbol">(</span>this<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">R</span>, connection<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ExternalProvider</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, account<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Signer</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span>, storage<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-symbol">{ </span>adapter<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">; </span>prefix<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>state<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">; </span>storage<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_utils_types_.storage.html" class="tsd-signature-type">Storage</a><span class="tsd-signature-symbol"> }</span>, contractsOrUDCAddress<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_types_.contractsinfo.html" class="tsd-signature-type">ContractsInfo</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, config<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_config_.partialraidenconfig.html" class="tsd-signature-type">PartialRaidenConfig</a>, subkey<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">InstanceType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">create&lt;R&gt;<span class="tsd-signature-symbol">(</span>this<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">R</span>, connection<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">ExternalProvider</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, account<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Signer</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span>, storage<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-symbol">{ </span>adapter<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">; </span>prefix<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>state<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">; </span>storage<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_utils_types_.storage.html" class="tsd-signature-type">Storage</a><span class="tsd-signature-symbol"> }</span>, contractsOrUDCAddress<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_types_.contractsinfo.html" class="tsd-signature-type">ContractsInfo</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, config<span class="tsd-signature-symbol">?: </span><a href="../modules/_utils_types_.html#decodable" class="tsd-signature-type">Decodable</a><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_config_.partialraidenconfig.html" class="tsd-signature-type">PartialRaidenConfig</a><span class="tsd-signature-symbol">&gt;</span>, subkey<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">true</span>, subkeyOriginUrl<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">InstanceType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">R</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/raiden.ts#L337">raiden-ts/src/raiden.ts:337</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/raiden.ts#L395">raiden-ts/src/raiden.ts:395</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1796,7 +1859,7 @@
 									</div>
 								</li>
 								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> config: <a href="../interfaces/_config_.partialraidenconfig.html" class="tsd-signature-type">PartialRaidenConfig</a></h5>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> config: <a href="../modules/_utils_types_.html#decodable" class="tsd-signature-type">Decodable</a><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_config_.partialraidenconfig.html" class="tsd-signature-type">PartialRaidenConfig</a><span class="tsd-signature-symbol">&gt;</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>Raiden configuration</p>
 									</div>
@@ -1805,6 +1868,13 @@
 									<h5><span class="tsd-flag ts-flagOptional">Optional</span> subkey: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">true</span></h5>
 									<div class="tsd-comment tsd-typography">
 										<p>Whether to use a derived subkey or not</p>
+									</div>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> subkeyOriginUrl: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>URL of origin to generate a subkey for (defaults
+										to global context)</p>
 									</div>
 								</li>
 							</ul>
@@ -1854,6 +1924,33 @@
 					<li class=" pp-nav pp-page">
 						<a href="../pages/Usage/settling-channel.html">Settling a channel</a>
 					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden d<wbr>App</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/using-dapp.html">Overview</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/navigate-dapp.html">Navigate the <wbr>Raiden d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/hub-selection-channel-opening.html">Hub <wbr>Selection and <wbr>Channel <wbr>Opening</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/transfers.html">Transfers</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/channels.html">Channels</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/account.html">Accounts</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden CLI</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden CLI/README.html">Overview</a>
+					</li>
 					<li class="globals  ">
 						<a href="../globals.html"><em>Globals</em></a>
 					</li>
@@ -1898,6 +1995,9 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_raiden_.raiden.html#state_" class="tsd-kind-icon">state$</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_raiden_.raiden.html#synced" class="tsd-kind-icon">synced</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_raiden_.raiden.html#transfers_" class="tsd-kind-icon">transfers$</a>
@@ -1988,6 +2088,9 @@
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_raiden_.raiden.html#stop" class="tsd-kind-icon">stop</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_raiden_.raiden.html#suggestpartners" class="tsd-kind-icon">suggest<wbr>Partners</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_raiden_.raiden.html#transfer" class="tsd-kind-icon">transfer</a>

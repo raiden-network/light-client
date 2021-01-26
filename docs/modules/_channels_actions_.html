@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;channels/actions&quot; | raiden-ts - v0.14.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<title>&quot;channels/actions&quot; | raiden-ts - v0.15.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.15.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
 	<link rel="stylesheet" href="../assets/css/pages.css">
@@ -23,7 +23,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">raiden-ts - v0.14.0</a>
+					<a href="../index.html" class="title">raiden-ts - v0.15.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -79,6 +79,8 @@
 						<section class="tsd-index-section ">
 							<h3>Interfaces</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_channels_actions_.blockstale.html" class="tsd-kind-icon">block<wbr>Stale</a></li>
+								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_channels_actions_.blocktime.html" class="tsd-kind-icon">block<wbr>Time</a></li>
 								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_channels_actions_.channelmonitored.html" class="tsd-kind-icon">channel<wbr>Monitored</a></li>
 								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_channels_actions_.channelsettleable.html" class="tsd-kind-icon">channel<wbr>Settleable</a></li>
 								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_channels_actions_.channelwithdrawn.html" class="tsd-kind-icon">channel<wbr>Withdrawn</a></li>
@@ -89,6 +91,8 @@
 						<section class="tsd-index-section ">
 							<h3>Variables</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_channels_actions_.html#blockstale-1" class="tsd-kind-icon">block<wbr>Stale</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_channels_actions_.html#blocktime-1" class="tsd-kind-icon">block<wbr>Time</a></li>
 								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_channels_actions_.html#channelmonitored-1" class="tsd-kind-icon">channel<wbr>Monitored</a></li>
 								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_channels_actions_.html#channelsettleable-1" class="tsd-kind-icon">channel<wbr>Settleable</a></li>
 								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_channels_actions_.html#channelwithdrawn-1" class="tsd-kind-icon">channel<wbr>Withdrawn</a></li>
@@ -102,12 +106,32 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Variables</h2>
 				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
+					<a name="blockstale-1" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> block<wbr>Stale</h3>
+					<div class="tsd-signature tsd-kind-icon">block<wbr>Stale<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"block/stale"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>stale<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BooleanC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;block/stale&#x27;, t.type({ stale: t.boolean }))</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/actions.ts#L22">raiden-ts/src/channels/actions.ts:22</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
+					<a name="blocktime-1" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> block<wbr>Time</h3>
+					<div class="tsd-signature tsd-kind-icon">block<wbr>Time<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"block/time"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>blockTime<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;block/time&#x27;, t.type({ blockTime: t.number }))</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/actions.ts#L19">raiden-ts/src/channels/actions.ts:19</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
 					<a name="channelmonitored-1" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagConst">Const</span> channel<wbr>Monitored</h3>
 					<div class="tsd-signature tsd-kind-icon">channel<wbr>Monitored<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"channel/monitored"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>id<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>partner<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>tokenNetwork<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;channel/monitored&#x27;,t.type({ id: t.number }),ChannelId,)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/actions.ts#L64">raiden-ts/src/channels/actions.ts:64</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/actions.ts#L71">raiden-ts/src/channels/actions.ts:71</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -117,7 +141,7 @@
 					<div class="tsd-signature tsd-kind-icon">channel<wbr>Settleable<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"channel/settleable"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>settleableBlock<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>partner<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>tokenNetwork<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;channel/settleable&#x27;,t.type({ settleableBlock: t.number }),ChannelId,)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/actions.ts#L133">raiden-ts/src/channels/actions.ts:133</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/actions.ts#L140">raiden-ts/src/channels/actions.ts:140</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -127,7 +151,7 @@
 					<div class="tsd-signature tsd-kind-icon">channel<wbr>Withdrawn<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"channel/withdraw/success"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>confirmed<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">UnionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">UndefinedC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">BooleanC</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>id<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">; </span>participant<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>totalWithdraw<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>txBlock<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">; </span>txHash<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.hexstringc.html" class="tsd-signature-type">HexStringC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>partner<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>tokenNetwork<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;channel/withdraw/success&#x27;,t.type({id: t.number,participant: Address,totalWithdraw: UInt(32),txHash: Hash,txBlock: t.number,confirmed: t.union([t.undefined, t.boolean]),}),ChannelId,)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/actions.ts#L97">raiden-ts/src/channels/actions.ts:97</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/actions.ts#L104">raiden-ts/src/channels/actions.ts:104</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -137,7 +161,7 @@
 					<div class="tsd-signature tsd-kind-icon">new<wbr>Block<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"block/new"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>blockNumber<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;block/new&#x27;, t.type({ blockNumber: t.number }))</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/actions.ts#L15">raiden-ts/src/channels/actions.ts:15</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/actions.ts#L15">raiden-ts/src/channels/actions.ts:15</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -147,7 +171,7 @@
 					<div class="tsd-signature tsd-kind-icon">token<wbr>Monitored<span class="tsd-signature-symbol">:</span> <a href="_utils_actions_.html#actioncreator" class="tsd-signature-type">ActionCreator</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">"token/monitored"</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">IntersectionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>token<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>tokenNetwork<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">PartialC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>fromBlock<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">; </span>toBlock<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = createAction(&#x27;token/monitored&#x27;,t.intersection([t.type({token: Address,tokenNetwork: Address,}),t.partial({fromBlock: t.number,toBlock: t.number,}),]),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/actions.ts#L22">raiden-ts/src/channels/actions.ts:22</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/actions.ts#L29">raiden-ts/src/channels/actions.ts:29</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -198,6 +222,33 @@
 					<li class=" pp-nav pp-page">
 						<a href="../pages/Usage/settling-channel.html">Settling a channel</a>
 					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden d<wbr>App</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/using-dapp.html">Overview</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/navigate-dapp.html">Navigate the <wbr>Raiden d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/hub-selection-channel-opening.html">Hub <wbr>Selection and <wbr>Channel <wbr>Opening</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/transfers.html">Transfers</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/channels.html">Channels</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/account.html">Accounts</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden CLI</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden CLI/README.html">Overview</a>
+					</li>
 					<li class="globals  ">
 						<a href="../globals.html"><em>Globals</em></a>
 					</li>
@@ -223,6 +274,12 @@
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
 					<li class=" tsd-kind-interface tsd-parent-kind-module">
+						<a href="../interfaces/_channels_actions_.blockstale.html" class="tsd-kind-icon">block<wbr>Stale</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-parent-kind-module">
+						<a href="../interfaces/_channels_actions_.blocktime.html" class="tsd-kind-icon">block<wbr>Time</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-parent-kind-module">
 						<a href="../interfaces/_channels_actions_.channelmonitored.html" class="tsd-kind-icon">channel<wbr>Monitored</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-parent-kind-module">
@@ -236,6 +293,12 @@
 					</li>
 					<li class=" tsd-kind-interface tsd-parent-kind-module">
 						<a href="../interfaces/_channels_actions_.tokenmonitored.html" class="tsd-kind-icon">token<wbr>Monitored</a>
+					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-module">
+						<a href="_channels_actions_.html#blockstale-1" class="tsd-kind-icon">block<wbr>Stale</a>
+					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-module">
+						<a href="_channels_actions_.html#blocktime-1" class="tsd-kind-icon">block<wbr>Time</a>
 					</li>
 					<li class=" tsd-kind-variable tsd-parent-kind-module">
 						<a href="_channels_actions_.html#channelmonitored-1" class="tsd-kind-icon">channel<wbr>Monitored</a>

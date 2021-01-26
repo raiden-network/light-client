@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;channels/epics&quot; | raiden-ts - v0.14.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<title>&quot;channels/epics&quot; | raiden-ts - v0.15.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.15.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
 	<link rel="stylesheet" href="../assets/css/pages.css">
@@ -23,7 +23,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">raiden-ts - v0.14.0</a>
+					<a href="../index.html" class="title">raiden-ts - v0.15.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -70,6 +70,8 @@
 						<section class="tsd-index-section ">
 							<h3>Functions</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#blockstaleepic" class="tsd-kind-icon">block<wbr>Stale<wbr>Epic</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#blocktimeepic" class="tsd-kind-icon">block<wbr>Time<wbr>Epic</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#channelautosettleepic" class="tsd-kind-icon">channel<wbr>Auto<wbr>Settle<wbr>Epic</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#channelcloseepic" class="tsd-kind-icon">channel<wbr>Close<wbr>Epic</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#channeldepositepic" class="tsd-kind-icon">channel<wbr>Deposit<wbr>Epic</a></li>
@@ -81,6 +83,7 @@
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#channelunlockepic" class="tsd-kind-icon">channel<wbr>Unlock<wbr>Epic</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#channelupdateepic" class="tsd-kind-icon">channel<wbr>Update<wbr>Epic</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#confirmationepic" class="tsd-kind-icon">confirmation<wbr>Epic</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#initepic" class="tsd-kind-icon">init<wbr>Epic</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#initmonitorproviderepic" class="tsd-kind-icon">init<wbr>Monitor<wbr>Provider<wbr>Epic</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#initnewblockepic" class="tsd-kind-icon">init<wbr>New<wbr>Block<wbr>Epic</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-module"><a href="_channels_epics_.html#inittokensregistryepic" class="tsd-kind-icon">init<wbr>Tokens<wbr>Registry<wbr>Epic</a></li>
@@ -92,6 +95,100 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Functions</h2>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
+					<a name="blockstaleepic" class="tsd-anchor"></a>
+					<h3>block<wbr>Stale<wbr>Epic</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
+						<li class="tsd-signature tsd-kind-icon">block<wbr>Stale<wbr>Epic<span class="tsd-signature-symbol">(</span>__namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, state$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_state_.raidenstate.html" class="tsd-signature-type">RaidenState</a><span class="tsd-signature-symbol">&gt;</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>config$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_config_.raidenconfig.html" class="tsd-signature-type">RaidenConfig</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>latest$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Subject</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_types_.latest.html" class="tsd-signature-type">Latest</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"_A"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">; </span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L217">raiden-ts/src/channels/epics.ts:217</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Monitors provider for staleness. A provider is considered stale when it doesn&#39;t emit new blocks
+									on either 2 * httpTimeout or the average time for 3 blocks.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>__namedParameters: <span class="tsd-signature-symbol">{}</span></h5>
+									<ul class="tsd-parameters">
+									</ul>
+								</li>
+								<li>
+									<h5>state$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_state_.raidenstate.html" class="tsd-signature-type">RaidenState</a><span class="tsd-signature-symbol">&gt;</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Observable of RaidenStates</p>
+									</div>
+								</li>
+								<li>
+									<h5>__namedParameters: <span class="tsd-signature-symbol">{ </span>config$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_config_.raidenconfig.html" class="tsd-signature-type">RaidenConfig</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>latest$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Subject</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_types_.latest.html" class="tsd-signature-type">Latest</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter">
+											<h5>config$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_config_.raidenconfig.html" class="tsd-signature-type">RaidenConfig</a><span class="tsd-signature-symbol">&gt;</span></h5>
+										</li>
+										<li class="tsd-parameter">
+											<h5>latest$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Subject</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_types_.latest.html" class="tsd-signature-type">Latest</a><span class="tsd-signature-symbol">&gt;</span></h5>
+										</li>
+									</ul>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>payload<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TPayload</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">"_A"</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">; </span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TType</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Observable of blockStale actions</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
+					<a name="blocktimeepic" class="tsd-anchor"></a>
+					<h3>block<wbr>Time<wbr>Epic</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
+						<li class="tsd-signature tsd-kind-icon">block<wbr>Time<wbr>Epic<span class="tsd-signature-symbol">(</span>action$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_actions_.html#raidenaction" class="tsd-signature-type">RaidenAction</a><span class="tsd-signature-symbol">&gt;</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_channels_actions_.blocktime.html" class="tsd-signature-type">blockTime</a><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L167">raiden-ts/src/channels/epics.ts:167</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Every fetchEach=20 blocks, update average block time since previous request</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>action$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_actions_.html#raidenaction" class="tsd-signature-type">RaidenAction</a><span class="tsd-signature-symbol">&gt;</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Observable of RaidenActions</p>
+									</div>
+								</li>
+								<li>
+									<h5>__namedParameters: <span class="tsd-signature-symbol">{}</span></h5>
+									<ul class="tsd-parameters">
+									</ul>
+								</li>
+								<li>
+									<h5>__namedParameters: <span class="tsd-signature-symbol">{ </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol"> }</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter">
+											<h5>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span></h5>
+										</li>
+									</ul>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_channels_actions_.blocktime.html" class="tsd-signature-type">blockTime</a><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Observable of blockTime actions</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
 					<a name="channelautosettleepic" class="tsd-anchor"></a>
 					<h3>channel<wbr>Auto<wbr>Settle<wbr>Epic</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
@@ -101,7 +198,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L1077">raiden-ts/src/channels/epics.ts:1077</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L1224">raiden-ts/src/channels/epics.ts:1224</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -148,7 +245,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L875">raiden-ts/src/channels/epics.ts:875</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L1006">raiden-ts/src/channels/epics.ts:1006</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -237,7 +334,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L763">raiden-ts/src/channels/epics.ts:763</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L894">raiden-ts/src/channels/epics.ts:894</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -348,7 +445,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L505">raiden-ts/src/channels/epics.ts:505</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L633">raiden-ts/src/channels/epics.ts:633</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -403,7 +500,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L578">raiden-ts/src/channels/epics.ts:578</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L713">raiden-ts/src/channels/epics.ts:713</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -440,7 +537,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L617">raiden-ts/src/channels/epics.ts:617</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L752">raiden-ts/src/channels/epics.ts:752</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -526,7 +623,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L1142">raiden-ts/src/channels/epics.ts:1142</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L1289">raiden-ts/src/channels/epics.ts:1289</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -615,7 +712,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L1290">raiden-ts/src/channels/epics.ts:1290</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L1441">raiden-ts/src/channels/epics.ts:1441</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -653,7 +750,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L1335">raiden-ts/src/channels/epics.ts:1335</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L1486">raiden-ts/src/channels/epics.ts:1486</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -737,7 +834,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L976">raiden-ts/src/channels/epics.ts:976</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L1120">raiden-ts/src/channels/epics.ts:1120</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -824,7 +921,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L1437">raiden-ts/src/channels/epics.ts:1437</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L1591">raiden-ts/src/channels/epics.ts:1591</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -873,16 +970,61 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
-					<a name="initmonitorproviderepic" class="tsd-anchor"></a>
-					<h3>init<wbr>Monitor<wbr>Provider<wbr>Epic</h3>
+					<a name="initepic" class="tsd-anchor"></a>
+					<h3>init<wbr>Epic</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
-						<li class="tsd-signature tsd-kind-icon">init<wbr>Monitor<wbr>Provider<wbr>Epic<span class="tsd-signature-symbol">(</span>__namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">; </span>main<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">; </span>signer<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Signer</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">; </span>network<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Network</span><span class="tsd-signature-symbol">; </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_actions_.raidenshutdown.html" class="tsd-signature-type">raidenShutdown</a><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">init<wbr>Epic<span class="tsd-signature-symbol">(</span>__namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, state$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_state_.raidenstate.html" class="tsd-signature-type">RaidenState</a><span class="tsd-signature-symbol">&gt;</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>init$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Subject</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_actions_.raidensynced.html" class="tsd-signature-type">raidenSynced</a><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L198">raiden-ts/src/channels/epics.ts:198</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L109">raiden-ts/src/channels/epics.ts:109</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Emits raidenSynced when all init$ tasks got completed</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>__namedParameters: <span class="tsd-signature-symbol">{}</span></h5>
+									<ul class="tsd-parameters">
+									</ul>
+								</li>
+								<li>
+									<h5>state$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_state_.raidenstate.html" class="tsd-signature-type">RaidenState</a><span class="tsd-signature-symbol">&gt;</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Observable of RaidenStates</p>
+									</div>
+								</li>
+								<li>
+									<h5>__namedParameters: <span class="tsd-signature-symbol">{ </span>init$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Subject</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter">
+											<h5>init$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Subject</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+										</li>
+									</ul>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_actions_.raidensynced.html" class="tsd-signature-type">raidenSynced</a><span class="tsd-signature-symbol">&gt;</span></h4>
+							<p>Observable of raidenSynced actions</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module">
+					<a name="initmonitorproviderepic" class="tsd-anchor"></a>
+					<h3>init<wbr>Monitor<wbr>Provider<wbr>Epic</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
+						<li class="tsd-signature tsd-kind-icon">init<wbr>Monitor<wbr>Provider<wbr>Epic<span class="tsd-signature-symbol">(</span>action$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_actions_.html#raidenaction" class="tsd-signature-type">RaidenAction</a><span class="tsd-signature-symbol">&gt;</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">; </span>main<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">; </span>signer<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Signer</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">; </span>network<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Network</span><span class="tsd-signature-symbol">; </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_actions_.raidenshutdown.html" class="tsd-signature-type">raidenShutdown</a><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L332">raiden-ts/src/channels/epics.ts:332</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -893,9 +1035,10 @@
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>__namedParameters: <span class="tsd-signature-symbol">{}</span></h5>
-									<ul class="tsd-parameters">
-									</ul>
+									<h5>action$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_actions_.html#raidenaction" class="tsd-signature-type">RaidenAction</a><span class="tsd-signature-symbol">&gt;</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Observable of RaidenActions</p>
+									</div>
 								</li>
 								<li>
 									<h5>__namedParameters: <span class="tsd-signature-symbol">{}</span></h5>
@@ -929,13 +1072,13 @@
 					<a name="initnewblockepic" class="tsd-anchor"></a>
 					<h3>init<wbr>New<wbr>Block<wbr>Epic</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
-						<li class="tsd-signature tsd-kind-icon">init<wbr>New<wbr>Block<wbr>Epic<span class="tsd-signature-symbol">(</span>__namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_channels_actions_.newblock.html" class="tsd-signature-type">newBlock</a><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">init<wbr>New<wbr>Block<wbr>Epic<span class="tsd-signature-symbol">(</span>action$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_actions_.html#raidenaction" class="tsd-signature-type">RaidenAction</a><span class="tsd-signature-symbol">&gt;</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_channels_actions_.newblock.html" class="tsd-signature-type">newBlock</a><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L94">raiden-ts/src/channels/epics.ts:94</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L146">raiden-ts/src/channels/epics.ts:146</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -946,9 +1089,10 @@
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>__namedParameters: <span class="tsd-signature-symbol">{}</span></h5>
-									<ul class="tsd-parameters">
-									</ul>
+									<h5>action$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_actions_.html#raidenaction" class="tsd-signature-type">RaidenAction</a><span class="tsd-signature-symbol">&gt;</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Observable of RaidenActions</p>
+									</div>
 								</li>
 								<li>
 									<h5>__namedParameters: <span class="tsd-signature-symbol">{}</span></h5>
@@ -973,13 +1117,13 @@
 					<a name="inittokensregistryepic" class="tsd-anchor"></a>
 					<h3>init<wbr>Tokens<wbr>Registry<wbr>Epic</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module">
-						<li class="tsd-signature tsd-kind-icon">init<wbr>Tokens<wbr>Registry<wbr>Epic<span class="tsd-signature-symbol">(</span>__namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{}</span>, state$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_state_.raidenstate.html" class="tsd-signature-type">RaidenState</a><span class="tsd-signature-symbol">&gt;</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">; </span>contractsInfo<span class="tsd-signature-symbol">: </span><a href="../interfaces/_types_.contractsinfo.html" class="tsd-signature-type">ContractsInfo</a><span class="tsd-signature-symbol">; </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol">; </span>registryContract<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TokenNetworkRegistry</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_channels_actions_.tokenmonitored.html" class="tsd-signature-type">tokenMonitored</a><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">init<wbr>Tokens<wbr>Registry<wbr>Epic<span class="tsd-signature-symbol">(</span>action$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_actions_.html#raidenaction" class="tsd-signature-type">RaidenAction</a><span class="tsd-signature-symbol">&gt;</span>, state$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_state_.raidenstate.html" class="tsd-signature-type">RaidenState</a><span class="tsd-signature-symbol">&gt;</span>, __namedParameters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">; </span>contractsInfo<span class="tsd-signature-symbol">: </span><a href="../interfaces/_types_.contractsinfo.html" class="tsd-signature-type">ContractsInfo</a><span class="tsd-signature-symbol">; </span>init$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Subject</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol">; </span>registryContract<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TokenNetworkRegistry</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_channels_actions_.tokenmonitored.html" class="tsd-signature-type">tokenMonitored</a><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/channels/epics.ts#L118">raiden-ts/src/channels/epics.ts:118</a></li>
+									<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/channels/epics.ts#L258">raiden-ts/src/channels/epics.ts:258</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -991,9 +1135,10 @@
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>__namedParameters: <span class="tsd-signature-symbol">{}</span></h5>
-									<ul class="tsd-parameters">
-									</ul>
+									<h5>action$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="_actions_.html#raidenaction" class="tsd-signature-type">RaidenAction</a><span class="tsd-signature-symbol">&gt;</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>Observable of RaidenActions</p>
+									</div>
 								</li>
 								<li>
 									<h5>state$: <span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_state_.raidenstate.html" class="tsd-signature-type">RaidenState</a><span class="tsd-signature-symbol">&gt;</span></h5>
@@ -1002,13 +1147,16 @@
 									</div>
 								</li>
 								<li>
-									<h5>__namedParameters: <span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">; </span>contractsInfo<span class="tsd-signature-symbol">: </span><a href="../interfaces/_types_.contractsinfo.html" class="tsd-signature-type">ContractsInfo</a><span class="tsd-signature-symbol">; </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol">; </span>registryContract<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TokenNetworkRegistry</span><span class="tsd-signature-symbol"> }</span></h5>
+									<h5>__namedParameters: <span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a><span class="tsd-signature-symbol">; </span>contractsInfo<span class="tsd-signature-symbol">: </span><a href="../interfaces/_types_.contractsinfo.html" class="tsd-signature-type">ContractsInfo</a><span class="tsd-signature-symbol">; </span>init$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Subject</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span><span class="tsd-signature-symbol">; </span>registryContract<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TokenNetworkRegistry</span><span class="tsd-signature-symbol"> }</span></h5>
 									<ul class="tsd-parameters">
 										<li class="tsd-parameter">
 											<h5>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressb.html#address" class="tsd-signature-type">Address</a></h5>
 										</li>
 										<li class="tsd-parameter">
 											<h5>contracts<wbr>Info<span class="tsd-signature-symbol">: </span><a href="../interfaces/_types_.contractsinfo.html" class="tsd-signature-type">ContractsInfo</a></h5>
+										</li>
+										<li class="tsd-parameter">
+											<h5>init$<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Subject</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Observable</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
 										</li>
 										<li class="tsd-parameter">
 											<h5>provider<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">JsonRpcProvider</span></h5>
@@ -1065,6 +1213,33 @@
 					<li class=" pp-nav pp-page">
 						<a href="../pages/Usage/settling-channel.html">Settling a channel</a>
 					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden d<wbr>App</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/using-dapp.html">Overview</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/navigate-dapp.html">Navigate the <wbr>Raiden d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/hub-selection-channel-opening.html">Hub <wbr>Selection and <wbr>Channel <wbr>Opening</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/transfers.html">Transfers</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/channels.html">Channels</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/account.html">Accounts</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden CLI</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden CLI/README.html">Overview</a>
+					</li>
 					<li class="globals  ">
 						<a href="../globals.html"><em>Globals</em></a>
 					</li>
@@ -1075,6 +1250,12 @@
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
+					<li class=" tsd-kind-function tsd-parent-kind-module">
+						<a href="_channels_epics_.html#blockstaleepic" class="tsd-kind-icon">block<wbr>Stale<wbr>Epic</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module">
+						<a href="_channels_epics_.html#blocktimeepic" class="tsd-kind-icon">block<wbr>Time<wbr>Epic</a>
+					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-module">
 						<a href="_channels_epics_.html#channelautosettleepic" class="tsd-kind-icon">channel<wbr>Auto<wbr>Settle<wbr>Epic</a>
 					</li>
@@ -1107,6 +1288,9 @@
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-module">
 						<a href="_channels_epics_.html#confirmationepic" class="tsd-kind-icon">confirmation<wbr>Epic</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module">
+						<a href="_channels_epics_.html#initepic" class="tsd-kind-icon">init<wbr>Epic</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-module">
 						<a href="_channels_epics_.html#initmonitorproviderepic" class="tsd-kind-icon">init<wbr>Monitor<wbr>Provider<wbr>Epic</a>

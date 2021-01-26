@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Installing the dApp | raiden-ts - v0.14.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<title>Installing the dApp | raiden-ts - v0.15.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.15.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../../assets/css/main.css">
 	<link rel="stylesheet" href="../../assets/css/pages.css">
@@ -23,7 +23,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../../index.html" class="title">raiden-ts - v0.14.0</a>
+					<a href="../../index.html" class="title">raiden-ts - v0.15.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -86,6 +86,22 @@ yarn workspace raiden-ts build</code></pre>
 				<blockquote>
 					<p>Note that for the Raiden dApp to work it requires MetaMask or some other Web3 provider (wallet apps with dApp support) to be installed on your browser.</p>
 				</blockquote>
+				<a href="#recover-backup-locally" id="recover-backup-locally" style="color: inherit; text-decoration: none;">
+					<h2>Recover Backup locally</h2>
+				</a>
+				<p>You might have a backup by a dApp instance that was provided by a service that
+					is not available anymore. You can not import this backup to another dApp
+					provider if you were using a Raiden subkey (configuration option). The subkey
+					generation is dependent on the origin URL which is serving the dApp and the
+					Ethereum chain it is connected to. Therefore this will result into a different
+				key for each dApp provider and chain.</p>
+				<p>To still being able to recover your backup you can run the dApp locally and tell
+					it to act like it would be served by a specific origin. Therefore you need to
+				edit the <code>raiden-dapp/.env.development</code> file and add the following line:</p>
+				<pre><code class="language-sh">VUE_APP_SUBKEY_ORIGIN_URL=https://&lt;url-of-old-service&gt;</code></pre>
+				<p>Afterwards continue to run the dApp locally <a href="#install-and-run-the-dapp">as describe
+					earlier</a>. Remember that you need to restart the dApp
+				if you have it already running to reload the environment variables.</p>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
@@ -126,6 +142,33 @@ yarn workspace raiden-ts build</code></pre>
 					</li>
 					<li class=" pp-nav pp-page">
 						<a href="../Usage/settling-channel.html">Settling a channel</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden d<wbr>App</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Using the Raiden dApp/using-dapp.html">Overview</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Using the Raiden dApp/navigate-dapp.html">Navigate the <wbr>Raiden d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Using the Raiden dApp/hub-selection-channel-opening.html">Hub <wbr>Selection and <wbr>Channel <wbr>Opening</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Using the Raiden dApp/transfers.html">Transfers</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Using the Raiden dApp/channels.html">Channels</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Using the Raiden dApp/account.html">Accounts</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden CLI</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../Using the Raiden CLI/README.html">Overview</a>
 					</li>
 					<li class="label pp-nav pp-group">
 						<span>API</span>

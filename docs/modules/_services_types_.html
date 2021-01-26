@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;services/types&quot; | raiden-ts - v0.14.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.14.0">
+	<title>&quot;services/types&quot; | raiden-ts - v0.15.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.15.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
 	<link rel="stylesheet" href="../assets/css/pages.css">
@@ -23,7 +23,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">raiden-ts - v0.14.0</a>
+					<a href="../index.html" class="title">raiden-ts - v0.15.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -74,13 +74,14 @@
 								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_services_types_.lastiouresults.html" class="tsd-kind-icon">LastIOUResults</a></li>
 								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_services_types_.pfs.html" class="tsd-kind-icon">PFS</a></li>
 								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_services_types_.pathresults.html" class="tsd-kind-icon">Path<wbr>Results</a></li>
-								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_services_types_.raidenpfs.html" class="tsd-kind-icon">RaidenPFS</a></li>
+								<li class="tsd-kind-interface tsd-parent-kind-module"><a href="../interfaces/_services_types_.suggestedpartner.html" class="tsd-kind-icon">Suggested<wbr>Partner</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
 							<h3>Type aliases</h3>
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-type-alias tsd-parent-kind-module"><a href="_services_types_.html#paths" class="tsd-kind-icon">Paths</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-module"><a href="_services_types_.html#raidenpfs" class="tsd-kind-icon">RaidenPFS</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-module"><a href="_services_types_.html#raidenpaths" class="tsd-kind-icon">Raiden<wbr>Paths</a></li>
 							</ul>
 						</section>
@@ -92,6 +93,8 @@
 								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_services_types_.html#pfs-1" class="tsd-kind-icon">PFS</a></li>
 								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_services_types_.html#pathresults-1" class="tsd-kind-icon">Path<wbr>Results</a></li>
 								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_services_types_.html#paths-1" class="tsd-kind-icon">Paths</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_services_types_.html#suggestedpartner-1" class="tsd-kind-icon">Suggested<wbr>Partner</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-module"><a href="_services_types_.html#suggestedpartners" class="tsd-kind-icon">Suggested<wbr>Partners</a></li>
 							</ul>
 						</section>
 					</div>
@@ -105,17 +108,32 @@
 					<div class="tsd-signature tsd-kind-icon">Paths<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">t.TypeOf</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">typeof </span><a href="_services_types_.html#paths-1" class="tsd-signature-type">Paths</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/services/types.ts#L36">raiden-ts/src/services/types.ts:36</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L35">raiden-ts/src/services/types.ts:35</a></li>
 						</ul>
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module">
-					<a name="raidenpaths" class="tsd-anchor"></a>
-					<h3>Raiden<wbr>Paths</h3>
-					<div class="tsd-signature tsd-kind-icon">Raiden<wbr>Paths<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>fee<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">BigNumberish</span><span class="tsd-signature-symbol">; </span>path<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">readonly </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">[]</span></div>
+					<a name="raidenpfs" class="tsd-anchor"></a>
+					<h3>RaidenPFS</h3>
+					<div class="tsd-signature tsd-kind-icon">RaidenPFS<span class="tsd-signature-symbol">:</span> <a href="_utils_types_.html#decodable" class="tsd-signature-type">Decodable</a><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_services_types_.pfs.html" class="tsd-signature-type">PFS</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/services/types.ts#L41">raiden-ts/src/services/types.ts:41</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L59">raiden-ts/src/services/types.ts:59</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Public Raiden interface for PFS info</p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-module">
+					<a name="raidenpaths" class="tsd-anchor"></a>
+					<h3>Raiden<wbr>Paths</h3>
+					<div class="tsd-signature tsd-kind-icon">Raiden<wbr>Paths<span class="tsd-signature-symbol">:</span> <a href="_utils_types_.html#decodable" class="tsd-signature-type">Decodable</a><span class="tsd-signature-symbol">&lt;</span><a href="_services_types_.html#paths" class="tsd-signature-type">Paths</a><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L40">raiden-ts/src/services/types.ts:40</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -133,7 +151,7 @@
 					<div class="tsd-signature tsd-kind-icon">IOU<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>amount<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>chain_id<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>expiration_block<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>one_to_n_address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>receiver<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>sender<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = t.readonly(t.type({sender: Address,receiver: Address,amount: UInt(32),expiration_block: UInt(32),one_to_n_address: Address,chain_id: UInt(32),}),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/services/types.ts#L71">raiden-ts/src/services/types.ts:71</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L64">raiden-ts/src/services/types.ts:64</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -148,7 +166,7 @@
 					<div class="tsd-signature tsd-kind-icon">LastIOUResults<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>last_iou<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.signedc.html" class="tsd-signature-type">SignedC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>amount<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>chain_id<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>expiration_block<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>one_to_n_address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>receiver<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>sender<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = t.readonly(t.type({ last_iou: Signed(IOU) }))</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/services/types.ts#L84">raiden-ts/src/services/types.ts:84</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L77">raiden-ts/src/services/types.ts:77</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -158,7 +176,7 @@
 					<div class="tsd-signature tsd-kind-icon">PFS<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>price<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>rtt<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">; </span>token<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>url<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = t.readonly(t.type({address: Address,url: t.string,rtt: t.number,price: UInt(32),token: Address,}),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/services/types.ts#L46">raiden-ts/src/services/types.ts:46</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L45">raiden-ts/src/services/types.ts:45</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -173,7 +191,7 @@
 					<div class="tsd-signature tsd-kind-icon">Path<wbr>Results<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">IntersectionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>result<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ArrayC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>estimated_fee<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.intc.html" class="tsd-signature-type">IntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>path<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ReadonlyArrayC</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">PartialC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>feedback_token<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = t.readonly(t.intersection([t.type({result: t.array(t.readonly(t.type({path: t.readonlyArray(Address),estimated_fee: Int(32),}),),),}),t.partial({ feedback_token: t.string }),]),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/services/types.ts#L8">raiden-ts/src/services/types.ts:8</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L7">raiden-ts/src/services/types.ts:7</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -188,7 +206,7 @@
 					<div class="tsd-signature tsd-kind-icon">Paths<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ArrayC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>fee<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.intc.html" class="tsd-signature-type">IntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>path<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ReadonlyArrayC</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = t.array(t.readonly(t.type({path: t.readonlyArray(Address),fee: Int(32),}),),)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/915ece6f9/raiden-ts/src/services/types.ts#L28">raiden-ts/src/services/types.ts:28</a></li>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L27">raiden-ts/src/services/types.ts:27</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -196,6 +214,26 @@
 							<p>Codec for raiden-ts internal representation of a PFS result/routes</p>
 						</div>
 					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
+					<a name="suggestedpartner-1" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> Suggested<wbr>Partner</h3>
+					<div class="tsd-signature tsd-kind-icon">Suggested<wbr>Partner<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>capacity<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>centrality<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">UnionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>score<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">UnionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>uptime<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">UnionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = t.readonly(t.type({address: Address,capacity: UInt(32),centrality: t.union([t.number, t.string]),score: t.union([t.number, t.string]),uptime: t.union([t.number, t.string]),}),&#x27;SuggestedPartner&#x27;,)</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L81">raiden-ts/src/services/types.ts:81</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-module">
+					<a name="suggestedpartners" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> Suggested<wbr>Partners</h3>
+					<div class="tsd-signature tsd-kind-icon">Suggested<wbr>Partners<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ArrayC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">ReadonlyC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">TypeC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">{ </span>address<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.addressc.html" class="tsd-signature-type">AddressC</a><span class="tsd-signature-symbol">; </span>capacity<span class="tsd-signature-symbol">: </span><a href="../interfaces/_utils_types_.uintc.html" class="tsd-signature-type">UIntC</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">32</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>centrality<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">UnionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>score<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">UnionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>uptime<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">UnionC</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-symbol">[</span><span class="tsd-signature-type">NumberC</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">StringC</span><span class="tsd-signature-symbol">]</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = t.array(SuggestedPartner, &#x27;SuggestedPartners&#x27;)</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/raiden-network/light-client/blob/beb2f5ebc/raiden-ts/src/services/types.ts#L92">raiden-ts/src/services/types.ts:92</a></li>
+						</ul>
+					</aside>
 				</section>
 			</section>
 		</div>
@@ -238,6 +276,33 @@
 					<li class=" pp-nav pp-page">
 						<a href="../pages/Usage/settling-channel.html">Settling a channel</a>
 					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden d<wbr>App</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/using-dapp.html">Overview</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/navigate-dapp.html">Navigate the <wbr>Raiden d<wbr>App</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/hub-selection-channel-opening.html">Hub <wbr>Selection and <wbr>Channel <wbr>Opening</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/transfers.html">Transfers</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/channels.html">Channels</a>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden dApp/account.html">Accounts</a>
+					</li>
+					<li class="label pp-nav pp-group">
+						<span>Using the <wbr>Raiden CLI</span>
+					</li>
+					<li class=" pp-nav pp-page">
+						<a href="../pages/Using the Raiden CLI/README.html">Overview</a>
+					</li>
 					<li class="globals  ">
 						<a href="../globals.html"><em>Globals</em></a>
 					</li>
@@ -261,10 +326,13 @@
 						<a href="../interfaces/_services_types_.pathresults.html" class="tsd-kind-icon">Path<wbr>Results</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-parent-kind-module">
-						<a href="../interfaces/_services_types_.raidenpfs.html" class="tsd-kind-icon">RaidenPFS</a>
+						<a href="../interfaces/_services_types_.suggestedpartner.html" class="tsd-kind-icon">Suggested<wbr>Partner</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-module">
 						<a href="_services_types_.html#paths" class="tsd-kind-icon">Paths</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-module">
+						<a href="_services_types_.html#raidenpfs" class="tsd-kind-icon">RaidenPFS</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-module">
 						<a href="_services_types_.html#raidenpaths" class="tsd-kind-icon">Raiden<wbr>Paths</a>
@@ -283,6 +351,12 @@
 					</li>
 					<li class=" tsd-kind-variable tsd-parent-kind-module">
 						<a href="_services_types_.html#paths-1" class="tsd-kind-icon">Paths</a>
+					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-module">
+						<a href="_services_types_.html#suggestedpartner-1" class="tsd-kind-icon">Suggested<wbr>Partner</a>
+					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-module">
+						<a href="_services_types_.html#suggestedpartners" class="tsd-kind-icon">Suggested<wbr>Partners</a>
 					</li>
 				</ul>
 			</nav>
