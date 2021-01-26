@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.15.0] - 2021-01-26
+
 ### Fixed
 
 - [#2415] Fix sorting latest transaction on top in transactions list
@@ -30,7 +32,7 @@
 - [#2409] Lower default payment expiration to 1.1 × reveal timeout
 - [#2448] Align basic route design in open channel user flow
 - [#2414] Allow the dApp do be served from cache after first load
-- [#2440] Establish a strict and secure update mechanism 
+- [#2440] Establish a strict and secure update mechanism
 
 [#211]: https://github.com/raiden-network/light-client/issues/211
 [#2379]: https://github.com/raiden-network/light-client/issues/2379
@@ -541,7 +543,8 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[unreleased]: https://github.com/raiden-network/light-client/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/raiden-network/light-client/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/raiden-network/light-client/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/raiden-network/light-client/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/raiden-network/light-client/compare/v0.11.1...v0.12.0

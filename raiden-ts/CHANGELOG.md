@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.15.0] - 2021-01-26
 ### Added
 - [#211] 'suggestPartners' method to fetch suggested partners from PFS
 - [#485] Enable the Redux DevTools Extension in development for monitoring the Redux store
@@ -391,7 +393,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/raiden-network/light-client/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/raiden-network/light-client/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/raiden-network/light-client/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/raiden-network/light-client/compare/v0.11.1...v0.12.0
