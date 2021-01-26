@@ -441,7 +441,7 @@ function keyAfter(key: string): string {
  * @param db - Database to dump
  * @param opts - Options
  * @param opts.batch - Size of batches to fetch and yield
- * @returns Generator of documents
+ * @yields Each document in database
  */
 export async function* dumpDatabase(db: RaidenDatabase, { batch = 10 }: { batch?: number } = {}) {
   let changed: string | undefined;
@@ -508,6 +508,7 @@ export async function dumpDatabaseToArray(db: RaidenDatabase, opts?: { batch?: n
  * Generate a new database dump from old RaidenState JSON object
  *
  * @param state - Legacy (before PouchDB) state
+ * @yields Rows equivalent to object input as state
  */
 export function* legacyStateMigration(state: any) {
   const meta: RaidenDatabaseMeta = {
