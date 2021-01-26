@@ -34,6 +34,8 @@ import {
   endWith,
   scan,
   debounceTime,
+  switchMap,
+  distinctUntilChanged,
 } from 'rxjs/operators';
 import sortBy from 'lodash/sortBy';
 import isEmpty from 'lodash/isEmpty';
@@ -91,6 +93,7 @@ import {
   channelSettleable,
   channelWithdrawn,
   blockTime,
+  blockStale,
 } from './actions';
 import { assertTx, channelKey, groupChannel$, channelUniqueKey, approveIfNeeded$ } from './utils';
 
@@ -197,6 +200,44 @@ export function blockTimeEpic(
       );
     }),
     map((avgBlockTime) => blockTime({ blockTime: avgBlockTime })),
+  );
+}
+
+/**
+ * Monitors provider for staleness. A provider is considered stale when it doesn't emit new blocks
+ * on either 2 * httpTimeout or the average time for 3 blocks.
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps members
+ * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
+ * @returns Observable of blockStale actions
+ */
+export function blockStaleEpic(
+  {}: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { latest$, config$ }: RaidenEpicDeps,
+) {
+  return state$.pipe(
+    pluckDistinct('blockNumber'),
+    withLatestFrom(latest$, config$),
+    // forEach block
+    map(([, { blockTime }, { httpTimeout }]) => Math.max(3 * blockTime, 2 * httpTimeout)),
+    // switchMap will "reset" timer every block, restarting the timeout
+    switchMap((staleTimeout) =>
+      concat(
+        of(false),
+        timer(staleTimeout).pipe(
+          mapTo(true),
+          // ensure timer completes output if input completes,
+          // but first element of concat ensures it'll emit at least once (true) when subscribed
+          completeWith(state$),
+        ),
+      ),
+    ),
+    distinctUntilChanged(),
+    map((stale) => blockStale({ stale })),
   );
 }
 

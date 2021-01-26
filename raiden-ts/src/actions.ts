@@ -19,6 +19,7 @@ import * as TransportActions from './transport/actions';
 import * as MessagesActions from './messages/actions';
 import * as TransfersActions from './transfers/actions';
 import * as ServicesActions from './services/actions';
+import { Caps } from './transport/types';
 
 export const raidenShutdown = createAction(
   'raiden/shutdown',
@@ -35,6 +36,12 @@ export interface raidenShutdown extends ActionType<typeof raidenShutdown> {}
 
 export const raidenConfigUpdate = createAction('raiden/config/update', PartialRaidenConfig);
 export interface raidenConfigUpdate extends ActionType<typeof raidenConfigUpdate> {}
+
+export const raidenConfigCaps = createAction(
+  'raiden/config/caps',
+  t.type({ caps: t.union([Caps, t.null]) }),
+);
+export interface raidenConfigCaps extends ActionType<typeof raidenConfigCaps> {}
 
 export const raidenStarted = createAction('raiden/started');
 export interface raidenStarted extends ActionType<typeof raidenStarted> {}

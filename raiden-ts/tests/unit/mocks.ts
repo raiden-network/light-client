@@ -627,6 +627,7 @@ export function raidenEpicDeps(): MockRaidenEpicDeps {
       rtc: {},
       udcBalance: Zero as UInt<32>,
       blockTime: 1e3,
+      stale: false,
     }),
     config$ = latest$.pipe(pluckDistinct('config'));
 

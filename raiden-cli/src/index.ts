@@ -286,6 +286,7 @@ async function createRaidenConfig(
       ...config,
       caps: {
         ...config.caps,
+        [Capabilities.RECEIVE]: 1,
         [Capabilities.MEDIATE]: 1,
       },
     };

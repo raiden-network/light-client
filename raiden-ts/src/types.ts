@@ -45,6 +45,7 @@ export interface Latest {
   rtc: { [address: string]: RTCDataChannel };
   udcBalance: UInt<32>;
   blockTime: number;
+  stale: boolean;
 }
 
 export interface RaidenEpicDeps {
