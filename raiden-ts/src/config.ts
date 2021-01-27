@@ -26,6 +26,8 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *    After intializing a [[Raiden]] instance, the matrix server can't be changed later on.
  * - revealTimeout - Timeout for secrets to be revealed
  * - settleTimeout - Timeout for channels to be settled
+ * - expiryFactor - Multiply revealTimeout to get how far in the future
+ *    transfer expiration block should be
  * - httpTimeout - Used in http fetch requests
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
@@ -62,7 +64,7 @@ export const RaidenConfig = t.readonly(
       matrixServerLookup: t.string,
       revealTimeout: t.number,
       settleTimeout: t.number,
-      expiryFactor: t.number, // must be >= 1.1
+      expiryFactor: t.number, // must be > 1.0
       httpTimeout: t.number,
       discoveryRoom: t.union([t.string, t.null]),
       pfsRoom: t.union([t.string, t.null]),
