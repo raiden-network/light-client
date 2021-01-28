@@ -3,33 +3,30 @@
     "user-info": {
       "header": "Important Information for Users",
       "body": "The Raiden Light Client  is an application that allows you to interact with the Raiden network. If you haven't used Raiden before we recommend that you:",
-      "bullet-points": [
-        {
+      "bullet-points": {
+        "portal": {
           "text": "Checkout the",
-          "link": "developer portal",
-          "url": "portal"
+          "link": "developer portal"
         },
-        {
+        "docs": {
           "text": "Look at the",
-          "link": "documentation",
-          "url": "docs"
+          "link": "documentation"
         },
-        {
+        "videos": {
           "text": "Learn more by watching",
-          "link": "explanatory videos",
-          "url": "videos"
+          "link": "explanatory videos"
         },
-        {
+        "medium": {
           "text": "Read blog posts on",
-          "link": "Medium",
-          "url": "medium"
+          "link": "Medium"
         }
-      ]
+      }
     },
     "terms": {
       "header": "Terms of Use",
-      "body": "By accessing the Raiden Light Client through our website you agree to the Terms of Use and {0}.",
-      "link-name": "Privacy Policy"
+      "body": "By accessing the Raiden Light Client through our website you agree to the {0} of Use and {1}.",
+      "link-name-terms": "Terms",
+      "link-name-policy": "Privacy Policy"
     },
     "disclaimer": {
       "header": "Disclaimer",
@@ -441,7 +438,8 @@
     }
   },
   "application": {
-    "privacy-policy": "Privacy Policy, Disclaimer & Imprint"
+    "privacy-policy": "Privacy Policy, Disclaimer & Imprint.",
+    "terms": "Terms."
   },
   "udc-deposit-dialog": {
     "title": "Deposit to UDC",

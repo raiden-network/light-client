@@ -27,7 +27,7 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 - [License](#license)
 
 > Important information for users
-> The Raiden Light Client SDK  is an application that allows you to interact with the Raiden
+> The Raiden Light Client is an application that allows you to interact with the Raiden
 > network. If you haven't used Raiden before we recommend that you:
 > - [Checkout the developer portal](https://developer.raiden.network)
 > - [Look at the documentation](https://docs.raiden.network)
@@ -35,23 +35,23 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 > - [Read the blog posts on Medium](https://medium.com/@raiden_network)
 >
 > **Terms of Use**
-> By accessing the Raiden Light Client SDK through our website you agree to the [Terms of Use](https://github.com/raiden-network/light-client/blob/master/TERMS.md)
+> By accessing the Raiden Light Client through our website you agree to the [Terms of Use](https://github.com/raiden-network/light-client/blob/master/TERMS.md)
 > and [Privacy Policy](https://raiden.network/privacy.html).
 >
 > **Disclaimer**
-> The Raiden Light Client SDK is a beta version of experimental open source software released
+> The Raiden Light Client is a beta version of experimental open source software released
 > as a test version under an MIT license and may contain errors and/or bugs. No guarantee
 > or representation whatsoever is made regarding its suitability (or its use) for any purpose
 > or regarding its compliance with any applicable laws and regulations. Use of the Raiden
-> Light Client SDK is at your own risk and discretion and by using the software you warrant and
+> Light Client is at your own risk and discretion and by using the software you warrant and
 > represent that you have read this disclaimer, understand its contents, assume all risk
 > related thereto and hereby release, waive, discharge and covenant not to hold us or any of
 > our officers, employees or affiliates from and for any direct or indirect damage resulting
-> from the Raiden Light Client SDK or the use thereof. Such to the extent as permissible by
+> from the Raiden Light Client or the use thereof. Such to the extent as permissible by
 > applicable laws and regulations.
 >
 > **Privacy warning**
-> Please be aware, that by using the Raiden Light Client SDK, among others your Ethereum
+> Please be aware, that by using the Raiden Light Client, among others your Ethereum
 > address, channels, channel deposits, settlements and the Ethereum address of your
 > channel counterparty will be stored on the Ethereum chain, i.e. on servers of Ethereum
 > node operators and ergo are to a certain extent publicly available. The same might also be

@@ -6,31 +6,32 @@
           {{ $t('disclaimer.user-info.header') }}
         </span>
         <span class="disclaimer__content__text__body">{{ $t('disclaimer.user-info.body') }}</span>
-        <div>
-          <ul
-            v-for="(bulletPoint, index) in $t('disclaimer.user-info.bullet-points')"
-            :key="index"
-            class="disclaimer__content__text__bullet-points"
-          >
-            <li>
-              {{ bulletPoint.text }}
-              <a :href="disclaimerUrlMappings[bulletPoint.url]" target="_blank">
-                {{ bulletPoint.link }}
-              </a>
-            </li>
-          </ul>
-        </div>
-        <span v-if="imprint" class="disclaimer__content__text__header">
+        <ul
+          v-for="(bulletPoint, name) in $t('disclaimer.user-info.bullet-points')"
+          :key="name"
+          class="disclaimer__content__text__bullet-points"
+        >
+          <li>
+            {{ bulletPoint.text }}
+            <a :href="disclaimerUrlMappings[name]" target="_blank">
+              {{ bulletPoint.link }}
+            </a>
+          </li>
+        </ul>
+        <span v-if="imprint && terms" class="disclaimer__content__text__header">
           {{ $t('disclaimer.terms.header') }}
         </span>
         <i18n
-          v-if="imprint"
+          v-if="imprint && terms"
           path="disclaimer.terms.body"
           tag="span"
           class="disclaimer__content__text__body"
         >
-          <a :href="disclaimerUrlMappings.policy" target="_blank">
-            {{ $t('disclaimer.terms.link-name') }}
+          <a :href="terms" target="_blank">
+            {{ $t('disclaimer.terms.link-name-terms') }}
+          </a>
+          <a :href="imprint" target="_blank">
+            {{ $t('disclaimer.terms.link-name-policy') }}
           </a>
         </i18n>
         <span class="disclaimer__content__text__header">
@@ -93,11 +94,14 @@ export default class Disclaimer extends Vue {
     docs: 'https://docs.raiden.network',
     videos: 'https://www.youtube.com/channel/UCoUP_hnjUddEvbxmtNCcApg',
     medium: 'https://medium.com/@raiden_network',
-    policy: 'https://raiden.network/privacy.html',
   };
 
   get imprint(): string | undefined {
     return process.env.VUE_APP_IMPRINT;
+  }
+
+  get terms(): string | undefined {
+    return process.env.VUE_APP_TERMS;
   }
 
   get navigationTarget(): Location {
