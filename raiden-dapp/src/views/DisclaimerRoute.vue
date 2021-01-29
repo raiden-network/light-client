@@ -6,18 +6,20 @@
           {{ $t('disclaimer.user-info.header') }}
         </span>
         <span class="disclaimer__content__text__body">{{ $t('disclaimer.user-info.body') }}</span>
-        <ul
-          v-for="(bulletPoint, name) in $t('disclaimer.user-info.bullet-points')"
-          :key="name"
-          class="disclaimer__content__text__bullet-points"
-        >
-          <li>
-            {{ bulletPoint.text }}
-            <a :href="disclaimerUrlMappings[name]" target="_blank">
-              {{ bulletPoint.link }}
-            </a>
-          </li>
-        </ul>
+        <div>
+          <ul
+            v-for="(bulletPoint, name) in $t('disclaimer.user-info.bullet-points')"
+            :key="name"
+            class="disclaimer__content__text__bullet-points"
+          >
+            <li>
+              {{ bulletPoint.text }}
+              <a :href="disclaimerUrlMappings[name]" target="_blank">
+                {{ bulletPoint.link }}
+              </a>
+            </li>
+          </ul>
+        </div>
         <span v-if="imprint && terms" class="disclaimer__content__text__header">
           {{ $t('disclaimer.terms.header') }}
         </span>

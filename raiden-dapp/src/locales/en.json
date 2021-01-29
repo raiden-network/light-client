@@ -24,8 +24,8 @@
     },
     "terms": {
       "header": "Terms of Use",
-      "body": "By accessing the Raiden Light Client through our website you agree to the {0} of Use and {1}.",
-      "link-name-terms": "Terms",
+      "body": "By accessing the Raiden Light Client through our website you agree to the {0} and {1}.",
+      "link-name-terms": "Terms of Use",
       "link-name-policy": "Privacy Policy"
     },
     "disclaimer": {

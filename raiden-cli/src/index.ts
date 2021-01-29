@@ -53,7 +53,7 @@ function parseArguments() {
       acceptDisclaimer: {
         type: 'boolean',
         desc:
-          'By setting this parameter you confirm that you have read, understood and accepted the disclaimer and privacy warning.',
+          'By setting this parameter you confirm that you have read, understood and accepted the disclaimer, privacy warning and terms of use.',
       },
       blockchainQueryInterval: {
         type: 'number',
@@ -309,7 +309,7 @@ async function checkDisclaimer(accepted?: boolean): Promise<void> {
         type: 'confirm',
         name: 'accepted',
         message:
-          'Have you read, understood and hereby accept the above disclaimer and privacy warning?',
+          'I have read, understood and hereby agree to the above Terms of Use, Privacy Policy including the Disclaimer and Privacy Warning',
         default: false,
       },
     ]));
