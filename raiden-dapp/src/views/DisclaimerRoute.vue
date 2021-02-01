@@ -20,14 +20,17 @@
             </li>
           </ul>
         </div>
-        <span v-if="imprint && terms" class="disclaimer__content__text__header">
+        <span
+          v-if="imprint && terms"
+          class="disclaimer__content__text__header, imprint_terms_header"
+        >
           {{ $t('disclaimer.terms.header') }}
         </span>
         <i18n
           v-if="imprint && terms"
           path="disclaimer.terms.body"
           tag="span"
-          class="disclaimer__content__text__body"
+          class="disclaimer__content__text__body, imprint_terms_body"
         >
           <a :href="terms" target="_blank">
             {{ $t('disclaimer.terms.link-name-terms') }}
