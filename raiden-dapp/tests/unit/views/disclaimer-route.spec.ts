@@ -6,9 +6,9 @@ import VueRouter from 'vue-router';
 import Vue from 'vue';
 import DisclaimerRoute from '@/views/DisclaimerRoute.vue';
 import ActionButton from '@/components/ActionButton.vue';
-import Mocked = jest.Mocked;
 import store from '@/store';
 import { RouteNames } from '@/router/route-names';
+import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -20,6 +20,9 @@ describe('DisclaimerRoute.vue', () => {
   let actionButton: Wrapper<Vue>;
 
   beforeEach(() => {
+    process.env.VUE_APP_IMPRINT = 'https://custom-imprint.test';
+    process.env.VUE_APP_TERMS = 'https://custom-terms.test';
+
     vuetify = new Vuetify();
     router = new VueRouter() as Mocked<VueRouter>;
     router.push = jest.fn().mockResolvedValue(null);
@@ -34,6 +37,11 @@ describe('DisclaimerRoute.vue', () => {
       },
     });
     actionButton = wrapper.findComponent(ActionButton).find('button');
+  });
+
+  afterEach(() => {
+    delete process.env.VUE_APP_IMPRINT;
+    delete process.env.VUE_APP_TERMS;
   });
 
   async function clickAcceptCheckbox() {
@@ -103,5 +111,13 @@ describe('DisclaimerRoute.vue', () => {
     await clickActionButton();
 
     expect(router.push).toHaveBeenCalledWith({ path: redirectTo });
+  });
+
+  test('displays privacy policy and terms if env variables are set', () => {
+    const imprintTermsHeader = wrapper.find('.imprint_terms_header');
+    const imprintTermsBody = wrapper.find('.imprint_terms_body');
+
+    expect(imprintTermsHeader.exists()).toBe(true);
+    expect(imprintTermsBody.exists()).toBe(true);
   });
 });

@@ -15,9 +15,12 @@
         </v-main>
       </div>
     </div>
-    <div v-if="imprint" class="policy">
-      <a :href="imprint" target="_blank">
+    <div v-if="imprint && terms" class="imprint">
+      <a :href="imprint" target="_blank" class="imprint__policy">
         {{ $t('application.privacy-policy') }}
+      </a>
+      <a :href="terms" target="_blank" class="imprint__terms">
+        {{ $t('application.terms') }}
       </a>
     </div>
     <offline-snackbar />
@@ -50,6 +53,9 @@ import InstallBanner from '@/components/InstallBanner.vue';
 export default class App extends Mixins(NavigationMixin) {
   get imprint(): string | undefined {
     return process.env.VUE_APP_IMPRINT;
+  }
+  get terms(): string | undefined {
+    return process.env.VUE_APP_TERMS;
   }
 
   destroyed() {
@@ -119,7 +125,7 @@ export default class App extends Mixins(NavigationMixin) {
   padding: 0 !important;
 }
 
-.policy {
+.imprint {
   font-size: 13px;
   margin: 15px auto 15px auto;
 
