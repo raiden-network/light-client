@@ -130,7 +130,7 @@ function parseArguments() {
       },
       enableMonitoring: {
         type: 'boolean',
-        default: true,
+        default: false,
         desc: "Enables monitoring if there's a UDC deposit",
       },
       enableMediation: {
