@@ -1,8 +1,8 @@
 {
-  "mode": "modules",
-  "plugin": ["typedoc-plugin-pages"],
+  "plugin": ["@sastan/typedoc-plugin-pages"],
   "theme": "pages-plugin",
   "readme": "./docs-source/SDK-Development.md",
+  "entryPoints": ["src/index.ts"],
   "out": "./docs",
   "exclude": ["src/contracts", "src/polyfills.ts"],
   "categoryOrder": ["Classes", "Enums", "*"],
@@ -11,7 +11,6 @@
   "excludeExternals": true,
   "excludePrivate": true,
   "excludeProtected": true,
-  "excludeNotExported": true,
   "includeVersion": true,
   "listInvalidSymbolLinks": true,
   "pages": {
