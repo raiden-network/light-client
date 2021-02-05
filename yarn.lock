@@ -2733,10 +2733,10 @@
   resolved "https://registry.yarnpkg.com/@types/long/-/long-4.0.1.tgz#459c65fa1867dafe6a8f322c4c51695663cc55e9"
   integrity sha512-5tXH6Bx/kNGd3MgffdmP4dy2Z+G4eaXw0SE81Tq3BNadtnMR5/ySMzX4SLEzHJzSmPNn4HIdpQsBvXMUykr58w==
 
-"@types/matrix-js-sdk@^5.1.3":
-  version "5.1.3"
-  resolved "https://registry.yarnpkg.com/@types/matrix-js-sdk/-/matrix-js-sdk-5.1.3.tgz#7b29da3f03272dea47550e93f99770e557b8af68"
-  integrity sha512-u4ofG4C8mRLcG/rH6fCSBVh1wpIINNEFVAY2kK70xEX2kpOuONHA7wrQ1iqaaSYh5zVuAs12Pf4Tzf89mwwsGQ==
+"@types/matrix-js-sdk@^9.2.0":
+  version "9.2.0"
+  resolved "https://registry.yarnpkg.com/@types/matrix-js-sdk/-/matrix-js-sdk-9.2.0.tgz#f360a13eb5a32bf21b2fb83299926c9af59eb697"
+  integrity sha512-t6eRrNhdeSRwq0GEnWAWZ4YmGFKDKjSPK8trdCeMVJX6jXAUlH/vd2a0+w/aIwJA+4aZwwuua1vDtKLTu2DWJA==
 
 "@types/mdast@^3.0.0":
   version "3.0.3"
