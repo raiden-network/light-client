@@ -8,7 +8,6 @@
       "packagePatterns": [
         "*"
       ],
-      "excludePackageNames": ["typedoc"],
       "updateTypes": ["minor", "patch", "pin", "digest", "lockFileMaintenance", "rollback", "bump"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch",
