@@ -50,6 +50,7 @@ describe('ChannelDeposit.vue', () => {
 
   test('do not update the deposit placeholder if dialog hides', async () => {
     wrapper.setProps({ token: { ...TestData.token, decimals: 0 } });
+    await wrapper.vm.$nextTick();
     expect(wrapper.vm.$data.deposit).toBe('0.0');
     (wrapper.vm as any).onVisibilityChanged(false);
     expect(wrapper.vm.$data.deposit).toBe('0.0');
@@ -57,6 +58,7 @@ describe('ChannelDeposit.vue', () => {
 
   test('update the deposit placeholder if dialog shows', async () => {
     wrapper.setProps({ token: { ...TestData.token, decimals: 0 } });
+    await wrapper.vm.$nextTick();
     expect(wrapper.vm.$data.deposit).toBe('0.0');
     (wrapper.vm as any).onVisibilityChanged(true);
     expect(wrapper.vm.$data.deposit).toBe('0');
