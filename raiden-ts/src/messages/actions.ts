@@ -24,12 +24,19 @@ export namespace messageSend {
 }
 
 /** One-shot send payload.message to a global room in transport */
-export const messageGlobalSend = createAction(
-  'message/global/send',
-  t.type({ message: t.union([t.string, Signed(Message)]) }),
-  t.type({ roomName: t.string }),
+export const messageGlobalSend = createAsyncAction(
+  t.type({ roomName: t.string, msgId: t.string }),
+  'message/global/send/request',
+  'message/global/send/success',
+  'message/global/send/failure',
+  t.type({ message: Signed(Message) }),
+  t.union([t.undefined, t.type({ via: t.string, tookMs: t.number, retries: t.number })]),
 );
-export interface messageGlobalSend extends ActionType<typeof messageGlobalSend> {}
+export namespace messageGlobalSend {
+  export interface request extends ActionType<typeof messageGlobalSend.request> {}
+  export interface success extends ActionType<typeof messageGlobalSend.success> {}
+  export interface failure extends ActionType<typeof messageGlobalSend.failure> {}
+}
 
 /**
  * payload.message was received on payload.ts (timestamp) from meta.address

@@ -66,6 +66,7 @@ import { matrixPresence } from '../transport/actions';
 import { getCap } from '../transport/utils';
 import type { UserDeposit, HumanStandardToken } from '../contracts';
 
+import { makeMessageId } from '../transfers/utils';
 import {
   iouClear,
   pathFind,
@@ -238,13 +239,13 @@ export function pathFindServiceEpic(
  * @param deps.network - Current Network
  * @param deps.signer - Signer instance
  * @param deps.config$ - Config observable
- * @returns Observable of messageGlobalSend actions
+ * @returns Observable of messageGlobalSend.request actions
  */
 export function pfsCapacityUpdateEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, address, network, signer, config$ }: RaidenEpicDeps,
-): Observable<messageGlobalSend> {
+): Observable<messageGlobalSend.request> {
   return state$.pipe(
     groupChannel$,
     mergeMap((grouped$) =>
@@ -281,9 +282,12 @@ export function pfsCapacityUpdateEpic(
             other_capacity: partnerCapacity,
             reveal_timeout: BigNumber.from(revealTimeout) as UInt<32>,
           };
+          const msgId = makeMessageId().toString();
 
           return defer(() => signMessage(signer, message, { log })).pipe(
-            map((signed) => messageGlobalSend({ message: signed }, { roomName: pfsRoom! })),
+            map((signed) =>
+              messageGlobalSend.request({ message: signed }, { roomName: pfsRoom!, msgId }),
+            ),
             catchError((err) => {
               log.error('Error trying to generate & sign PFSCapacityUpdate', err);
               return EMPTY;
@@ -308,13 +312,13 @@ export function pfsCapacityUpdateEpic(
  * @param deps.network - Current network
  * @param deps.signer - Signer instance
  * @param deps.config$ - Config observable
- * @returns Observable of messageGlobalSend actions
+ * @returns Observable of messageGlobalSend.request actions
  */
 export function pfsFeeUpdateEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, address, network, signer, config$ }: RaidenEpicDeps,
-): Observable<messageGlobalSend> {
+): Observable<messageGlobalSend.request> {
   return state$.pipe(
     groupChannel$,
     // get only first state per channel
@@ -342,9 +346,12 @@ export function pfsFeeUpdateEpic(
           flat: Zero as Int<32>,
         },
       };
+      const msgId = makeMessageId().toString();
 
       return from(signMessage(signer, message, { log })).pipe(
-        map((signed) => messageGlobalSend({ message: signed }, { roomName: pfsRoom! })),
+        map((signed) =>
+          messageGlobalSend.request({ message: signed }, { roomName: pfsRoom!, msgId }),
+        ),
         catchError((err) => {
           log.error('Error trying to generate & sign PFSFeeUpdate', err);
           return EMPTY;
@@ -624,7 +631,7 @@ export function udcDepositEpic(
  * @param deps.latest$ - Latest observable
  * @param deps.config$ - Config observable
  * @returns An operator which receives prev and current Channel states and returns a cold
- *      Observable of messageGlobalSend actions to the global monitoring room
+ *      Observable of messageGlobalSend.request actions to the global monitoring room
  */
 function makeMonitoringRequest$({
   address,
@@ -672,6 +679,7 @@ function makeMonitoringRequest$({
           encode(balanceProof.additionalHash, 32),
           encode(balanceProof.signature, 65), // partner's signature for this balance proof
         ]); // UInt8Array of 277 bytes
+        const msgId = makeMessageId().toString();
 
         // first sign the nonClosing signature, then the actual message
         return from(signer.signMessage(nonClosingMessage) as Promise<Signature>).pipe(
@@ -697,7 +705,9 @@ function makeMonitoringRequest$({
               { log },
             ),
           ),
-          map((message) => messageGlobalSend({ message }, { roomName: monitoringRoom! })),
+          map((message) =>
+            messageGlobalSend.request({ message }, { roomName: monitoringRoom!, msgId }),
+          ),
         );
       }),
       catchError((err) => {
@@ -714,13 +724,13 @@ function makeMonitoringRequest$({
  * @param action$ - Observable of channelDeposit.success actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
- * @returns Observable of messageGlobalSend actions
+ * @returns Observable of messageGlobalSend.request actions
  */
 export function monitorRequestEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<messageGlobalSend> {
+): Observable<messageGlobalSend.request> {
   return state$.pipe(
     groupChannel$,
     withLatestFrom(deps.config$),

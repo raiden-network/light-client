@@ -15,7 +15,6 @@ import {
   catchError,
   concatMap,
   filter,
-  ignoreElements,
   map,
   mergeMap,
   withLatestFrom,
@@ -53,7 +52,7 @@ import { RaidenState } from '../../state';
 import { getServerName } from '../../utils/matrix';
 import { LruCache } from '../../utils/lru';
 import { getPresenceByUserId, getCap } from '../utils';
-import { networkErrors } from '../../utils/error';
+import { assert, networkErrors } from '../../utils/error';
 import { globalRoomNames, roomMatch, getRoom$, parseMessage } from './helpers';
 
 function getMessageBody(message: string | Signed<Message>): string {
@@ -199,17 +198,17 @@ export function matrixMessageSendEpic(
 }
 
 function sendGlobalMessages(
-  actions: messageGlobalSend[],
+  actions: readonly messageGlobalSend.request[],
   matrix: MatrixClient,
   config: RaidenConfig,
-  { config$, log }: Pick<RaidenEpicDeps, 'config$' | 'log'>,
-) {
+  { config$ }: Pick<RaidenEpicDeps, 'config$'>,
+): Observable<messageGlobalSend.success['payload']> {
   const roomName = actions[0].meta.roomName;
   const globalRooms = globalRoomNames(config);
-  if (!globalRooms.includes(roomName)) {
-    log.warn('messageGlobalSend for unknown global room, ignoring', roomName, globalRooms);
-    return EMPTY;
-  }
+  assert(globalRooms.includes(roomName), [
+    'messageGlobalSend for unknown global room',
+    { roomName, globalRooms: globalRooms.join(',') },
+  ]);
   const serverName = getServerName(matrix.getHomeserverUrl());
   const roomAlias = `#${roomName}:${serverName}`;
   // batch action messages in a single text body
@@ -220,31 +219,15 @@ function sendGlobalMessages(
     // send message!
     mergeMap(async (room) => {
       retries++;
-      return matrix
-        .sendEvent(room.roomId, 'm.room.message', { body, msgtype: 'm.text' }, '')
-        .then(() =>
-          log.info('messageGlobalSend success', {
-            tookMs: Date.now() - start,
-            retries,
-            roomName,
-            batchSize: actions.length,
-          }),
-        );
+      await matrix.sendEvent(room.roomId, 'm.room.message', { body, msgtype: 'm.text' }, '');
+      return { via: room.roomId, tookMs: Date.now() - start, retries };
     }),
     retryWhile(intervalFromConfig(config$), { maxRetries: 3, onErrors: networkErrors }),
-    catchError((err) => {
-      log.error('Error sending messages to global room', err, {
-        retries,
-        roomName,
-        batchSize: actions.length,
-      });
-      return EMPTY;
-    }),
   );
 }
 
 /**
- * Handles a [[messageGlobalSend]] action and send one-shot message to a global room
+ * Handles a [[messageGlobalSend.request]] action and send one-shot message to a global room
  *
  * @param action$ - Observable of messageGlobalSend actions
  * @param state$ - Observable of RaidenStates
@@ -258,10 +241,10 @@ export function matrixMessageGlobalSendEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<RaidenAction> {
+): Observable<messageGlobalSend.success | messageGlobalSend.failure> {
   const { matrix$, config$ } = deps;
   return action$.pipe(
-    filter(isActionOf(messageGlobalSend)),
+    filter(isActionOf(messageGlobalSend.request)),
     groupBy((action) => action.meta.roomName),
     mergeMap((grouped$) =>
       grouped$.pipe(
@@ -269,12 +252,17 @@ export function matrixMessageGlobalSendEpic(
           return matrix$.pipe(
             withLatestFrom(config$),
             mergeMap(([matrix, config]) => sendGlobalMessages(actions, matrix, config, deps)),
+            mergeMap((payload) =>
+              from(actions.map((action) => messageGlobalSend.success(payload, action.meta))),
+            ),
+            catchError((err) =>
+              from(actions.map((action) => messageGlobalSend.failure(err, action.meta))),
+            ),
             completeWith(action$, 10),
           );
         }, 20),
       ),
     ),
-    ignoreElements(),
   );
 }
 
