@@ -3,7 +3,7 @@
 import * as t from 'io-ts';
 import isMatchWith from 'lodash/isMatchWith';
 import { Observable } from 'rxjs';
-import { filter, first, map } from 'rxjs/operators';
+import { filter, first, map, take } from 'rxjs/operators';
 
 import { assert } from '../utils';
 import { RaidenError, ErrorCodes } from '../utils/error';
@@ -568,12 +568,13 @@ export async function asyncActionToPromise<
           ? isConfirmationResponseOf<AAC>(asyncAction, meta)
           : isResponseOf<AAC>(asyncAction, meta),
       ),
-      first(
+      filter(
         (action) =>
           confirmed === undefined ||
           !asyncAction.success.is(action) ||
           'confirmed' in action.payload,
       ),
+      take(1),
       map((action) => {
         if (asyncAction.failure.is(action))
           throw action.payload as ActionType<AAC['failure']>['payload'];
