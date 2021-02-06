@@ -9,15 +9,26 @@ import { sha256 } from '@ethersproject/sha2';
 import { MaxUint256 } from '@ethersproject/constants';
 
 import { Observable, defer, merge } from 'rxjs';
-import { filter, map, pluck, withLatestFrom, first, exhaustMap, take } from 'rxjs/operators';
+import {
+  filter,
+  map,
+  pluck,
+  withLatestFrom,
+  first,
+  exhaustMap,
+  take,
+  tap,
+  takeWhile,
+} from 'rxjs/operators';
 import logging from 'loglevel';
+import isEqual from 'lodash/isEqual';
 
 import { RaidenState, makeInitialState } from './state';
 import { ContractsInfo, RaidenEpicDeps, Latest } from './types';
 import { assert } from './utils';
 import { raidenTransfer } from './transfers/utils';
 import { RaidenTransfer, TransferState, Direction } from './transfers/state';
-import { channelAmounts } from './channels/utils';
+import { channelAmounts, channelKey } from './channels/utils';
 import { RaidenChannels, RaidenChannel } from './channels/state';
 import { distinctRecordValues, pluckDistinct } from './utils/rx';
 import { Address, PrivateKey, isntNil, Hash, UInt, decode, Storage } from './utils/types';
@@ -54,6 +65,11 @@ import {
   getDatabaseConstructorFromOptions,
 } from './db/utils';
 import { jsonParse } from './utils/data';
+import { messageGlobalSend } from './messages/actions';
+import { asyncActionToPromise } from './utils/actions';
+import { RaidenAction } from './actions';
+import { RaidenConfig } from './config';
+import { channelDeposit } from './channels/actions';
 
 /**
  * Returns contract information depending on the passed [[Network]]. Currently, only
@@ -551,4 +567,58 @@ export async function getState(
   }
 
   return { db, state };
+}
+
+/**
+ * For a given channelId (passed as opts.meta), waits for a deposit to be confirmed and for the
+ * following messageGlobalSend for its PFSCapacityUpdate to succeed
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param opts - Options
+ * @param opts.meta - channelId on which to wait for a deposit
+ * @param opts.config - RaidenConfig to check pfsRoom from
+ * @returns Promise for undefined or messageGlobalSend.success action
+ */
+export async function waitForPFSCapacityUpdate(
+  action$: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  {
+    meta,
+    config,
+  }: { meta: channelDeposit.request['meta']; config: Pick<RaidenConfig, 'pfsRoom'> },
+) {
+  const pfsRoom = config.pfsRoom;
+  if (!pfsRoom) return;
+  const postMeta: messageGlobalSend.request['meta'] = { roomName: '', msgId: '' };
+  return asyncActionToPromise(
+    messageGlobalSend,
+    postMeta, // pass postMeta by reference, so it gets used for filtering once msgId is set
+    // like action$, but sets proper postMeta for filtering *once* deposited and request is
+    // identified in a synchronous way
+    action$.pipe(
+      withLatestFrom(state$),
+      tap(([action, state]) => {
+        if (channelDeposit.success.is(action) && action.payload.confirmed) {
+          postMeta.roomName = pfsRoom; // once deposited, set roomName
+          return;
+        }
+        // ignore if not deposited yet or request's msgId already identified
+        if (!postMeta.roomName || postMeta.msgId || !messageGlobalSend.request.is(action)) return;
+        const message = action.payload.message;
+        if (message.type !== 'PFSCapacityUpdate') return;
+        // ensure it's a PFSCapacityUpdate for this specific channel
+        if (
+          message.canonical_identifier.token_network_address !== meta.tokenNetwork ||
+          !message.canonical_identifier.channel_identifier.eq(state.channels[channelKey(meta)]?.id)
+        )
+          return;
+        // on the first messageGlobalSend.request for a PFSCapacityUpdate for this channel
+        // *after* deposit is confirmed, "save" msgId to be used in filter for success
+        postMeta.msgId = action.meta.msgId;
+      }),
+      pluck(0),
+      takeWhile((action) => !(channelDeposit.failure.is(action) && isEqual(action.meta, meta))),
+    ),
+  );
 }

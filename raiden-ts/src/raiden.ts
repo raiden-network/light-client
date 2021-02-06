@@ -114,6 +114,7 @@ import {
   fetchContractsInfo,
   getUdcBalance,
   getState,
+  waitForPFSCapacityUpdate,
 } from './helpers';
 import { RaidenError, ErrorCodes } from './utils/error';
 import { RaidenDatabase } from './db/types';
@@ -742,10 +743,15 @@ export class Raiden {
       ({ txHash }) => txHash, // pluck txHash
     );
     let depositPromise;
+    let postPromise;
     if (deposit?.gt(0)) {
       depositPromise = asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
         ({ txHash }) => txHash, // pluck txHash
       );
+      postPromise = waitForPFSCapacityUpdate(this.action$, this.state$, {
+        meta,
+        config: this.config,
+      });
     }
 
     this.store.dispatch(channelOpen.request({ ...options, settleTimeout, deposit }, meta));
@@ -755,7 +761,7 @@ export class Raiden {
 
     await this.state$
       .pipe(
-        pluckDistinct('channels', channelKey({ tokenNetwork, partner }), 'state'),
+        pluckDistinct('channels', channelKey(meta), 'state'),
         first((state) => state === ChannelState.open),
       )
       .toPromise();
@@ -764,6 +770,7 @@ export class Raiden {
     if (depositPromise) {
       const depositTx = await depositPromise;
       onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: depositTx } });
+      await postPromise;
     }
 
     return openTxHash;
@@ -797,10 +804,17 @@ export class Raiden {
 
     const deposit = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
     const meta = { tokenNetwork, partner };
+    const postPromise = waitForPFSCapacityUpdate(this.action$, this.state$, {
+      meta,
+      config: this.config,
+    });
+
     const promise = asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
     this.store.dispatch(channelDeposit.request({ deposit, subkey }, meta));
+    await promise;
+    await postPromise; // if undefined, noop
     return promise;
   }
 
