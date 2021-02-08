@@ -397,9 +397,7 @@ describe('receive transfers', () => {
       // "wrong" secret/secrethash
       const secret_ = makeSecret();
       const secrethash_ = getSecrethash(secret_);
-      const promise = raiden.deps.latest$
-        .pipe(pluck('action'), first(transferExpire.failure.is))
-        .toPromise();
+      const promise = raiden.action$.pipe(first(transferExpire.failure.is)).toPromise();
       raiden.store.dispatch(
         messageReceived(
           {

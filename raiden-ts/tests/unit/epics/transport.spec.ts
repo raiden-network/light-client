@@ -1268,23 +1268,38 @@ describe('deliveredEpic', () => {
 });
 
 test('matrixMessageGlobalSendEpic', async () => {
-  expect.assertions(5);
+  expect.assertions(9);
 
-  const [raiden, partner] = await makeRaidens(2);
+  const raiden = await makeRaiden();
   const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-  const message = await signMessage(partner.deps.signer, processed),
+  const msgId = '123';
+  const message = await signMessage(raiden.deps.signer, processed),
     text = encodeJsonMessage(message);
 
-  raiden.store.dispatch(messageGlobalSend({ message }, { roomName: 'unknown_global_room' }));
+  raiden.store.dispatch(
+    messageGlobalSend.request({ message }, { roomName: 'unknown_global_room', msgId }),
+  );
 
+  await sleep(2 * raiden.config.pollingInterval);
   expect(matrix.sendEvent).toHaveBeenCalledTimes(0);
+  expect(raiden.output).not.toContainEqual(
+    messageGlobalSend.success(expect.anything(), { roomName: 'unknown_global_room', msgId }),
+  );
+  expect(raiden.output).toContainEqual(
+    messageGlobalSend.failure(
+      expect.objectContaining({ message: expect.stringContaining('unknown global room') }),
+      { roomName: 'unknown_global_room', msgId },
+    ),
+  );
 
-  let discoveryRoom!: string;
-  raiden.deps.latest$
-    .pipe(first())
-    .subscribe(({ config }) => (discoveryRoom = config.discoveryRoom!));
+  raiden.output.splice(0, raiden.output.length);
+  matrix.sendEvent.mockClear();
 
-  raiden.store.dispatch(messageGlobalSend({ message }, { roomName: discoveryRoom }));
+  const discoveryRoom = raiden.config.discoveryRoom!;
+
+  raiden.store.dispatch(
+    messageGlobalSend.request({ message }, { roomName: discoveryRoom, msgId }),
+  );
 
   await sleep(2 * raiden.config.pollingInterval);
   expect(matrix.sendEvent).toHaveBeenCalledTimes(1);
@@ -1294,20 +1309,35 @@ test('matrixMessageGlobalSendEpic', async () => {
     expect.objectContaining({ body: text, msgtype: 'm.text' }),
     expect.anything(),
   );
+  expect(raiden.output).toContainEqual(
+    messageGlobalSend.success(
+      { via: expect.stringMatching(/!.*:/), tookMs: expect.any(Number), retries: 0 },
+      { roomName: discoveryRoom, msgId },
+    ),
+  );
 
   // test graceful failure
+  raiden.output.splice(0, raiden.output.length);
   matrix.sendEvent.mockClear();
-  matrix.sendEvent.mockRejectedValueOnce(new Error('Failed'));
+  matrix.sendEvent.mockRejectedValueOnce(Object.assign(new Error('Failed'), { httpStatus: 429 }));
 
-  raiden.store.dispatch(messageGlobalSend({ message }, { roomName: discoveryRoom }));
+  raiden.store.dispatch(
+    messageGlobalSend.request({ message }, { roomName: discoveryRoom, msgId }),
+  );
 
-  await sleep(2 * raiden.config.pollingInterval);
-  expect(matrix.sendEvent).toHaveBeenCalledTimes(1);
+  await sleep(raiden.config.httpTimeout);
+  expect(matrix.sendEvent).toHaveBeenCalledTimes(2);
   expect(matrix.sendEvent).toHaveBeenCalledWith(
     expect.any(String),
     'm.room.message',
     expect.objectContaining({ body: text, msgtype: 'm.text' }),
     expect.anything(),
+  );
+  expect(raiden.output).toContainEqual(
+    messageGlobalSend.success(
+      { via: expect.stringMatching(/!.*:/), tookMs: expect.any(Number), retries: 1 },
+      { roomName: discoveryRoom, msgId },
+    ),
   );
 });
 

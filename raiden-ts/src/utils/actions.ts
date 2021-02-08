@@ -3,7 +3,7 @@
 import * as t from 'io-ts';
 import isMatchWith from 'lodash/isMatchWith';
 import { Observable } from 'rxjs';
-import { filter, first, map, take } from 'rxjs/operators';
+import { filter, map, take } from 'rxjs/operators';
 
 import { assert } from '../utils';
 import { RaidenError, ErrorCodes } from '../utils/error';

@@ -1012,7 +1012,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     await ensureChannelIsOpen([raiden, partner]);
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         { message: expect.objectContaining({ type: MessageType.PFS_CAPACITY_UPDATE }) },
         expect.anything(),
       ),
@@ -1021,7 +1021,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     await ensureChannelIsDeposited([raiden, partner], deposit);
 
     expect(raiden.output).toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         {
           message: expect.objectContaining({
             type: MessageType.PFS_CAPACITY_UPDATE,
@@ -1031,7 +1031,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
             signature: expect.any(String),
           }),
         },
-        { roomName: expect.stringMatching(pfsRoom) },
+        { roomName: pfsRoom, msgId: expect.any(String) },
       ),
     );
   });
@@ -1048,7 +1048,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     await ensureChannelIsDeposited([raiden, partner], deposit);
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         { message: expect.objectContaining({ type: MessageType.PFS_CAPACITY_UPDATE }) },
         expect.anything(),
       ),
@@ -1074,7 +1074,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     const channel = getChannel(raiden, partner);
 
     expect(raiden.output).toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         {
           message: {
             type: MessageType.PFS_FEE_UPDATE,
@@ -1089,7 +1089,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
             signature: expect.any(String),
           },
         },
-        { roomName: expect.stringContaining('path_finding') },
+        { roomName: raiden.config.pfsRoom!, msgId: expect.any(String) },
       ),
     );
   });
@@ -1114,7 +1114,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     expect(signerSpy).toHaveBeenCalledTimes(1);
     expect(raiden.output).not.toContainEqual(raidenShutdown(expect.anything()));
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         { message: expect.objectContaining({ type: MessageType.PFS_FEE_UPDATE }) },
         expect.anything(),
       ),
@@ -1136,7 +1136,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     await ensureChannelIsClosed([raiden, partner]);
     await waitBlock();
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         { message: expect.objectContaining({ type: MessageType.PFS_FEE_UPDATE }) },
         expect.anything(),
       ),
