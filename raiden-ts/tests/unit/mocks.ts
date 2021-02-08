@@ -4,7 +4,7 @@ patchVerifyMessage();
 patchEthersDefineReadOnly();
 patchEthersGetNetwork();
 
-import { AsyncSubject, of, BehaviorSubject, ReplaySubject, Observable } from 'rxjs';
+import { AsyncSubject, ReplaySubject, Observable } from 'rxjs';
 import { filter, finalize, take } from 'rxjs/operators';
 import { MatrixClient } from 'matrix-js-sdk';
 import { EventEmitter } from 'events';
@@ -12,13 +12,10 @@ import { memoize } from 'lodash';
 import logging from 'loglevel';
 import { Store, createStore, applyMiddleware } from 'redux';
 
-// TODO: remove this mock
-jest.mock('@ethersproject/providers');
 import {
   Web3Provider,
   JsonRpcProvider,
   EventType,
-  Listener,
   ExternalProvider,
 } from '@ethersproject/providers';
 import { Zero, HashZero } from '@ethersproject/constants';
@@ -63,16 +60,10 @@ import {
 import { RaidenEpicDeps, ContractsInfo, Latest } from 'raiden-ts/types';
 import { makeInitialState, RaidenState } from 'raiden-ts/state';
 import { assert } from 'raiden-ts/utils';
-import { Address, Signature, UInt, Hash, decode, Secret } from 'raiden-ts/utils/types';
+import { Address, Signature, Hash, decode, Secret } from 'raiden-ts/utils/types';
 import { getServerName } from 'raiden-ts/utils/matrix';
 import { pluckDistinct } from 'raiden-ts/utils/rx';
-import {
-  raidenConfigUpdate,
-  RaidenAction,
-  raidenShutdown,
-  raidenStarted,
-  raidenSynced,
-} from 'raiden-ts/actions';
+import { RaidenAction, raidenShutdown, raidenStarted, raidenSynced } from 'raiden-ts/actions';
 import { makeDefaultConfig, RaidenConfig } from 'raiden-ts/config';
 import { getSecrethash, makeSecret } from 'raiden-ts/transfers/utils';
 import { raidenReducer } from 'raiden-ts/reducer';
@@ -243,84 +234,6 @@ export function makeTransaction(
   };
 }
 
-/**
- * Returns a mocked MatrixClient
- *
- * @param userId - userId of account owner
- * @param server - server mock hostname
- * @returns Mocked MatrixClient
- */
-export function makeMatrix(userId: string, server: string): jest.Mocked<MatrixClient> {
-  return (Object.assign(new EventEmitter(), {
-    startClient: jest.fn(async () => true),
-    stopClient: jest.fn(() => true),
-    joinRoom: jest.fn(async () => true),
-    // reject to test register
-    login: jest.fn().mockRejectedValue(new Error('invalid password')),
-    register: jest.fn(async (userName) => {
-      userId = `@${userName}:${server}`;
-      return {
-        user_id: userId,
-        device_id: `${userName}_device_id`,
-        access_token: `${userName}_access_token`,
-      };
-    }),
-    registerRequest: jest.fn(
-      async ({ username, device_id }: { username: string; device_id?: string }) => {
-        userId = `@${username}:${server}`;
-        return {
-          user_id: userId,
-          device_id: device_id ?? `${username}_device_id`,
-          access_token: `${username}_access_token`,
-        };
-      },
-    ),
-    searchUserDirectory: jest.fn(async ({ term }) => ({
-      results: [{ user_id: `@${term}:${server}`, display_name: `${term}_display_name` }],
-    })),
-    getUserId: jest.fn(() => userId),
-    getUsers: jest.fn(() => []),
-    getUser: jest.fn((userId) => ({ userId, presence: 'offline', setDisplayName: jest.fn() })),
-    getProfileInfo: jest.fn(async (userId) => ({ displayname: `${userId}_display_name` })),
-    setDisplayName: jest.fn(async () => null),
-    setAvatarUrl: jest.fn(async () => null),
-    setPresence: jest.fn(async () => null),
-    createRoom: jest.fn(async ({ visibility, invite }) => ({
-      room_id: `!roomId_${visibility || 'public'}_with_${(invite || []).join('_')}:${server}`,
-      getMember: jest.fn(),
-      getCanonicalAlias: jest.fn(() => null),
-      getAliases: jest.fn(() => []),
-    })),
-    getRoom: jest.fn((roomId) => ({
-      roomId,
-      getMember: jest.fn(),
-      getCanonicalAlias: jest.fn(() => null),
-      getAliases: jest.fn(() => []),
-    })),
-    getRooms: jest.fn(() => []),
-    getHomeserverUrl: jest.fn(() => getServerName(server)),
-    invite: jest.fn(async () => true),
-    leave: jest.fn(async () => true),
-    sendEvent: jest.fn(async () => true),
-    sendToDevice: jest.fn(async () => true),
-    _http: {
-      opts: {},
-      // mock request done by raiden/utils::getUserPresence
-      authedRequest: jest.fn(async () => ({
-        user_id: 'user_id',
-        last_active_ago: 1,
-        presence: 'online',
-      })),
-    },
-    turnServer: jest.fn(async () => ({
-      uris: 'https://turn.raiden.test',
-      ttl: 86400,
-      username: 'user',
-      password: 'password',
-    })),
-  }) as unknown) as jest.Mocked<MatrixClient>;
-}
-
 // array of cleanup functions registered on current test
 const mockedCleanups: (() => void)[] = [];
 
@@ -352,64 +265,6 @@ afterEach(async () => {
   fetch.mockRestore();
 });
 
-// spyOn .on, .removeListener & .emit methods and replace with a synchronous simplified logic
-function mockEthersEventEmitter(target: JsonRpcProvider | Contract): void {
-  let listeners: Map<EventType, Set<Listener>> | null = new Map();
-
-  function getEventTag(event: EventType): string {
-    if (typeof event === 'string') return event;
-    else if (Array.isArray(event)) return `filter::${event.join('|')}`;
-    else if ('expiry' in event) return `filter::${event.expiry}`;
-    else return `filter:${event.address}:${(event.topics ?? []).join('|')}`;
-  }
-
-  const onSpy = jest
-    .spyOn(target, 'on')
-    .mockImplementation((event: EventType, callback: Listener) => {
-      if (!listeners) return target;
-      event = getEventTag(event);
-      let cbs = listeners.get(event);
-      if (!cbs) listeners.set(event, (cbs = new Set()));
-      cbs.add(callback);
-      return target;
-    });
-  const removeSpy = jest
-    .spyOn(target, 'removeListener')
-    .mockImplementation((event: EventType, callback: Listener) => {
-      if (!listeners) return target;
-      event = getEventTag(event);
-      const cbs = listeners.get(event);
-      if (cbs) cbs.delete(callback);
-      return target;
-    });
-  const countSpy = jest
-    .spyOn(target, 'listenerCount')
-    .mockImplementation((event?: EventType): number => {
-      if (!listeners) return 0;
-      if (event) return listeners.get(getEventTag(event))?.size ?? 0;
-      return Array.from(listeners.values()).reduce((acc, cbs) => acc + cbs.size, 0);
-    });
-  const emitSpy = jest
-    .spyOn(target, 'emit')
-    .mockImplementation((event: EventType, ...args: any[]) => {
-      if (!listeners) return false;
-      event = getEventTag(event);
-      if (event === '*') {
-        for (const cbs of listeners.values()) for (const cb of cbs) cb(...args);
-      } else if (listeners.has(event)) listeners.get(event)!.forEach((cb) => cb(...args));
-      return true;
-    });
-
-  mockedCleanups.push(() => {
-    listeners?.clear();
-    listeners = null;
-    onSpy.mockRestore();
-    removeSpy.mockRestore();
-    countSpy.mockRestore();
-    emitSpy.mockRestore();
-  });
-}
-
 function spyContract(contract: Contract, rejectContractName?: string): void {
   for (const func in contract.functions) {
     const spied = jest.spyOn(contract, func);
@@ -429,238 +284,6 @@ function spyContract(contract: Contract, rejectContractName?: string): void {
       return Array.isArray(res) ? res : [res];
     });
   }
-}
-
-/**
- * Create a mock of RaidenEpicDeps
- *
- * @returns Mocked RaidenEpicDeps
- */
-export function raidenEpicDeps(): MockRaidenEpicDeps {
-  const network: Network = { name: 'testnet', chainId: 1337 };
-
-  const provider = new JsonRpcProvider() as jest.Mocked<JsonRpcProvider>;
-
-  let blockNumber = 125;
-  Object.assign(provider, { network, _ethersType: 'Provider' });
-  Object.defineProperty(provider, 'blockNumber', { get: () => blockNumber });
-  jest.spyOn(provider, 'getNetwork').mockImplementation(async () => network);
-  jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
-  jest.spyOn(provider, 'listAccounts').mockResolvedValue([]);
-  // See: https://github.com/cartant/rxjs-marbles/issues/11
-  jest
-    .spyOn(provider, 'getBlockNumber')
-    .mockImplementation(async () => (of(blockNumber) as unknown) as Promise<number>);
-  // use provider.resetEventsBlock used to set current block number for provider
-  jest.spyOn(provider, 'resetEventsBlock').mockImplementation((n: number) => (blockNumber = n));
-
-  const logs: Log[] = [];
-  const origEmit = provider.emit;
-  jest.spyOn(provider, 'emit').mockImplementation((event: EventType, ...args: any[]) => {
-    if (typeof event !== 'string' && !Array.isArray(event)) logs.push(args[0] as Log);
-    return origEmit.call(provider, event, ...args);
-  });
-  jest
-    .spyOn(provider, 'getLogs')
-    .mockImplementation(
-      async (filter_: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>) => {
-        const filter = await filter_;
-        return logs.filter((log) => {
-          if (filter.address && filter.address !== log.address) return false;
-          if (
-            filter.topics &&
-            !filter.topics.every(
-              (f, i) =>
-                f == null ||
-                f === log.topics[i] ||
-                (Array.isArray(f) && f.some((f1) => f1 === log.topics[i])),
-            )
-          )
-            return false;
-          if ('fromBlock' in filter && filter.fromBlock && log.blockNumber! < filter.fromBlock)
-            return false;
-          if (
-            'toBlock' in filter &&
-            typeof filter.toBlock === 'number' &&
-            log.blockNumber! > filter.toBlock!
-          )
-            return false;
-          return true;
-        });
-      },
-    );
-  mockEthersEventEmitter(provider);
-
-  const signer = makeWallet().connect(provider);
-  const address = signer.address as Address;
-  const log = logging.getLogger(`raiden:${address}`);
-
-  const registryAddress = '0xregistry';
-  const registryContract = TokenNetworkRegistry__factory.connect(
-    registryAddress,
-    signer,
-  ) as MockedContract<TokenNetworkRegistry>;
-  spyContract(registryContract);
-  registryContract.token_to_token_networks.mockImplementation(
-    async (token: string) => token + 'Network',
-  );
-
-  const getTokenNetworkContract = memoize(
-    (address: string): MockedContract<TokenNetwork> => {
-      const tokenNetworkContract = TokenNetwork__factory.connect(
-        address,
-        signer,
-      ) as MockedContract<TokenNetwork>;
-      spyContract(tokenNetworkContract);
-      tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
-        Zero,
-        Zero,
-        false,
-        HashZero,
-        Zero,
-        HashZero,
-        Zero,
-      ]);
-      return tokenNetworkContract;
-    },
-  );
-
-  const getTokenContract = memoize(
-    (address: string): MockedContract<HumanStandardToken> => {
-      const tokenContract = HumanStandardToken__factory.connect(
-        address,
-        signer,
-      ) as MockedContract<HumanStandardToken>;
-      spyContract(tokenContract);
-      tokenContract.allowance.mockResolvedValue(Zero);
-      return tokenContract;
-    },
-  );
-
-  const serviceRegistryContract = ServiceRegistry__factory.connect(
-    registryAddress,
-    signer,
-  ) as MockedContract<ServiceRegistry>;
-  spyContract(serviceRegistryContract);
-  serviceRegistryContract.token.mockResolvedValue('0x0800000000000000000000000000000000000008');
-  serviceRegistryContract.urls.mockImplementation(async () => 'https://pfs.raiden.test');
-
-  const userDepositContract = UserDeposit__factory.connect(
-    address,
-    signer,
-  ) as MockedContract<UserDeposit>;
-
-  spyContract(userDepositContract);
-
-  userDepositContract.one_to_n_address.mockResolvedValue(oneToNAddress);
-  userDepositContract.balances.mockResolvedValue(parseEther('5'));
-  userDepositContract.total_deposit.mockResolvedValue(parseEther('5'));
-  userDepositContract.deposit.mockResolvedValue(
-    makeTransaction(undefined, { to: userDepositContract.address }),
-  );
-  userDepositContract.effectiveBalance.mockResolvedValue(parseEther('5'));
-  userDepositContract.withdraw_plans.mockResolvedValue(
-    makeStruct(['amount', 'withdraw_block'] as const, [Zero, Zero]),
-  );
-
-  const secretRegistryContract = SecretRegistry__factory.connect(
-    address,
-    signer,
-  ) as MockedContract<SecretRegistry>;
-
-  spyContract(secretRegistryContract);
-
-  const monitoringServiceContract = MonitoringService__factory.connect(
-    address,
-    signer,
-  ) as MockedContract<MonitoringService>;
-
-  spyContract(monitoringServiceContract);
-
-  const contractsInfo: ContractsInfo = {
-      TokenNetworkRegistry: {
-        address: registryContract.address as Address,
-        block_number: 100,
-      },
-      ServiceRegistry: {
-        address: serviceRegistryContract.address as Address,
-        block_number: 101,
-      },
-      UserDeposit: {
-        address: userDepositContract.address as Address,
-        block_number: 102,
-      },
-      SecretRegistry: {
-        address: secretRegistryContract.address as Address,
-        block_number: 102,
-      },
-      MonitoringService: {
-        address: monitoringServiceContract.address as Address,
-        block_number: 102,
-      },
-      OneToN: {
-        address: oneToNAddress,
-        block_number: 102,
-      },
-    },
-    state = makeInitialState({ network, address, contractsInfo }, { blockNumber }),
-    defaultConfig = makeDefaultConfig(
-      { network },
-      {
-        matrixServerLookup: 'https://matrixLookup.raiden.test',
-        pfsSafetyMargin: 1.1,
-        pfs: 'pfs.raiden.test',
-        pollingInterval,
-        httpTimeout: 300,
-        confirmationBlocks: 2,
-        caps: { [Capabilities.DELIVERY]: 0, [Capabilities.WEBRTC]: 0, [Capabilities.MEDIATE]: 1 },
-      },
-    ),
-    config = { ...defaultConfig, ...state.config };
-
-  const latest$ = new BehaviorSubject<Latest>({
-      action: raidenConfigUpdate({}),
-      state,
-      config,
-      presences: {},
-      pfsList: [],
-      rtc: {},
-      udcBalance: Zero as UInt<32>,
-      blockTime: 1e3,
-      stale: false,
-    }),
-    config$ = latest$.pipe(pluckDistinct('config'));
-
-  const dbName = [
-    'raiden',
-    getNetworkName(network),
-    contractsInfo.TokenNetworkRegistry.address,
-    address,
-  ].join('_');
-  const db = new RaidenPouchDB(dbName);
-  Object.assign(db, { storageKeys: new Set<string>() });
-
-  return {
-    latest$,
-    config$,
-    matrix$: new AsyncSubject<MatrixClient>(),
-    address,
-    log,
-    defaultConfig,
-    network,
-    contractsInfo,
-    provider,
-    signer,
-    registryContract,
-    getTokenNetworkContract,
-    getTokenContract,
-    serviceRegistryContract,
-    userDepositContract,
-    secretRegistryContract,
-    monitoringServiceContract,
-    db,
-    init$: new ReplaySubject(),
-  };
 }
 
 const mockedMatrixUsers: {
@@ -997,7 +620,6 @@ export async function makeRaiden(
   initialState?: RaidenState,
 ): Promise<MockedRaiden> {
   const network: Network = { name: 'testnet', chainId: 1337 };
-  const { Web3Provider } = jest.requireActual('@ethersproject/providers');
   const extProvider: ExternalProvider = {
     isMetaMask: true,
     request: async ({ method, params }) => {
