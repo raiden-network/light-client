@@ -95,7 +95,7 @@ describe('monitorRequestEpic', () => {
     const partnerBP = getChannel(raiden, partner).partner.balanceProof;
 
     expect(raiden.output).toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         {
           message: {
             type: MessageType.MONITOR_REQUEST,
@@ -115,7 +115,7 @@ describe('monitorRequestEpic', () => {
             signature: expect.any(String),
           },
         },
-        { roomName: expect.stringMatching(/_monitoring$/) },
+        { roomName: raiden.config.monitoringRoom!, msgId: expect.any(String) },
       ),
     );
   });
@@ -138,7 +138,7 @@ describe('monitorRequestEpic', () => {
     const partnerBP = getChannel(raiden, partner).partner.balanceProof;
 
     expect(raiden.output).toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         {
           message: {
             type: MessageType.MONITOR_REQUEST,
@@ -158,7 +158,7 @@ describe('monitorRequestEpic', () => {
             signature: expect.any(String),
           },
         },
-        { roomName: expect.stringMatching(/_monitoring$/) },
+        { roomName: raiden.config.monitoringRoom!, msgId: expect.any(String) },
       ),
     );
   });
@@ -198,7 +198,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),
@@ -216,7 +216,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),
@@ -255,7 +255,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),
@@ -296,7 +296,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),
@@ -329,7 +329,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend(
+      messageGlobalSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),

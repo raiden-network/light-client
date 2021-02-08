@@ -470,7 +470,7 @@ describe('transferRetryMessageEpic', () => {
 
     const sentState = await pendingTransfer([raiden, partner]);
 
-    await sleep(2 * raiden.config.pollingInterval);
+    await sleep(raiden.config.httpTimeout);
     const sentCount = raiden.output
       .filter(messageSend.request.is)
       .filter((r) => LockedTransfer.is(r.payload.message)).length;
