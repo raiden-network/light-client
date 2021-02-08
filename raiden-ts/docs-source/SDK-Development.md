@@ -118,6 +118,46 @@ The project is structured in a domain-driven logic, each folder under `src` repr
 
 These are just suggestions on how to keep a well organized codebase. It is the developer's responsibility to decide in which module/domain any function, data or type belongs.
 
+## Data Persistence
+
+The visual representation of the data handling and persistance:
+
+```
+                         +--------------------+
+                         |       State        |
+          .............. |      [Redux]       | <.............
+          .              |    (in memory)     |              .
+          .              +--------------------+              .
+          .                        ^                         .
+          .                        .                         .
+   async sync back         load data on start        read historic data
+          .                        .                         .
+          .                        .                         .
+          .              +--------------------+              .
+          .              |     Database       |              .
+          .............> |     [PouchDB]      | ..............
+                         |(persistent storage)|
+                         +--------------------+
+                                   ^
+                                   |
+          +------------------------+------------------------+
+          |                        |                        |
++--------------------+   +--------------------+   +--------------------+
+|  LevelDB Adapter   |   | IndexedDB Adapter  |   |   Memory Adapter   |
+|     (NodeJS)       |   |   (Web-Browser)    |   |      (Tests)       |
++--------------------+   +--------------------+   +--------------------+
+```
+
+Additional notes:
+
+- The database adapter gets chosen based on the environment the SDK is running inside.
+- The hot state in memory with Redux is limiting its size by not including historic data.
+- The data synchronization from the memory to the storage does not block the protocol logic and gets minimized by state diffs.
+- During shutdown, the final data synchronization is been safely awaited for.
+- The database is used as source to do dump backups or load such one (can be transferred between clients).
+- Old database scheme versions get automatically migrated during startup before the load to the Redux state.
+- Clients requests which try to read historic data might be slower due to the database read, while all protocol relevant operations are blazing fast, operating on in-memory data.
+
 ## Typing System
 
 TypeScript helps us check for correctness and aid implementation, validation and integration of various parts of the codebase. We can tell TypeScript what type of argument, return value or variable is expected in a function which helps us avoid passing wrong types when writing our code, like passing a number to a function that expects a string.
