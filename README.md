@@ -58,7 +58,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
   - [Raiden Light Client SDK](#raiden-light-client-sdk)
   - [Architecture diagram](#architecture-diagram)
 - [Learn about Raiden](#learn-about-raiden)
-- [Try Out the Raiden dApp](#try-out-the-raiden-dapp)
+- [Try Out the Raiden dApp](#try-out-the-raiden-demo-dapp)
   - [Prerequisites](#prerequisites)
   - [Making a First Transfer on Testnet](#making-a-first-transfer-on-testnet)
   - [Receiving Transfers](#receiving-transfers)
