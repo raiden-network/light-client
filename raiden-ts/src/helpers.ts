@@ -577,19 +577,16 @@ export async function getState(
  * @param state$ - Observable of RaidenStates
  * @param opts - Options
  * @param opts.meta - channelId on which to wait for a deposit
- * @param opts.config - RaidenConfig to check pfsRoom from
+ * @param opts.config - RaidenConfig to check if PFS is enabled
  * @returns Promise for undefined or messageGlobalSend.success action
  */
 export async function waitForPFSCapacityUpdate(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  {
-    meta,
-    config,
-  }: { meta: channelDeposit.request['meta']; config: Pick<RaidenConfig, 'pfsRoom'> },
+  { meta, config }: { meta: channelDeposit.request['meta']; config: RaidenConfig },
 ) {
   const pfsRoom = config.pfsRoom;
-  if (!pfsRoom) return;
+  if (!pfsRoom || config.pfs === null) return;
   const postMeta: messageGlobalSend.request['meta'] = { roomName: '', msgId: '' };
   return asyncActionToPromise(
     messageGlobalSend,
