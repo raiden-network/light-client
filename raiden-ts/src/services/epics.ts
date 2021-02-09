@@ -253,7 +253,10 @@ export function pfsCapacityUpdateEpic(
         pairwise(), // skips first emission on startup
         withLatestFrom(config$),
         // ignore actions if channel not open or while/if config.pfsRoom isn't set
-        filter(([[, channel], { pfsRoom }]) => channel.state === ChannelState.open && !!pfsRoom),
+        filter(
+          ([[, channel], { pfsRoom, pfs }]) =>
+            channel.state === ChannelState.open && !!pfsRoom && pfs !== null,
+        ),
         debounce(
           ([[prev, cur], { httpTimeout }]) =>
             cur.own.locks.length > prev.own.locks.length ||
