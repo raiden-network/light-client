@@ -7,7 +7,7 @@
     <v-card-text>
       <v-row align="center" justify="center" no-gutters>
         <v-col cols="6">
-          <v-img class="download-state__warning" :src="require('@/assets/warning.svg')"></v-img>
+          <v-img class="download-state__warning" :src="require('@/assets/warning.svg')" />
         </v-col>
         <v-col cols="12">
           {{ $t('backup-state.download-warning') }}
@@ -23,7 +23,7 @@
         full-width
         :text="$t('backup-state.download-button')"
         @click="getAndDownloadState()"
-      ></action-button>
+      />
     </v-card-actions>
   </raiden-dialog>
 </template>

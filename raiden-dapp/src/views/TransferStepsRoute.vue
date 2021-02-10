@@ -19,7 +19,7 @@
               skipped: pfsSelectionSkipped || routeSelectionSkipped,
             }"
             class="transfer-steps__divider"
-          ></v-divider>
+          />
 
           <v-stepper-step
             :complete="step > 2"
@@ -37,7 +37,7 @@
           <v-divider
             :class="{ active: step >= 3, skipped: routeSelectionSkipped }"
             class="transfer-steps__divider"
-          ></v-divider>
+          />
 
           <v-stepper-step
             :complete="step > 3"
@@ -113,10 +113,7 @@
             </v-row>
             <v-row justify="center" class="transfer-steps__step__content">
               <v-col cols="12" sm="10">
-                <pathfinding-services
-                  v-if="step === 1"
-                  @select="setPFS($event)"
-                ></pathfinding-services>
+                <pathfinding-services v-if="step === 1" @select="setPFS($event)" />
               </v-col>
             </v-row>
           </v-stepper-content>
@@ -130,7 +127,7 @@
                   :routes="routes"
                   :pfs-url="selectedPfs.url"
                   @select="setRoute($event)"
-                ></find-routes>
+                />
               </v-col>
             </v-row>
           </v-stepper-content>
@@ -151,7 +148,7 @@
       :visible="pfsFeesConfirmed && step === 1"
       :pfs-fees-paid="pfsFeesPaid"
       :free-pfs="freePfs"
-    ></pfs-fees-dialog>
+    />
 
     <transfer-progress-dialog
       :visible="processingTransfer"
@@ -159,13 +156,13 @@
       :error="error"
       :identifier="paymentId"
       @dismiss="dismissProgress(0)"
-    ></transfer-progress-dialog>
+    />
 
     <error-dialog
       v-if="!processingTransfer"
       :error="error"
       @dismiss="navigateToSelectTransferTarget(token.address)"
-    ></error-dialog>
+    />
 
     <action-button
       data-cy="transfer_button"
@@ -175,7 +172,7 @@
       sticky
       arrow
       @click="handleStep()"
-    ></action-button>
+    />
   </v-container>
 </template>
 

@@ -22,7 +22,7 @@
         :enabled="!loading"
         :text="$t('general.buttons.continue')"
         @click="mint()"
-      ></action-button>
+      />
     </v-card-actions>
   </raiden-dialog>
 </template>

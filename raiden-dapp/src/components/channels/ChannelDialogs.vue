@@ -43,7 +43,7 @@
     :done="false"
     @deposit-tokens="deposit($event)"
     @cancel="dismiss()"
-  ></channel-deposit-dialog>
+  />
 
   <channel-withdraw-dialog
     v-else-if="channel && action === 'withdraw'"
@@ -55,7 +55,7 @@
     :done="false"
     @withdraw-tokens="withdraw($event)"
     @cancel="dismiss()"
-  ></channel-withdraw-dialog>
+  />
 </template>
 
 <script lang="ts">

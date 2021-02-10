@@ -1,6 +1,6 @@
 <template>
   <div v-if="show" class="blurred-overlay" :class="{ fullscreen: fullscreen }">
-    <slot></slot>
+    <slot />
   </div>
 </template>
 

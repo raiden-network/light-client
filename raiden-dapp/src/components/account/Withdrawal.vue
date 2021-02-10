@@ -35,7 +35,7 @@
       <v-col cols="auto">
         <v-row align="center" justify="center">
           <div>
-            <v-img height="150px" width="150px" :src="require('@/assets/info.svg')"></v-img>
+            <v-img height="150px" width="150px" :src="require('@/assets/info.svg')" />
           </div>
         </v-row>
         <v-row>
@@ -106,8 +106,7 @@
           :enabled="parseFloat(raidenAccountBalance) > 0"
           :text="$t('withdrawal.dialog.button')"
           @click="withdrawTokens()"
-        >
-        </action-button>
+        />
       </v-card-actions>
     </raiden-dialog>
   </v-container>

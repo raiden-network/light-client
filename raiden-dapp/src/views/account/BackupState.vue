@@ -21,7 +21,7 @@
                   'backup-state__buttons__download-state__icon disabled-icon': !isConnected,
                 }"
               >
-                <v-img :src="require('@/assets/state_download.png')"></v-img>
+                <v-img :src="require('@/assets/state_download.png')" />
               </div>
               <v-list-item-content>
                 <div class="backup-state__buttons__download-state__title">
@@ -47,7 +47,7 @@
                   'backup-state__buttons__upload-state__icon disabled-icon': isConnected,
                 }"
               >
-                <v-img :src="require('@/assets/state_upload.png')"></v-img>
+                <v-img :src="require('@/assets/state_upload.png')" />
               </div>
               <v-list-item-content>
                 <div class="backup-state__buttons__upload-state__title">
@@ -60,14 +60,8 @@
         <span>{{ $t('backup-state.disabled-upload') }}</span>
       </v-tooltip>
     </v-list>
-    <download-state-dialog
-      :visible="downloadState"
-      @cancel="downloadState = false"
-    ></download-state-dialog>
-    <upload-state-dialog
-      :visible="uploadState"
-      @cancel="uploadState = false"
-    ></upload-state-dialog>
+    <download-state-dialog :visible="downloadState" @cancel="downloadState = false" />
+    <upload-state-dialog :visible="uploadState" @cancel="uploadState = false" />
   </div>
 </template>
 

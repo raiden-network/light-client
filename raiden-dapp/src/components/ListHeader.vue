@@ -2,7 +2,7 @@
   <v-row class="list-header" no-gutters>
     <v-col cols="12">
       <div class="list-header__header">{{ header }}</div>
-      <div class="list-header__divider"></div>
+      <div class="list-header__divider" />
     </v-col>
   </v-row>
 </template>

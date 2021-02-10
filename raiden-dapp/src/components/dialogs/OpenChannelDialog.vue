@@ -22,7 +22,7 @@
     <v-card-actions>
       <v-row v-if="done" align="center" justify="center">
         <v-col cols="6">
-          <v-img class="open-channel-dialog__done" :src="require('@/assets/done.svg')"></v-img>
+          <v-img class="open-channel-dialog__done" :src="require('@/assets/done.svg')" />
         </v-col>
       </v-row>
 
