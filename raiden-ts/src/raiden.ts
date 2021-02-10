@@ -99,7 +99,7 @@ import {
   RaidenPFS,
 } from './services/types';
 import { pfsListInfo } from './services/utils';
-import { Address, Secret, Storage, Hash, UInt, decode, Decodable } from './utils/types';
+import { Address, Secret, Hash, UInt, decode, Decodable } from './utils/types';
 import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
 import { pluckDistinct } from './utils/rx';
 import {
@@ -377,12 +377,9 @@ export class Raiden {
    *       <li>number index of a remote account loaded in provider
    *            (e.g. 0 for Metamask's loaded account)</li>
    *     </ul>
-   * @param storage - Storage/localStorage-like object from where to load and store current
-   * state, initial RaidenState-like object, or a { storage; state? } object containing both.
-   * If a storage isn't provided, user must listen state$ changes on ensure it's persisted.
+   * @param storage - diverse storage related parameters to load from and save to
    * @param storage.state - State uploaded by user; should be decodable by RaidenState;
    *    it is auto-migrated
-   * @param storage.storage - Legacy localStorage; will load states from there if matching
    * @param storage.adapter - PouchDB adapter; default to 'indexeddb' on browsers and 'leveldb' on
    *    node. If you provide a custom one, ensure you call PouchDB.plugin on it.
    * @param storage.prefix - Database name prefix; use to set a directory to store leveldown db;
@@ -398,7 +395,7 @@ export class Raiden {
     connection: JsonRpcProvider | ExternalProvider | string,
     account: Signer | string | number,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    storage?: { state?: any; storage?: Storage; adapter?: any; prefix?: string },
+    storage?: { state?: any; adapter?: any; prefix?: string },
     contractsOrUDCAddress?: ContractsInfo | string,
     config?: Decodable<PartialRaidenConfig>,
     subkey?: true,
