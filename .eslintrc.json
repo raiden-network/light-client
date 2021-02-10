@@ -1,6 +1,14 @@
 {
   "root": true,
   "reportUnusedDisableDirectives": true,
+  "plugins": [
+    "@typescript-eslint",
+    "simple-import-sort",
+    "import",
+    "lodash",
+    "jsdoc"
+  ],
+  "parser": "@typescript-eslint/parser",
   "extends": [
     "plugin:@typescript-eslint/recommended",
     "prettier/@typescript-eslint",
@@ -9,13 +17,6 @@
     "plugin:import/errors",
     "plugin:import/warnings",
     "plugin:import/typescript"
-  ],
-  "parser": "@typescript-eslint/parser",
-  "plugins": [
-    "@typescript-eslint",
-    "simple-import-sort",
-    "import",
-    "jsdoc"
   ],
   "env": {
     "browser": true,
@@ -67,6 +68,15 @@
       { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }
     ],
     "@typescript-eslint/consistent-type-imports": "warn",
+    "lodash/import-scope": ["warn", "method"],
+    "lodash/preferred-alias": "warn",
+    "lodash/callback-binding": "warn",
+    "lodash/collection-method-value": "warn",
+    "lodash/collection-return": "warn",
+    "lodash/no-double-unwrap": "warn",
+    "lodash/no-extra-args": "warn",
+    "lodash/no-unbound-this": "warn",
+    "lodash/unwrap": "warn",
     "jsdoc/no-types": "warn",
     "jsdoc/require-param-type": "off",
     "jsdoc/require-returns-type": "off",
