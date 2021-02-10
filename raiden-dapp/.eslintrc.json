@@ -1,7 +1,6 @@
 {
   "extends": [
     "plugin:vue/recommended",
-    "plugin:vue/essential",
     "@vue/prettier",
     "@vue/typescript",
     "plugin:vue-i18n/recommended"
@@ -47,7 +46,16 @@
         "registeredComponentsOnly": false,
         "ignores": []
       }
-    ]
+    ],
+    "vue/html-self-closing": ["warn", {
+      "html": {
+        "void": "always",
+        "normal": "always",
+        "component": "always"
+      },
+      "svg": "always",
+      "math": "always"
+    }]
   },
   "settings": {
     "vue-i18n": {
