@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { defer, merge, fromEvent, throwError, from, BehaviorSubject } from 'rxjs';
 import { mergeMap, pluck, takeUntil, finalize, concatMap } from 'rxjs/operators';
-import { BigNumber } from '@ethersproject/bignumber';
-import { HashZero } from '@ethersproject/constants';
 import logging from 'loglevel';
 import omit from 'lodash/fp/omit';
 
@@ -13,7 +11,7 @@ PouchDB.plugin(PouchDBFind);
 import { ErrorCodes, assert } from '../utils/error';
 import { RaidenState } from '../state';
 import { Channel } from '../channels';
-import { channelKey, channelUniqueKey } from '../channels/utils';
+import { channelKey } from '../channels/utils';
 import { last, Address } from '../utils/types';
 
 import {
@@ -502,59 +500,4 @@ export async function dumpDatabaseToArray(db: RaidenDatabase, opts?: { batch?: n
     }
   }
   throw new Error('Could not dump database');
-}
-
-/**
- * Generate a new database dump from old RaidenState JSON object
- *
- * @param state - Legacy (before PouchDB) state
- * @yields Rows equivalent to object input as state
- */
-export function* legacyStateMigration(state: any) {
-  const meta: RaidenDatabaseMeta = {
-    _id: '_meta',
-    version: 0,
-    network: state.chainId,
-    registry: state.registry,
-    address: state.address,
-    blockNumber: state.blockNumber,
-  };
-  yield meta;
-
-  for (const [key, value] of Object.entries<any>(state)) {
-    if (key === 'channels' || key === 'oldChannels') {
-      for (const channel of Object.values<any>(value)) {
-        yield { _id: channelsPrefix + channelUniqueKey(channel), ...channel };
-      }
-    } else if (key === 'sent' || key === 'received') {
-      for (const transfer of Object.values<any>(value)) {
-        yield {
-          _id: `${key}:${transfer.transfer.lock.secrethash}`,
-          direction: key,
-          secrethash: transfer.transfer.lock.secrethash,
-          expiration: BigNumber.from(transfer.transfer.lock.expiration).toNumber(),
-          channel: `${transfer.transfer.token_network_address}@${
-            transfer.partner
-          }#${BigNumber.from(transfer.transfer.channel_identifier).toString().padStart(9, '0')}`,
-          cleared: 0,
-          ...(transfer.secret?.registerBlock
-            ? {
-                secretRegistered: {
-                  txHash: HashZero,
-                  txBlock: transfer.secret.registerBlock,
-                  ts: 1,
-                },
-              }
-            : {}),
-          ...transfer,
-          ...(transfer.secret ? { secret: transfer.secret.value } : {}),
-          ...(transfer.lockExpired ? { expired: transfer.lockExpired } : {}),
-          // for legacy migrations, consider closed==settled, so we don't load these channels
-          ...(transfer.channelClosed ? { channelSettled: transfer.channelClosed } : {}),
-        };
-      }
-    } else {
-      yield { _id: statePrefix + key, value };
-    }
-  }
 }

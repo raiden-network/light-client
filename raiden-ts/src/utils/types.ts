@@ -12,13 +12,6 @@ import memoize from 'lodash/memoize';
 
 import { RaidenError } from './error';
 
-/* A Subset of DOM's Storage/localStorage interface which supports async/await */
-export interface Storage {
-  getItem(key: string): string | null | Promise<string | null>;
-  setItem(key: string, value: string): void | Promise<void>;
-  removeItem(key: string): void | Promise<void>;
-}
-
 function reporterAssert<T>(value: Either<t.Errors, T>): asserts value is Right<T> {
   if (isLeft(value)) {
     throw new Error(PathReporter.report(value).join('\n'));

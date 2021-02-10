@@ -31,7 +31,7 @@ import { RaidenTransfer, TransferState, Direction } from './transfers/state';
 import { channelAmounts, channelKey } from './channels/utils';
 import { RaidenChannels, RaidenChannel } from './channels/state';
 import { distinctRecordValues, pluckDistinct } from './utils/rx';
-import { Address, PrivateKey, isntNil, Hash, UInt, decode, Storage } from './utils/types';
+import { Address, PrivateKey, isntNil, Hash, UInt, decode } from './utils/types';
 import { getLogsByChunk$, getNetworkName } from './utils/ethers';
 import { RaidenError, ErrorCodes } from './utils/error';
 
@@ -49,19 +49,13 @@ import {
   TokenNetworkRegistry__factory,
 } from './contracts';
 
-import {
-  RaidenDatabase,
-  RaidenDatabaseMeta,
-  RaidenDatabaseOptions,
-  TransferStateish,
-} from './db/types';
+import { RaidenDatabase, RaidenDatabaseMeta, TransferStateish } from './db/types';
 import {
   getRaidenState,
   changes$,
   putRaidenState,
   migrateDatabase,
   replaceDatabase,
-  legacyStateMigration,
   getDatabaseConstructorFromOptions,
 } from './db/utils';
 import { jsonParse } from './utils/data';
@@ -507,12 +501,11 @@ function validateDump(
  * @param deps.network - current network
  * @param deps.contractsInfo - current contracts
  * @param deps.log - Logger instance
- * @param storage - either [[Storage]] or [[RaidenState]] or
- * { storage: [[Storage]]; state?: [[RaidenState]] }
+ * @param storage - diverse storage related parameters to load from and save to
  * @param storage.state - Uploaded state: replaces database state; must be newer than database
- * @param storage.storage - Like above, but load from localStorage
- * @param storage.adapter - RxDB adapter: usually 'indexeddb' or [leveldown] module object
- * @param storage.prefix - RxDB prefix: may be a dir path with trailing slash (for leveldown)
+ * @param storage.adapter - PouchDB adapter; default to 'indexeddb' on browsers and 'leveldb' on
+ *    node. If you provide a custom one, ensure you call PouchDB.plugin on it.
+ * @param storage.prefix - Database name prefix; use to set a directory to store leveldown db;
  * @returns database and RaidenDoc object
  */
 export async function getState(
@@ -523,7 +516,7 @@ export async function getState(
     log,
   }: Pick<RaidenEpicDeps, 'address' | 'network' | 'contractsInfo' | 'log'>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  storage: { state?: any; storage?: Storage } & RaidenDatabaseOptions = {},
+  storage: { state?: any; adapter?: any; prefix?: string } = {},
 ): Promise<{ db: RaidenDatabase; state: RaidenState }> {
   const dbName = [
     'raiden',
@@ -533,27 +526,20 @@ export async function getState(
   ].join('_');
 
   let db;
-  let fromLocalStorage = false;
   let { state: dump } = storage;
-  const { storage: localStorage, state: _, ...pouchOpts } = storage;
-  if (!dump) {
-    dump = await localStorage?.getItem(dbName);
-    if (dump) fromLocalStorage = true;
-  }
+  const { adapter, prefix } = storage;
 
   // PouchDB configs are passed as custom database constructor using PouchDB.defaults
-  const dbCtor = await getDatabaseConstructorFromOptions({ log, ...pouchOpts });
+  const dbCtor = await getDatabaseConstructorFromOptions({ log, adapter, prefix });
 
   if (dump) {
     if (typeof dump === 'string') dump = jsonParse(dump);
-    if (!Array.isArray(dump)) dump = Array.from(legacyStateMigration(dump));
 
     // perform some early simple validation on dump before persisting it in database
     validateDump(dump, { address, network, contractsInfo });
 
     db = await replaceDatabase.call(dbCtor, dump, dbName);
     // only if succeeds:
-    if (fromLocalStorage) storage?.storage!.removeItem(dbName);
   } else {
     db = await migrateDatabase.call(dbCtor, dbName);
   }
