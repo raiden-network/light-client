@@ -32,7 +32,7 @@
       <span v-if="showNetwork" class="header-content__title__network">{{ network }}</span>
     </div>
     <div class="header-content__items">
-      <slot></slot>
+      <slot />
     </div>
   </div>
 </template>

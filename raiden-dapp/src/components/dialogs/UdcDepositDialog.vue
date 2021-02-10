@@ -69,8 +69,7 @@
         data-cy="udc_deposit_dialog_action"
         class="udc-deposit-dialog__action"
         @click="udcDeposit()"
-      >
-      </action-button>
+      />
     </v-card-actions>
   </raiden-dialog>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <withdrawal></withdrawal>
+  <withdrawal />
 </template>
 
 <script lang="ts">

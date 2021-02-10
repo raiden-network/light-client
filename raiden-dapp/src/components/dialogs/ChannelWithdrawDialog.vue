@@ -27,7 +27,7 @@
       </v-row>
       <v-row v-else-if="done" align="center" justify="center">
         <v-col cols="6">
-          <v-img class="channel-withdraw__done" :src="require('@/assets/done.svg')"></v-img>
+          <v-img class="channel-withdraw__done" :src="require('@/assets/done.svg')" />
         </v-col>
       </v-row>
       <v-row v-else align="center" justify="center">

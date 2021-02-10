@@ -6,7 +6,7 @@
       </v-row>
       <v-row v-else align="center" justify="center">
         <v-col cols="6">
-          <v-img :src="require('@/assets/done.svg')"> </v-img>
+          <v-img :src="require('@/assets/done.svg')" />
         </v-col>
       </v-row>
     </v-card-actions>

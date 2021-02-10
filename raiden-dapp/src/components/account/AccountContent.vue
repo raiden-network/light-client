@@ -61,7 +61,7 @@
             max-width="40px"
             height="36px"
             contain
-          ></v-img>
+          />
         </div>
         <v-list-item-content>
           <v-list-item-title class="account-content__menu__list-items__title">

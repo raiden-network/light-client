@@ -16,8 +16,7 @@
         <v-col v-else-if="isDone" cols="12">
           <v-row align="center" justify="center">
             <v-col cols="6">
-              <v-img class="udc-withdrawal-dialog__done" :src="require('@/assets/done.svg')">
-              </v-img>
+              <v-img class="udc-withdrawal-dialog__done" :src="require('@/assets/done.svg')" />
             </v-col>
           </v-row>
           <v-row align="center" justify="center">

@@ -2,12 +2,12 @@
   <raiden-dialog class="confirmation" :visible="visible" @close="cancel">
     <v-card-title>
       <span>
-        <slot name="header"></slot>
+        <slot name="header" />
       </span>
     </v-card-title>
 
     <v-card-text>
-      <slot></slot>
+      <slot />
     </v-card-text>
 
     <v-card-actions>
@@ -17,8 +17,7 @@
         :enabled="true"
         :text="positiveAction"
         @click="confirm()"
-      >
-      </action-button>
+      />
     </v-card-actions>
   </raiden-dialog>
 </template>

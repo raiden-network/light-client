@@ -12,7 +12,7 @@
         <v-btn v-if="!hideClose" icon class="raiden-dialog__close" @click="close()">
           <v-icon>mdi-close</v-icon>
         </v-btn>
-        <slot></slot>
+        <slot />
       </v-card>
     </v-dialog>
   </blurred-overlay>

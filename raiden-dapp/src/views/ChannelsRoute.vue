@@ -24,7 +24,7 @@
       v-if="open.length > 0"
       :header="$t('channels.open.header')"
       class="channels__header"
-    ></list-header>
+    />
     <div class="channels__wrapper">
       <channel-list
         v-if="open.length > 0"
@@ -33,12 +33,12 @@
         :selected-channel="selectedChannel"
         :busy="busy"
         @action="onAction"
-      ></channel-list>
+      />
       <list-header
         v-if="closed.length > 0"
         :header="$t('channels.closed.header')"
         class="channels__header"
-      ></list-header>
+      />
       <channel-list
         v-if="closed.length > 0"
         :token="token"
@@ -46,12 +46,12 @@
         :selected-channel="selectedChannel"
         :busy="busy"
         @action="onAction"
-      ></channel-list>
+      />
       <list-header
         v-if="settleable.length > 0"
         :header="$t('channels.settleable.header')"
         class="channels__header"
-      ></list-header>
+      />
       <channel-list
         v-if="settleable.length > 0"
         :token="token"
@@ -59,7 +59,7 @@
         :selected-channel="selectedChannel"
         :busy="busy"
         @action="onAction"
-      ></channel-list>
+      />
     </div>
     <v-snackbar v-model="snackbar" :multi-line="true" :timeout="3000" bottom>
       {{ message }}
@@ -77,7 +77,7 @@
       "
       @message="showMessage($event)"
       @busy="setBusyState($event)"
-    ></channel-dialogs>
+    />
   </div>
 </template>
 

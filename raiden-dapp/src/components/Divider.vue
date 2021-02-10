@@ -1,6 +1,6 @@
 <template>
   <div class="divider">
-    <div class="divider__line"></div>
+    <div class="divider__line" />
   </div>
 </template>
 <script lang="ts">

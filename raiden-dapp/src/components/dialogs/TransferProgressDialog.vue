@@ -28,10 +28,7 @@
       <v-row align="center" justify="center">
         <v-col cols="6">
           <div v-if="error">
-            <v-img
-              :src="require('@/assets/error.png')"
-              class="transfer-progress-dialog--error"
-            ></v-img>
+            <v-img :src="require('@/assets/error.png')" class="transfer-progress-dialog--error" />
           </div>
           <spinner v-else-if="inProgress" class="transfer-progress-dialog--progress" />
         </v-col>
