@@ -3,7 +3,7 @@ import { ContractFactory } from '@ethersproject/contracts';
 import type { ExternalProvider } from '@ethersproject/providers';
 import { Web3Provider } from '@ethersproject/providers';
 import { parseUnits } from '@ethersproject/units';
-import { range } from 'lodash';
+import range from 'lodash/range';
 import log from 'loglevel';
 import asyncPool from 'tiny-async-pool';
 
