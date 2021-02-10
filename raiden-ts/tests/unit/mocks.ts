@@ -21,7 +21,7 @@ import { randomBytes } from '@ethersproject/random';
 import { parseEther } from '@ethersproject/units';
 import { verifyMessage, Wallet } from '@ethersproject/wallet';
 import { EventEmitter } from 'events';
-import { memoize } from 'lodash';
+import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import PouchDB from 'pouchdb';
