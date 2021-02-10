@@ -13,6 +13,8 @@
   "parser": "@typescript-eslint/parser",
   "plugins": [
     "@typescript-eslint",
+    "simple-import-sort",
+    "import",
     "jsdoc"
   ],
   "env": {
@@ -28,12 +30,34 @@
     "ecmaVersion": 2019,
     "sourceType": "module"
   },
+  "settings": {
+    "import/resolver": {
+      "typescript": {}
+    }
+  },
   "rules": {
     "no-console": "warn",
     "no-debugger": "error",
-    "import/order": "warn",
+    "sort-imports": "off",
+    "import/order": "off",
     "import/export": "off",
+    "import/first": "error",
+    "import/newline-after-import": "error",
     "import/no-extraneous-dependencies": "error",
+    "import/no-duplicates": "error",
+    "simple-import-sort/imports": [
+      "error",
+      {
+        "groups": [
+          ["^\\u0000", "/(fixtures|mocks|patches)$"],
+          ["^@?\\w"],
+          ["^raiden-\\w+"],
+          ["^"],
+          ["^\\."]
+        ]
+      }
+    ],
+    "simple-import-sort/exports": "error",
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
@@ -42,6 +66,7 @@
       "warn",
       { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }
     ],
+    "@typescript-eslint/consistent-type-imports": "warn",
     "jsdoc/no-types": "warn",
     "jsdoc/require-param-type": "off",
     "jsdoc/require-returns-type": "off",
@@ -59,7 +84,9 @@
       ],
       "rules": {
         "@typescript-eslint/no-var-requires": "off",
-        "@typescript-eslint/no-empty-function": "off"
+        "@typescript-eslint/no-empty-function": "off",
+        "simple-import-sort/imports": "off",
+        "import/order": ["warn", { "newlines-between": "always" }]
       }
     }
   ]
