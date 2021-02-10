@@ -58,7 +58,6 @@ export default class RaidenService {
         provider,
         account,
         {
-          storage: window.localStorage,
           state: stateBackup,
         },
         contracts,
