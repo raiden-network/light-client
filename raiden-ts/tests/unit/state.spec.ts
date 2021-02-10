@@ -11,7 +11,6 @@ import {
   getDatabaseConstructorFromOptions,
   getRaidenState,
   latestVersion,
-  legacyStateMigration,
   replaceDatabase,
 } from 'raiden-ts/db/utils';
 import defaultMigrations from 'raiden-ts/db/migrations';
@@ -45,7 +44,6 @@ test('migrate, decode & dump', async () => {
     let dump: any = await fs.readFile(path.join(dir, file), { encoding: 'utf-8' });
 
     if (typeof dump === 'string') dump = jsonParse(dump);
-    if (!Array.isArray(dump)) dump = Array.from(legacyStateMigration(dump));
     const db = await replaceDatabase.call(dbCtor, dump, dbName, migrations);
 
     const decodedState = decode(RaidenState, await getRaidenState(db));
