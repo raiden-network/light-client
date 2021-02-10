@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- [#2250] **BREAKING** remove migration of legacy state at localStorage during creation
+
+[#2550]: https://github.com/raiden-network/light-client/pull/2550
 
 ## [0.15.0] - 2021-01-26
 ### Added
@@ -14,6 +18,7 @@
 - [#2409] Lower default payment expiration to 1.1 × reveal timeout
 - [#2505] Properly shut down epics on stop and wait for teardown/cleanup tasks
 - [#2536] Wait for global messages before resolving deposits and channel open request
+- [#2550] **BREAKING** remove migration of legacy state at localStorage during creation
 
 ### Fixed
 - [#2352] Presence bug, transport fixes and performance improvements
@@ -27,6 +32,7 @@
 [#2446]: https://github.com/raiden-network/light-client/issues/2446
 [#2505]: https://github.com/raiden-network/light-client/pull/2505
 [#2536]: https://github.com/raiden-network/light-client/issues/2536
+[#2550]: https://github.com/raiden-network/light-client/issues/2550
 
 ## [0.14.0] - 2020-11-25
 ### Fixed
