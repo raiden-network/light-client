@@ -15,6 +15,7 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapState } from 'vuex';
+
 import BlockieMixin from '@/mixins/blockie-mixin';
 
 @Component({

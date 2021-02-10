@@ -1,12 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuetify from 'vuetify';
-import Vue from 'vue';
-import Vuex from 'vuex';
-import { constants, BigNumber } from 'ethers';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import { BigNumber, constants } from 'ethers';
 import flushPromises from 'flush-promises';
-import { generateToken } from '../../utils/data-generator';
+import Vue from 'vue';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
+
+import { generateToken } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

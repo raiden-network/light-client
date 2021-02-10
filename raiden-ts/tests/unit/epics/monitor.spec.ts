@@ -1,43 +1,42 @@
 import {
-  makeLog,
-  makeAddress,
-  makeHash,
-  makeRaidens,
-  waitBlock,
-  providersEmit,
-  makeTransaction,
-  sleep,
-  makeRaiden,
-  mockedSignMessage,
-  originalSignMessage,
-} from '../mocks';
-import {
-  tokenNetwork,
-  token,
-  deposit,
   amount,
-  ensureChannelIsOpen,
+  deposit,
   ensureChannelIsDeposited,
-  ensureTransferUnlocked,
+  ensureChannelIsOpen,
   ensureTransferPending,
+  ensureTransferUnlocked,
   getChannel,
   id,
+  token,
+  tokenNetwork,
 } from '../fixtures';
+import {
+  makeAddress,
+  makeHash,
+  makeLog,
+  makeRaiden,
+  makeRaidens,
+  makeTransaction,
+  mockedSignMessage,
+  originalSignMessage,
+  providersEmit,
+  sleep,
+  waitBlock,
+} from '../mocks';
 
-import { BigNumber } from '@ethersproject/bignumber';
 import { defaultAbiCoder } from '@ethersproject/abi';
-import { Zero, WeiPerEther, Two, MaxUint256 } from '@ethersproject/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { MaxUint256, Two, WeiPerEther, Zero } from '@ethersproject/constants';
 import { first, pluck } from 'rxjs/operators';
 
-import { Capabilities } from 'raiden-ts/constants';
-import { raidenConfigUpdate, raidenShutdown } from 'raiden-ts/actions';
-import { MessageType } from 'raiden-ts/messages/types';
-import { createBalanceHash } from 'raiden-ts/messages/utils';
-import { messageGlobalSend } from 'raiden-ts/messages/actions';
-import { UInt, Hash } from 'raiden-ts/utils/types';
-
-import { udcDeposit, msBalanceProofSent } from 'raiden-ts/services/actions';
-import { ErrorCodes } from 'raiden-ts/utils/error';
+import { raidenConfigUpdate, raidenShutdown } from '@/actions';
+import { Capabilities } from '@/constants';
+import { messageGlobalSend } from '@/messages/actions';
+import { MessageType } from '@/messages/types';
+import { createBalanceHash } from '@/messages/utils';
+import { msBalanceProofSent, udcDeposit } from '@/services/actions';
+import { ErrorCodes } from '@/utils/error';
+import type { Hash, UInt } from '@/utils/types';
 
 test('monitorUdcBalanceEpic', async () => {
   expect.assertions(5);

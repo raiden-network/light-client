@@ -1,27 +1,28 @@
-import { Zero, AddressZero } from '@ethersproject/constants';
 import { BigNumber } from '@ethersproject/bignumber';
+import { AddressZero, Zero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { getNetwork } from '@ethersproject/networks';
 
-import { raidenReducer } from 'raiden-ts/reducer';
-import { RaidenState, makeInitialState } from 'raiden-ts/state';
-import { ShutdownReason } from 'raiden-ts/constants';
-import { raidenShutdown } from 'raiden-ts/actions';
+import { raidenShutdown } from '@/actions';
+import { ChannelState } from '@/channels';
 import {
+  channelClose,
+  channelDeposit,
+  channelOpen,
+  channelSettle,
+  channelSettleable,
+  channelWithdrawn,
   newBlock,
   tokenMonitored,
-  channelOpen,
-  channelDeposit,
-  channelClose,
-  channelSettleable,
-  channelSettle,
-  channelWithdrawn,
-} from 'raiden-ts/channels/actions';
-import { matrixSetup, matrixRoom, matrixRoomLeave } from 'raiden-ts/transport/actions';
-import { ChannelState } from 'raiden-ts/channels';
-import { Address, Hash, UInt } from 'raiden-ts/utils/types';
-import { RaidenError, ErrorCodes } from 'raiden-ts/utils/error';
-import { channelKey, channelUniqueKey } from 'raiden-ts/channels/utils';
+} from '@/channels/actions';
+import { channelKey, channelUniqueKey } from '@/channels/utils';
+import { ShutdownReason } from '@/constants';
+import { raidenReducer } from '@/reducer';
+import type { RaidenState } from '@/state';
+import { makeInitialState } from '@/state';
+import { matrixRoom, matrixRoomLeave, matrixSetup } from '@/transport/actions';
+import { ErrorCodes, RaidenError } from '@/utils/error';
+import type { Address, Hash, UInt } from '@/utils/types';
 
 describe('raidenReducer', () => {
   let state: RaidenState;

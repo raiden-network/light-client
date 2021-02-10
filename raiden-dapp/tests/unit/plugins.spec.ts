@@ -1,8 +1,10 @@
-import Vue, { VueConstructor } from 'vue';
 import { createLocalVue } from '@vue/test-utils';
+import type { VueConstructor } from 'vue';
+import Vue from 'vue';
+
 import { IdenticonPlugin } from '@/plugins/identicon-plugin';
-import { IdenticonCache } from '@/services/identicon-cache';
 import { RaidenPlugin } from '@/plugins/raiden';
+import { IdenticonCache } from '@/services/identicon-cache';
 import RaidenService from '@/services/raiden-service';
 
 jest.mock('@/i18n', () => jest.fn());

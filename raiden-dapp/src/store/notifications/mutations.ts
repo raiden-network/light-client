@@ -1,11 +1,13 @@
-import { MutationTree } from 'vuex';
-import { NotificationImportance } from './notification-importance';
-import { NotificationContext } from './notification-context';
-import {
+import type { MutationTree } from 'vuex';
+
+import type {
+  NotificationDictionary,
   NotificationPayload,
   NotificationsState,
-  NotificationDictionary,
 } from '@/store/notifications/types';
+
+import { NotificationContext } from './notification-context';
+import { NotificationImportance } from './notification-importance';
 
 function generateNotificationId(notifications: NotificationDictionary) {
   const id = Object.values(notifications).map((notification) => notification.id);

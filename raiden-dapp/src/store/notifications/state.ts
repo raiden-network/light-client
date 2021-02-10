@@ -1,4 +1,4 @@
-import { NotificationsState } from '@/store/notifications/types';
+import type { NotificationsState } from '@/store/notifications/types';
 
 export const defaultState = (): NotificationsState => ({
   notifications: {},

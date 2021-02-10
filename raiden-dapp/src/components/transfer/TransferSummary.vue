@@ -101,12 +101,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import Checkmark from '@/components/icons/Checkmark.vue';
+import { Component, Prop, Vue } from 'vue-property-decorator';
+
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import { Transfer } from '@/model/types';
+import Checkmark from '@/components/icons/Checkmark.vue';
 import Filters from '@/filters';
+import type { Transfer } from '@/model/types';
 
 @Component({ components: { Checkmark, AddressDisplay, AmountDisplay } })
 export default class TransferSummary extends Vue {

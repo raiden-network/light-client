@@ -1,56 +1,47 @@
 import * as t from 'io-ts';
-import {
-  Observable,
-  combineLatest,
-  from,
-  of,
-  EMPTY,
-  throwError,
-  merge,
-  defer,
-  AsyncSubject,
-  timer,
-} from 'rxjs';
+import constant from 'lodash/constant';
+import isEmpty from 'lodash/isEmpty';
+import sortBy from 'lodash/sortBy';
+import type { Filter, LoginPayload, MatrixClient } from 'matrix-js-sdk';
+import { createClient, MatrixEvent } from 'matrix-js-sdk';
+import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
+import type { AsyncSubject, Observable } from 'rxjs';
+import { combineLatest, defer, EMPTY, from, merge, of, throwError, timer } from 'rxjs';
+import { fromFetch } from 'rxjs/fetch';
 import {
   catchError,
   concatMap,
+  delayWhen,
   filter,
+  first,
   ignoreElements,
   map,
+  mapTo,
   mergeMap,
-  withLatestFrom,
+  pluck,
+  retryWhen,
   take,
   tap,
-  toArray,
-  mapTo,
-  first,
-  timeout,
-  pluck,
   throwIfEmpty,
-  retryWhen,
-  delayWhen,
+  timeout,
+  toArray,
+  withLatestFrom,
 } from 'rxjs/operators';
-import { fromFetch } from 'rxjs/fetch';
-import sortBy from 'lodash/sortBy';
-import isEmpty from 'lodash/isEmpty';
-import constant from 'lodash/constant';
 
-import { createClient, MatrixClient, MatrixEvent, Filter, LoginPayload } from 'matrix-js-sdk';
-import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
-
-import { assert } from '../../utils';
-import { RaidenError, ErrorCodes, networkErrors } from '../../utils/error';
-import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../../actions';
-import { intervalFromConfig, RaidenConfig } from '../../config';
-import { RaidenState } from '../../state';
+import type { RaidenAction } from '../../actions';
+import type { RaidenConfig } from '../../config';
+import { intervalFromConfig } from '../../config';
 import { RAIDEN_DEVICE_ID } from '../../constants';
+import type { RaidenState } from '../../state';
+import type { RaidenEpicDeps } from '../../types';
+import { assert } from '../../utils';
+import { ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { getServerName } from '../../utils/matrix';
-import { decode } from '../../utils/types';
 import { completeWith, lastMap, pluckDistinct, retryWhile } from '../../utils/rx';
+import { decode } from '../../utils/types';
 import { matrixSetup } from '../actions';
-import { RaidenMatrixSetup } from '../state';
-import { Caps } from '../types';
+import type { RaidenMatrixSetup } from '../state';
+import type { Caps } from '../types';
 import { stringifyCaps } from '../utils';
 import { globalRoomNames } from './helpers';
 

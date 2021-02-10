@@ -1,4 +1,5 @@
 const path = require('path');
+
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const VersionFile = require('webpack-version-file-plugin');
 const { DefinePlugin } = require('webpack'); // eslint-disable-line import/no-extraneous-dependencies

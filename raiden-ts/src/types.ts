@@ -1,26 +1,25 @@
-import type { AsyncSubject, Subject, Observable } from 'rxjs';
 import type { Signer } from '@ethersproject/abstract-signer';
 import type { Network } from '@ethersproject/networks';
 import type { JsonRpcProvider } from '@ethersproject/providers';
-import { MatrixClient } from 'matrix-js-sdk';
-import { Logger } from 'loglevel';
+import type { Logger } from 'loglevel';
+import type { MatrixClient } from 'matrix-js-sdk';
+import type { AsyncSubject, Observable, Subject } from 'rxjs';
 
+import type { RaidenAction } from './actions';
+import type { RaidenConfig } from './config';
 import type {
-  TokenNetworkRegistry,
+  HumanStandardToken,
+  MonitoringService,
+  SecretRegistry,
   ServiceRegistry,
   TokenNetwork,
-  HumanStandardToken,
+  TokenNetworkRegistry,
   UserDeposit,
-  SecretRegistry,
-  MonitoringService,
 } from './contracts';
-
-import { RaidenAction } from './actions';
-import { RaidenState } from './state';
-import { Address, UInt } from './utils/types';
-import { RaidenConfig } from './config';
-import { Presences } from './transport/types';
-import { RaidenDatabase } from './db/types';
+import type { RaidenDatabase } from './db/types';
+import type { RaidenState } from './state';
+import type { Presences } from './transport/types';
+import type { Address, UInt } from './utils/types';
 
 interface Info {
   address: Address;

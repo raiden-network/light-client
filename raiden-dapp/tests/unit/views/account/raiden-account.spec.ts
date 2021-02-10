@@ -1,11 +1,13 @@
-jest.useFakeTimers();
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import flushPromises from 'flush-promises';
 
 import store from '@/store';
 import RaidenAccount from '@/views/account/RaidenAccount.vue';
+
+jest.useFakeTimers();
 
 Vue.use(Vuetify);
 

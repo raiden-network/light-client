@@ -1,12 +1,12 @@
+import { confirmationBlocks } from '../fixtures';
 import { makeRaidens, makeStruct, makeTransaction, waitBlock } from '../mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
-import { parseEther } from '@ethersproject/units';
 import { Zero } from '@ethersproject/constants';
+import { parseEther } from '@ethersproject/units';
 
-import { udcWithdraw, udcWithdrawn } from 'raiden-ts/services/actions';
-import { confirmationBlocks } from '../fixtures';
-import { Hash, UInt } from 'raiden-ts/utils/types';
+import { udcWithdraw, udcWithdrawn } from '@/services/actions';
+import type { Hash, UInt } from '@/utils/types';
 
 describe('udcWithdraw', () => {
   test('planned withdraw picked on startup', async () => {

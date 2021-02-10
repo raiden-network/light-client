@@ -1,23 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { $t } from '../utils/mocks';
+
+import type { Wrapper } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
+import { BigNumber, constants } from 'ethers';
+import flushPromises from 'flush-promises';
+import Vue from 'vue';
+import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
+import type { RaidenPaths, RaidenPFS } from 'raiden-ts';
+
+import ActionButton from '@/components/ActionButton.vue';
+import type { Route } from '@/model/types';
+import { RouteNames } from '@/router/route-names';
+import TransferSteps from '@/views/TransferStepsRoute.vue';
+
+import { generateToken } from '../utils/data-generator';
+
 jest.useFakeTimers();
 jest.mock('vue-router');
-
-import { shallowMount, Wrapper } from '@vue/test-utils';
-import { BigNumber, constants } from 'ethers';
-import Vuetify from 'vuetify';
-import Vue from 'vue';
-import Vuex from 'vuex';
-import VueRouter from 'vue-router';
-import flushPromises from 'flush-promises';
-import { $t } from '../utils/mocks';
-import { generateToken } from '../utils/data-generator';
-import { RaidenPaths, RaidenPFS } from 'raiden-ts';
 import Mocked = jest.Mocked;
-
-import TransferSteps from '@/views/TransferStepsRoute.vue';
-import ActionButton from '@/components/ActionButton.vue';
-import { Route } from '@/model/types';
-import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

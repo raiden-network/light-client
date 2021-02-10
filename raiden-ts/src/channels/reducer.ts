@@ -1,25 +1,30 @@
-import { Zero, AddressZero, One } from '@ethersproject/constants';
+import { AddressZero, One, Zero } from '@ethersproject/constants';
 
-import { UInt, Address, Hash } from '../utils/types';
-import { Reducer, createReducer } from '../utils/actions';
-import { partialCombineReducers } from '../utils/redux';
-import { RaidenState, initialState } from '../state';
-import { RaidenAction, ConfirmableAction } from '../actions';
+import type { RaidenAction } from '../actions';
+import { ConfirmableAction } from '../actions';
+import type { RaidenState } from '../state';
+import { initialState } from '../state';
 import { transferSecretRegister } from '../transfers/actions';
 import { Direction } from '../transfers/state';
+import type { Reducer } from '../utils/actions';
+import { createReducer } from '../utils/actions';
+import { partialCombineReducers } from '../utils/redux';
+import type { Address, Hash, UInt } from '../utils/types';
 import {
   channelClose,
   channelDeposit,
   channelOpen,
   channelSettle,
   channelSettleable,
+  channelWithdrawn,
   newBlock,
   tokenMonitored,
-  channelWithdrawn,
 } from './actions';
-import { Channel, ChannelState, ChannelEnd } from './state';
+import type { Channel, ChannelEnd } from './state';
+import { ChannelState } from './state';
+import type { Lock } from './types';
+import { BalanceProofZero } from './types';
 import { channelKey, channelUniqueKey } from './utils';
-import { BalanceProofZero, Lock } from './types';
 
 // state.blockNumber specific reducer, handles only newBlock action
 const blockNumber = createReducer(initialState.blockNumber).handle(

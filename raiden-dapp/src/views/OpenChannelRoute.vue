@@ -46,24 +46,27 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator';
 import { constants } from 'ethers';
-import { Route, NavigationGuardNext } from 'vue-router';
+import type { LocaleMessageObject } from 'vue-i18n';
+import { Component, Mixins } from 'vue-property-decorator';
+import type { NavigationGuardNext, Route } from 'vue-router';
 import { mapGetters } from 'vuex';
-import { LocaleMessageObject } from 'vue-i18n';
+
+import type { RaidenError } from 'raiden-ts';
+
+import ActionButton from '@/components/ActionButton.vue';
+import AddressDisplay from '@/components/AddressDisplay.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import { emptyDescription, StepDescription, Token } from '@/model/types';
-import { BalanceUtils } from '@/utils/balance-utils';
-import AddressUtils from '@/utils/address-utils';
-import NavigationMixin from '@/mixins/navigation-mixin';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
+import OpenChannelDialog from '@/components/dialogs/OpenChannelDialog.vue';
 import Divider from '@/components/Divider.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
-import AddressDisplay from '@/components/AddressDisplay.vue';
-import ActionButton from '@/components/ActionButton.vue';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import type { StepDescription, Token } from '@/model/types';
+import { emptyDescription } from '@/model/types';
+import AddressUtils from '@/utils/address-utils';
+import { BalanceUtils } from '@/utils/balance-utils';
 import { getAmount } from '@/utils/query-params';
-import OpenChannelDialog from '@/components/dialogs/OpenChannelDialog.vue';
-import { RaidenError } from 'raiden-ts';
 
 @Component({
   components: {

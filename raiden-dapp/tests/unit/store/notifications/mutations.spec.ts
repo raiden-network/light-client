@@ -1,8 +1,9 @@
-import { generateNotificationPayload } from '../../utils/data-generator';
 import { mutations } from '@/store/notifications/mutations';
-import { NotificationsState } from '@/store/notifications/types';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
+import type { NotificationsState } from '@/store/notifications/types';
+
+import { generateNotificationPayload } from '../../utils/data-generator';
 
 const notificationIdentifier = 1;
 const notificationPayload = generateNotificationPayload();

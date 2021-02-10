@@ -1,8 +1,10 @@
 import { constants } from 'ethers';
-import { generateToken } from '../../utils/data-generator';
-import { PlannedUdcWithdrawal } from '@/store/user-deposit-contract/types';
+
 import { mutations } from '@/store/user-deposit-contract/mutations';
 import { defaultState } from '@/store/user-deposit-contract/state';
+import type { PlannedUdcWithdrawal } from '@/store/user-deposit-contract/types';
+
+import { generateToken } from '../../utils/data-generator';
 
 const token = generateToken();
 

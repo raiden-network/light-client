@@ -1,6 +1,6 @@
-import { NotificationImportance } from '@/store/notifications/notification-importance';
-import { NotificationContext } from '@/store/notifications/notification-context';
-import { RouteNames } from '@/router/route-names';
+import type { RouteNames } from '@/router/route-names';
+import type { NotificationContext } from '@/store/notifications/notification-context';
+import type { NotificationImportance } from '@/store/notifications/notification-importance';
 
 export interface NotificationPayload {
   readonly id: number;

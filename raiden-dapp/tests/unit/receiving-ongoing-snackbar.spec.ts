@@ -1,10 +1,14 @@
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
-import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import { generateTransfer } from './utils/data-generator';
-import { RaidenTransfer } from 'raiden-ts';
+import Vuex from 'vuex';
+
+import type { RaidenTransfer } from 'raiden-ts';
+
 import ReceivingOngoingSnackbar from '@/components/ReceivingOngoingSnackbar.vue';
+
+import { generateTransfer } from './utils/data-generator';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

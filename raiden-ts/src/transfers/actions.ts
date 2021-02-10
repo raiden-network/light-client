@@ -1,21 +1,22 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import * as t from 'io-ts';
 
-import { Address, UInt, Int, Secret, Hash, Signed } from '../utils/types';
-import { createAction, ActionType, createAsyncAction } from '../utils/actions';
 import { BalanceProof } from '../channels/types';
 import {
   LockedTransfer,
+  LockExpired,
   Processed,
   SecretRequest,
   SecretReveal,
   Unlock,
-  LockExpired,
-  WithdrawRequest,
   WithdrawConfirmation,
   WithdrawExpired,
+  WithdrawRequest,
 } from '../messages/types';
 import { Paths } from '../services/types';
+import type { ActionType } from '../utils/actions';
+import { createAction, createAsyncAction } from '../utils/actions';
+import { Address, Hash, Int, Secret, Signed, UInt } from '../utils/types';
 import { DirectionC, TransferState } from './state';
 
 const TransferId = t.type({

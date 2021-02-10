@@ -1,13 +1,17 @@
+import { $identicon } from '../../utils/mocks';
+
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import Vuex, { Store } from 'vuex';
-import { mount, Wrapper } from '@vue/test-utils';
-import { generateToken } from '../../utils/data-generator';
-import { $identicon } from '../../utils/mocks';
-import { Token } from '@/model/types';
+
+import ListHeader from '@/components/ListHeader.vue';
 import TokenList from '@/components/tokens/TokenList.vue';
 import TokenListItem from '@/components/tokens/TokenListItem.vue';
-import ListHeader from '@/components/ListHeader.vue';
+import type { Token } from '@/model/types';
+
+import { generateToken } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

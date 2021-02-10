@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BigNumber } from 'ethers';
+
 import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
 
 describe('query params', () => {

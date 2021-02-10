@@ -32,13 +32,15 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import NavigationMixin from './mixins/navigation-mixin';
+
 import AppHeader from '@/components/AppHeader.vue';
-import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
-import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
-import ReceivingOngoingSnackbar from '@/components/ReceivingOngoingSnackbar.vue';
-import NotificationSnackbar from '@/components/notification-panel/NotificationSnackbar.vue';
 import InstallBanner from '@/components/InstallBanner.vue';
+import NotificationSnackbar from '@/components/notification-panel/NotificationSnackbar.vue';
+import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
+import ReceivingOngoingSnackbar from '@/components/ReceivingOngoingSnackbar.vue';
+import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
+
+import NavigationMixin from './mixins/navigation-mixin';
 
 @Component({
   components: {

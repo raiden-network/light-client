@@ -18,10 +18,12 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import NavigationMixin from '@/mixins/navigation-mixin';
-import InfoOverlay from '@/components/overlays/InfoOverlay.vue';
-import HeaderContent from '@/components/HeaderContent.vue';
+
 import { Raiden } from 'raiden-ts';
+
+import HeaderContent from '@/components/HeaderContent.vue';
+import InfoOverlay from '@/components/overlays/InfoOverlay.vue';
+import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component({
   components: {

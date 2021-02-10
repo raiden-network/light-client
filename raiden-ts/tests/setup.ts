@@ -1,14 +1,14 @@
-import 'raiden-ts/polyfills';
+import '@/polyfills';
 
 // import util from 'util';
-// util.inspect.defaultOptions.depth = null;
-
+import logging from 'loglevel';
 import PouchDB from 'pouchdb';
 import MemAdapter from 'pouchdb-adapter-memory';
-PouchDB.plugin(MemAdapter);
 import PouchDebug from 'pouchdb-debug';
-PouchDB.plugin(PouchDebug);
-// PouchDB.debug.enable('*');
 
-import logging from 'loglevel';
+// util.inspect.defaultOptions.depth = null;
+// PouchDB.debug.enable('*');
+PouchDB.plugin(MemAdapter);
+PouchDB.plugin(PouchDebug);
+
 logging.setLevel(logging.levels.DEBUG);

@@ -1,12 +1,13 @@
-import { OpenMode, promises as fs } from 'fs';
+import type { Signer } from '@ethersproject/abstract-signer';
 import { BigNumber } from '@ethersproject/bignumber';
 import { Wallet } from '@ethersproject/wallet';
-import type { Signer } from '@ethersproject/abstract-signer';
+import type { OpenMode } from 'fs';
+import { promises as fs } from 'fs';
 
-import { assert } from 'raiden-ts/utils';
-import { Raiden } from 'raiden-ts/raiden';
-import { ContractsInfo } from 'raiden-ts/types';
-import { RaidenPaths } from 'raiden-ts/services/types';
+import { Raiden } from '@/raiden';
+import type { RaidenPaths } from '@/services/types';
+import type { ContractsInfo } from '@/types';
+import { assert } from '@/utils';
 
 jest.setTimeout(120000);
 

@@ -1,20 +1,17 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { Router } from 'express';
 import { first, pluck } from 'rxjs/operators';
+
+import type { RaidenChannel, RaidenChannels } from 'raiden-ts';
+import { ChannelState, ErrorCodes, isntNil, RaidenError } from 'raiden-ts';
+
+import type { Cli } from '../types';
 import {
-  isntNil,
-  ChannelState,
-  RaidenChannel,
-  RaidenChannels,
-  RaidenError,
-  ErrorCodes,
-} from 'raiden-ts';
-import { Cli } from '../types';
-import {
-  isInvalidParameterError,
   isConflictError,
   isInsuficientFundsError,
-  validateOptionalAddressParameter,
+  isInvalidParameterError,
   validateAddressParameter,
+  validateOptionalAddressParameter,
 } from '../utils/validation';
 
 export enum ApiChannelState {

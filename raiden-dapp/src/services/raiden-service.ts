@@ -1,30 +1,27 @@
-import { Store } from 'vuex';
-import Router from 'vue-router';
-import { BigNumber, BigNumberish, utils, constants, providers } from 'ethers';
-import { ObservedValueOf } from 'rxjs';
+import type { BigNumber, BigNumberish, providers } from 'ethers';
+import { constants, utils } from 'ethers';
+import type { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
-import { Tokens, SuggestedPartner } from '@/types';
-import { CombinedStoreState } from '@/store';
-import { Web3Provider } from '@/services/web3-provider';
-import { BalanceUtils } from '@/utils/balance-utils';
-import { DeniedReason, Progress, Token } from '@/model/types';
-import { ConfigProvider, Configuration } from '@/services/config-provider';
+import type Router from 'vue-router';
+import type { Store } from 'vuex';
+
+import type { ChangeEvent, RaidenPaths, RaidenPFS } from 'raiden-ts';
+import { Capabilities, ErrorCodes, EventTypes, Raiden, RaidenError } from 'raiden-ts';
+
 import i18n from '@/i18n';
-import { NotificationPayload } from '@/store/notifications/types';
+import type { Progress, Token } from '@/model/types';
+import { DeniedReason } from '@/model/types';
+import { RouteNames } from '@/router/route-names';
+import type { Configuration } from '@/services/config-provider';
+import { ConfigProvider } from '@/services/config-provider';
+import { Web3Provider } from '@/services/web3-provider';
+import type { CombinedStoreState } from '@/store';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
-import { RouteNames } from '@/router/route-names';
-import {
-  Capabilities,
-  ChangeEvent,
-  ErrorCodes,
-  EventTypes,
-  Raiden,
-  RaidenError,
-  RaidenPaths,
-  RaidenPFS,
-} from 'raiden-ts';
+import type { NotificationPayload } from '@/store/notifications/types';
+import type { SuggestedPartner, Tokens } from '@/types';
+import { BalanceUtils } from '@/utils/balance-utils';
 
 function raidenActionConfirmationValueToStateTranslation(
   confirmationValue: boolean | undefined,

@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { mount, Wrapper } from '@vue/test-utils';
+
 import InfoOverlay from '@/components/overlays/InfoOverlay.vue';
 
 Vue.use(Vuetify);

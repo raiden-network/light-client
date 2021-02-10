@@ -1,13 +1,15 @@
-import { BigNumber, utils, constants } from 'ethers';
-import { Route } from 'vue-router';
-import { Token, Transfer } from '@/model/types';
+import { BigNumber, constants, utils } from 'ethers';
+import type { Route } from 'vue-router';
 
-import { Address, ChannelState, RaidenChannel, RaidenChannels } from 'raiden-ts';
+import type { Address, RaidenChannel, RaidenChannels } from 'raiden-ts';
+import { ChannelState } from 'raiden-ts';
+
+import type { Token, Transfer } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
-import { Tokens } from '@/types';
-import { NotificationPayload } from '@/store/notifications/types';
-import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { NotificationContext } from '@/store/notifications/notification-context';
+import { NotificationImportance } from '@/store/notifications/notification-importance';
+import type { NotificationPayload } from '@/store/notifications/types';
+import type { Tokens } from '@/types';
 
 export const paymentId = BigNumber.from(4444);
 

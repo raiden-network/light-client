@@ -1,37 +1,34 @@
-import {
-  Observable,
-  OperatorFunction,
-  pairs,
+import type {
   MonoTypeOperatorFunction,
-  defer,
-  throwError,
-  timer,
-  race,
+  Observable,
   ObservableInput,
-  EMPTY,
+  OperatorFunction,
 } from 'rxjs';
+import { defer, EMPTY, pairs, race, throwError, timer } from 'rxjs';
 import {
-  pluck,
-  distinctUntilChanged,
-  mergeMap,
-  scan,
-  filter,
-  repeatWhen,
-  takeUntil,
-  retryWhen,
-  takeWhile,
-  map,
-  switchMap,
-  mergeMapTo,
-  tap,
   concatMap,
-  ignoreElements,
-  endWith,
-  last,
   delay,
+  distinctUntilChanged,
+  endWith,
+  filter,
+  ignoreElements,
+  last,
+  map,
+  mergeMap,
+  mergeMapTo,
+  pluck,
+  repeatWhen,
+  retryWhen,
+  scan,
+  switchMap,
+  takeUntil,
+  takeWhile,
+  tap,
 } from 'rxjs/operators';
+
+import type { ErrorMatches } from './error';
+import { matchError } from './error';
 import { isntNil } from './types';
-import { ErrorMatches, matchError } from './error';
 
 /**
  * Maps each source value (an object) to its specified nested property,

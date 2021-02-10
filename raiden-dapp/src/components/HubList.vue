@@ -34,10 +34,11 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Emit, Prop } from 'vue-property-decorator';
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+
 import Spinner from '@/components/icons/Spinner.vue';
 import Filters from '@/filters';
-import { SuggestedPartner } from '@/types';
+import type { SuggestedPartner } from '@/types';
 
 @Component({
   components: {

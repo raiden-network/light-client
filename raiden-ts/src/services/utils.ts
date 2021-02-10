@@ -1,27 +1,28 @@
-import * as t from 'io-ts';
-import { Observable, from, of, EMPTY } from 'rxjs';
-import { mergeMap, map, timeout, withLatestFrom, catchError, toArray } from 'rxjs/operators';
-import { fromFetch } from 'rxjs/fetch';
-import { concat as concatBytes } from '@ethersproject/bytes';
 import type { Signer } from '@ethersproject/abstract-signer';
+import { concat as concatBytes } from '@ethersproject/bytes';
+import * as t from 'io-ts';
 import memoize from 'lodash/memoize';
+import type { Observable } from 'rxjs';
+import { EMPTY, from, of } from 'rxjs';
+import { fromFetch } from 'rxjs/fetch';
+import { catchError, map, mergeMap, timeout, toArray, withLatestFrom } from 'rxjs/operators';
 
-import { retryAsync$ } from '../utils/rx';
-import { RaidenState } from '../state';
-import { RaidenEpicDeps } from '../types';
-import { RaidenError, ErrorCodes, assert, networkErrors } from '../utils/error';
-import { Address, UInt, decode, Signed, Signature } from '../utils/types';
-import { jsonParse, encode } from '../utils/data';
-import { Presences } from '../transport/types';
-import { getCap } from '../transport/utils';
 import { ChannelState } from '../channels/state';
 import { channelAmounts, channelKey } from '../channels/utils';
-import type { ServiceRegistry } from '../contracts';
-
-import { MessageTypeId } from '../messages/utils';
 import { Capabilities } from '../constants';
+import type { ServiceRegistry } from '../contracts';
 import { isValidUrl } from '../helpers';
-import { PFS, IOU } from './types';
+import { MessageTypeId } from '../messages/utils';
+import type { RaidenState } from '../state';
+import type { Presences } from '../transport/types';
+import { getCap } from '../transport/utils';
+import type { RaidenEpicDeps } from '../types';
+import { encode, jsonParse } from '../utils/data';
+import { assert, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
+import { retryAsync$ } from '../utils/rx';
+import type { Signature, Signed } from '../utils/types';
+import { Address, decode, UInt } from '../utils/types';
+import type { IOU, PFS } from './types';
 
 /**
  * Either returns true if given channel can route a payment, or a reason as string if not

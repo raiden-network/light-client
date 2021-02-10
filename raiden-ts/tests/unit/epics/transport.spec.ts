@@ -1,30 +1,33 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { makeSignature, makeRaiden, makeRaidens, MockedRaiden, sleep, fetch } from '../mocks';
-import { ensureChannelIsOpen, token, matrixServer } from '../fixtures';
+import { ensureChannelIsOpen, matrixServer, token } from '../fixtures';
+import { fetch, makeRaiden, makeRaidens, makeSignature, sleep } from '../mocks';
 
-import { EventEmitter } from 'events';
-import { MatrixClient } from 'matrix-js-sdk';
-import { first, pluck } from 'rxjs/operators';
 import { verifyMessage } from '@ethersproject/wallet';
-import { raidenConfigUpdate, raidenShutdown } from 'raiden-ts/actions';
+import { EventEmitter } from 'events';
+import type { MatrixClient } from 'matrix-js-sdk';
+import { first, pluck } from 'rxjs/operators';
 
+import { raidenConfigUpdate, raidenShutdown } from '@/actions';
+import { Capabilities } from '@/constants';
+import { messageGlobalSend, messageReceived, messageSend } from '@/messages/actions';
+import type { Delivered, Processed } from '@/messages/types';
+import { MessageType } from '@/messages/types';
+import { encodeJsonMessage, signMessage } from '@/messages/utils';
+import { makeMessageId } from '@/transfers/utils';
 import {
   matrixPresence,
   matrixRoom,
-  matrixSetup,
   matrixRoomLeave,
+  matrixSetup,
   rtcChannel,
-} from 'raiden-ts/transport/actions';
-import { messageSend, messageReceived, messageGlobalSend } from 'raiden-ts/messages/actions';
+} from '@/transport/actions';
+import { getSortedAddresses } from '@/transport/utils';
+import { ErrorCodes } from '@/utils/error';
+import type { Address, Signed } from '@/utils/types';
+import { isntNil } from '@/utils/types';
 
-import { MessageType, Delivered, Processed } from 'raiden-ts/messages/types';
-import { makeMessageId } from 'raiden-ts/transfers/utils';
-import { encodeJsonMessage, signMessage } from 'raiden-ts/messages/utils';
-import { Address, isntNil, Signed } from 'raiden-ts/utils/types';
-import { Capabilities } from 'raiden-ts/constants';
-import { ErrorCodes } from 'raiden-ts/utils/error';
-import { getSortedAddresses } from 'raiden-ts/transport/utils';
+import type { MockedRaiden } from '../mocks';
 
 const partnerRoomId = `!partnerRoomId:${matrixServer}`;
 const accessToken = 'access_token';

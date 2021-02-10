@@ -56,18 +56,22 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Watch, Mixins } from 'vue-property-decorator';
-import { mapState, mapGetters } from 'vuex';
-import { BigNumber } from 'ethers';
-import { VForm } from 'vuetify/lib';
-import NavigationMixin from '../../mixins/navigation-mixin';
+import type { BigNumber } from 'ethers';
+import { Component, Mixins, Prop, Watch } from 'vue-property-decorator';
+import type { VForm } from 'vuetify/lib';
+import { mapGetters, mapState } from 'vuex';
+
+import type { RaidenChannel } from 'raiden-ts';
+import { ChannelState } from 'raiden-ts';
+
+import ActionButton from '@/components/ActionButton.vue';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
-import ActionButton from '@/components/ActionButton.vue';
-import { getAmount, getAddress } from '@/utils/query-params';
+import type { Token } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
-import { RaidenChannel, ChannelState } from 'raiden-ts';
-import { Token } from '@/model/types';
+import { getAddress, getAmount } from '@/utils/query-params';
+
+import NavigationMixin from '../../mixins/navigation-mixin';
 
 @Component({
   components: {

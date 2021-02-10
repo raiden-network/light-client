@@ -1,7 +1,8 @@
 import path from 'path';
-import _Vue from 'vue';
-import store from '@/store';
+import type _Vue from 'vue';
+
 import ServiceWorkerAssistant from '@/service-worker/assistant';
+import store from '@/store';
 
 const SERVICE_WORKER_SCRIPT = path.join(process.env.BASE_URL ?? '/', 'service-worker.js');
 

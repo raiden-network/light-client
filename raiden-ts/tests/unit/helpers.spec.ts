@@ -3,9 +3,9 @@ import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers';
 import { toUtf8String } from '@ethersproject/strings';
 import { Wallet } from '@ethersproject/wallet';
 
-import { getContracts, getSigner, isValidUrl } from 'raiden-ts/helpers';
-import Raiden from 'raiden-ts/raiden';
-import { Address } from 'raiden-ts/utils/types';
+import { getContracts, getSigner, isValidUrl } from '@/helpers';
+import Raiden from '@/raiden';
+import type { Address } from '@/utils/types';
 
 describe('getContracts', () => {
   test('return contracts if network is ropsten, rinkeby or goerli', async () => {

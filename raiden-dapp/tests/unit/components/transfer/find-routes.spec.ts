@@ -1,11 +1,13 @@
 import { mount } from '@vue/test-utils';
-import Vuetify from 'vuetify';
-import Vue from 'vue';
 import { BigNumber, constants } from 'ethers';
-import { RaidenPaths } from 'raiden-ts';
+import Vue from 'vue';
+import Vuetify from 'vuetify';
+
+import type { RaidenPaths } from 'raiden-ts';
+
 import FindRoutes from '@/components/transfer/FindRoutes.vue';
-import { Token } from '@/model/types';
 import Filters from '@/filters';
+import type { Token } from '@/model/types';
 
 Vue.use(Vuetify);
 Vue.filter('dispayFormat', Filters.displayFormat);

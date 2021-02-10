@@ -1,12 +1,13 @@
-import { from, merge, Observable, of } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { from, merge, of } from 'rxjs';
 import { exhaustMap, filter, mergeMap, pluck, withLatestFrom } from 'rxjs/operators';
 
-import { RaidenAction } from '../../actions';
+import type { RaidenAction } from '../../actions';
 import { newBlock } from '../../channels/actions';
-import { RaidenState } from '../../state';
-import { RaidenEpicDeps } from '../../types';
+import type { RaidenState } from '../../state';
+import type { RaidenEpicDeps } from '../../types';
 import { isResponseOf } from '../../utils/actions';
-import { RaidenError, ErrorCodes } from '../../utils/error';
+import { ErrorCodes, RaidenError } from '../../utils/error';
 import { transfer, transferExpire } from '../actions';
 import { Direction } from '../state';
 import { dispatchAndWait$ } from './utils';

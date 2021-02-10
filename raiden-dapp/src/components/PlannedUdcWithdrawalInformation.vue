@@ -41,10 +41,11 @@
 
 <script lang="ts">
 import { Component, Prop } from 'vue-property-decorator';
-import { Token } from '@/model/types';
-import { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
+
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
+import type { Token } from '@/model/types';
+import type { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
 
 @Component({ components: { AmountDisplay } })
 export default class PlannedUdcWithdrawalInformation extends NavigationMixin {

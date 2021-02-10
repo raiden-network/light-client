@@ -1,11 +1,14 @@
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuex from 'vuex';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import { BigNumber } from 'ethers';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { BigNumber } from 'ethers';
-import { TestData, paymentId } from '../../data/mock-data';
+import Vuex from 'vuex';
+
 import TransferSummary from '@/components/transfer/TransferSummary.vue';
-import { Transfer } from '@/model/types';
+import type { Transfer } from '@/model/types';
+
+import { paymentId, TestData } from '../../data/mock-data';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

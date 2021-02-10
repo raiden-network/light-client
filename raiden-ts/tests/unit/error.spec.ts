@@ -1,6 +1,7 @@
 import { defer } from 'rxjs';
-import { matchError } from 'raiden-ts/utils/error';
-import { retryWhile } from 'raiden-ts/utils/rx';
+
+import { matchError } from '@/utils/error';
+import { retryWhile } from '@/utils/rx';
 
 describe('matchError', () => {
   test('matches error.message substrings', () => {

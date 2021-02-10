@@ -1,5 +1,7 @@
-import { Route, NavigationGuardNext } from 'vue-router';
-import { globalNavigationGuard, GuardArguments } from '@/router/guards';
+import type { NavigationGuardNext, Route } from 'vue-router';
+
+import type { GuardArguments } from '@/router/guards';
+import { globalNavigationGuard } from '@/router/guards';
 
 const anyRoute = {
   path: '/',

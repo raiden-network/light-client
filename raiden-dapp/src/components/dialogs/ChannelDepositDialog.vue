@@ -69,11 +69,12 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue, Watch } from 'vue-property-decorator';
-import { Token } from '@/model/types';
-import AmountInput from '@/components/AmountInput.vue';
+
 import ActionButton from '@/components/ActionButton.vue';
+import AmountInput from '@/components/AmountInput.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import type { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({

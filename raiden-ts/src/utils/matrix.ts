@@ -1,4 +1,4 @@
-import { MatrixClient } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { encodeUri } from 'matrix-js-sdk/lib/utils';
 
 /**

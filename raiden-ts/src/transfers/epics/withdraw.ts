@@ -1,39 +1,40 @@
-import { Observable, of, from, EMPTY, merge, defer } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { defer, EMPTY, from, merge, of } from 'rxjs';
 import {
+  catchError,
+  concatMap,
   filter,
+  first,
   map,
-  withLatestFrom,
+  mapTo,
   mergeMap,
   pluck,
-  first,
-  concatMap,
-  catchError,
-  tap,
-  take,
-  mapTo,
   share,
+  take,
+  tap,
+  withLatestFrom,
 } from 'rxjs/operators';
 
-import { Capabilities } from '../../constants';
-import { channelKey, assertTx } from '../../channels/utils';
-import { RaidenAction } from '../../actions';
-import { RaidenState } from '../../state';
-import { RaidenEpicDeps } from '../../types';
+import type { RaidenAction } from '../../actions';
 import { ChannelState } from '../../channels';
+import { newBlock } from '../../channels/actions';
+import { assertTx, channelKey } from '../../channels/utils';
+import { intervalFromConfig } from '../../config';
+import { Capabilities } from '../../constants';
+import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
+import { isMessageReceivedOfType, MessageType, Processed, signMessage } from '../../messages';
+import { messageSend } from '../../messages/actions';
+import type { RaidenState } from '../../state';
+import { getCap } from '../../transport/utils';
+import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
-import { assert, ErrorCodes, commonTxErrors } from '../../utils/error';
-import { Signed } from '../../utils/types';
+import { assert, commonTxErrors, ErrorCodes } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { retryWhile } from '../../utils/rx';
-import { Processed, MessageType, signMessage, isMessageReceivedOfType } from '../../messages';
-import { messageSend } from '../../messages/actions';
-import { newBlock } from '../../channels/actions';
-import { getCap } from '../../transport/utils';
-import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
-import { withdrawExpire, withdrawMessage, withdraw, withdrawCompleted } from '../actions';
+import { Signed } from '../../utils/types';
+import { withdraw, withdrawCompleted, withdrawExpire, withdrawMessage } from '../actions';
 import { Direction } from '../state';
-import { intervalFromConfig } from '../../config';
-import { retrySendUntil$, matchWithdraw } from './utils';
+import { matchWithdraw, retrySendUntil$ } from './utils';
 
 /**
  * Emits withdraw action once for each own non-confirmed message at startup

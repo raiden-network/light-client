@@ -1,59 +1,54 @@
+import constant from 'lodash/constant';
+import type { EventType, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
+import type { Observable } from 'rxjs';
 import {
-  Observable,
-  of,
-  EMPTY,
-  fromEvent,
-  timer,
-  defer,
-  from,
-  merge,
   asapScheduler,
-  scheduled,
   combineLatest,
+  defer,
+  EMPTY,
+  from,
+  fromEvent,
+  merge,
+  of,
+  scheduled,
+  timer,
 } from 'rxjs';
 import {
   catchError,
   concatMap,
+  delayWhen,
+  distinctUntilChanged,
   filter,
+  groupBy,
   map,
+  mapTo,
   mergeMap,
-  withLatestFrom,
   switchMap,
   take,
   takeUntil,
   tap,
-  groupBy,
-  distinctUntilChanged,
-  mapTo,
-  delayWhen,
+  withLatestFrom,
 } from 'rxjs/operators';
-import constant from 'lodash/constant';
 
-import { EventType, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
-
-import { completeWith, concatBuffer, pluckDistinct, retryWhile } from '../../utils/rx';
-import { intervalFromConfig, RaidenConfig } from '../../config';
+import type { RaidenAction } from '../../actions';
+import type { RaidenConfig } from '../../config';
+import { intervalFromConfig } from '../../config';
 import { Capabilities } from '../../constants';
-import { Address, Signed } from '../../utils/types';
-import { isActionOf } from '../../utils/actions';
-import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../../actions';
-import {
-  Delivered,
-  Processed,
-  SecretRequest,
-  SecretReveal,
-  MessageType,
-  Message,
-} from '../../messages/types';
+import { messageGlobalSend, messageReceived, messageSend } from '../../messages/actions';
+import type { Delivered, Message } from '../../messages/types';
+import { MessageType, Processed, SecretRequest, SecretReveal } from '../../messages/types';
 import { encodeJsonMessage, isMessageReceivedOfType, signMessage } from '../../messages/utils';
-import { messageSend, messageReceived, messageGlobalSend } from '../../messages/actions';
-import { RaidenState } from '../../state';
-import { getServerName } from '../../utils/matrix';
-import { LruCache } from '../../utils/lru';
-import { getPresenceByUserId, getCap } from '../utils';
+import type { RaidenState } from '../../state';
+import type { RaidenEpicDeps } from '../../types';
+import { isActionOf } from '../../utils/actions';
 import { assert, networkErrors } from '../../utils/error';
-import { globalRoomNames, roomMatch, getRoom$, parseMessage } from './helpers';
+import { LruCache } from '../../utils/lru';
+import { getServerName } from '../../utils/matrix';
+import { completeWith, concatBuffer, pluckDistinct, retryWhile } from '../../utils/rx';
+import type { Address } from '../../utils/types';
+import { Signed } from '../../utils/types';
+import { getCap, getPresenceByUserId } from '../utils';
+import { getRoom$, globalRoomNames, parseMessage, roomMatch } from './helpers';
 
 function getMessageBody(message: string | Signed<Message>): string {
   return typeof message === 'string' ? message : encodeJsonMessage(message);

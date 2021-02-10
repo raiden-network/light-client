@@ -1,7 +1,9 @@
-import { Route } from 'vue-router';
-import { RouteNames } from '../route-names';
-import { NavigationGuardNextArgument } from './types';
+import type { Route } from 'vue-router';
+
 import store from '@/store';
+
+import { RouteNames } from '../route-names';
+import type { NavigationGuardNextArgument } from './types';
 
 const accountRoutes = [
   RouteNames.ACCOUNT_ROOT,

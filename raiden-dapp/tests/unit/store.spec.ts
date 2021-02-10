@@ -1,10 +1,13 @@
 import { BigNumber, constants } from 'ethers';
-import { TestData } from './data/mock-data';
+
+import type { Token } from '@/model/types';
+import { DeniedReason, emptyTokenModel } from '@/model/types';
+import store, { defaultState } from '@/store/index';
 import { defaultState as defaultNotificationsState } from '@/store/notifications/state';
 import { defaultState as defaultUserDepositContractState } from '@/store/user-deposit-contract/state';
-import store, { defaultState } from '@/store/index';
-import { DeniedReason, emptyTokenModel, Token } from '@/model/types';
-import { Tokens } from '@/types';
+import type { Tokens } from '@/types';
+
+import { TestData } from './data/mock-data';
 
 describe('store', () => {
   const testTokens = (token: string, name?: string, symbol?: string) => {

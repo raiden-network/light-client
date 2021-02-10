@@ -18,10 +18,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Mixins } from 'vue-property-decorator';
-import NavigationMixin from '../../mixins/navigation-mixin';
-import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import { Component, Mixins, Prop } from 'vue-property-decorator';
+
 import ActionButton from '@/components/ActionButton.vue';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+
+import NavigationMixin from '../../mixins/navigation-mixin';
 
 @Component({
   components: { RaidenDialog, ActionButton },

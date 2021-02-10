@@ -1,6 +1,8 @@
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { mount, Wrapper } from '@vue/test-utils';
+
 import InstallBanner from '@/components/InstallBanner.vue';
 
 Vue.use(Vuetify);

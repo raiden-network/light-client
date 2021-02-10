@@ -1,14 +1,18 @@
-jest.mock('@/i18n', () => jest.fn());
-import flushPromises from 'flush-promises';
-import { mount, Wrapper } from '@vue/test-utils';
-import Vue from 'vue';
-import Vuex from 'vuex';
-import Vuetify from 'vuetify';
-import { BigNumber } from 'ethers';
 import { $identicon } from '../../utils/mocks';
+
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import { BigNumber } from 'ethers';
+import flushPromises from 'flush-promises';
+import Vue from 'vue';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
 import Withdrawal from '@/components/account/Withdrawal.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
-import RaidenService from '@/services/raiden-service';
+import type RaidenService from '@/services/raiden-service';
+
+jest.mock('@/i18n', () => jest.fn());
 
 Vue.use(Vuex);
 Vue.use(Vuetify);

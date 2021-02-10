@@ -1,34 +1,36 @@
-import { Wallet } from '@ethersproject/wallet';
 import { BigNumber } from '@ethersproject/bignumber';
 import { One, Zero } from '@ethersproject/constants';
+import { Wallet } from '@ethersproject/wallet';
+
+import type { Metadata } from '@/messages/types';
 import {
   Delivered,
   LockedTransfer,
   LockExpired,
   MessageType,
+  MonitorRequest,
+  PFSFeeUpdate,
   Processed,
-  SecretReveal,
   SecretRequest,
+  SecretReveal,
   Unlock,
-  Metadata,
-  WithdrawRequest,
   WithdrawConfirmation,
   WithdrawExpired,
-  PFSFeeUpdate,
-  MonitorRequest,
-} from 'raiden-ts/messages/types';
+  WithdrawRequest,
+} from '@/messages/types';
 import {
-  packMessage,
-  signMessage,
-  getMessageSigner,
-  encodeJsonMessage,
-  decodeJsonMessage,
-  getBalanceProofFromEnvelopeMessage,
+  createBalanceHash,
   createMessageHash,
   createMetadataHash,
-  createBalanceHash,
-} from 'raiden-ts/messages/utils';
-import { Address, Hash, Secret, UInt, Signed, Int, Signature } from 'raiden-ts/utils/types';
+  decodeJsonMessage,
+  encodeJsonMessage,
+  getBalanceProofFromEnvelopeMessage,
+  getMessageSigner,
+  packMessage,
+  signMessage,
+} from '@/messages/utils';
+import type { Address, Hash, Int, Secret, Signature, UInt } from '@/utils/types';
+import { Signed } from '@/utils/types';
 
 // sign/verify & en/decode to avoid having to duplicate all examples
 describe('sign/verify, pack & encode/decode ', () => {

@@ -1,54 +1,49 @@
 import {
-  makeLog,
-  makeHash,
-  makeRaidens,
-  waitBlock,
-  providersEmit,
-  sleep,
-  makeRaiden,
-  MockedRaiden,
-} from '../mocks';
-import {
-  tokenNetwork,
   ensureChannelIsDeposited,
-  ensureTransferUnlocked,
   ensureTransferPending,
+  ensureTransferUnlocked,
+  expectChannelsAreInSync,
   getChannel,
+  getOrWaitTransfer,
   secret,
   secrethash,
-  getOrWaitTransfer,
-  expectChannelsAreInSync,
+  tokenNetwork,
 } from '../fixtures';
+import {
+  makeHash,
+  makeLog,
+  makeRaiden,
+  makeRaidens,
+  providersEmit,
+  sleep,
+  waitBlock,
+} from '../mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
-import { keccak256 } from '@ethersproject/keccak256';
 import { Two, Zero } from '@ethersproject/constants';
+import { keccak256 } from '@ethersproject/keccak256';
 import { first, pluck } from 'rxjs/operators';
 
-import {
-  LockedTransfer,
-  LockExpired,
-  MessageType,
-  Processed,
-  Unlock,
-} from 'raiden-ts/messages/types';
-import { signMessage } from 'raiden-ts/messages/utils';
-import { messageReceived, messageSend } from 'raiden-ts/messages/actions';
-import { UInt, Int } from 'raiden-ts/utils/types';
-
-import { Direction } from 'raiden-ts/transfers/state';
+import { channelClose, newBlock } from '@/channels/actions';
+import { channelUniqueKey } from '@/channels/utils';
+import { messageReceived, messageSend } from '@/messages/actions';
+import type { Processed } from '@/messages/types';
+import { LockedTransfer, LockExpired, MessageType, Unlock } from '@/messages/types';
+import { signMessage } from '@/messages/utils';
 import {
   transfer,
-  transferSigned,
-  transferSecret,
-  transferUnlock,
-  transferSecretRegister,
   transferExpire,
-} from 'raiden-ts/transfers/actions';
-import { getSecrethash, makePaymentId, makeSecret, transferKey } from 'raiden-ts/transfers/utils';
-import { channelUniqueKey } from 'raiden-ts/channels/utils';
-import { isResponseOf } from 'raiden-ts/utils/actions';
-import { channelClose, newBlock } from 'raiden-ts/channels/actions';
+  transferSecret,
+  transferSecretRegister,
+  transferSigned,
+  transferUnlock,
+} from '@/transfers/actions';
+import { Direction } from '@/transfers/state';
+import { getSecrethash, makePaymentId, makeSecret, transferKey } from '@/transfers/utils';
+import { isResponseOf } from '@/utils/actions';
+import type { Int, UInt } from '@/utils/types';
+
+import type { MockedRaiden } from '../mocks';
 
 const direction = Direction.SENT;
 const paymentId = makePaymentId();

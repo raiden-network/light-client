@@ -1,24 +1,25 @@
-import { range } from 'lodash';
-import asyncPool from 'tiny-async-pool';
-import log from 'loglevel';
-
-import { Web3Provider, ExternalProvider } from '@ethersproject/providers';
-import { MaxUint256, AddressZero } from '@ethersproject/constants';
+import { AddressZero, MaxUint256 } from '@ethersproject/constants';
 import { ContractFactory } from '@ethersproject/contracts';
+import type { ExternalProvider } from '@ethersproject/providers';
+import { Web3Provider } from '@ethersproject/providers';
 import { parseUnits } from '@ethersproject/units';
+import { range } from 'lodash';
+import log from 'loglevel';
+import asyncPool from 'tiny-async-pool';
 
-import { ContractsInfo } from 'raiden-ts/types';
-import { Address, last } from 'raiden-ts/utils/types';
-import {
-  TokenNetworkRegistry,
+import type {
   CustomToken,
-  ServiceRegistry,
-  UserDeposit,
-  SecretRegistry,
   MonitoringService,
   OneToN,
-  TokenNetworkRegistry__factory,
-} from 'raiden-ts/contracts';
+  SecretRegistry,
+  ServiceRegistry,
+  TokenNetworkRegistry,
+  UserDeposit,
+} from '@/contracts';
+import { TokenNetworkRegistry__factory } from '@/contracts';
+import type { ContractsInfo } from '@/types';
+import type { Address } from '@/utils/types';
+import { last } from '@/utils/types';
 
 import Contracts from '../../raiden-contracts/raiden_contracts/data/contracts.json';
 

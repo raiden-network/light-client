@@ -1,36 +1,28 @@
-import Vue from 'vue';
-import VuexPersistence from 'vuex-persist';
-import Vuex, { StoreOptions } from 'vuex';
-import map from 'lodash/map';
-import flatMap from 'lodash/flatMap';
-import filter from 'lodash/filter';
-import clone from 'lodash/clone';
-import reduce from 'lodash/reduce';
-import isEqual from 'lodash/isEqual';
-import isEmpty from 'lodash/isEmpty';
-import { BigNumber, providers } from 'ethers';
 import compareVersions from 'compare-versions';
-import { NotificationsState } from './notifications/types';
-import {
-  AccTokenModel,
-  DeniedReason,
-  emptyTokenModel,
-  PlaceHolderNetwork,
-  Token,
-  TokenModel,
-  Presences,
-} from '@/model/types';
-import {
-  ChannelState,
-  getNetworkName,
-  RaidenChannel,
-  RaidenChannels,
-  RaidenConfig,
-  RaidenTransfer,
-} from 'raiden-ts';
-import { RootState, Settings, Tokens, Transfers } from '@/types';
+import type { BigNumber, providers } from 'ethers';
+import clone from 'lodash/clone';
+import filter from 'lodash/filter';
+import flatMap from 'lodash/flatMap';
+import isEmpty from 'lodash/isEmpty';
+import isEqual from 'lodash/isEqual';
+import map from 'lodash/map';
+import reduce from 'lodash/reduce';
+import Vue from 'vue';
+import type { StoreOptions } from 'vuex';
+import Vuex from 'vuex';
+import VuexPersistence from 'vuex-persist';
+
+import type { RaidenChannel, RaidenChannels, RaidenConfig, RaidenTransfer } from 'raiden-ts';
+import { ChannelState, getNetworkName } from 'raiden-ts';
+
+import type { AccTokenModel, Presences, Token, TokenModel } from '@/model/types';
+import { DeniedReason, emptyTokenModel, PlaceHolderNetwork } from '@/model/types';
 import { notifications } from '@/store/notifications';
-import { userDepositContract, UserDepositContractState } from '@/store/user-deposit-contract';
+import type { UserDepositContractState } from '@/store/user-deposit-contract';
+import { userDepositContract } from '@/store/user-deposit-contract';
+import type { RootState, Settings, Tokens, Transfers } from '@/types';
+
+import type { NotificationsState } from './notifications/types';
 
 Vue.use(Vuex);
 

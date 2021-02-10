@@ -1,21 +1,22 @@
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
-import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
-import Vuex from 'vuex';
-import Vuetify from 'vuetify';
 import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
+import { DeniedReason } from '@/model/types';
+import { RouteNames } from '@/router/route-names';
+import { ConfigProvider } from '@/services/config-provider';
+import RaidenService from '@/services/raiden-service';
+import store from '@/store/index';
+import Home from '@/views/Home.vue';
 
 jest.mock('@/services/raiden-service');
 jest.mock('@/services/config-provider');
 jest.mock('@/i18n', () => jest.fn());
-
-import { ConfigProvider } from '@/services/config-provider';
-import store from '@/store/index';
-import RaidenService from '@/services/raiden-service';
-import { DeniedReason } from '@/model/types';
-import Home from '@/views/Home.vue';
 import Mocked = jest.Mocked;
-import { RouteNames } from '@/router/route-names';
 
 Vue.use(Vuex);
 Vue.use(Vuetify);

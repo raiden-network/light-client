@@ -1,21 +1,45 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { timer } from 'rxjs';
-import { first, filter, takeUntil, take, toArray, finalize } from 'rxjs/operators';
-import { Zero } from '@ethersproject/constants';
-import { parseEther, parseUnits } from '@ethersproject/units';
-import { BigNumber } from '@ethersproject/bignumber';
-import { keccak256 } from '@ethersproject/keccak256';
-import type { Network } from '@ethersproject/networks';
-import ganache from 'ganache-cli';
-import logging from 'loglevel';
-logging.setDefaultLevel(logging.levels.DEBUG);
-
-import { TestProvider } from './provider';
 import { MockMatrixRequestFn } from './mocks';
 
+import { BigNumber } from '@ethersproject/bignumber';
+import { Zero } from '@ethersproject/constants';
+import { keccak256 } from '@ethersproject/keccak256';
+import type { Network } from '@ethersproject/networks';
+import { parseEther, parseUnits } from '@ethersproject/units';
+import ganache from 'ganache-cli';
+import logging from 'loglevel';
+import { request } from 'matrix-js-sdk';
+import { timer } from 'rxjs';
+import { filter, finalize, first, take, takeUntil, toArray } from 'rxjs/operators';
+
+import { ConfirmableAction, raidenShutdown, raidenStarted } from '@/actions';
+import { newBlock, tokenMonitored } from '@/channels/actions';
+import { ChannelState } from '@/channels/state';
+import { channelKey } from '@/channels/utils';
+import type { PartialRaidenConfig } from '@/config';
+import { ShutdownReason } from '@/constants';
+import { ServiceRegistry__factory } from '@/contracts';
+import type { RaidenDatabaseMeta } from '@/db/types';
+import { Raiden as OrigRaiden } from '@/raiden';
+import { udcWithdrawn } from '@/services/actions';
+import type { RaidenState } from '@/state';
+import type { RaidenTransfer } from '@/transfers/state';
+import { RaidenTransferStatus } from '@/transfers/state';
+import { getSecrethash, makeSecret } from '@/transfers/utils';
+import { matrixSetup } from '@/transport/actions';
+import type { ContractsInfo } from '@/types';
+import { isActionOf } from '@/utils/actions';
+import { jsonStringify } from '@/utils/data';
+import { ErrorCodes } from '@/utils/error';
+import type { Address, Secret, UInt } from '@/utils/types';
+
+import { TestProvider } from './provider';
+
+logging.setDefaultLevel(logging.levels.DEBUG);
+
 // mock waitConfirmation Raiden helper to also trigger provider.mine
-jest.mock('raiden-ts/helpers', () => {
-  const actual = jest.requireActual<typeof import('raiden-ts/helpers')>('raiden-ts/helpers');
+jest.mock('@/helpers', () => {
+  const actual = jest.requireActual<any>('@/helpers');
   return {
     ...actual,
     waitConfirmation: jest.fn(
@@ -26,33 +50,11 @@ jest.mock('raiden-ts/helpers', () => {
   };
 });
 
-import { request } from 'matrix-js-sdk';
-
-import { Raiden as OrigRaiden } from 'raiden-ts/raiden';
-import { ShutdownReason } from 'raiden-ts/constants';
-import { RaidenState } from 'raiden-ts/state';
-import { raidenShutdown, ConfirmableAction, raidenStarted } from 'raiden-ts/actions';
-import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
-import { ChannelState } from 'raiden-ts/channels/state';
-import { Secret, Address, UInt } from 'raiden-ts/utils/types';
-import { isActionOf } from 'raiden-ts/utils/actions';
-import { ContractsInfo } from 'raiden-ts/types';
-import { PartialRaidenConfig } from 'raiden-ts/config';
-import { RaidenTransfer, RaidenTransferStatus } from 'raiden-ts/transfers/state';
-import { makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
-import { matrixSetup } from 'raiden-ts/transport/actions';
-import { jsonStringify } from 'raiden-ts/utils/data';
-import { ServiceRegistry__factory } from 'raiden-ts/contracts';
-import { ErrorCodes } from 'raiden-ts/utils/error';
-import { channelKey } from 'raiden-ts/channels/utils';
-import { confirmationBlocks } from '../unit/fixtures';
-import { udcWithdrawn } from 'raiden-ts/services/actions';
-import { RaidenDatabaseMeta } from 'raiden-ts/db/types';
-
 type Raiden = OrigRaiden;
 const Raiden = OrigRaiden as typeof OrigRaiden & {
   create: jest.Mock<Promise<Raiden>, Parameters<typeof OrigRaiden['create']>>;
 };
+const confirmationBlocks = 2;
 
 function makeServer(chainId: number) {
   return ganache.provider({
@@ -83,7 +85,7 @@ describe('Raiden', () => {
   const config: PartialRaidenConfig = {
     settleTimeout: 20,
     revealTimeout: 5,
-    confirmationBlocks: 2,
+    confirmationBlocks,
     pollingInterval: 10,
   };
 

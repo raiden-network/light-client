@@ -1,18 +1,22 @@
-jest.mock('vue-router');
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import type { BigNumber } from 'ethers';
+import { constants } from 'ethers';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
-import { BigNumber, constants } from 'ethers';
+
+import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
+import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
+import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
+import { RouteNames } from '@/router/route-names';
+import store from '@/store';
 
 import { generateToken } from '../../utils/data-generator';
 
+jest.mock('vue-router');
+
 import Mocked = jest.Mocked;
-import store from '@/store';
-import { RouteNames } from '@/router/route-names';
-import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
-import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
-import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 
 Vue.use(Vuetify);
 

@@ -1,22 +1,26 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { concat as concatBytes, hexlify } from '@ethersproject/bytes';
-import { randomBytes } from '@ethersproject/random';
-import { keccak256 } from '@ethersproject/keccak256';
-import { sha256 } from '@ethersproject/sha2';
 import { HashZero } from '@ethersproject/constants';
-import { first, mergeMap, map, filter } from 'rxjs/operators';
-import { of, from, defer, Observable } from 'rxjs';
+import { keccak256 } from '@ethersproject/keccak256';
+import { randomBytes } from '@ethersproject/random';
+import { sha256 } from '@ethersproject/sha2';
+import type { Observable } from 'rxjs';
+import { defer, from, of } from 'rxjs';
+import { filter, first, map, mergeMap } from 'rxjs/operators';
 
-import { RaidenState } from '../state';
+import type { Channel } from '../channels';
+import type { Lock } from '../channels/types';
+import { BalanceProofZero } from '../channels/types';
 import { channelUniqueKey } from '../channels/utils';
+import type { RaidenDatabase, TransferStateish } from '../db/types';
+import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from '../messages';
+import type { RaidenState } from '../state';
 import { assert } from '../utils';
-import { Hash, Secret, UInt, HexString, isntNil, decode } from '../utils/types';
 import { encode } from '../utils/data';
-import { Lock, BalanceProofZero } from '../channels/types';
-import { Channel } from '../channels';
-import { getBalanceProofFromEnvelopeMessage, createBalanceHash } from '../messages';
-import { RaidenDatabase, TransferStateish } from '../db/types';
-import { TransferState, RaidenTransfer, RaidenTransferStatus, Direction } from './state';
+import type { Hash, HexString, Secret, UInt } from '../utils/types';
+import { decode, isntNil } from '../utils/types';
+import type { RaidenTransfer } from './state';
+import { Direction, RaidenTransferStatus, TransferState } from './state';
 
 /**
  * Get the locksroot of a given array of pending locks

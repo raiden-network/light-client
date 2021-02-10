@@ -1,127 +1,118 @@
 import './polyfills';
+
 import type { Signer } from '@ethersproject/abstract-signer';
-import { Web3Provider, JsonRpcProvider, ExternalProvider } from '@ethersproject/providers';
-import { Network } from '@ethersproject/networks';
-import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
-import { Zero, AddressZero, MaxUint256 } from '@ethersproject/constants';
-
-import { MatrixClient } from 'matrix-js-sdk';
-import { applyMiddleware, createStore, Store } from 'redux';
-import { createEpicMiddleware, EpicMiddleware } from 'redux-observable';
-import { createLogger } from 'redux-logger';
-import { composeWithDevTools } from 'redux-devtools-extension/developmentOnly';
-
+import type { BigNumberish } from '@ethersproject/bignumber';
+import { BigNumber } from '@ethersproject/bignumber';
+import { AddressZero, MaxUint256, Zero } from '@ethersproject/constants';
+import type { Network } from '@ethersproject/networks';
+import type { ExternalProvider } from '@ethersproject/providers';
+import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 import constant from 'lodash/constant';
-import memoize from 'lodash/memoize';
 import isUndefined from 'lodash/isUndefined';
+import memoize from 'lodash/memoize';
 import omitBy from 'lodash/omitBy';
+import logging from 'loglevel';
+import type { MatrixClient } from 'matrix-js-sdk';
+import type { Store } from 'redux';
+import { applyMiddleware, createStore } from 'redux';
+import { composeWithDevTools } from 'redux-devtools-extension/developmentOnly';
+import { createLogger } from 'redux-logger';
+import type { EpicMiddleware } from 'redux-observable';
+import { createEpicMiddleware } from 'redux-observable';
+import type { Observable } from 'rxjs';
+import { AsyncSubject, defer, EMPTY, from, merge, of, ReplaySubject, throwError } from 'rxjs';
+import { fromFetch } from 'rxjs/fetch';
 import {
-  Observable,
-  AsyncSubject,
-  merge,
-  defer,
-  EMPTY,
-  ReplaySubject,
-  of,
-  from,
-  throwError,
-} from 'rxjs';
-import {
-  first,
+  catchError,
+  concatMap,
   filter,
+  first,
   map,
   mergeMap,
-  skip,
   pluck,
+  skip,
   timeout,
   toArray,
-  concatMap,
-  catchError,
 } from 'rxjs/operators';
-import { fromFetch } from 'rxjs/fetch';
-import logging from 'loglevel';
 
+import type { RaidenAction, RaidenEvent } from './actions';
 import {
-  TokenNetworkRegistry__factory,
-  TokenNetwork__factory,
-  HumanStandardToken__factory,
-  ServiceRegistry__factory,
-  CustomToken__factory,
-  UserDeposit__factory,
-  SecretRegistry__factory,
-  MonitoringService__factory,
-} from './contracts';
-import versions from './versions.json';
-import { ContractsInfo, EventTypes, OnChange, RaidenEpicDeps, Latest } from './types';
-import { ShutdownReason } from './constants';
-import { RaidenState } from './state';
-import { RaidenConfig, PartialRaidenConfig, makeDefaultConfig } from './config';
-import { RaidenChannels, ChannelState } from './channels/state';
-import { RaidenTransfer, Direction, TransferState } from './transfers/state';
-import { raidenReducer } from './reducer';
-import { raidenRootEpic, getLatest$ } from './epics';
-import {
-  RaidenAction,
-  RaidenEvents,
-  RaidenEvent,
-  raidenShutdown,
   raidenConfigUpdate,
+  RaidenEvents,
+  raidenShutdown,
   raidenStarted,
   raidenSynced,
 } from './actions';
-import { assert } from './utils';
 import {
-  channelOpen,
-  channelDeposit,
   channelClose,
+  channelDeposit,
+  channelOpen,
   channelSettle,
   tokenMonitored,
 } from './channels/actions';
-import { channelKey, channelAmounts } from './channels/utils';
-import { matrixPresence } from './transport/actions';
-import { transfer, transferSigned, withdraw } from './transfers/actions';
+import type { RaidenChannels } from './channels/state';
+import { ChannelState } from './channels/state';
+import { channelAmounts, channelKey } from './channels/utils';
+import type { RaidenConfig } from './config';
+import { makeDefaultConfig, PartialRaidenConfig } from './config';
+import { ShutdownReason } from './constants';
 import {
-  makeSecret,
+  CustomToken__factory,
+  HumanStandardToken__factory,
+  MonitoringService__factory,
+  SecretRegistry__factory,
+  ServiceRegistry__factory,
+  TokenNetwork__factory,
+  TokenNetworkRegistry__factory,
+  UserDeposit__factory,
+} from './contracts';
+import type { RaidenDatabase } from './db/types';
+import { dumpDatabaseToArray } from './db/utils';
+import { getLatest$, raidenRootEpic } from './epics';
+import {
+  callAndWaitMined,
+  chooseOnchainAccount,
+  fetchContractsInfo,
+  getContracts,
+  getContractWithSigner,
+  getSigner,
+  getState,
+  getUdcBalance,
+  initTransfers$,
+  mapRaidenChannels,
+  waitConfirmation,
+  waitForPFSCapacityUpdate,
+} from './helpers';
+import { createPersisterMiddleware } from './persister';
+import { raidenReducer } from './reducer';
+import { pathFind, udcDeposit, udcWithdraw } from './services/actions';
+import type { IOU, RaidenPaths, RaidenPFS, SuggestedPartner } from './services/types';
+import { Paths, PFS, SuggestedPartners } from './services/types';
+import { pfsListInfo } from './services/utils';
+import type { RaidenState } from './state';
+import { transfer, transferSigned, withdraw } from './transfers/actions';
+import type { RaidenTransfer } from './transfers/state';
+import { Direction, TransferState } from './transfers/state';
+import {
   getSecrethash,
   makePaymentId,
+  makeSecret,
   raidenTransfer,
   transferKey,
   transferKeyToMeta,
 } from './transfers/utils';
-import { pathFind, udcWithdraw, udcDeposit } from './services/actions';
-import {
-  Paths,
-  PFS,
-  IOU,
-  SuggestedPartner,
-  SuggestedPartners,
-  RaidenPaths,
-  RaidenPFS,
-} from './services/types';
-import { pfsListInfo } from './services/utils';
-import { Address, Secret, Hash, UInt, decode, Decodable } from './utils/types';
-import { isActionOf, asyncActionToPromise, isResponseOf } from './utils/actions';
-import { pluckDistinct } from './utils/rx';
-import {
-  getContracts,
-  getSigner,
-  initTransfers$,
-  mapRaidenChannels,
-  chooseOnchainAccount,
-  getContractWithSigner,
-  waitConfirmation,
-  callAndWaitMined,
-  fetchContractsInfo,
-  getUdcBalance,
-  getState,
-  waitForPFSCapacityUpdate,
-} from './helpers';
-import { RaidenError, ErrorCodes } from './utils/error';
-import { RaidenDatabase } from './db/types';
-import { dumpDatabaseToArray } from './db/utils';
-import { createPersisterMiddleware } from './persister';
+import { matrixPresence } from './transport/actions';
+import type { ContractsInfo, Latest, OnChange, RaidenEpicDeps } from './types';
+import { EventTypes } from './types';
+import { assert } from './utils';
+import { asyncActionToPromise, isActionOf, isResponseOf } from './utils/actions';
 import { jsonParse } from './utils/data';
+import { ErrorCodes, RaidenError } from './utils/error';
 import { getLogsByChunk$ } from './utils/ethers';
+import { pluckDistinct } from './utils/rx';
+import type { Decodable } from './utils/types';
+import { Address, decode, Hash, Secret, UInt } from './utils/types';
+import versions from './versions.json';
 
 export class Raiden {
   private readonly store: Store<RaidenState, RaidenAction>;

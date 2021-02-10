@@ -1,6 +1,7 @@
 /* istanbul ignore file */
+import type { DBSchema, IDBPDatabase } from 'idb';
+import { openDB } from 'idb';
 import logging from 'loglevel';
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
 const storeName = 'logs';
 let lastBlockNumber: number | undefined = undefined;

@@ -1,84 +1,79 @@
+import { BigNumber } from '@ethersproject/bignumber';
+import { concat as concatBytes } from '@ethersproject/bytes';
+import { MaxUint256, Two, WeiPerEther, Zero } from '@ethersproject/constants';
+import type { Event } from '@ethersproject/contracts';
+import { toUtf8Bytes } from '@ethersproject/strings';
+import { verifyMessage } from '@ethersproject/wallet';
 import * as t from 'io-ts';
-import {
-  defer,
-  EMPTY,
-  from,
-  merge,
-  Observable,
-  of,
-  combineLatest,
-  timer,
-  AsyncSubject,
-} from 'rxjs';
+import constant from 'lodash/constant';
+import type { Observable } from 'rxjs';
+import { AsyncSubject, combineLatest, defer, EMPTY, from, merge, of, timer } from 'rxjs';
+import { fromFetch } from 'rxjs/fetch';
 import {
   catchError,
   concatMap,
-  delay,
+  debounce,
   debounceTime,
+  delay,
   distinctUntilChanged,
+  exhaustMap,
   filter,
   first,
   groupBy,
   map,
+  mapTo,
   mergeMap,
+  pairwise,
   pluck,
   scan,
+  startWith,
   switchMap,
+  take,
   tap,
   timeout,
   withLatestFrom,
-  exhaustMap,
-  take,
-  mapTo,
-  debounce,
-  pairwise,
-  startWith,
 } from 'rxjs/operators';
-import { fromFetch } from 'rxjs/fetch';
-import { Event } from '@ethersproject/contracts';
-import { BigNumber } from '@ethersproject/bignumber';
-import { concat as concatBytes } from '@ethersproject/bytes';
-import { toUtf8Bytes } from '@ethersproject/strings';
-import { verifyMessage } from '@ethersproject/wallet';
-import { Two, Zero, MaxUint256, WeiPerEther } from '@ethersproject/constants';
-import constant from 'lodash/constant';
 
-import { RaidenAction } from '../actions';
-import { RaidenState } from '../state';
-import { RaidenEpicDeps, Latest } from '../types';
-import { intervalFromConfig, RaidenConfig } from '../config';
-import { Capabilities } from '../constants';
-import { getContractWithSigner, chooseOnchainAccount } from '../helpers';
-import { Presences } from '../transport/types';
-import { messageGlobalSend } from '../messages/actions';
-import { MessageType, PFSCapacityUpdate, PFSFeeUpdate, MonitorRequest } from '../messages/types';
-import { MessageTypeId, signMessage, createBalanceHash } from '../messages/utils';
-import { ChannelState, Channel } from '../channels/state';
+import type { RaidenAction } from '../actions';
 import { newBlock } from '../channels/actions';
-import { channelAmounts, groupChannel$, assertTx, approveIfNeeded$ } from '../channels/utils';
-import { Address, decode, Int, Signature, Signed, UInt, isntNil, Hash } from '../utils/types';
+import type { Channel } from '../channels/state';
+import { ChannelState } from '../channels/state';
+import { approveIfNeeded$, assertTx, channelAmounts, groupChannel$ } from '../channels/utils';
+import type { RaidenConfig } from '../config';
+import { intervalFromConfig } from '../config';
+import { Capabilities } from '../constants';
+import type { HumanStandardToken, UserDeposit } from '../contracts';
+import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
+import { messageGlobalSend } from '../messages/actions';
+import type { MonitorRequest, PFSCapacityUpdate, PFSFeeUpdate } from '../messages/types';
+import { MessageType } from '../messages/types';
+import { createBalanceHash, MessageTypeId, signMessage } from '../messages/utils';
+import type { RaidenState } from '../state';
+import { makeMessageId } from '../transfers/utils';
+import { matrixPresence } from '../transport/actions';
+import type { Presences } from '../transport/types';
+import { getCap } from '../transport/utils';
+import type { Latest, RaidenEpicDeps } from '../types';
 import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
+import { assert, commonTxErrors, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
-import { RaidenError, ErrorCodes, assert, networkErrors, commonTxErrors } from '../utils/error';
 import { completeWith, pluckDistinct, retryAsync$, retryWhile } from '../utils/rx';
-import { matrixPresence } from '../transport/actions';
-import { getCap } from '../transport/utils';
-import type { UserDeposit, HumanStandardToken } from '../contracts';
-
-import { makeMessageId } from '../transfers/utils';
+import type { Address, Hash, Int, Signature, Signed } from '../utils/types';
+import { decode, isntNil, UInt } from '../utils/types';
 import {
   iouClear,
-  pathFind,
   iouPersist,
+  msBalanceProofSent,
+  pathFind,
   pfsListUpdated,
   udcDeposit,
   udcWithdraw,
   udcWithdrawn,
-  msBalanceProofSent,
 } from './actions';
-import { channelCanRoute, pfsInfo, pfsListInfo, packIOU, signIOU } from './utils';
-import { IOU, LastIOUResults, PathResults, Paths, PFS } from './types';
+import type { IOU, Paths, PFS } from './types';
+import { LastIOUResults, PathResults } from './types';
+import { channelCanRoute, packIOU, pfsInfo, pfsListInfo, signIOU } from './utils';
 
 /**
  * Codec for PFS API returned error

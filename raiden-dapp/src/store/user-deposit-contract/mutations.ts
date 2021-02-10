@@ -1,6 +1,8 @@
-import { MutationTree } from 'vuex';
-import { UserDepositContractState, PlannedUdcWithdrawal } from './types';
-import { Token } from '@/model/types';
+import type { MutationTree } from 'vuex';
+
+import type { Token } from '@/model/types';
+
+import type { PlannedUdcWithdrawal, UserDepositContractState } from './types';
 
 export const mutations: MutationTree<UserDepositContractState> = {
   setTokenAddress(state, address: string) {

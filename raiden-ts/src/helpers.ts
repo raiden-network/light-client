@@ -1,69 +1,68 @@
 import { Signer } from '@ethersproject/abstract-signer';
-import { Wallet } from '@ethersproject/wallet';
+import { MaxUint256 } from '@ethersproject/constants';
 import type { Contract, ContractReceipt, ContractTransaction } from '@ethersproject/contracts';
 import type { Network } from '@ethersproject/networks';
 import type { JsonRpcProvider } from '@ethersproject/providers';
-import { toUtf8Bytes } from '@ethersproject/strings';
 import { sha256 } from '@ethersproject/sha2';
-
-import { MaxUint256 } from '@ethersproject/constants';
-
-import { Observable, defer, merge } from 'rxjs';
+import { toUtf8Bytes } from '@ethersproject/strings';
+import { Wallet } from '@ethersproject/wallet';
+import isEqual from 'lodash/isEqual';
+import logging from 'loglevel';
+import type { Observable } from 'rxjs';
+import { defer, merge } from 'rxjs';
 import {
+  exhaustMap,
   filter,
+  first,
   map,
   pluck,
-  withLatestFrom,
-  first,
-  exhaustMap,
   take,
-  tap,
   takeWhile,
+  tap,
+  withLatestFrom,
 } from 'rxjs/operators';
-import logging from 'loglevel';
-import isEqual from 'lodash/isEqual';
 
-import { RaidenState, makeInitialState } from './state';
-import { ContractsInfo, RaidenEpicDeps, Latest } from './types';
-import { assert } from './utils';
-import { raidenTransfer } from './transfers/utils';
-import { RaidenTransfer, TransferState, Direction } from './transfers/state';
+import type { RaidenAction } from './actions';
+import { channelDeposit } from './channels/actions';
+import type { RaidenChannel, RaidenChannels } from './channels/state';
 import { channelAmounts, channelKey } from './channels/utils';
-import { RaidenChannels, RaidenChannel } from './channels/state';
-import { distinctRecordValues, pluckDistinct } from './utils/rx';
-import { Address, PrivateKey, isntNil, Hash, UInt, decode } from './utils/types';
-import { getLogsByChunk$, getNetworkName } from './utils/ethers';
-import { RaidenError, ErrorCodes } from './utils/error';
-
-import ropstenDeploy from './deployment/deployment_ropsten.json';
-import rinkebyDeploy from './deployment/deployment_rinkeby.json';
-import goerliDeploy from './deployment/deployment_goerli.json';
-import mainnetDeploy from './deployment/deployment_mainnet.json';
-import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
-import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
-import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
-import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
+import type { RaidenConfig } from './config';
 import {
-  UserDeposit__factory,
   MonitoringService__factory,
   TokenNetworkRegistry__factory,
+  UserDeposit__factory,
 } from './contracts';
-
-import { RaidenDatabase, RaidenDatabaseMeta, TransferStateish } from './db/types';
+import type { RaidenDatabase, RaidenDatabaseMeta, TransferStateish } from './db/types';
 import {
-  getRaidenState,
   changes$,
-  putRaidenState,
-  migrateDatabase,
-  replaceDatabase,
   getDatabaseConstructorFromOptions,
+  getRaidenState,
+  migrateDatabase,
+  putRaidenState,
+  replaceDatabase,
 } from './db/utils';
-import { jsonParse } from './utils/data';
+import goerliDeploy from './deployment/deployment_goerli.json';
+import mainnetDeploy from './deployment/deployment_mainnet.json';
+import rinkebyDeploy from './deployment/deployment_rinkeby.json';
+import ropstenDeploy from './deployment/deployment_ropsten.json';
+import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
+import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
+import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
+import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
 import { messageGlobalSend } from './messages/actions';
+import { makeInitialState, RaidenState } from './state';
+import type { RaidenTransfer } from './transfers/state';
+import { Direction, TransferState } from './transfers/state';
+import { raidenTransfer } from './transfers/utils';
+import type { ContractsInfo, Latest, RaidenEpicDeps } from './types';
+import { assert } from './utils';
 import { asyncActionToPromise } from './utils/actions';
-import { RaidenAction } from './actions';
-import { RaidenConfig } from './config';
-import { channelDeposit } from './channels/actions';
+import { jsonParse } from './utils/data';
+import { ErrorCodes, RaidenError } from './utils/error';
+import { getLogsByChunk$, getNetworkName } from './utils/ethers';
+import { distinctRecordValues, pluckDistinct } from './utils/rx';
+import type { Hash, UInt } from './utils/types';
+import { Address, decode, isntNil, PrivateKey } from './utils/types';
 
 /**
  * Returns contract information depending on the passed [[Network]]. Currently, only

@@ -1,6 +1,7 @@
-import { TestData } from '../../data/mock-data';
 import { getters } from '@/store/notifications/getters';
-import { NotificationsState } from '@/store/notifications/types';
+import type { NotificationsState } from '@/store/notifications/types';
+
+import { TestData } from '../../data/mock-data';
 
 describe('notifications store getters', () => {
   const notification = TestData.notifications;

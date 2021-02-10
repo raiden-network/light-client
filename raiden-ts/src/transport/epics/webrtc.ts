@@ -1,66 +1,66 @@
+import * as t from 'io-ts';
+import constant from 'lodash/constant';
+import type { MatrixClient } from 'matrix-js-sdk';
+import type { Observable, OperatorFunction } from 'rxjs';
 import {
-  Observable,
-  from,
-  of,
-  EMPTY,
-  fromEvent,
-  timer,
-  throwError,
-  merge,
-  defer,
-  AsyncSubject,
-  OperatorFunction,
   asapScheduler,
+  AsyncSubject,
+  defer,
+  EMPTY,
+  from,
+  fromEvent,
+  merge,
+  of,
+  throwError,
+  timer,
 } from 'rxjs';
 import {
+  bufferTime,
   catchError,
+  delayWhen,
+  distinct,
   distinctUntilChanged,
+  endWith,
   filter,
+  finalize,
   ignoreElements,
   map,
+  mapTo,
   mergeMap,
-  withLatestFrom,
+  mergeMapTo,
+  observeOn,
+  pluck,
+  repeatWhen,
+  share,
+  startWith,
   switchMap,
   take,
   takeUntil,
-  tap,
-  finalize,
-  pluck,
-  repeatWhen,
-  delayWhen,
   takeWhile,
-  bufferTime,
-  endWith,
-  mergeMapTo,
-  startWith,
-  mapTo,
-  observeOn,
-  share,
-  distinct,
+  tap,
+  withLatestFrom,
 } from 'rxjs/operators';
-import * as t from 'io-ts';
-import constant from 'lodash/constant';
 
-import { MatrixClient } from 'matrix-js-sdk';
-
-import { Capabilities } from '../../constants';
-import { Address, decode, isntNil } from '../../utils/types';
-import { jsonParse, jsonStringify } from '../../utils/data';
-import { completeWith, timeoutFirst } from '../../utils/rx';
-import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../../actions';
-import { dispatchAndWait$, exponentialBackoff } from '../../transfers/epics/utils';
-import { RaidenConfig } from '../../config';
-import { messageReceived, messageSend } from '../../messages/actions';
-import { RaidenState } from '../../state';
-import { matrixPresence, rtcChannel } from '../actions';
-import { getCap, getSortedAddresses } from '../utils';
-import { makeMessageId } from '../../transfers/utils';
-import { isActionOf, isResponseOf } from '../../utils/actions';
-import { matchError } from '../../utils/error';
-import { transferSigned } from '../../transfers/actions';
+import type { RaidenAction } from '../../actions';
 import { channelMonitored } from '../../channels/actions';
+import type { RaidenConfig } from '../../config';
+import { Capabilities } from '../../constants';
+import { messageReceived, messageSend } from '../../messages/actions';
+import type { RaidenState } from '../../state';
+import { transferSigned } from '../../transfers/actions';
+import { dispatchAndWait$, exponentialBackoff } from '../../transfers/epics/utils';
 import { Direction } from '../../transfers/state';
+import { makeMessageId } from '../../transfers/utils';
+import type { RaidenEpicDeps } from '../../types';
+import { isActionOf, isResponseOf } from '../../utils/actions';
+import { jsonParse, jsonStringify } from '../../utils/data';
+import { matchError } from '../../utils/error';
+import { completeWith, timeoutFirst } from '../../utils/rx';
+import type { Address } from '../../utils/types';
+import { decode, isntNil } from '../../utils/types';
+import type { matrixPresence } from '../actions';
+import { rtcChannel } from '../actions';
+import { getCap, getSortedAddresses } from '../utils';
 import { parseMessage } from './helpers';
 
 interface CallInfo {

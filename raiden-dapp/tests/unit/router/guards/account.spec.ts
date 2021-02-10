@@ -1,7 +1,9 @@
-import { NavigationGuardNext, Route } from 'vue-router';
-import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
-import { RouteNames } from '@/router/route-names';
+import type { NavigationGuardNext, Route } from 'vue-router';
+
 import { beforeRouteToAccount } from '@/router/guards/account';
+import { RouteNames } from '@/router/route-names';
+
+import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 
 const {
   [RouteNames.ACCOUNT_ROOT]: accountRoute,

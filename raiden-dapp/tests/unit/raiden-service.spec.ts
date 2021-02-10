@@ -1,4 +1,31 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { providers } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
+import flushPromises from 'flush-promises';
+import { BehaviorSubject, EMPTY, of } from 'rxjs';
+import { delay } from 'rxjs/operators';
+import VueRouter from 'vue-router';
+import type { CommitOptions } from 'vuex';
+import { Store } from 'vuex';
+
+import type { Address, Hash, OnChange, RaidenTransfer } from 'raiden-ts';
+import { EventTypes, Raiden } from 'raiden-ts';
+
+import type { Token, TokenModel } from '@/model/types';
+import { DeniedReason } from '@/model/types';
+import { RouteNames } from '@/router/route-names';
+import type { Configuration } from '@/services/config-provider';
+import { ConfigProvider } from '@/services/config-provider';
+import RaidenService from '@/services/raiden-service';
+import { Web3Provider } from '@/services/web3-provider';
+import type { CombinedStoreState } from '@/store';
+import { NotificationContext } from '@/store/notifications/notification-context';
+import { NotificationImportance } from '@/store/notifications/notification-importance';
+import type { Tokens } from '@/types';
+
+import { paymentId } from './data/mock-data';
+import { generateToken } from './utils/data-generator';
+
 jest.mock('vuex');
 jest.mock('vue-router');
 jest.mock('raiden-ts');
@@ -9,25 +36,6 @@ jest.mock('@/i18n', () => ({
   },
 }));
 jest.mock('@/services/config-provider');
-
-import { CommitOptions, Store } from 'vuex';
-import VueRouter from 'vue-router';
-import flushPromises from 'flush-promises';
-import { BigNumber, providers, utils, constants } from 'ethers';
-import { BehaviorSubject, EMPTY, of } from 'rxjs';
-import { delay } from 'rxjs/operators';
-import { paymentId } from './data/mock-data';
-import { generateToken } from './utils/data-generator';
-import { Address, EventTypes, Hash, OnChange, Raiden, RaidenTransfer } from 'raiden-ts';
-import { ConfigProvider, Configuration } from '@/services/config-provider';
-import { DeniedReason, Token, TokenModel } from '@/model/types';
-import RaidenService from '@/services/raiden-service';
-import { Web3Provider } from '@/services/web3-provider';
-import { Tokens } from '@/types';
-import { CombinedStoreState } from '@/store';
-import { NotificationImportance } from '@/store/notifications/notification-importance';
-import { NotificationContext } from '@/store/notifications/notification-context';
-import { RouteNames } from '@/router/route-names';
 const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual('raiden-ts');
 
 describe('RaidenService', () => {

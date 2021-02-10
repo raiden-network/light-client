@@ -13,12 +13,12 @@
  * database storage.
  */
 
-import { Dispatch, Middleware } from 'redux';
 import isEmpty from 'lodash/isEmpty';
+import type { Dispatch, Middleware } from 'redux';
 
-import type { RaidenState } from './state';
 import type { RaidenAction } from './actions';
 import type { RaidenDatabase } from './db/types';
+import type { RaidenState } from './state';
 import { assert, ErrorCodes } from './utils/error';
 
 /**

@@ -114,18 +114,20 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator';
-import { mapState, mapGetters } from 'vuex';
+import type { BigNumber } from 'ethers';
+import { constants } from 'ethers';
 import uniqBy from 'lodash/uniqBy';
-import { BigNumber, constants } from 'ethers';
-import { Token } from '@/model/types';
-import AddressDisplay from '@/components/AddressDisplay.vue';
-import BlockieMixin from '@/mixins/blockie-mixin';
-import NavigationMixin from '@/mixins/navigation-mixin';
-import AmountDisplay from '@/components/AmountDisplay.vue';
+import { Component, Mixins } from 'vue-property-decorator';
+import { mapGetters, mapState } from 'vuex';
+
 import ActionButton from '@/components/ActionButton.vue';
+import AddressDisplay from '@/components/AddressDisplay.vue';
+import AmountDisplay from '@/components/AmountDisplay.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import BlockieMixin from '@/mixins/blockie-mixin';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import type { Token } from '@/model/types';
 
 @Component({
   components: {

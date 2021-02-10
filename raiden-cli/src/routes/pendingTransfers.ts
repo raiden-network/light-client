@@ -1,9 +1,12 @@
-import { Router, Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { timer } from 'rxjs';
-import { filter, takeUntil, map, toArray } from 'rxjs/operators';
-import { RaidenTransfer, isntNil } from 'raiden-ts';
+import { filter, map, takeUntil, toArray } from 'rxjs/operators';
 
-import { Cli } from '../types';
+import type { RaidenTransfer } from 'raiden-ts';
+import { isntNil } from 'raiden-ts';
+
+import type { Cli } from '../types';
 import { validateOptionalAddressParameter } from '../utils/validation';
 
 export enum ApiTransferRole {

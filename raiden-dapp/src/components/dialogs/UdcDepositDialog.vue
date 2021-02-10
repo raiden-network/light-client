@@ -76,18 +76,21 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Emit, Prop } from 'vue-property-decorator';
-import { mapState, mapGetters } from 'vuex';
-import { BigNumber, utils, constants } from 'ethers';
-import AmountInput from '@/components/AmountInput.vue';
+import type { BigNumber } from 'ethers';
+import { constants, utils } from 'ethers';
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+import { mapGetters, mapState } from 'vuex';
+
+import type { RaidenError } from 'raiden-ts';
+
 import ActionButton from '@/components/ActionButton.vue';
-import { BalanceUtils } from '@/utils/balance-utils';
-import { Token } from '@/model/types';
+import AmountInput from '@/components/AmountInput.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
-import { RaidenError } from 'raiden-ts';
 import Filters from '@/filters';
+import type { Token } from '@/model/types';
+import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({
   components: {

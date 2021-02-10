@@ -1,101 +1,101 @@
+import { defaultAbiCoder, Interface } from '@ethersproject/abi';
+import type { BigNumber } from '@ethersproject/bignumber';
+import { concat as concatBytes } from '@ethersproject/bytes';
+import { Zero } from '@ethersproject/constants';
+import type { Event } from '@ethersproject/contracts';
+import type { Filter, Log } from '@ethersproject/providers';
+import constant from 'lodash/constant';
+import findKey from 'lodash/findKey';
+import isEmpty from 'lodash/isEmpty';
+import sortBy from 'lodash/sortBy';
+import type { Observable } from 'rxjs';
 import {
-  Observable,
-  from,
-  of,
+  AsyncSubject,
+  combineLatest,
+  concat,
   defer,
   EMPTY,
+  from,
   merge,
-  concat,
-  combineLatest,
+  of,
   throwError,
-  AsyncSubject,
   timer,
 } from 'rxjs';
 import {
   catchError,
-  filter,
-  map,
-  mergeMap,
-  withLatestFrom,
+  concatMap,
+  debounceTime,
+  delayWhen,
+  distinctUntilChanged,
+  endWith,
   exhaustMap,
-  take,
+  filter,
+  finalize,
+  first,
+  groupBy,
+  ignoreElements,
+  map,
   mapTo,
+  mergeMap,
+  mergeMapTo,
   pluck,
   publishReplay,
-  ignoreElements,
-  mergeMapTo,
-  first,
-  delayWhen,
-  finalize,
-  concatMap,
-  takeUntil,
-  groupBy,
-  toArray,
-  endWith,
   scan,
-  debounceTime,
   switchMap,
-  distinctUntilChanged,
+  take,
+  takeUntil,
+  toArray,
+  withLatestFrom,
 } from 'rxjs/operators';
-import sortBy from 'lodash/sortBy';
-import isEmpty from 'lodash/isEmpty';
-import findKey from 'lodash/findKey';
-import constant from 'lodash/constant';
 
-import type { BigNumber } from '@ethersproject/bignumber';
-import { Zero } from '@ethersproject/constants';
-import { concat as concatBytes } from '@ethersproject/bytes';
-import { defaultAbiCoder, Interface } from '@ethersproject/abi';
-import type { Event } from '@ethersproject/contracts';
-import type { Filter, Log } from '@ethersproject/providers';
-
-import { RaidenEpicDeps } from '../types';
-import { RaidenAction, raidenShutdown, ConfirmableAction, raidenSynced } from '../actions';
-import { RaidenState } from '../state';
-import { ShutdownReason } from '../constants';
-import {
-  RaidenError,
-  ErrorCodes,
-  assert,
-  networkErrors,
-  commonAndFailTxErrors,
-  matchError,
-} from '../utils/error';
-import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
-import { Address, Hash, UInt, Signature, isntNil, HexString, last } from '../utils/types';
-import { isActionOf } from '../utils/actions';
-import {
-  pluckDistinct,
-  distinctRecordValues,
-  retryAsync$,
-  takeIf,
-  retryWhile,
-  completeWith,
-} from '../utils/rx';
-import { fromEthersEvent, getLogsByChunk$, logToContractEvent } from '../utils/ethers';
-import { encode } from '../utils/data';
-
-import { createBalanceHash, MessageTypeId } from '../messages/utils';
-import type { TokenNetwork, HumanStandardToken } from '../contracts';
-
-import { findBalanceProofMatchingBalanceHash$ } from '../transfers/utils';
-import { Direction } from '../transfers/state';
+import type { ConfirmableAction, RaidenAction } from '../actions';
+import { raidenShutdown, raidenSynced } from '../actions';
 import { intervalFromConfig } from '../config';
-import { ChannelState, Channel } from './state';
+import { ShutdownReason } from '../constants';
+import type { HumanStandardToken, TokenNetwork } from '../contracts';
+import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
+import { createBalanceHash, MessageTypeId } from '../messages/utils';
+import type { RaidenState } from '../state';
+import { Direction } from '../transfers/state';
+import { findBalanceProofMatchingBalanceHash$ } from '../transfers/utils';
+import type { RaidenEpicDeps } from '../types';
+import { isActionOf } from '../utils/actions';
+import { encode } from '../utils/data';
 import {
-  newBlock,
-  tokenMonitored,
+  assert,
+  commonAndFailTxErrors,
+  ErrorCodes,
+  matchError,
+  networkErrors,
+  RaidenError,
+} from '../utils/error';
+import { fromEthersEvent, getLogsByChunk$, logToContractEvent } from '../utils/ethers';
+import {
+  completeWith,
+  distinctRecordValues,
+  pluckDistinct,
+  retryAsync$,
+  retryWhile,
+  takeIf,
+} from '../utils/rx';
+import type { Address, Hash, HexString, Signature, UInt } from '../utils/types';
+import { isntNil, last } from '../utils/types';
+import {
+  blockStale,
+  blockTime,
+  channelClose,
+  channelDeposit,
   channelMonitored,
   channelOpen,
-  channelDeposit,
-  channelClose,
   channelSettle,
   channelSettleable,
   channelWithdrawn,
-  blockTime,
-  blockStale,
+  newBlock,
+  tokenMonitored,
 } from './actions';
-import { assertTx, channelKey, groupChannel$, channelUniqueKey, approveIfNeeded$ } from './utils';
+import type { Channel } from './state';
+import { ChannelState } from './state';
+import { approveIfNeeded$, assertTx, channelKey, channelUniqueKey, groupChannel$ } from './utils';
 
 /**
  * Emits raidenSynced when all init$ tasks got completed

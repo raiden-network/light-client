@@ -1,18 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('vue-router');
-jest.useFakeTimers();
-import { shallowMount, Wrapper } from '@vue/test-utils';
-import Vue from 'vue';
-import Vuex from 'vuex';
-import Vuetify from 'vuetify';
+import type { Wrapper } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import { constants } from 'ethers';
-import { generateChannel, generateToken } from '../utils/data-generator';
-import TransferRoute from '@/views/TransferRoute.vue';
+import Vue from 'vue';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
+import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
 import NoTokens from '@/components/NoTokens.vue';
+import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
-import TransactionList from '@/components/transaction-history/TransactionList.vue';
-import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
+import TransferRoute from '@/views/TransferRoute.vue';
+
+import { generateChannel, generateToken } from '../utils/data-generator';
+
+jest.mock('vue-router');
+jest.useFakeTimers();
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

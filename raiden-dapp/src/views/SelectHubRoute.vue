@@ -69,22 +69,24 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator';
+import type { providers } from 'ethers';
+import { constants } from 'ethers';
 import isEmpty from 'lodash/isEmpty';
+import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
-import { constants, providers } from 'ethers';
 
-import { Token } from '@/model/types';
-import AddressInput from '@/components/AddressInput.vue';
-import AddressUtils from '@/utils/address-utils';
-import AmountDisplay from '@/components/AmountDisplay.vue';
-import NavigationMixin from '@/mixins/navigation-mixin';
-import Divider from '@/components/Divider.vue';
-import TokenInformation from '@/components/TokenInformation.vue';
+import type { RaidenChannels } from 'raiden-ts';
+
 import ActionButton from '@/components/ActionButton.vue';
+import AddressInput from '@/components/AddressInput.vue';
+import AmountDisplay from '@/components/AmountDisplay.vue';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
+import Divider from '@/components/Divider.vue';
 import HubList from '@/components/HubList.vue';
-import { RaidenChannels } from 'raiden-ts';
+import TokenInformation from '@/components/TokenInformation.vue';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import type { Token } from '@/model/types';
+import AddressUtils from '@/utils/address-utils';
 
 @Component({
   components: {

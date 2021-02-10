@@ -1,7 +1,10 @@
-import { shallowMount, Wrapper } from '@vue/test-utils';
+import { $identicon } from '../../utils/mocks';
+
+import type { Wrapper } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { $identicon } from '../../utils/mocks';
+
 import store from '@/store';
 import WithdrawalRoute from '@/views/account/WithdrawalRoute.vue';
 

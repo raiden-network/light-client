@@ -1,5 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { Address, RaidenError, ErrorCodes } from 'raiden-ts';
+import type { NextFunction, Request, Response } from 'express';
+
+import type { RaidenError } from 'raiden-ts';
+import { Address, ErrorCodes } from 'raiden-ts';
 
 /**
  * Validate bound string is a valid address in request's params

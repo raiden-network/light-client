@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
-import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import { mount, Wrapper } from '@vue/test-utils';
+import Vuex from 'vuex';
+
 import HeaderContent from '@/components/HeaderContent.vue';
 import { RouteNames } from '@/router/route-names';
 

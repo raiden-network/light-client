@@ -18,11 +18,11 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import { QrcodeStream } from 'vue-qrcode-reader';
-import Spinner from '@/components/icons/Spinner.vue';
 
 import ErrorMessage from '@/components/ErrorMessage.vue';
+import Spinner from '@/components/icons/Spinner.vue';
 
 @Component({ components: { QrcodeStream, ErrorMessage, Spinner } })
 export default class QrCodeOverlay extends Vue {

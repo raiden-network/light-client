@@ -1,5 +1,6 @@
 // require('cypress-plugin-retries')
 const path = require('path');
+
 const wp = require('@cypress/webpack-preprocessor');
 
 // https://docs.cypress.io/guides/guides/plugins-guide.html

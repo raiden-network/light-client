@@ -10,9 +10,11 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+
+import type { RaidenError } from 'raiden-ts';
+
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
-import { RaidenError } from 'raiden-ts';
 
 @Component({
   components: { RaidenDialog, ErrorMessage },

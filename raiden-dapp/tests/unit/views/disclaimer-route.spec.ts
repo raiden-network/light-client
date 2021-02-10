@@ -1,13 +1,15 @@
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
-import Vuex from 'vuex';
-import Vuetify from 'vuetify';
-import VueRouter from 'vue-router';
 import Vue from 'vue';
-import DisclaimerRoute from '@/views/DisclaimerRoute.vue';
+import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
 import ActionButton from '@/components/ActionButton.vue';
-import store from '@/store';
 import { RouteNames } from '@/router/route-names';
+import store from '@/store';
+import DisclaimerRoute from '@/views/DisclaimerRoute.vue';
 import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);

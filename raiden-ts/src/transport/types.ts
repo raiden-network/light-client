@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
-import { matrixPresence } from './actions';
+
+import type { matrixPresence } from './actions';
 
 export interface Presences {
   [address: string]: matrixPresence.success;

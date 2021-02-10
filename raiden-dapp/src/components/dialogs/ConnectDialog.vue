@@ -29,12 +29,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Emit, Vue } from 'vue-property-decorator';
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
-import { DeniedReason } from '@/model/types';
-import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+
 import ActionButton from '@/components/ActionButton.vue';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
+import type { DeniedReason } from '@/model/types';
 
 @Component({
   components: {

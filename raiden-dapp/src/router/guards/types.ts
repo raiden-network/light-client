@@ -1,4 +1,4 @@
-import { Route, RawLocation, NavigationGuardNext } from 'vue-router';
+import type { NavigationGuardNext, RawLocation, Route } from 'vue-router';
 
 export type GuardArguments = [Route, Route, NavigationGuardNext];
 

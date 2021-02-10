@@ -9,8 +9,9 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
+
 import AccountContent from '@/components/account/AccountContent.vue';
+import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
 
 @Component({
   components: {

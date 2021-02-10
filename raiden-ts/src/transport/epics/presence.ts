@@ -1,43 +1,44 @@
-import { Observable, of, EMPTY, fromEvent, defer, combineLatest } from 'rxjs';
+import { getAddress } from '@ethersproject/address';
+import { verifyMessage } from '@ethersproject/wallet';
+import getOr from 'lodash/fp/getOr';
+import isEmpty from 'lodash/isEmpty';
+import isEqual from 'lodash/isEqual';
+import minBy from 'lodash/minBy';
+import pick from 'lodash/pick';
+import type { MatrixClient, MatrixEvent, User } from 'matrix-js-sdk';
+import type { Observable } from 'rxjs';
+import { combineLatest, defer, EMPTY, fromEvent, of } from 'rxjs';
 import {
   catchError,
+  distinctUntilChanged,
+  exhaustMap,
   filter,
   groupBy,
+  ignoreElements,
   map,
   mergeMap,
-  withLatestFrom,
+  pluck,
   scan,
+  skip,
   startWith,
   switchMap,
   toArray,
-  pluck,
-  exhaustMap,
-  skip,
-  ignoreElements,
-  distinctUntilChanged,
+  withLatestFrom,
 } from 'rxjs/operators';
-import minBy from 'lodash/minBy';
-import isEmpty from 'lodash/isEmpty';
-import isEqual from 'lodash/isEqual';
-import pick from 'lodash/pick';
-import getOr from 'lodash/fp/getOr';
-import { getAddress } from '@ethersproject/address';
-import { verifyMessage } from '@ethersproject/wallet';
-import { MatrixClient, MatrixEvent, User } from 'matrix-js-sdk';
 
+import type { RaidenAction } from '../../actions';
+import { channelMonitored } from '../../channels/actions';
+import { intervalFromConfig } from '../../config';
+import type { RaidenState } from '../../state';
+import type { RaidenEpicDeps } from '../../types';
 import { assert } from '../../utils';
-import { RaidenError, ErrorCodes, networkErrors } from '../../utils/error';
-import { Address } from '../../utils/types';
 import { isActionOf } from '../../utils/actions';
-import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../../actions';
-import { RaidenState } from '../../state';
+import { ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { getUserPresence } from '../../utils/matrix';
 import { completeWith, pluckDistinct, retryWhile } from '../../utils/rx';
+import type { Address } from '../../utils/types';
 import { matrixPresence } from '../actions';
-import { channelMonitored } from '../../channels/actions';
 import { parseCaps, stringifyCaps } from '../utils';
-import { intervalFromConfig } from '../../config';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available/online then

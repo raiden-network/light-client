@@ -2,24 +2,25 @@
 /**
  * Aggregate types and exported properties from actions from all modules
  */
+import type { Either } from 'fp-ts/lib/Either';
+import { either } from 'fp-ts/lib/Either';
 import * as t from 'io-ts';
-import { either, Either } from 'fp-ts/lib/Either';
 import mapKeys from 'lodash/mapKeys';
 import property from 'lodash/property';
 import reduce from 'lodash/reduce';
 
-import { ShutdownReason } from './constants';
+import * as ChannelsActions from './channels/actions';
 import { PartialRaidenConfig } from './config';
-import { ActionType, createAction, Action, AnyAC, TTypeOf, ActionCreator } from './utils/actions';
+import { ShutdownReason } from './constants';
+import * as MessagesActions from './messages/actions';
+import * as ServicesActions from './services/actions';
+import * as TransfersActions from './transfers/actions';
+import * as TransportActions from './transport/actions';
+import { Caps } from './transport/types';
+import type { Action, ActionCreator, ActionType, AnyAC, TTypeOf } from './utils/actions';
+import { createAction } from './utils/actions';
 import { ErrorCodec } from './utils/error';
 import { Hash } from './utils/types';
-
-import * as ChannelsActions from './channels/actions';
-import * as TransportActions from './transport/actions';
-import * as MessagesActions from './messages/actions';
-import * as TransfersActions from './transfers/actions';
-import * as ServicesActions from './services/actions';
-import { Caps } from './transport/types';
 
 export const raidenShutdown = createAction(
   'raiden/shutdown',

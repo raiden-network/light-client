@@ -1,34 +1,30 @@
-import {
-  MockedRaiden,
-  makeAddress,
-  makeHash,
-  waitBlock,
-  providersEmit,
-  makeLog,
-  sleep,
-} from './mocks';
+import { makeAddress, makeHash, makeLog, providersEmit, sleep, waitBlock } from './mocks';
 
-import { exhaustMap, first, pluck } from 'rxjs/operators';
-import { Zero, HashZero } from '@ethersproject/constants';
-import { BigNumber } from '@ethersproject/bignumber';
 import { defaultAbiCoder } from '@ethersproject/abi';
+import { BigNumber } from '@ethersproject/bignumber';
+import { HashZero, Zero } from '@ethersproject/constants';
+import { exhaustMap, first, pluck } from 'rxjs/operators';
 
-import { Address, Hash, Int, UInt, Secret } from 'raiden-ts/utils/types';
+import type { Channel } from '@/channels';
+import { ChannelState } from '@/channels';
+import { tokenMonitored } from '@/channels/actions';
+import { channelKey } from '@/channels/utils';
+import { transfer, transferSecret, transferUnlock } from '@/transfers/actions';
+import type { TransferState } from '@/transfers/state';
+import { Direction } from '@/transfers/state';
 import {
+  getSecrethash,
+  getTransfer,
   makePaymentId,
   makeSecret,
-  getSecrethash,
   transferKey,
-  getTransfer,
-} from 'raiden-ts/transfers/utils';
-import { channelKey } from 'raiden-ts/channels/utils';
-import { tokenMonitored } from 'raiden-ts/channels/actions';
-import { ChannelState, Channel } from 'raiden-ts/channels';
-import { Direction, TransferState } from 'raiden-ts/transfers/state';
-import { transfer, transferSecret, transferUnlock } from 'raiden-ts/transfers/actions';
-import { assert } from 'raiden-ts/utils';
-import { isResponseOf } from 'raiden-ts/utils/actions';
-import { matrixPresence } from 'raiden-ts/transport/actions';
+} from '@/transfers/utils';
+import { matrixPresence } from '@/transport/actions';
+import { assert } from '@/utils';
+import { isResponseOf } from '@/utils/actions';
+import type { Address, Hash, Int, Secret, UInt } from '@/utils/types';
+
+import type { MockedRaiden } from './mocks';
 
 // fixture constants
 export const token = makeAddress();

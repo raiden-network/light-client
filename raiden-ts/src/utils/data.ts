@@ -1,19 +1,19 @@
-import { Zero, One, Two } from '@ethersproject/constants';
 import { BigNumber } from '@ethersproject/bignumber';
-import { toUtf8Bytes } from '@ethersproject/strings';
+import type { BytesLike, Hexable } from '@ethersproject/bytes';
 import {
-  BytesLike,
-  isBytesLike,
-  Hexable,
+  hexDataLength,
   hexlify,
   hexZeroPad,
-  hexDataLength,
+  isBytesLike,
   isHexString,
 } from '@ethersproject/bytes';
+import { One, Two, Zero } from '@ethersproject/constants';
+import { toUtf8Bytes } from '@ethersproject/strings';
 import JSONbig from 'json-bigint';
 
-import { BigNumberC, HexString } from './types';
-import { RaidenError, ErrorCodes } from './error';
+import { ErrorCodes, RaidenError } from './error';
+import type { HexString } from './types';
+import { BigNumberC } from './types';
 
 /**
  * Encode data to hex string of exactly length size (in bytes)

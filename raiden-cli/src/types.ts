@@ -1,7 +1,8 @@
-import { Server } from 'http';
-import { Raiden } from 'raiden-ts';
-import { Logger } from 'loglevel';
-import { Express } from 'express';
+import type { Express } from 'express';
+import type { Server } from 'http';
+import type { Logger } from 'loglevel';
+
+import type { Raiden } from 'raiden-ts';
 
 export interface CliArguments {
   ethNode: string;

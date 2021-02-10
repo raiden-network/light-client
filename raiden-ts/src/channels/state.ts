@@ -1,9 +1,10 @@
-import * as t from 'io-ts';
 import type { BigNumber } from '@ethersproject/bignumber';
+import * as t from 'io-ts';
 
-import { UInt, Address, Signed, Int } from '../utils/types';
-import { WithdrawRequest, WithdrawExpired, WithdrawConfirmation } from '../messages';
-import { Lock, BalanceProof } from './types';
+import { WithdrawConfirmation, WithdrawExpired, WithdrawRequest } from '../messages';
+import type { Int } from '../utils/types';
+import { Address, Signed, UInt } from '../utils/types';
+import { BalanceProof, Lock } from './types';
 
 export enum ChannelState {
   open = 'open',

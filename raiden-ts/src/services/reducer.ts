@@ -9,8 +9,8 @@
 import unset from 'lodash/fp/unset';
 
 import { initialState } from '../state';
-import { partialCombineReducers } from '../utils/redux';
 import { createReducer } from '../utils/actions';
+import { partialCombineReducers } from '../utils/redux';
 import { iouClear, iouPersist } from './actions';
 
 const iou = createReducer(initialState.iou)

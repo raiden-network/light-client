@@ -1,44 +1,46 @@
 import {
-  makeLog,
-  makeRaidens,
-  makeRaiden,
-  providersEmit,
-  waitBlock,
-  sleep,
-  MockedRaiden,
-  fetch,
-  makeAddress,
-} from '../mocks';
-import {
+  amount,
+  deposit,
+  ensureChannelIsClosed,
+  ensureChannelIsDeposited,
+  ensureChannelIsOpen,
+  fee,
+  getChannel,
+  openBlock,
   token,
   tokenNetwork,
-  amount,
-  openBlock,
-  ensureChannelIsOpen,
-  ensureChannelIsDeposited,
-  deposit,
-  fee,
-  ensureChannelIsClosed,
-  getChannel,
 } from '../fixtures';
+import {
+  fetch,
+  makeAddress,
+  makeLog,
+  makeRaiden,
+  makeRaidens,
+  providersEmit,
+  sleep,
+  waitBlock,
+} from '../mocks';
 
-import { first, pluck } from 'rxjs/operators';
-import { BigNumber } from '@ethersproject/bignumber';
 import { defaultAbiCoder } from '@ethersproject/abi';
-import { Zero, AddressZero, One } from '@ethersproject/constants';
+import { BigNumber } from '@ethersproject/bignumber';
+import { AddressZero, One, Zero } from '@ethersproject/constants';
+import { first, pluck } from 'rxjs/operators';
 
-import { UInt, Int, Address, Signature, Signed } from 'raiden-ts/utils/types';
-import { raidenConfigUpdate, raidenShutdown } from 'raiden-ts/actions';
-import { matrixPresence } from 'raiden-ts/transport/actions';
-import { raidenReducer } from 'raiden-ts/reducer';
-import { pathFind, pfsListUpdated, iouPersist, iouClear } from 'raiden-ts/services/actions';
-import { messageGlobalSend } from 'raiden-ts/messages/actions';
-import { MessageType } from 'raiden-ts/messages/types';
-import { jsonStringify } from 'raiden-ts/utils/data';
-import { ErrorCodes } from 'raiden-ts/utils/error';
-import { Capabilities } from 'raiden-ts/constants';
-import { signIOU } from 'raiden-ts/services/utils';
-import { IOU } from 'raiden-ts/services/types';
+import { raidenConfigUpdate, raidenShutdown } from '@/actions';
+import { Capabilities } from '@/constants';
+import { messageGlobalSend } from '@/messages/actions';
+import { MessageType } from '@/messages/types';
+import { raidenReducer } from '@/reducer';
+import { iouClear, iouPersist, pathFind, pfsListUpdated } from '@/services/actions';
+import { IOU } from '@/services/types';
+import { signIOU } from '@/services/utils';
+import { matrixPresence } from '@/transport/actions';
+import { jsonStringify } from '@/utils/data';
+import { ErrorCodes } from '@/utils/error';
+import type { Address, Int, Signature, UInt } from '@/utils/types';
+import { Signed } from '@/utils/types';
+
+import type { MockedRaiden } from '../mocks';
 
 const pfsAddress = makeAddress();
 

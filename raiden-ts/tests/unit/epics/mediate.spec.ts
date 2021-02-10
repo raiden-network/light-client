@@ -1,25 +1,25 @@
-import { makeRaidens, sleep } from '../mocks';
 import {
+  amount,
   ensureChannelIsDeposited,
   ensureChannelIsOpen,
+  ensurePresence,
+  getOrWaitTransfer,
   secret,
   secrethash,
-  amount,
   tokenNetwork,
-  getOrWaitTransfer,
-  ensurePresence,
 } from '../fixtures';
+import { makeRaidens, sleep } from '../mocks';
 
 import { Zero } from '@ethersproject/constants';
 import { first } from 'rxjs/operators';
 
-import { Capabilities } from 'raiden-ts/constants';
-import { raidenConfigUpdate } from 'raiden-ts/actions';
-import { MessageType } from 'raiden-ts/messages/types';
-import { transfer, transferSigned } from 'raiden-ts/transfers/actions';
-import { Int } from 'raiden-ts/utils/types';
-import { makePaymentId } from 'raiden-ts/transfers/utils';
-import { Direction } from 'raiden-ts/transfers/state';
+import { raidenConfigUpdate } from '@/actions';
+import { Capabilities } from '@/constants';
+import { MessageType } from '@/messages/types';
+import { transfer, transferSigned } from '@/transfers/actions';
+import { Direction } from '@/transfers/state';
+import { makePaymentId } from '@/transfers/utils';
+import type { Int } from '@/utils/types';
 
 describe('mediate transfers', () => {
   test('success', async () => {

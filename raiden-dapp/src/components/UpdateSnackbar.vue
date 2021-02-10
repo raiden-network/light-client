@@ -15,9 +15,10 @@
 <script lang="ts">
 /* istanbul ignore file */
 import { Component, Vue } from 'vue-property-decorator';
-import { mapState, mapGetters } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
+
 import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
-import { VersionInfo } from '@/types';
+import type { VersionInfo } from '@/types';
 
 @Component({
   components: { BlurredOverlay },

@@ -4,6 +4,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+
 import Withdrawal from '@/components/account/Withdrawal.vue';
 
 @Component({

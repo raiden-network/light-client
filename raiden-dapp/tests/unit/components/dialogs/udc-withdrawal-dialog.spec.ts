@@ -1,19 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('@/services/raiden-service');
-jest.mock('@/i18n', () => jest.fn());
+import { $identicon } from '../../utils/mocks';
 
-import flushPromises from 'flush-promises';
+import type { Wrapper } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import { constants, utils } from 'ethers';
-import { shallowMount, Wrapper } from '@vue/test-utils';
-import Vuetify from 'vuetify';
+import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import { $identicon } from '../../utils/mocks';
-import Filters from '@/filters';
-import store from '@/store';
-import RaidenService from '@/services/raiden-service';
-import Mocked = jest.Mocked;
+import Vuetify from 'vuetify';
+
 import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
+import Filters from '@/filters';
+import RaidenService from '@/services/raiden-service';
+import store from '@/store';
+
+jest.mock('@/services/raiden-service');
+jest.mock('@/i18n', () => jest.fn());
+import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.filter('upperCase', Filters.upperCase);

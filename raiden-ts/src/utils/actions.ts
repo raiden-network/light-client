@@ -2,12 +2,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as t from 'io-ts';
 import isMatchWith from 'lodash/isMatchWith';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { filter, map, take } from 'rxjs/operators';
 
 import { assert } from '../utils';
-import { RaidenError, ErrorCodes } from '../utils/error';
-import { BigNumberC, Hash } from './types';
+import { ErrorCodes, RaidenError } from '../utils/error';
+import type { Hash } from './types';
+import { BigNumberC } from './types';
 
 /**
  * The type of a generic action

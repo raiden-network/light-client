@@ -1,15 +1,15 @@
-import * as t from 'io-ts';
-import { Observable } from 'rxjs';
+import { MaxUint256 } from '@ethersproject/constants';
 import type { Network } from '@ethersproject/networks';
 import { parseEther } from '@ethersproject/units';
-import { MaxUint256 } from '@ethersproject/constants';
-
+import * as t from 'io-ts';
+import type { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
+
 import { Capabilities } from './constants';
-import { Address, UInt } from './utils/types';
-import { getNetworkName } from './utils/ethers';
-import { Caps } from './transport/types';
 import { exponentialBackoff } from './transfers/epics/utils';
+import { Caps } from './transport/types';
+import { getNetworkName } from './utils/ethers';
+import { Address, UInt } from './utils/types';
 
 const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
 

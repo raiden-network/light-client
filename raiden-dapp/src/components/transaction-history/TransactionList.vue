@@ -22,10 +22,13 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
-import { Transfers } from '../../types';
-import { Token } from '@/model/types';
+
+import type { RaidenTransfer } from 'raiden-ts';
+
 import Transaction from '@/components/transaction-history/Transaction.vue';
-import { RaidenTransfer } from 'raiden-ts';
+import type { Token } from '@/model/types';
+
+import type { Transfers } from '../../types';
 
 @Component({
   components: {

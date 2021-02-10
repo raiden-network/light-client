@@ -1,17 +1,21 @@
+import { $identicon } from '../../utils/mocks';
+
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import { utils } from 'ethers';
+import Vue from 'vue';
+import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
+import Vuex, { Store } from 'vuex';
+
+import ChannelList from '@/components/channels/ChannelList.vue';
+import Filters from '@/filters';
+import type { Token } from '@/model/types';
+
+import { TestData } from '../../data/mock-data';
+
 jest.mock('@/services/raiden-service');
 jest.useFakeTimers();
-
-import Vue from 'vue';
-import Vuex, { Store } from 'vuex';
-import Vuetify from 'vuetify';
-import { mount, Wrapper } from '@vue/test-utils';
-import VueRouter from 'vue-router';
-import { utils } from 'ethers';
-import { TestData } from '../../data/mock-data';
-import { $identicon } from '../../utils/mocks';
-import Filters from '@/filters';
-import ChannelList from '@/components/channels/ChannelList.vue';
-import { Token } from '@/model/types';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

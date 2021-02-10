@@ -19,8 +19,9 @@
 
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
-import HeaderContent from '@/components/HeaderContent.vue';
+
 import ActionButton from '@/components/ActionButton.vue';
+import HeaderContent from '@/components/HeaderContent.vue';
 
 @Component({
   components: {

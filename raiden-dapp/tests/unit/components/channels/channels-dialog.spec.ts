@@ -1,22 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('@/services/raiden-service');
-jest.mock('@/i18n', () => jest.fn());
-
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { constants } from 'ethers';
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuetify from 'vuetify';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
 import Vuex from 'vuex';
-import { TestData } from '../../data/mock-data';
-import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
+
 import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
+import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
-import RaidenService from '@/services/raiden-service';
-import Mocked = jest.Mocked;
-import store from '@/store';
-import { Tokens } from '@/types';
 import Filters from '@/filters';
+import RaidenService from '@/services/raiden-service';
+import store from '@/store';
+import type { Tokens } from '@/types';
+
+import { TestData } from '../../data/mock-data';
+
+jest.mock('@/services/raiden-service');
+jest.mock('@/i18n', () => jest.fn());
+import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

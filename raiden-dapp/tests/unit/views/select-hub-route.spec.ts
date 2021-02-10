@@ -1,22 +1,25 @@
+import { $identicon } from '../utils/mocks';
+
+import type { Wrapper } from '@vue/test-utils';
+import { mount, shallowMount } from '@vue/test-utils';
 import { BigNumber } from 'ethers';
+import flushPromises from 'flush-promises';
+import Vue from 'vue';
+import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
+import Filters from '@/filters';
+import { RouteNames } from '@/router/route-names';
+import SelectHubRoute from '@/views/SelectHubRoute.vue';
+
+import { TestData } from '../data/mock-data';
+import { generateToken } from '../utils/data-generator';
+import { mockInput } from '../utils/interaction-utils';
 
 jest.useFakeTimers();
 jest.mock('vue-router');
-
-import { mount, shallowMount, Wrapper } from '@vue/test-utils';
-import Vuex from 'vuex';
-import Vuetify from 'vuetify';
-import Vue from 'vue';
-import VueRouter from 'vue-router';
-import flushPromises from 'flush-promises';
-import { TestData } from '../data/mock-data';
-import { mockInput } from '../utils/interaction-utils';
-import { $identicon } from '../utils/mocks';
-import { generateToken } from '../utils/data-generator';
-import SelectHubRoute from '@/views/SelectHubRoute.vue';
 import Mocked = jest.Mocked;
-import { RouteNames } from '@/router/route-names';
-import Filters from '@/filters';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

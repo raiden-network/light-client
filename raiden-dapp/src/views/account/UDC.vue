@@ -62,19 +62,19 @@
 </template>
 
 <script lang="ts">
+import { constants } from 'ethers';
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
-import { constants } from 'ethers';
 
-import PlannedUdcWithdrawalInformation from '@/components/PlannedUdcWithdrawalInformation.vue';
-import { Token } from '@/model/types';
-import { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import ErrorMessage from '@/components/ErrorMessage.vue';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
+import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import PlannedUdcWithdrawalInformation from '@/components/PlannedUdcWithdrawalInformation.vue';
+import type { Token } from '@/model/types';
+import type { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
 
 @Component({
   components: {

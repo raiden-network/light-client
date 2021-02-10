@@ -1,19 +1,23 @@
-jest.mock('vue-router');
+import { $identicon } from '../utils/mocks';
 
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuex from 'vuex';
-import Vuetify from 'vuetify';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import { TestData } from '../data/mock-data';
-import { $identicon } from '../utils/mocks';
-import ChannelsRoute from '@/views/ChannelsRoute.vue';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
 import Filters from '@/filters';
-import store from '@/store';
-import RaidenService from '@/services/raiden-service';
-import Mocked = jest.Mocked;
 import { RouteNames } from '@/router/route-names';
+import RaidenService from '@/services/raiden-service';
+import store from '@/store';
+import ChannelsRoute from '@/views/ChannelsRoute.vue';
+
+import { TestData } from '../data/mock-data';
+
+jest.mock('vue-router');
+import Mocked = jest.Mocked;
 
 jest.mock('@/i18n', () => jest.fn());
 

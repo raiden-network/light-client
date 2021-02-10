@@ -1,13 +1,17 @@
-jest.mock('vue-router');
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
-import Vuex from 'vuex';
-import Vuetify from 'vuetify';
 import VueRouter from 'vue-router';
-import { TestData } from '../../data/mock-data';
-import Filters from '@/filters';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
 import NotificationSnackbar from '@/components/notification-panel/NotificationSnackbar.vue';
+import Filters from '@/filters';
 import { RouteNames } from '@/router/route-names';
+
+import { TestData } from '../../data/mock-data';
+
+jest.mock('vue-router');
 
 Vue.use(Vuex);
 Vue.use(Vuetify);

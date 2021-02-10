@@ -36,13 +36,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Emit } from 'vue-property-decorator';
+import { Component, Emit, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 
+import TokenList from '@/components/tokens/TokenList.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import { TokenModel, Token } from '@/model/types';
-import TokenList from '@/components/tokens/TokenList.vue';
+import type { Token, TokenModel } from '@/model/types';
 
 @Component({
   components: { TokenList },

@@ -40,11 +40,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Prop, Emit } from 'vue-property-decorator';
-import BlockieMixin from '@/mixins/blockie-mixin';
+import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
+
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import { TokenModel, Token } from '@/model/types';
+import BlockieMixin from '@/mixins/blockie-mixin';
+import type { Token, TokenModel } from '@/model/types';
 
 @Component({ components: { AddressDisplay, AmountDisplay } })
 export default class TokenListItem extends Mixins(BlockieMixin) {

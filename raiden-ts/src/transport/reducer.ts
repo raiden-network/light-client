@@ -1,7 +1,7 @@
-import { partialCombineReducers } from '../utils/redux';
-import { createReducer } from '../utils/actions';
 import { initialState } from '../state';
-import { matrixSetup, matrixRoom, matrixRoomLeave } from './actions';
+import { createReducer } from '../utils/actions';
+import { partialCombineReducers } from '../utils/redux';
+import { matrixRoom, matrixRoomLeave, matrixSetup } from './actions';
 
 /**
  * state.transport reducer

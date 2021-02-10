@@ -1,9 +1,13 @@
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { generateToken, generateTransfer } from '../../utils/data-generator';
+
+import type { RaidenTransfer } from 'raiden-ts';
+
 import Transaction from '@/components/transaction-history/Transaction.vue';
-import { RaidenTransfer } from 'raiden-ts';
+
+import { generateToken, generateTransfer } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 

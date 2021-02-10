@@ -1,15 +1,17 @@
 /* eslint-disable no-console */
+import { ethers, Wallet } from 'ethers';
 import fs from 'fs';
-import * as path from 'path';
 import inquirer from 'inquirer';
+import * as path from 'path';
 import yargs from 'yargs/yargs';
-import { Wallet, ethers } from 'ethers';
-import { Raiden, Address, RaidenConfig, assert, UInt, Capabilities } from 'raiden-ts';
 
-import DISCLAIMER from './disclaimer.json';
-import DEFAULT_RAIDEN_CONFIG from './config.json';
-import { Cli } from './types';
+import type { RaidenConfig, UInt } from 'raiden-ts';
+import { Address, assert, Capabilities, Raiden } from 'raiden-ts';
+
 import { makeCli } from './cli';
+import DEFAULT_RAIDEN_CONFIG from './config.json';
+import DISCLAIMER from './disclaimer.json';
+import type { Cli } from './types';
 import { setupLoglevel } from './utils/logging';
 
 function parseArguments() {

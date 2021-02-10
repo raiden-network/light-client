@@ -1,11 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import flushPromises from 'flush-promises';
-import { mockInput } from '../utils/interaction-utils';
-import { TestData } from '../data/mock-data';
+
 import AmountInput from '@/components/AmountInput.vue';
+
+import { TestData } from '../data/mock-data';
+import { mockInput } from '../utils/interaction-utils';
 
 Vue.use(Vuetify);
 

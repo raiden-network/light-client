@@ -1,14 +1,14 @@
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { filter, map, mergeMap, withLatestFrom } from 'rxjs/operators';
 
-import { RaidenAction } from '../../actions';
+import type { RaidenAction } from '../../actions';
 import { messageSend } from '../../messages/actions';
 import { Processed } from '../../messages/types';
 import { getBalanceProofFromEnvelopeMessage, isMessageReceivedOfType } from '../../messages/utils';
-import { RaidenState } from '../../state';
-import { RaidenEpicDeps } from '../../types';
-import { Signed } from '../../utils/types';
+import type { RaidenState } from '../../state';
+import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
+import { Signed } from '../../utils/types';
 import {
   transfer,
   transferExpireProcessed,

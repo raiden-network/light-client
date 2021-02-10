@@ -1,9 +1,11 @@
-import Vue from 'vue';
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { constants } from 'ethers';
-import Filters from '@/filters';
-import { Token } from '@/model/types';
+import Vue from 'vue';
+
 import AmountDisplay from '@/components/AmountDisplay.vue';
+import Filters from '@/filters';
+import type { Token } from '@/model/types';
 
 Vue.filter('displayFormat', Filters.displayFormat);
 

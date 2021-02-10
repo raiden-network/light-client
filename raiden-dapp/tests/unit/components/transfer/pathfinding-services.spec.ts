@@ -1,13 +1,15 @@
 import { mount } from '@vue/test-utils';
-import Vuetify from 'vuetify';
-import Vue from 'vue';
 import { BigNumber, constants } from 'ethers';
 import flushPromises from 'flush-promises';
+import Vue from 'vue';
+import Vuetify from 'vuetify';
+
+import type { RaidenPFS } from 'raiden-ts';
+
 import PathfindingServices from '@/components/transfer/PathfindingServices.vue';
+import type { Token } from '@/model/types';
 import store from '@/store';
-import { RaidenPFS } from 'raiden-ts';
-import { Tokens } from '@/types';
-import { Token } from '@/model/types';
+import type { Tokens } from '@/types';
 
 Vue.use(Vuetify);
 

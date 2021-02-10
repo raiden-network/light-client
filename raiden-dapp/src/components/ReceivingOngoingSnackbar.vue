@@ -11,8 +11,10 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { RaidenTransfer } from 'raiden-ts';
-import { Transfers } from '@/types';
+
+import type { RaidenTransfer } from 'raiden-ts';
+
+import type { Transfers } from '@/types';
 
 @Component({
   computed: {

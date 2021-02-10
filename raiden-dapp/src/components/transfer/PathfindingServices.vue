@@ -56,13 +56,14 @@
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { RaidenPFS, RaidenError } from 'raiden-ts';
 
-import { Token } from '@/model/types';
-import Filters from '@/filters';
+import type { RaidenError, RaidenPFS } from 'raiden-ts';
+
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import Spinner from '@/components/icons/Spinner.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
+import Spinner from '@/components/icons/Spinner.vue';
+import Filters from '@/filters';
+import type { Token } from '@/model/types';
 
 @Component({
   components: { AmountDisplay, Spinner, ErrorMessage },
