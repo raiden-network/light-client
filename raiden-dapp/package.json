@@ -12,7 +12,7 @@
     "test:e2e": "cypress install && nyc vue-cli-service test:e2e --mode e2e",
     "test:e2e:docker": "bash ../e2e-environment/run-e2e-tests.sh",
     "lint": "vue-cli-service lint --no-fix --max-warnings 0 && stylelint ./src/**/*.{vue,scss}",
-    "lint:fix": "vue-cli-service lint && stylelint --fix ./src/**/*.{vue,scss}",
+    "lint:fix": "vue-cli-service lint --fix && stylelint --fix ./src/**/*.{vue,scss}",
     "i18n:report": "vue-cli-service i18n:report --src './src/**/*.?(js|vue)' --locales './src/locales/**/*.json'",
     "serve": "vue-cli-service serve",
     "serve:no-logging": "export NODE_ENV=nologging && vue-cli-service serve"
