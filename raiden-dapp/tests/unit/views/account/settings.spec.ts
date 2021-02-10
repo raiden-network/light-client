@@ -1,9 +1,12 @@
-jest.mock('vue-router');
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import Settings from '@/views/account/Settings.vue';
+
 import store from '@/store';
+import Settings from '@/views/account/Settings.vue';
+
+jest.mock('vue-router');
 
 Vue.use(Vuetify);
 

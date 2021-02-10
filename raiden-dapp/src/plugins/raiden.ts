@@ -1,7 +1,8 @@
-import _Vue from 'vue';
+import type _Vue from 'vue';
+
+import router from '@/router';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store/index';
-import router from '@/router';
 
 /**
  * @param Vue - global Vue instance to act on

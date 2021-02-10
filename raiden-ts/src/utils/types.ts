@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import * as t from 'io-ts';
-import { Either, isLeft, Right } from 'fp-ts/lib/Either';
-import { PathReporter } from 'io-ts/lib/PathReporter';
-
-import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
 import { getAddress } from '@ethersproject/address';
-import { isHexString, hexDataLength } from '@ethersproject/bytes';
+import type { BigNumberish } from '@ethersproject/bignumber';
+import { BigNumber } from '@ethersproject/bignumber';
+import { hexDataLength, isHexString } from '@ethersproject/bytes';
 import { Two, Zero } from '@ethersproject/constants';
-
+import type { Either, Right } from 'fp-ts/lib/Either';
+import { isLeft } from 'fp-ts/lib/Either';
+import * as t from 'io-ts';
+import { PathReporter } from 'io-ts/lib/PathReporter';
 import memoize from 'lodash/memoize';
 
 import { RaidenError } from './error';

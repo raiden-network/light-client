@@ -1,16 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('vue-router');
-
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
-import Vuetify from 'vuetify';
 import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
 import Vuex from 'vuex';
-import { TestData } from '../../data/mock-data';
-import Mocked = jest.Mocked;
-import { RouteNames } from '@/router/route-names';
-import Filters from '@/filters';
+
 import NotificationCard from '@/components/notification-panel/NotificationCard.vue';
+import Filters from '@/filters';
+import { RouteNames } from '@/router/route-names';
+
+import { TestData } from '../../data/mock-data';
+
+jest.mock('vue-router');
+import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

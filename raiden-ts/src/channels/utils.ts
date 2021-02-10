@@ -1,18 +1,21 @@
-import { OperatorFunction, Observable, ReplaySubject, of, defer } from 'rxjs';
-import { tap, mergeMap, map, pluck, filter, groupBy, takeUntil, mapTo } from 'rxjs/operators';
 import { Zero } from '@ethersproject/constants';
-import type { ContractTransaction, ContractReceipt } from '@ethersproject/contracts';
-import logging, { Logger } from 'loglevel';
+import type { ContractReceipt, ContractTransaction } from '@ethersproject/contracts';
+import type { Logger } from 'loglevel';
+import logging from 'loglevel';
+import type { Observable, OperatorFunction } from 'rxjs';
+import { defer, of, ReplaySubject } from 'rxjs';
+import { filter, groupBy, map, mapTo, mergeMap, pluck, takeUntil, tap } from 'rxjs/operators';
 
 import type { HumanStandardToken } from '../contracts';
-import { RaidenState } from '../state';
-import { RaidenEpicDeps } from '../types';
-import { UInt, Address, Hash, Int, bnMax } from '../utils/types';
-import { RaidenError, assert, ErrorCodes, networkErrors } from '../utils/error';
-import { distinctRecordValues, retryAsync$ } from '../utils/rx';
 import { MessageType } from '../messages/types';
-import { Channel, ChannelBalances } from './state';
-import { ChannelKey, ChannelUniqueKey } from './types';
+import type { RaidenState } from '../state';
+import type { RaidenEpicDeps } from '../types';
+import { assert, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
+import { distinctRecordValues, retryAsync$ } from '../utils/rx';
+import type { Address, Hash, Int, UInt } from '../utils/types';
+import { bnMax } from '../utils/types';
+import type { Channel, ChannelBalances } from './state';
+import type { ChannelKey, ChannelUniqueKey } from './types';
 
 /**
  * Returns a key (string) for a channel unique per tokenNetwork+partner

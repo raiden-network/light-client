@@ -44,9 +44,10 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { Token } from '@/model/types';
+
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import MintDialog from '@/components/dialogs/MintDialog.vue';
+import type { Token } from '@/model/types';
 
 @Component({
   components: { AddressDisplay, MintDialog },

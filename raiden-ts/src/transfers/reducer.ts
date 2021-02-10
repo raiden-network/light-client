@@ -1,31 +1,34 @@
 import pick from 'lodash/fp/pick';
 
-import { channelKey, channelUniqueKey } from '../channels/utils';
-import { RaidenState, initialState } from '../state';
-import { RaidenAction } from '../actions';
-import { ChannelState } from '../channels/state';
+import type { RaidenAction } from '../actions';
 import { channelClose, channelSettle } from '../channels/actions';
-import { timed, UInt } from '../utils/types';
-import { Reducer, createReducer } from '../utils/actions';
+import { ChannelState } from '../channels/state';
+import { channelKey, channelUniqueKey } from '../channels/utils';
 import { getBalanceProofFromEnvelopeMessage } from '../messages/utils';
-import { Direction } from './state';
+import type { RaidenState } from '../state';
+import { initialState } from '../state';
+import type { Reducer } from '../utils/actions';
+import { createReducer } from '../utils/actions';
+import type { UInt } from '../utils/types';
+import { timed } from '../utils/types';
 import {
-  transferSigned,
-  transferSecret,
-  transferProcessed,
-  transferUnlock,
-  transferExpire,
-  transferSecretReveal,
-  transferUnlockProcessed,
-  transferExpireProcessed,
-  transferSecretRequest,
-  transferSecretRegister,
   transferClear,
+  transferExpire,
+  transferExpireProcessed,
   transferLoad,
-  withdrawMessage,
-  withdrawExpire,
+  transferProcessed,
+  transferSecret,
+  transferSecretRegister,
+  transferSecretRequest,
+  transferSecretReveal,
+  transferSigned,
+  transferUnlock,
+  transferUnlockProcessed,
   withdrawCompleted,
+  withdrawExpire,
+  withdrawMessage,
 } from './actions';
+import { Direction } from './state';
 import { transferKey } from './utils';
 
 const END = { [Direction.SENT]: 'own', [Direction.RECEIVED]: 'partner' } as const;

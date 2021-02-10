@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('vue-router');
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import Mocked = jest.Mocked;
+import Vuex from 'vuex';
+
 import AccountContent from '@/components/account/AccountContent.vue';
 import { RouteNames } from '@/router/route-names';
+
+jest.mock('vue-router');
+import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

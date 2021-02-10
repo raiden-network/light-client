@@ -46,9 +46,10 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
-import { StepDescription } from '@/model/types';
+import type { StepDescription } from '@/model/types';
 
 @Component({
   components: { RaidenDialog, Spinner },

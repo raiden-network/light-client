@@ -1,10 +1,14 @@
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuetify from 'vuetify';
-import Vue from 'vue';
-import { TestData } from '../data/mock-data';
 import { $identicon } from '../utils/mocks';
-import Filters from '@/filters';
+
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import Vue from 'vue';
+import Vuetify from 'vuetify';
+
 import AddressDisplay from '@/components/AddressDisplay.vue';
+import Filters from '@/filters';
+
+import { TestData } from '../data/mock-data';
 
 Vue.use(Vuetify);
 Vue.filter('truncate', Filters.truncate);

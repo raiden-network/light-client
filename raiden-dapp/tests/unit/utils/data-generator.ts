@@ -1,9 +1,12 @@
-import times from 'lodash/times';
 import { BigNumber, constants } from 'ethers';
-import { Token } from '@/model/types';
-import { SuggestedPartner } from '@/types';
-import { NotificationPayload } from '@/store/notifications/types';
-import { RaidenTransfer, Address, RaidenChannel, ChannelState } from 'raiden-ts';
+import times from 'lodash/times';
+
+import type { Address, RaidenChannel, RaidenTransfer } from 'raiden-ts';
+import { ChannelState } from 'raiden-ts';
+
+import type { Token } from '@/model/types';
+import type { NotificationPayload } from '@/store/notifications/types';
+import type { SuggestedPartner } from '@/types';
 
 const HEXADECIMAL_CHARACTERS = '0123456789abcdefABCDEF';
 const ALPHABET_CHARACTERS = 'abcdefghijklmnopqrstuvwxyz';

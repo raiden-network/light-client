@@ -1,60 +1,56 @@
 import {
+  ensureChannelIsDeposited,
+  ensureTransferPending,
+  expectChannelsAreInSync,
+  getOrWaitTransfer,
+  secret,
+  secrethash,
+  tokenNetwork,
+} from '../fixtures';
+import {
+  flushPromises,
+  makeHash,
   makeLog,
+  makeRaiden,
   makeRaidens,
+  providersEmit,
   sleep,
   waitBlock,
-  providersEmit,
-  makeHash,
-  makeRaiden,
-  flushPromises,
 } from '../mocks';
-import {
-  ensureChannelIsDeposited,
-  tokenNetwork,
-  secrethash,
-  secret,
-  getOrWaitTransfer,
-  expectChannelsAreInSync,
-  ensureTransferPending,
-} from '../fixtures';
 
-import { first } from 'rxjs/operators';
 import { BigNumber } from '@ethersproject/bignumber';
-import { Zero, One } from '@ethersproject/constants';
+import { One, Zero } from '@ethersproject/constants';
+import { first } from 'rxjs/operators';
 
+import { raidenConfigUpdate } from '@/actions';
+import { Capabilities } from '@/constants';
+import { messageReceived, messageSend } from '@/messages/actions';
 import {
-  MessageType,
   LockedTransfer,
-  Unlock,
   LockExpired,
+  MessageType,
   Processed,
-  SecretReveal,
   SecretRequest,
-} from 'raiden-ts/messages/types';
-import { isMessageReceivedOfType, signMessage } from 'raiden-ts/messages/utils';
-import { messageReceived, messageSend } from 'raiden-ts/messages/actions';
+  SecretReveal,
+  Unlock,
+} from '@/messages/types';
+import { isMessageReceivedOfType, signMessage } from '@/messages/utils';
 import {
-  transferSigned,
-  transferProcessed,
-  transferSecretRequest,
-  transferUnlock,
-  transferUnlockProcessed,
   transfer,
   transferExpire,
   transferExpireProcessed,
+  transferProcessed,
   transferSecret,
   transferSecretRegister,
-} from 'raiden-ts/transfers/actions';
-import { UInt, Int, Signed, untime } from 'raiden-ts/utils/types';
-import {
-  makeSecret,
-  getSecrethash,
-  makePaymentId,
-  makeMessageId,
-} from 'raiden-ts/transfers/utils';
-import { Direction } from 'raiden-ts/transfers/state';
-import { Capabilities } from 'raiden-ts/constants';
-import { raidenConfigUpdate } from 'raiden-ts/actions';
+  transferSecretRequest,
+  transferSigned,
+  transferUnlock,
+  transferUnlockProcessed,
+} from '@/transfers/actions';
+import { Direction } from '@/transfers/state';
+import { getSecrethash, makeMessageId, makePaymentId, makeSecret } from '@/transfers/utils';
+import type { Int, UInt } from '@/utils/types';
+import { Signed, untime } from '@/utils/types';
 
 const direction = Direction.RECEIVED;
 const paymentId = makePaymentId();

@@ -1,9 +1,11 @@
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import { BigNumber } from 'ethers';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { BigNumber } from 'ethers';
-import store from '@/store';
+
 import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
+import store from '@/store';
 
 Vue.use(Vuetify);
 

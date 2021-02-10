@@ -1,11 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Wrapper } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import Vue from 'vue';
-import { shallowMount, Wrapper } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import Vuex, { Store } from 'vuex';
-import { generateToken } from '../utils/data-generator';
-import SelectTokenRoute from '@/views/SelectTokenRoute.vue';
+
 import TokenList from '@/components/tokens/TokenList.vue';
+import SelectTokenRoute from '@/views/SelectTokenRoute.vue';
+
+import { generateToken } from '../utils/data-generator';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

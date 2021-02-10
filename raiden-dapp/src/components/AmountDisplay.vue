@@ -15,9 +15,10 @@
 </template>
 
 <script lang="ts">
+import type { BigNumber } from 'ethers';
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { BigNumber } from 'ethers';
-import { Token } from '@/model/types';
+
+import type { Token } from '@/model/types';
 
 @Component({})
 export default class AmountDisplay extends Vue {

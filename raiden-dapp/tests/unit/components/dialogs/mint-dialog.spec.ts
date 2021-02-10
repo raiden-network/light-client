@@ -1,12 +1,15 @@
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuetify from 'vuetify';
-import Vue from 'vue';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
+import Vue from 'vue';
+import Vuetify from 'vuetify';
 
-import { TestData } from '../../data/mock-data';
+import { ErrorCodes, RaidenError } from 'raiden-ts';
+
 import MintDialog from '@/components/dialogs/MintDialog.vue';
 import Filters from '@/filters';
-import { RaidenError, ErrorCodes } from 'raiden-ts';
+
+import { TestData } from '../../data/mock-data';
 
 Vue.use(Vuetify);
 Vue.filter('truncate', Filters.truncate);

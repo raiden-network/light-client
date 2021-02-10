@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import * as t from 'io-ts';
 
-import { createAction, ActionType, createAsyncAction } from '../utils/actions';
+import type { ActionType } from '../utils/actions';
+import { createAction, createAsyncAction } from '../utils/actions';
 import { Address, instanceOf } from '../utils/types';
 import { RaidenMatrixSetup } from './state';
 

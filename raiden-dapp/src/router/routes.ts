@@ -1,8 +1,10 @@
-import { RouteConfig } from 'vue-router';
-import { beforeRouteToNotifications, beforeRouteToAccount } from './guards';
-import { RouteNames } from './route-names';
+import type { RouteConfig } from 'vue-router';
+
 import DisclaimerRoute from '@/views/DisclaimerRoute.vue';
 import Home from '@/views/Home.vue';
+
+import { beforeRouteToAccount, beforeRouteToNotifications } from './guards';
+import { RouteNames } from './route-names';
 
 /* istanbul ignore next */
 export const routes: RouteConfig[] = [

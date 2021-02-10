@@ -1,7 +1,8 @@
-import { GetterTree } from 'vuex';
-import { RootState } from '@/types';
-import { NotificationPayload, NotificationsState } from '@/store/notifications/types';
+import type { GetterTree } from 'vuex';
+
 import { NotificationImportance } from '@/store/notifications/notification-importance';
+import type { NotificationPayload, NotificationsState } from '@/store/notifications/types';
+import type { RootState } from '@/types';
 
 type Getters = {
   notifications(state: NotificationsState): NotificationPayload[];

@@ -1,7 +1,8 @@
-import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
-import store from '@/store';
-import { RouteNames } from '@/router/route-names';
 import { redirectIfNotConnected } from '@/router/guards/connection';
+import { RouteNames } from '@/router/route-names';
+import store from '@/store';
+
+import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 
 const {
   [RouteNames.HOME]: homeRoute,

@@ -1,14 +1,18 @@
-import { Router, Request, Response, NextFunction } from 'express';
-import { ErrorCodes, RaidenError, RaidenTransfer } from 'raiden-ts';
+import type { NextFunction, Request, Response } from 'express';
+import { Router } from 'express';
 import { timer } from 'rxjs';
-import { toArray, takeUntil, filter, map } from 'rxjs/operators';
-import { Cli } from '../types';
+import { filter, map, takeUntil, toArray } from 'rxjs/operators';
+
+import type { RaidenError, RaidenTransfer } from 'raiden-ts';
+import { ErrorCodes } from 'raiden-ts';
+
+import type { Cli } from '../types';
 import {
-  validateAddressParameter,
-  isInvalidParameterError,
-  validateOptionalAddressParameter,
   isInsuficientFundsError,
+  isInvalidParameterError,
   isTransferFailedError,
+  validateAddressParameter,
+  validateOptionalAddressParameter,
 } from '../utils/validation';
 
 export enum ApiPaymentEvent {

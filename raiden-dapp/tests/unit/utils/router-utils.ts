@@ -1,4 +1,5 @@
-import { Route } from 'vue-router';
+import type { Route } from 'vue-router';
+
 import { routes as routeConfigs } from '@/router/routes';
 
 /**

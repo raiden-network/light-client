@@ -1,4 +1,5 @@
-import { BigNumber, utils } from 'ethers';
+import type { BigNumber } from 'ethers';
+import { utils } from 'ethers';
 
 export class BalanceUtils {
   static toEth(wei: BigNumber): string {

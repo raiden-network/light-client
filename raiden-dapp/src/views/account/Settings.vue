@@ -21,7 +21,8 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
-import { Settings } from '@/types';
+
+import type { Settings } from '@/types';
 
 @Component({
   computed: { ...mapState(['settings']) },

@@ -1,13 +1,14 @@
 import unset from 'lodash/fp/unset';
 
+import type { RaidenAction } from './actions';
+import { raidenConfigUpdate } from './actions';
 import channelsReducer from './channels/reducer';
-import transportReducer from './transport/reducer';
-import transfersReducer from './transfers/reducer';
+import type { PartialRaidenConfig } from './config';
 import servicesReducer from './services/reducer';
-
-import { PartialRaidenConfig } from './config';
-import { RaidenAction, raidenConfigUpdate } from './actions';
-import { RaidenState, initialState } from './state';
+import type { RaidenState } from './state';
+import { initialState } from './state';
+import transfersReducer from './transfers/reducer';
+import transportReducer from './transport/reducer';
 import { createReducer } from './utils/actions';
 
 // update state.config on raidenConfigUpdate action

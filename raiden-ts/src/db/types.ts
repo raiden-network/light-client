@@ -1,8 +1,8 @@
-import { BehaviorSubject } from 'rxjs';
 import type logging from 'loglevel';
+import type { BehaviorSubject } from 'rxjs';
 
 import type { TransferState } from '../transfers/state';
-import { Address, Decodable } from '../utils/types';
+import type { Address, Decodable } from '../utils/types';
 
 export interface TransferStateish extends Decodable<TransferState> {
   _rev: string;

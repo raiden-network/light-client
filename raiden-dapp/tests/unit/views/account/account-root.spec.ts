@@ -1,7 +1,10 @@
-import { mount, Wrapper } from '@vue/test-utils';
+import { $identicon } from '../../utils/mocks';
+
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { $identicon } from '../../utils/mocks';
+
 import store from '@/store';
 import AccountRoot from '@/views/account/AccountRoot.vue';
 

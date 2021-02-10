@@ -7,10 +7,11 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { Token } from '@/model/types';
-import NavigationMixin from '@/mixins/navigation-mixin';
-import BlockieMixin from '@/mixins/blockie-mixin';
+
 import TokenList from '@/components/tokens/TokenList.vue';
+import BlockieMixin from '@/mixins/blockie-mixin';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import type { Token } from '@/model/types';
 
 @Component({
   components: { TokenList },

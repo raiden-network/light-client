@@ -5,7 +5,8 @@ declare module 'matrix-js-sdk/lib/utils' {
 }
 
 declare module 'matrix-js-sdk/lib/logger' {
-  import { Logger } from 'loglevel';
+  import type { Logger } from 'loglevel';
+
   export const logger: Logger;
 }
 

@@ -1,14 +1,17 @@
+import type { Wrapper } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
+import Vue from 'vue';
+import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
+import Vuex from 'vuex';
+
+import App from '@/App.vue';
+import RaidenService from '@/services/raiden-service';
+import store from '@/store/index';
+
 jest.mock('vue-router');
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
-import { shallowMount, Wrapper } from '@vue/test-utils';
-import Vue from 'vue';
-import VueRouter from 'vue-router';
-import Vuex from 'vuex';
-import Vuetify from 'vuetify';
-import store from '@/store/index';
-import RaidenService from '@/services/raiden-service';
-import App from '@/App.vue';
 import Mocked = jest.Mocked;
 
 Vue.use(VueRouter);

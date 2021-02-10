@@ -1,13 +1,14 @@
-import { Observable } from 'rxjs';
-import { filter, scan, startWith, share } from 'rxjs/operators';
 import memoize from 'lodash/memoize';
+import type { Observable } from 'rxjs';
+import { filter, scan, share, startWith } from 'rxjs/operators';
 
-import { RaidenAction } from '../actions';
-import { Capabilities, CapsFallback } from '../constants';
+import type { RaidenAction } from '../actions';
+import type { Capabilities } from '../constants';
+import { CapsFallback } from '../constants';
 import { jsonParse } from '../utils/data';
-import { Address } from '../utils/types';
-import { Presences, Caps, CapsPrimitive } from './types';
+import type { Address } from '../utils/types';
 import { matrixPresence } from './actions';
+import type { Caps, CapsPrimitive, Presences } from './types';
 
 /**
  * Helper to map/get an aggregated Presences observable from action$ bus

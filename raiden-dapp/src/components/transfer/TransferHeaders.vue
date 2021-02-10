@@ -60,16 +60,19 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Mixins } from 'vue-property-decorator';
+import type { BigNumber } from 'ethers';
+import { Component, Mixins, Prop } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { BigNumber } from 'ethers';
-import NavigationMixin from '../../mixins/navigation-mixin';
+
+import type { RaidenChannel } from 'raiden-ts';
+
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
-import { RaidenChannel } from 'raiden-ts';
-import { Token } from '@/model/types';
+import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
+import type { Token } from '@/model/types';
+
+import NavigationMixin from '../../mixins/navigation-mixin';
 
 @Component({
   components: {

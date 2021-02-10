@@ -1,7 +1,8 @@
-jest.mock('ethereum-blockies-base64');
-
 import makeBlockie from 'ethereum-blockies-base64';
+
 import { IdenticonCache } from '@/services/identicon-cache';
+
+jest.mock('ethereum-blockies-base64');
 
 describe('IdenticonCache', () => {
   let cache: IdenticonCache;

@@ -1,5 +1,6 @@
-import { Route, NavigationGuardNext } from 'vue-router';
-import { NavigationGuardChild } from './types';
+import type { NavigationGuardNext, Route } from 'vue-router';
+
+import type { NavigationGuardChild } from './types';
 
 /**
  * @param this - bound function conext

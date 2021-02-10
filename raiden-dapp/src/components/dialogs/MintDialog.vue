@@ -28,14 +28,15 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Emit, Prop } from 'vue-property-decorator';
-import { RaidenError } from 'raiden-ts';
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+
+import type { RaidenError } from 'raiden-ts';
 
 import ActionButton from '@/components/ActionButton.vue';
-import { Token } from '@/model/types';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import ErrorMessage from '@/components/ErrorMessage.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import type { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({

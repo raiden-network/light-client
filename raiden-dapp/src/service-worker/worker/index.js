@@ -1,7 +1,9 @@
 /* istanbul ignore file */
 import { PrecacheController, PrecacheRoute } from 'workbox-precaching';
 import { registerRoute, setCatchHandler } from 'workbox-routing';
+
 import { ServiceWorkerMessages, ServiceWorkerAssistantMessages } from '../messages';
+
 import {
   getPreservedPrecacheEntries,
   saveToPreservePrecacheEntries,

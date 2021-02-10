@@ -1,14 +1,16 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { Router } from 'express';
 import { first } from 'rxjs/operators';
+
 import { ChannelState, isntNil } from 'raiden-ts';
 
+import type { Cli } from '../types';
 import {
-  validateAddressParameter,
   isConflictError,
   isInsuficientFundsError,
   isInvalidParameterError,
+  validateAddressParameter,
 } from '../utils/validation';
-import { Cli } from '../types';
 
 export interface ApiConnection {
   channels: string;

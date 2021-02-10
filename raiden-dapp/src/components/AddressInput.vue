@@ -53,27 +53,19 @@
 </template>
 
 <script lang="ts">
+import type { Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, defer, from, merge, of, partition } from 'rxjs';
+import { catchError, debounceTime, map, switchMap, tap } from 'rxjs/internal/operators';
 import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
+import type { VTextField } from 'vuetify/lib';
 import { mapState } from 'vuex';
 
-import {
-  BehaviorSubject,
-  defer,
-  from,
-  merge,
-  Observable,
-  of,
-  partition,
-  Subscription,
-} from 'rxjs';
-import { catchError, debounceTime, map, switchMap, tap } from 'rxjs/internal/operators';
-import { VTextField } from 'vuetify/lib';
 import QrCode from '@/components/icons/QrCode.vue';
-import QrCodeOverlay from '@/components/overlays/QrCodeOverlay.vue';
 import Spinner from '@/components/icons/Spinner.vue';
-import { Presences } from '@/model/types';
-import AddressUtils from '@/utils/address-utils';
+import QrCodeOverlay from '@/components/overlays/QrCodeOverlay.vue';
 import BlockieMixin from '@/mixins/blockie-mixin';
+import type { Presences } from '@/model/types';
+import AddressUtils from '@/utils/address-utils';
 
 type ValidationResult = {
   error?: string;

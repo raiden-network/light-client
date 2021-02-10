@@ -53,13 +53,15 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Emit, Mixins } from 'vue-property-decorator';
+import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
 import { mapState } from 'vuex';
-import NavigationMixin from '../../../mixins/navigation-mixin';
-import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+
 import ActionButton from '@/components/ActionButton.vue';
+import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
-import { Settings } from '@/types';
+import type { Settings } from '@/types';
+
+import NavigationMixin from '../../../mixins/navigation-mixin';
 
 @Component({
   components: {

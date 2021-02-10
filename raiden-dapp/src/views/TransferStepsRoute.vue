@@ -180,29 +180,30 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins } from 'vue-property-decorator';
 import { BigNumber, constants } from 'ethers';
-import { mapState, mapGetters } from 'vuex';
-import { RaidenPFS, RaidenError } from 'raiden-ts';
+import { Component, Mixins } from 'vue-property-decorator';
+import { mapGetters, mapState } from 'vuex';
 
-import { BalanceUtils } from '@/utils/balance-utils';
-import { Token, Route, Transfer } from '@/model/types';
-import { Tokens } from '@/types';
-import NavigationMixin from '@/mixins/navigation-mixin';
-import BlockieMixin from '@/mixins/blockie-mixin';
-import PathfindingServices from '@/components/transfer/PathfindingServices.vue';
-import FindRoutes from '@/components/transfer/FindRoutes.vue';
+import type { RaidenError, RaidenPFS } from 'raiden-ts';
+
 import ActionButton from '@/components/ActionButton.vue';
-import TransferSummary from '@/components/transfer/TransferSummary.vue';
-import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
-import Checkmark from '@/components/icons/Checkmark.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
-import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
-import AddressUtils from '@/utils/address-utils';
-import Filter from '@/filters';
-import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
 import PfsFeesDialog from '@/components/dialogs/PfsFeesDialog.vue';
+import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
+import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
+import Checkmark from '@/components/icons/Checkmark.vue';
+import FindRoutes from '@/components/transfer/FindRoutes.vue';
+import PathfindingServices from '@/components/transfer/PathfindingServices.vue';
+import TransferSummary from '@/components/transfer/TransferSummary.vue';
+import Filter from '@/filters';
+import BlockieMixin from '@/mixins/blockie-mixin';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import type { Route, Token, Transfer } from '@/model/types';
+import type { Tokens } from '@/types';
+import AddressUtils from '@/utils/address-utils';
+import { BalanceUtils } from '@/utils/balance-utils';
+import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
 
 @Component({
   components: {

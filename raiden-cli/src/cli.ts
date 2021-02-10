@@ -1,7 +1,10 @@
-import { Raiden } from 'raiden-ts';
-import { Logger, getLogger } from 'loglevel';
+import type { Logger } from 'loglevel';
+import { getLogger } from 'loglevel';
+
+import type { Raiden } from 'raiden-ts';
+
 import { makeApp } from './app';
-import { Cli } from './types';
+import type { Cli } from './types';
 
 /**
  * Populate a Cli with app and server properties

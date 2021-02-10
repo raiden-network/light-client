@@ -94,15 +94,17 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Prop, Emit } from 'vue-property-decorator';
+import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
 import { mapState } from 'vuex';
-import { RaidenChannel } from 'raiden-ts';
-import { Token } from '@/model/types';
+
+import type { RaidenChannel } from 'raiden-ts';
+
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import Spinner from '@/components/icons/Spinner.vue';
-import BlockieMixin from '@/mixins/blockie-mixin';
 import Filters from '@/filters';
-import { ChannelAction } from '@/types';
+import BlockieMixin from '@/mixins/blockie-mixin';
+import type { Token } from '@/model/types';
+import type { ChannelAction } from '@/types';
 
 @Component({
   components: { AddressDisplay, Spinner },

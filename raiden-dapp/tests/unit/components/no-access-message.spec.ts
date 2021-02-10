@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
-import Vuetify from 'vuetify';
 import Vue from 'vue';
+import Vuetify from 'vuetify';
+
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
 import { DeniedReason } from '@/model/types';
 

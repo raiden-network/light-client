@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'vuetify/types/lib.d';
-import { BigNumber, providers } from 'ethers';
-import RaidenService from '@/services/raiden-service';
-import { DeniedReason, Token, Presences } from '@/model/types';
-import { RaidenChannels, RaidenTransfer, RaidenConfig } from 'raiden-ts';
+
+import type { BigNumber, providers } from 'ethers';
+
+import type { RaidenChannels, RaidenConfig, RaidenTransfer } from 'raiden-ts';
+
+import type { DeniedReason, Presences, Token } from '@/model/types';
+import type RaidenService from '@/services/raiden-service';
 
 export type Tokens = { [token: string]: Token };
 export type Transfers = { [key: string]: RaidenTransfer };

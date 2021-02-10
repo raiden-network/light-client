@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
-import util from 'util';
 import logging from 'loglevel';
+import util from 'util';
 
 util.inspect.defaultOptions.depth = 3; // +1 from default of 2
 

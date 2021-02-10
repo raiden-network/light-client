@@ -59,16 +59,18 @@
 </template>
 
 <script lang="ts">
+import type { BigNumber } from 'ethers';
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
-import { BigNumber } from 'ethers';
 import { mapGetters } from 'vuex';
+
+import type { RaidenChannel } from 'raiden-ts';
+
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import ChannelWithdrawDialog from '@/components/dialogs/ChannelWithdrawDialog.vue';
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
-import { RaidenChannel } from 'raiden-ts';
-import { ChannelAction } from '@/types';
-import { Token } from '@/model/types';
+import type { Token } from '@/model/types';
+import type { ChannelAction } from '@/types';
 
 @Component({
   components: {

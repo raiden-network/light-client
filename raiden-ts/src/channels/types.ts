@@ -1,8 +1,9 @@
+import { AddressZero, HashZero, Zero } from '@ethersproject/constants';
 import * as t from 'io-ts';
-import { Zero, AddressZero, HashZero } from '@ethersproject/constants';
 
-import { SignatureZero, LocksrootZero } from '../constants';
-import { Address, Hash, UInt, Signed } from '../utils/types';
+import { LocksrootZero, SignatureZero } from '../constants';
+import type { Signed } from '../utils/types';
+import { Address, Hash, UInt } from '../utils/types';
 
 // should these become brands?
 export const ChannelKey = t.string;

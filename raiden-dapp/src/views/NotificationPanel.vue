@@ -45,9 +45,10 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters, mapMutations } from 'vuex';
-import NavigationMixin from '@/mixins/navigation-mixin';
+
 import NotificationCard from '@/components/notification-panel/NotificationCard.vue';
-import { NotificationPayload } from '@/store/notifications/types';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import type { NotificationPayload } from '@/store/notifications/types';
 
 @Component({
   components: {

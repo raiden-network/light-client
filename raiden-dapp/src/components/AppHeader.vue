@@ -45,11 +45,12 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { createNamespacedHelpers, mapGetters } from 'vuex';
-import { RouteNames } from '@/router/route-names';
+
+import HeaderContent from '@/components/HeaderContent.vue';
+import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
 import InfoOverlay from '@/components/overlays/InfoOverlay.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
-import HeaderContent from '@/components/HeaderContent.vue';
+import { RouteNames } from '@/router/route-names';
 
 const { mapState: mapNotificationsState, mapMutations } = createNamespacedHelpers('notifications');
 

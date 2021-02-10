@@ -1,16 +1,17 @@
-import * as t from 'io-ts';
 import { AddressZero } from '@ethersproject/constants';
-import { Network, getNetwork } from '@ethersproject/networks';
+import type { Network } from '@ethersproject/networks';
+import { getNetwork } from '@ethersproject/networks';
+import * as t from 'io-ts';
 
-import { PartialRaidenConfig } from './config';
-import { ContractsInfo } from './types';
 import { ConfirmableAction } from './actions';
-import { Address, Signed } from './utils/types';
-import { ChannelKey } from './channels/types';
 import { Channel } from './channels/state';
-import { RaidenMatrixSetup } from './transport/state';
+import { ChannelKey } from './channels/types';
+import { PartialRaidenConfig } from './config';
 import { IOU } from './services/types';
 import { TransferState } from './transfers/state';
+import { RaidenMatrixSetup } from './transport/state';
+import type { ContractsInfo } from './types';
+import { Address, Signed } from './utils/types';
 
 // types
 const _RaidenState = t.readonly(

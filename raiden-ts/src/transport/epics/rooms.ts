@@ -1,42 +1,45 @@
-import { Observable, from, of, EMPTY, fromEvent, timer, defer, combineLatest } from 'rxjs';
+import type { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
+import type { Observable } from 'rxjs';
+import { combineLatest, defer, EMPTY, from, fromEvent, of, timer } from 'rxjs';
 import {
   catchError,
+  delayWhen,
+  distinct,
   distinctUntilChanged,
+  exhaustMap,
   filter,
+  first,
   groupBy,
   ignoreElements,
   map,
+  mapTo,
   mergeMap,
-  withLatestFrom,
   switchMap,
   take,
-  mapTo,
-  first,
-  timeout,
-  exhaustMap,
-  distinct,
-  delayWhen,
   tap,
+  timeout,
+  withLatestFrom,
 } from 'rxjs/operators';
-import { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
 
-import { Capabilities } from '../../constants';
-import { intervalFromConfig, RaidenConfig } from '../../config';
-import { Address, isntNil } from '../../utils/types';
-import { isActionOf } from '../../utils/actions';
-import { RaidenEpicDeps } from '../../types';
-import { RaidenAction } from '../../actions';
-import { RaidenState } from '../../state';
+import type { RaidenAction } from '../../actions';
 import { channelMonitored } from '../../channels/actions';
+import type { RaidenConfig } from '../../config';
+import { intervalFromConfig } from '../../config';
+import { Capabilities } from '../../constants';
 import { messageReceived } from '../../messages/actions';
+import type { RaidenState } from '../../state';
 import { transferSigned } from '../../transfers/actions';
-import { completeWith, pluckDistinct, retryWhile } from '../../utils/rx';
-import { getServerName } from '../../utils/matrix';
 import { Direction } from '../../transfers/state';
-import { matrixRoom, matrixRoomLeave, matrixPresence } from '../actions';
-import { getCap, getSortedAddresses } from '../utils';
+import type { RaidenEpicDeps } from '../../types';
+import { isActionOf } from '../../utils/actions';
 import { matchError, networkErrors } from '../../utils/error';
-import { globalRoomNames, getRoom$, roomMatch } from './helpers';
+import { getServerName } from '../../utils/matrix';
+import { completeWith, pluckDistinct, retryWhile } from '../../utils/rx';
+import type { Address } from '../../utils/types';
+import { isntNil } from '../../utils/types';
+import { matrixPresence, matrixRoom, matrixRoomLeave } from '../actions';
+import { getCap, getSortedAddresses } from '../utils';
+import { getRoom$, globalRoomNames, roomMatch } from './helpers';
 
 /**
  * Returns an observable which keeps inviting userId to roomId while user doesn't join

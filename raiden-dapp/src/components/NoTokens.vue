@@ -15,6 +15,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
+
 import NavigationMixin from '@/mixins/navigation-mixin';
 
 @Component

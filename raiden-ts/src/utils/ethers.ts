@@ -1,23 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Contract, Event } from '@ethersproject/contracts';
 import type {
-  JsonRpcProvider,
-  Listener,
   EventType,
   Filter,
+  JsonRpcProvider,
+  Listener,
   Log,
   Network,
 } from '@ethersproject/providers';
-import { Observable, fromEventPattern, from, defer, throwError, timer } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { defer, from, fromEventPattern, throwError, timer } from 'rxjs';
 import {
-  mergeMap,
+  catchError,
   debounceTime,
   exhaustMap,
-  tap,
-  catchError,
+  ignoreElements,
+  mergeMap,
   repeatWhen,
   takeWhile,
-  ignoreElements,
+  tap,
 } from 'rxjs/operators';
 
 /**

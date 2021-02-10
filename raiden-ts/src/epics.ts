@@ -1,46 +1,47 @@
-import { Observable, from, of, combineLatest, using, timer, concat, merge } from 'rxjs';
-import {
-  catchError,
-  filter,
-  mergeMap,
-  takeWhile,
-  takeUntil,
-  pluck,
-  startWith,
-  map,
-  scan,
-  distinctUntilChanged,
-  ignoreElements,
-  withLatestFrom,
-  delayWhen,
-  take,
-  first,
-  tap,
-  finalize,
-} from 'rxjs/operators';
 import { MaxUint256 } from '@ethersproject/constants';
-import negate from 'lodash/negate';
 import unset from 'lodash/fp/unset';
 import isEqual from 'lodash/isEqual';
+import negate from 'lodash/negate';
+import type { Observable } from 'rxjs';
+import { combineLatest, concat, from, merge, of, timer, using } from 'rxjs';
+import {
+  catchError,
+  delayWhen,
+  distinctUntilChanged,
+  filter,
+  finalize,
+  first,
+  ignoreElements,
+  map,
+  mergeMap,
+  pluck,
+  scan,
+  startWith,
+  take,
+  takeUntil,
+  takeWhile,
+  tap,
+  withLatestFrom,
+} from 'rxjs/operators';
 
-import { RaidenState } from './state';
-import { RaidenEpicDeps, Latest } from './types';
-import { RaidenAction, raidenConfigCaps, raidenShutdown } from './actions';
-import { RaidenConfig } from './config';
-import { Capabilities } from './constants';
-import { completeWith, pluckDistinct } from './utils/rx';
-import { getPresences$ } from './transport/utils';
-import { rtcChannel } from './transport/actions';
-import { pfsListUpdated, udcDeposit } from './services/actions';
-import { Address, UInt } from './utils/types';
-
-import * as DatabaseEpics from './db/epics';
-import * as ChannelsEpics from './channels/epics';
-import * as TransportEpics from './transport/epics';
-import * as TransfersEpics from './transfers/epics';
-import * as ServicesEpics from './services/epics';
+import type { RaidenAction } from './actions';
+import { raidenConfigCaps, raidenShutdown } from './actions';
 import { blockStale, blockTime } from './channels/actions';
-import { Caps } from './transport/types';
+import * as ChannelsEpics from './channels/epics';
+import type { RaidenConfig } from './config';
+import { Capabilities } from './constants';
+import * as DatabaseEpics from './db/epics';
+import { pfsListUpdated, udcDeposit } from './services/actions';
+import * as ServicesEpics from './services/epics';
+import type { RaidenState } from './state';
+import * as TransfersEpics from './transfers/epics';
+import { rtcChannel } from './transport/actions';
+import * as TransportEpics from './transport/epics';
+import type { Caps } from './transport/types';
+import { getPresences$ } from './transport/utils';
+import type { Latest, RaidenEpicDeps } from './types';
+import { completeWith, pluckDistinct } from './utils/rx';
+import type { Address, UInt } from './utils/types';
 
 // default values for dynamic capabilities not specified on defaultConfig nor userConfig
 function dynamicCaps({

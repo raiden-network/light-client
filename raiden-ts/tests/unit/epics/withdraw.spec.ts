@@ -1,29 +1,32 @@
-import { makeRaidens, waitBlock, MockedRaiden, makeTransaction, sleep } from '../mocks';
 import {
-  ensureChannelIsDeposited,
-  tokenNetwork,
-  id,
-  deposit,
   amount,
+  deposit,
+  ensureChannelIsClosed,
+  ensureChannelIsDeposited,
   ensureTransferUnlocked,
   getChannel,
-  ensureChannelIsClosed,
+  id,
+  tokenNetwork,
 } from '../fixtures';
+import { makeRaidens, makeTransaction, sleep, waitBlock } from '../mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { Zero } from '@ethersproject/constants';
 
-import { MessageType, WithdrawRequest, WithdrawConfirmation } from 'raiden-ts/messages/types';
-import { signMessage } from 'raiden-ts/messages/utils';
-import { messageSend, messageReceived } from 'raiden-ts/messages/actions';
-import { withdraw, withdrawMessage, withdrawExpire } from 'raiden-ts/transfers/actions';
-import { UInt, Hash } from 'raiden-ts/utils/types';
-import { makeMessageId } from 'raiden-ts/transfers/utils';
-import { channelAmounts } from 'raiden-ts/channels/utils';
-import { Direction } from 'raiden-ts/transfers/state';
-import { ErrorCodes } from 'raiden-ts/utils/error';
-import { raidenConfigUpdate } from 'raiden-ts/actions';
-import { Capabilities } from 'raiden-ts/constants';
+import { raidenConfigUpdate } from '@/actions';
+import { channelAmounts } from '@/channels/utils';
+import { Capabilities } from '@/constants';
+import { messageReceived, messageSend } from '@/messages/actions';
+import type { WithdrawConfirmation, WithdrawRequest } from '@/messages/types';
+import { MessageType } from '@/messages/types';
+import { signMessage } from '@/messages/utils';
+import { withdraw, withdrawExpire, withdrawMessage } from '@/transfers/actions';
+import { Direction } from '@/transfers/state';
+import { makeMessageId } from '@/transfers/utils';
+import { ErrorCodes } from '@/utils/error';
+import type { Hash, UInt } from '@/utils/types';
+
+import type { MockedRaiden } from '../mocks';
 
 describe('withdraw receive request', () => {
   const direction = Direction.RECEIVED;

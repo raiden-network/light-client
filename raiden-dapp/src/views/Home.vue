@@ -58,16 +58,18 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { mapState, mapGetters } from 'vuex';
-import { Location } from 'vue-router';
-import { RouteNames } from '@/router/route-names';
-import { DeniedReason, TokenModel } from '@/model/types';
+import type { Location } from 'vue-router';
+import { mapGetters, mapState } from 'vuex';
+
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
-import { Settings } from '@/types';
-import { Web3Provider } from '@/services/web3-provider';
+import type { TokenModel } from '@/model/types';
+import { DeniedReason } from '@/model/types';
+import { RouteNames } from '@/router/route-names';
 import { ConfigProvider } from '@/services/config-provider';
+import { Web3Provider } from '@/services/web3-provider';
+import type { Settings } from '@/types';
 
 @Component({
   computed: {

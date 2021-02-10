@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import * as t from 'io-ts';
 
-import { createAction, ActionType, createAsyncAction } from '../utils/actions';
-import { Address, UInt, Signed, Hash } from '../utils/types';
-import { Paths, PFS, IOU } from './types';
+import type { ActionType } from '../utils/actions';
+import { createAction, createAsyncAction } from '../utils/actions';
+import { Address, Hash, Signed, UInt } from '../utils/types';
+import { IOU, Paths, PFS } from './types';
 
 const PathId = t.type({
   tokenNetwork: Address,

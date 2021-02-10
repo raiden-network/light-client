@@ -1,13 +1,16 @@
-jest.mock('vue-router');
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import Mocked = jest.Mocked;
-import store from '@/store/index';
-import { RouteNames } from '@/router/route-names';
+import Vuex from 'vuex';
+
 import NoTokens from '@/components/NoTokens.vue';
+import { RouteNames } from '@/router/route-names';
+import store from '@/store/index';
+
+jest.mock('vue-router');
+import Mocked = jest.Mocked;
 
 Vue.use(Vuex);
 Vue.use(Vuetify);

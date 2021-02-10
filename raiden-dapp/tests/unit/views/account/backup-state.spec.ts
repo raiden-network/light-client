@@ -1,10 +1,12 @@
-jest.useFakeTimers();
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 
 import store from '@/store';
 import BackupState from '@/views/account/BackupState.vue';
+
+jest.useFakeTimers();
 
 Vue.use(Vuetify);
 

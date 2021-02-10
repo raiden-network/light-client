@@ -1,9 +1,11 @@
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import Vuex from 'vuex';
-import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
+
 import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
+import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

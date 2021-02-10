@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish, providers } from 'ethers';
+import type { BigNumber, BigNumberish, providers } from 'ethers';
 
 export interface Token {
   readonly address: string;

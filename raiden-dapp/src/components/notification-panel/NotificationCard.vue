@@ -48,8 +48,9 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { createNamespacedHelpers, mapState } from 'vuex';
-import { NotificationPayload } from '@/store/notifications/types';
+
 import NotificationDescriptionDisplay from '@/components/notification-panel/NotificationDescriptionDisplay.vue';
+import type { NotificationPayload } from '@/store/notifications/types';
 
 const { mapMutations } = createNamespacedHelpers('notifications');
 

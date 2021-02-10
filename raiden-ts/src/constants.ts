@@ -1,6 +1,7 @@
 import { hexZeroPad } from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
-import type { Signature, Hash } from './utils/types';
+
+import type { Hash, Signature } from './utils/types';
 
 export const SignatureZero = hexZeroPad([], 65) as Signature;
 

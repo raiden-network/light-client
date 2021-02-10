@@ -1,12 +1,15 @@
+import type { Wrapper } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import { constants } from 'ethers';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { shallowMount, Wrapper } from '@vue/test-utils';
-import { generateToken } from '../utils/data-generator';
-import Filters from '@/filters';
-import { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
-import PlannedUdcWithdrawalInformation from '@/components/PlannedUdcWithdrawalInformation.vue';
+
 import AmountDisplay from '@/components/AmountDisplay.vue';
+import PlannedUdcWithdrawalInformation from '@/components/PlannedUdcWithdrawalInformation.vue';
+import Filters from '@/filters';
+import type { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
+
+import { generateToken } from '../utils/data-generator';
 
 Vue.use(Vuetify);
 Vue.filter('upperCase', Filters.upperCase);

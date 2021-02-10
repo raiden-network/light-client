@@ -1,19 +1,21 @@
-import * as t from 'io-ts';
 import type { Signer } from '@ethersproject/abstract-signer';
+import { arrayify, concat as concatBytes, hexlify } from '@ethersproject/bytes';
+import { HashZero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { encode as rlpEncode } from '@ethersproject/rlp';
 import { verifyMessage } from '@ethersproject/wallet';
-import { arrayify, concat as concatBytes, hexlify } from '@ethersproject/bytes';
-import { HashZero } from '@ethersproject/constants';
+import type * as t from 'io-ts';
 import logging from 'loglevel';
 
+import type { BalanceProof } from '../channels/types';
 import { LocksrootZero } from '../constants';
 import { assert } from '../utils';
-import { Address, Hash, HexString, Signature, Signed, decode } from '../utils/types';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
-import { BalanceProof } from '../channels/types';
-import { EnvelopeMessage, Message, MessageType, Metadata } from './types';
+import type { Address, Hash, HexString } from '../utils/types';
+import { decode, Signature, Signed } from '../utils/types';
 import { messageReceived } from './actions';
+import type { EnvelopeMessage, Metadata } from './types';
+import { Message, MessageType } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,

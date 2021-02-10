@@ -5,8 +5,8 @@
  */
 import * as t from 'io-ts';
 
-import { Address, Hash, Secret, UInt, Int, Signature } from '../utils/types';
 import { Lock } from '../channels/types';
+import { Address, Hash, Int, Secret, Signature, UInt } from '../utils/types';
 
 // types
 export enum MessageType {

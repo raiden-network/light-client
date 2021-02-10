@@ -1,16 +1,20 @@
-jest.mock('vue-router');
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import { constants } from 'ethers';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
-import { constants } from 'ethers';
-import { TestData } from '../../data/mock-data';
-import { mockInput } from '../../utils/interaction-utils';
-import { generateToken } from '../../utils/data-generator';
-import Mocked = jest.Mocked;
+
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import { RouteNames } from '@/router/route-names';
 import store from '@/store';
+
+import { TestData } from '../../data/mock-data';
+import { generateToken } from '../../utils/data-generator';
+import { mockInput } from '../../utils/interaction-utils';
+
+jest.mock('vue-router');
+import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 

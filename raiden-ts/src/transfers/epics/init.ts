@@ -1,36 +1,38 @@
-import { from, Observable, merge, of, EMPTY, identity } from 'rxjs';
+import pick from 'lodash/fp/pick';
+import type { Observable } from 'rxjs';
+import { EMPTY, from, identity, merge, of } from 'rxjs';
 import {
+  debounceTime,
   filter,
-  mergeMap,
-  pluck,
-  take,
-  mergeMapTo,
   first,
   groupBy,
-  withLatestFrom,
-  debounceTime,
   map,
+  mergeMap,
+  mergeMapTo,
+  pluck,
   startWith,
+  take,
   takeUntil,
+  withLatestFrom,
 } from 'rxjs/operators';
-import pick from 'lodash/fp/pick';
 
+import type { RaidenAction } from '../../actions';
 import { Capabilities } from '../../constants';
-import { RaidenAction } from '../../actions';
-import { RaidenState } from '../../state';
-import { RaidenEpicDeps } from '../../types';
+import type { RaidenState } from '../../state';
 import { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
-import { Hash, untime } from '../../utils/types';
+import type { RaidenEpicDeps } from '../../types';
 import { completeWith, distinctRecordValues, pluckDistinct } from '../../utils/rx';
+import type { Hash } from '../../utils/types';
+import { untime } from '../../utils/types';
 import {
+  transferClear,
   transferExpire,
-  transferSigned,
-  transferUnlock,
+  transferSecret,
   transferSecretRequest,
   transferSecretReveal,
-  transferSecret,
-  transferClear,
+  transferSigned,
+  transferUnlock,
 } from '../actions';
 import { Direction } from '../state';
 import { transferKey } from '../utils';

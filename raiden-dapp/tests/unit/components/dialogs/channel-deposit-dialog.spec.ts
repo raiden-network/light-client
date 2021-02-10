@@ -1,12 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuetify from 'vuetify';
-import Vue from 'vue';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { BigNumber } from 'ethers';
 import flushPromises from 'flush-promises';
+import Vue from 'vue';
+import Vuetify from 'vuetify';
+
+import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
+
 import { TestData } from '../../data/mock-data';
 import { mockInput } from '../../utils/interaction-utils';
-import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 
 Vue.use(Vuetify);
 

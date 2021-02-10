@@ -1,5 +1,5 @@
-import { Wrapper } from '@vue/test-utils';
-import { Vue } from 'vue-property-decorator';
+import type { Wrapper } from '@vue/test-utils';
+import type { Vue } from 'vue-property-decorator';
 
 /**
  * @param wrapper - Vue wrapper

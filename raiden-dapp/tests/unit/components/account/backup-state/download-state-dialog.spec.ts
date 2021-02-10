@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+
 import DownloadStateDialog from '@/components/account/backup-state/DownloadStateDialog.vue';
 
 Vue.use(Vuetify);

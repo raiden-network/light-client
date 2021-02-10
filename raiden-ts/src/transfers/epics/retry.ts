@@ -1,24 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { combineLatest, EMPTY, Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { combineLatest, EMPTY } from 'rxjs';
 import { filter, mergeMap, withLatestFrom } from 'rxjs/operators';
 
-import { RaidenAction } from '../../actions';
+import type { RaidenAction } from '../../actions';
+import { intervalFromConfig } from '../../config';
 import { messageSend } from '../../messages/actions';
-import { RaidenState } from '../../state';
-import { RaidenEpicDeps } from '../../types';
+import type { RaidenState } from '../../state';
+import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
-import { Address } from '../../utils/types';
 import { pluckDistinct } from '../../utils/rx';
+import type { Address } from '../../utils/types';
 import {
   transferExpire,
-  transferSigned,
-  transferUnlock,
   transferSecretRequest,
   transferSecretReveal,
+  transferSigned,
+  transferUnlock,
 } from '../actions';
 import { Direction } from '../state';
 import { transferKey } from '../utils';
-import { intervalFromConfig } from '../../config';
 import { retrySendUntil$ } from './utils';
 
 /**

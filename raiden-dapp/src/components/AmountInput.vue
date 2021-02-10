@@ -22,11 +22,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue, Emit, Watch } from 'vue-property-decorator';
-import { BigNumber, constants } from 'ethers';
-import { InputValidationRule } from 'vuetify';
-import { VTextField } from 'vuetify/lib';
-import { Token } from '@/model/types';
+import type { BigNumber } from 'ethers';
+import { constants } from 'ethers';
+import { Component, Emit, Prop, Vue, Watch } from 'vue-property-decorator';
+import type { InputValidationRule } from 'vuetify';
+import type { VTextField } from 'vuetify/lib';
+
+import type { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 @Component({})

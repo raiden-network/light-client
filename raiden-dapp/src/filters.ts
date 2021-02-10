@@ -1,7 +1,8 @@
-import Vue from 'vue';
-import { BigNumber } from 'ethers';
-import split from 'lodash/split';
+import type { BigNumber } from 'ethers';
 import capitalize from 'lodash/capitalize';
+import split from 'lodash/split';
+import Vue from 'vue';
+
 import { BalanceUtils } from '@/utils/balance-utils';
 
 export default class Filters {

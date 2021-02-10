@@ -34,8 +34,9 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import { Route, Token } from '@/model/types';
+import type { Route, Token } from '@/model/types';
 
 @Component({ components: { AmountDisplay } })
 export default class FindRoutes extends Vue {

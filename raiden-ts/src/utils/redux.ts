@@ -1,4 +1,4 @@
-import { Action, Reducer } from './actions';
+import type { Action, Reducer } from './actions';
 
 /**
  * Like redux's combineReducers, but allows passing only a partial reducer mapping

@@ -1,11 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.useFakeTimers();
-import { mount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
-import Vuex from 'vuex';
 import Vuetify from 'vuetify';
-import store from '@/store/index';
+import Vuex from 'vuex';
+
 import UploadStateDialog from '@/components/account/backup-state/UploadStateDialog.vue';
+import store from '@/store/index';
+
+jest.useFakeTimers();
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

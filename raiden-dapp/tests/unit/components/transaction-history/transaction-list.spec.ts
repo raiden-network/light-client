@@ -1,12 +1,16 @@
-import { shallowMount, Wrapper } from '@vue/test-utils';
+import type { Wrapper } from '@vue/test-utils';
+import { shallowMount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { generateToken, generateTransfer, TRANSFER_DATES } from '../../utils/data-generator';
+
+import type { RaidenTransfer } from 'raiden-ts';
+
 import Transaction from '@/components/transaction-history/Transaction.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
-import { Token } from '@/model/types';
-import { Transfers } from '@/types';
-import { RaidenTransfer } from 'raiden-ts';
+import type { Token } from '@/model/types';
+import type { Transfers } from '@/types';
+
+import { generateToken, generateTransfer, TRANSFER_DATES } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 

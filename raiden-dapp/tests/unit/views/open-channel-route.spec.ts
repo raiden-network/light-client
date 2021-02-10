@@ -1,27 +1,30 @@
-jest.mock('@/services/raiden-service');
-jest.mock('vue-router');
-jest.useFakeTimers();
-
-import VueRouter, { NavigationGuard } from 'vue-router';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import { utils } from 'ethers';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
-
+import type { NavigationGuard } from 'vue-router';
+import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
-import { mount, Wrapper } from '@vue/test-utils';
-import { utils } from 'ethers';
+
+import { ErrorCodes, RaidenError } from 'raiden-ts';
+
+import Filters from '@/filters';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import type { Token } from '@/model/types';
+import { RouteNames } from '@/router/route-names';
+import RaidenService from '@/services/raiden-service';
+import store from '@/store';
+import type { Tokens } from '@/types';
+import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
+
 import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
 
-import store from '@/store';
-import Filters from '@/filters';
-import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
-import NavigationMixin from '@/mixins/navigation-mixin';
-import { RouteNames } from '@/router/route-names';
+jest.mock('@/services/raiden-service');
+jest.mock('vue-router');
+jest.useFakeTimers();
 import Mocked = jest.Mocked;
-import { Token } from '@/model/types';
-import { Tokens } from '@/types';
-import { RaidenError, ErrorCodes } from 'raiden-ts';
-import RaidenService from '@/services/raiden-service';
 
 jest.mock('@/i18n', () => jest.fn());
 

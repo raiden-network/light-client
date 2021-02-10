@@ -1,6 +1,9 @@
-import { Router, Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
+
 import { Raiden, RaidenConfig } from 'raiden-ts';
-import { Cli } from '../types';
+
+import type { Cli } from '../types';
 import { makeChannelsRouter } from './channels';
 import { makeConnectionsRouter } from './connections';
 import { makePaymentsRouter } from './payments';

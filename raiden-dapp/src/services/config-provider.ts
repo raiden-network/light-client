@@ -1,4 +1,4 @@
-import { ContractsInfo } from 'raiden-ts';
+import type { ContractsInfo } from 'raiden-ts';
 
 export class ConfigProvider {
   static async contracts(): Promise<ContractsInfo | undefined> {

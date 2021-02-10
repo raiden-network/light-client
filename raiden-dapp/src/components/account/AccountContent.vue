@@ -80,9 +80,10 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
-import { getLogsFromStore } from '@/utils/logstore';
-import NavigationMixin from '@/mixins/navigation-mixin';
+
 import AddressDisplay from '@/components/AddressDisplay.vue';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import { getLogsFromStore } from '@/utils/logstore';
 
 interface MenuItem {
   icon: string;

@@ -1,11 +1,15 @@
 // estlint-disable @typescript-eslint/no-explicit-any
-jest.mock('vuex');
 import 'isomorphic-fetch'; // Solve ReferenceError undefined Response
-import { Store, CommitOptions } from 'vuex';
+
 import flushPromises from 'flush-promises';
+import type { CommitOptions } from 'vuex';
+import { Store } from 'vuex';
+
 import ServiceWorkerAssistant from '@/service-worker/assistant';
-import { CombinedStoreState } from '@/store/index';
-import { ServiceWorkerMessages, ServiceWorkerAssistantMessages } from '@/service-worker/messages';
+import { ServiceWorkerAssistantMessages, ServiceWorkerMessages } from '@/service-worker/messages';
+import type { CombinedStoreState } from '@/store/index';
+
+jest.mock('vuex');
 
 interface SimplifiedResponse {
   json: () => Promise<unknown>;

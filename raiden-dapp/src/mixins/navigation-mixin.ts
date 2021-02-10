@@ -1,4 +1,5 @@
 import { Component, Vue } from 'vue-property-decorator';
+
 import { RouteNames } from '@/router/route-names';
 
 @Component

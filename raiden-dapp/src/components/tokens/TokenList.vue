@@ -11,10 +11,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Emit } from 'vue-property-decorator';
-import TokenListItem from './TokenListItem.vue';
-import { Token } from '@/model/types';
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+
 import ListHeader from '@/components/ListHeader.vue';
+import type { Token } from '@/model/types';
+
+import TokenListItem from './TokenListItem.vue';
 
 @Component({ components: { ListHeader, TokenListItem } })
 export default class TokenList extends Vue {

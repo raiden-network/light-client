@@ -1,4 +1,5 @@
 import { BigNumber } from 'ethers';
+
 import AddressUtils from '@/utils/address-utils';
 
 type RouteQueryParameter = string | (string | null)[];

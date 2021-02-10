@@ -1,6 +1,8 @@
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuetify from 'vuetify';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
+import Vuetify from 'vuetify';
+
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 
 Vue.use(Vuetify);

@@ -1,14 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { mount, Wrapper } from '@vue/test-utils';
+import { $identicon } from '../../utils/mocks';
+
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
+import { constants } from 'ethers';
+import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import Vuex from 'vuex';
-import { constants } from 'ethers';
-import flushPromises from 'flush-promises';
-import { $identicon } from '../../utils/mocks';
-import { generateToken } from '../../utils/data-generator';
-import UDC from '@/views/account/UDC.vue';
+
 import Filters from '@/filters';
+import UDC from '@/views/account/UDC.vue';
+
+import { generateToken } from '../../utils/data-generator';
 
 Vue.filter('displayFormat', Filters.displayFormat);
 

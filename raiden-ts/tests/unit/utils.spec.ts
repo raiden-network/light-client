@@ -1,33 +1,24 @@
-import * as t from 'io-ts';
+import { BigNumber } from '@ethersproject/bignumber';
+import { hexDataLength } from '@ethersproject/bytes';
+import { keccak256 } from '@ethersproject/keccak256';
+import type { JsonRpcProvider } from '@ethersproject/providers';
+import { Web3Provider } from '@ethersproject/providers';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
+import * as t from 'io-ts';
+import { of, timer } from 'rxjs';
 import { delay, first, ignoreElements, mapTo, tap, toArray } from 'rxjs/operators';
 
-import { BigNumber } from '@ethersproject/bignumber';
-import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
-import { keccak256 } from '@ethersproject/keccak256';
-import { hexDataLength } from '@ethersproject/bytes';
-
-import { fromEthersEvent, getLogsByChunk$, getNetworkName } from 'raiden-ts/utils/ethers';
-import {
-  Address,
-  BigNumberC,
-  HexString,
-  UInt,
-  Secret,
-  Timed,
-  timed,
-  decode,
-} from 'raiden-ts/utils/types';
-import { RaidenError, ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
-import { LruCache } from 'raiden-ts/utils/lru';
-import { encode } from 'raiden-ts/utils/data';
-import { getLocksroot, makeSecret, getSecrethash } from 'raiden-ts/transfers/utils';
-import { Lock } from 'raiden-ts/channels';
-import { LocksrootZero } from 'raiden-ts/constants';
-import { of, timer } from 'rxjs';
-import { completeWith, concatBuffer, lastMap } from 'raiden-ts/utils/rx';
-import { getSortedAddresses } from 'raiden-ts/transport/utils';
+import type { Lock } from '@/channels';
+import { LocksrootZero } from '@/constants';
+import { getLocksroot, getSecrethash, makeSecret } from '@/transfers/utils';
+import { getSortedAddresses } from '@/transport/utils';
+import { encode } from '@/utils/data';
+import { ErrorCodec, ErrorCodes, RaidenError } from '@/utils/error';
+import { fromEthersEvent, getLogsByChunk$, getNetworkName } from '@/utils/ethers';
+import { LruCache } from '@/utils/lru';
+import { completeWith, concatBuffer, lastMap } from '@/utils/rx';
+import { Address, BigNumberC, decode, HexString, Secret, Timed, timed, UInt } from '@/utils/types';
 
 describe('getLogsByChunk$', () => {
   let provider: jest.Mocked<JsonRpcProvider>;

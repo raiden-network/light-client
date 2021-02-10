@@ -1,8 +1,10 @@
 /* istanbul ignore file */
-import { Store } from 'vuex';
 import compareVersions from 'compare-versions';
-import { ServiceWorkerMessages, ServiceWorkerAssistantMessages } from './messages';
-import { CombinedStoreState } from '@/store/index';
+import type { Store } from 'vuex';
+
+import type { CombinedStoreState } from '@/store/index';
+
+import { ServiceWorkerAssistantMessages, ServiceWorkerMessages } from './messages';
 
 const VERSION_FILE_PATH = (process.env.BASE_URL ?? '/') + 'version.json';
 

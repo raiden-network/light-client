@@ -1,17 +1,17 @@
-import * as t from 'io-ts';
 import type { BigNumber } from '@ethersproject/bignumber';
+import * as t from 'io-ts';
 import invert from 'lodash/invert';
 
+import type { Metadata } from '../messages/types';
 import {
   LockedTransfer,
+  LockExpired,
   Processed,
+  SecretRequest,
   SecretReveal,
   Unlock,
-  LockExpired,
-  Metadata,
-  SecretRequest,
 } from '../messages/types';
-import { Address, Timed, Hash, Int, Signed, Secret } from '../utils/types';
+import { Address, Hash, Int, Secret, Signed, Timed } from '../utils/types';
 
 // it's like an enum, but with literals
 export const Direction = {

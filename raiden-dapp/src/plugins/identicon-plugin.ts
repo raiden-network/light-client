@@ -1,4 +1,5 @@
-import _Vue from 'vue';
+import type _Vue from 'vue';
+
 import { IdenticonCache } from '@/services/identicon-cache';
 
 /**

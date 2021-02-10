@@ -1,29 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { defer, merge, fromEvent, throwError, from, BehaviorSubject } from 'rxjs';
-import { mergeMap, pluck, takeUntil, finalize, concatMap } from 'rxjs/operators';
-import logging from 'loglevel';
 import omit from 'lodash/fp/omit';
-
+import logging from 'loglevel';
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
-PouchDB.plugin(PouchDBFind);
+import { BehaviorSubject, defer, from, fromEvent, merge, throwError } from 'rxjs';
+import { concatMap, finalize, mergeMap, pluck, takeUntil } from 'rxjs/operators';
 
-import { ErrorCodes, assert } from '../utils/error';
-import { RaidenState } from '../state';
-import { Channel } from '../channels';
+import type { Channel } from '../channels';
 import { channelKey } from '../channels/utils';
-import { last, Address } from '../utils/types';
-
-import {
-  RaidenDatabase,
-  Migrations,
-  RaidenDatabaseMeta,
-  RaidenDatabaseOptions,
-  RaidenDatabaseConstructor,
-  TransferStateish,
-} from './types';
+import type { RaidenState } from '../state';
+import { assert, ErrorCodes } from '../utils/error';
+import type { Address } from '../utils/types';
+import { last } from '../utils/types';
 import { getDefaultPouchAdapter } from './adapter';
 import defaultMigrations from './migrations';
+import type {
+  Migrations,
+  RaidenDatabase,
+  RaidenDatabaseConstructor,
+  RaidenDatabaseMeta,
+  RaidenDatabaseOptions,
+  TransferStateish,
+} from './types';
+
+PouchDB.plugin(PouchDBFind);
 
 const statePrefix = 'state.';
 const channelsPrefix = 'channels.';

@@ -1,4 +1,4 @@
-import { UserDepositContractState } from './types';
+import type { UserDepositContractState } from './types';
 
 export const defaultState = (): UserDepositContractState => ({
   tokenAddress: '',

@@ -1,11 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { mount, Wrapper } from '@vue/test-utils';
-import { generateSuggestedPartner } from '../utils/data-generator';
+
 import HubList from '@/components/HubList.vue';
-import { SuggestedPartner } from '@/types';
+import type { SuggestedPartner } from '@/types';
+
+import { generateSuggestedPartner } from '../utils/data-generator';
 
 Vue.use(Vuetify);
 

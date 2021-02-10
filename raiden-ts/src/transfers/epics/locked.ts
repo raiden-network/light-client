@@ -1,6 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { Zero } from '@ethersproject/constants';
-import { combineLatest, EMPTY, from, Observable, of, merge, defer } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { combineLatest, defer, EMPTY, from, merge, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -12,58 +13,59 @@ import {
   withLatestFrom,
 } from 'rxjs/operators';
 
-import { messageReceived, messageSend } from '../../messages/actions';
-import { RaidenAction } from '../../actions';
-import { RaidenConfig } from '../../config';
-import { assert } from '../../utils';
-import { ChannelState, ChannelEnd } from '../../channels/state';
-import { Lock } from '../../channels/types';
+import type { RaidenAction } from '../../actions';
+import type { ChannelEnd } from '../../channels/state';
+import { ChannelState } from '../../channels/state';
+import type { Lock } from '../../channels/types';
 import { channelAmounts, channelKey, channelUniqueKey } from '../../channels/utils';
+import type { RaidenConfig } from '../../config';
+import { Capabilities } from '../../constants';
+import { messageReceived, messageSend } from '../../messages/actions';
+import type { Metadata, Processed, SecretRequest } from '../../messages/types';
 import {
   LockedTransfer,
   LockExpired,
   MessageType,
-  Metadata,
   Unlock,
   WithdrawConfirmation,
-  WithdrawRequest,
-  Processed,
-  SecretRequest,
   WithdrawExpired,
+  WithdrawRequest,
 } from '../../messages/types';
+import type { messageReceivedTyped } from '../../messages/utils';
 import {
-  signMessage,
-  isMessageReceivedOfType,
-  messageReceivedTyped,
   getBalanceProofFromEnvelopeMessage,
+  isMessageReceivedOfType,
+  signMessage,
 } from '../../messages/utils';
+import type { RaidenState } from '../../state';
 import { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
-import { RaidenState } from '../../state';
-import { RaidenEpicDeps } from '../../types';
+import type { RaidenEpicDeps } from '../../types';
+import { assert } from '../../utils';
 import { isActionOf } from '../../utils/actions';
+import { ErrorCodes, RaidenError } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { completeWith, pluckDistinct } from '../../utils/rx';
-import { Hash, Signed, UInt, Int, Address, untime, decode } from '../../utils/types';
-import { RaidenError, ErrorCodes } from '../../utils/error';
-import { Capabilities } from '../../constants';
+import type { Address, Hash, Int } from '../../utils/types';
+import { decode, Signed, UInt, untime } from '../../utils/types';
 import {
   transfer,
   transferExpire,
+  transferExpireProcessed,
+  transferProcessed,
   transferSecret,
+  transferSecretRequest,
   transferSigned,
   transferUnlock,
-  transferProcessed,
-  transferSecretRequest,
   transferUnlockProcessed,
-  transferExpireProcessed,
   withdraw,
-  withdrawMessage,
-  withdrawExpire,
   withdrawCompleted,
+  withdrawExpire,
+  withdrawMessage,
 } from '../actions';
-import { getLocksroot, makeMessageId, getSecrethash, transferKey, getTransfer } from '../utils';
-import { Direction, TransferState } from '../state';
+import type { TransferState } from '../state';
+import { Direction } from '../state';
+import { getLocksroot, getSecrethash, getTransfer, makeMessageId, transferKey } from '../utils';
 import { matchWithdraw } from './utils';
 
 // calculate locks array for channel end without lock with given secrethash

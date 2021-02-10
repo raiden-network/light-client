@@ -1,9 +1,11 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import type { Express, NextFunction, Request, Response } from 'express';
+import express, { json as expressJson } from 'express';
 import createError from 'http-errors';
 import logger from 'morgan';
-import { Cli } from './types';
+
 import { makeApiV1Router } from './routes/api.v1';
+import type { Cli } from './types';
 
 function notFoundHandler(_request: Request, _response: Response, next: NextFunction) {
   next(createError(404, 'Undefined resource'));
@@ -28,7 +30,7 @@ function internalErrorHandler(
  */
 export function makeApp(this: Cli, corsOrigin?: string): Express {
   const app = express();
-  app.use(express.json());
+  app.use(expressJson());
   if (corsOrigin) app.use(cors({ origin: corsOrigin }));
   const loggerMiddleware = logger(
     ':remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"',

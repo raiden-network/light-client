@@ -84,7 +84,8 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Location } from 'vue-router';
+import type { Location } from 'vue-router';
+
 import ActionButton from '@/components/ActionButton.vue';
 import { RouteNames } from '@/router/route-names';
 

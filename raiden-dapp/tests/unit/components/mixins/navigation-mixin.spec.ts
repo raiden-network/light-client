@@ -1,11 +1,14 @@
-jest.mock('vue-router');
-
-import { mount, Wrapper } from '@vue/test-utils';
-import VueRouter from 'vue-router';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { Component, Mixins } from 'vue-property-decorator';
-import { TestData } from '../../data/mock-data';
+import VueRouter from 'vue-router';
+
 import NavigationMixin from '@/mixins/navigation-mixin';
 import { RouteNames } from '@/router/route-names';
+
+import { TestData } from '../../data/mock-data';
+
+jest.mock('vue-router');
 import Mocked = jest.Mocked;
 
 describe('NavigationMixin', () => {

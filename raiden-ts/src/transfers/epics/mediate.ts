@@ -1,14 +1,14 @@
 import { Zero } from '@ethersproject/constants';
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { filter, map, withLatestFrom } from 'rxjs/operators';
 
+import type { RaidenAction } from '../../actions';
+import type { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
+import type { RaidenState } from '../../state';
 import { getCap } from '../../transport/utils';
-import { RaidenAction } from '../../actions';
-import { RaidenState } from '../../state';
-import { RaidenConfig } from '../../config';
-import { RaidenEpicDeps } from '../../types';
-import { Address, Int } from '../../utils/types';
+import type { RaidenEpicDeps } from '../../types';
+import type { Address, Int } from '../../utils/types';
 import { transfer, transferSigned } from '../actions';
 import { Direction } from '../state';
 

@@ -1,62 +1,62 @@
 import {
-  makeLog,
-  makeRaidens,
+  amount,
+  closeBlock,
+  confirmationBlocks,
+  deposit,
+  ensureChannelIsClosed,
+  ensureChannelIsDeposited,
+  ensureChannelIsOpen,
+  ensureChannelIsSettled,
+  ensureTokenIsMonitored,
+  ensureTransferPending,
+  ensureTransferUnlocked,
+  getChannel,
+  getOrWaitTransfer,
+  id,
+  openBlock,
+  secret,
+  secrethash,
+  settleBlock,
+  settleTimeout,
+  token,
+  tokenNetwork,
+  txHash,
+} from '../fixtures';
+import {
+  makeAddress,
   makeHash,
-  waitBlock,
+  makeLog,
+  makeRaiden,
+  makeRaidens,
   makeTransaction,
   providersEmit,
   sleep,
-  makeAddress,
-  makeRaiden,
+  waitBlock,
 } from '../mocks';
-import {
-  token,
-  tokenNetwork,
-  id,
-  openBlock,
-  closeBlock,
-  settleBlock,
-  settleTimeout,
-  txHash,
-  ensureChannelIsClosed,
-  ensureChannelIsOpen,
-  ensureTokenIsMonitored,
-  deposit,
-  confirmationBlocks,
-  ensureChannelIsDeposited,
-  ensureTransferUnlocked,
-  ensureTransferPending,
-  secrethash,
-  secret,
-  ensureChannelIsSettled,
-  getChannel,
-  getOrWaitTransfer,
-  amount,
-} from '../fixtures';
 
-import { BigNumber } from '@ethersproject/bignumber';
-import { Zero, HashZero } from '@ethersproject/constants';
 import { defaultAbiCoder, Interface } from '@ethersproject/abi';
+import { BigNumber } from '@ethersproject/bignumber';
+import { HashZero, Zero } from '@ethersproject/constants';
 import { first, pluck } from 'rxjs/operators';
 
-import { UInt } from 'raiden-ts/utils/types';
-import { Capabilities, LocksrootZero } from 'raiden-ts/constants';
+import { raidenConfigUpdate } from '@/actions';
+import { ChannelState } from '@/channels';
 import {
+  channelClose,
+  channelDeposit,
   channelMonitored,
   channelOpen,
-  channelDeposit,
-  channelClose,
-  channelSettleable,
   channelSettle,
+  channelSettleable,
   channelWithdrawn,
-} from 'raiden-ts/channels/actions';
-import { channelKey, channelUniqueKey } from 'raiden-ts/channels/utils';
-import { ChannelState } from 'raiden-ts/channels';
-import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from 'raiden-ts/messages';
-import { getLocksroot, transferKey } from 'raiden-ts/transfers/utils';
-import { ErrorCodes } from 'raiden-ts/utils/error';
-import { raidenConfigUpdate } from 'raiden-ts/actions';
-import { Direction } from 'raiden-ts/transfers/state';
+} from '@/channels/actions';
+import { channelKey, channelUniqueKey } from '@/channels/utils';
+import { Capabilities, LocksrootZero } from '@/constants';
+import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from '@/messages';
+import { Direction } from '@/transfers/state';
+import { getLocksroot, transferKey } from '@/transfers/utils';
+import { ErrorCodes } from '@/utils/error';
+import type { UInt } from '@/utils/types';
 
 test('channelSettleableEpic', async () => {
   expect.assertions(3);

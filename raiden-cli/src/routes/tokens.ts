@@ -1,7 +1,8 @@
-import { Router, Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import { first } from 'rxjs/operators';
 
-import { Cli } from '../types';
+import type { Cli } from '../types';
 import { validateAddressParameter } from '../utils/validation';
 
 export interface ApiTokenPartner {

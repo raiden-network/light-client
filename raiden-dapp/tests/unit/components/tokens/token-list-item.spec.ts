@@ -1,10 +1,13 @@
+import { $identicon } from '../../utils/mocks';
+
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import Vuex, { Store } from 'vuex';
-import { mount } from '@vue/test-utils';
-import { generateToken } from '../../utils/data-generator';
-import { $identicon } from '../../utils/mocks';
+
 import TokenListItem from '@/components/tokens/TokenListItem.vue';
+
+import { generateToken } from '../../utils/data-generator';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

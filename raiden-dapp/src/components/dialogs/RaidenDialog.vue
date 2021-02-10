@@ -19,7 +19,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Vue, Prop } from 'vue-property-decorator';
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
+
 import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
 
 @Component({ components: { BlurredOverlay } })

@@ -84,15 +84,18 @@
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
-import { ChannelState, RaidenChannel } from 'raiden-ts';
-import ListHeader from '@/components/ListHeader.vue';
-import { Token } from '@/model/types';
-import AddressUtils from '@/utils/address-utils';
-import NavigationMixin from '@/mixins/navigation-mixin';
-import ChannelList from '@/components/channels/ChannelList.vue';
+
+import type { RaidenChannel } from 'raiden-ts';
+import { ChannelState } from 'raiden-ts';
+
 import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
-import { ChannelAction } from '@/types';
+import ChannelList from '@/components/channels/ChannelList.vue';
+import ListHeader from '@/components/ListHeader.vue';
 import Filters from '@/filters';
+import NavigationMixin from '@/mixins/navigation-mixin';
+import type { Token } from '@/model/types';
+import type { ChannelAction } from '@/types';
+import AddressUtils from '@/utils/address-utils';
 
 @Component({
   components: { ChannelDialogs, ListHeader, ChannelList },

@@ -1,18 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { merge, Observable, of } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { merge, of } from 'rxjs';
 import { filter, ignoreElements, take } from 'rxjs/operators';
 
+import type { RaidenAction } from '../../actions';
+import type {
+  MessageType,
+  WithdrawConfirmation,
+  WithdrawExpired,
+  WithdrawRequest,
+} from '../../messages';
 import { messageSend } from '../../messages/actions';
 import { isResponseOf } from '../../utils/actions';
 import { completeWith, repeatUntil } from '../../utils/rx';
-import { RaidenAction } from '../../actions';
-import {
-  MessageType,
-  WithdrawRequest,
-  WithdrawConfirmation,
-  WithdrawExpired,
-} from '../../messages';
-import { UInt } from '../../utils/types';
+import type { UInt } from '../../utils/types';
 
 /**
  * Exponential back-off infinite generator

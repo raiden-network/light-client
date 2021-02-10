@@ -1,5 +1,7 @@
 import * as t from 'io-ts';
-import { Address, Decodable, Int, Signed, UInt } from '../utils/types';
+
+import type { Decodable } from '../utils/types';
+import { Address, Int, Signed, UInt } from '../utils/types';
 
 /**
  * Codec for PFS API returned data

@@ -1,7 +1,10 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { Router } from 'express';
+
 import { ErrorCodes } from 'raiden-ts';
+
+import type { Cli } from '../types';
 import { validateAddressParameter } from '../utils/validation';
-import { Cli } from '../types';
 
 async function mintTokens(this: Cli, request: Request, response: Response, next: NextFunction) {
   try {

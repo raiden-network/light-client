@@ -1,4 +1,5 @@
-import { Route, NavigationGuardNext } from 'vue-router';
+import type { NavigationGuardNext, Route } from 'vue-router';
+
 import { RouteNames } from '../route-names';
 
 /**

@@ -1,11 +1,14 @@
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuetify from 'vuetify';
-import Vue from 'vue';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { BigNumber, utils } from 'ethers';
 import flushPromises from 'flush-promises';
+import Vue from 'vue';
+import Vuetify from 'vuetify';
+
+import ChannelWithdrawDialog from '@/components/dialogs/ChannelWithdrawDialog.vue';
+
 import { TestData } from '../../data/mock-data';
 import { mockInput } from '../../utils/interaction-utils';
-import ChannelWithdrawDialog from '@/components/dialogs/ChannelWithdrawDialog.vue';
 
 Vue.use(Vuetify);
 

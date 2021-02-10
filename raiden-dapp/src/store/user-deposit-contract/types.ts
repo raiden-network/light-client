@@ -1,5 +1,6 @@
-import { BigNumber } from 'ethers';
-import { Token } from '@/model/types';
+import type { BigNumber } from 'ethers';
+
+import type { Token } from '@/model/types';
 
 export interface PlannedUdcWithdrawal {
   txHash: string;

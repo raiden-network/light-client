@@ -1,14 +1,16 @@
-import { Observable, of, fromEvent } from 'rxjs';
-import { filter, take } from 'rxjs/operators';
-import { Room, MatrixClient } from 'matrix-js-sdk';
 import curry from 'lodash/curry';
+import type { MatrixClient, Room } from 'matrix-js-sdk';
+import type { Observable } from 'rxjs';
+import { fromEvent, of } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
 
-import { RaidenConfig } from '../../config';
-import { RaidenEpicDeps } from '../../types';
-import { isntNil, Address, Signed } from '../../utils/types';
-import { RaidenError, ErrorCodes } from '../../utils/error';
-import { Message } from '../../messages/types';
+import type { RaidenConfig } from '../../config';
+import type { Message } from '../../messages/types';
 import { decodeJsonMessage, getMessageSigner } from '../../messages/utils';
+import type { RaidenEpicDeps } from '../../types';
+import { ErrorCodes, RaidenError } from '../../utils/error';
+import type { Address, Signed } from '../../utils/types';
+import { isntNil } from '../../utils/types';
 
 /**
  * Return the array of configured global rooms

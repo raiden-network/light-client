@@ -22,7 +22,8 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { RaidenError } from 'raiden-ts';
+
+import type { RaidenError } from 'raiden-ts';
 
 @Component({})
 export default class ErrorMessage extends Vue {

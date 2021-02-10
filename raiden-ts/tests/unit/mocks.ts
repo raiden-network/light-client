@@ -1,80 +1,83 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { patchEthersDefineReadOnly, patchEthersGetNetwork, patchVerifyMessage } from './patches';
-patchVerifyMessage();
-patchEthersDefineReadOnly();
-patchEthersGetNetwork();
+import './patches';
 
-import { AsyncSubject, ReplaySubject, Observable } from 'rxjs';
-import { filter, finalize, take } from 'rxjs/operators';
-import { MatrixClient } from 'matrix-js-sdk';
+import type { FilterByBlockHash } from '@ethersproject/abstract-provider';
+import { getAddress } from '@ethersproject/address';
+import { BigNumber } from '@ethersproject/bignumber';
+import { hexlify } from '@ethersproject/bytes';
+import { HashZero, Zero } from '@ethersproject/constants';
+import type { Contract, ContractTransaction, EventFilter } from '@ethersproject/contracts';
+import { keccak256 } from '@ethersproject/keccak256';
+import type { Network } from '@ethersproject/networks';
+import type {
+  EventType,
+  ExternalProvider,
+  Filter,
+  JsonRpcProvider,
+  Log,
+} from '@ethersproject/providers';
+import { Web3Provider } from '@ethersproject/providers';
+import { randomBytes } from '@ethersproject/random';
+import { parseEther } from '@ethersproject/units';
+import { verifyMessage, Wallet } from '@ethersproject/wallet';
 import { EventEmitter } from 'events';
 import { memoize } from 'lodash';
 import logging from 'loglevel';
-import { Store, createStore, applyMiddleware } from 'redux';
-
-import {
-  Web3Provider,
-  JsonRpcProvider,
-  EventType,
-  ExternalProvider,
-} from '@ethersproject/providers';
-import { Zero, HashZero } from '@ethersproject/constants';
-import type { Log, Filter } from '@ethersproject/providers';
-import type { FilterByBlockHash } from '@ethersproject/abstract-provider';
-import type { Network } from '@ethersproject/networks';
-import { parseEther } from '@ethersproject/units';
-import { getAddress } from '@ethersproject/address';
-import { randomBytes } from '@ethersproject/random';
-import { Wallet, verifyMessage } from '@ethersproject/wallet';
-import { keccak256 } from '@ethersproject/keccak256';
-import { hexlify } from '@ethersproject/bytes';
-import { BigNumber } from '@ethersproject/bignumber';
-import { Contract, EventFilter, ContractTransaction } from '@ethersproject/contracts';
+import type { MatrixClient } from 'matrix-js-sdk';
 import PouchDB from 'pouchdb';
-
-jest.mock('raiden-ts/messages/utils', () => ({
-  ...jest.requireActual<any>('raiden-ts/messages/utils'),
-  signMessage: jest.fn(jest.requireActual<any>('raiden-ts/messages/utils').signMessage),
-}));
-import { signMessage } from 'raiden-ts/messages/utils';
-export const originalSignMessage = jest.requireActual<any>('raiden-ts/messages/utils').signMessage;
-export const mockedSignMessage = signMessage as jest.MockedFunction<typeof signMessage>;
-
-import {
-  TokenNetworkRegistry,
-  TokenNetwork,
-  HumanStandardToken,
-  ServiceRegistry,
-  UserDeposit,
-  SecretRegistry,
-  MonitoringService,
-  TokenNetworkRegistry__factory,
-  TokenNetwork__factory,
-  HumanStandardToken__factory,
-  ServiceRegistry__factory,
-  UserDeposit__factory,
-  SecretRegistry__factory,
-  MonitoringService__factory,
-} from 'raiden-ts/contracts';
-
-import { RaidenEpicDeps, ContractsInfo, Latest } from 'raiden-ts/types';
-import { makeInitialState, RaidenState } from 'raiden-ts/state';
-import { assert } from 'raiden-ts/utils';
-import { Address, Signature, Hash, decode, Secret } from 'raiden-ts/utils/types';
-import { getServerName } from 'raiden-ts/utils/matrix';
-import { pluckDistinct } from 'raiden-ts/utils/rx';
-import { RaidenAction, raidenShutdown, raidenStarted, raidenSynced } from 'raiden-ts/actions';
-import { makeDefaultConfig, RaidenConfig } from 'raiden-ts/config';
-import { getSecrethash, makeSecret } from 'raiden-ts/transfers/utils';
-import { raidenReducer } from 'raiden-ts/reducer';
-import { ShutdownReason, Capabilities } from 'raiden-ts/constants';
+import type { Store } from 'redux';
+import { applyMiddleware, createStore } from 'redux';
 import { createEpicMiddleware } from 'redux-observable';
-import { raidenRootEpic } from 'raiden-ts/epics';
-import { migrateDatabase, putRaidenState, getRaidenState } from 'raiden-ts/db/utils';
-import { RaidenDatabaseConstructor } from 'raiden-ts/db/types';
-import { getNetworkName } from 'raiden-ts/utils/ethers';
-import { createPersisterMiddleware } from 'raiden-ts/persister';
-import { getSortedAddresses } from 'raiden-ts/transport/utils';
+import type { Observable } from 'rxjs';
+import { AsyncSubject, ReplaySubject } from 'rxjs';
+import { filter, finalize, take } from 'rxjs/operators';
+
+import type { RaidenAction } from '@/actions';
+import { raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
+import type { RaidenConfig } from '@/config';
+import { makeDefaultConfig } from '@/config';
+import { Capabilities, ShutdownReason } from '@/constants';
+import type {
+  HumanStandardToken,
+  MonitoringService,
+  SecretRegistry,
+  ServiceRegistry,
+  TokenNetwork,
+  TokenNetworkRegistry,
+  UserDeposit,
+} from '@/contracts';
+import {
+  HumanStandardToken__factory,
+  MonitoringService__factory,
+  SecretRegistry__factory,
+  ServiceRegistry__factory,
+  TokenNetwork__factory,
+  TokenNetworkRegistry__factory,
+  UserDeposit__factory,
+} from '@/contracts';
+import type { RaidenDatabaseConstructor } from '@/db/types';
+import { getRaidenState, migrateDatabase, putRaidenState } from '@/db/utils';
+import { raidenRootEpic } from '@/epics';
+import { signMessage } from '@/messages/utils';
+import { createPersisterMiddleware } from '@/persister';
+import { raidenReducer } from '@/reducer';
+import { makeInitialState, RaidenState } from '@/state';
+import { getSecrethash, makeSecret } from '@/transfers/utils';
+import { getSortedAddresses } from '@/transport/utils';
+import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
+import { assert } from '@/utils';
+import { getNetworkName } from '@/utils/ethers';
+import { getServerName } from '@/utils/matrix';
+import { pluckDistinct } from '@/utils/rx';
+import type { Hash, Signature } from '@/utils/types';
+import { Address, decode, Secret } from '@/utils/types';
+
+jest.mock('@/messages/utils', () => ({
+  ...jest.requireActual<any>('@/messages/utils'),
+  signMessage: jest.fn(jest.requireActual<any>('@/messages/utils').signMessage),
+}));
+export const originalSignMessage = jest.requireActual<any>('@/messages/utils').signMessage;
+export const mockedSignMessage = signMessage as jest.MockedFunction<typeof signMessage>;
 
 const RaidenPouchDB = PouchDB.defaults({
   adapter: 'memory',

@@ -53,14 +53,15 @@
 </template>
 
 <script lang="ts">
+import type { BigNumber } from 'ethers';
 import { Component, Emit, Prop, Vue, Watch } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
-import { BigNumber } from 'ethers';
-import { RaidenTransferStatus, RaidenTransfer } from 'raiden-ts';
+
+import type { RaidenTransfer, RaidenTransferStatus } from 'raiden-ts';
 
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
-import { Transfers } from '@/types';
+import type { Transfers } from '@/types';
 
 @Component({
   components: { RaidenDialog, Spinner },

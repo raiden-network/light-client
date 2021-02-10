@@ -21,20 +21,24 @@
 </template>
 
 <script lang="ts">
+import type { BigNumber } from 'ethers';
+import { constants } from 'ethers';
 import { Component, Vue } from 'vue-property-decorator';
-import { mapState, mapGetters } from 'vuex';
-import { BigNumber, constants } from 'ethers';
-import { NotificationContext } from '../store/notifications/notification-context';
-import { NotificationImportance } from '../store/notifications/notification-importance';
-import { NotificationPayload } from '../store/notifications/types';
+import { mapGetters, mapState } from 'vuex';
+
+import type { RaidenChannel } from 'raiden-ts';
+
+import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
+import NoTokens from '@/components/NoTokens.vue';
+import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
-import TransactionList from '@/components/transaction-history/TransactionList.vue';
-import NoTokens from '@/components/NoTokens.vue';
-import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
+import type { Token, TokenModel } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
-import { Token, TokenModel } from '@/model/types';
-import { RaidenChannel } from 'raiden-ts';
+
+import { NotificationContext } from '../store/notifications/notification-context';
+import { NotificationImportance } from '../store/notifications/notification-importance';
+import type { NotificationPayload } from '../store/notifications/types';
 
 const ONE_DAY = new Date(0).setUTCHours(24);
 

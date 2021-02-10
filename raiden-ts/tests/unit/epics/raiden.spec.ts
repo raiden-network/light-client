@@ -1,30 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { makeLog, makeRaiden, makeAddress, waitBlock, sleep } from '../mocks';
 import {
-  token,
-  tokenNetwork,
+  confirmationBlocks,
   id,
+  isFirstParticipant,
   openBlock,
   settleTimeout,
-  isFirstParticipant,
-  confirmationBlocks,
+  token,
+  tokenNetwork,
   txHash,
 } from '../fixtures';
+import { makeAddress, makeLog, makeRaiden, sleep, waitBlock } from '../mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { HashZero, One } from '@ethersproject/constants';
 import { first, pluck } from 'rxjs/operators';
 
-import { raidenShutdown, raidenSynced } from 'raiden-ts/actions';
-import {
-  newBlock,
-  tokenMonitored,
-  channelMonitored,
-  channelOpen,
-} from 'raiden-ts/channels/actions';
-import { ShutdownReason } from 'raiden-ts/constants';
-import { RaidenError, ErrorCodes } from 'raiden-ts/utils/error';
-import { last } from 'raiden-ts/utils/types';
+import { raidenShutdown, raidenSynced } from '@/actions';
+import { channelMonitored, channelOpen, newBlock, tokenMonitored } from '@/channels/actions';
+import { ShutdownReason } from '@/constants';
+import { ErrorCodes, RaidenError } from '@/utils/error';
+import { last } from '@/utils/types';
 
 const partner = makeAddress();
 

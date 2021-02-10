@@ -1,11 +1,13 @@
-import { mount, Wrapper } from '@vue/test-utils';
-import Vuetify from 'vuetify';
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import Vue from 'vue';
-import { TestData } from '../data/mock-data';
-import store from '@/store';
+import Vuetify from 'vuetify';
 
 import TokenInformation from '@/components/TokenInformation.vue';
 import Filters from '@/filters';
+import store from '@/store';
+
+import { TestData } from '../data/mock-data';
 
 Vue.use(Vuetify);
 Vue.filter('truncate', Filters.truncate);

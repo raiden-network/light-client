@@ -1,9 +1,9 @@
-import { Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { ignoreElements } from 'rxjs/operators';
 
-import { RaidenAction } from '../actions';
-import { RaidenState } from '../state';
-import { RaidenEpicDeps } from '../types';
+import type { RaidenAction } from '../actions';
+import type { RaidenState } from '../state';
+import type { RaidenEpicDeps } from '../types';
 import { completeWith } from '../utils/rx';
 
 /**

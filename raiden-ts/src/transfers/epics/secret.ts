@@ -1,35 +1,40 @@
 import type { Event } from '@ethersproject/contracts';
-import { EMPTY, from, Observable, of, defer, identity } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { defer, EMPTY, from, identity, of } from 'rxjs';
 import {
+  catchError,
   concatMap,
+  endWith,
+  exhaustMap,
   filter,
   first,
+  groupBy,
+  ignoreElements,
   map,
   mergeMap,
-  withLatestFrom,
-  catchError,
-  groupBy,
   pluck,
-  exhaustMap,
-  ignoreElements,
   switchMap,
   takeUntil,
-  endWith,
+  withLatestFrom,
 } from 'rxjs/operators';
 
+import type { RaidenAction } from '../../actions';
 import { assertTx } from '../../channels/utils';
-import { RaidenAction } from '../../actions';
+import { intervalFromConfig } from '../../config';
+import { Capabilities } from '../../constants';
+import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { messageSend } from '../../messages/actions';
 import { MessageType, SecretRequest, SecretReveal } from '../../messages/types';
-import { signMessage, isMessageReceivedOfType } from '../../messages/utils';
-import { RaidenState } from '../../state';
-import { RaidenEpicDeps } from '../../types';
+import { isMessageReceivedOfType, signMessage } from '../../messages/utils';
+import type { RaidenState } from '../../state';
+import { getCap } from '../../transport/utils';
+import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
-import { RaidenError, ErrorCodes, assert, commonTxErrors } from '../../utils/error';
+import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
 import { completeWith, pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
-import { Hash, Secret, Signed, UInt, isntNil, untime } from '../../utils/types';
-import { getCap } from '../../transport/utils';
+import type { Hash, Secret, UInt } from '../../utils/types';
+import { isntNil, Signed, untime } from '../../utils/types';
 import {
   transfer,
   transferSecret,
@@ -38,11 +43,8 @@ import {
   transferSecretReveal,
   transferUnlock,
 } from '../actions';
-import { getSecrethash, makeMessageId, transferKey } from '../utils';
 import { Direction } from '../state';
-import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
-import { Capabilities } from '../../constants';
-import { intervalFromConfig } from '../../config';
+import { getSecrethash, makeMessageId, transferKey } from '../utils';
 import { dispatchAndWait$ } from './utils';
 
 /**

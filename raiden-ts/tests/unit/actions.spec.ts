@@ -1,20 +1,21 @@
+import { BigNumber } from '@ethersproject/bignumber';
 import * as t from 'io-ts';
 import { from } from 'rxjs';
-import { BigNumber } from '@ethersproject/bignumber';
 
-import { channelDeposit, channelMonitored } from 'raiden-ts/channels/actions';
-import { RaidenError, ErrorCodec, ErrorCodes } from 'raiden-ts/utils/error';
-import { Address, UInt, decode } from 'raiden-ts/utils/types';
+import { ConfirmableAction } from '@/actions';
+import { channelDeposit, channelMonitored } from '@/channels/actions';
+import type { ActionType } from '@/utils/actions';
 import {
-  createAction,
-  ActionType,
-  isActionOf,
-  createAsyncAction,
-  isResponseOf,
   asyncActionToPromise,
+  createAction,
+  createAsyncAction,
   createReducer,
-} from 'raiden-ts/utils/actions';
-import { ConfirmableAction } from 'raiden-ts/actions';
+  isActionOf,
+  isResponseOf,
+} from '@/utils/actions';
+import { ErrorCodec, ErrorCodes, RaidenError } from '@/utils/error';
+import type { Address, UInt } from '@/utils/types';
+import { decode } from '@/utils/types';
 
 describe('action factories not tested in reducers.spec.ts', () => {
   const tokenNetwork = '0x0000000000000000000000000000000000020001' as Address,

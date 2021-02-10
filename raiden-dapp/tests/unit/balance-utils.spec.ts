@@ -1,6 +1,7 @@
 import { BigNumber, constants } from 'ethers';
+
+import type { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
-import { Token } from '@/model/types';
 
 describe('BalanceUtils', () => {
   const token: Token = {

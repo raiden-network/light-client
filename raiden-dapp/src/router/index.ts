@@ -1,11 +1,12 @@
 import Vue from 'vue';
 import Router from 'vue-router';
-import { routes } from './routes';
+
 import {
   globalNavigationGuard,
   redirectIfDisclaimerIsNotAccepted,
   redirectIfNotConnected,
 } from './guards';
+import { routes } from './routes';
 
 Vue.use(Router);
 

@@ -75,10 +75,12 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { mapState } from 'vuex';
-import { RaidenTransfer } from 'raiden-ts';
-import { Tokens } from '@/types';
+
+import type { RaidenTransfer } from 'raiden-ts';
+
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
+import type { Tokens } from '@/types';
 
 @Component({
   components: {

@@ -1,15 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('@/services/raiden-service');
-jest.useFakeTimers();
+import { $identicon } from '../utils/mocks';
 
+import type { Wrapper } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
-import { mount, Wrapper } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import { $identicon } from '../utils/mocks';
-import { mockInput } from '../utils/interaction-utils';
+
 import AddressInput from '@/components/AddressInput.vue';
 import store from '@/store/index';
+
+import { mockInput } from '../utils/interaction-utils';
+
+jest.mock('@/services/raiden-service');
+jest.useFakeTimers();
 
 Vue.use(Vuetify);
 

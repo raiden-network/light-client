@@ -31,10 +31,11 @@
 <script lang="ts">
 import { Component, Mixins, Watch } from 'vue-property-decorator';
 import { mapGetters, mapMutations } from 'vuex';
+
 import NavigationMixin from '@/mixins/navigation-mixin';
-import { NotificationPayload } from '@/store/notifications/types';
-import { NotificationImportance } from '@/store/notifications/notification-importance';
 import { NotificationContext } from '@/store/notifications/notification-context';
+import { NotificationImportance } from '@/store/notifications/notification-importance';
+import type { NotificationPayload } from '@/store/notifications/types';
 
 const emptyNotification: NotificationPayload = {
   id: -1,

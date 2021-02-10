@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { promises as fs } from 'fs';
-import path from 'path';
 import logging from 'loglevel';
+import path from 'path';
 
-import { RaidenState } from 'raiden-ts/state';
-import { TransferState } from 'raiden-ts/transfers/state';
-import { decode } from 'raiden-ts/utils/types';
+import defaultMigrations from '@/db/migrations';
+import type { Migrations } from '@/db/types';
 import {
   dumpDatabaseToArray,
   getDatabaseConstructorFromOptions,
   getRaidenState,
   latestVersion,
   replaceDatabase,
-} from 'raiden-ts/db/utils';
-import defaultMigrations from 'raiden-ts/db/migrations';
-import { jsonParse } from 'raiden-ts/utils/data';
-import { Migrations } from 'raiden-ts/db/types';
+} from '@/db/utils';
+import { RaidenState } from '@/state';
+import { TransferState } from '@/transfers/state';
+import { jsonParse } from '@/utils/data';
+import { decode } from '@/utils/types';
 
 test('migrate, decode & dump', async () => {
   // iterate over past stored JSON states & ensure they can be migrated to current
