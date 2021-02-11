@@ -23,7 +23,7 @@
     "ethereum-blockies-base64": "^1.0.2",
     "ethers": "^5.0.29",
     "fontsource-roboto": "^4.0.0",
-    "idb": "^5.0.8",
+    "idb": "^6.0.0",
     "lodash": "^4.17.20",
     "loglevel": "^1.7.1",
     "raiden-ts": "*",
