@@ -1,5 +1,8 @@
 {
   "pfsSafetyMargin": 1.1,
   "expiryFactor": 2.0,
-  "autoSettle": true
+  "autoSettle": true,
+  "caps": {
+    "Receive": 1
+  }
 }
