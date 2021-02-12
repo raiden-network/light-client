@@ -9,12 +9,7 @@ let defaultPouchAdapter: string;
 export async function getDefaultPouchAdapter(): Promise<string> {
   // default RxDB adapters, using dynamic imports (module=ESNext|CommonJS)
   if (defaultPouchAdapter) return defaultPouchAdapter;
-  if ('JEST_WORKER_ID' in process.env) {
-    // tests
-    const { default: adapterPlugin } = await import('pouchdb-adapter-memory');
-    PouchDB.plugin(adapterPlugin);
-    defaultPouchAdapter = 'memory';
-  } else if (globalThis.location?.href) {
+  if (globalThis.location?.href) {
     // browser
     const { default: adapterPlugin } = await import('pouchdb-adapter-indexeddb');
     PouchDB.plugin(adapterPlugin);

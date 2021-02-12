@@ -30,11 +30,11 @@ import { request } from 'matrix-js-sdk';
 
 import { Raiden as OrigRaiden } from 'raiden-ts/raiden';
 import { ShutdownReason } from 'raiden-ts/constants';
-import { makeInitialState, RaidenState } from 'raiden-ts/state';
+import { RaidenState } from 'raiden-ts/state';
 import { raidenShutdown, ConfirmableAction, raidenStarted } from 'raiden-ts/actions';
 import { newBlock, tokenMonitored } from 'raiden-ts/channels/actions';
 import { ChannelState } from 'raiden-ts/channels/state';
-import { Storage, Secret, Address, UInt } from 'raiden-ts/utils/types';
+import { Secret, Address, UInt } from 'raiden-ts/utils/types';
 import { isActionOf } from 'raiden-ts/utils/actions';
 import { ContractsInfo } from 'raiden-ts/types';
 import { PartialRaidenConfig } from 'raiden-ts/config';
@@ -47,6 +47,7 @@ import { ErrorCodes } from 'raiden-ts/utils/error';
 import { channelKey } from 'raiden-ts/channels/utils';
 import { confirmationBlocks } from '../unit/fixtures';
 import { udcWithdrawn } from 'raiden-ts/services/actions';
+import { RaidenDatabaseMeta } from 'raiden-ts/db/types';
 
 type Raiden = OrigRaiden;
 const Raiden = OrigRaiden as typeof OrigRaiden & {
@@ -121,7 +122,7 @@ describe('Raiden', () => {
 
   async function createRaiden(
     account: number | string,
-    storage?: { state?: any; storage?: Storage; adapter?: any; prefix?: string },
+    storage?: { state?: any; adapter?: any; prefix?: string },
     subkey?: true,
   ): Promise<Raiden> {
     return await Raiden.create(
@@ -210,8 +211,9 @@ describe('Raiden', () => {
   test('create from other params and RaidenState', async () => {
     expect.assertions(15);
 
-    const raiden0State = await raiden.state$.pipe(first()).toPromise();
     await raiden.stop();
+    const raiden0State = await raiden.dumpDatabase();
+    const raiden0StateMeta = raiden0State[0] as RaidenDatabaseMeta;
 
     // state & storage object
     await expect(
@@ -219,7 +221,10 @@ describe('Raiden', () => {
         provider,
         0,
         {
-          state: { ...raiden0State, blockNumber: raiden0State.blockNumber - 2 },
+          state: [
+            { ...raiden0StateMeta, blockNumber: raiden0StateMeta.blockNumber - 2 },
+            ...raiden0State.slice(1),
+          ],
           ...getStorageOpts(),
         },
         contractsInfo,
@@ -232,7 +237,10 @@ describe('Raiden', () => {
         provider,
         0,
         {
-          state: { ...raiden0State, blockNumber: raiden0State.blockNumber + 2 },
+          state: [
+            { ...raiden0StateMeta, blockNumber: raiden0StateMeta.blockNumber + 2 },
+            ...raiden0State.slice(1),
+          ],
           ...getStorageOpts(),
         },
         contractsInfo,
@@ -260,9 +268,7 @@ describe('Raiden', () => {
         provider,
         '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         {
-          state: JSON.stringify(
-            makeInitialState({ network, contractsInfo, address: token as Address }, { config }),
-          ),
+          state: [{ ...raiden0StateMeta, address: token as Address }, ...raiden0State.slice(1)],
           ...getStorageOpts(),
         },
         contractsInfo,
@@ -274,29 +280,21 @@ describe('Raiden', () => {
         provider,
         1,
         {
-          state: JSON.stringify(
-            makeInitialState(
-              {
-                network,
-                contractsInfo: {
-                  TokenNetworkRegistry: { address: token as Address, block_number: 0 },
-                  ServiceRegistry: { address: partner as Address, block_number: 1 },
-                  UserDeposit: { address: partner as Address, block_number: 2 },
-                  SecretRegistry: { address: partner as Address, block_number: 3 },
-                  MonitoringService: { address: partner as Address, block_number: 3 },
-                  OneToN: { address: partner as Address, block_number: 3 },
-                },
-                address: accounts[1] as Address,
-              },
-              { config },
-            ),
-          ),
+          state: [
+            { ...raiden0StateMeta, registry: token as Address, address: accounts[1] as Address },
+            ...raiden0State.slice(1),
+          ],
           ...getStorageOpts(),
         },
         contractsInfo,
       ),
     ).rejects.toThrow(ErrorCodes.RDN_STATE_NETWORK_MISMATCH);
 
+    const raiden1State = [
+      { ...raiden0StateMeta, address: accounts[1] as Address },
+      { _id: 'state.address', value: accounts[1] },
+      ...raiden0State.slice(1).filter(({ _id }) => _id !== 'state.address'),
+    ];
     // success when using address of account on provider and initial state,
     // and pass UserDeposit address to fetch contracts info from
     provider.pollingInterval = config.pollingInterval! * 3;
@@ -304,10 +302,7 @@ describe('Raiden', () => {
       provider,
       accounts[1],
       {
-        state: makeInitialState(
-          { network, contractsInfo, address: accounts[1] as Address },
-          { config },
-        ),
+        state: raiden1State,
         ...getStorageOpts(),
       },
       contractsInfo.UserDeposit.address,
@@ -534,7 +529,7 @@ describe('Raiden', () => {
     beforeEach(async () => {
       await raiden.openChannel(token, partner);
       await raiden.depositChannel(token, partner, 200);
-      raiden1 = await createRaiden(partner, undefined);
+      raiden1 = await createRaiden(partner);
       raiden1.start();
     });
 
@@ -768,7 +763,7 @@ describe('Raiden', () => {
       // while partner is not yet initialized, open a channel with them
       await raiden.openChannel(token, partner);
 
-      const raiden1 = await createRaiden(partner, undefined);
+      const raiden1 = await createRaiden(partner);
 
       const promise1 = raiden1.events$
         .pipe(first((value) => tokenMonitored.is(value) && !!value.payload.fromBlock))
@@ -796,13 +791,7 @@ describe('Raiden', () => {
 
       await expect(raiden.getAvailability(partner)).rejects.toThrow(ErrorCodes.TRNS_NO_VALID_USER);
 
-      // success when using address of account on provider and initial state
-      const raiden1 = await createRaiden(accounts[2], {
-        state: makeInitialState(
-          { network, contractsInfo, address: accounts[2] as Address },
-          { config },
-        ),
-      });
+      const raiden1 = await createRaiden(accounts[2]);
       expect(raiden1).toBeInstanceOf(Raiden);
       await raiden1.start();
 
