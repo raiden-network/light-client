@@ -23,7 +23,7 @@ for PIPELINE in $PIPELINES; do
   WORKFLOWS=(`$CURL "$BASE/pipeline/${PIPELINE}/workflow" | grep -oP '(?<="id" : ")[^"]+'`)
   for WORKFLOW in $WORKFLOWS; do
     log "Workflow: ${WORKFLOW}"
-    JOB=`$CURL "$BASE/workflow/${WORKFLOW}/job" | grep -B5 -A0 '"status" : "success"' | grep -B3 -A0 -E '"name" : "build_dapp-[1-9]"' | grep -oP '(?<="job_number" : )\d+' | head -1`
+    JOB=`$CURL "$BASE/workflow/${WORKFLOW}/job" | grep -B5 -A0 '"status" : "success"' | grep -B3 -A0 -E '"name" : "build_dapp' | grep -oP '(?<="job_number" : )\d+' | head -1`
     URL=`$CURL "$BASE/project/${CIRCLE_SLUG}/${JOB}/artifacts" | grep -oP '(?<="url" : ")[^"]+' | head -1`
     PULL=`curl -ss "https://circleci.com/api/v1.1/project/${CIRCLE_SLUG}/${JOB}?circle-token=${CIRCLE_TOKEN}" | grep -B0 -A2 '"pull_requests"' | grep -oP '(?<=/pull/)\d+' | head -1`
     [[ -n "$PULL" ]] || continue
