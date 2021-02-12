@@ -1,9 +1,8 @@
 /* eslint-disable no-console */
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import * as path from 'path';
 import inquirer from 'inquirer';
 import yargs from 'yargs/yargs';
-import { LocalStorage } from 'node-localstorage';
 import { Wallet, ethers } from 'ethers';
 import { Raiden, Address, RaidenConfig, assert, UInt, Capabilities } from 'raiden-ts';
 
@@ -146,11 +145,11 @@ function parseArguments() {
     .alias('V', 'version').argv;
 }
 
-async function getKeystoreAccounts(keystorePath: string): Promise<{ [addr: string]: string[] }> {
+function getKeystoreAccounts(keystorePath: string): { [addr: string]: string[] } {
   const keys: { [addr: string]: string[] } = {};
-  for (const filename of await fs.readdir(keystorePath)) {
+  for (const filename of fs.readdirSync(keystorePath)) {
     try {
-      const json = await fs.readFile(path.join(keystorePath, filename), 'utf-8');
+      const json = fs.readFileSync(path.join(keystorePath, filename), 'utf-8');
       const address = ethers.utils.getAddress(JSON.parse(json)['address']);
       if (!(address in keys)) keys[address] = [];
       keys[address].push(json);
@@ -164,7 +163,7 @@ async function getWallet(
   address?: string,
   passwordFile?: string,
 ): Promise<Wallet> {
-  const keys = await getKeystoreAccounts(keystoreDir);
+  const keys = getKeystoreAccounts(keystoreDir);
   if (!Object.keys(keys).length)
     throw new Error(`No account found on keystore directory "${keystoreDir}"`);
   else if (!address)
@@ -174,7 +173,7 @@ async function getWallet(
   else if (!(address in keys)) throw new Error(`Could not find keystore file for "${address}"`);
 
   let password;
-  if (passwordFile) password = (await fs.readFile(passwordFile, 'utf-8')).split('\n').shift()!;
+  if (passwordFile) password = fs.readFileSync(passwordFile, 'utf-8').split('\n').shift()!;
   else
     ({ password } = await inquirer.prompt<{ password: string }>([
       { type: 'password', name: 'password', message: `[${address}] Password:`, mask: '*' },
@@ -210,10 +209,10 @@ async function getWallet(
   );
 }
 
-function createLocalStorage(name: string): LocalStorage {
-  const localStorage = new LocalStorage(name);
-  Object.assign(globalThis, { localStorage });
-  return localStorage;
+function createDataDirectory(path: string): void {
+  if (!fs.existsSync(path)) {
+    fs.mkdirSync(path);
+  }
 }
 
 function unrefTimeout(timeout: number | NodeJS.Timeout) {
@@ -255,13 +254,11 @@ function registerShutdownHooks(this: Cli): void {
   });
 }
 
-async function createRaidenConfig(
-  argv: ReturnType<typeof parseArguments>,
-): Promise<Partial<RaidenConfig>> {
+function createRaidenConfig(argv: ReturnType<typeof parseArguments>): Partial<RaidenConfig> {
   let config: Partial<RaidenConfig> = DEFAULT_RAIDEN_CONFIG;
 
   if (argv.configFile)
-    config = { ...config, ...JSON.parse(await fs.readFile(argv.configFile, 'utf-8')) };
+    config = { ...config, ...JSON.parse(fs.readFileSync(argv.configFile, 'utf-8')) };
 
   config = {
     ...config,
@@ -325,14 +322,14 @@ async function main() {
   await checkDisclaimer(argv.acceptDisclaimer);
   const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
   setupLoglevel(argv.logFile);
-  const storage = createLocalStorage(argv.datadir);
+  createDataDirectory(argv.datadir);
   const endpoint = parseEndpoint(argv.apiAddress);
-  const config = await createRaidenConfig(argv);
+  const config = createRaidenConfig(argv);
 
   const raiden = await Raiden.create(
     argv.ethRpcEndpoint,
     wallet.privateKey,
-    { storage, prefix: argv.datadir.endsWith('/') ? argv.datadir : argv.datadir + '/' },
+    { prefix: argv.datadir.endsWith('/') ? argv.datadir : argv.datadir + '/' },
     argv.userDepositContractAddress,
     config,
   );
