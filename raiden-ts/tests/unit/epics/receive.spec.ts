@@ -18,7 +18,7 @@ import {
   ensureTransferPending,
 } from '../fixtures';
 
-import { first, pluck } from 'rxjs/operators';
+import { first } from 'rxjs/operators';
 import { BigNumber } from '@ethersproject/bignumber';
 import { Zero, One } from '@ethersproject/constants';
 
@@ -273,9 +273,7 @@ describe('receive transfers', () => {
       // "wrong" secret/secrethash
       const secret_ = makeSecret();
       const secrethash_ = getSecrethash(secret_);
-      const promise = raiden.deps.latest$
-        .pipe(pluck('action'), first(transferUnlock.failure.is))
-        .toPromise();
+      const promise = raiden.action$.pipe(first(transferUnlock.failure.is)).toPromise();
       raiden.store.dispatch(
         messageReceived(
           {

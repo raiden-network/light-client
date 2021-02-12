@@ -410,17 +410,17 @@ function mockedMatrixCreateClient({
       };
     }),
     setDisplayName: jest.fn(async (displayname) => {
-      assert(userId in mockedMatrixUsers);
+      if (!(userId in mockedMatrixUsers)) return;
       assert(verifyMessage(userId, displayname) === address);
       mockedMatrixUsers[userId].displayName = displayname;
     }),
     setAvatarUrl: jest.fn(async (avatarUrl) => {
-      assert(userId in mockedMatrixUsers);
+      if (!(userId in mockedMatrixUsers)) return;
       mockedMatrixUsers[userId].avatarUrl = avatarUrl;
       mockedMatrixUsers[userId].presence = 'online';
     }),
     setPresence: jest.fn(async ({ presence }: { presence: string }) => {
-      assert(userId in mockedMatrixUsers);
+      if (!(userId in mockedMatrixUsers)) return;
       mockedMatrixUsers[userId].presence = presence;
       for (const client of mockedClients) {
         if (client.address === address) continue;

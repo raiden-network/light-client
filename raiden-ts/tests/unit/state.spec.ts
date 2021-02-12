@@ -24,6 +24,7 @@ test('migrate, decode & dump', async () => {
 
   // PouchDB configs are passed as custom database constructor using PouchDB.defaults
   const dbCtor = await getDatabaseConstructorFromOptions({
+    adapter: 'memory',
     prefix: expect.getState().currentTestName + '/',
   });
 
