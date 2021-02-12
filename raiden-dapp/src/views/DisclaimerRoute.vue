@@ -30,7 +30,7 @@
           v-if="imprint && terms"
           path="disclaimer.terms.body"
           tag="span"
-          class="disclaimer__content__text__body, imprint_terms_body"
+          class="disclaimer__content__text__imprint-terms-body"
         >
           <a :href="terms" target="_blank">
             {{ $t('disclaimer.terms.link-name-terms') }}
@@ -157,6 +157,7 @@ export default class Disclaimer extends Vue {
       @extend .themed-scrollbar;
 
       &__body,
+      &__imprint-terms-body,
       &__bullet-points {
         font-size: 14px;
       }
@@ -166,7 +167,8 @@ export default class Disclaimer extends Vue {
         padding-bottom: 6px;
       }
 
-      &__body {
+      &__body,
+      &__imprint-terms-body {
         padding: 0 4px 12px 0;
       }
 

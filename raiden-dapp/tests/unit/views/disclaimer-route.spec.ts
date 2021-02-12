@@ -115,7 +115,7 @@ describe('DisclaimerRoute.vue', () => {
 
   test('displays privacy policy and terms if env variables are set', () => {
     const imprintTermsHeader = wrapper.find('.imprint_terms_header');
-    const imprintTermsBody = wrapper.find('.imprint_terms_body');
+    const imprintTermsBody = wrapper.find('.disclaimer__content__text__imprint-terms-body');
 
     expect(imprintTermsHeader.exists()).toBe(true);
     expect(imprintTermsBody.exists()).toBe(true);
