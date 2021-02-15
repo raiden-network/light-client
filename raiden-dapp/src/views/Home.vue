@@ -4,7 +4,7 @@
       <v-col cols="12">
         <div class="home__logo-container">
           <v-img
-            :src="require('@/assets/logo.svg')"
+            :src="require('../assets/logo.svg')"
             aspect-ratio="1"
             class="home__logo-container__logo"
             contain

@@ -139,7 +139,7 @@
       "icon": "notification_withdrawn",
       "title": "User Deposit Tokens Withdrawn",
       "description": "{withdrawnAmount} {symbol} ({plannedAmount} planned) have been withdrawn from the user deposit contract.",
-      "link": "Click here to transfer them to your main account."
+      "link": "Click here to transfer them to your main acccount."
     },
     "settlement": {
       "icon": "notification_settle",
