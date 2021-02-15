@@ -27,7 +27,7 @@
               }}
             </v-list-item-subtitle>
           </v-list-item-content>
-          <v-list-item-icon class="channel-action channel-action-inline">
+          <v-list-item-icon class="channel-action channel-action-inline ml-2">
             <v-btn
               :id="`deposit-${channel.id}`"
               text
@@ -36,7 +36,7 @@
               :disabled="channel.state !== 'open' || !!busy[channel.id]"
               @click="action(['deposit', channel])"
             >
-              <v-img width="27" height="25px" :src="require('@/assets/deposit.svg')" />
+              <img :src="require('@/assets/deposit.svg')" />
               <span class="action-title">
                 {{ $t('channel-actions.deposit') }}
               </span>
@@ -49,7 +49,7 @@
               :disabled="channel.state !== 'open' || !!busy[channel.id]"
               @click="action(['withdraw', channel])"
             >
-              <v-img width="27px" height="25px" :src="require('@/assets/withdrawal.svg')" />
+              <img :src="require('@/assets/withdrawal.svg')" />
               <span class="action-title">
                 {{ $t('channel-actions.withdraw') }}
               </span>
@@ -208,19 +208,18 @@ export default class ChannelList extends Mixins(BlockieMixin) {
   }
 
   &.channel-action-inline {
-    flex: 1 1;
-    @include respond-to(handhelds) {
-      display: flex;
-      flex-direction: column;
-    }
+    $size: 29px;
 
     .channel-action-button {
-      margin: 0 4px;
-      justify-content: left;
       padding: 0 8px;
-      border-radius: 29px;
+      border-radius: $size;
       min-width: unset;
       text-transform: unset;
+
+      img {
+        width: $size;
+        height: $size;
+      }
 
       span {
         &.action-title {
