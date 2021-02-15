@@ -5,13 +5,16 @@
       <div class="account-route__header">
         <header-content @show-info="showInfoOverlay = true" @navigate-back="navigateBack()" />
       </div>
-      <router-view />
-      <div v-if="version" class="account-route__footer">
-        <span>{{ $t('versions.sdk', { version }) }}</span>
-        <span class="account-route__footer__contracts-version">
-          {{ $t('versions.contracts', { version: contractVersion }) }}
-        </span>
-      </div>
+      <v-main>
+        <router-view />
+
+        <div v-if="version" class="account-route__footer">
+          <span>{{ $t('versions.sdk', { version }) }}</span>
+          <span class="account-route__footer__contracts-version">
+            {{ $t('versions.contracts', { version: contractVersion }) }}
+          </span>
+        </div>
+      </v-main>
     </div>
   </div>
 </template>
@@ -51,6 +54,7 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
 <style lang="scss" scoped>
 @import '@/scss/mixins';
 @import '@/scss/colors';
+@import '@/scss/scroll';
 
 #account-route-wrapper {
   align-items: center;
@@ -58,6 +62,7 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
   height: 100%;
   position: absolute;
   z-index: 20;
+
   @include respond-to(handhelds) {
     height: 100vh;
     width: 100%;
@@ -72,6 +77,9 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
   height: 844px;
   margin-top: 25px;
   width: 620px;
+  overflow-y: auto;
+  @extend .themed-scrollbar;
+
   @include respond-to(handhelds) {
     border-radius: 0;
     height: 100vh;
