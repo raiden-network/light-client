@@ -10,7 +10,7 @@
         </span>
       </v-row>
       <v-row no-gutters justify="center">
-        <v-col cols="3" class="raiden-account__column">
+        <v-col cols="4" md="3" class="raiden-account__column">
           <div class="raiden-account__column__card">
             <span v-if="isFromMainToRaidenAccount" class="raiden-account__column__card__title">
               {{ $t('general.main-account') }}
@@ -33,12 +33,16 @@
             </div>
           </div>
         </v-col>
-        <v-col cols="3" class="raiden-account__column" @click="toggleDirection">
+        <v-col cols="2" class="raiden-account__column" @click="toggleDirection">
           <v-btn icon>
-            <v-img width="90px" height="84px" :src="require('@/assets/eth_transfer_arrow.svg')" />
+            <v-img
+              width="70px"
+              height="64px"
+              :src="require('../../assets/eth_transfer_arrow.svg')"
+            />
           </v-btn>
         </v-col>
-        <v-col cols="3" class="raiden-account__column">
+        <v-col cols="4" md="3" class="raiden-account__column">
           <div class="raiden-account__column__card">
             <span v-if="isFromMainToRaidenAccount" class="raiden-account__column__card__title">
               {{ $t('general.raiden-account') }}
@@ -58,27 +62,29 @@
         </v-col>
       </v-row>
       <v-row no-gutters justify="center" class="raiden-account__amount-input">
-        <amount-input
-          v-model="amount"
-          data-cy="raiden_account_amount_input_field"
-          class="raiden-account__amount-input__field"
-          :token="token"
-          :max="maximumAmount"
-          limit
-        />
-        <v-btn icon large class="raiden-account__amount-input__toggle" @click="toggleDirection">
-          <v-icon large color="primary">mdi-autorenew</v-icon>
-        </v-btn>
+        <v-col cols="8" md="7">
+          <amount-input
+            v-model="amount"
+            data-cy="raiden_account_amount_input_field"
+            class="raiden-account__amount-input__field"
+            :token="token"
+            :max="maximumAmount"
+            limit
+          />
+        </v-col>
+        <v-col cols="2" md="1">
+          <v-btn icon class="raiden-account__amount-input__toggle" @click="toggleDirection">
+            <v-icon large color="primary">mdi-autorenew</v-icon>
+          </v-btn>
+        </v-col>
       </v-row>
-      <v-row no-gutters justify="center" class="raiden-account__transfer-button">
-        <action-button
-          data-cy="raiden_account_transfer_button_button"
-          class="raiden-account__transfer-button__button"
-          full-width
-          :enabled="valid"
-          :text="$t('general.buttons.transfer')"
-        />
-      </v-row>
+      <action-button
+        data-cy="raiden_account_transfer_button_button"
+        class="raiden-account__transfer-button"
+        :enabled="valid"
+        :text="$t('general.buttons.transfer')"
+        full-width
+      />
     </v-form>
     <v-row
       v-else-if="error"
@@ -190,7 +196,7 @@ export default class RaidenAccount extends Vue {
   &__title {
     font-size: 18px;
     margin-top: 50px;
-    padding-bottom: 75px;
+    padding-bottom: 50px;
     text-align: center;
   }
 
@@ -206,7 +212,7 @@ export default class RaidenAccount extends Vue {
       display: flex;
       flex-direction: column;
       height: 140px;
-      width: 140px;
+      width: 100%; // Required to get grid alignment
 
       &__title {
         padding-top: 20px;
@@ -235,26 +241,6 @@ export default class RaidenAccount extends Vue {
         to {
           transform: rotate(360deg);
         }
-      }
-    }
-  }
-
-  &__transfer-button {
-    margin-top: 115px;
-    margin-left: 80px;
-    margin-right: 90px;
-    @include respond-to(handhelds) {
-      margin-left: 40px;
-      margin-right: 40px;
-    }
-
-    ::v-deep {
-      .col-10 {
-        flex: 1;
-        max-width: 100%;
-      }
-      .v-btn {
-        border-radius: 8px;
       }
     }
   }
