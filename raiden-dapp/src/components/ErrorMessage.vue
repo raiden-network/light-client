@@ -2,7 +2,7 @@
   <v-row class="error-message">
     <v-col cols="12">
       <div class="error-message__image">
-        <v-img :src="require('../assets/error.png')" />
+        <v-img :src="require('@/assets/error.png')" />
       </div>
       <h2 class="error-message__title">{{ title }}</h2>
       <label class="error-message__label">
