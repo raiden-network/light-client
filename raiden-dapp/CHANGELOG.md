@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- [#2420] Fix withdraw and deposit button for channels on mobile
+
+[#2420]: https://github.com/raiden-network/light-client/issues/2420
+
 ## [0.15.0] - 2021-01-26
 
 ### Fixed
