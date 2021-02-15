@@ -23,7 +23,12 @@ export default class AccountRoot extends Vue {}
 </script>
 
 <style scoped lang="scss">
+@import '@/scss/scroll';
+
 .account-root {
+  overflow-y: auto;
+  @extend .themed-scrollbar;
+
   &__identicon {
     align-self: center;
     border-bottom: solid 1px #707070;

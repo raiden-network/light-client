@@ -22,28 +22,24 @@
         </v-col>
       </v-row>
       <v-row class="account-content__account-details__eth" no-gutters>
-        <v-col cols="2">
+        <v-row no-gutters>
           <span class="account-content__account-details__eth__account">
             {{ $t('account-content.account.main') }}
           </span>
-        </v-col>
-        <v-col cols="10">
           <span class="account-content__account-details__eth__balance">
             {{ accountBalance | decimals }}
           </span>
-        </v-col>
+        </v-row>
       </v-row>
       <v-row v-if="usingRaidenAccount" class="account-content__account-details__eth" no-gutters>
-        <v-col cols="2">
+        <v-row no-gutters>
           <span class="account-content__account-details__eth__account">
             {{ $t('account-content.account.raiden') }}
           </span>
-        </v-col>
-        <v-col cols="10">
           <span class="account-content__account-details__eth__balance">
             {{ raidenAccountBalance | decimals }}
           </span>
-        </v-col>
+        </v-row>
       </v-row>
     </div>
     <v-list two-line class="account-content__menu">
@@ -241,9 +237,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 
     &__eth {
       &__balance {
-        @include respond-to(handhelds) {
-          margin-left: 30px;
-        }
+        margin-left: 12px;
       }
 
       &__account,
@@ -256,7 +250,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 
   &__menu {
     background-color: transparent;
-    margin-top: 50px;
+    margin-top: 20px;
 
     ::v-deep {
       ::before {
