@@ -73,6 +73,8 @@ type ValidationResult = {
   isAddress?: boolean;
 };
 
+const ETHSUM = 'https://ethsum.netlify.com';
+
 @Component({
   components: { QrCode, QrCodeOverlay, Spinner },
   computed: { ...mapState(['presences']) },
@@ -204,7 +206,7 @@ export default class AddressInput extends Mixins(BlockieMixin) {
       let message: string | undefined = undefined;
 
       if (!AddressUtils.checkAddressChecksum(value)) {
-        message = this.$t('address-input.error.no-checksum') as string;
+        message = this.$t('address-input.error.no-checksum', { ethsum: ETHSUM }) as string;
       } else if (this.exclude.includes(value)) {
         message = this.$t('address-input.error.invalid-excluded-address') as string;
       } else if (this.block.includes(value)) {

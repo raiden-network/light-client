@@ -150,10 +150,7 @@ export default class UdcDepositDialog extends Vue {
   mounted() {
     const mainAccountAddress = this.$raiden.getMainAccount() ?? this.$raiden.getAccount();
 
-    this.uniswapURL = this.$t('udc-deposit-dialog.uniswap-url', {
-      rdnToken: this.udcToken.address,
-      mainAccountAddress: mainAccountAddress,
-    }) as string;
+    this.uniswapURL = `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=${this.udcToken.address}&exactAmount=10&exactField=outPUT&recipient=${mainAccountAddress}`;
 
     this.mainnet
       ? (this.defaultUtilityTokenAmount = this.utilityTokenBalance)

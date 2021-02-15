@@ -35,10 +35,9 @@ import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
 import type { Token, TokenModel } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
-
-import { NotificationContext } from '../store/notifications/notification-context';
-import { NotificationImportance } from '../store/notifications/notification-importance';
-import type { NotificationPayload } from '../store/notifications/types';
+import { NotificationContext } from '@/store/notifications/notification-context';
+import { NotificationImportance } from '@/store/notifications/notification-importance';
+import type { NotificationPayload } from '@/store/notifications/types';
 
 const ONE_DAY = new Date(0).setUTCHours(24);
 

@@ -27,8 +27,7 @@ import type { RaidenTransfer } from 'raiden-ts';
 
 import Transaction from '@/components/transaction-history/Transaction.vue';
 import type { Token } from '@/model/types';
-
-import type { Transfers } from '../../types';
+import type { Transfers } from '@/types';
 
 @Component({
   components: {

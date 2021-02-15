@@ -139,7 +139,7 @@
       "icon": "notification_withdrawn",
       "title": "User Deposit Tokens Withdrawn",
       "description": "{withdrawnAmount} {symbol} ({plannedAmount} planned) have been withdrawn from the user deposit contract.",
-      "link": "Click here to transfer them to your main acccount."
+      "link": "Click here to transfer them to your main account."
     },
     "settlement": {
       "icon": "notification_settle",
@@ -267,7 +267,7 @@
     "blockie-alt": "Selected token address blockie",
     "error": {
       "invalid-address": "Enter a valid address or ENS name",
-      "no-checksum": "Please enter an address in checksum format. You can convert your address on https://ethsum.netlify.com",
+      "no-checksum": "Please enter an address in checksum format. You can convert your address on {ethsum}.",
       "empty": "Enter an address or ENS name",
       "ens-resolve-failed": "Please enter a resolvable ENS name",
       "invalid-excluded-address": "Please enter a different address or ENS name. You can't use your own address or the address of the token network.",
@@ -447,7 +447,6 @@
     "button": "Mint and deposit",
     "button-main": "Deposit",
     "uniswap-url-title": "Click here to purchase RDN",
-    "uniswap-url": "https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency={rdnToken}&exactAmount=10&exactField=outPUT&recipient={mainAccountAddress}",
     "available-utility-token": "Available {utilityTokenSymbol} to deposit: {utilityTokenBalance}",
     "available-eth": "Available ETH for on-chain transaction: {balance} {currency}",
     "error": "The mint and deposit operation failed.",
