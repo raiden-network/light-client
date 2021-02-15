@@ -5,8 +5,12 @@
 ### Fixed
 
 - [#2420] Fix withdraw and deposit button for channels on mobile
+- [#2421] Fix account menu on mobile devices by making it scrollable
+- [#2422] Fix broken layout on RaidenAccount screen for mobile virtual keyboard
 
 [#2420]: https://github.com/raiden-network/light-client/issues/2420
+[#2421]: https://github.com/raiden-network/light-client/issues/2421
+[#2422]: https://github.com/raiden-network/light-client/issues/2422
 
 ## [0.15.0] - 2021-01-26
 
