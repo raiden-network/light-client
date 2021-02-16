@@ -67,11 +67,10 @@ import { ChannelState } from 'raiden-ts';
 import ActionButton from '@/components/ActionButton.vue';
 import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
+import NavigationMixin from '@/mixins/navigation-mixin';
 import type { Token } from '@/model/types';
 import AddressUtils from '@/utils/address-utils';
 import { getAddress, getAmount } from '@/utils/query-params';
-
-import NavigationMixin from '../../mixins/navigation-mixin';
 
 @Component({
   components: {

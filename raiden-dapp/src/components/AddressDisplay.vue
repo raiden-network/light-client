@@ -19,7 +19,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 
-import Filters from '../filters';
+import Filters from '@/filters';
 
 @Component({})
 export default class AddressDisplay extends Vue {

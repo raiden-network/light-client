@@ -99,7 +99,7 @@ export default class Transaction extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '../../main';
+@import '@/main';
 @import '@/scss/mixins';
 @import '@/scss/colors';
 

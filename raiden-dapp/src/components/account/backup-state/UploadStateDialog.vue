@@ -59,9 +59,8 @@ import { mapState } from 'vuex';
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import NavigationMixin from '@/mixins/navigation-mixin';
 import type { Settings } from '@/types';
-
-import NavigationMixin from '../../../mixins/navigation-mixin';
 
 @Component({
   components: {

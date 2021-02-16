@@ -70,9 +70,8 @@ import AmountDisplay from '@/components/AmountDisplay.vue';
 import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
+import NavigationMixin from '@/mixins/navigation-mixin';
 import type { Token } from '@/model/types';
-
-import NavigationMixin from '../../mixins/navigation-mixin';
 
 @Component({
   components: {
