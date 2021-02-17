@@ -93,6 +93,7 @@
     "@ethersproject/units": "^5.0.10",
     "@ethersproject/wallet": "^5.0.11",
     "abort-controller": "^3.0.0",
+    "bignumber.js": "^9.0.1",
     "fp-ts": "^2.9.5",
     "io-ts": "^2.2.14",
     "isomorphic-fetch": "^3.0.0",
