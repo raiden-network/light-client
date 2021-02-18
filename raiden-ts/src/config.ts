@@ -35,8 +35,9 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *    use null to disable
  * - pfs - Path Finding Service URL or Address. Set to null to disable, or empty string to enable
  *    automatic fetching from ServiceRegistry.
- * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10%
- *    safety margin.
+ * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Either a fee
+ *    multiplier, or a [fee, amount] pair ofmultipliers. Use `1.1` to add a 10% over estimated fee
+ *    margin, or `[0.03, 0.0005]` to add a 3% over fee plus 0.05% over amount.
  * - pfsMaxPaths - Limit number of paths requested from PFS for a route.
  * - pfsMaxFee - Maximum fee we're willing to pay a PFS for a route (in SVT/RDN wei)
  * - pfsIouTimeout - Number of blocks to timeout an IOU to a PFS.
@@ -70,7 +71,7 @@ export const RaidenConfig = t.readonly(
       pfsRoom: t.union([t.string, t.null]),
       monitoringRoom: t.union([t.string, t.null]),
       pfs: t.union([Address, t.string, t.null]),
-      pfsSafetyMargin: t.number,
+      pfsSafetyMargin: t.union([t.number, t.tuple([t.number, t.number])]),
       pfsMaxPaths: t.number,
       pfsMaxFee: UInt(32),
       pfsIouTimeout: t.number,
