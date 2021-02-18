@@ -211,7 +211,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
   margin: 0 64px 0 64px;
 
   &__account-details {
-    margin-top: 30px;
+    margin-top: 20px;
 
     &__title {
       font-size: 16px;
@@ -256,7 +256,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 
   &__menu {
     background-color: transparent;
-    margin-top: 50px;
+    margin-top: 25px;
 
     ::v-deep {
       ::before {
@@ -290,7 +290,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       }
 
       &:nth-of-type(3) {
-        margin-bottom: 50px;
+        margin-bottom: 40px;
       }
     }
   }
