@@ -5,7 +5,7 @@ import inquirer from 'inquirer';
 import * as path from 'path';
 import yargs from 'yargs/yargs';
 
-import type { RaidenConfig, UInt } from 'raiden-ts';
+import type { Decodable, RaidenConfig, UInt } from 'raiden-ts';
 import { Address, assert, Capabilities, Raiden } from 'raiden-ts';
 
 import { makeCli } from './cli';
@@ -256,8 +256,11 @@ function registerShutdownHooks(this: Cli): void {
   });
 }
 
-function createRaidenConfig(argv: ReturnType<typeof parseArguments>): Partial<RaidenConfig> {
-  let config: Partial<RaidenConfig> = DEFAULT_RAIDEN_CONFIG;
+function createRaidenConfig(
+  argv: ReturnType<typeof parseArguments>,
+): Partial<Decodable<RaidenConfig>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let config: Partial<Decodable<RaidenConfig>> = DEFAULT_RAIDEN_CONFIG as any;
 
   if (argv.configFile)
     config = { ...config, ...JSON.parse(fs.readFileSync(argv.configFile, 'utf-8')) };

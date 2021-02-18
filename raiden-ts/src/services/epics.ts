@@ -4,6 +4,7 @@ import { MaxUint256, Two, WeiPerEther, Zero } from '@ethersproject/constants';
 import type { Event } from '@ethersproject/contracts';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
+import BN from 'bignumber.js';
 import * as t from 'io-ts';
 import constant from 'lodash/constant';
 import type { Observable } from 'rxjs';
@@ -59,8 +60,8 @@ import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { assert, commonTxErrors, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
 import { completeWith, pluckDistinct, retryAsync$, retryWhile } from '../utils/rx';
-import type { Address, Hash, Int, Signature, Signed } from '../utils/types';
-import { decode, isntNil, UInt } from '../utils/types';
+import type { Address, Hash, Signature, Signed } from '../utils/types';
+import { decode, Int, isntNil, UInt } from '../utils/types';
 import {
   iouClear,
   iouPersist,
@@ -1175,7 +1176,7 @@ function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Obser
           requestPfs$(pfs, iou, tokenNetwork, deps.address, target, value, config),
         ),
         map(({ pfsResponse, responseText, iou }) =>
-          parsePfsResponse(pfsResponse, responseText, iou, config),
+          parsePfsResponse(value, pfsResponse, responseText, iou, config),
         ),
       ),
     ),
@@ -1306,6 +1307,7 @@ function requestPfs$(
 }
 
 function parsePfsResponse(
+  value: UInt<32>,
   pfsResponse: Response,
   responseText: string,
   iou: Signed<IOU> | undefined,
@@ -1321,7 +1323,22 @@ function parsePfsResponse(
     // decode results and cap also client-side for pfsMaxPaths
     const results = decode(PathResults, data).result.filter((_, idx) => idx < pfsMaxPaths);
     const paths = results.map(({ path, estimated_fee }) => {
-      const fee = estimated_fee.mul(Math.round(pfsSafetyMargin * 1e6)).div(1e6) as Int<32>;
+      let fee;
+      if (estimated_fee.lte(0)) fee = estimated_fee;
+      // add fee margins iff estimated_fee is greater than zero
+      else {
+        const [feeMultiplier, amountMultiplier] =
+          typeof pfsSafetyMargin === 'number'
+            ? [pfsSafetyMargin, 0] // legacy: receive feeMultiplier directly, e.g. 1.1 = +10%
+            : [pfsSafetyMargin[0] + 1, pfsSafetyMargin[1]]; // feeMultiplier = feeMargin% + 100%
+        fee = decode(
+          Int(32),
+          new BN(estimated_fee.toHexString())
+            .times(feeMultiplier)
+            .plus(new BN(value.toHexString()).times(amountMultiplier))
+            .toFixed(0), // fee = estimatedFee * (feeMultiplier) + amount * amountMultiplier
+        );
+      }
       return { path, fee } as const;
     });
     return { paths, iou };
