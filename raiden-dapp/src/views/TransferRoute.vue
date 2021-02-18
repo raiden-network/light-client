@@ -10,7 +10,9 @@
       />
       <transfer-inputs
         class="transfer__inputs"
-        :token="token"
+        :token.sync="token"
+        :transfer-amount.sync="transferAmount"
+        :target-address.sync="targetAddress"
         :no-channels="noChannels"
         :max-channel-capacity="maxChannelCapacity"
       />
@@ -23,7 +25,7 @@
 <script lang="ts">
 import type { BigNumber } from 'ethers';
 import { constants } from 'ethers';
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
 
 import type { RaidenChannel } from 'raiden-ts';
@@ -33,11 +35,13 @@ import NoTokens from '@/components/NoTokens.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
-import type { Token, TokenModel } from '@/model/types';
+import type { Token } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import type { NotificationPayload } from '@/store/notifications/types';
+import type { Tokens } from '@/types';
+import AddressUtils from '@/utils/address-utils';
 
 const ONE_DAY = new Date(0).setUTCHours(24);
 
@@ -50,59 +54,38 @@ const ONE_DAY = new Date(0).setUTCHours(24);
     NoChannelsDialog,
   },
   computed: {
-    ...mapState(['stateBackupReminderDateMs']),
-    ...mapGetters(['tokens', 'channels', 'channelWithBiggestCapacity', 'openChannels']),
+    ...mapState(['tokens', 'stateBackupReminderDateMs']),
+    ...mapGetters(['channels', 'channelWithBiggestCapacity', 'openChannels']),
   },
 })
 export default class TransferRoute extends Vue {
+  tokens!: Tokens;
   stateBackupReminderDateMs!: number;
-  tokens!: TokenModel[];
   channels!: (tokenAddress: string) => RaidenChannel[];
   channelWithBiggestCapacity!: (tokenAddress: string) => RaidenChannel | undefined;
 
-  mounted() {
-    const currentTime = new Date().getTime();
-
-    if (
-      this.stateBackupReminderDateMs === 0 ||
-      currentTime > this.stateBackupReminderDateMs + ONE_DAY
-    ) {
-      this.pushStateBackupNotification(currentTime);
-    }
-  }
-
-  pushStateBackupNotification(currentTime: number): void {
-    const stateBackupReminder = {
-      icon: this.$t('notifications.backup-state.icon') as string,
-      title: this.$t('notifications.backup-state.title') as string,
-      link: this.$t('notifications.backup-state.link') as string,
-      dappRoute: RouteNames.ACCOUNT_BACKUP,
-      description: this.$t('notifications.backup-state.description') as string,
-      duration: 60000,
-      importance: NotificationImportance.HIGH,
-      context: NotificationContext.WARNING,
-    } as NotificationPayload;
-
-    this.$store.commit('updateStateBackupReminderDate', currentTime);
-    this.$store.commit('notifications/notificationAddOrReplace', stateBackupReminder);
-  }
+  token: Token | null = null;
+  transferAmount = '';
+  targetAddress = '';
 
   get noTokens(): boolean {
-    return this.tokens.length === 0;
-  }
-
-  get token(): Token | undefined {
-    if (this.noTokens) {
-      return undefined;
-    } else {
-      const { token } = this.$route.params;
-      const address = token ? token : this.tokens[0].address;
-      return this.$store.getters.token(address) || ({ address } as Token);
-    }
+    return Object.keys(this.tokens).length === 0;
   }
 
   get noChannels(): boolean {
-    return this.channels.length === 0;
+    if (this.token) {
+      return this.channels(this.token.address).length === 0;
+    } else {
+      return true;
+    }
+  }
+
+  get shouldPushBackupNotification(): boolean {
+    const currentTime = new Date().getTime();
+    return (
+      this.stateBackupReminderDateMs === 0 ||
+      currentTime > this.stateBackupReminderDateMs + ONE_DAY
+    );
   }
 
   get maxChannelCapacity(): BigNumber {
@@ -123,6 +106,72 @@ export default class TransferRoute extends Vue {
     } else {
       return constants.Zero;
     }
+  }
+
+  created() {
+    this.selectFirstAvailableTokenIfAny();
+  }
+
+  mounted() {
+    this.handleBackupNotification();
+  }
+
+  @Watch('$route.params.token', { immediate: true })
+  async onTokenRouteParameterChanged(tokenAddress: string | undefined) {
+    if (!tokenAddress) {
+      this.selectFirstAvailableTokenIfAny();
+    } else if (AddressUtils.checkAddressChecksum(tokenAddress)) {
+      this.token = await this.getTokenFromStore(tokenAddress);
+    }
+  }
+
+  @Watch('$route.query.amount', { immediate: true })
+  async onAmountQueryParameterChanged(transferAmount: string | undefined) {
+    this.transferAmount = transferAmount ?? '';
+  }
+
+  @Watch('$route.query.target', { immediate: true })
+  async onTargetQueryParameterChanged(targetAddress: string | undefined) {
+    this.targetAddress = targetAddress ?? '';
+  }
+
+  async getTokenFromStore(tokenAddress: string): Promise<Token> {
+    if (!(tokenAddress in this.tokens)) {
+      await this.$raiden.fetchAndUpdateTokenData([tokenAddress]);
+    }
+
+    // From the SDK implementation it should not be possible undefined here as
+    // it should have thrown earier on the fetch procedure.
+    return this.tokens[tokenAddress];
+  }
+
+  selectFirstAvailableTokenIfAny(): void {
+    if (!this.noTokens) {
+      this.token = Object.values(this.tokens)[0];
+    }
+  }
+
+  handleBackupNotification(): void {
+    if (this.shouldPushBackupNotification) {
+      this.pushStateBackupNotification();
+    }
+  }
+
+  pushStateBackupNotification(): void {
+    const currentTime = new Date().getTime();
+    const stateBackupReminder = {
+      icon: this.$t('notifications.backup-state.icon') as string,
+      title: this.$t('notifications.backup-state.title') as string,
+      link: this.$t('notifications.backup-state.link') as string,
+      dappRoute: RouteNames.ACCOUNT_BACKUP,
+      description: this.$t('notifications.backup-state.description') as string,
+      duration: 60000,
+      importance: NotificationImportance.HIGH,
+      context: NotificationContext.WARNING,
+    } as NotificationPayload;
+
+    this.$store.commit('updateStateBackupReminderDate', currentTime);
+    this.$store.commit('notifications/notificationAddOrReplace', stateBackupReminder);
   }
 }
 </script>

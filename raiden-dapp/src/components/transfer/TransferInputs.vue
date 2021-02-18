@@ -1,12 +1,12 @@
 <template>
   <v-row no-gutters data-cy="transfer_inputs" class="transfer-inputs">
     <v-form
-      ref="transfer"
+      ref="transferForm"
       v-model="valid"
       class="transfer-inputs__form"
       autocomplete="off"
       novalidate
-      @submit.prevent="navigateToTransferSteps(token.address, target, amount)"
+      @submit.prevent="navigateToTransferSteps(token.address, syncedTarget, syncedAmount)"
     >
       <v-row no-gutters class="transfer-inputs__form__heading">
         <span class="transfer-inputs__form__heading--title">
@@ -14,27 +14,27 @@
         </span>
         <div class="transfer-inputs__form__heading__errors">
           <span>
-            {{ addressError }}
+            {{ targetAddressError }}
           </span>
           <span>
-            {{ amountError }}
+            {{ transferAmountError }}
           </span>
         </div>
       </v-row>
       <v-row no-gutters>
         <address-input
-          v-model="target"
+          v-model="syncedTargetAddress"
           class="transfer-inputs__form__address"
           :disabled="noChannels"
           :exclude="[token.address, defaultAccount]"
           hide-error-label
           :block="blockedHubs"
-          @input-error="addressError = $event"
+          @input-error="targetAddressError = $event"
         />
       </v-row>
       <v-row no-gutters>
         <amount-input
-          v-model="amount"
+          v-model="syncedTransferAmount"
           class="transfer-inputs__form__amount"
           limit
           hide-error-label
@@ -42,7 +42,7 @@
           :token="token"
           :max="maxChannelCapacity"
           :placeholder="$t('transfer.amount-placeholder')"
-          @input-error="amountError = $event"
+          @input-error="transferAmountError = $event"
         />
         <action-button
           data-cy="transfer_inputs_form_button"
@@ -57,7 +57,7 @@
 
 <script lang="ts">
 import type { BigNumber } from 'ethers';
-import { Component, Mixins, Prop, Watch } from 'vue-property-decorator';
+import { Component, Mixins, Prop, PropSync, Watch } from 'vue-property-decorator';
 import type { VForm } from 'vuetify/lib';
 import { mapGetters, mapState } from 'vuex';
 
@@ -69,8 +69,6 @@ import AddressInput from '@/components/AddressInput.vue';
 import AmountInput from '@/components/AmountInput.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import type { Token } from '@/model/types';
-import AddressUtils from '@/utils/address-utils';
-import { getAddress, getAmount } from '@/utils/query-params';
 
 @Component({
   components: {
@@ -84,57 +82,40 @@ import { getAddress, getAmount } from '@/utils/query-params';
   },
 })
 export default class TransferInputs extends Mixins(NavigationMixin) {
-  valid = false;
-  amount = '';
-  target = '';
-  defaultAccount!: string;
-  addressError = '';
-  amountError = '';
-
-  channels!: (tokenAddress: string) => RaidenChannel[];
-
   @Prop({ required: true })
   token!: Token;
+
+  @PropSync('transferAmount', { required: true })
+  syncedTransferAmount!: string;
+
+  @PropSync('targetAddress', { required: true })
+  syncedTargetAddress!: string;
+
   @Prop({ required: true })
   noChannels!: boolean;
+
   @Prop({ required: true })
   maxChannelCapacity!: BigNumber;
 
+  defaultAccount!: string;
+  channels!: (tokenAddress: string) => RaidenChannel[];
   $refs!: {
-    transfer: VForm;
+    transferForm: VForm;
   };
 
-  @Watch('$route', { immediate: true, deep: true })
-  onRouteChange() {
-    this.$refs.transfer?.reset();
-  }
-
-  async created() {
-    const { token: address } = this.$route.params;
-    const { amount, target } = this.$route.query;
-    this.amount = getAmount(amount);
-    this.target = getAddress(target);
-
-    if (!AddressUtils.checkAddressChecksum(address)) {
-      this.navigateToHome();
-      return;
-    }
-
-    await this.$raiden.fetchAndUpdateTokenData([address]);
-
-    if (typeof this.token.decimals !== 'number') {
-      this.navigateToHome();
-    }
-
-    if (this.token.decimals === 0 && this.amount.indexOf('.') > -1) {
-      this.amount = this.amount.split('.')[0];
-    }
-  }
+  valid = false;
+  targetAddressError = '';
+  transferAmountError = '';
 
   get blockedHubs(): string[] {
     return this.channels(this.token.address)
       .filter((channel: RaidenChannel) => channel.state !== ChannelState.open)
       .map((channel: RaidenChannel) => channel.partner as string);
+  }
+
+  @Watch('$route', { deep: true })
+  onRouteChange() {
+    this.$refs.transferForm?.reset();
   }
 }
 </script>
