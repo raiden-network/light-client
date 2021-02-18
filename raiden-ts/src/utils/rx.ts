@@ -4,7 +4,7 @@ import type {
   ObservableInput,
   OperatorFunction,
 } from 'rxjs';
-import { defer, EMPTY, pairs, race, throwError, timer } from 'rxjs';
+import { defer, EMPTY, from, pairs, race, throwError, timer } from 'rxjs';
 import {
   concatMap,
   delay,
@@ -301,4 +301,44 @@ export function concatBuffer<T, R>(
       ),
     );
   };
+}
+
+/**
+ * Flatten the merging of higher-order observables but preserving previous value
+ *
+ * It's like [[withLatestFrom]], but don't lose outter values and merges all inner emitted ones.
+ * Instead of the callback-hell of:
+ *   obs1.pipe(
+ *     mergeMap((v1) =>
+ *       obs2(v1).pipe( // obs2 uses v1
+ *         mergeMap((v2) =>
+ *           obs3(v1, v2).pipe( // obs3 uses v1, v2
+ *             map(({ v3_a, v3_b }) => { v1, v2, v3: v3_a + v3_b }), // map uses v1, v2, v3
+ *           ),
+ *         ),
+ *       ),
+ *     ),
+ *   );
+ *
+ * You can now:
+ *   obs1.pipe(
+ *     mergeWith((v1) => obs2(v1, 123)),
+ *     mergeWith(([v1, v2]) => obs3(v1, v2, true)),
+ *     // you can use tuple-destructuring on values, and obj-destructuring on objects
+ *     map(([[v1, v2], { v3_a, v3_b }]) => ({ v1, v2, v3: v3_a + v3_b })),
+ *   );
+ *
+ * @param project - Project function passed to mergeMap
+ * @returns Observable mirroring project's return, but prepending emitted values from this inner
+ *    observable in a tuple with the value from the outter observable which generated the inner.
+ */
+export function mergeWith<T, R>(
+  project: (value: T, index: number) => ObservableInput<R>,
+): OperatorFunction<T, [T, R]> {
+  return (input$) =>
+    input$.pipe(
+      mergeMap((value, index) =>
+        from(project(value, index)).pipe(map((res) => [value, res] as [T, R])),
+      ),
+    );
 }
