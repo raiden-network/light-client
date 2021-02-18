@@ -23,6 +23,8 @@ export default class AccountRoot extends Vue {}
 </script>
 
 <style scoped lang="scss">
+@import '@/scss/mixins';
+
 .account-root {
   &__identicon {
     align-self: center;
@@ -30,6 +32,10 @@ export default class AccountRoot extends Vue {}
     justify-content: center;
     margin: 0 64px 0 64px;
     padding-bottom: 30px;
+
+    @include respond-to(handhelds) {
+      margin: 0 30px 0 30px;
+    }
   }
 
   ::v-deep {
