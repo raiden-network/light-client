@@ -2,19 +2,21 @@
   <div id="account-route-wrapper">
     <div class="account-route">
       <info-overlay v-if="showInfoOverlay" @close-overlay="showInfoOverlay = false" />
+
       <div class="account-route__header">
         <header-content @show-info="showInfoOverlay = true" @navigate-back="navigateBack()" />
       </div>
+
       <v-main>
         <router-view />
-
-        <div v-if="version" class="account-route__footer">
-          <span>{{ $t('versions.sdk', { version }) }}</span>
-          <span class="account-route__footer__contracts-version">
-            {{ $t('versions.contracts', { version: contractVersion }) }}
-          </span>
-        </div>
       </v-main>
+
+      <div v-if="version" class="account-route__footer">
+        <span>{{ $t('versions.sdk', { version }) }}</span>
+        <span class="account-route__footer__contracts-version">
+          {{ $t('versions.contracts', { version: contractVersion }) }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
