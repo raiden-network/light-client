@@ -178,6 +178,7 @@
   "account-content": {
     "account-details": "Account Details",
     "address": "Address:",
+    "disconnect-button": "Disconnect",
     "account": {
       "main": "Main ETH:",
       "raiden": "Raiden ETH:"

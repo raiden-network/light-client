@@ -74,6 +74,11 @@
         </v-icon>
       </v-list-item>
     </v-list>
+    <div v-if="isConnected" class="account-content__disconnect">
+      <span class="account-content__disconnect__button" @click="disconnect()">
+        {{ $t('account-content.disconnect-button') }}
+      </span>
+    </div>
   </div>
 </template>
 
@@ -108,6 +113,11 @@ export default class AccountContent extends Mixins(NavigationMixin) {
   accountBalance!: string;
   raidenAccountBalance!: string;
   isConnected!: boolean;
+
+  async disconnect() {
+    await this.$raiden.disconnect();
+    this.$store.commit('reset');
+  }
 
   mounted() {
     this.menuItems = [
@@ -296,6 +306,15 @@ export default class AccountContent extends Mixins(NavigationMixin) {
       &:nth-of-type(3) {
         margin-bottom: 40px;
       }
+    }
+  }
+
+  &__disconnect {
+    height: 42px;
+    text-align: center;
+    &__button {
+      color: $primary-color;
+      cursor: pointer;
     }
   }
 }

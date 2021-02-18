@@ -200,4 +200,36 @@ describe('AccountContent.vue', () => {
       }),
     );
   });
+
+  test('displays "Disconnect" button when connected', async () => {
+    const wrapper = await createWrapper(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      false,
+      undefined,
+    );
+    const disconnectButton = wrapper.find('.account-content__disconnect__button');
+
+    expect(disconnectButton.exists()).toBe(false);
+  });
+
+  test('does not display "Disconnect" button when not connected', async () => {
+    const wrapper = await createWrapper();
+    const disconnectButton = wrapper.find('.account-content__disconnect__button');
+
+    expect(disconnectButton.exists()).toBe(true);
+  });
+
+  test('Clicking "Disconnect" button triggers disconnect method', async () => {
+    const wrapper = await createWrapper();
+    (wrapper.vm as any).disconnect = jest.fn();
+    const disconnectButton = wrapper.find('.account-content__disconnect__button');
+
+    disconnectButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).disconnect).toHaveBeenCalled();
+  });
 });
