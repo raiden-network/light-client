@@ -1,13 +1,13 @@
 <template>
   <div class="account-content">
     <div v-if="!loading && defaultAccount">
-      <v-row class="account-content__account-details" no-gutters>
-        <v-col cols="2">
+      <v-row class="account-content__account-details" dense>
+        <v-col cols="3">
           <span class="account-content__account-details__address">
             {{ $t('account-content.address') }}
           </span>
         </v-col>
-        <v-col cols="10">
+        <v-col cols="9">
           <span class="account-content__account-details__address">
             <address-display
               class="account-content__account-details__address__desktop"
@@ -21,25 +21,25 @@
           </span>
         </v-col>
       </v-row>
-      <v-row class="account-content__account-details__eth" no-gutters>
-        <v-col cols="2">
+      <v-row class="account-content__account-details__eth" dense>
+        <v-col cols="3">
           <span class="account-content__account-details__eth__account">
             {{ $t('account-content.account.main') }}
           </span>
         </v-col>
-        <v-col cols="10">
+        <v-col cols="9">
           <span class="account-content__account-details__eth__balance">
             {{ accountBalance | decimals }}
           </span>
         </v-col>
       </v-row>
-      <v-row v-if="usingRaidenAccount" class="account-content__account-details__eth" no-gutters>
-        <v-col cols="2">
+      <v-row v-if="usingRaidenAccount" class="account-content__account-details__eth" dense>
+        <v-col cols="3">
           <span class="account-content__account-details__eth__account">
             {{ $t('account-content.account.raiden') }}
           </span>
         </v-col>
-        <v-col cols="10">
+        <v-col cols="9">
           <span class="account-content__account-details__eth__balance">
             {{ raidenAccountBalance | decimals }}
           </span>
@@ -209,6 +209,10 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 
 .account-content {
   margin: 0 64px 0 64px;
+
+  @include respond-to(handhelds) {
+    margin: 0 30px 0 30px;
+  }
 
   &__account-details {
     margin-top: 20px;
