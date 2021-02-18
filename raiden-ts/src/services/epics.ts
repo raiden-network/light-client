@@ -59,7 +59,7 @@ import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { assert, commonTxErrors, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
-import { completeWith, pluckDistinct, retryAsync$, retryWhile } from '../utils/rx';
+import { completeWith, mergeWith, pluckDistinct, retryAsync$, retryWhile } from '../utils/rx';
 import type { Address, Hash, Signature, Signed } from '../utils/types';
 import { decode, Int, isntNil, UInt } from '../utils/types';
 import {
@@ -162,7 +162,8 @@ function prepareNextIOU$(
   pfs: PFS,
   tokenNetwork: Address,
   deps: RaidenEpicDeps,
-): Observable<Signed<IOU>> {
+): Observable<Signed<IOU> | undefined> {
+  if (pfs.price.isZero()) return of(undefined);
   return deps.latest$.pipe(
     first(),
     mergeMap(({ state }) => {
@@ -1165,21 +1166,23 @@ function pfsIsDisabled(action: pathFind.request, { pfs }: RaidenConfig): boolean
 }
 
 function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Observable<Route> {
-  const { tokenNetwork, target, value } = action.meta;
-
   return deps.config$.pipe(
     first(),
-    mergeMap((config) =>
-      getPsfInfo$(action.payload.pfs, config.pfs, deps).pipe(
-        mergeMap((pfs) => getIouForPfs(pfs, tokenNetwork, deps)),
-        mergeMap(({ pfs, iou }) =>
-          requestPfs$(pfs, iou, tokenNetwork, deps.address, target, value, config),
-        ),
-        map(({ pfsResponse, responseText, iou }) =>
-          parsePfsResponse(value, pfsResponse, responseText, iou, config),
-        ),
-      ),
+    mergeWith((config) => getPsfInfo$(action.payload.pfs, config.pfs, deps)),
+    mergeWith(([, pfs]) => prepareNextIOU$(pfs, action.meta.tokenNetwork, deps)),
+    mergeWith(([[config, pfs], iou]) =>
+      requestPfs$(pfs, iou, action.meta, { address: deps.address, config }),
     ),
+    map(([[[config], iou], { response, text }]) => {
+      // any decode error here will throw early and end up in catchError
+      const data = jsonParse(text);
+
+      if (!response.ok) {
+        const error = decode(PathError, data);
+        return { iou, error };
+      }
+      return { iou, paths: parsePfsResponse(action.meta.value, data, config) };
+    }),
   );
 }
 
@@ -1252,27 +1255,12 @@ function getPsfInfo$(
   }
 }
 
-function getIouForPfs(
-  pfs: PFS,
-  tokenNetwork: Address,
-  deps: RaidenEpicDeps,
-): Observable<{ pfs: PFS; iou: Signed<IOU> | undefined }> {
-  if (pfs.price.isZero()) {
-    return of({ pfs, iou: undefined });
-  } else {
-    return prepareNextIOU$(pfs, tokenNetwork, deps).pipe(map((iou) => ({ pfs, iou })));
-  }
-}
-
 function requestPfs$(
   pfs: PFS,
   iou: Signed<IOU> | undefined,
-  tokenNetwork: Address,
-  address: Address,
-  target: Address,
-  value: UInt<32>,
-  config: RaidenConfig,
-): Observable<{ pfsResponse: Response; responseText: string; iou: Signed<IOU> | undefined }> {
+  { tokenNetwork, target, value }: pathFind.request['meta'],
+  { address, config }: { address: Address; config: RaidenConfig },
+): Observable<{ response: Response; text: string }> {
   const { httpTimeout, pfsMaxPaths } = config;
   const body = jsonStringify({
     from: address,
@@ -1298,51 +1286,36 @@ function requestPfs$(
     retryWhile(intervalFromConfig(of(config)), {
       onErrors: [...networkErrors, 'TimeoutError'],
     }),
-    mergeMap(async (pfsResponse) => ({
-      pfsResponse,
-      responseText: await pfsResponse.text(),
-      iou,
-    })),
+    mergeMap(async (response) => ({ response, text: await response.text() })),
   );
 }
 
 function parsePfsResponse(
   value: UInt<32>,
-  pfsResponse: Response,
-  responseText: string,
-  iou: Signed<IOU> | undefined,
+  data: unknown,
   { pfsSafetyMargin, pfsMaxPaths }: RaidenConfig,
-): Route {
-  // any decode error here will throw early and end up in catchError
-  const data = jsonParse(responseText);
-
-  if (!pfsResponse.ok) {
-    const error = decode(PathError, data);
-    return { iou, error };
-  } else {
-    // decode results and cap also client-side for pfsMaxPaths
-    const results = decode(PathResults, data).result.filter((_, idx) => idx < pfsMaxPaths);
-    const paths = results.map(({ path, estimated_fee }) => {
-      let fee;
-      if (estimated_fee.lte(0)) fee = estimated_fee;
-      // add fee margins iff estimated_fee is greater than zero
-      else {
-        const [feeMultiplier, amountMultiplier] =
-          typeof pfsSafetyMargin === 'number'
-            ? [pfsSafetyMargin, 0] // legacy: receive feeMultiplier directly, e.g. 1.1 = +10%
-            : [pfsSafetyMargin[0] + 1, pfsSafetyMargin[1]]; // feeMultiplier = feeMargin% + 100%
-        fee = decode(
-          Int(32),
-          new BN(estimated_fee.toHexString())
-            .times(feeMultiplier)
-            .plus(new BN(value.toHexString()).times(amountMultiplier))
-            .toFixed(0), // fee = estimatedFee * (feeMultiplier) + amount * amountMultiplier
-        );
-      }
-      return { path, fee } as const;
-    });
-    return { paths, iou };
-  }
+) {
+  // decode results and cap also client-side for pfsMaxPaths
+  const results = decode(PathResults, data).result.slice(0, pfsMaxPaths);
+  return results.map(({ path, estimated_fee }) => {
+    let fee;
+    if (estimated_fee.lte(0)) fee = estimated_fee;
+    // add fee margins iff estimated_fee is greater than zero
+    else {
+      const [feeMultiplier, amountMultiplier] =
+        typeof pfsSafetyMargin === 'number'
+          ? [pfsSafetyMargin, 0] // legacy: receive feeMultiplier directly, e.g. 1.1 = +10%
+          : [pfsSafetyMargin[0] + 1, pfsSafetyMargin[1]]; // feeMultiplier = feeMargin% + 100%
+      fee = decode(
+        Int(32),
+        new BN(estimated_fee.toHexString())
+          .times(feeMultiplier)
+          .plus(new BN(value.toHexString()).times(amountMultiplier))
+          .toFixed(0), // fee = estimatedFee * (feeMultiplier) + amount * amountMultiplier
+      );
+    }
+    return { path, fee } as const;
+  });
 }
 
 function shouldPersistIou(route: Route): boolean {
