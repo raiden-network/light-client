@@ -287,10 +287,8 @@ export default class AddressInput extends Mixins(BlockieMixin) {
 
   @Watch('value')
   onChange(value: string) {
-    if (
-      value !== this.address &&
-      (this.isChecksumAddress(value) || AddressUtils.isDomain(value))
-    ) {
+    if (value === this.address) return;
+    if (value === '' || this.isChecksumAddress(value) || AddressUtils.isDomain(value)) {
       this.address = value;
       this.valueChanged(this.value);
     }
