@@ -1,5 +1,5 @@
 import constant from 'lodash/constant';
-import type { EventType, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
+import type { EventType, MatrixClient, MatrixEvent } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
 import {
   asapScheduler,
@@ -8,7 +8,6 @@ import {
   EMPTY,
   from,
   fromEvent,
-  merge,
   of,
   scheduled,
   timer,
@@ -23,6 +22,7 @@ import {
   map,
   mapTo,
   mergeMap,
+  pluck,
   switchMap,
   take,
   takeUntil,
@@ -44,11 +44,11 @@ import { isActionOf } from '../../utils/actions';
 import { assert, networkErrors } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { getServerName } from '../../utils/matrix';
-import { completeWith, concatBuffer, pluckDistinct, retryWhile } from '../../utils/rx';
+import { completeWith, concatBuffer, mergeWith, pluckDistinct, retryWhile } from '../../utils/rx';
 import type { Address } from '../../utils/types';
 import { Signed } from '../../utils/types';
 import { getCap, getPresenceByUserId } from '../utils';
-import { getRoom$, globalRoomNames, parseMessage, roomMatch } from './helpers';
+import { getRoom$, globalRoomNames, parseMessage } from './helpers';
 
 function getMessageBody(message: string | Signed<Message>): string {
   return typeof message === 'string' ? message : encodeJsonMessage(message);
@@ -64,7 +64,7 @@ function getMessageBody(message: string | Signed<Message>): string {
  * @param deps.latest$ - Latest observable
  * @param deps.config$ - Config observable
  * @param deps.matrix$ - Matrix async subject
- * @returns Observable of a string containing the roomAlias or channel label
+ * @returns Observable of a string containing the userId or channel label
  */
 function sendAndWait$<C extends { msgtype: string; body: string }>(
   address: Address,
@@ -80,20 +80,15 @@ function sendAndWait$<C extends { msgtype: string; body: string }>(
   const rtcChannel$ =
     content.msgtype === 'm.text' ? latest$.pipe(pluckDistinct('rtc', address)) : of(null);
   const presence$ = latest$.pipe(pluckDistinct('presences', address));
-  const roomId$ = latest$.pipe(
-    map(({ state }) => state.transport.rooms?.[address]?.[0]),
-    distinctUntilChanged(),
-  );
-  const via$ = combineLatest([rtcChannel$, presence$, roomId$]).pipe(
+  const via$ = combineLatest([rtcChannel$, presence$]).pipe(
     withLatestFrom(config$),
-    map(([[rtcChannel, presence, roomId], { caps }]) => {
+    map(([[rtcChannel, presence], { caps }]) => {
       if (rtcChannel?.readyState === 'open') return rtcChannel;
       else if (
         getCap(caps, Capabilities.TO_DEVICE) &&
         getCap(presence?.payload.caps, Capabilities.TO_DEVICE)
       )
         return presence!.payload.userId;
-      else if (roomId) return roomId;
     }),
     distinctUntilChanged(),
   );
@@ -111,7 +106,7 @@ function sendAndWait$<C extends { msgtype: string; body: string }>(
           via.send(content.body);
           return via.label; // via RTC channel, complete immediately
         });
-      else if (via.startsWith('@'))
+      else
         return matrix$.pipe(
           mergeMap(async (matrix) => matrix.sendToDevice(type, { [via]: { '*': content } })),
           mapTo(via), // via toDevice message
@@ -126,13 +121,6 @@ function sendAndWait$<C extends { msgtype: string; body: string }>(
             ),
           ),
         );
-      else
-        return matrix$.pipe(
-          mergeMap(async (matrix) => matrix.sendEvent(via, type, content, '')),
-          mapTo(via), // via room
-          // complete only when peer is online
-          delayWhen(constant(presence$.pipe(filter((presence) => !!presence?.payload.available)))),
-        );
     }),
     retryWhile(intervalFromConfig(config$), {
       maxRetries: 3,
@@ -145,8 +133,7 @@ function sendAndWait$<C extends { msgtype: string; body: string }>(
 }
 
 /**
- * Handles a [[messageSend.request]] action and send its message to the first room on queue for
- * address
+ * Handles a [[messageSend.request]] action and send its message to the userId for this address
  *
  * @param action$ - Observable of messageSend.request actions
  * @param state$ - Observable of RaidenStates
@@ -161,7 +148,7 @@ export function matrixMessageSendEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<RaidenAction> {
+): Observable<messageSend.success | messageSend.failure> {
   return action$.pipe(
     filter(isActionOf(messageSend.request)),
     groupBy((action) => `${action.meta.address}|${action.payload.msgtype ?? 'm.text'}`),
@@ -261,23 +248,6 @@ export function matrixMessageGlobalSendEpic(
   );
 }
 
-// filter for text messages not from us and not from global rooms
-function isValidMessage([{ matrix, event, room }, config]: [
-  { matrix: MatrixClient; event: MatrixEvent; room: Room | undefined },
-  RaidenConfig,
-]): boolean {
-  const isTextMessage =
-    event.getType() === 'm.room.message' && event.getSender() !== matrix.getUserId();
-  const isPrivateRoom =
-    !!room &&
-    !globalRoomNames(config).some((g) =>
-      // generate an alias for global room of given name, and check if room matches
-      roomMatch(`#${g}:${getServerName(matrix.getHomeserverUrl())}`, room),
-    );
-  const isToDevice = !room && !!getCap(config.caps, Capabilities.TO_DEVICE); // toDevice message
-  return isTextMessage && (isPrivateRoom || isToDevice);
-}
-
 /**
  * Subscribe to matrix messages and emits MessageReceivedAction upon receiving a valid message from
  * an user of interest (one valid signature from an address we monitor) in a room we have for them
@@ -299,56 +269,43 @@ export function matrixMessageReceivedEpic(
   // gets/wait for the user to be in a room, and then sendMessage
   return matrix$.pipe(
     // when matrix finishes initialization, register to matrix timeline events
-    switchMap((matrix) =>
-      merge(
-        fromEvent<[MatrixEvent, Room]>(matrix, 'Room.timeline').pipe(
-          map(([event, room]) => ({ matrix, event, room })),
-        ),
-        fromEvent<MatrixEvent>(matrix, 'toDeviceEvent').pipe(
-          map((event) => ({ matrix, event, room: undefined })),
-        ),
+    mergeWith((matrix) => fromEvent<MatrixEvent>(matrix, 'toDeviceEvent')),
+    filter(
+      ([matrix, event]) =>
+        event.getType() === 'm.room.message' && event.getSender() !== matrix.getUserId(),
+    ),
+    pluck(1),
+    withLatestFrom(config$),
+    mergeWith(([event, { httpTimeout }]) =>
+      latest$.pipe(
+        filter(({ presences }) => !!getPresenceByUserId(presences, event.getSender())),
+        take(1),
+        // take up to an arbitrary timeout to know presence status fo (monitor) the sender
+        takeUntil(timer(httpTimeout)),
       ),
     ),
     completeWith(action$),
-    withLatestFrom(config$),
-    filter(isValidMessage),
-    mergeMap(([{ event, room }, { httpTimeout }]) =>
-      latest$.pipe(
-        filter(({ presences, state }) => {
-          const presence = getPresenceByUserId(presences, event.getSender());
-          if (!presence) return false;
-          const rooms = state.transport.rooms?.[presence.meta.address] ?? [];
-          return !room || rooms.includes(room.roomId);
-        }),
-        completeWith(action$),
-        take(1),
-        // take up to an arbitrary timeout to presence status for the sender
-        // AND the room in which this message was sent to be in sender's address room queue
-        takeUntil(timer(httpTimeout)),
-        mergeMap(({ presences }) => {
-          const presence = getPresenceByUserId(presences, event.getSender())!;
-          const lines: string[] = (event.getContent().body ?? '').split('\n');
-          return scheduled(lines, asapScheduler).pipe(
-            map((line) => {
-              let message;
-              if (event.getContent().msgtype === 'm.text')
-                message = parseMessage(line, presence.meta.address, { log });
-              return messageReceived(
-                {
-                  text: line,
-                  ...(message ? { message } : {}),
-                  ts: Date.now(),
-                  userId: presence.payload.userId,
-                  ...(room ? { roomId: room.roomId } : {}),
-                  ...(event.getContent().msgtype ? { msgtype: event.getContent().msgtype } : {}),
-                },
-                presence.meta,
-              );
-            }),
+    mergeMap(([[event], { presences }]) => {
+      const presence = getPresenceByUserId(presences, event.getSender())!;
+      const lines: string[] = (event.getContent().body ?? '').split('\n');
+      return scheduled(lines, asapScheduler).pipe(
+        map((line) => {
+          let message;
+          if (event.getContent().msgtype === 'm.text')
+            message = parseMessage(line, presence.meta.address, { log });
+          return messageReceived(
+            {
+              text: line,
+              ...(message ? { message } : {}),
+              ts: Date.now(),
+              userId: presence.payload.userId,
+              ...(event.getContent().msgtype ? { msgtype: event.getContent().msgtype } : {}),
+            },
+            presence.meta,
           );
         }),
-      ),
-    ),
+      );
+    }),
   );
 }
 

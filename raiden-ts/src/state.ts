@@ -24,13 +24,7 @@ const _RaidenState = t.readonly(
     channels: t.readonly(t.record(ChannelKey, Channel)),
     oldChannels: t.readonly(t.record(t.string, Channel)),
     tokens: t.readonly(t.record(t.string /* token: Address */, Address)),
-    transport: t.readonly(
-      t.partial({
-        server: t.string,
-        setup: RaidenMatrixSetup,
-        rooms: t.readonly(t.record(t.string /* partner: Address */, t.array(t.string))),
-      }),
-    ),
+    transport: t.readonly(t.partial({ server: t.string, setup: RaidenMatrixSetup })),
     transfers: t.readonly(t.record(t.string /*: key: TransferKey */, TransferState)),
     iou: t.readonly(
       t.record(

@@ -41,8 +41,6 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - pfsMaxPaths - Limit number of paths requested from PFS for a route.
  * - pfsMaxFee - Maximum fee we're willing to pay a PFS for a route (in SVT/RDN wei)
  * - pfsIouTimeout - Number of blocks to timeout an IOU to a PFS.
- * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
- *    Leave LRU beyond this threshold.
  * - confirmationBlocks - How many blocks to wait before considering a transaction as confirmed
  * - monitoringReward - Reward to be paid to MS, in SVT/RDN; use Zero or null to disable
  * - logger - String specifying the console log level of redux-logger. Use '' to silence.
@@ -75,7 +73,6 @@ export const RaidenConfig = t.readonly(
       pfsMaxPaths: t.number,
       pfsMaxFee: UInt(32),
       pfsIouTimeout: t.number,
-      matrixExcessRooms: t.number,
       confirmationBlocks: t.number,
       monitoringReward: t.union([t.null, UInt(32)]),
       logger: t.keyof({
@@ -147,7 +144,6 @@ export function makeDefaultConfig(
     pfsRoom: `raiden_${networkName}_path_finding`,
     monitoringRoom: `raiden_${networkName}_monitoring`,
     pfs: '', // empty string = auto mode
-    matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0, // multiplier
     pfsMaxPaths: 3,
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
