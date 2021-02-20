@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { ensureChannelIsOpen, matrixServer, token } from '../fixtures';
+import { ensureChannelIsOpen, ensurePresence, matrixServer, token } from '../fixtures';
 import { fetch, makeRaiden, makeRaidens, makeSignature, sleep } from '../mocks';
 
 import { verifyMessage } from '@ethersproject/wallet';
@@ -9,19 +7,13 @@ import type { MatrixClient } from 'matrix-js-sdk';
 import { first, pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate, raidenShutdown } from '@/actions';
-import { Capabilities } from '@/constants';
+import { Capabilities, RAIDEN_DEVICE_ID } from '@/constants';
 import { messageGlobalSend, messageReceived, messageSend } from '@/messages/actions';
 import type { Delivered, Processed } from '@/messages/types';
 import { MessageType } from '@/messages/types';
 import { encodeJsonMessage, signMessage } from '@/messages/utils';
 import { makeMessageId } from '@/transfers/utils';
-import {
-  matrixPresence,
-  matrixRoom,
-  matrixRoomLeave,
-  matrixSetup,
-  rtcChannel,
-} from '@/transport/actions';
+import { matrixPresence, matrixSetup, rtcChannel } from '@/transport/actions';
 import { getSortedAddresses } from '@/transport/utils';
 import { ErrorCodes } from '@/utils/error';
 import type { Address, Signed } from '@/utils/types';
@@ -29,7 +21,6 @@ import { isntNil } from '@/utils/types';
 
 import type { MockedRaiden } from '../mocks';
 
-const partnerRoomId = `!partnerRoomId:${matrixServer}`;
 const accessToken = 'access_token';
 const deviceId = 'device_id';
 const processed: Processed = {
@@ -112,7 +103,7 @@ describe('initMatrixEpic', () => {
   afterEach(() => jest.restoreAllMocks());
 
   test('matrix stored setup', async () => {
-    expect.assertions(5);
+    expect.assertions(4);
 
     const userId = `@${raiden.address.toLowerCase()}:${matrixServer}`;
     const displayName = await raiden.deps.signer.signMessage(userId);
@@ -143,9 +134,8 @@ describe('initMatrixEpic', () => {
     // ensure if stored setup works, servers list don't need to be fetched
     expect(fetch).not.toHaveBeenCalled();
 
-    // test presence got set again after some time, to overcome presence bug
-    expect(matrix.setPresence).not.toHaveBeenCalled();
     await sleep(2 * raiden.config.httpTimeout);
+    // test presence got set again after some time, to overcome presence bug
     expect(matrix.setPresence).toHaveBeenCalledWith({
       presence: 'online',
       status_msg: expect.any(String),
@@ -566,133 +556,11 @@ test('matrixUpdateCapsEpic', async () => {
   );
 });
 
-test('matrixCreateRoomEpic', async () => {
-  expect.assertions(3);
-  // ensure raiden is inviter, partner is invitee
-  const [raiden, partner] = getSortedClients(await makeRaidens(2));
-  const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-  const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-
-  await ensureChannelIsOpen([raiden, partner]);
-
-  await sleep(2 * raiden.config.pollingInterval);
-  expect(raiden.output).toContainEqual(
-    matrixRoom(
-      { roomId: expect.stringMatching(new RegExp(`^!.*:${matrixServer}$`)) },
-      { address: partner.address },
-    ),
-  );
-  expect(matrix.createRoom).toHaveBeenCalledTimes(1);
-  // invitee doesn't invite
-  expect(partnerMatrix.createRoom).not.toHaveBeenCalled();
-});
-
-describe('matrixInviteEpic', () => {
-  test('do not invite if there is no room for user', async () => {
-    expect.assertions(1);
-    const [raiden, partner] = await makeRaidens(2);
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-
-    raiden.store.dispatch(
-      matrixPresence.success(
-        { userId: partnerMatrix.getUserId()!, available: true, ts: 123 },
-        { address: partner.address },
-      ),
-    );
-    await sleep();
-    expect(matrix.invite).not.toHaveBeenCalled();
-  });
-
-  test('invite if there is room for user', async () => {
-    expect.assertions(2);
-    const [raiden, partner] = getSortedClients(await makeRaidens(2));
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const roomId = partnerRoomId;
-    raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
-    // partner joins when they're invited the second time
-    matrix.invite.mockResolvedValueOnce(Promise.resolve());
-
-    raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
-
-    await sleep(2 * raiden.config.httpTimeout);
-    expect(matrix.invite).toHaveBeenCalledTimes(2);
-    expect(matrix.invite).toHaveBeenCalledWith(roomId, partnerMatrix.getUserId()!);
-  });
-});
-
-describe('matrixHandleInvitesEpic', () => {
-  test('accept & join', async () => {
-    expect.assertions(4);
-    const [partner, raiden] = getSortedClients(await makeRaidens(2));
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-
-    await ensureChannelIsOpen([raiden, partner]);
-    await sleep();
-
-    expect(partner.output).toContainEqual(
-      matrixRoom({ roomId: expect.stringMatching(/!.*:/) }, { address: raiden.address }),
-    );
-    const roomId = partner.output.find(matrixRoom.is)!.payload.roomId;
-    expect(raiden.output).toContainEqual(matrixRoom({ roomId }, { address: partner.address }));
-    expect(matrix.joinRoom).toHaveBeenCalledTimes(4);
-    expect(matrix.joinRoom).toHaveBeenCalledWith(
-      roomId,
-      expect.objectContaining({ syncRoom: true }),
-    );
-  });
-
-  test('do not accept invites from non-monitored peers', async () => {
-    expect.assertions(2);
-
-    const [partner, raiden] = getSortedClients(await makeRaidens(2));
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-
-    const { room_id: roomId } = await partnerMatrix.createRoom({ invite: [matrix.getUserId()!] });
-    await sleep();
-
-    expect(partnerMatrix.getRoom(roomId)?.getMember(matrix.getUserId()!)).toMatchObject({
-      membership: 'invite',
-    });
-    expect(matrix.joinRoom).not.toHaveBeenCalledWith(roomId, expect.anything());
-  });
-});
-
-describe('matrixLeaveExcessRoomsEpic', () => {
-  test('leave rooms behind threshold', async () => {
-    expect.assertions(3);
-    const roomId = partnerRoomId;
-    const [raiden, partner] = await makeRaidens(2);
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const action = matrixRoom(
-      { roomId: `!frontRoomId_for_partner:${matrixServer}` },
-      { address: partner.address },
-    );
-    raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
-    raiden.store.dispatch(
-      matrixRoom({ roomId: `!roomId2:${matrixServer}` }, { address: partner.address }),
-    );
-    raiden.store.dispatch(
-      matrixRoom({ roomId: `!roomId3:${matrixServer}` }, { address: partner.address }),
-    );
-    raiden.store.dispatch(action);
-
-    await sleep(2 * raiden.config.pollingInterval);
-    expect(raiden.output).toContainEqual(
-      matrixRoomLeave({ roomId }, { address: partner.address }),
-    );
-    expect(matrix.leave).toHaveBeenCalledTimes(1);
-    expect(matrix.leave).toHaveBeenCalledWith(roomId);
-  });
-});
-
 describe('matrixLeaveUnknownRoomsEpic', () => {
   test('leave unknown rooms', async () => {
     expect.assertions(3);
 
-    const raiden = await makeRaiden(undefined);
+    const raiden = await makeRaiden();
     const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
     const roomId = `!unknownRoomId:${matrixServer}`;
 
@@ -700,6 +568,7 @@ describe('matrixLeaveUnknownRoomsEpic', () => {
       roomId,
       getCanonicalAlias: jest.fn(),
       getAliases: jest.fn(() => []),
+      getMyMembership: jest.fn(() => 'join'),
     });
 
     await sleep();
@@ -725,6 +594,7 @@ describe('matrixLeaveUnknownRoomsEpic', () => {
       roomId,
       getCanonicalAlias: jest.fn(),
       getAliases: jest.fn(() => [roomAlias]),
+      getMyMembership: jest.fn(() => 'join'),
     });
 
     await sleep();
@@ -737,157 +607,23 @@ describe('matrixLeaveUnknownRoomsEpic', () => {
     // even after some time, discovery room isn't left
     expect(matrix.leave).not.toHaveBeenCalled();
   });
-
-  test('do not leave peers rooms', async () => {
-    expect.assertions(2);
-
-    const roomId = partnerRoomId;
-    const [raiden, partner] = await makeRaidens(2);
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
-
-    matrix.emit('Room', {
-      roomId,
-      getCanonicalAlias: jest.fn(),
-      getAliases: jest.fn(() => []),
-    });
-
-    await sleep();
-
-    // we should wait a little before leaving rooms
-    expect(matrix.leave).not.toHaveBeenCalled();
-
-    await sleep(500);
-
-    // even after some time, partner's room isn't left
-    expect(matrix.leave).not.toHaveBeenCalled();
-  });
-});
-
-describe('matrixCleanLeftRoomsEpic', () => {
-  test('clean left rooms', async () => {
-    expect.assertions(1);
-
-    const roomId = partnerRoomId;
-    const [raiden, partner] = await makeRaidens(2);
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
-
-    matrix.emit('Room.myMembership', { roomId }, 'leave');
-
-    await sleep(2 * raiden.config.pollingInterval);
-    expect(raiden.output).toContainEqual(
-      matrixRoomLeave({ roomId }, { address: partner.address }),
-    );
-  });
-});
-
-describe('matrixCleanMissingRoomsEpic', () => {
-  test('clean missing rooms', async () => {
-    expect.assertions(1);
-
-    const roomId = partnerRoomId;
-    const roomId2 = `!partnerRoomId2:${matrixServer}`;
-    const [raiden, partner] = await makeRaidens(2);
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    matrix.getRoom.mockReturnValueOnce(null).mockReturnValueOnce({
-      roomId,
-      name: roomId,
-      getMember: jest.fn(),
-      getJoinedMembers: jest.fn(),
-      getCanonicalAlias: jest.fn(() => roomId),
-      getAliases: jest.fn(() => []),
-    } as any);
-
-    raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 10 }));
-    raiden.store.dispatch(
-      matrixSetup({
-        server: matrixServer,
-        setup: {
-          userId: matrix.getUserId()!,
-          deviceId: 'device_id',
-          accessToken: 'access_token',
-          displayName: 'display_name',
-        },
-      }),
-    );
-    raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
-    raiden.store.dispatch(matrixRoom({ roomId: roomId2 }, { address: partner.address }));
-
-    await sleep(2 * raiden.config.pollingInterval);
-
-    raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 10 }));
-
-    await sleep(2 * raiden.config.pollingInterval);
-    // why roomId is ousted instead of roomId2
-    expect(raiden.output).toContainEqual(
-      matrixRoomLeave({ roomId }, { address: partner.address }),
-    );
-  });
 });
 
 describe('matrixMessageSendEpic', () => {
-  test('success: errors once but retries successfully', async () => {
-    expect.assertions(4);
-
-    const [raiden, partner] = getSortedClients(await makeRaidens(2));
-    raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 30 }));
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-
-    const message: Processed = {
-        type: MessageType.PROCESSED,
-        message_identifier: makeMessageId(),
-      },
-      signed = await signMessage(raiden.deps.signer, message);
-
-    await ensureChannelIsOpen([raiden, partner]);
-    await sleep();
-    matrix.sendEvent.mockClear();
-
-    const roomId = raiden.store.getState().transport.rooms?.[partner.address][0];
-    expect(roomId).toMatch(/!.*:/);
-
-    matrix.sendEvent.mockRejectedValueOnce(
-      Object.assign(new Error('Failed'), { httpStatus: 500 }),
-    );
-    raiden.store.dispatch(
-      messageSend.request(
-        { message: signed },
-        { address: partner.address, msgId: signed.message_identifier.toString() },
-      ),
-    );
-
-    await sleep(100);
-    expect(raiden.output).toContainEqual(
-      messageSend.success(expect.objectContaining({ via: expect.stringMatching(/^!/) }), {
-        address: partner.address,
-        msgId: signed.message_identifier.toString(),
-      }),
-    );
-    expect(matrix.sendEvent).toHaveBeenCalledTimes(2);
-    expect(matrix.sendEvent).toHaveBeenCalledWith(
-      roomId,
-      'm.room.message',
-      expect.objectContaining({ body: expect.stringMatching('"Processed"'), msgtype: 'm.text' }),
-      expect.anything(),
-    );
-  });
-
-  test('sendEvent fails', async () => {
-    expect.assertions(4);
+  test('sendToDevice fails', async () => {
+    expect.assertions(3);
 
     const message = 'Hello world!';
     const [raiden, partner] = getSortedClients(await makeRaidens(2));
     raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 30 }));
     const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
 
     await ensureChannelIsOpen([raiden, partner]);
     await sleep();
-    matrix.sendEvent.mockClear();
+    matrix.sendToDevice.mockClear();
 
-    const roomId = raiden.store.getState().transport.rooms?.[partner.address][0];
-    expect(roomId).toMatch(/!.*:/);
-    matrix.sendEvent
+    matrix.sendToDevice
       .mockRejectedValueOnce(Object.assign(new Error('Failed 1'), { httpStatus: 500 }))
       .mockRejectedValueOnce(Object.assign(new Error('Failed 2'), { httpStatus: 500 }))
       .mockRejectedValueOnce(Object.assign(new Error('Failed 3'), { httpStatus: 500 }))
@@ -904,25 +640,22 @@ describe('matrixMessageSendEpic', () => {
         msgId: message,
       }),
     );
-    expect(matrix.sendEvent).toHaveBeenCalledTimes(4);
-    expect(matrix.sendEvent).toHaveBeenCalledWith(
-      roomId,
+    expect(matrix.sendToDevice).toHaveBeenCalledTimes(4);
+    expect(matrix.sendToDevice).toHaveBeenCalledWith(
       'm.room.message',
-      expect.objectContaining({ body: message, msgtype: 'm.text' }),
-      expect.anything(),
+      expect.objectContaining({
+        [partnerMatrix.getUserId()!]: { [RAIDEN_DEVICE_ID]: { body: message, msgtype: 'm.text' } },
+      }),
     );
   });
 
-  test('send: toDevice', async () => {
+  test('success: errors once but retries successfully', async () => {
     expect.assertions(4);
     const [raiden, partner] = await makeRaidens(2);
 
     const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
     const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
     const message = await signMessage(raiden.deps.signer, processed);
-
-    raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.TO_DEVICE]: 1 } }));
-    partner.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.TO_DEVICE]: 1 } }));
 
     raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
     partner.store.dispatch(matrixPresence.request(undefined, { address: raiden.address }));
@@ -949,7 +682,63 @@ describe('matrixMessageSendEpic', () => {
     expect(matrix.sendToDevice).toHaveBeenCalledTimes(2);
     expect(matrix.sendToDevice).toHaveBeenCalledWith('m.room.message', {
       [partnerMatrix.getUserId()!]: {
-        '*': { body: expect.stringMatching('"Processed"'), msgtype: 'm.text' },
+        [RAIDEN_DEVICE_ID]: { body: expect.stringMatching('"Processed"'), msgtype: 'm.text' },
+      },
+    });
+  });
+
+  test('success: batch multiple recipients', async () => {
+    expect.assertions(4);
+    const [raiden, p1, p2] = await makeRaidens(3);
+
+    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const p1Matrix = (await p1.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const p2Matrix = (await p2.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+
+    const actualSendToDevice = matrix.sendToDevice.getMockImplementation();
+    // sendToDevice takes some time to send messages
+    const mockedSendToDevice = jest
+      .spyOn(matrix, 'sendToDevice')
+      .mockImplementation(async (type, contentMap) => {
+        await sleep(raiden.config.httpTimeout / 2);
+        return await actualSendToDevice!(type, contentMap);
+      });
+
+    await ensurePresence([raiden, p1]);
+    await ensurePresence([raiden, p2]);
+
+    const length = 4;
+    const messages = Array.from({ length }, (_, i) => `test${i + 1}`);
+    const ids = Array.from({ length }, (_, i) => (1001 + i).toString());
+    const recipients = [p1.address, p1.address, p2.address, p2.address];
+
+    // queue all messages synchronously
+    for (let i = 0; i < messages.length; i++)
+      raiden.store.dispatch(
+        messageSend.request({ message: messages[i] }, { address: recipients[i], msgId: ids[i] }),
+      );
+
+    await sleep(2 * raiden.config.httpTimeout);
+    expect(raiden.output).toContainEqual(
+      messageSend.success(expect.objectContaining({ via: expect.stringMatching(/^@0x/) }), {
+        address: p2.address,
+        msgId: ids[length - 1],
+      }),
+    );
+    expect(mockedSendToDevice).toHaveBeenCalledTimes(2);
+    // first message got sent immediately
+    expect(mockedSendToDevice).toHaveBeenNthCalledWith(1, 'm.room.message', {
+      [p1Matrix.getUserId()!]: {
+        [RAIDEN_DEVICE_ID]: { body: messages[0], msgtype: 'm.text' },
+      },
+    });
+    // second message to first recipient, plus batched messages to 2nd recipient, in a single call
+    expect(mockedSendToDevice).toHaveBeenNthCalledWith(2, 'm.room.message', {
+      [p1Matrix.getUserId()!]: {
+        [RAIDEN_DEVICE_ID]: { body: messages[1], msgtype: 'm.text' },
+      },
+      [p2Matrix.getUserId()!]: {
+        [RAIDEN_DEVICE_ID]: { body: messages.slice(2).join('\n'), msgtype: 'm.text' },
       },
     });
   });
@@ -957,7 +746,7 @@ describe('matrixMessageSendEpic', () => {
 
 describe('matrixMessageReceivedEpic', () => {
   test('receive: success', async () => {
-    expect.assertions(2);
+    expect.assertions(1);
     // Gets a log.warn(`Could not decode message: ${line}: ${err}`);
     // at Object.parseMessage (src/transport/epics/helpers.ts:203:9)
     const message = 'test message';
@@ -966,9 +755,6 @@ describe('matrixMessageReceivedEpic', () => {
 
     await ensureChannelIsOpen([raiden, partner]);
     await sleep();
-
-    const roomId = raiden.store.getState().transport.rooms?.[partner.address][0];
-    expect(roomId).toMatch(/!.*:/);
 
     partner.store.dispatch(
       messageSend.request({ message }, { address: raiden.address, msgId: message }),
@@ -982,7 +768,6 @@ describe('matrixMessageReceivedEpic', () => {
           msgtype: 'm.text',
           ts: expect.any(Number),
           userId: partnerMatrix.getUserId()!,
-          roomId,
         },
         { address: partner.address },
       ),
@@ -990,7 +775,7 @@ describe('matrixMessageReceivedEpic', () => {
   });
 
   test('receive: decode signed message', async () => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
     const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
@@ -999,9 +784,6 @@ describe('matrixMessageReceivedEpic', () => {
 
     await ensureChannelIsOpen([raiden, partner]);
     await sleep();
-
-    const roomId = raiden.store.getState().transport.rooms?.[partner.address][0];
-    expect(roomId).toMatch(/!.*:/);
 
     partner.store.dispatch(
       messageSend.request({ message }, { address: raiden.address, msgId: message }),
@@ -1015,7 +797,6 @@ describe('matrixMessageReceivedEpic', () => {
           msgtype: 'm.text',
           ts: expect.any(Number),
           userId: partnerMatrix.getUserId()!,
-          roomId,
         },
         { address: partner.address },
       ),
@@ -1023,7 +804,7 @@ describe('matrixMessageReceivedEpic', () => {
   });
 
   test("receive: messages from wrong sender aren't decoded", async () => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
     const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
@@ -1033,9 +814,6 @@ describe('matrixMessageReceivedEpic', () => {
 
     await ensureChannelIsOpen([raiden, partner]);
     await sleep();
-
-    const roomId = raiden.store.getState().transport.rooms?.[partner.address][0];
-    expect(roomId).toMatch(/!.*:/);
 
     partner.store.dispatch(
       messageSend.request({ message }, { address: raiden.address, msgId: message }),
@@ -1050,85 +828,9 @@ describe('matrixMessageReceivedEpic', () => {
           msgtype: 'm.text',
           ts: expect.any(Number),
           userId: partnerMatrix.getUserId()!,
-          roomId,
         },
         { address: partner.address },
       ),
-    );
-  });
-
-  test('receive: toDevice', async () => {
-    expect.assertions(1);
-
-    const message = 'test message',
-      content = { msgtype: 'm.text', body: message };
-
-    const [raiden, partner] = await makeRaidens(2);
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.TO_DEVICE]: 1 } }));
-
-    matrix.emit('toDeviceEvent', {
-      getType: jest.fn(() => 'm.room.message'),
-      getSender: jest.fn(() => partnerMatrix.getUserId()),
-      getContent: jest.fn(() => content),
-      event: { type: 'm.room.message', sender: partnerMatrix.getUserId(), content },
-    });
-
-    // actions sees presence update for partner only later
-    raiden.store.dispatch(
-      matrixPresence.success(
-        {
-          userId: partnerMatrix.getUserId()!,
-          available: true,
-          ts: Date.now(),
-          caps: { [Capabilities.TO_DEVICE]: 1 },
-        },
-        { address: partner.address },
-      ),
-    );
-
-    await sleep();
-    expect(raiden.output).toContainEqual(
-      messageReceived(
-        {
-          text: message,
-          msgtype: 'm.text',
-          ts: expect.any(Number),
-          userId: partnerMatrix.getUserId()!,
-        },
-        { address: partner.address },
-      ),
-    );
-  });
-});
-
-describe('matrixMessageReceivedUpdateRoomEpic', () => {
-  test('messageReceived on second room emits matrixRoom', async () => {
-    expect.assertions(2);
-
-    const roomId = partnerRoomId;
-    const newRoomId = `!newRoomId_for_partner:${matrixServer}`;
-    const [raiden, partner] = await makeRaidens(2);
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    raiden.store.dispatch(matrixRoom({ roomId }, { address: partner.address }));
-    raiden.store.dispatch(matrixRoom({ roomId: newRoomId }, { address: partner.address }));
-
-    expect(raiden.store.getState().transport.rooms).toMatchObject({
-      [partner.address]: [newRoomId, partnerRoomId],
-    });
-
-    const sliceLength = raiden.output.length;
-    raiden.store.dispatch(
-      messageReceived(
-        { text: 'test message', ts: 123, userId: partnerMatrix.getUserId()!, roomId },
-        { address: partner.address },
-      ),
-    );
-
-    await sleep(2 * raiden.config.pollingInterval);
-    expect(raiden.output.slice(sliceLength)).toContainEqual(
-      matrixRoom({ roomId }, { address: partner.address }),
     );
   });
 });
@@ -1144,14 +846,12 @@ describe('deliveredEpic', () => {
         message_identifier: makeMessageId(),
         signature: makeSignature(),
       },
-      roomId = partnerRoomId,
       messageReceivedAction = messageReceived(
         {
           text: encodeJsonMessage(message),
           message,
           ts: 123,
           userId: partnerMatrix.getUserId()!,
-          roomId,
         },
         { address: partner.address },
       );
@@ -1196,14 +896,12 @@ describe('deliveredEpic', () => {
         message_identifier: makeMessageId(),
         signature: makeSignature(),
       },
-      roomId = partnerRoomId,
       messageReceivedAction = messageReceived(
         {
           text: encodeJsonMessage(message),
           message,
           ts: 123,
           userId: partnerMatrix.getUserId()!,
-          roomId,
         },
         { address: partner.address },
       );
@@ -1245,14 +943,12 @@ describe('deliveredEpic', () => {
         delivered_message_identifier: makeMessageId(),
         signature: makeSignature(),
       },
-      roomId = partnerRoomId,
       messageReceivedAction = messageReceived(
         {
           text: encodeJsonMessage(message),
           message,
           ts: 123,
           userId: partnerMatrix.getUserId()!,
-          roomId,
         },
         { address: partner.address },
       );
@@ -1353,19 +1049,11 @@ describe('rtcConnectEpic', () => {
     [raiden, partner] = getSortedClients(await makeRaidens(2));
 
     RTCPeerConnection = mockRTC();
-    raiden.store.dispatch(
-      raidenConfigUpdate({
-        caps: {
-          [Capabilities.WEBRTC]: 1,
-          [Capabilities.TO_DEVICE]: 0,
-        },
-      }),
-    );
+    raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.WEBRTC]: 1 } }));
     partner.store.dispatch(
       raidenConfigUpdate({
         caps: {
           [Capabilities.WEBRTC]: 1,
-          [Capabilities.TO_DEVICE]: 0,
         },
       }),
     );
@@ -1377,9 +1065,7 @@ describe('rtcConnectEpic', () => {
   });
 
   test('skip if no webrtc capability exists', async () => {
-    raiden.store.dispatch(
-      raidenConfigUpdate({ caps: { [Capabilities.WEBRTC]: 0, [Capabilities.TO_DEVICE]: 1 } }),
-    );
+    raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.WEBRTC]: 0 } }));
     await ensureChannelIsOpen([raiden, partner]);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).not.toContainEqual(rtcChannel(expect.anything(), expect.anything()));
