@@ -305,6 +305,7 @@ const mockedRooms: {
     members: { [userId: string]: string };
     aliases: string[];
     getMember: (userId: string) => { membership: string; roomId: string; userId: string } | null;
+    getMyMembership: () => string | null;
     getCanonicalAlias: () => string | null | undefined;
     getAliases: () => string[];
     currentState: { setStateEvents: (state: any) => void };
@@ -323,6 +324,9 @@ function mockedGetOrMakeRoom(roomId: string) {
       getMember(userId) {
         if (!(userId in this.members)) return null;
         return { membership: this.members[userId], roomId, userId };
+      },
+      getMyMembership() {
+        return 'join';
       },
       getCanonicalAlias() {
         return null;
@@ -528,6 +532,7 @@ function mockedMatrixCreateClient({
     }),
     sendToDevice: jest.fn(
       async (type: string, contentMap: { [userId: string]: { [deviceID: string]: any } }) => {
+        if (stopped) return true;
         for (const [partnerId, map] of Object.entries(contentMap)) {
           for (const client of mockedClients) {
             const matrix = await client.deps.matrix$.toPromise();
@@ -869,7 +874,7 @@ export async function makeRaiden(
       caps: {
         [Capabilities.DELIVERY]: 0,
         [Capabilities.WEBRTC]: 0,
-        [Capabilities.TO_DEVICE]: 0,
+        [Capabilities.TO_DEVICE]: 1,
         [Capabilities.MEDIATE]: 1,
       },
     },

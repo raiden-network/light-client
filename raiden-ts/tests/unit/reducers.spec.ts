@@ -20,7 +20,7 @@ import { ShutdownReason } from '@/constants';
 import { raidenReducer } from '@/reducer';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
-import { matrixRoom, matrixRoomLeave, matrixSetup } from '@/transport/actions';
+import { matrixSetup } from '@/transport/actions';
 import { ErrorCodes, RaidenError } from '@/utils/error';
 import type { Address, Hash, UInt } from '@/utils/types';
 
@@ -824,34 +824,6 @@ describe('raidenReducer', () => {
       const newState = [matrixSetup({ server, setup })].reduce(raidenReducer, state);
       expect(newState.transport.server).toBe(server);
       expect(newState.transport.setup).toEqual(setup);
-    });
-
-    test('matrixRoom', () => {
-      const roomId = '!roomId:matrix.raiden.test',
-        newRoomId = '!newRoomId:matrix.raiden.test';
-
-      let newState = [matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, state);
-      expect(newState.transport.rooms?.[partner]).toEqual([roomId]);
-
-      // new room goes to the front
-      newState = [matrixRoom({ roomId: newRoomId }, { address: partner })].reduce(
-        raidenReducer,
-        newState,
-      );
-      expect(newState.transport.rooms?.[partner]).toEqual([newRoomId, roomId]);
-
-      // old room is brought back to the front
-      newState = [matrixRoom({ roomId }, { address: partner })].reduce(raidenReducer, newState);
-      expect(newState.transport.rooms?.[partner]).toEqual([roomId, newRoomId]);
-    });
-
-    test('matrixRoomLeave', () => {
-      const roomId = '!roomId:matrix.raiden.test';
-      const newState = [
-        matrixRoom({ roomId }, { address: partner }),
-        matrixRoomLeave({ roomId }, { address: partner }),
-      ].reduce(raidenReducer, state);
-      expect(newState.transport.rooms?.[partner]).toHaveLength(0);
     });
   });
 
