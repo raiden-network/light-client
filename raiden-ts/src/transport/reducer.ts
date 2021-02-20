@@ -1,7 +1,9 @@
+import isEqual from 'lodash/isEqual';
+
 import { initialState } from '../state';
 import { createReducer } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
-import { matrixRoom, matrixRoomLeave, matrixSetup } from './actions';
+import { matrixSetup } from './actions';
 
 /**
  * state.transport reducer
@@ -12,36 +14,11 @@ import { matrixRoom, matrixRoomLeave, matrixSetup } from './actions';
  * @returns New RaidenState['transport'] slice
  */
 
-const transport = createReducer(initialState.transport)
-  .handle(matrixSetup, (state, action) => {
-    // immutably remove rooms from state.transport
-    const { rooms: _, ...noRooms } = state;
-    return {
-      ...(state.server !== action.payload.server ? noRooms : state),
-      ...action.payload,
-    };
-  })
-  .handle(matrixRoom, (state, action) => ({
-    ...state,
-    rooms: {
-      ...state.rooms,
-      [action.meta.address]: [
-        action.payload.roomId,
-        ...(state.rooms?.[action.meta.address] ?? []).filter(
-          (room) => room !== action.payload.roomId,
-        ),
-      ],
-    },
-  }))
-  .handle(matrixRoomLeave, (state, action) => ({
-    ...state,
-    rooms: {
-      ...state.rooms,
-      [action.meta.address]: (state.rooms?.[action.meta.address] ?? []).filter(
-        (room) => room !== action.payload.roomId,
-      ),
-    },
-  }));
+const transport = createReducer(initialState.transport).handle(matrixSetup, (state, action) => {
+  // immutably remove rooms from state.transport
+  if (!isEqual(state, action.payload)) state = action.payload;
+  return state;
+});
 
 /**
  * Nested/combined reducer for transport

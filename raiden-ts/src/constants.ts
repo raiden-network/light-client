@@ -28,7 +28,7 @@ export const CapsFallback = {
   [Capabilities.RECEIVE]: 1,
   [Capabilities.MEDIATE]: 1,
   [Capabilities.WEBRTC]: 0,
-  [Capabilities.TO_DEVICE]: 0,
+  [Capabilities.TO_DEVICE]: 1,
 } as const;
 
 export const RAIDEN_DEVICE_ID = 'RAIDEN';

@@ -41,7 +41,7 @@ export namespace messageGlobalSend {
 
 /**
  * payload.message was received on payload.ts (timestamp) from meta.address
- * payload.userId and payload.roomId are optional and specific to matrix transport, as sender info
+ * payload.userId is optional and specific to matrix transport, as sender info
  */
 export const messageReceived = createAction(
   'message/received',
@@ -53,7 +53,6 @@ export const messageReceived = createAction(
     t.partial({
       message: t.union([Message, Signed(Message)]),
       userId: t.string,
-      roomId: t.string,
       msgtype: t.string,
     }),
   ]),
