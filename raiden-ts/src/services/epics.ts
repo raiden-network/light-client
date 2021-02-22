@@ -1290,29 +1290,37 @@ function requestPfs$(
   );
 }
 
-function parsePfsResponse(
-  value: UInt<32>,
-  data: unknown,
-  { pfsSafetyMargin, pfsMaxPaths }: RaidenConfig,
-) {
+function addFeeSafetyMargin(
+  fee: Int<32>,
+  amount: UInt<32>,
+  { pfsSafetyMargin }: Pick<RaidenConfig, 'pfsSafetyMargin'>,
+): Int<32> {
+  let feeMultiplier = 1.0;
+  let amountMultiplier = 0.0;
+  if (typeof pfsSafetyMargin === 'number') {
+    feeMultiplier = pfsSafetyMargin; // legacy: receive feeMultiplier directly, e.g. 1.1 = +10%
+  } else {
+    feeMultiplier = pfsSafetyMargin[0] + 1.0; // feeMultiplier = feeMargin% + 100%
+    amountMultiplier = pfsSafetyMargin[1];
+  }
+  return decode(
+    Int(32),
+    new BN(fee.toHexString())
+      .times(feeMultiplier)
+      .plus(new BN(amount.toHexString()).times(amountMultiplier))
+      .toFixed(0, BN.ROUND_CEIL), // fee = estimatedFee * (feeMultiplier) + amount * amountMultiplier
+  );
+}
+
+function parsePfsResponse(amount: UInt<32>, data: unknown, config: RaidenConfig) {
   // decode results and cap also client-side for pfsMaxPaths
-  const results = decode(PathResults, data).result.slice(0, pfsMaxPaths);
+  const results = decode(PathResults, data).result.slice(0, config.pfsMaxPaths);
   return results.map(({ path, estimated_fee }) => {
     let fee;
     if (estimated_fee.lte(0)) fee = estimated_fee;
     // add fee margins iff estimated_fee is greater than zero
     else {
-      const [feeMultiplier, amountMultiplier] =
-        typeof pfsSafetyMargin === 'number'
-          ? [pfsSafetyMargin, 0] // legacy: receive feeMultiplier directly, e.g. 1.1 = +10%
-          : [pfsSafetyMargin[0] + 1, pfsSafetyMargin[1]]; // feeMultiplier = feeMargin% + 100%
-      fee = decode(
-        Int(32),
-        new BN(estimated_fee.toHexString())
-          .times(feeMultiplier)
-          .plus(new BN(value.toHexString()).times(amountMultiplier))
-          .toFixed(0), // fee = estimatedFee * (feeMultiplier) + amount * amountMultiplier
-      );
+      fee = addFeeSafetyMargin(estimated_fee, amount, config);
     }
     return { path, fee } as const;
   });
