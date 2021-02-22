@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- [#2581] CLI now defaults to `3% * fee + 0.05% * amount` for fee safety margin, same as PC
+
+[#2581]: https://github.com/raiden-network/light-client/pull/2581
 
 ## [0.15.0] - 2021-01-26
 ### Added
