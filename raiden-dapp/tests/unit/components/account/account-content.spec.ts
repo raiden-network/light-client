@@ -60,6 +60,10 @@ async function createWrapper(
   return wrapper;
 }
 
+const getDisconnectButton = (wrapper: Wrapper<AccountContent>): Wrapper<AccountContent> => {
+  return wrapper.find('.account-content__disconnect__button');
+};
+
 describe('AccountContent.vue', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -201,7 +205,7 @@ describe('AccountContent.vue', () => {
     );
   });
 
-  test('displays "Disconnect" button when connected', async () => {
+  test('does not display "Disconnect" button when not connected', async () => {
     const wrapper = await createWrapper(
       undefined,
       undefined,
@@ -210,14 +214,21 @@ describe('AccountContent.vue', () => {
       false,
       undefined,
     );
-    const disconnectButton = wrapper.find('.account-content__disconnect__button');
+    const disconnectButton = getDisconnectButton(wrapper);
 
     expect(disconnectButton.exists()).toBe(false);
   });
 
-  test('does not display "Disconnect" button when not connected', async () => {
-    const wrapper = await createWrapper();
-    const disconnectButton = wrapper.find('.account-content__disconnect__button');
+  test('displays "Disconnect" button when connected', async () => {
+    const wrapper = await createWrapper(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true,
+      undefined,
+    );
+    const disconnectButton = getDisconnectButton(wrapper);
 
     expect(disconnectButton.exists()).toBe(true);
   });
@@ -225,7 +236,7 @@ describe('AccountContent.vue', () => {
   test('Clicking "Disconnect" button triggers disconnect method', async () => {
     const wrapper = await createWrapper();
     (wrapper.vm as any).disconnect = jest.fn();
-    const disconnectButton = wrapper.find('.account-content__disconnect__button');
+    const disconnectButton = getDisconnectButton(wrapper);
 
     disconnectButton.trigger('click');
     await wrapper.vm.$nextTick();
