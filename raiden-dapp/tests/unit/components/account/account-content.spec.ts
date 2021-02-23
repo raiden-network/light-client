@@ -60,6 +60,10 @@ async function createWrapper(
   return wrapper;
 }
 
+const getDisconnectButton = (wrapper: Wrapper<AccountContent>): Wrapper<AccountContent> => {
+  return wrapper.find('.account-content__disconnect__button');
+};
+
 describe('AccountContent.vue', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -199,5 +203,44 @@ describe('AccountContent.vue', () => {
         name: RouteNames.ACCOUNT_SETTINGS,
       }),
     );
+  });
+
+  test('does not display "Disconnect" button when not connected', async () => {
+    const wrapper = await createWrapper(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      false,
+      undefined,
+    );
+    const disconnectButton = getDisconnectButton(wrapper);
+
+    expect(disconnectButton.exists()).toBe(false);
+  });
+
+  test('displays "Disconnect" button when connected', async () => {
+    const wrapper = await createWrapper(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true,
+      undefined,
+    );
+    const disconnectButton = getDisconnectButton(wrapper);
+
+    expect(disconnectButton.exists()).toBe(true);
+  });
+
+  test('Clicking "Disconnect" button triggers disconnect method', async () => {
+    const wrapper = await createWrapper();
+    (wrapper.vm as any).disconnect = jest.fn();
+    const disconnectButton = getDisconnectButton(wrapper);
+
+    disconnectButton.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect((wrapper.vm as any).disconnect).toHaveBeenCalled();
   });
 });

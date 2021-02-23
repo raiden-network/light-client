@@ -9,6 +9,11 @@
 - [#2422] Fix broken layout on RaidenAccount screen for mobile virtual keyboard
 - [#2383] Fix broken handling of path/query parameters of transfer route
 
+### Added
+
+- [#1515] Button for disconnecting the dApp
+
+[#1515]: https://github.com/raiden-network/light-client/issues/1515
 [#2420]: https://github.com/raiden-network/light-client/issues/2420
 [#2421]: https://github.com/raiden-network/light-client/issues/2421
 [#2422]: https://github.com/raiden-network/light-client/issues/2422
