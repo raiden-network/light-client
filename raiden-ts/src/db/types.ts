@@ -9,8 +9,10 @@ export interface TransferStateish extends Decodable<TransferState> {
 }
 
 export type Migrations = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readonly [version: number]: (doc: any, db: RaidenDatabase) => Promise<any[]>;
+  readonly [version: number]: (
+    doc: PouchDB.Core.IdMeta & PouchDB.Core.RevisionIdMeta,
+    db: RaidenDatabase,
+  ) => Promise<(PouchDB.Core.IdMeta & Partial<PouchDB.Core.RevisionIdMeta>)[]>;
 };
 
 export interface RaidenDatabaseMeta {

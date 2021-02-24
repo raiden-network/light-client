@@ -81,7 +81,7 @@ export function createPersisterMiddleware(
           dirtyDocs[_id] = state[key][id];
         }
       } else if (key === 'transfers') {
-        // iterate over channels separately
+        // iterate over transfers separately
         for (const _id in state.transfers) {
           if (state.transfers[_id] === prevState.transfers[_id]) continue;
           db.storageKeys.add(_id);
