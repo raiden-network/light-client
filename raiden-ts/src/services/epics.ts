@@ -381,15 +381,13 @@ export function pfsFeeUpdateEpic(
  */
 export function pfsServiceRegistryMonitorEpic(
   action$: Observable<RaidenAction>,
-  {}: Observable<RaidenState>,
+  state$: Observable<RaidenState>,
   { provider, serviceRegistryContract, contractsInfo, config$, latest$, init$ }: RaidenEpicDeps,
 ): Observable<pfsListUpdated> {
-  return combineLatest([
-    // monitors config.pfs, and only monitors contract if it's empty
-    config$.pipe(pluckDistinct('pfs')),
-    config$.pipe(pluckDistinct('confirmationBlocks')),
-  ]).pipe(
-    switchMap(([pfs, confirmationBlocks]) => {
+  const confirmations$ = config$.pipe(pluckDistinct('confirmationBlocks'));
+  const blockNumber$ = state$.pipe(pluckDistinct('blockNumber'));
+  return config$.pipe(pluckDistinct('pfs')).pipe(
+    switchMap((pfs) => {
       // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
       if (pfs !== '' && pfs !== undefined) return EMPTY;
       const initSub = new AsyncSubject<null>();
@@ -397,14 +395,17 @@ export function pfsServiceRegistryMonitorEpic(
       return fromEthersEvent(
         provider,
         serviceRegistryContract.filters.RegisteredService(null, null, null, null),
-        confirmationBlocks,
-        contractsInfo.ServiceRegistry.block_number,
+        {
+          fromBlock: contractsInfo.ServiceRegistry.block_number,
+          confirmations: config$.pipe(pluck('confirmationBlocks')),
+          blockNumber$,
+        },
       )
         .pipe(
-          withLatestFrom(latest$),
+          withLatestFrom(latest$, confirmations$),
           // filter only confirmed logs
           filter(
-            ([{ blockNumber }, { state }]) =>
+            ([{ blockNumber }, { state }, confirmationBlocks]) =>
               !!blockNumber && blockNumber + confirmationBlocks <= state.blockNumber,
           ),
           pluck(0),
@@ -986,23 +987,21 @@ export function msMonitorNewBPEpic(
   state$: Observable<RaidenState>,
   { provider, monitoringServiceContract, address, config$ }: RaidenEpicDeps,
 ): Observable<msBalanceProofSent> {
+  const confirmations$ = config$.pipe(pluckDistinct('confirmationBlocks'));
+  const blockNumber$ = state$.pipe(pluckDistinct('blockNumber'));
   // NewBalanceProofReceived event: [tokenNetwork, channelId, reward, nonce, monitoringService, ourAddress]
-  return config$.pipe(
-    pluckDistinct('confirmationBlocks'),
-    switchMap((confirmationBlocks) =>
-      fromEthersEvent(
-        provider,
-        monitoringServiceContract.filters.NewBalanceProofReceived(
-          null,
-          null,
-          null,
-          null,
-          null,
-          address,
-        ),
-        confirmationBlocks,
-      ),
+  return fromEthersEvent(
+    provider,
+    monitoringServiceContract.filters.NewBalanceProofReceived(
+      null,
+      null,
+      null,
+      null,
+      null,
+      address,
     ),
+    { confirmations: confirmations$, blockNumber$ },
+  ).pipe(
     completeWith(state$),
     map(
       logToContractEvent<[Address, UInt<32>, UInt<32>, UInt<8>, Address, Address, Event]>(

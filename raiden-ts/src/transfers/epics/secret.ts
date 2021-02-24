@@ -13,7 +13,6 @@ import {
   map,
   mergeMap,
   pluck,
-  switchMap,
   takeUntil,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -311,15 +310,10 @@ export function monitorSecretRegistryEpic(
   state$: Observable<RaidenState>,
   { provider, secretRegistryContract, config$ }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.success> {
-  return config$.pipe(
-    pluckDistinct('confirmationBlocks'),
-    switchMap((confirmationBlocks) =>
-      fromEthersEvent(
-        provider,
-        secretRegistryContract.filters.SecretRevealed(null, null),
-        confirmationBlocks,
-      ),
-    ),
+  return fromEthersEvent(provider, secretRegistryContract.filters.SecretRevealed(null, null), {
+    confirmations: config$.pipe(pluck('confirmationBlocks')),
+    blockNumber$: state$.pipe(pluckDistinct('blockNumber')),
+  }).pipe(
     completeWith(state$),
     map(logToContractEvent<[Hash, Secret, Event]>(secretRegistryContract)),
     filter(isntNil),
