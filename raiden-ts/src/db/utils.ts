@@ -303,8 +303,8 @@ export async function migrateDatabase(
             defer(() => migrations[newVersion](change.doc!, db!)).pipe(
               mergeMap((results) => from(results)),
               concatMap(async (result) => {
-                if ('_rev' in result) delete result['_rev'];
-                return newStorage.put(result);
+                const { _rev: _, ...doc } = result;
+                return newStorage.put(doc);
               }),
             ),
           ),
