@@ -40,7 +40,6 @@ export interface Latest {
   state: RaidenState;
   config: RaidenConfig;
   presences: Presences;
-  pfsList: readonly Address[];
   rtc: { [address: string]: RTCDataChannel };
   udcBalance: UInt<32>;
   blockTime: number;

@@ -11,7 +11,7 @@ import unset from 'lodash/fp/unset';
 import { initialState } from '../state';
 import { createReducer } from '../utils/actions';
 import { partialCombineReducers } from '../utils/redux';
-import { iouClear, iouPersist } from './actions';
+import { iouClear, iouPersist, servicesValid } from './actions';
 
 const iou = createReducer(initialState.iou)
   .handle(iouPersist, (state, action) => ({
@@ -25,9 +25,14 @@ const iou = createReducer(initialState.iou)
     unset([action.meta.tokenNetwork, action.meta.serviceAddress], state),
   );
 
+const services = createReducer(initialState.services).handle(
+  servicesValid,
+  (_s, action) => action.payload,
+);
+
 /**
  * Nested combined reducer for iou
  * Handles the 'iou' substate.
  */
-const servicesReducer = partialCombineReducers({ iou }, initialState);
+const servicesReducer = partialCombineReducers({ iou, services }, initialState);
 export default servicesReducer;

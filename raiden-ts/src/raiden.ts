@@ -1157,14 +1157,12 @@ export class Raiden {
    */
   public async findPFS(): Promise<PFS[]> {
     assert(this.config.pfs !== null, ErrorCodes.PFS_DISABLED, this.log.info);
+    await this.synced;
     return (this.config.pfs
       ? of<readonly (string | Address)[]>([this.config.pfs])
-      : this.deps.latest$.pipe(
-          pluckDistinct('pfsList'),
-          first((v) => v.length > 0),
-        )
+      : of<readonly Address[]>(Object.keys(this.state.services) as Address[])
     )
-      .pipe(mergeMap((pfsList) => pfsListInfo(pfsList, this.deps)))
+      .pipe(mergeMap((service) => pfsListInfo(service, this.deps)))
       .toPromise();
   }
 
