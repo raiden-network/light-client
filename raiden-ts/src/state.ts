@@ -7,7 +7,7 @@ import { ConfirmableAction } from './actions';
 import { Channel } from './channels/state';
 import { ChannelKey } from './channels/types';
 import { PartialRaidenConfig } from './config';
-import { IOU } from './services/types';
+import { IOU, ServicesValidityMap } from './services/types';
 import { TransferState } from './transfers/state';
 import { RaidenMatrixSetup } from './transport/state';
 import type { ContractsInfo } from './types';
@@ -33,6 +33,7 @@ const _RaidenState = t.readonly(
       ),
     ),
     pendingTxs: t.readonlyArray(ConfirmableAction),
+    services: ServicesValidityMap,
   }),
   'RaidenState',
 );
@@ -77,6 +78,7 @@ export function makeInitialState(
     transfers: {},
     iou: {},
     pendingTxs: [],
+    services: {},
     config: {},
     ...overrides,
   };

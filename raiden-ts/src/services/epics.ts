@@ -1,12 +1,15 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { concat as concatBytes } from '@ethersproject/bytes';
-import { MaxUint256, Two, WeiPerEther, Zero } from '@ethersproject/constants';
+import { MaxUint256, WeiPerEther, Zero } from '@ethersproject/constants';
 import type { Event } from '@ethersproject/contracts';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
 import BN from 'bignumber.js';
 import * as t from 'io-ts';
 import constant from 'lodash/constant';
+import isEmpty from 'lodash/isEmpty';
+import isEqual from 'lodash/isEqual';
+import pickBy from 'lodash/pickBy';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, combineLatest, defer, EMPTY, from, merge, of, timer } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
@@ -14,19 +17,15 @@ import {
   catchError,
   concatMap,
   debounce,
-  debounceTime,
-  delay,
   distinctUntilChanged,
   exhaustMap,
   filter,
   first,
-  groupBy,
   map,
   mapTo,
   mergeMap,
   pairwise,
   pluck,
-  scan,
   startWith,
   switchMap,
   take,
@@ -59,7 +58,14 @@ import { isActionOf, isResponseOf } from '../utils/actions';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { assert, commonTxErrors, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../utils/ethers';
-import { completeWith, mergeWith, pluckDistinct, retryAsync$, retryWhile } from '../utils/rx';
+import {
+  completeWith,
+  lastMap,
+  mergeWith,
+  pluckDistinct,
+  retryAsync$,
+  retryWhile,
+} from '../utils/rx';
 import type { Address, Hash, Signature, Signed } from '../utils/types';
 import { decode, Int, isntNil, UInt } from '../utils/types';
 import {
@@ -67,7 +73,7 @@ import {
   iouPersist,
   msBalanceProofSent,
   pathFind,
-  pfsListUpdated,
+  servicesValid,
   udcDeposit,
   udcWithdraw,
   udcWithdrawn,
@@ -375,80 +381,75 @@ export function pfsFeeUpdateEpic(
  * @param deps.serviceRegistryContract - ServiceRegistry contract instance
  * @param deps.contractsInfo - Contracts info mapping
  * @param deps.config$ - Config observable
- * @param deps.latest$ - Latest observable
  * @param deps.init$ - Init$ tasks subject
- * @returns Observable of pfsListUpdated actions
+ * @returns Observable of servicesValid actions
  */
 export function pfsServiceRegistryMonitorEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { provider, serviceRegistryContract, contractsInfo, config$, latest$, init$ }: RaidenEpicDeps,
-): Observable<pfsListUpdated> {
-  const confirmations$ = config$.pipe(pluckDistinct('confirmationBlocks'));
-  const blockNumber$ = state$.pipe(pluckDistinct('blockNumber'));
-  return config$.pipe(pluckDistinct('pfs')).pipe(
-    switchMap((pfs) => {
-      // disable ServiceRegistry monitoring if/while pfs is null=disabled or truty
-      if (pfs !== '' && pfs !== undefined) return EMPTY;
+  { provider, serviceRegistryContract, contractsInfo, config$, init$ }: RaidenEpicDeps,
+): Observable<servicesValid> {
+  const blockNumber$ = action$.pipe(filter(newBlock.is), pluck('payload', 'blockNumber'));
+  return state$.pipe(
+    first(),
+    switchMap(({ services: initialServices }) => {
       const initSub = new AsyncSubject<null>();
       init$.next(initSub);
       return fromEthersEvent(
         provider,
         serviceRegistryContract.filters.RegisteredService(null, null, null, null),
         {
-          fromBlock: contractsInfo.ServiceRegistry.block_number,
+          // if initialServices is empty, fetch since registry deploy block, else, resetEventsBlock
+          fromBlock: isEmpty(initialServices)
+            ? contractsInfo.TokenNetworkRegistry.block_number
+            : undefined,
           confirmations: config$.pipe(pluck('confirmationBlocks')),
           blockNumber$,
+          onPastCompleted: () => {
+            initSub.next(null);
+            initSub.complete();
+          },
         },
       )
         .pipe(
-          withLatestFrom(latest$, confirmations$),
-          // filter only confirmed logs
+          withLatestFrom(state$, config$),
           filter(
-            ([{ blockNumber }, { state }, confirmationBlocks]) =>
-              !!blockNumber && blockNumber + confirmationBlocks <= state.blockNumber,
+            ([{ blockNumber: eventBlock }, { blockNumber }, { confirmationBlocks }]) =>
+              !!eventBlock && eventBlock + confirmationBlocks <= blockNumber,
           ),
           pluck(0),
           map(
-            // [service, valid_till, deposit_amount, deposit_contract, Event]
-            logToContractEvent<[Address, BigNumber, UInt<32>, Address, Event]>(
-              serviceRegistryContract,
-            ),
+            logToContractEvent<
+              [
+                service: Address,
+                valid_till: BigNumber,
+                deposit_amount: UInt<32>,
+                deposit_contract: Address,
+                event: Event,
+              ]
+            >(serviceRegistryContract),
           ),
           filter(isntNil),
+          withLatestFrom(state$),
+          // merge new entry with stored state
+          map(([[service, valid_till], { services }]) => ({
+            ...services,
+            [service]: valid_till.toNumber() * 1000,
+          })),
         )
         .pipe(
-          groupBy(([service]) => service),
-          mergeMap((grouped$) =>
-            grouped$.pipe(
-              // switchMap ensures new events for each server (grouped$) picks latest event
-              switchMap(([service, valid_till]) => {
-                const now = Date.now(),
-                  validTill = valid_till.mul(1000); // milliseconds valid_till
-                if (validTill.lt(now)) return EMPTY; // this event already expired
-                // end$ will emit valid=false iff <2^31 ms in the future (setTimeout limit)
-                const end$ = validTill.sub(now).lt(Two.pow(31))
-                  ? of({ service, valid: false }).pipe(delay(new Date(validTill.toNumber())))
-                  : EMPTY;
-                return merge(of({ service, valid: true }), end$);
-              }),
+          startWith(initialServices),
+          // switchMap with newBlock events ensure this filter gets re-evaluated every block
+          // and filters out entries which aren't valid anymore
+          switchMap((services) =>
+            action$.pipe(
+              filter(newBlock.is),
+              startWith(true),
+              map(() => pickBy(services, (till) => Date.now() < till)),
             ),
           ),
-          scan(
-            (acc, { service, valid }) =>
-              !valid && acc.includes(service)
-                ? acc.filter((s) => s !== service)
-                : valid && !acc.includes(service)
-                ? [...acc, service]
-                : acc,
-            [] as readonly Address[],
-          ),
-          distinctUntilChanged(),
-          debounceTime(1e3), // debounce burst of updates on initial fetch
-          map((pfsList) => {
-            initSub.complete(); // complete initSub on first emition, following completes are noop
-            return pfsListUpdated({ pfsList });
-          }),
+          distinctUntilChanged<typeof initialServices>(isEqual),
+          map((valid) => servicesValid(valid)),
         );
     }),
     completeWith(action$),
@@ -980,16 +981,16 @@ export function udcWithdrawPlannedEpic(
  * @param deps.monitoringServiceContract - MonitoringService contract instance
  * @param deps.address - Our address
  * @param deps.config$ - Config observable
+ * @param deps.init$ - Subject of initial sync tasks
  * @returns Observable of msBalanceProofSent actions
  */
 export function msMonitorNewBPEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { provider, monitoringServiceContract, address, config$ }: RaidenEpicDeps,
+  { provider, monitoringServiceContract, address, config$, init$ }: RaidenEpicDeps,
 ): Observable<msBalanceProofSent> {
-  const confirmations$ = config$.pipe(pluckDistinct('confirmationBlocks'));
-  const blockNumber$ = state$.pipe(pluckDistinct('blockNumber'));
-  // NewBalanceProofReceived event: [tokenNetwork, channelId, reward, nonce, monitoringService, ourAddress]
+  const initSub = new AsyncSubject<null>();
+  init$.next(initSub);
   return fromEthersEvent(
     provider,
     monitoringServiceContract.filters.NewBalanceProofReceived(
@@ -1000,13 +1001,28 @@ export function msMonitorNewBPEpic(
       null,
       address,
     ),
-    { confirmations: confirmations$, blockNumber$ },
+    {
+      confirmations: config$.pipe(pluck('confirmationBlocks')),
+      blockNumber$: action$.pipe(filter(newBlock.is), pluck('payload', 'blockNumber')),
+      onPastCompleted: () => {
+        initSub.next(null);
+        initSub.complete();
+      },
+    },
   ).pipe(
     completeWith(state$),
     map(
-      logToContractEvent<[Address, UInt<32>, UInt<32>, UInt<8>, Address, Address, Event]>(
-        monitoringServiceContract,
-      ),
+      logToContractEvent<
+        [
+          tokenNetwork: Address,
+          channelId: UInt<32>,
+          reward: UInt<32>,
+          nonce: UInt<8>,
+          monitoringService: Address,
+          ourAddress: Address,
+          event: Event,
+        ]
+      >(monitoringServiceContract),
     ),
     filter(isntNil),
     // should never fail, as per filter
@@ -1167,7 +1183,7 @@ function pfsIsDisabled(action: pathFind.request, { pfs }: RaidenConfig): boolean
 function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Observable<Route> {
   return deps.config$.pipe(
     first(),
-    mergeWith((config) => getPsfInfo$(action.payload.pfs, config.pfs, deps)),
+    mergeWith((config) => getPfsInfo$(action.payload.pfs, config.pfs, deps)),
     mergeWith(([, pfs]) => prepareNextIOU$(pfs, action.meta.tokenNetwork, deps)),
     mergeWith(([[config, pfs], iou]) =>
       requestPfs$(pfs, iou, action.meta, { address: deps.address, config }),
@@ -1235,7 +1251,7 @@ function filterPaths(
   return filteredPaths;
 }
 
-function getPsfInfo$(
+function getPfsInfo$(
   pfsByAction: PFS | null | undefined,
   pfsByConfig: string | Address | null,
   deps: RaidenEpicDeps,
@@ -1243,11 +1259,11 @@ function getPsfInfo$(
   if (pfsByAction) return of(pfsByAction);
   else if (pfsByConfig) return pfsInfo(pfsByConfig, deps);
   else {
-    const { log, latest$ } = deps;
-    return latest$.pipe(
-      pluck('pfsList'), // get cached pfsList
-      first((pfsList) => pfsList.length > 0), // if needed, wait for list to be populated
-      mergeMap((pfsList) => pfsListInfo(pfsList, deps)), // fetch pfsInfo from whole list & sort it
+    const { log, latest$, init$ } = deps;
+    return init$.pipe(
+      lastMap(() => latest$.pipe(first(), pluck('state', 'services'))),
+      map((services) => Object.keys(services) as Address[]),
+      mergeMap((services) => pfsListInfo(services, deps)), // fetch pfsInfo from whole list & sort it
       tap((pfsInfos) => log.info('Auto-selecting best PFS from:', pfsInfos)),
       pluck(0), // pop best ranked
     );

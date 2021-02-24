@@ -92,3 +92,6 @@ export const SuggestedPartner = t.readonly(
 );
 export interface SuggestedPartner extends t.TypeOf<typeof SuggestedPartner> {}
 export const SuggestedPartners = t.array(SuggestedPartner, 'SuggestedPartners');
+
+export const ServicesValidityMap = t.readonly(t.record(t.string, t.number), 'ServicesValidityMap');
+export type ServicesValidityMap = t.TypeOf<typeof ServicesValidityMap>;

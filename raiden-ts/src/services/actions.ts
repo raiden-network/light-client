@@ -4,7 +4,7 @@ import * as t from 'io-ts';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
 import { Address, Hash, Signed, UInt } from '../utils/types';
-import { IOU, Paths, PFS } from './types';
+import { IOU, Paths, PFS, ServicesValidityMap } from './types';
 
 const PathId = t.type({
   tokenNetwork: Address,
@@ -31,11 +31,8 @@ export namespace pathFind {
   export interface failure extends ActionType<typeof pathFind.failure> {}
 }
 
-export const pfsListUpdated = createAction(
-  'pfs/list/updated',
-  t.type({ pfsList: t.readonlyArray(Address) }),
-);
-export interface pfsListUpdated extends ActionType<typeof pfsListUpdated> {}
+export const servicesValid = createAction('services/valid', ServicesValidityMap);
+export interface servicesValid extends ActionType<typeof servicesValid> {}
 
 export const iouPersist = createAction('iou/persist', t.type({ iou: Signed(IOU) }), ServiceId);
 export interface iouPersist extends ActionType<typeof iouPersist> {}

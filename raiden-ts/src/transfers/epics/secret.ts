@@ -1,6 +1,6 @@
 import type { Event } from '@ethersproject/contracts';
 import type { Observable } from 'rxjs';
-import { defer, EMPTY, from, identity, of } from 'rxjs';
+import { AsyncSubject, defer, EMPTY, from, identity, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -303,16 +303,23 @@ export function transferRequestUnlockEpic(
  * @param deps.provider - Provider instance
  * @param deps.secretRegistryContract - SecretRegistry contract instance
  * @param deps.config$ - Config observable
+ * @param deps.init$ - Init$ tasks subject
  * @returns Observable of transferSecretRegister.success actions
  */
 export function monitorSecretRegistryEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { provider, secretRegistryContract, config$ }: RaidenEpicDeps,
+  { provider, secretRegistryContract, config$, init$ }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.success> {
+  const initSub = new AsyncSubject<null>();
+  init$.next(initSub);
   return fromEthersEvent(provider, secretRegistryContract.filters.SecretRevealed(null, null), {
     confirmations: config$.pipe(pluck('confirmationBlocks')),
     blockNumber$: state$.pipe(pluckDistinct('blockNumber')),
+    onPastCompleted: () => {
+      initSub.next(null);
+      initSub.complete();
+    },
   }).pipe(
     completeWith(state$),
     map(logToContractEvent<[Hash, Secret, Event]>(secretRegistryContract)),

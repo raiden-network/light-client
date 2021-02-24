@@ -31,7 +31,7 @@ import * as ChannelsEpics from './channels/epics';
 import type { RaidenConfig } from './config';
 import { Capabilities } from './constants';
 import * as DatabaseEpics from './db/epics';
-import { pfsListUpdated, udcDeposit } from './services/actions';
+import { udcDeposit } from './services/actions';
 import * as ServicesEpics from './services/epics';
 import type { RaidenState } from './state';
 import * as TransfersEpics from './transfers/epics';
@@ -41,7 +41,7 @@ import type { Caps } from './transport/types';
 import { getPresences$ } from './transport/utils';
 import type { Latest, RaidenEpicDeps } from './types';
 import { completeWith, pluckDistinct } from './utils/rx';
-import type { Address, UInt } from './utils/types';
+import type { UInt } from './utils/types';
 
 // default values for dynamic capabilities not specified on defaultConfig nor userConfig
 function dynamicCaps({
@@ -185,11 +185,6 @@ export function getLatest$(
     map(([userConfig, caps]) => ({ ...defaultConfig, ...userConfig, caps })),
   );
   const presences$ = getPresences$(action$);
-  const pfsList$ = action$.pipe(
-    filter(pfsListUpdated.is),
-    pluck('payload', 'pfsList'),
-    startWith([] as readonly Address[]),
-  );
   const rtc$ = action$.pipe(
     filter(rtcChannel.is),
     // scan: if v.payload is defined, set it; else, unset
@@ -202,15 +197,14 @@ export function getLatest$(
   );
 
   return combineLatest([
-    combineLatest([action$, state$, config$, presences$, pfsList$, rtc$]),
+    combineLatest([action$, state$, config$, presences$, rtc$]),
     combineLatest([udcBalance$, blockTime$, stale$]),
   ]).pipe(
-    map(([[action, state, config, presences, pfsList, rtc], [udcBalance, blockTime, stale]]) => ({
+    map(([[action, state, config, presences, rtc], [udcBalance, blockTime, stale]]) => ({
       action,
       state,
       config,
       presences,
-      pfsList,
       rtc,
       udcBalance,
       blockTime,
