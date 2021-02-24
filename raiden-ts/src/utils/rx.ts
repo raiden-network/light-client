@@ -329,15 +329,17 @@ export function concatBuffer<T, R>(
  *   );
  *
  * @param project - Project function passed to mergeMap
+ * @param mapFunc - Funtion to merge result with, like mergeMap or switchMap
  * @returns Observable mirroring project's return, but prepending emitted values from this inner
  *    observable in a tuple with the value from the outter observable which generated the inner.
  */
 export function mergeWith<T, R>(
   project: (value: T, index: number) => ObservableInput<R>,
+  mapFunc = mergeMap,
 ): OperatorFunction<T, [T, R]> {
   return (input$) =>
     input$.pipe(
-      mergeMap((value, index) =>
+      mapFunc((value, index) =>
         from(project(value, index)).pipe(map((res) => [value, res] as [T, R])),
       ),
     );
