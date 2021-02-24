@@ -41,6 +41,7 @@ import {
   pluck,
   publishReplay,
   scan,
+  startWith,
   switchMap,
   take,
   takeUntil,
@@ -73,6 +74,7 @@ import { fromEthersEvent, getLogsByChunk$, logToContractEvent } from '../utils/e
 import {
   completeWith,
   distinctRecordValues,
+  lastMap,
   pluckDistinct,
   retryAsync$,
   retryWhile,
@@ -130,6 +132,7 @@ export function initEpic(
         ),
       );
     }),
+    completeWith(state$),
     finalize(() => init$.complete()),
   );
 }
@@ -141,15 +144,22 @@ export function initEpic(
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
  * @param deps.provider - Eth provider
+ * @param deps.init$ - Observable which completes when initial sync is done
  * @returns Observable of newBlock actions
  */
 export function initNewBlockEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { provider }: RaidenEpicDeps,
+  { provider, init$ }: RaidenEpicDeps,
 ): Observable<newBlock> {
   return retryAsync$(() => provider.getBlockNumber(), provider.pollingInterval).pipe(
-    mergeMap((blockNumber) => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
+    // emits fetched block first, then subscribes to provider's block after synced
+    mergeMap((blockNumber) =>
+      init$.pipe(
+        lastMap(() => fromEthersEvent<number>(provider, 'block')),
+        startWith(blockNumber),
+      ),
+    ),
     map((blockNumber) => newBlock({ blockNumber })),
     completeWith(action$),
   );
@@ -592,8 +602,9 @@ function fetchNewChannelEvents$(
   [token, tokenNetwork]: [Address, Address],
   deps: RaidenEpicDeps,
 ) {
-  const { provider, getTokenNetworkContract, config$ } = deps;
+  const { provider, getTokenNetworkContract, config$, latest$ } = deps;
   const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
+  const blockNumber$ = latest$.pipe(pluckDistinct('state', 'blockNumber'));
 
   // this mapping is needed to handle channel events emitted before open is confirmed/stored
   const channelFilter: Filter = {
@@ -601,12 +612,11 @@ function fetchNewChannelEvents$(
     // set only topics[0], to get also open events (new ids); filter client-side
     topics: [Object.values(getChannelEventsTopics(tokenNetworkContract))],
   };
-
-  return config$.pipe(
-    first(),
-    mergeMap(({ confirmationBlocks }) =>
-      fromEthersEvent<Log>(provider, channelFilter, confirmationBlocks, fromBlock),
-    ),
+  return fromEthersEvent<Log>(provider, channelFilter, {
+    fromBlock,
+    blockNumber$,
+    confirmations: config$.pipe(pluck('confirmationBlocks')),
+  }).pipe(
     map(logToContractEvent<ChannelEvents>(tokenNetworkContract)),
     filter(isntNil),
     mapChannelEventsToAction([token, tokenNetwork], deps),
