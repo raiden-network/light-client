@@ -9,17 +9,21 @@ import type {
   Network,
 } from '@ethersproject/providers';
 import type { Observable } from 'rxjs';
-import { defer, from, fromEventPattern, throwError, timer } from 'rxjs';
+import { defer, from, fromEventPattern, of, throwError, timer } from 'rxjs';
 import {
   catchError,
   debounceTime,
+  distinctUntilChanged,
   exhaustMap,
   ignoreElements,
   mergeMap,
   repeatWhen,
+  switchMap,
   takeWhile,
   tap,
 } from 'rxjs/operators';
+
+import { mergeWith } from './rx';
 
 /**
  * @param provider - Provider to getLogs from
@@ -78,23 +82,40 @@ export function fromEthersEvent<T>(
 export function fromEthersEvent<T extends Log>(
   target: JsonRpcProvider,
   event: Filter,
-  confirmations?: number,
-  fromBlock?: number,
+  opts?: {
+    fromBlock?: number;
+    confirmations?: number | Observable<number>;
+    blockNumber$?: Observable<number>;
+    onPastCompleted?: (elapsedMs: number) => void;
+  },
 ): Observable<T>;
 /**
  * Like rxjs' fromEvent, but event can be an EventFilter
  *
  * @param target - Object to hook event listener, maybe a Provider or Contract
  * @param event - EventFilter or string representing the event to listen to
- * @param confirmations - After how many blocks a tx is considered confirmed
- * @param fromBlock - Block since when to fetch events from
+ * @param opts - Options object
+ * @param opts.fromBlock - Block since when to fetch events from
+ * @param opts.confirmations - After how many blocks a tx is considered confirmed; if observable,
+ *    it should have a value at subscription time, like a ReplaySubject(1);
+ * @param opts.blockNumber$ - New blockNumber observable
+ * @param opts.onPastCompleted - Callback when first/past blocks scan completes
  * @returns Observable of target.on(event) events
  */
 export function fromEthersEvent<T>(
   target: JsonRpcProvider,
   event: EventType,
-  confirmations = 5,
-  fromBlock?: number,
+  {
+    fromBlock,
+    confirmations,
+    blockNumber$,
+    onPastCompleted,
+  }: {
+    fromBlock?: number;
+    confirmations?: number | Observable<number>;
+    blockNumber$?: Observable<number>;
+    onPastCompleted?: (elapsedMs: number) => void;
+  } = {},
 ) {
   if (typeof event === 'string' || Array.isArray(event))
     return fromEventPattern<T>(
@@ -102,30 +123,37 @@ export function fromEthersEvent<T>(
       (handler: Listener) => target.removeListener(event, handler),
     ) as Observable<T>;
 
-  const range = confirmations * 2; // half for confirmed, half for unconfirmed logs
-  const blockQueue: number[] = []; // sorted 'fromBlock' queue, at most of [range] size
-  return defer(() => {
-    if (!fromBlock) {
-      // 'resetEventsBlock' is private, set at [[Raiden]] constructor, so we need 'any'
-      let resetBlock: number = (target as any)._lastBlockNumber;
-      const innerBlockNumber = target.blockNumber;
-      resetBlock =
-        resetBlock && resetBlock > 0
-          ? resetBlock
-          : innerBlockNumber && innerBlockNumber > 0
-          ? innerBlockNumber
-          : 1;
-      fromBlock = resetBlock - confirmations;
-    }
-    // starts 'blockQueue' with subscription-time's resetEventsBlock
-    blockQueue.splice(0, blockQueue.length, fromBlock);
+  const confirmations$ = !confirmations
+    ? of(5)
+    : typeof confirmations === 'number'
+    ? of(confirmations)
+    : confirmations;
+  const blockQueue: number[] = []; // sorted 'fromBlock' queue, at most of [confirmations * 2] size
+  let start = Date.now();
+  return confirmations$.pipe(
+    distinctUntilChanged(),
+    mergeWith((confirmations) => {
+      if (!fromBlock) {
+        // 'resetEventsBlock' is private, set at [[Raiden]] constructor, so we need 'any'
+        let resetBlock: number = (target as any)._lastBlockNumber;
+        const innerBlockNumber = target.blockNumber;
+        resetBlock =
+          resetBlock && resetBlock > 0
+            ? resetBlock
+            : innerBlockNumber && innerBlockNumber > 0
+            ? innerBlockNumber
+            : confirmations + 1;
+        // starts 'blockQueue' with subscription-time's resetEventsBlock
+        fromBlock = resetBlock - confirmations;
+      }
+      blockQueue.splice(0, blockQueue.length, fromBlock);
 
-    return fromEthersEvent<number>(target, 'block');
-  }).pipe(
+      return blockNumber$ ?? fromEthersEvent<number>(target, 'block');
+    }, switchMap),
     debounceTime(Math.ceil(target.pollingInterval / 10)), // debounce bursts of blocks
     // exhaustMap will skip new events if it's still busy with a previous getLogs call,
     // but next [fromBlock] in queue always includes range for any skipped block
-    exhaustMap((blockNumber) =>
+    exhaustMap(([confirmations, blockNumber]) =>
       getLogsByChunk$(target, { ...event, fromBlock: blockQueue[0], toBlock: blockNumber }).pipe(
         tap({
           next: (log) => {
@@ -141,7 +169,13 @@ export function fromEthersEvent<T>(
           },
           complete: () => {
             // if queue is full, pop_front 'fromBlock' which was just queried
-            while (blockQueue.length >= range) blockQueue.shift();
+            // half for confirmed, half for unconfirmed logs
+            while (blockQueue.length >= confirmations * 2) blockQueue.shift();
+            if (onPastCompleted && start) {
+              start = 0;
+              // this is called only once as soon as first stretch/past scan completes
+              onPastCompleted(Date.now() - start);
+            }
             // push_back next block iff getLogs didn't throw, queue is never empty
             blockQueue.push(blockNumber + 1);
           },
