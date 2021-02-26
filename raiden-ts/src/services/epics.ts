@@ -318,12 +318,13 @@ export function pfsCapacityUpdateEpic(
  * @param deps.network - Current network
  * @param deps.signer - Signer instance
  * @param deps.config$ - Config observable
+ * @param deps.init$ - Init$ subject
  * @returns Observable of messageGlobalSend.request actions
  */
 export function pfsFeeUpdateEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, address, network, signer, config$ }: RaidenEpicDeps,
+  { log, address, network, signer, config$, init$ }: RaidenEpicDeps,
 ): Observable<messageGlobalSend.request> {
   return state$.pipe(
     groupChannel$,
@@ -353,11 +354,14 @@ export function pfsFeeUpdateEpic(
         },
       };
       const msgId = makeMessageId().toString();
+      const meta = { roomName: pfsRoom!, msgId };
+      const completed$ = action$.pipe(filter(isResponseOf(messageGlobalSend, meta)), take(1));
 
       return from(signMessage(signer, message, { log })).pipe(
-        map((signed) =>
-          messageGlobalSend.request({ message: signed }, { roomName: pfsRoom!, msgId }),
-        ),
+        map((signed) => {
+          init$.next(completed$);
+          return messageGlobalSend.request({ message: signed }, meta);
+        }),
         catchError((err) => {
           log.error('Error trying to generate & sign PFSFeeUpdate', err);
           return EMPTY;
