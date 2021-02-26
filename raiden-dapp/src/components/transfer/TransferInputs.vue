@@ -6,7 +6,9 @@
       class="transfer-inputs__form"
       autocomplete="off"
       novalidate
-      @submit.prevent="navigateToTransferSteps(token.address, syncedTarget, syncedAmount)"
+      @submit.prevent="
+        navigateToTransferSteps(token.address, syncedTargetAddress, syncedTransferAmount)
+      "
     >
       <v-row no-gutters class="transfer-inputs__form__heading">
         <span class="transfer-inputs__form__heading--title">
