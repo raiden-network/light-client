@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { hexlify } from '@ethersproject/bytes';
 import type { Contract, Event } from '@ethersproject/contracts';
 import type {
   EventType,
@@ -8,6 +9,7 @@ import type {
   Log,
   Network,
 } from '@ethersproject/providers';
+import { Formatter } from '@ethersproject/providers';
 import type { Observable } from 'rxjs';
 import { defer, from, fromEventPattern, of, throwError, timer } from 'rxjs';
 import {
@@ -16,6 +18,7 @@ import {
   distinctUntilChanged,
   exhaustMap,
   ignoreElements,
+  map,
   mergeMap,
   repeatWhen,
   switchMap,
@@ -26,15 +29,28 @@ import {
 import { mergeWith } from './rx';
 
 /**
+ * Like JsonRpcProvider.getLogs, but split block scan range in chunks, adapting to smaller chunks
+ * in case provider times out with such big ranges, and also supporting arrays of addresses in
+ * filter.address field, to scan multiple similar contracts on a single request.
+ *
  * @param provider - Provider to getLogs from
  * @param filter - getLogs filter
+ * @param filter.address - Contract address or array of addresses
+ * @param filter.topics - Array of topics
+ * @param filter.fromBlock - Scan block start
+ * @param filter.toBlock - Scan block end
  * @param chunk - Initial chunk size
  * @param minChunk - Minimum chunk size in case of getLogs errors
  * @returns Observable of fetched logs
  */
 export function getLogsByChunk$(
   provider: JsonRpcProvider,
-  filter: Filter & { fromBlock: number; toBlock: number },
+  filter: {
+    address?: string | string[];
+    topics?: ((string | null) | (string | null)[])[];
+    fromBlock: number;
+    toBlock: number;
+  },
   chunk = 1e5,
   minChunk = 1e3,
 ): Observable<Log> {
@@ -46,12 +62,23 @@ export function getLogsByChunk$(
     let retry = 3;
     // every time repeatWhen re-subscribes to this defer, yield (current/retried/next) range/chunk
     return defer(async () =>
-      provider.getLogs({
-        ...filter,
-        fromBlock: start,
-        toBlock: Math.min(start + curChunk - 1, toBlock),
-      }),
+      provider.send('eth_getLogs', [
+        {
+          ...filter,
+          fromBlock: hexlify(start),
+          toBlock: hexlify(Math.min(start + curChunk - 1, toBlock)),
+        },
+      ]),
     ).pipe(
+      // mimics the post-request handling on BaseProvider.getLogs
+      map((logs) => {
+        logs.forEach((log: { removed?: boolean }) => {
+          if (log.removed == null) log.removed = false;
+        });
+        return Formatter.arrayOf(provider.formatter.filterLog.bind(provider.formatter))(
+          logs,
+        ) as Log[];
+      }),
       tap({
         complete: () => (start += curChunk), // on success, increment range start
         error: () => {
@@ -134,8 +161,7 @@ export function fromEthersEvent<T>(
     distinctUntilChanged(),
     mergeWith((confirmations) => {
       if (!fromBlock) {
-        // 'resetEventsBlock' is private, set at [[Raiden]] constructor, so we need 'any'
-        let resetBlock: number = (target as any)._lastBlockNumber;
+        let resetBlock = target._lastBlockNumber;
         const innerBlockNumber = target.blockNumber;
         resetBlock =
           resetBlock && resetBlock > 0
