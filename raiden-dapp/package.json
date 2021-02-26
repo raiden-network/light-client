@@ -13,8 +13,8 @@
     "test:e2e:docker": "bash ../e2e-environment/run-e2e-tests.sh",
     "lint": "vue-cli-service lint --no-fix --max-warnings 0 && stylelint ./src/**/*.{vue,scss}",
     "lint:fix": "vue-cli-service lint --fix && stylelint --fix ./src/**/*.{vue,scss}",
-    "capacitor:build": "vue-cli-service capacitor:build",
-    "capacitor:serve": "vue-cli-service capacitor:serve",
+    "capacitor:build": "vue-cli-service capacitor:build --mode capacitor",
+    "capacitor:serve": "vue-cli-service capacitor:serve --mode capacitor",
     "i18n:report": "vue-cli-service i18n:report --src './src/**/*.?(js|vue)' --locales './src/locales/**/*.json'",
     "serve": "vue-cli-service serve",
     "serve:no-logging": "export NODE_ENV=nologging && vue-cli-service serve"
