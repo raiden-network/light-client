@@ -1,0 +1,7 @@
+{
+  "appId": "com.brainbot.raiden.dapp",
+  "appName": "Raiden dApp",
+  "bundledWebRuntime": false,
+  "webDir":"dist",
+  "linuxAndroidStudioPath": "/usr/bin/android-studio"
+}

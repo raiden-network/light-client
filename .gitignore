@@ -2,3 +2,5 @@ node_modules
 logs
 .DS_Store
 junit.xml
+android/
+ios/

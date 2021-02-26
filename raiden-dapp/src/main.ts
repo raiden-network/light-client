@@ -9,6 +9,7 @@ import { IdenticonPlugin } from '@/plugins/identicon-plugin';
 import { RaidenPlugin } from '@/plugins/raiden';
 import { ServiceWorkerAssistantPlugin } from '@/plugins/service-worker-assistant-plugin';
 import vuetify from '@/plugins/vuetify';
+import { Plugins } from '@capacitor/core'
 
 import App from './App.vue';
 import i18n from './i18n';
@@ -30,4 +31,7 @@ new Vue({
   store,
   i18n,
   render: (h) => h(App),
+  mounted() {
+    Plugins.SplashScreen.hide();
+  },
 }).$mount('#app');
