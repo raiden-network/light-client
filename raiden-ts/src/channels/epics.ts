@@ -271,41 +271,53 @@ function scanRegistryTokenNetworks({
     filter(([, tokenNetwork]) => !!tokenNetwork),
     toArray(),
     mergeMap((logs) => {
-      if (!logs.length) return EMPTY;
-      const firstBlock = logs[0][2].blockNumber;
-      const tokenNetworks = new Map<string, [token: Address, event: Event]>(
-        logs.map(([token, tokenNetwork, event]) => [tokenNetwork, [token, event]]),
+      const alwaysMonitored$: Observable<tokenMonitored> = from(
+        logs
+          .splice(0, 2)
+          .map(([token, tokenNetwork, event]) =>
+            tokenMonitored({ token, tokenNetwork, fromBlock: event.blockNumber }),
+          ),
       );
-      const allTokenNetworkAddrs = Array.from(tokenNetworks.keys());
-      const aTokenNetworkContract = getTokenNetworkContract(allTokenNetworkAddrs[0] as Address);
-      const ChannelOpenedTopic = Interface.getEventTopic(
-        aTokenNetworkContract.interface.getEvent('ChannelOpened'),
-      );
-      // simultaneously query all tokenNetworks for channels from us and to us
-      return merge(
-        getLogsByChunk$(provider, {
-          address: allTokenNetworkAddrs,
-          topics: [ChannelOpenedTopic, null, encodedAddress], // channels from us
-          fromBlock: firstBlock,
-          toBlock: provider.blockNumber,
-        }),
-        getLogsByChunk$(provider, {
-          address: allTokenNetworkAddrs,
-          topics: [ChannelOpenedTopic, null, null, encodedAddress], // channels to us
-          fromBlock: firstBlock,
-          toBlock: provider.blockNumber,
-        }),
-      ).pipe(
-        distinct((log) => log.address), // only act on the first log found for each tokenNetwork
-        filter((log) => tokenNetworks.has(log.address)), // shouldn't fail
-        map((log) =>
-          tokenMonitored({
-            token: tokenNetworks.get(log.address)![0],
-            tokenNetwork: log.address as Address,
-            fromBlock: log.blockNumber,
+
+      let monitorsIfHasChannels$: Observable<tokenMonitored> = EMPTY;
+      if (logs.length) {
+        const firstBlock = logs[0][2].blockNumber;
+        const tokenNetworks = new Map<string, [token: Address, event: Event]>(
+          logs.map(([token, tokenNetwork, event]) => [tokenNetwork, [token, event]]),
+        );
+        const allTokenNetworkAddrs = Array.from(tokenNetworks.keys());
+        const aTokenNetworkContract = getTokenNetworkContract(allTokenNetworkAddrs[0] as Address);
+        const ChannelOpenedTopic = Interface.getEventTopic(
+          aTokenNetworkContract.interface.getEvent('ChannelOpened'),
+        );
+        // simultaneously query all tokenNetworks for channels from us and to us
+        monitorsIfHasChannels$ = merge(
+          getLogsByChunk$(provider, {
+            address: allTokenNetworkAddrs,
+            topics: [ChannelOpenedTopic, null, encodedAddress], // channels from us
+            fromBlock: firstBlock,
+            toBlock: provider.blockNumber,
           }),
-        ),
-      );
+          getLogsByChunk$(provider, {
+            address: allTokenNetworkAddrs,
+            topics: [ChannelOpenedTopic, null, null, encodedAddress], // channels to us
+            fromBlock: firstBlock,
+            toBlock: provider.blockNumber,
+          }),
+        ).pipe(
+          distinct((log) => log.address), // only act on the first log found for each tokenNetwork
+          filter((log) => tokenNetworks.has(log.address)), // shouldn't fail
+          map((log) =>
+            tokenMonitored({
+              token: tokenNetworks.get(log.address)![0],
+              tokenNetwork: log.address as Address,
+              fromBlock: log.blockNumber,
+            }),
+          ),
+        );
+      }
+
+      return merge(alwaysMonitored$, monitorsIfHasChannels$);
     }),
   );
 }
