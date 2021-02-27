@@ -1,5 +1,5 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { hexDataLength } from '@ethersproject/bytes';
+import { hexDataLength, hexlify } from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
 import type { JsonRpcProvider } from '@ethersproject/providers';
 import { Web3Provider } from '@ethersproject/providers';
@@ -27,7 +27,8 @@ describe('getLogsByChunk$', () => {
   beforeEach(() => {
     provider = ({
       pollingInterval: 10,
-      getLogs: jest.fn(async () => []),
+      send: jest.fn(async () => []),
+      formatter: { filterLog: jest.fn(() => true) },
     } as unknown) as jest.Mocked<JsonRpcProvider>;
   });
 
@@ -35,33 +36,58 @@ describe('getLogsByChunk$', () => {
     expect.assertions(7);
 
     // errors twice before succeeding
-    provider.getLogs.mockRejectedValueOnce(error);
-    provider.getLogs.mockRejectedValueOnce(error);
+    provider.send.mockRejectedValueOnce(error);
+    provider.send.mockRejectedValueOnce(error);
 
     await expect(
       getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 5).toPromise(),
     ).resolves.toBeUndefined();
-    expect(provider.getLogs).toHaveBeenCalledTimes(5);
-    expect(provider.getLogs).toHaveBeenNthCalledWith(1, { fromBlock: 20, toBlock: 29 });
-    expect(provider.getLogs).toHaveBeenNthCalledWith(2, { fromBlock: 20, toBlock: 24 });
+    expect(provider.send).toHaveBeenCalledTimes(5);
+    expect(provider.send).toHaveBeenNthCalledWith(1, 'eth_getLogs', [
+      { fromBlock: hexlify(20), toBlock: hexlify(29) },
+    ]);
+    expect(provider.send).toHaveBeenNthCalledWith(2, 'eth_getLogs', [
+      { fromBlock: hexlify(20), toBlock: hexlify(24) },
+    ]);
 
-    expect(provider.getLogs).toHaveBeenNthCalledWith(3, { fromBlock: 20, toBlock: 24 });
-    expect(provider.getLogs).toHaveBeenNthCalledWith(4, { fromBlock: 25, toBlock: 29 });
-    expect(provider.getLogs).toHaveBeenNthCalledWith(5, { fromBlock: 30, toBlock: 30 });
+    expect(provider.send).toHaveBeenNthCalledWith(3, 'eth_getLogs', [
+      { fromBlock: hexlify(20), toBlock: hexlify(24) },
+    ]);
+    expect(provider.send).toHaveBeenNthCalledWith(4, 'eth_getLogs', [
+      { fromBlock: hexlify(25), toBlock: hexlify(29) },
+    ]);
+    expect(provider.send).toHaveBeenNthCalledWith(5, 'eth_getLogs', [
+      { fromBlock: hexlify(30), toBlock: hexlify(30) },
+    ]);
   });
 
   test('fail: max retries', async () => {
     expect.assertions(5);
 
-    provider.getLogs.mockRejectedValue(error);
+    provider.send.mockRejectedValue(error);
 
     await expect(
       getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 4).toPromise(),
     ).rejects.toBe(error);
-    expect(provider.getLogs).toHaveBeenCalledTimes(5);
-    expect(provider.getLogs).toHaveBeenCalledWith({ fromBlock: 20, toBlock: 29 });
-    expect(provider.getLogs).toHaveBeenCalledWith({ fromBlock: 20, toBlock: 24 });
-    expect(provider.getLogs).toHaveBeenCalledWith({ fromBlock: 20, toBlock: 23 });
+    expect(provider.send).toHaveBeenCalledTimes(5);
+    expect(provider.send).toHaveBeenCalledWith('eth_getLogs', [
+      {
+        fromBlock: hexlify(20),
+        toBlock: hexlify(29),
+      },
+    ]);
+    expect(provider.send).toHaveBeenCalledWith('eth_getLogs', [
+      {
+        fromBlock: hexlify(20),
+        toBlock: hexlify(24),
+      },
+    ]);
+    expect(provider.send).toHaveBeenCalledWith('eth_getLogs', [
+      {
+        fromBlock: hexlify(20),
+        toBlock: hexlify(23),
+      },
+    ]);
   });
 });
 

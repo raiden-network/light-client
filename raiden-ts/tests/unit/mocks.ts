@@ -5,7 +5,7 @@ import type { FilterByBlockHash } from '@ethersproject/abstract-provider';
 import { getAddress } from '@ethersproject/address';
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
-import { HashZero, Zero } from '@ethersproject/constants';
+import { HashZero, MaxUint256, Zero } from '@ethersproject/constants';
 import type { Contract, ContractTransaction, EventFilter } from '@ethersproject/contracts';
 import { keccak256 } from '@ethersproject/keccak256';
 import type { Network } from '@ethersproject/networks';
@@ -33,7 +33,7 @@ import { AsyncSubject, ReplaySubject } from 'rxjs';
 import { filter, finalize, take } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
-import { raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
+import { raidenShutdown, raidenStarted } from '@/actions';
 import type { RaidenConfig } from '@/config';
 import { makeDefaultConfig } from '@/config';
 import { Capabilities, ShutdownReason } from '@/constants';
@@ -597,6 +597,7 @@ export interface MockedRaiden {
   start: () => Promise<void>;
   started: boolean | undefined;
   stop: () => void;
+  synced: Promise<any>;
 }
 
 const mockedClients: MockedRaiden[] = [];
@@ -628,6 +629,35 @@ export async function makeRaiden(
   initialState?: RaidenState,
 ): Promise<MockedRaiden> {
   const network: Network = { name: 'testnet', chainId: 1337 };
+  const logs: Log[] = [];
+  const getLogs = jest.fn(async function (filter: {
+    address?: string | string[];
+    topics?: ((string | null) | (string | null)[])[];
+    fromBlock?: number | string;
+    toBlock?: number | string;
+  }) {
+    return logs.filter((log) => {
+      if (filter.address) {
+        const addrs = typeof filter.address === 'string' ? [filter.address] : filter.address;
+        if (!addrs.includes(log.address)) return false;
+      }
+      if (
+        filter.topics &&
+        !filter.topics.every(
+          (f, i) =>
+            f == null ||
+            f === log.topics[i] ||
+            (Array.isArray(f) && f.some((f1) => f1 === log.topics[i])),
+        )
+      )
+        return false;
+      const fromBlock = BigNumber.from(filter.fromBlock ?? 0);
+      const toBlock = BigNumber.from(filter.toBlock ?? MaxUint256);
+      if (fromBlock.gt(log.blockNumber!)) return false;
+      if (toBlock.lt(log.blockNumber!)) return false;
+      return true;
+    });
+  });
   const extProvider: ExternalProvider = {
     isMetaMask: true,
     request: async ({ method, params }) => {
@@ -637,6 +667,8 @@ export async function makeRaiden(
           return network.chainId;
         case 'eth_blockNumber':
           return provider.blockNumber ?? 0;
+        case 'eth_getLogs':
+          return getLogs(params![0]);
         default:
           throw new Error(`provider.send called: "${method}" => ${JSON.stringify(params)}`);
       }
@@ -650,6 +682,7 @@ export async function makeRaiden(
 
   Object.assign(provider, { _network: network });
   jest.spyOn(provider, 'on');
+  jest.spyOn(provider, 'send');
   jest.spyOn(provider, 'poll').mockImplementation(async () => undefined);
   jest.spyOn(provider, 'removeListener');
   jest.spyOn(provider, 'listenerCount');
@@ -678,13 +711,15 @@ export async function makeRaiden(
         ({ status: 1, txHash: await txHash, confirmations: 6, blockNumber: undefined } as any),
     );
   // use provider.resetEventsBlock used to set current block number for provider
-  jest
-    .spyOn(provider, 'resetEventsBlock')
-    .mockImplementation((n: number) => Object.assign(provider, { _fastBlockNumber: n }));
+  jest.spyOn(provider, 'resetEventsBlock').mockImplementation((n: number) =>
+    Object.assign(provider, {
+      _lastBlockNumber: provider._fastBlockNumber ?? 6,
+      _fastBlockNumber: n,
+    }),
+  );
   // mockEthersEventEmitter(provider);
   provider.on('block', (n: number) => provider.resetEventsBlock(n));
 
-  const logs: Log[] = [];
   const origEmit = provider.emit;
   jest.spyOn(provider, 'emit').mockImplementation((event: EventType, ...args: any[]) => {
     if (typeof event !== 'string' && !Array.isArray(event)) logs.push(args[0] as Log);
@@ -693,33 +728,10 @@ export async function makeRaiden(
   jest
     .spyOn(provider, 'getLogs')
     .mockImplementation(
-      async (filter_: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>) => {
-        const filter = await filter_;
-        return logs.filter((log) => {
-          if (filter.address && filter.address !== log.address) return false;
-          if (
-            filter.topics &&
-            !filter.topics.every(
-              (f, i) =>
-                f == null ||
-                f === log.topics[i] ||
-                (Array.isArray(f) && f.some((f1) => f1 === log.topics[i])),
-            )
-          )
-            return false;
-          if ('fromBlock' in filter && filter.fromBlock && log.blockNumber! < filter.fromBlock)
-            return false;
-          if (
-            'toBlock' in filter &&
-            typeof filter.toBlock === 'number' &&
-            log.blockNumber! > filter.toBlock!
-          )
-            return false;
-          return true;
-        });
-      },
+      async (filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>) =>
+        getLogs(await filter),
     );
-  provider.resetEventsBlock(100);
+  provider.resetEventsBlock(99);
 
   const registryContract = TokenNetworkRegistry__factory.connect(
     registryAddress,
@@ -968,9 +980,8 @@ export async function makeRaiden(
         .pipe(finalize(() => (raiden.started = false)))
         .subscribe((config) => (raiden.config = config));
       epicMiddleware.run(raidenRootEpic);
-      const synced = raiden.action$.pipe(filter(raidenSynced.is), take(1)).toPromise();
       raiden.store.dispatch(raidenStarted());
-      await synced;
+      await raiden.synced;
     },
     started: undefined,
     stop: async () => {
@@ -981,6 +992,7 @@ export async function makeRaiden(
       if (idx >= 0) mockedClients.splice(idx, 1);
       assert(!raiden.started, ['node did not stop', { address }]);
     },
+    synced: deps.init$.toPromise(),
   };
 
   mockedClients.push(raiden);

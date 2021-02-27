@@ -98,6 +98,7 @@ export async function getOrWaitTransfer(
  * @param raiden - Client instance
  */
 export async function ensureTokenIsMonitored(raiden: MockedRaiden): Promise<void> {
+  await raiden.synced;
   if (token in raiden.store.getState().tokens) return;
   raiden.store.dispatch(tokenMonitored({ token, tokenNetwork }));
 }

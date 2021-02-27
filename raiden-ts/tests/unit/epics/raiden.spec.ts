@@ -41,6 +41,16 @@ describe('raiden init epics', () => {
     const otherToken = makeAddress();
     const otherTokenNetwork = makeAddress();
 
+    // first, register some random tokenNetworks, so the later can be scanned
+    for (let i = 0; i < 5; i++) {
+      raiden.deps.provider.emit(
+        {},
+        makeLog({
+          blockNumber: 65 + i,
+          filter: registryContract.filters.TokenNetworkCreated(makeAddress(), makeAddress()),
+        }),
+      );
+    }
     // on registryContract's getLogs, return 2 registered tokenNetworks
     raiden.deps.provider.emit(
       {},

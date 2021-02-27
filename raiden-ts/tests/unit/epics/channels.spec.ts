@@ -36,6 +36,7 @@ import {
 
 import { defaultAbiCoder, Interface } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
+import { hexlify } from '@ethersproject/bytes';
 import { HashZero, Zero } from '@ethersproject/constants';
 import { first, pluck } from 'rxjs/operators';
 
@@ -49,6 +50,7 @@ import {
   channelSettle,
   channelSettleable,
   channelWithdrawn,
+  tokenMonitored,
 } from '@/channels/actions';
 import { channelKey, channelUniqueKey } from '@/channels/utils';
 import { Capabilities, LocksrootZero } from '@/constants';
@@ -167,7 +169,7 @@ describe('channelEventsEpic', () => {
           settleTimeout,
           isFirstParticipant: true,
           txHash: makeHash(),
-          txBlock: openBlock - 5,
+          txBlock: openBlock - 4,
           confirmed: true,
         },
         { tokenNetwork, partner: makeAddress() },
@@ -194,7 +196,7 @@ describe('channelEventsEpic', () => {
       }),
     );
     await waitBlock(openBlock + confirmationBlocks + 3);
-    await ensureTokenIsMonitored(raiden);
+    raiden.store.dispatch(tokenMonitored({ token, tokenNetwork, fromBlock: openBlock - 5 }));
     await waitBlock();
 
     expect(raiden.output).toContainEqual(
@@ -210,20 +212,24 @@ describe('channelEventsEpic', () => {
         { tokenNetwork, partner },
       ),
     );
-    // expect getLogs to have been limited fromBlock since last known event
-    expect(raiden.deps.provider.getLogs).toHaveBeenCalledWith({
-      address: tokenNetwork,
-      topics: [
-        expect.arrayContaining([
-          Interface.getEventTopic(tokenNetworkContract.interface.getEvent('ChannelNewDeposit')),
-          Interface.getEventTopic(tokenNetworkContract.interface.getEvent('ChannelSettled')),
-        ]),
-        // ensure already confirmed channel also got into scanned channelIds set
-        expect.arrayContaining([id - 1, id].map((i) => defaultAbiCoder.encode(['uint256'], [i]))),
-      ],
-      fromBlock: openBlock - 5,
-      toBlock: expect.any(Number),
-    });
+    // expect getLogs to have been limited fromBlock
+    expect(raiden.deps.provider.send).toHaveBeenCalledWith('eth_getLogs', [
+      {
+        address: tokenNetwork,
+        topics: [
+          expect.arrayContaining([
+            Interface.getEventTopic(tokenNetworkContract.interface.getEvent('ChannelNewDeposit')),
+            Interface.getEventTopic(tokenNetworkContract.interface.getEvent('ChannelSettled')),
+          ]),
+          // ensure already confirmed channel also got into scanned channelIds set
+          expect.arrayContaining(
+            [id - 1, id].map((i) => defaultAbiCoder.encode(['uint256'], [i])),
+          ),
+        ],
+        fromBlock: hexlify(openBlock - 5),
+        toBlock: expect.any(String),
+      },
+    ]);
   });
 
   test('already monitored with new$ partner ChannelNewDeposit event', async () => {

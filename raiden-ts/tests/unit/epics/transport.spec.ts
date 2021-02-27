@@ -226,6 +226,7 @@ describe('initMatrixEpic', () => {
     raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
 
     await raiden.start();
+    await raiden.action$.toPromise();
 
     expect(raiden.started).toBeFalsy();
     expect(raiden.output).toContainEqual(
@@ -260,7 +261,7 @@ describe('initMatrixEpic', () => {
     // set fetch list from matrixServerLookup
     raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
     await raiden.start();
-    await sleep();
+    await raiden.action$.toPromise();
 
     expect(raiden.started).toBeFalsy();
     expect(raiden.output).toContainEqual(
