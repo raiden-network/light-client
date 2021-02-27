@@ -24,14 +24,13 @@ import {
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { AddressZero, One, Zero } from '@ethersproject/constants';
-import { first, pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate, raidenShutdown } from '@/actions';
 import { Capabilities } from '@/constants';
 import { messageGlobalSend } from '@/messages/actions';
 import { MessageType } from '@/messages/types';
 import { raidenReducer } from '@/reducer';
-import { iouClear, iouPersist, pathFind, pfsListUpdated } from '@/services/actions';
+import { iouClear, iouPersist, pathFind, servicesValid } from '@/services/actions';
 import { IOU } from '@/services/types';
 import { signIOU } from '@/services/utils';
 import { matrixPresence } from '@/transport/actions';
@@ -57,6 +56,11 @@ function makeIou(raiden: MockedRaiden): IOU {
     expiration_block: BigNumber.from(3232341) as UInt<32>,
     amount: BigNumber.from(100) as UInt<32>,
   };
+}
+
+function makeValidServices(services: Address[]) {
+  const validTill = Date.now() + 86.4e6;
+  return Object.fromEntries(services.map((service) => [service, validTill]));
 }
 
 describe('PFS: pathFindServiceEpic', () => {
@@ -482,9 +486,7 @@ describe('PFS: pathFindServiceEpic', () => {
     };
 
     raiden.store.dispatch(
-      pfsListUpdated({
-        pfsList: [pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress],
-      }),
+      servicesValid(makeValidServices([pfsAddress1, pfsAddress2, pfsAddress3, pfsAddress])),
     );
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
@@ -539,7 +541,7 @@ describe('PFS: pathFindServiceEpic', () => {
     // invalid schema (on development mode, both http & https are accepted)
     raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('ftp://not.https.url');
 
-    raiden.store.dispatch(pfsListUpdated({ pfsList: [pfsAddress, pfsAddress, pfsAddress] }));
+    raiden.store.dispatch(servicesValid(makeValidServices([pfsAddress, pfsAddress, pfsAddress])));
     await waitBlock();
 
     const pathFindMeta = {
@@ -1155,7 +1157,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
 
     // enable config.pfs auto ('')
     raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
-    raiden.start();
+    await raiden.start();
 
     const validTill = BigNumber.from(Math.floor(Date.now() / 1000) + 86400), // tomorrow
       registeredEncoded = defaultAbiCoder.encode(
@@ -1216,40 +1218,9 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
     );
     await waitBlock(raiden.deps.provider.blockNumber + raiden.config.confirmationBlocks + 1);
 
-    await expect(
-      raiden.deps.latest$
-        .pipe(
-          pluck('pfsList'),
-          first((l) => l.length > 0),
-        )
-        .toPromise(),
-    ).resolves.toContainEqual(pfsAddress);
-  });
-
-  test('noop if config.pfs is set', async () => {
-    expect.assertions(2);
-
-    const raiden = await makeRaiden();
-    const { serviceRegistryContract } = raiden.deps;
-
-    expect(raiden.config.pfs).toBeDefined();
-
-    const validTill = BigNumber.from(Math.floor(Date.now() / 1000) + 86400), // tomorrow
-      registeredEncoded = defaultAbiCoder.encode(
-        ['uint256', 'uint256', 'address'],
-        [validTill, Zero, AddressZero],
-      );
-
-    await providersEmit(
-      {},
-      makeLog({
-        filter: serviceRegistryContract.filters.RegisteredService(pfsAddress, null, null, null),
-        data: registeredEncoded, // non-indexed valid_till, deposit, deposit_contract
-      }),
-    );
-    await waitBlock();
-
-    expect(raiden.output).not.toContainEqual(pfsListUpdated(expect.anything()));
+    expect(raiden.store.getState()).toMatchObject({
+      services: { [pfsAddress]: expect.any(Number) },
+    });
   });
 });
 

@@ -87,6 +87,7 @@ describe('Raiden', () => {
     revealTimeout: 5,
     confirmationBlocks,
     pollingInterval: 10,
+    httpTimeout: 5000,
   };
 
   let httpBackend: MockMatrixRequestFn;
@@ -733,7 +734,10 @@ describe('Raiden', () => {
       expect.assertions(4);
 
       const promise = raiden.events$
-        .pipe(first((value) => tokenMonitored.is(value) && !!value.payload.fromBlock))
+        .pipe(
+          filter(tokenMonitored.is),
+          first((action) => action.payload.token === token),
+        )
         .toPromise();
 
       // deploy a new token & tokenNetwork
@@ -768,7 +772,10 @@ describe('Raiden', () => {
       const raiden1 = await createRaiden(partner);
 
       const promise1 = raiden1.events$
-        .pipe(first((value) => tokenMonitored.is(value) && !!value.payload.fromBlock))
+        .pipe(
+          filter(tokenMonitored.is),
+          first((action) => action.payload.token === token),
+        )
         .toPromise();
 
       raiden1.start();
