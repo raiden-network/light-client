@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { hexlify } from '@ethersproject/bytes';
+import { hexValue } from '@ethersproject/bytes';
 import type { Contract, Event } from '@ethersproject/contracts';
 import type {
   EventType,
@@ -66,8 +66,8 @@ export function getLogsByChunk$(
       provider.send('eth_getLogs', [
         {
           ...filter,
-          fromBlock: hexlify(start),
-          toBlock: hexlify(Math.min(start + curChunk - 1, toBlock)),
+          fromBlock: hexValue(start),
+          toBlock: hexValue(Math.min(start + curChunk - 1, toBlock)),
         },
       ]),
     ).pipe(
