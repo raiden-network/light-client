@@ -5,7 +5,7 @@ import * as t from 'io-ts';
 import type { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 
-import { Capabilities } from './constants';
+import { Capabilities, DEFAULT_CONFIRMATIONS } from './constants';
 import { exponentialBackoff } from './transfers/epics/utils';
 import { Caps } from './transport/types';
 import { getNetworkName } from './utils/ethers';
@@ -148,7 +148,7 @@ export function makeDefaultConfig(
     pfsMaxPaths: 3,
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
     pfsIouTimeout: 200000, // in blocks
-    confirmationBlocks: 5,
+    confirmationBlocks: DEFAULT_CONFIRMATIONS,
     // SVT also uses 18 decimals, like Ether, so parseEther works
     monitoringReward: parseEther('5') as UInt<32>,
     logger: 'info',
