@@ -32,3 +32,4 @@ export const CapsFallback = {
 } as const;
 
 export const RAIDEN_DEVICE_ID = 'RAIDEN';
+export const DEFAULT_CONFIRMATIONS = 5;

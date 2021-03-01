@@ -26,6 +26,7 @@ import {
   tap,
 } from 'rxjs/operators';
 
+import { DEFAULT_CONFIRMATIONS } from '../constants';
 import { mergeWith } from './rx';
 
 /**
@@ -151,7 +152,7 @@ export function fromEthersEvent<T>(
     ) as Observable<T>;
 
   const confirmations$ = !confirmations
-    ? of(5)
+    ? of(DEFAULT_CONFIRMATIONS)
     : typeof confirmations === 'number'
     ? of(confirmations)
     : confirmations;
