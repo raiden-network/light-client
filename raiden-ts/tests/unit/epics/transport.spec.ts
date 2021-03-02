@@ -134,6 +134,7 @@ describe('initMatrixEpic', () => {
     // ensure if stored setup works, servers list don't need to be fetched
     expect(fetch).not.toHaveBeenCalled();
 
+    // test presence got set again after some time, to overcome presence bug
     await sleep(2 * raiden.config.httpTimeout);
     // test presence got set again after some time, to overcome presence bug
     expect(matrix.setPresence).toHaveBeenCalledWith({
