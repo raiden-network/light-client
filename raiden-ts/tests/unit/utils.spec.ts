@@ -6,8 +6,8 @@ import { Web3Provider } from '@ethersproject/providers';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 import * as t from 'io-ts';
-import { of, timer } from 'rxjs';
-import { delay, first, ignoreElements, mapTo, tap, toArray } from 'rxjs/operators';
+import { from, of, timer } from 'rxjs';
+import { delay, first, ignoreElements, map, mapTo, tap, toArray } from 'rxjs/operators';
 
 import type { Lock } from '@/channels';
 import { LocksrootZero } from '@/constants';
@@ -17,7 +17,7 @@ import { encode } from '@/utils/data';
 import { ErrorCodec, ErrorCodes, RaidenError } from '@/utils/error';
 import { fromEthersEvent, getLogsByChunk$, getNetworkName } from '@/utils/ethers';
 import { LruCache } from '@/utils/lru';
-import { completeWith, concatBuffer, lastMap } from '@/utils/rx';
+import { completeWith, concatBuffer, lastMap, mergeWith } from '@/utils/rx';
 import { Address, BigNumberC, decode, HexString, Secret, Timed, timed, UInt } from '@/utils/types';
 
 describe('getLogsByChunk$', () => {
@@ -459,4 +459,31 @@ test('lastMap', async () => {
   expect(project2).toHaveBeenCalledTimes(1); // only last emition passed
   // ignoreElements calls project with null
   expect(project2).toHaveBeenCalledWith(null, expect.anything());
+});
+
+test('mergeWith', async () => {
+  const obs1 = of(1, 2);
+  const obs2 = jest.fn(
+    (v1: number, count: number) => from(Array.from({ length: v1 }, () => count)), // [0], [1, 1]
+  );
+  const obs3 = jest.fn(async (v1: number, v2: number, sub: boolean) =>
+    Promise.resolve({ v: sub ? v2 - v1 : v1 + v2 }),
+  );
+
+  expect(
+    obs1
+      .pipe(
+        mergeWith((v1, count) => obs2(v1, count)),
+        mergeWith(([v1, v2]) => obs3(v1, v2, true)),
+        map(([[v1, v2], { v: v3 }]) => ({ v1, v2, v3 })),
+        toArray(),
+      )
+      .toPromise(),
+  ).resolves.toEqual([
+    { v1: 1, v2: 0, v3: -1 },
+    { v1: 2, v2: 1, v3: -1 },
+    { v1: 2, v2: 1, v3: -1 },
+  ]);
+  expect(obs2).toHaveBeenCalledTimes(2);
+  expect(obs3).toHaveBeenCalledTimes(3);
 });

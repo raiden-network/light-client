@@ -31,7 +31,7 @@ import type { ContractsInfo } from '@/types';
 import { isActionOf } from '@/utils/actions';
 import { jsonStringify } from '@/utils/data';
 import { ErrorCodes } from '@/utils/error';
-import type { Address, Secret, UInt } from '@/utils/types';
+import type { Address, Int, Secret, UInt } from '@/utils/types';
 
 import { TestProvider } from './provider';
 
@@ -871,7 +871,7 @@ describe('Raiden', () => {
       expect.assertions(1);
       await expect(
         raiden.transfer(token, partner, 23, {
-          paths: [{ path: ['0xnotAnAddress'], fee: 0 }],
+          paths: [{ path: ['0xnotAnAddress' as Address], fee: Zero as Int<32> }],
         }),
       ).rejects.toThrowError(/Invalid path parameter./i);
     });

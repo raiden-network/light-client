@@ -62,6 +62,7 @@ import { signMessage } from '@/messages/utils';
 import { createPersisterMiddleware } from '@/persister';
 import { raidenReducer } from '@/reducer';
 import { makeInitialState, RaidenState } from '@/state';
+import { standardCalculator } from '@/transfers/mediate/types';
 import { getSecrethash, makeSecret } from '@/transfers/utils';
 import { getSortedAddresses } from '@/transport/utils';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
@@ -934,6 +935,7 @@ export async function makeRaiden(
     monitoringServiceContract,
     db,
     init$: new ReplaySubject<Observable<any>>(),
+    mediationFeeCalculator: standardCalculator,
   };
 
   const epicMiddleware = createEpicMiddleware<
