@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Added
+- [#1342] Flat (fixed) mediation fees for mediator nodes
 - [#2581] `config.pfsSafetyMargin` now also accepts a `[f, a]` pair, which will add `f*fee + a*amount` on top of PFS's estimated fee, if one wants finer-grain control on safety margin which is added on the transfer to be initiated.
 
 ### Changed
@@ -12,6 +13,7 @@
 ### Removed
 - [#2567] **BREAKING** Remove support for peer-to-peer communication through Matrix rooms; now supports only `toDevice` and WebRTC channels.
 
+[#1342]: https://github.com/raiden-network/light-client/issues/1342
 [#2536]: https://github.com/raiden-network/light-client/issues/2536
 [#2550]: https://github.com/raiden-network/light-client/issues/2550
 [#2566]: https://github.com/raiden-network/light-client/issues/2566

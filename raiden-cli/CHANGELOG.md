@@ -4,6 +4,10 @@
 ### Changed
 - [#2581] CLI now defaults to `3% * fee + 0.05% * amount` for fee safety margin, same as PC
 
+### Added
+- [#1342] `--flat-fee` param to set a fixed fee (per token) to be taken on transfers being mediated
+
+[#1342]: https://github.com/raiden-network/light-client/issues/1342
 [#2581]: https://github.com/raiden-network/light-client/pull/2581
 
 ## [0.15.0] - 2021-01-26
