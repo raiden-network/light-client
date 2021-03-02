@@ -115,6 +115,7 @@ export interface ChannelBalances {
   partnerUnlocked: UInt<32>;
   partnerTotalWithdrawable: UInt<32>;
   partnerWithdrawable: UInt<32>;
+  totalCapacity: UInt<32>;
 }
 
 /**

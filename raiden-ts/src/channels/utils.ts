@@ -101,7 +101,11 @@ export function channelAmounts(channel: Channel): ChannelBalances {
     partnerTotalWithdrawable = channel.partner.deposit
       .add(partnerBalance)
       .sub(partnerLocked) as UInt<32>,
-    partnerWithdrawable = partnerTotalWithdrawable.sub(partnerWithdraw) as UInt<32>;
+    partnerWithdrawable = partnerTotalWithdrawable.sub(partnerWithdraw) as UInt<32>,
+    totalCapacity = channel.own.deposit
+      .sub(channel.own.withdraw)
+      .add(channel.partner.deposit)
+      .sub(channel.partner.withdraw) as UInt<32>;
 
   return {
     ownDeposit: channel.own.deposit,
@@ -124,6 +128,7 @@ export function channelAmounts(channel: Channel): ChannelBalances {
     ownWithdrawable,
     partnerTotalWithdrawable,
     partnerWithdrawable,
+    totalCapacity,
   };
 }
 
