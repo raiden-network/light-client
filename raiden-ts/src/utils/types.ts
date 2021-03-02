@@ -294,28 +294,8 @@ export const instanceOf: <C extends Newable>(C: C) => t.Type<InstanceType<C>> = 
 /**
  * Infer type of last element of a tuple or array
  * Currently supports tuples of up to 9 elements before falling back to array's inference
- *
- * FIXME: may be simplified with variadic tuple types from TypeScript 4.0
  */
-export type Last<T extends any[]> = T extends [any, any, any, any, any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, infer L]
-  ? L
-  : T extends [any, any, infer L]
-  ? L
-  : T extends [any, infer L]
-  ? L
-  : T extends [infer L]
-  ? L
-  : T[number] | undefined;
+export type Last<T extends any[]> = T extends [...any[], infer L] ? L : T[number] | undefined;
 
 /**
  * Like lodash's last, but properly infer return type when argument is a tuple
@@ -352,4 +332,6 @@ export type Decodable<T> = T extends BigNumber
   ? number
   : T extends null | symbol
   ? T
+  : unknown extends T
+  ? unknown
   : { [K in keyof T]: Decodable<T[K]> };

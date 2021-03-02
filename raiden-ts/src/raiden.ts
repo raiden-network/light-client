@@ -91,6 +91,7 @@ import { Paths, PFS, SuggestedPartners } from './services/types';
 import { pfsListInfo } from './services/utils';
 import type { RaidenState } from './state';
 import { transfer, transferSigned, withdraw } from './transfers/actions';
+import { standardCalculator } from './transfers/mediate/types';
 import type { RaidenTransfer } from './transfers/state';
 import { Direction, TransferState } from './transfers/state';
 import {
@@ -286,6 +287,7 @@ export class Raiden {
       main,
       db,
       init$: new ReplaySubject(),
+      mediationFeeCalculator: standardCalculator,
     };
 
     this.userDepositTokenAddress = memoize(
@@ -595,6 +597,12 @@ export class Raiden {
    * @param config - Partial object containing keys and values to update in config
    */
   public updateConfig(config: PartialRaidenConfig) {
+    if ('mediationFees' in config)
+      // just validate, it's set in getLatest$
+      this.deps.mediationFeeCalculator.decodeConfig(
+        config.mediationFees,
+        this.deps.defaultConfig.mediationFees,
+      );
     this.store.dispatch(raidenConfigUpdate(decode(PartialRaidenConfig, config)));
   }
 
