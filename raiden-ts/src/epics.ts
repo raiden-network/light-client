@@ -135,13 +135,17 @@ const ConfigEpics = { configCapsEpic, configReactEpic };
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies, minus 'latest$' & 'config$' (outputs)
  * @param deps.defaultConfig - defaultConfig mapping
+ * @param deps.mediationFeeCalculator - Calculator used to decode/validate config.mediationFees
  * @returns latest$ observable
  */
 export function getLatest$(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   // do not use latest$ or dependents (e.g. config$), as they're defined here
-  { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
+  {
+    defaultConfig,
+    mediationFeeCalculator,
+  }: Pick<RaidenEpicDeps, 'defaultConfig' | 'mediationFeeCalculator'>,
 ): Observable<Latest> {
   const initialUdcBalance = MaxUint256 as UInt<32>;
   const initialStale = false;
@@ -182,7 +186,15 @@ export function getLatest$(
     action$.pipe(filter(raidenConfigCaps.is), pluck('payload', 'caps')),
   );
   const config$ = combineLatest([state$.pipe(pluckDistinct('config')), caps$]).pipe(
-    map(([userConfig, caps]) => ({ ...defaultConfig, ...userConfig, caps })),
+    map(([userConfig, caps]) => ({
+      ...defaultConfig,
+      ...userConfig,
+      caps,
+      mediationFees: mediationFeeCalculator.decodeConfig(
+        userConfig.mediationFees,
+        defaultConfig.mediationFees,
+      ),
+    })),
   );
   const presences$ = getPresences$(action$);
   const rtc$ = action$.pipe(

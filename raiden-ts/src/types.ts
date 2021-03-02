@@ -17,7 +17,9 @@ import type {
   UserDeposit,
 } from './contracts';
 import type { RaidenDatabase } from './db/types';
+import type { PFSFeeUpdate } from './messages/types';
 import type { RaidenState } from './state';
+import type { FeeModel } from './transfers/mediate/types';
 import type { Presences } from './transport/types';
 import type { Address, UInt } from './utils/types';
 
@@ -67,6 +69,9 @@ export interface RaidenEpicDeps {
   main?: { signer: Signer; address: Address };
   db: RaidenDatabase;
   init$: Subject<Observable<any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mediationFeeCalculator: FeeModel<any, Partial<PFSFeeUpdate['fee_schedule']>>;
+  // TODO: remove Partial on Schedule requirement once feeCalculator is complete
 }
 
 export interface ChangeEvent<T extends string, P> {
