@@ -1,18 +1,30 @@
 /* eslint-disable no-console */
+import type { BigNumberish } from 'ethers';
 import { ethers, Wallet } from 'ethers';
 import fs from 'fs';
 import inquirer from 'inquirer';
 import * as path from 'path';
 import yargs from 'yargs/yargs';
 
-import type { Decodable, RaidenConfig, UInt } from 'raiden-ts';
-import { Address, assert, Capabilities, Raiden } from 'raiden-ts';
+import type { Decodable, RaidenConfig } from 'raiden-ts';
+import { Address, assert, Capabilities, decode, Raiden, UInt } from 'raiden-ts';
 
 import { makeCli } from './cli';
 import DEFAULT_RAIDEN_CONFIG from './config.json';
 import DISCLAIMER from './disclaimer.json';
 import type { Cli } from './types';
 import { setupLoglevel } from './utils/logging';
+
+function parseFeeOption(args: readonly string[]) {
+  assert(args.length && args.length % 2 === 0, 'fees must have the format [address, number]');
+  const res: { [addr: string]: string } = {};
+  for (let i = 0; i < args.length; i += 2) {
+    assert(Address.is(args[i]), 'Invalid address');
+    assert(args[i + 1].match(/^\d+$/), 'Invalid numeric value');
+    res[args[i]] = args[i + 1];
+  }
+  return res;
+}
 
 function parseArguments() {
   const argv = yargs(process.argv.slice(2));
@@ -120,8 +132,8 @@ function parseArguments() {
       },
       pathfindingMaxFee: {
         type: 'string',
-        // cast to fool TypeScript on type of argv.pathfindingMaxFee, decoded by Raiden.create
-        default: ('50000000000000000' as unknown) as UInt<32>,
+        default: '50000000000000000',
+        coerce: (value) => decode(UInt(32), value),
         desc: 'Set max fee per request paid to the path finding service.',
       },
       pathfindingIouTimeout: {
@@ -139,6 +151,13 @@ function parseArguments() {
         default: false,
         desc: 'Enables support for mediated payments (unsupported).',
         hidden: true, // hidden from help because not officially supported
+      },
+      flatFee: {
+        type: 'string',
+        nargs: 2,
+        desc:
+          'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
+        coerce: parseFeeOption,
       },
     })
     .help()
@@ -292,6 +311,12 @@ function createRaidenConfig(
         [Capabilities.MEDIATE]: 1,
       },
     };
+
+  let mediationFees: { [token: string]: { flat: BigNumberish } } = {};
+  for (const [addr, flat] of Object.entries(argv.flatFee ?? {})) {
+    mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], flat } };
+  }
+  if (Object.keys(mediationFees).length) config = { ...config, mediationFees };
 
   return config;
 }
