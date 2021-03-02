@@ -29,6 +29,7 @@ import {
   startWith,
   switchMap,
   take,
+  takeUntil,
   tap,
   timeout,
   withLatestFrom,
@@ -319,55 +320,69 @@ export function pfsCapacityUpdateEpic(
  * @param deps.signer - Signer instance
  * @param deps.config$ - Config observable
  * @param deps.init$ - Init$ subject
+ * @param deps.mediationFeeCalculator - Calculator for mediation fees schedule
  * @returns Observable of messageGlobalSend.request actions
  */
 export function pfsFeeUpdateEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, address, network, signer, config$, init$ }: RaidenEpicDeps,
+  { log, address, network, signer, config$, init$, mediationFeeCalculator }: RaidenEpicDeps,
 ): Observable<messageGlobalSend.request> {
   return state$.pipe(
     groupChannel$,
-    // get only first state per channel
-    mergeMap((grouped$) => grouped$.pipe(first())),
-    withLatestFrom(config$),
-    // ignore actions while/if mediating not enabled
-    filter(
-      ([channel, { pfsRoom, caps }]) =>
-        channel.state === ChannelState.open && !!pfsRoom && !!getCap(caps, Capabilities.MEDIATE),
-    ),
-    mergeMap(([channel, { pfsRoom }]) => {
-      const message: PFSFeeUpdate = {
-        type: MessageType.PFS_FEE_UPDATE,
-        canonical_identifier: {
-          chain_identifier: BigNumber.from(network.chainId) as UInt<32>,
-          token_network_address: channel.tokenNetwork,
-          channel_identifier: BigNumber.from(channel.id) as UInt<32>,
-        },
-        updating_participant: address,
-        timestamp: makeTimestamp(),
-        fee_schedule: {
-          cap_fees: true,
-          imbalance_penalty: null,
-          proportional: Zero as Int<32>,
-          flat: Zero as Int<32>,
-        },
-      };
-      const msgId = makeMessageId().toString();
-      const meta = { roomName: pfsRoom!, msgId };
-      const completed$ = action$.pipe(filter(isResponseOf(messageGlobalSend, meta)), take(1));
+    mergeMap((grouped$) =>
+      combineLatest([
+        grouped$,
+        config$.pipe(pluckDistinct('caps')),
+        config$.pipe(pluckDistinct('mediationFees')),
+      ]).pipe(
+        filter(([, caps]) => !!getCap(caps, Capabilities.MEDIATE)),
+        map(([channel, , mediationFees]) => {
+          const schedule: PFSFeeUpdate['fee_schedule'] = {
+            cap_fees: true,
+            flat: Zero as Int<32>,
+            proportional: Zero as Int<32>,
+            imbalance_penalty: null,
+            ...mediationFeeCalculator.emptySchedule,
+          };
+          Object.assign(schedule, mediationFeeCalculator.schedule(mediationFees, channel));
+          // using channel feeSchedule above, build a PFSFeeUpdate's schedule payload
+          return [channel, schedule] as const;
+        }),
+        // reactive on channel state and config changes, distinct on schedule's payload
+        distinctUntilChanged(([, sched1], [, sched2]) => isEqual(sched1, sched2)),
+        withLatestFrom(config$),
+        switchMap(([[channel, schedule], { pfsRoom }]) => {
+          const message: PFSFeeUpdate = {
+            type: MessageType.PFS_FEE_UPDATE,
+            canonical_identifier: {
+              chain_identifier: BigNumber.from(network.chainId) as UInt<32>,
+              token_network_address: channel.tokenNetwork,
+              channel_identifier: BigNumber.from(channel.id) as UInt<32>,
+            },
+            updating_participant: address,
+            timestamp: makeTimestamp(),
+            fee_schedule: schedule,
+          };
+          const msgId = makeMessageId().toString();
+          const meta = { roomName: pfsRoom!, msgId };
+          const completed$ = action$.pipe(filter(isResponseOf(messageGlobalSend, meta)), take(1));
 
-      return from(signMessage(signer, message, { log })).pipe(
-        map((signed) => {
-          init$.next(completed$);
-          return messageGlobalSend.request({ message: signed }, meta);
+          return from(signMessage(signer, message, { log })).pipe(
+            map((signed) => {
+              init$.next(completed$);
+              return messageGlobalSend.request({ message: signed }, meta);
+            }),
+            catchError((err) => {
+              log.error('Error trying to generate & sign PFSFeeUpdate', err);
+              return EMPTY;
+            }),
+          );
         }),
-        catchError((err) => {
-          log.error('Error trying to generate & sign PFSFeeUpdate', err);
-          return EMPTY;
-        }),
-      );
-    }),
+        takeUntil(grouped$.pipe(filter((channel) => channel.state !== ChannelState.open))),
+      ),
+    ),
+    completeWith(state$),
   );
 }
 
