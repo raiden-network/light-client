@@ -17,3 +17,9 @@ declare module 'pouchdb-adapter-indexeddb';
 declare module 'pouchdb-debug';
 
 declare type Mutable<T> = { -readonly [P in keyof T]: T[P] };
+
+declare type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
