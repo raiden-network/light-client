@@ -99,7 +99,7 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
 
   for (const log of [logging, ...additionalLoggers.map(logging.getLogger)]) {
     const origFactory = log.methodFactory;
-    log.methodFactory = (methodName, level, loggerName) => {
+    log.methodFactory = function raidenMethodFactory(methodName, level, loggerName) {
       const rawMethod = origFactory(methodName, level, loggerName);
       const name = loggerName.toString();
       setDbForLogger(name);
