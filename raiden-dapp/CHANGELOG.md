@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- [#2606] Fixes NoTokens screen not being displayed
 - [#2420] Fix withdraw and deposit button for channels on mobile
 - [#2421] Fix account menu on mobile devices by making it scrollable
 - [#2422] Fix broken layout on RaidenAccount screen for mobile virtual keyboard
@@ -13,6 +14,7 @@
 
 - [#1515] Button for disconnecting the dApp
 
+[#2606]: https://github.com/raiden-network/light-client/issues/2606
 [#1515]: https://github.com/raiden-network/light-client/issues/1515
 [#2420]: https://github.com/raiden-network/light-client/issues/2420
 [#2421]: https://github.com/raiden-network/light-client/issues/2421

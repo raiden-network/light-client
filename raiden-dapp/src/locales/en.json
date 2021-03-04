@@ -479,7 +479,7 @@
       "title": "Transfer"
     },
     "no-channels-dialog": {
-      "title": "No connected tokens and open channels",
+      "title": "No open channels for the selected token",
       "button": "Connect new token"
     },
     "steps": {
