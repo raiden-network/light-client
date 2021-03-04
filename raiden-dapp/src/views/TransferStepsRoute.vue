@@ -10,7 +10,7 @@
             step
             class="transfer-steps__step"
           >
-            {{ this.$t('transfer.steps.request-route.title') }}
+            {{ $t('transfer.steps.request-route.title') }}
           </v-stepper-step>
 
           <v-divider
@@ -31,7 +31,7 @@
             step
             class="transfer-steps__step"
           >
-            {{ this.$t('transfer.steps.select-route.title') }}
+            {{ $t('transfer.steps.select-route.title') }}
           </v-stepper-step>
 
           <v-divider
@@ -45,7 +45,7 @@
             step
             class="transfer-steps__step"
           >
-            {{ this.$t('transfer.steps.confirm-transfer.title') }}
+            {{ $t('transfer.steps.confirm-transfer.title') }}
           </v-stepper-step>
         </v-stepper-header>
 
