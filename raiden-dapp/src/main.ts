@@ -3,13 +3,13 @@ import '@/plugins/class-component.hooks';
 import '@/filters';
 import './class-component-hooks';
 
+import { Plugins } from '@capacitor/core';
 import Vue from 'vue';
 
 import { IdenticonPlugin } from '@/plugins/identicon-plugin';
 import { RaidenPlugin } from '@/plugins/raiden';
 import { ServiceWorkerAssistantPlugin } from '@/plugins/service-worker-assistant-plugin';
 import vuetify from '@/plugins/vuetify';
-import { Plugins } from '@capacitor/core'
 
 import App from './App.vue';
 import i18n from './i18n';
@@ -30,8 +30,8 @@ new Vue({
   router,
   store,
   i18n,
-  render: (h) => h(App),
   mounted() {
     Plugins.SplashScreen.hide();
   },
+  render: (h) => h(App),
 }).$mount('#app');
