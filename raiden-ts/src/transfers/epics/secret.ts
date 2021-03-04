@@ -207,8 +207,8 @@ export function transferSecretRevealedEpic(
   return action$.pipe(
     // we don't require Signed SecretReveal, nor even check sender for persisting the secret
     filter(isMessageReceivedOfType(SecretReveal)),
-    withLatestFrom(state$),
-    mergeMap(function* ([action, state]) {
+    withLatestFrom(state$, config$),
+    mergeMap(function* ([action, state, { caps }]) {
       const secrethash = getSecrethash(action.payload.message.secret);
       const results = Object.values(Direction)
         .map((direction) => state.transfers[transferKey({ secrethash, direction })])
@@ -230,6 +230,8 @@ export function transferSecretRevealedEpic(
           yield transferUnlock.request(undefined, meta);
         }
       }
+      // avoid unlocking received transfers if receiving is disabled
+      if (!getCap(caps, Capabilities.RECEIVE)) return;
 
       // we're mediator or target, and received reveal from next hop or initiator, respectively
       for (const _received of results.filter((doc) => doc.direction === Direction.RECEIVED)) {
@@ -240,9 +242,6 @@ export function transferSecretRevealedEpic(
         );
       }
     }),
-    // enable this epic only if/while/when receiving is enabled, to avoid being forced handling
-    // undesired reveals
-    takeIf(config$.pipe(map(({ caps }) => getCap(caps, Capabilities.RECEIVE)))),
   );
 }
 

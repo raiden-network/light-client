@@ -7,11 +7,14 @@
 
 ### Changed
 - [#2536] Wait for global messages before resolving deposits and channel open request
-- [#2550] **BREAKING** remove migration of legacy state at localStorage during creation
 - [#2566] Optimize initial sync and resume previous sync filters scans
 
 ### Removed
+- [#2550] **BREAKING** Remove migration of legacy state at localStorage during creation
 - [#2567] **BREAKING** Remove support for peer-to-peer communication through Matrix rooms; now supports only `toDevice` and WebRTC channels.
+
+### Fixed
+- [#2596] Fix unlocking sent transfers even if receiving is disabled
 
 [#1342]: https://github.com/raiden-network/light-client/issues/1342
 [#2536]: https://github.com/raiden-network/light-client/issues/2536
@@ -19,6 +22,7 @@
 [#2566]: https://github.com/raiden-network/light-client/issues/2566
 [#2567]: https://github.com/raiden-network/light-client/issues/2567
 [#2581]: https://github.com/raiden-network/light-client/pull/2581
+[#2596]: https://github.com/raiden-network/light-client/issues/2596
 
 ## [0.15.0] - 2021-01-26
 ### Added
