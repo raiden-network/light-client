@@ -55,7 +55,12 @@ const ONE_DAY = new Date(0).setUTCHours(24);
   },
   computed: {
     ...mapState(['stateBackupReminderDateMs']),
-    ...mapGetters(['tokensWithChannels', 'channels', 'channelWithBiggestCapacity']),
+    ...mapGetters([
+      'tokensWithChannels',
+      'channels',
+      'channelWithBiggestCapacity',
+      'openChannels',
+    ]),
   },
 })
 export default class TransferRoute extends Vue {
