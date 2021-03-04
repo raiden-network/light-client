@@ -24,8 +24,10 @@ import { Two, Zero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { first, pluck } from 'rxjs/operators';
 
+import { raidenConfigUpdate } from '@/actions';
 import { channelClose, newBlock } from '@/channels/actions';
 import { channelUniqueKey } from '@/channels/utils';
+import { Capabilities } from '@/constants';
 import { messageReceived, messageSend } from '@/messages/actions';
 import type { Processed } from '@/messages/types';
 import { LockedTransfer, LockExpired, MessageType, Unlock } from '@/messages/types';
@@ -239,6 +241,30 @@ describe('send transfer', () => {
       );
       // ensure it reused the previous cached expired message
       expect((await promise).payload.message).toBe(finalState.unlock);
+
+      expectChannelsAreInSync([raiden, partner]);
+    });
+
+    test('regression test: sender unlocks even if receiving is disabled', async () => {
+      expect.assertions(3);
+
+      const [raiden, partner] = await makeRaidens(2);
+      // disable receiving for sender
+      raiden.store.dispatch(
+        raidenConfigUpdate({ caps: { ...raiden.config.caps, [Capabilities.RECEIVE]: 0 } }),
+      );
+      await ensureTransferPending([raiden, partner]);
+      await sleep();
+
+      // reveal secret to partner
+      partner.store.dispatch(
+        transferSecret({ secret }, { secrethash, direction: Direction.RECEIVED }),
+      );
+
+      await expect(
+        raiden.action$.pipe(first(transferUnlock.success.is)).toPromise(),
+      ).resolves.toBeDefined();
+      await sleep();
 
       expectChannelsAreInSync([raiden, partner]);
     });
