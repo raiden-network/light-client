@@ -51,11 +51,12 @@ async function createWrapper({
   channels = channels ?? { [firstToken.address]: [channel] };
 
   const state = {
-    tokens: tokens ?? { [firstToken.address]: firstToken, [otherToken.address]: otherToken },
     stateBackupReminderDateMs: stateBackupReminderDateMs ?? 0,
   };
 
   const getters = {
+    tokensWithChannels: () =>
+      tokens ?? { [firstToken.address]: firstToken, [otherToken.address]: otherToken },
     channels: () => (tokenAddress: string) => channels![tokenAddress] ?? [],
     // This simplified version that expects one open channel per token none
     channelWithBiggestCapacity: () => (tokenAddress: string) =>
