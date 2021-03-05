@@ -19,7 +19,7 @@ import { isntNil } from '../../utils/types';
  * @returns Array of room names
  */
 export function globalRoomNames(config: RaidenConfig) {
-  return [config.discoveryRoom, config.pfsRoom, config.monitoringRoom].filter(isntNil);
+  return [config.discoveryRoom].filter(isntNil);
 }
 
 /**
