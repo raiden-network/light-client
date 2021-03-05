@@ -33,10 +33,11 @@ import type { RaidenAction } from '../../actions';
 import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
 import { Capabilities, RAIDEN_DEVICE_ID } from '../../constants';
-import { messageGlobalSend, messageReceived, messageSend } from '../../messages/actions';
+import { messageReceived, messageSend, messageServiceSend } from '../../messages/actions';
 import type { Delivered, Message } from '../../messages/types';
 import { MessageType, Processed, SecretRequest, SecretReveal } from '../../messages/types';
 import { encodeJsonMessage, isMessageReceivedOfType, signMessage } from '../../messages/utils';
+import { Service } from '../../services/types';
 import type { RaidenState } from '../../state';
 import type { Latest, RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
@@ -231,15 +232,19 @@ export function matrixMessageSendEpic(
 }
 
 function sendGlobalMessages(
-  actions: readonly messageGlobalSend.request[],
+  actions: readonly messageServiceSend.request[],
   matrix: MatrixClient,
   config: RaidenConfig,
   { config$ }: Pick<RaidenEpicDeps, 'config$'>,
-): Observable<messageGlobalSend.success['payload']> {
-  const roomName = actions[0].meta.roomName;
+): Observable<messageServiceSend.success['payload']> {
+  const servicesToRoomName = {
+    [Service.PFS]: config.pfsRoom,
+    [Service.MS]: config.monitoringRoom,
+  };
+  const roomName = servicesToRoomName[actions[0].meta.service];
   const globalRooms = globalRoomNames(config);
-  assert(globalRooms.includes(roomName), [
-    'messageGlobalSend for unknown global room',
+  assert(roomName && globalRooms.includes(roomName), [
+    'messageServiceSend for unknown global room',
     { roomName, globalRooms: globalRooms.join(',') },
   ]);
   const serverName = getServerName(matrix.getHomeserverUrl());
@@ -260,9 +265,9 @@ function sendGlobalMessages(
 }
 
 /**
- * Handles a [[messageGlobalSend.request]] action and send one-shot message to a global room
+ * Handles a [[messageServiceSend.request]] action and send one-shot message to a global room
  *
- * @param action$ - Observable of messageGlobalSend actions
+ * @param action$ - Observable of messageServiceSend actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
  * @param deps.log - Logger instance
@@ -274,11 +279,11 @@ export function matrixMessageGlobalSendEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<messageGlobalSend.success | messageGlobalSend.failure> {
+): Observable<messageServiceSend.success | messageServiceSend.failure> {
   const { matrix$, config$ } = deps;
   return action$.pipe(
-    filter(isActionOf(messageGlobalSend.request)),
-    groupBy((action) => action.meta.roomName),
+    filter(isActionOf(messageServiceSend.request)),
+    groupBy((action) => action.meta.service),
     mergeMap((grouped$) =>
       grouped$.pipe(
         concatBuffer((actions) => {
@@ -286,10 +291,10 @@ export function matrixMessageGlobalSendEpic(
             withLatestFrom(config$),
             mergeMap(([matrix, config]) => sendGlobalMessages(actions, matrix, config, deps)),
             mergeMap((payload) =>
-              from(actions.map((action) => messageGlobalSend.success(payload, action.meta))),
+              from(actions.map((action) => messageServiceSend.success(payload, action.meta))),
             ),
             catchError((err) =>
-              from(actions.map((action) => messageGlobalSend.failure(err, action.meta))),
+              from(actions.map((action) => messageServiceSend.failure(err, action.meta))),
             ),
             completeWith(action$, 10),
           );

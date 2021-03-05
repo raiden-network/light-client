@@ -31,10 +31,11 @@ import { first, pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate, raidenShutdown } from '@/actions';
 import { Capabilities } from '@/constants';
-import { messageGlobalSend } from '@/messages/actions';
+import { messageServiceSend } from '@/messages/actions';
 import { MessageType } from '@/messages/types';
 import { createBalanceHash } from '@/messages/utils';
 import { msBalanceProofSent, udcDeposit } from '@/services/actions';
+import { Service } from '@/services/types';
 import { ErrorCodes } from '@/utils/error';
 import type { Hash, UInt } from '@/utils/types';
 
@@ -94,7 +95,7 @@ describe('monitorRequestEpic', () => {
     const partnerBP = getChannel(raiden, partner).partner.balanceProof;
 
     expect(raiden.output).toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         {
           message: {
             type: MessageType.MONITOR_REQUEST,
@@ -114,7 +115,7 @@ describe('monitorRequestEpic', () => {
             signature: expect.any(String),
           },
         },
-        { roomName: raiden.config.monitoringRoom!, msgId: expect.any(String) },
+        { service: Service.MS, msgId: expect.any(String) },
       ),
     );
   });
@@ -137,7 +138,7 @@ describe('monitorRequestEpic', () => {
     const partnerBP = getChannel(raiden, partner).partner.balanceProof;
 
     expect(raiden.output).toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         {
           message: {
             type: MessageType.MONITOR_REQUEST,
@@ -157,7 +158,7 @@ describe('monitorRequestEpic', () => {
             signature: expect.any(String),
           },
         },
-        { roomName: raiden.config.monitoringRoom!, msgId: expect.any(String) },
+        { service: Service.MS, msgId: expect.any(String) },
       ),
     );
   });
@@ -197,7 +198,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),
@@ -215,7 +216,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),
@@ -254,7 +255,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),
@@ -295,7 +296,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),
@@ -328,7 +329,7 @@ describe('monitorRequestEpic', () => {
     await waitBlock();
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         { message: expect.objectContaining({ type: MessageType.MONITOR_REQUEST }) },
         expect.anything(),
       ),

@@ -1,7 +1,21 @@
 import * as t from 'io-ts';
+import invert from 'lodash/invert';
 
 import type { Decodable } from '../utils/types';
 import { Address, Int, Signed, UInt } from '../utils/types';
+
+// it's like an enum, but with literals
+export const Service = {
+  PFS: 'path_finding',
+  MS: 'monitoring',
+} as const;
+export type Service = typeof Service[keyof typeof Service];
+export const ServiceC = t.keyof(invert(Service) as { [D in Service]: string });
+
+export const ServiceDeviceId: { readonly [K in Service]: string } = {
+  [Service.PFS]: 'PATH_FINDING',
+  [Service.MS]: 'MONITORING',
+};
 
 /**
  * Codec for PFS API returned data
