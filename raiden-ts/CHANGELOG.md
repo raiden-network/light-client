@@ -27,6 +27,7 @@
 - [#2536] Wait for global messages before resolving deposits and channel open request
 - [#2566] Optimize initial sync and resume previous sync filters scans
 - [#2570] Support multiple custom services in config.pfs
+- [#2572] **BREAKING** Send services messages through `toDevice` instead of global rooms
 - [#2635] **BREAKING** Renamed `Raiden.planUdcWithdraw` to `Raiden.planUDCWithdraw` for consistency
 - [#2645] Wait for condition to be ready on `settleChannel` and `withdrawFromUDC` in case it's called early instead of erroring
 
@@ -34,6 +35,7 @@
 - [#2550] **BREAKING** Remove migration of legacy state at localStorage during creation
 - [#2567] **BREAKING** Remove support for peer-to-peer communication through Matrix rooms; now supports only `toDevice` and WebRTC channels.
 - [#2600] `wrtc` auto-polyfill; now, if you're using `raiden-ts` in a NodeJS project, you're expected to polyfill `wrtc` or some WebRTC-compatible API to your global object; in exchange, the SDK doesn't require WebRTC, and therefore should work fine on environments without it (through matrix' toDevice messages).
+- [#2571] **BREAKING** Remove ability to join and send messages to global service rooms
 
 ### Fixed
 - [#2596] Fix unlocking sent transfers even if receiving is disabled
@@ -45,6 +47,8 @@
 [#2566]: https://github.com/raiden-network/light-client/issues/2566
 [#2567]: https://github.com/raiden-network/light-client/issues/2567
 [#2570]: https://github.com/raiden-network/light-client/issues/2570
+[#2571]: https://github.com/raiden-network/light-client/issues/2571
+[#2572]: https://github.com/raiden-network/light-client/issues/2572
 [#2581]: https://github.com/raiden-network/light-client/pull/2581
 [#2596]: https://github.com/raiden-network/light-client/issues/2596
 [#2600]: https://github.com/raiden-network/light-client/issues/2600
