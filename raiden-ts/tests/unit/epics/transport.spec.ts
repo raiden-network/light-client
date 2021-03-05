@@ -1,5 +1,5 @@
 import { ensureChannelIsOpen, ensurePresence, matrixServer, token } from '../fixtures';
-import { fetch, makeRaiden, makeRaidens, makeSignature, sleep } from '../mocks';
+import { fetch, makeAddress, makeRaiden, makeRaidens, makeSignature, sleep } from '../mocks';
 
 import { verifyMessage } from '@ethersproject/wallet';
 import { EventEmitter } from 'events';
@@ -12,11 +12,13 @@ import { messageReceived, messageSend, messageServiceSend } from '@/messages/act
 import type { Delivered, Processed } from '@/messages/types';
 import { MessageType } from '@/messages/types';
 import { encodeJsonMessage, signMessage } from '@/messages/utils';
-import { Service } from '@/services/types';
+import { servicesValid } from '@/services/actions';
+import { Service, ServiceDeviceId } from '@/services/types';
 import { makeMessageId } from '@/transfers/utils';
 import { matrixPresence, matrixSetup, rtcChannel } from '@/transport/actions';
 import { getSortedAddresses } from '@/transport/utils';
 import { ErrorCodes } from '@/utils/error';
+import { getServerName } from '@/utils/matrix';
 import type { Address, Signed } from '@/utils/types';
 import { isntNil } from '@/utils/types';
 
@@ -969,51 +971,56 @@ describe('deliveredEpic', () => {
   });
 });
 
-test('matrixMessageGlobalSendEpic', async () => {
+test('matrixMessageServiceSendEpic', async () => {
   expect.assertions(6);
 
   const raiden = await makeRaiden();
   const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+  const service = makeAddress();
+  const serviceUid = `@${service.toLowerCase()}:${getServerName(matrix.getHomeserverUrl())}`;
   const msgId = '123';
   const message = await signMessage(raiden.deps.signer, processed),
     text = encodeJsonMessage(message);
 
-  raiden.store.dispatch(messageServiceSend.request({ message }, { service: Service.PFS, msgId }));
+  const meta = { service: Service.PFS, msgId };
+  raiden.store.dispatch(messageServiceSend.request({ message }, meta));
 
   await sleep(2 * raiden.config.pollingInterval);
-  expect(matrix.sendEvent).toHaveBeenCalledTimes(1);
-  expect(matrix.sendEvent).toHaveBeenCalledWith(
-    expect.any(String),
-    'm.room.message',
-    expect.objectContaining({ body: text, msgtype: 'm.text' }),
-    expect.anything(),
-  );
+  expect(matrix.sendToDevice).not.toHaveBeenCalled();
+  expect(raiden.output).not.toContainEqual(messageServiceSend.success(expect.anything(), meta));
   expect(raiden.output).toContainEqual(
-    messageServiceSend.success(
-      { via: expect.stringMatching(/!.*:/), tookMs: expect.any(Number), retries: 0 },
-      { service: Service.PFS, msgId },
+    messageServiceSend.failure(
+      expect.objectContaining({ message: expect.stringContaining('no services') }),
+      meta,
     ),
   );
 
-  // test graceful failure
   raiden.output.splice(0, raiden.output.length);
-  matrix.sendEvent.mockClear();
-  matrix.sendEvent.mockRejectedValueOnce(Object.assign(new Error('Failed'), { httpStatus: 429 }));
+  matrix.sendToDevice.mockClear();
+  // network errors must be retried
+  matrix.sendToDevice.mockRejectedValueOnce(
+    Object.assign(new Error('Failed'), { httpStatus: 429 }),
+  );
+  raiden.store.dispatch(servicesValid({ [service]: Date.now() + 1e8 }));
 
-  raiden.store.dispatch(messageServiceSend.request({ message }, { service: Service.PFS, msgId }));
+  raiden.store.dispatch(messageServiceSend.request({ message }, meta));
 
   await sleep(raiden.config.httpTimeout);
-  expect(matrix.sendEvent).toHaveBeenCalledTimes(2);
-  expect(matrix.sendEvent).toHaveBeenCalledWith(
-    expect.any(String),
+  expect(matrix.sendToDevice).toHaveBeenCalledTimes(2);
+  expect(matrix.sendToDevice).toHaveBeenCalledWith(
     'm.room.message',
-    expect.objectContaining({ body: text, msgtype: 'm.text' }),
-    expect.anything(),
+    expect.objectContaining({
+      [serviceUid]: { [ServiceDeviceId[meta.service]]: { body: text, msgtype: 'm.text' } },
+    }),
   );
   expect(raiden.output).toContainEqual(
     messageServiceSend.success(
-      { via: expect.stringMatching(/!.*:/), tookMs: expect.any(Number), retries: 1 },
-      { service: Service.PFS, msgId },
+      {
+        via: expect.arrayContaining([serviceUid]),
+        tookMs: expect.any(Number),
+        retries: 1,
+      },
+      meta,
     ),
   );
 });

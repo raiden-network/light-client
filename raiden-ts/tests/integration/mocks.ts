@@ -86,6 +86,7 @@ export class MockMatrixRequestFn {
     this.endpoints['/send/m.room.message'] = ({}, callback) =>
       this.respond(callback, 200, { event_id: `$eventId_${Date.now()}` });
     this.endpoints['/invite'] = ({}, callback) => this.respond(callback, 200, {});
+    this.endpoints['/sendToDevice'] = ({}, callback) => this.respond(callback, 200, {});
   }
 
   public requestFn(opts: RequestOpts, callback: RequestCallback): any {

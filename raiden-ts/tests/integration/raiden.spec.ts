@@ -396,7 +396,6 @@ describe('Raiden', () => {
     expect.assertions(3);
     expect(raiden.config).toMatchObject({
       discoveryRoom: 'raiden_1338_discovery',
-      pfsRoom: 'raiden_1338_path_finding',
       settleTimeout: 20,
       revealTimeout: 5,
     });
