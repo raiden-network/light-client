@@ -179,6 +179,15 @@ const store: StoreOptions<CombinedStoreState> = {
   },
   actions: {},
   getters: {
+    tokensWithChannels: function (state: RootState): Tokens {
+      const tokensWithChannels: Tokens = {};
+
+      for (const [address, token] of Object.entries(state.tokens)) {
+        if (!!state.channels[address]) tokensWithChannels[address] = token;
+      }
+
+      return tokensWithChannels;
+    },
     tokens: function (state: RootState): TokenModel[] {
       const reducer = (acc: AccTokenModel, channel: RaidenChannel): AccTokenModel => {
         acc.address = channel.token;

@@ -54,12 +54,17 @@ const ONE_DAY = new Date(0).setUTCHours(24);
     NoChannelsDialog,
   },
   computed: {
-    ...mapState(['tokens', 'stateBackupReminderDateMs']),
-    ...mapGetters(['channels', 'channelWithBiggestCapacity', 'openChannels']),
+    ...mapState(['stateBackupReminderDateMs']),
+    ...mapGetters([
+      'tokensWithChannels',
+      'channels',
+      'channelWithBiggestCapacity',
+      'openChannels',
+    ]),
   },
 })
 export default class TransferRoute extends Vue {
-  tokens!: Tokens;
+  tokensWithChannels!: Tokens;
   stateBackupReminderDateMs!: number;
   channels!: (tokenAddress: string) => RaidenChannel[];
   channelWithBiggestCapacity!: (tokenAddress: string) => RaidenChannel | undefined;
@@ -69,7 +74,7 @@ export default class TransferRoute extends Vue {
   targetAddress = '';
 
   get noTokens(): boolean {
-    return Object.keys(this.tokens).length === 0;
+    return Object.keys(this.tokensWithChannels).length === 0;
   }
 
   get noChannels(): boolean {
@@ -136,18 +141,18 @@ export default class TransferRoute extends Vue {
   }
 
   async getTokenFromStore(tokenAddress: string): Promise<Token> {
-    if (!(tokenAddress in this.tokens)) {
+    if (!(tokenAddress in this.tokensWithChannels)) {
       await this.$raiden.fetchAndUpdateTokenData([tokenAddress]);
     }
 
     // From the SDK implementation it should not be possible undefined here as
     // it should have thrown earier on the fetch procedure.
-    return this.tokens[tokenAddress];
+    return this.tokensWithChannels[tokenAddress];
   }
 
   selectFirstAvailableTokenIfAny(): void {
     if (!this.noTokens) {
-      this.token = Object.values(this.tokens)[0];
+      this.token = Object.values(this.tokensWithChannels)[0];
     }
   }
 
