@@ -74,7 +74,7 @@ export default class HeaderContent extends Vue {
   }
 
   get canNavigateBack(): boolean {
-    return this.isConnected && !this.disableBackButton && !this.$route.meta.cannotNavigateBack;
+    return !this.disableBackButton && !this.$route.meta.cannotNavigateBack;
   }
 }
 </script>
