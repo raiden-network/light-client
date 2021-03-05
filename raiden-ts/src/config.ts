@@ -35,11 +35,6 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - pfsMode - One of 'disabled' (disables PFS usage and notifications), 'auto' (notifies all of
  *    registered and additionalServices, picks cheapest for transfers without explicit pfs),
  *    or 'onlyAdditional' (notifies all, but pick first responding from additionalServices only).
- * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
- * - monitoringRoom - MS global room to auto-join and send RequestMonitoring messages;
- *    use null to disable
- * - pfs - Array of Path Finding Service Addresses (require PFS to be registered) or URLs.
- *    Set to false to disable, or true to enable automatic fetching from ServiceRegistry.
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Either a fee
  *    multiplier, or a [fee, amount] pair ofmultipliers. Use `1.1` to add a 10% over estimated fee
  *    margin, or `[0.03, 0.0005]` to add a 3% over fee plus 0.05% over amount.
@@ -76,8 +71,6 @@ export const RaidenConfig = t.readonly(
       discoveryRoom: t.union([t.string, t.null]),
       additionalServices: t.readonlyArray(t.union([Address, t.string])),
       pfsMode: PfsModeC,
-      pfsRoom: t.union([t.string, t.null]),
-      monitoringRoom: t.union([t.string, t.null]),
       pfsSafetyMargin: t.union([t.number, t.tuple([t.number, t.number])]),
       pfsMaxPaths: t.number,
       pfsMaxFee: UInt(32),
@@ -153,8 +146,6 @@ export function makeDefaultConfig(
     discoveryRoom: `raiden_${networkName}_discovery`,
     additionalServices: [],
     pfsMode: PfsMode.auto,
-    pfsRoom: `raiden_${networkName}_path_finding`,
-    monitoringRoom: `raiden_${networkName}_monitoring`,
     pfsSafetyMargin: 1.0, // multiplier
     pfsMaxPaths: 3,
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
