@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import * as t from 'io-ts';
 
+import { ServiceC } from '../services/types';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
 import { Address, Signed } from '../utils/types';
@@ -24,19 +25,19 @@ export namespace messageSend {
   export interface failure extends ActionType<typeof messageSend.failure> {}
 }
 
-/** One-shot send payload.message to a global room in transport */
-export const messageGlobalSend = createAsyncAction(
-  t.type({ roomName: t.string, msgId: t.string }),
-  'message/global/send/request',
-  'message/global/send/success',
-  'message/global/send/failure',
+/** One-shot send payload.message to a service room in transport */
+export const messageServiceSend = createAsyncAction(
+  t.type({ service: ServiceC, msgId: t.string }),
+  'message/service/send/request',
+  'message/service/send/success',
+  'message/service/send/failure',
   t.type({ message: Signed(Message) }),
-  t.union([t.undefined, t.type({ via: t.string, tookMs: t.number, retries: t.number })]),
+  t.union([t.undefined, t.type({ via: t.unknown, tookMs: t.number, retries: t.number })]),
 );
-export namespace messageGlobalSend {
-  export interface request extends ActionType<typeof messageGlobalSend.request> {}
-  export interface success extends ActionType<typeof messageGlobalSend.success> {}
-  export interface failure extends ActionType<typeof messageGlobalSend.failure> {}
+export namespace messageServiceSend {
+  export interface request extends ActionType<typeof messageServiceSend.request> {}
+  export interface success extends ActionType<typeof messageServiceSend.success> {}
+  export interface failure extends ActionType<typeof messageServiceSend.failure> {}
 }
 
 /**

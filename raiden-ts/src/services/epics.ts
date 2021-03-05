@@ -45,7 +45,7 @@ import { intervalFromConfig } from '../config';
 import { Capabilities } from '../constants';
 import type { HumanStandardToken, UserDeposit } from '../contracts';
 import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
-import { messageGlobalSend } from '../messages/actions';
+import { messageServiceSend } from '../messages/actions';
 import type { MonitorRequest, PFSCapacityUpdate, PFSFeeUpdate } from '../messages/types';
 import { MessageType } from '../messages/types';
 import { createBalanceHash, MessageTypeId, signMessage } from '../messages/utils';
@@ -80,7 +80,7 @@ import {
   udcWithdrawn,
 } from './actions';
 import type { IOU, Paths, PFS } from './types';
-import { LastIOUResults, PathResults } from './types';
+import { LastIOUResults, PathResults, Service } from './types';
 import { channelCanRoute, packIOU, pfsInfo, pfsListInfo, signIOU } from './utils';
 
 /**
@@ -233,7 +233,7 @@ export function pathFindServiceEpic(
 }
 
 /**
- * Sends a [[PFSCapacityUpdate]] to PFS global room on new deposit on our side of channels
+ * Sends a [[PFSCapacityUpdate]] to PFSs on new deposit on our side of channels
  *
  * @param action$ - Observable of channelDeposit.success actions
  * @param state$ - Observable of RaidenStates
@@ -243,24 +243,21 @@ export function pathFindServiceEpic(
  * @param deps.network - Current Network
  * @param deps.signer - Signer instance
  * @param deps.config$ - Config observable
- * @returns Observable of messageGlobalSend.request actions
+ * @returns Observable of messageServiceSend.request actions
  */
 export function pfsCapacityUpdateEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { log, address, network, signer, config$ }: RaidenEpicDeps,
-): Observable<messageGlobalSend.request> {
+): Observable<messageServiceSend.request> {
   return state$.pipe(
     groupChannel$,
     mergeMap((grouped$) =>
       grouped$.pipe(
         pairwise(), // skips first emission on startup
         withLatestFrom(config$),
-        // ignore actions if channel not open or while/if config.pfsRoom isn't set
-        filter(
-          ([[, channel], { pfsRoom, pfs }]) =>
-            channel.state === ChannelState.open && !!pfsRoom && pfs !== null,
-        ),
+        // ignore actions if channel not open or while/if pfs is disabled
+        filter(([[, channel], { pfs }]) => channel.state === ChannelState.open && pfs !== null),
         debounce(
           ([[prev, cur], { httpTimeout }]) =>
             cur.own.locks.length > prev.own.locks.length ||
@@ -269,7 +266,7 @@ export function pfsCapacityUpdateEpic(
                 timer(httpTimeout)
               : of(1), // otherwise, deposited or a transfer completed, fires immediatelly
         ),
-        switchMap(([[, channel], { revealTimeout, pfsRoom }]) => {
+        switchMap(([[, channel], { revealTimeout }]) => {
           const tokenNetwork = channel.tokenNetwork;
           const partner = channel.partner.address;
           const { ownCapacity, partnerCapacity } = channelAmounts(channel);
@@ -293,7 +290,7 @@ export function pfsCapacityUpdateEpic(
 
           return defer(() => signMessage(signer, message, { log })).pipe(
             map((signed) =>
-              messageGlobalSend.request({ message: signed }, { roomName: pfsRoom!, msgId }),
+              messageServiceSend.request({ message: signed }, { service: Service.PFS, msgId }),
             ),
             catchError((err) => {
               log.error('Error trying to generate & sign PFSCapacityUpdate', err);
@@ -308,8 +305,7 @@ export function pfsCapacityUpdateEpic(
 
 /**
  * When monitoring a channel (either a new channel or a previously monitored one), send a matching
- * PFSFeeUpdate to path_finding global room, so PFSs can pick us for mediation
- * TODO: Currently, we always send Zero fees; we should send correct fee data from config
+ * PFSFeeUpdate to PFSs, so they can pick us for mediation
  *
  * @param action$ - Observable of channelMonitored actions
  * @param state$ - Observable of RaidenStates
@@ -319,15 +315,14 @@ export function pfsCapacityUpdateEpic(
  * @param deps.network - Current network
  * @param deps.signer - Signer instance
  * @param deps.config$ - Config observable
- * @param deps.init$ - Init$ subject
  * @param deps.mediationFeeCalculator - Calculator for mediation fees schedule
- * @returns Observable of messageGlobalSend.request actions
+ * @returns Observable of messageServiceSend.request actions
  */
 export function pfsFeeUpdateEpic(
-  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, address, network, signer, config$, init$, mediationFeeCalculator }: RaidenEpicDeps,
-): Observable<messageGlobalSend.request> {
+  { log, address, network, signer, config$, mediationFeeCalculator }: RaidenEpicDeps,
+): Observable<messageServiceSend.request> {
   return state$.pipe(
     groupChannel$,
     mergeMap((grouped$) =>
@@ -351,8 +346,7 @@ export function pfsFeeUpdateEpic(
         }),
         // reactive on channel state and config changes, distinct on schedule's payload
         distinctUntilChanged(([, sched1], [, sched2]) => isEqual(sched1, sched2)),
-        withLatestFrom(config$),
-        switchMap(([[channel, schedule], { pfsRoom }]) => {
+        switchMap(([channel, schedule]) => {
           const message: PFSFeeUpdate = {
             type: MessageType.PFS_FEE_UPDATE,
             canonical_identifier: {
@@ -365,14 +359,10 @@ export function pfsFeeUpdateEpic(
             fee_schedule: schedule,
           };
           const msgId = makeMessageId().toString();
-          const meta = { roomName: pfsRoom!, msgId };
-          const completed$ = action$.pipe(filter(isResponseOf(messageGlobalSend, meta)), take(1));
+          const meta = { service: Service.PFS, msgId };
 
           return from(signMessage(signer, message, { log })).pipe(
-            map((signed) => {
-              init$.next(completed$);
-              return messageGlobalSend.request({ message: signed }, meta);
-            }),
+            map((signed) => messageServiceSend.request({ message: signed }, meta)),
             catchError((err) => {
               log.error('Error trying to generate & sign PFSFeeUpdate', err);
               return EMPTY;
@@ -652,7 +642,7 @@ export function udcDepositEpic(
  * @param deps.latest$ - Latest observable
  * @param deps.config$ - Config observable
  * @returns An operator which receives prev and current Channel states and returns a cold
- *      Observable of messageGlobalSend.request actions to the global monitoring room
+ *      Observable of messageServiceSend.request actions to monitoring services
  */
 function makeMonitoringRequest$({
   address,
@@ -671,9 +661,8 @@ function makeMonitoringRequest$({
     return combineLatest([latest$, config$]).pipe(
       // combineLatest + filter ensures it'll pass if anything here changes
       filter(
-        ([{ udcBalance }, { monitoringRoom, monitoringReward, rateToSvt }]) =>
-          // ignore actions while/if config.monitoringRoom isn't set
-          !!monitoringRoom &&
+        ([{ udcBalance }, { monitoringReward, rateToSvt }]) =>
+          // ignore actions while/if config.monitoringReward isn't enabled
           !!monitoringReward?.gt(Zero) &&
           // wait for udcBalance >= monitoringReward, fires immediately if already
           udcBalance.gte(monitoringReward) &&
@@ -686,7 +675,7 @@ function makeMonitoringRequest$({
             .gt(monitoringReward),
       ),
       take(1), // take/act on first time all conditions above pass
-      mergeMap(([, { monitoringReward, monitoringRoom }]) => {
+      mergeMap(([, { monitoringReward }]) => {
         const balanceProof = channel.partner.balanceProof;
         const balanceHash = createBalanceHash(balanceProof);
 
@@ -727,7 +716,7 @@ function makeMonitoringRequest$({
             ),
           ),
           map((message) =>
-            messageGlobalSend.request({ message }, { roomName: monitoringRoom!, msgId }),
+            messageServiceSend.request({ message }, { service: Service.MS, msgId }),
           ),
         );
       }),
@@ -745,13 +734,13 @@ function makeMonitoringRequest$({
  * @param action$ - Observable of channelDeposit.success actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
- * @returns Observable of messageGlobalSend.request actions
+ * @returns Observable of messageServiceSend.request actions
  */
 export function monitorRequestEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<messageGlobalSend.request> {
+): Observable<messageServiceSend.request> {
   return state$.pipe(
     groupChannel$,
     withLatestFrom(deps.config$),

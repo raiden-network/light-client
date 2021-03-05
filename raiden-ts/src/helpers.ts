@@ -49,7 +49,8 @@ import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
 import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
-import { messageGlobalSend } from './messages/actions';
+import { messageServiceSend } from './messages/actions';
+import { Service } from './services/types';
 import { makeInitialState, RaidenState } from './state';
 import type { RaidenTransfer } from './transfers/state';
 import { Direction, TransferState } from './transfers/state';
@@ -556,25 +557,25 @@ export async function getState(
 
 /**
  * For a given channelId (passed as opts.meta), waits for a deposit to be confirmed and for the
- * following messageGlobalSend for its PFSCapacityUpdate to succeed
+ * following messageServiceSend for its PFSCapacityUpdate to succeed
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param opts - Options
  * @param opts.meta - channelId on which to wait for a deposit
  * @param opts.config - RaidenConfig to check if PFS is enabled
- * @returns Promise for undefined or messageGlobalSend.success action
+ * @returns Promise for undefined or messageServiceSend.success action
  */
 export async function waitForPFSCapacityUpdate(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { meta, config }: { meta: channelDeposit.request['meta']; config: RaidenConfig },
 ) {
-  const pfsRoom = config.pfsRoom;
-  if (!pfsRoom || config.pfs === null) return;
-  const postMeta: messageGlobalSend.request['meta'] = { roomName: '', msgId: '' };
+  if (config.pfs === null) return;
+  const postMeta: messageServiceSend.request['meta'] = { service: Service.PFS, msgId: '' };
+  let deposited = false;
   return asyncActionToPromise(
-    messageGlobalSend,
+    messageServiceSend,
     postMeta, // pass postMeta by reference, so it gets used for filtering once msgId is set
     // like action$, but sets proper postMeta for filtering *once* deposited and request is
     // identified in a synchronous way
@@ -582,11 +583,11 @@ export async function waitForPFSCapacityUpdate(
       withLatestFrom(state$),
       tap(([action, state]) => {
         if (channelDeposit.success.is(action) && action.payload.confirmed) {
-          postMeta.roomName = pfsRoom; // once deposited, set roomName
+          deposited = true;
           return;
         }
         // ignore if not deposited yet or request's msgId already identified
-        if (!postMeta.roomName || postMeta.msgId || !messageGlobalSend.request.is(action)) return;
+        if (!deposited || postMeta.msgId || !messageServiceSend.request.is(action)) return;
         const message = action.payload.message;
         if (message.type !== 'PFSCapacityUpdate') return;
         // ensure it's a PFSCapacityUpdate for this specific channel
@@ -595,7 +596,7 @@ export async function waitForPFSCapacityUpdate(
           !message.canonical_identifier.channel_identifier.eq(state.channels[channelKey(meta)]?.id)
         )
           return;
-        // on the first messageGlobalSend.request for a PFSCapacityUpdate for this channel
+        // on the first messageServiceSend.request for a PFSCapacityUpdate for this channel
         // *after* deposit is confirmed, "save" msgId to be used in filter for success
         postMeta.msgId = action.meta.msgId;
       }),

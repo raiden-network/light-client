@@ -27,11 +27,11 @@ import { AddressZero, One, Zero } from '@ethersproject/constants';
 
 import { raidenConfigUpdate, raidenShutdown } from '@/actions';
 import { Capabilities } from '@/constants';
-import { messageGlobalSend } from '@/messages/actions';
+import { messageServiceSend } from '@/messages/actions';
 import { MessageType } from '@/messages/types';
 import { raidenReducer } from '@/reducer';
 import { iouClear, iouPersist, pathFind, servicesValid } from '@/services/actions';
-import { IOU } from '@/services/types';
+import { IOU, Service } from '@/services/types';
 import { signIOU } from '@/services/utils';
 import { matrixPresence } from '@/transport/actions';
 import { jsonStringify } from '@/utils/data';
@@ -1012,11 +1012,10 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     expect.assertions(2);
 
     const [raiden, partner] = await makeRaidens(2);
-    const pfsRoom = raiden.config.pfsRoom!;
     await ensureChannelIsOpen([raiden, partner]);
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         { message: expect.objectContaining({ type: MessageType.PFS_CAPACITY_UPDATE }) },
         expect.anything(),
       ),
@@ -1025,7 +1024,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     await ensureChannelIsDeposited([raiden, partner], deposit);
 
     expect(raiden.output).toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         {
           message: expect.objectContaining({
             type: MessageType.PFS_CAPACITY_UPDATE,
@@ -1035,7 +1034,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
             signature: expect.any(String),
           }),
         },
-        { roomName: pfsRoom, msgId: expect.any(String) },
+        { service: Service.PFS, msgId: expect.any(String) },
       ),
     );
   });
@@ -1052,7 +1051,7 @@ describe('PFS: pfsCapacityUpdateEpic', () => {
     await ensureChannelIsDeposited([raiden, partner], deposit);
 
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         { message: expect.objectContaining({ type: MessageType.PFS_CAPACITY_UPDATE }) },
         expect.anything(),
       ),
@@ -1078,7 +1077,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     const channel = getChannel(raiden, partner);
 
     expect(raiden.output).toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         {
           message: {
             type: MessageType.PFS_FEE_UPDATE,
@@ -1093,7 +1092,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
             signature: expect.any(String),
           },
         },
-        { roomName: raiden.config.pfsRoom!, msgId: expect.any(String) },
+        { service: Service.PFS, msgId: expect.any(String) },
       ),
     );
   });
@@ -1118,7 +1117,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     expect(signerSpy).toHaveBeenCalledTimes(1);
     expect(raiden.output).not.toContainEqual(raidenShutdown(expect.anything()));
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         { message: expect.objectContaining({ type: MessageType.PFS_FEE_UPDATE }) },
         expect.anything(),
       ),
@@ -1140,7 +1139,7 @@ describe('PFS: pfsFeeUpdateEpic', () => {
     await ensureChannelIsClosed([raiden, partner]);
     await waitBlock();
     expect(raiden.output).not.toContainEqual(
-      messageGlobalSend.request(
+      messageServiceSend.request(
         { message: expect.objectContaining({ type: MessageType.PFS_FEE_UPDATE }) },
         expect.anything(),
       ),
