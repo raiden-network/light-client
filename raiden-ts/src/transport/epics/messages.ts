@@ -1,4 +1,5 @@
-import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
+import isEmpty from 'lodash/isEmpty';
+import type { MatrixEvent } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
 import {
   asapScheduler,
@@ -15,8 +16,10 @@ import {
 import {
   catchError,
   concatMap,
+  delayWhen,
+  endWith,
   filter,
-  groupBy,
+  ignoreElements,
   map,
   mergeMap,
   pluck,
@@ -28,13 +31,12 @@ import {
 } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
-import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
 import { messageReceived, messageSend, messageServiceSend } from '../../messages/actions';
 import type { Delivered, Message } from '../../messages/types';
 import { MessageType, Processed, SecretRequest, SecretReveal } from '../../messages/types';
 import { encodeJsonMessage, isMessageReceivedOfType, signMessage } from '../../messages/utils';
-import { Service } from '../../services/types';
+import { ServiceDeviceId } from '../../services/types';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
@@ -43,7 +45,6 @@ import { LruCache } from '../../utils/lru';
 import { getServerName } from '../../utils/matrix';
 import {
   completeWith,
-  concatBuffer,
   dispatchRequestAndGetResponse,
   mergeWith,
   pluckDistinct,
@@ -52,7 +53,7 @@ import {
 import { isntNil, Signed } from '../../utils/types';
 import { matrixPresence } from '../actions';
 import { getAddressFromUserId, getNoDeliveryPeers } from '../utils';
-import { getRoom$, globalRoomNames, parseMessage } from './helpers';
+import { parseMessage } from './helpers';
 
 function getMessageBody(message: string | Signed<Message>): string {
   return typeof message === 'string' ? message : encodeJsonMessage(message);
@@ -246,76 +247,60 @@ export function matrixMessageSendEpic(
   );
 }
 
-function sendGlobalMessages(
-  actions: readonly messageServiceSend.request[],
-  matrix: MatrixClient,
-  config: RaidenConfig,
-  { config$ }: Pick<RaidenEpicDeps, 'config$'>,
-): Observable<messageServiceSend.success['payload']> {
-  const servicesToRoomName = {
-    [Service.PFS]: config.pfsRoom,
-    [Service.MS]: config.monitoringRoom,
-  };
-  const roomName = servicesToRoomName[actions[0].meta.service];
-  const globalRooms = globalRoomNames(config);
-  assert(roomName && globalRooms.includes(roomName), [
-    'messageServiceSend for unknown global room',
-    { roomName, globalRooms: globalRooms.join(',') },
-  ]);
-  const serverName = getServerName(matrix.getHomeserverUrl());
-  const roomAlias = `#${roomName}:${serverName}`;
-  // batch action messages in a single text body
-  const body = actions.map((action) => getMessageBody(action.payload.message)).join('\n');
-  const start = Date.now();
-  let retries = -1;
-  return getRoom$(matrix, roomAlias).pipe(
-    // send message!
-    mergeMap(async (room) => {
-      retries++;
-      await matrix.sendEvent(room.roomId, 'm.room.message', { body, msgtype: textMsgType }, '');
-      return { via: room.roomId, tookMs: Date.now() - start, retries };
+function sendServiceMessage(
+  request: messageServiceSend.request,
+  { matrix$, config$, latest$ }: Pick<RaidenEpicDeps, 'matrix$' | 'config$' | 'latest$'>,
+) {
+  return matrix$.pipe(
+    withLatestFrom(latest$),
+    mergeMap(([matrix, { state }]) => {
+      assert(!isEmpty(state.services), 'no services to messageServiceSend to');
+      const serverName = getServerName(matrix.getHomeserverUrl());
+      const userIds = Object.keys(state.services).map(
+        (service) => `@${service.toLowerCase()}:${serverName}`,
+      );
+      // batch action messages in a single text body
+      const content = {
+        msgtype: 'm.text',
+        body: getMessageBody(request.payload.message),
+      };
+      const payload = Object.fromEntries(
+        userIds.map((uid) => [uid, { [ServiceDeviceId[request.meta.service]]: content }]),
+      );
+      const start = Date.now();
+      let retries = -1;
+      return defer(async () => {
+        retries++;
+        await matrix.sendToDevice('m.room.message', payload); // send message!
+        return messageServiceSend.success(
+          { via: userIds, tookMs: Date.now() - start, retries },
+          request.meta,
+        );
+      }).pipe(retryWhile(intervalFromConfig(config$), { maxRetries: 3, onErrors: networkErrors }));
     }),
-    retryWhile(intervalFromConfig(config$), { maxRetries: 3, onErrors: networkErrors }),
+    catchError((err) => of(messageServiceSend.failure(err, request.meta))),
   );
 }
 
 /**
- * Handles a [[messageServiceSend.request]] action and send one-shot message to a global room
+ * Handles a [[messageServiceSend.request]] action and send one-shot message to a service
  *
  * @param action$ - Observable of messageServiceSend actions
  * @param state$ - Observable of RaidenStates
- * @param deps - RaidenEpicDeps members
- * @param deps.log - Logger instance
- * @param deps.matrix$ - MatrixClient async subject
- * @param deps.config$ - Config observable
- * @returns Empty observable (whole side-effect on matrix instance)
+ * @param deps - Epics dependencies
+ * @returns Observable of messageServiceSend.success|failure actions
  */
-export function matrixMessageGlobalSendEpic(
+export function matrixMessageServiceSendEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<messageServiceSend.success | messageServiceSend.failure> {
-  const { matrix$, config$ } = deps;
   return action$.pipe(
     filter(isActionOf(messageServiceSend.request)),
-    groupBy((action) => action.meta.service),
-    mergeMap((grouped$) =>
-      grouped$.pipe(
-        concatBuffer((actions) => {
-          return matrix$.pipe(
-            withLatestFrom(config$),
-            mergeMap(([matrix, config]) => sendGlobalMessages(actions, matrix, config, deps)),
-            mergeMap((payload) =>
-              from(actions.map((action) => messageServiceSend.success(payload, action.meta))),
-            ),
-            catchError((err) =>
-              from(actions.map((action) => messageServiceSend.failure(err, action.meta))),
-            ),
-            completeWith(action$, 10),
-          );
-        }, 20),
-      ),
-    ),
+    // wait until init$ is completed before handling requests, so state.services is populated
+    delayWhen(() => deps.init$.pipe(ignoreElements(), endWith(true))),
+    mergeMap((request) => sendServiceMessage(request, deps), 5),
+    completeWith(action$, 10),
   );
 }
 
