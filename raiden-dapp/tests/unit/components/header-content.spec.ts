@@ -49,11 +49,6 @@ const createWrapper = (
 };
 
 describe('HeaderContent.vue', () => {
-  test('cannot navigate back if not connected', () => {
-    const wrapper = createWrapper(RouteNames.CHANNELS, false);
-    expect((wrapper.vm as any).canNavigateBack).toBe(false);
-  });
-
   test('cannot navigate back if back button is disabled', () => {
     const wrapper = createWrapper(RouteNames.CHANNELS, true, true, true);
     expect((wrapper.vm as any).canNavigateBack).toBe(false);
