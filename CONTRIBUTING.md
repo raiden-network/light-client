@@ -299,3 +299,12 @@ We do not enforce any specific way, but want to keep the git history **as flat a
 If you feel like the individual commits of your pull request are of importance, feel free to **Merge Commit** or **Rebase and Merge**.
 
 If your pull request contains a lot of unimportant commits, e.g. syncs with `master` or intermediate commits, then please use **Squash and Merge**.
+
+
+### Next branch
+
+Compatibility breaking changes from the last stable release and targetting keeping the Light Client in sync and working together with the improvements and experiments conducted by the Python Client team on their client and on development versions of the Services (Transport, Path Finding and Monitoring) are kept in a parallel branch called `next`. The bulk of the non-breaking changes and features should still be merged to `master`, and that will be merged on top of `next`, or the later will be rebased on top of `master` as often as needed to keep both versions working and in sync without breaking `master`'s compatibility with current stable releases.
+
+`next` will contain only the minimal number of commits diverging from `master`, and its changes will be reviewed the same as in the stable branch, requiring at least one additional reviewer, although rebases can be done by developers when needed in order to keep the changes contained and focused.
+
+To test locally on the staging environment, simply `git merge next` on your feature branch based on `master`, and reset the merged changes after testing is done.
