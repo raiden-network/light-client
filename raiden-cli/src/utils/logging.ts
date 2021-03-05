@@ -11,7 +11,7 @@ util.inspect.defaultOptions.depth = 3; // +1 from default of 2
 export function setupLoglevel(output?: string): void {
   const originalFactory = logging.methodFactory;
 
-  logging.methodFactory = (methodName, level, loggerName) => {
+  logging.methodFactory = function raidenMethodFactory(methodName, level, loggerName) {
     const rawMethod = originalFactory(methodName, level, loggerName);
     return (...message: any[]): void => {
       const prefix = `${new Date(Date.now()).toISOString()} [${methodName}]`;
