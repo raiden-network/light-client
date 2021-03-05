@@ -30,9 +30,6 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *    transfer expiration block should be
  * - httpTimeout - Used in http fetch requests
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
- * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
- * - monitoringRoom - MS global room to auto-join and send RequestMonitoring messages;
- *    use null to disable
  * - pfs - Path Finding Service URL or Address. Set to null to disable, or empty string to enable
  *    automatic fetching from ServiceRegistry.
  * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Either a fee
@@ -68,8 +65,6 @@ export const RaidenConfig = t.readonly(
       expiryFactor: t.number, // must be > 1.0
       httpTimeout: t.number,
       discoveryRoom: t.union([t.string, t.null]),
-      pfsRoom: t.union([t.string, t.null]),
-      monitoringRoom: t.union([t.string, t.null]),
       pfs: t.union([Address, t.string, t.null]),
       pfsSafetyMargin: t.union([t.number, t.tuple([t.number, t.number])]),
       pfsMaxPaths: t.number,
@@ -144,8 +139,6 @@ export function makeDefaultConfig(
     expiryFactor: 1.1, // must be > 1.0
     httpTimeout: 30e3,
     discoveryRoom: `raiden_${networkName}_discovery`,
-    pfsRoom: `raiden_${networkName}_path_finding`,
-    monitoringRoom: `raiden_${networkName}_monitoring`,
     pfs: '', // empty string = auto mode
     pfsSafetyMargin: 1.0, // multiplier
     pfsMaxPaths: 3,
