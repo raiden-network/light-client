@@ -294,6 +294,7 @@ export class Raiden {
       async () => (await this.deps.userDepositContract.callStatic.token()) as Address,
     );
 
+    const isBrowser = !!globalThis?.location;
     const loggerMiddleware = createLogger({
       predicate: () => this.log.getLevel() <= logging.levels.INFO,
       logger: this.log,
@@ -303,6 +304,7 @@ export class Raiden {
         error: 'error',
         nextState: 'debug',
       },
+      ...(isBrowser ? {} : { colors: false }),
     });
 
     this.config$ = this.deps.config$;
