@@ -136,9 +136,9 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
 }
 
 const redactions: readonly [RegExp, string][] = [
-  [/(\\?"?access_?token\\?"?\s*[=:]\s*)(\\?"?)[\w-]+(\\?"?)/gi, '$1$2<redacted>$3'],
-  [/(\\?"?secret\\?"?\s*[=:]\s*)\[[^\]]+\]/gi, '$1["<redacted>"]'],
-  [/(\\?"?secret\\?"?\s*[=:]\s*)(\\?"?)\w+(\\?"?)/gi, '$1$2<redacted>$3'],
+  [/(\\?["']?access_?token\\?["']?\s*[=:]\s*\\?["']?)[\w-]+(\\?["']?)/gi, '$1<redacted>$2'],
+  [/(\\?["']?secret\\?["']?\s*[=:]\s*)\[[^\]]+\]/gi, '$1["<redacted>"]'],
+  [/(\\?["']?secret\\?["']?\s*[=:]\s*\\?["']?)\w+(\\?["']?)/gi, '$1<redacted>$2'],
 ];
 function redactLogs(text: string): string {
   for (const [re, repl] of redactions) text = text.replace(re, repl);
