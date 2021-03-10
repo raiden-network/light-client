@@ -1,11 +1,11 @@
 version: 2.1
 
 parameters:
-  base_executor_image:
+  base_docker_image:
     type: string
     default: cimg/node:lts-browsers
 
-  e2e_environment_executor_image:
+  e2e_environment_docker_image:
     type: string
     default: raidennetwork/lightclient-e2e-environment:latest
 
@@ -20,32 +20,28 @@ parameters:
 anchor_1: &attach_options
   at: << pipeline.parameters.working_directory >>
 
-anchor_2: &executor_parameter
-  parameters:
-    executor:
-      type: executor
-      default: base-executor
+anchor_2: &filter_release_tag
+  filters:
+    tags:
+      only: /^v\d+\.\d+\.\d+$/
 
 anchor_3: &executor_shared_options
   working_directory: << pipeline.parameters.working_directory >>
   environment:
     JEST_JUNIT_OUTPUT_DIR: << pipeline.parameters.test_report_directory >>
 
-anchor_4: &filter_release_tag
-  filters:
-    tags:
-      only: /^v\d+\.\d+\.\d+$/
 
 executors:
   base-executor:
     <<: *executor_shared_options
     docker:
-      - image: << pipeline.parameters.base_executor_image >>
+      - image: << pipeline.parameters.base_docker_image >>
 
   e2e-environment-executor:
     <<: *executor_shared_options
     docker:
-      - image: << pipeline.parameters.e2e_environment_executor_image >>
+      - image: << pipeline.parameters.base_docker_image >>
+      - image: << pipeline.parameters.e2e_environment_docker_image >>
 
 commands:
   check-license:
@@ -85,8 +81,7 @@ commands:
 
 jobs:
   install:
-    <<: *executor_parameter
-    executor: << parameters.executor >>
+    executor: base-executor
     working_directory: << pipeline.parameters.working_directory >>
     steps:
       - checkout
@@ -122,8 +117,7 @@ jobs:
           directory: raiden-cli
 
   build_sdk:
-    <<: *executor_parameter
-    executor: << parameters.executor >>
+    executor: base-executor
     working_directory: << pipeline.parameters.working_directory >>/raiden-ts
     steps:
       - attach_workspace: *attach_options
@@ -399,10 +393,8 @@ workflows:
                 - master
 
     jobs:
-      - install:
-          executor: e2e-environment-executor
+      - install
       - build_sdk:
-          executor: e2e-environment-executor
           requires:
             - install
       - test_sdk_e2e:
