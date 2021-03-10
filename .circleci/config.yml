@@ -157,10 +157,10 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Build CLI
-          command: yarn run build
+          command: yarn build
       - run:
           name: Bundle CLI
-          command: yarn run build:bundle
+          command: yarn build:bundle
       - run:
           name: Compress CLI bundle
           command: >
@@ -183,7 +183,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: yarn run test:unit --ci --runInBand
+          command: yarn test:unit --ci --runInBand
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: unit
@@ -195,7 +195,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run integration tests
-          command: yarn run test:integration --ci --runInBand
+          command: yarn test:integration --ci --runInBand
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: integration
@@ -207,7 +207,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run end-to-end tests
-          command: yarn run test:e2e:docker --ci --runInBand
+          command: yarn test:e2e:docker --ci --runInBand
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: e2e
@@ -219,7 +219,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: yarn run test:unit --ci --runInBand
+          command: yarn test:unit --ci --runInBand
       - upload_test_results_and_coverage:
           base_flag: dapp
           test_kind_flag: unit
@@ -231,7 +231,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run e2e tests
-          command: yarn run test:e2e:docker --headless
+          command: yarn test:e2e:docker --headless
       # TODO: Check how we can make this unified with how other jobs upload
       # the test results (overwrite Cypress directory config via cli parameters)
       - store_test_results:
