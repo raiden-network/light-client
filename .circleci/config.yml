@@ -313,7 +313,13 @@ workflows:
       - test_sdk_integration:
           requires:
             - build_sdk
+      - test_sdk_e2e:
+          requires:
+            - build_sdk
       - test_dapp_unit:
+          requires:
+            - build_dapp
+      - test_dapp_e2e:
           requires:
             - build_dapp
 
@@ -336,7 +342,13 @@ workflows:
       - test_sdk_integration:
           requires:
             - build_sdk
+      - test_sdk_e2e:
+          requires:
+            - build_sdk
       - test_dapp_unit:
+          requires:
+            - build_dapp
+      - test_dapp_e2e:
           requires:
             - build_dapp
       - deploy_gh_pages:
@@ -380,24 +392,3 @@ workflows:
           context: 'Raiden Context'
           requires:
             - deploy_gh_pages
-
-  nightly:
-    triggers:
-      - schedule:
-          cron: '0 0 * * *'
-          filters:
-            branches:
-              only:
-                - master
-
-    jobs:
-      - install
-      - build_sdk:
-          requires:
-            - install
-      - test_sdk_e2e:
-          requires:
-            - build_sdk
-      - test_dapp_e2e:
-          requires:
-            - build_sdk
