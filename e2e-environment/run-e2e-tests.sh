@@ -33,8 +33,10 @@ if ! running_inside_circleci; then
     "$DOCKER_IMAGE_TAG_NAME" \
     >/dev/null
 
-  sleep 5s
 fi
+
+echo -e "\nWait to make sure all services are up and running"
+sleep 5s
 
 export DEPLOYMENT_INFO="${DEPLOYMENT_INFORMATION_DIRECTORY}/deployment_private_net.json"
 export DEPLOYMENT_SERVICES_INFO="${DEPLOYMENT_INFORMATION_DIRECTORY}/deployment_services_private_net.json"
