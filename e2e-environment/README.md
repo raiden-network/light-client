@@ -16,22 +16,26 @@ environment contains:
 ## Get Docker Image
 
 The image is available on DockerHub and can be pulled locally. Note that the
-test scripts will pull the image automatically if not available yet.
+test scripts will pull the image automatically if not available yet. Though this
+step will be necessary if the image was already once pulled, but got an update
+since then.
 
 ```sh
 docker pull raidennetwork/lightclient-e2e-environment
 ```
 
-Alternatively it can be built locally as well.
-
+Alternatively it can be built locally as well. This requires to use the
+according script for the maintaince of the deployment information files. These
+will be automatically staged to the VCS after the script has run and need to be
+commited afterwards.
 ```sh
-docker build --tag raidennetwork/lightclient-e2e-environment .
+bash ./build-e2e-environment.sh
 ```
 
-Please mind that it is necessary to tag the build like the image from the
-DockerHub repository. Else the test scripts won't make use of it.
-
 ## Run Docker Container
+
+Despite this step should be never necessary to be done manually, this is how it
+works:
 
 ```sh
 docker run --detach --rm \
@@ -41,13 +45,13 @@ docker run --detach --rm \
   --publish 127.0.0.1:5001:5001 \
   --publish 127.0.0.1:5002:5002 \
   --publish 127.0.0.1:8545:8545 \
-  raidennetwork/lightclient-e2e-environment \
+  raidennetwork/lightclient-e2e-environment
 ```
 
 ## Access Services
 
-After starting the Docker container as described above, the services are
-accessible at the following ports on `localhost`:
+After the Docker container gets started, the services are accessible at the
+following ports on `localhost`:
 
 - RPC endpoint of the Geth Etherum node: `8545`
 - Synapse Matrix server: `80`
@@ -57,22 +61,20 @@ accessible at the following ports on `localhost`:
 
 ## Running Tests
 
-It is suggested to run the tests using the `./run-e2e-tests.sh`. The script
-automatically starts the Docker container for the full environment, so some
-additional preparation and runs the tests on `localhost`. At the end it shuts
-down the container again to make sure the tests always run with a clean setup.
-Which tests get executed depend on the current working directory. All arguments
-passed to the script get forwarded to the test command. To run the end-to-end
-tests of the dApp in headless mode, change into the according directory and run
-the script with the additional argument.
-
-```sh
-cd raiden-dapp
-bash ../e2e-environment/run-e2e-tests.sh --headless
-```
-
-The logs of the services will be provided automatically within the `./logs`
+In first place it is suggested to run the tests via the according package script
+in the respective workspace. This script is equally named and can be run like
+this `yarn workspace raiden-ts test:e2e:docker`.
+Under the hood this will make use of the `./run-e2e-tests.sh` script. This will
+make sure that the required deployment information are available, eventually
+pulls the image if not available (notice that it doesn't update the image) and
+takes care about bringing up the test environment, running the tests and cleanly
+shutting everything down. The tests themselves will run on `localhost`. The logs
+of the services will be provided automatically within the `./logs`
 directory.
+
+**Hint:** It might be helpful to run the end-to-end tests of the dApp in
+headless mode. Therefore just append the parameter `--headless` to the (package)
+script.
 
 ## Upgrade Environment in Docker Image
 
