@@ -207,9 +207,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run end-to-end tests
-          command: >
-            source /etc/profile.d/smartcontracts.sh &&
-            yarn run test:e2e --ci --runInBand
+          command: yarn run test:e2e:docker --ci --runInBand
       - upload_test_results_and_coverage:
           base_flag: sdk
           test_kind_flag: e2e
@@ -233,7 +231,7 @@ jobs:
       - attach_workspace: *attach_options
       - run:
           name: Run e2e tests
-          command: yarn run test:e2e --headless
+          command: yarn run test:e2e:docker --headless
       # TODO: Check how we can make this unified with how other jobs upload
       # the test results (overwrite Cypress directory config via cli parameters)
       - store_test_results:

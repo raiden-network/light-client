@@ -11,7 +11,7 @@ DEPLOYMENT_INFORMATION_DIRECTORY="${E2E_ENVIRONMENT_DIRECTORY}/deployment_inform
 
 function finish() {
   echo -e "\nShut down the Docker container"
-  docker stop "$DOCKER_CONTAINER_NAME" >/dev/null 2>&1
+  docker stop "$DOCKER_CONTAINER_NAME" >/dev/null 2>&1 || true
 }
 
 function extract_deployment_information() {
@@ -28,6 +28,12 @@ function extract_deployment_information() {
   docker cp "${DOCKER_CONTAINER_NAME}:/etc/profile.d/smartcontracts.sh" "${DEPLOYMENT_INFORMATION_DIRECTORY}/"
    
   docker stop "$DOCKER_CONTAINER_NAME" >/dev/null
+}
+
+function running_inside_circleci() {
+  # All our CircleCI executor use Docker. The assumption is that if the Docker
+  # socket (at its default location) does not exist we are inside CircleCI.
+  test ! -e /var/run/docker.sock
 }
 
 set -e
