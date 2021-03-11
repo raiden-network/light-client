@@ -1,7 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { concat as concatBytes } from '@ethersproject/bytes';
 import { MaxUint256, WeiPerEther, Zero } from '@ethersproject/constants';
-import type { Event } from '@ethersproject/contracts';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
 import BN from 'bignumber.js';
@@ -427,18 +426,7 @@ export function pfsServiceRegistryMonitorEpic(
               !!eventBlock && eventBlock + confirmationBlocks <= blockNumber,
           ),
           pluck(0),
-          map(
-            logToContractEvent<
-              [
-                service: Address,
-                valid_till: BigNumber,
-                deposit_amount: UInt<32>,
-                deposit_contract: Address,
-                event: Event,
-              ]
-            >(serviceRegistryContract),
-          ),
-          filter(isntNil),
+          map(logToContractEvent(serviceRegistryContract)),
           withLatestFrom(state$),
           // merge new entry with stored state
           map(([[service, valid_till], { services }]) => ({
@@ -1019,20 +1007,7 @@ export function msMonitorNewBPEpic(
     },
   ).pipe(
     completeWith(state$),
-    map(
-      logToContractEvent<
-        [
-          tokenNetwork: Address,
-          channelId: UInt<32>,
-          reward: UInt<32>,
-          nonce: UInt<8>,
-          monitoringService: Address,
-          ourAddress: Address,
-          event: Event,
-        ]
-      >(monitoringServiceContract),
-    ),
-    filter(isntNil),
+    map(logToContractEvent(monitoringServiceContract)),
     // should never fail, as per filter
     filter(([, , , , , raidenAddress]) => raidenAddress === address),
     withLatestFrom(state$, config$),
@@ -1048,12 +1023,12 @@ export function msMonitorNewBPEpic(
         const txBlock = event.blockNumber;
         if (!channel || !txBlock) return;
         return msBalanceProofSent({
-          tokenNetwork,
+          tokenNetwork: tokenNetwork as Address,
           partner: channel.partner.address,
           id: channel.id,
-          reward,
-          nonce,
-          monitoringService,
+          reward: reward as UInt<32>,
+          nonce: nonce as UInt<8>,
+          monitoringService: monitoringService as Address,
           txHash: event.transactionHash as Hash,
           txBlock,
           confirmed: txBlock + confirmationBlocks <= state.blockNumber ? true : undefined,
