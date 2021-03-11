@@ -1,4 +1,3 @@
-import type { Event } from '@ethersproject/contracts';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, defer, EMPTY, from, identity, of } from 'rxjs';
 import {
@@ -321,8 +320,7 @@ export function monitorSecretRegistryEpic(
     },
   }).pipe(
     completeWith(state$),
-    map(logToContractEvent<[Hash, Secret, Event]>(secretRegistryContract)),
-    filter(isntNil),
+    map(logToContractEvent(secretRegistryContract)),
     withLatestFrom(state$, config$),
     mergeMap(function* ([
       [secrethash, secret, event],
@@ -331,11 +329,11 @@ export function monitorSecretRegistryEpic(
     ]) {
       // find sent|received transfers matching secrethash and secret registered before expiration
       for (const direction of Object.values(Direction)) {
-        const key = transferKey({ secrethash, direction });
+        const key = transferKey({ secrethash: secrethash as Hash, direction });
         if (!(key in transfers)) continue;
         yield transferSecretRegister.success(
           {
-            secret,
+            secret: secret as Secret,
             txHash: event.transactionHash! as Hash,
             txBlock: event.blockNumber!,
             confirmed:
@@ -343,7 +341,7 @@ export function monitorSecretRegistryEpic(
                 ? event.blockNumber! < transfers[key].expiration // false is like event got reorged/removed
                 : undefined,
           },
-          { secrethash, direction },
+          { secrethash: secrethash as Hash, direction },
         );
       }
     }),

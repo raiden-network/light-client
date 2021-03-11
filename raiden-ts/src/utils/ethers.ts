@@ -27,7 +27,55 @@ import {
 } from 'rxjs/operators';
 
 import { DEFAULT_CONFIRMATIONS } from '../constants';
+import type { TypedEventFilter, TypedListener } from '../contracts/commons';
 import { mergeWith } from './rx';
+
+declare const _filter: unique symbol;
+/**
+ * Extract the union of TypedEventFilters for a given contract
+ */
+export type ContractFilter<
+  C extends Contract,
+  E extends keyof C['filters'] = keyof C['filters']
+> = ReturnType<C['filters'][E]>;
+/**
+ * A simple Log, but tagged (at typecheck-time) to indicate the logs will map to a specific
+ * TypedEvent/EventTuple
+ */
+export type FilteredLog<F extends TypedEventFilter<any[], any>> = Log & {
+  readonly [_filter]: F;
+};
+type FilterFromLog<L extends Log> = L extends { readonly [_filter]: infer F } ? F : never;
+
+/**
+ * For given TypedEventFilters, return the tuple of arguments plus the TypedEvent as last element
+ */
+export type EventTuple<F extends TypedEventFilter<any[], any>> = F extends TypedEventFilter<
+  infer EventArgsArray,
+  infer EventArgsObject
+>
+  ? EventArgsArray extends any[]
+    ? Parameters<TypedListener<EventArgsArray, EventArgsObject>>
+    : never
+  : never;
+
+export function getLogsByChunk$<F extends TypedEventFilter<any[], any>>(
+  provider: JsonRpcProvider,
+  filter: F & { fromBlock: number; toBlock: number },
+  chunk?: number,
+  minChunk?: number,
+): Observable<FilteredLog<F>>;
+export function getLogsByChunk$(
+  provider: JsonRpcProvider,
+  filter: {
+    address?: string | string[];
+    topics?: ((string | null) | (string | null)[])[];
+    fromBlock: number;
+    toBlock: number;
+  },
+  chunk?: number,
+  minChunk?: number,
+): Observable<Log>;
 
 /**
  * Like JsonRpcProvider.getLogs, but split block scan range in chunks, adapting to smaller chunks
@@ -107,6 +155,16 @@ export function fromEthersEvent<T>(
   target: JsonRpcProvider,
   event: string | string[],
 ): Observable<T>;
+export function fromEthersEvent<F extends TypedEventFilter<any[], any>>(
+  target: JsonRpcProvider,
+  event: F,
+  opts?: {
+    fromBlock?: number;
+    confirmations?: number | Observable<number>;
+    blockNumber$?: Observable<number>;
+    onPastCompleted?: (elapsedMs: number) => void;
+  },
+): Observable<FilteredLog<F>>;
 export function fromEthersEvent<T extends Log>(
   target: JsonRpcProvider,
   event: Filter,
@@ -212,39 +270,22 @@ export function fromEthersEvent<T>(
   );
 }
 
-export type ContractEvent =
-  | [Event]
-  | [any, Event]
-  | [any, any, Event]
-  | [any, any, any, Event]
-  | [any, any, any, any, Event]
-  | [any, any, any, any, any, Event]
-  | [any, any, any, any, any, any, Event]
-  | [any, any, any, any, any, any, any, Event]
-  | [any, any, any, any, any, any, any, any, Event]
-  | [any, any, any, any, any, any, any, any, any, Event];
-export function logToContractEvent<T extends ContractEvent>(
-  contract: Contract,
-): (log: Log) => T | undefined;
-export function logToContractEvent<T extends ContractEvent>(
-  contract: Contract,
-  log: Log,
-): T | undefined;
 /**
- * Curried(2) function to map an ethers's Provider log to a contract event tuple
+ * Function to map an ethers's Provider log to a contract event tuple
+ * It requires logs coming from getLogsByChunk$ or fromEthersEvent overloads which tag at
+ * type-check time to which set of events the logs belong, and use that information to narrow
+ * the types of the tuple events emitted
  *
- * @param contract - Contract instance
- * @param log - Log to map
- * @returns Tuple of events args plus Event object
+ * @param contract - Contract fo parse logs for
+ * @returns Function to map logs to event tuples for contract
  */
-export function logToContractEvent<T extends ContractEvent>(contract: Contract, log?: Log) {
-  const mapper = (log: Log): T | undefined => {
+export function logToContractEvent<C extends Contract>(contract: C) {
+  return function mapper<L extends FilteredLog<ContractFilter<C>>>(
+    log: L,
+  ): EventTuple<FilterFromLog<L>> {
     // parse log into [...args, event: Event] array,
     // the same that contract.on events/callbacks
     const parsed = contract.interface.parseLog(log);
-    // ignore removed (reorg'd) events (reorgs are handled by ConfirmableActions logic)
-    // and parse errors (shouldn't happen)
-    if (log.removed === true || !parsed) return;
     // not all parameters quite needed right now, but let's comply with the interface
     const event: Event = {
       ...log,
@@ -256,9 +297,8 @@ export function logToContractEvent<T extends ContractEvent>(contract: Contract, 
       getTransaction: () => contract.provider.getTransaction(log.transactionHash!),
       getTransactionReceipt: () => contract.provider.getTransactionReceipt(log.transactionHash!),
     };
-    return [...parsed.args, event] as T;
+    return [...parsed.args, event] as EventTuple<FilterFromLog<L>>;
   };
-  return log !== undefined ? mapper(log) : mapper;
 }
 
 /**
