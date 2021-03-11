@@ -3,19 +3,19 @@
   "chain_id": 4321,
   "contracts": {
     "SecretRegistry": {
-      "address": "0xBDfAD054a670DCe46D2f6F47C5a44231E65d6C5f",
-      "transaction_hash": "0x896fbd6ca141c41c71694f6836d8dd1ab4e20ece511281d2685b5a51b6df7c40",
+      "address": "0x54b48DF6b23865e9a74d6c9C80FF4d07EA791F1B",
+      "transaction_hash": "0xe6c9c9f79c4cfe9bffda471716e4a2a15c4f2704d72eab342125d9197ae07057",
       "block_number": 4,
       "gas_cost": 292942,
       "constructor_arguments": []
     },
     "TokenNetworkRegistry": {
-      "address": "0x339cE43919f8367391e919ab4bAae6F67c3Bc2E7",
-      "transaction_hash": "0x5ef7fb7eb0a0d88151387fdc349649ba3d8d0c73fc67d2acf5055f2da4b8deac",
+      "address": "0x1D1a393EE7eaAeA8482BE3Eccd56E52654f12611",
+      "transaction_hash": "0xc45c86ef4eb40f627d48b8ddfede40fb867e9d5e1630808c32e1e921c4c0032c",
       "block_number": 14,
       "gas_cost": 4907586,
       "constructor_arguments": [
-        "0xBDfAD054a670DCe46D2f6F47C5a44231E65d6C5f",
+        "0x54b48DF6b23865e9a74d6c9C80FF4d07EA791F1B",
         4321,
         20,
         555428,
