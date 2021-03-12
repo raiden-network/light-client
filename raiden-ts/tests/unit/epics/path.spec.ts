@@ -354,7 +354,7 @@ describe('PFS: pathFindServiceEpic', () => {
     // original test(old pattern) fails ;)
     expect.assertions(1);
 
-    const pfsUrl = raiden.config.pfs!;
+    const pfsUrl = (raiden.config.pfs as string[])[0]!;
     const pathFindMeta = {
       tokenNetwork,
       target: target.address,
@@ -430,7 +430,7 @@ describe('PFS: pathFindServiceEpic', () => {
 
     // put config.pfs into auto mode
     const pfsSafetyMargin = 2;
-    raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: true }));
 
     // pfsAddress1 will be accepted with default https:// schema
     raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('domain.only.url');
@@ -532,7 +532,7 @@ describe('PFS: pathFindServiceEpic', () => {
     expect.assertions(1);
 
     // put config.pfs into auto mode
-    raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: true }));
 
     // invalid url
     raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('""');
@@ -986,8 +986,8 @@ describe('PFS: pathFindServiceEpic', () => {
     expect.assertions(2);
 
     // disable pfs
-    raiden.store.dispatch(raidenConfigUpdate({ pfs: null }));
-    expect(raiden.config.pfs).toBeNull();
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: false }));
+    expect(raiden.config.pfs).toBe(false);
 
     const pathFindMeta = {
       tokenNetwork,
@@ -1155,7 +1155,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
     const { serviceRegistryContract } = raiden.deps;
 
     // enable config.pfs auto ('')
-    raiden.store.dispatch(raidenConfigUpdate({ pfs: '' }));
+    raiden.store.dispatch(raidenConfigUpdate({ pfs: true }));
     await raiden.start();
 
     const validTill = BigNumber.from(Math.floor(Date.now() / 1000) + 86400), // tomorrow

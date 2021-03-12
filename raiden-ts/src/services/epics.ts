@@ -256,7 +256,7 @@ export function pfsCapacityUpdateEpic(
         pairwise(), // skips first emission on startup
         withLatestFrom(config$),
         // ignore actions if channel not open or while/if pfs is disabled
-        filter(([[, channel], { pfs }]) => channel.state === ChannelState.open && pfs !== null),
+        filter(([[, channel], { pfs }]) => channel.state === ChannelState.open && pfs !== false),
         debounce(
           ([[prev, cur], { httpTimeout }]) =>
             cur.own.locks.length > prev.own.locks.length ||
@@ -1157,9 +1157,9 @@ function validateRouteTargetAndEventuallyThrow(
   );
 }
 
-function pfsIsDisabled(action: pathFind.request, { pfs }: RaidenConfig): boolean {
+function pfsIsDisabled(action: pathFind.request, config: Pick<RaidenConfig, 'pfs'>): boolean {
   const disabledByAction = action.payload.pfs === null;
-  const disabledByConfig = !action.payload.pfs && pfs === null;
+  const disabledByConfig = !action.payload.pfs && config.pfs === false;
   return disabledByAction || disabledByConfig;
 }
 
@@ -1236,11 +1236,15 @@ function filterPaths(
 
 function getPfsInfo$(
   pfsByAction: PFS | null | undefined,
-  pfsByConfig: string | Address | null,
+  pfsByConfig: RaidenConfig['pfs'],
   deps: RaidenEpicDeps,
 ): Observable<PFS> {
   if (pfsByAction) return of(pfsByAction);
-  else if (pfsByConfig) return pfsInfo(pfsByConfig, deps);
+  else if (typeof pfsByConfig !== 'boolean')
+    return from(pfsByConfig).pipe(
+      concatMap((pfsUrlOrAddr) => pfsInfo(pfsUrlOrAddr, deps).pipe(catchError(constant(EMPTY)))),
+      first(),
+    );
   else {
     const { log, latest$, init$ } = deps;
     return init$.pipe(
