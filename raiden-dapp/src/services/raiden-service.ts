@@ -7,7 +7,7 @@ import type Router from 'vue-router';
 import type { Store } from 'vuex';
 
 import type { ChangeEvent, RaidenPaths, RaidenPFS } from 'raiden-ts';
-import { Capabilities, ErrorCodes, EventTypes, Raiden, RaidenError } from 'raiden-ts';
+import { Capabilities, ErrorCodes, EventTypes, PfsMode, Raiden, RaidenError } from 'raiden-ts';
 
 import i18n from '@/i18n';
 import type { Progress, Token } from '@/model/types';
@@ -60,7 +60,9 @@ export default class RaidenService {
         contracts,
         {
           pfsSafetyMargin: 1.1,
-          pfs: process.env.VUE_APP_PFS,
+          ...(process.env.VUE_APP_PFS
+            ? { pfsMode: PfsMode.onlyAdditional, additionalServices: [process.env.VUE_APP_PFS] }
+            : {}),
           matrixServer: process.env.VUE_APP_MATRIX_SERVER,
           matrixServerLookup: process.env.VUE_APP_MATRIX_LIST_URL,
           ...(process.env.VUE_APP_REVEAL_TIMEOUT && +process.env.VUE_APP_REVEAL_TIMEOUT
