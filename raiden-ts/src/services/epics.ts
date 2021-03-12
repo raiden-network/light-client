@@ -418,37 +418,34 @@ export function pfsServiceRegistryMonitorEpic(
             initSub.complete();
           },
         },
-      )
-        .pipe(
-          withLatestFrom(state$, config$),
-          filter(
-            ([{ blockNumber: eventBlock }, { blockNumber }, { confirmationBlocks }]) =>
-              !!eventBlock && eventBlock + confirmationBlocks <= blockNumber,
+      ).pipe(
+        withLatestFrom(state$, config$),
+        filter(
+          ([{ blockNumber: eventBlock }, { blockNumber }, { confirmationBlocks }]) =>
+            !!eventBlock && eventBlock + confirmationBlocks <= blockNumber,
+        ),
+        pluck(0),
+        map(logToContractEvent(serviceRegistryContract)),
+        withLatestFrom(state$),
+        // merge new entry with stored state
+        map(([[service, valid_till], { services }]) => ({
+          ...services,
+          [service]: valid_till.toNumber() * 1000,
+        })),
+        startWith(initialServices),
+        // switchMap with newBlock events ensure this filter gets re-evaluated every block
+        // and filters out entries which aren't valid anymore
+        switchMap((services) =>
+          action$.pipe(
+            filter(newBlock.is),
+            startWith(true),
+            map(() => pickBy(services, (till) => Date.now() < till)),
           ),
-          pluck(0),
-          map(logToContractEvent(serviceRegistryContract)),
-          withLatestFrom(state$),
-          // merge new entry with stored state
-          map(([[service, valid_till], { services }]) => ({
-            ...services,
-            [service]: valid_till.toNumber() * 1000,
-          })),
-        )
-        .pipe(
-          startWith(initialServices),
-          // switchMap with newBlock events ensure this filter gets re-evaluated every block
-          // and filters out entries which aren't valid anymore
-          switchMap((services) =>
-            action$.pipe(
-              filter(newBlock.is),
-              startWith(true),
-              map(() => pickBy(services, (till) => Date.now() < till)),
-            ),
-          ),
-          distinctUntilChanged<typeof initialServices>(isEqual),
-          map((valid) => servicesValid(valid)),
-        );
+        ),
+      );
     }),
+    distinctUntilChanged<RaidenState['services']>(isEqual),
+    map((valid) => servicesValid(valid)),
     completeWith(action$),
   );
 }
@@ -1241,10 +1238,17 @@ function getPfsInfo$(
 ): Observable<PFS> {
   if (pfsByAction) return of(pfsByAction);
   else if (typeof pfsByConfig !== 'boolean')
-    return from(pfsByConfig).pipe(
-      concatMap((pfsUrlOrAddr) => pfsInfo(pfsUrlOrAddr, deps).pipe(catchError(constant(EMPTY)))),
-      first(),
-    );
+    return defer(async () => {
+      let firstErr;
+      for (const pfsUrlOrAddr of pfsByConfig) {
+        try {
+          return await pfsInfo(pfsUrlOrAddr, deps);
+        } catch (e) {
+          if (!firstErr) firstErr = e;
+        }
+      }
+      throw firstErr;
+    });
   else {
     const { log, latest$, init$ } = deps;
     return init$.pipe(

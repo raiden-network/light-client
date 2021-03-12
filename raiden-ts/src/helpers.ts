@@ -379,21 +379,6 @@ export async function waitConfirmation(
     .toPromise();
 }
 
-/*
- * Returns true if `url` is a valid URL or domain.
- * On production `https://` is required for URLs, otherwise `http://` matches as well.
- *
- * @param url - A URL or hostname
- * @returns true if valid URL or domain
- */
-export const isValidUrl = (url: string): boolean => {
-  const regex =
-    process.env.NODE_ENV === 'production'
-      ? /^(?:https:\/\/)?[^\s\/$.?#&"']+\.[^\s\/$?#&"']+$/
-      : /^(?:(http|https):\/\/)?([^\s\/$.?#&"']+\.)*[^\s\/$?#&"']+(?:(\d+))*$/;
-  return regex.test(url);
-};
-
 /**
  * Construct entire ContractsInfo using UserDeposit contract address as entrypoint
  *
