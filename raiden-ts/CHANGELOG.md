@@ -8,6 +8,7 @@
 ### Changed
 - [#2536] Wait for global messages before resolving deposits and channel open request
 - [#2566] Optimize initial sync and resume previous sync filters scans
+- [#2570] Support multiple custom services in config.pfs
 
 ### Removed
 - [#2550] **BREAKING** Remove migration of legacy state at localStorage during creation
@@ -21,6 +22,7 @@
 [#2550]: https://github.com/raiden-network/light-client/issues/2550
 [#2566]: https://github.com/raiden-network/light-client/issues/2566
 [#2567]: https://github.com/raiden-network/light-client/issues/2567
+[#2570]: https://github.com/raiden-network/light-client/issues/2570
 [#2581]: https://github.com/raiden-network/light-client/pull/2581
 [#2596]: https://github.com/raiden-network/light-client/issues/2596
 
