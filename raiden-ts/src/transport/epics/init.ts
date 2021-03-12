@@ -48,7 +48,7 @@ import { globalRoomNames } from './helpers';
 /**
  * Joins the global broadcast rooms and returns the room ids.
  *
- * @param config - The {@link RaidenConfig} provides the broadcast room aliases for pfs and discovery.
+ * @param config - The {@link RaidenConfig} provides the global room aliases.
  * @param matrix - The {@link MatrixClient} instance used to create the filter.
  * @returns Observable of the list of room ids for the the broadcast rooms.
  */

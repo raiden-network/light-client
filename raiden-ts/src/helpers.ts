@@ -571,7 +571,7 @@ export async function waitForPFSCapacityUpdate(
   state$: Observable<RaidenState>,
   { meta, config }: { meta: channelDeposit.request['meta']; config: RaidenConfig },
 ) {
-  if (config.pfs === null) return;
+  if (!config.pfs) return;
   const postMeta: messageServiceSend.request['meta'] = { service: Service.PFS, msgId: '' };
   let deposited = false;
   return asyncActionToPromise(

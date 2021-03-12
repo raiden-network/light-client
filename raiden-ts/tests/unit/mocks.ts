@@ -877,7 +877,7 @@ export async function makeRaiden(
       // matrixServerLookup: 'https://matrixLookup.raiden.test',
       matrixServer: 'https://matrix.raiden.test',
       pfsSafetyMargin: 1.1,
-      pfs: 'pfs.raiden.test',
+      pfs: ['pfs.raiden.test'],
       pollingInterval,
       httpTimeout: 300,
       settleTimeout: 60,
