@@ -7,7 +7,7 @@ import * as path from 'path';
 import yargs from 'yargs/yargs';
 
 import type { Decodable, RaidenConfig } from 'raiden-ts';
-import { Address, assert, Capabilities, decode, Raiden, UInt } from 'raiden-ts';
+import { Address, assert, Capabilities, decode, PfsMode, Raiden, UInt } from 'raiden-ts';
 
 import { makeCli } from './cli';
 import DEFAULT_RAIDEN_CONFIG from './config.json';
@@ -121,9 +121,9 @@ function parseArguments() {
         desc: 'Anything else than "pfs" disables mediated transfers',
       },
       pathfindingServiceAddress: {
-        type: 'string',
-        default: 'auto',
-        desc: 'Force a given PFS to be used; "auto" selects cheapest registered on-chain',
+        type: 'array',
+        desc:
+          'Force given PFS URL list to be used, automatically chosing the first responding provider for transfers, instead of auto-selecting valid from "ServiceRegistry" contract',
       },
       pathfindingMaxPaths: {
         type: 'number',
@@ -296,9 +296,14 @@ function createRaidenConfig(
 
   if (argv.matrixServer !== 'auto') config = { ...config, matrixServer: argv.matrixServer };
 
-  if (argv.routingMode !== 'pfs') config = { ...config, pfs: null };
-  else if (argv.pathfindingServiceAddress !== 'auto')
-    config = { ...config, pfs: argv.pathfindingServiceAddress };
+  if (argv.routingMode !== 'pfs') config = { ...config, pfsMode: PfsMode.disabled };
+  else if (!argv.pathfindingServiceAddress) config = { ...config, pfsMode: PfsMode.auto };
+  else
+    config = {
+      ...config,
+      pfsMode: PfsMode.onlyAdditional,
+      additionalServices: argv.pathfindingServiceAddress as string[],
+    };
 
   if (!argv.enableMonitoring) config = { ...config, monitoringReward: null };
 
