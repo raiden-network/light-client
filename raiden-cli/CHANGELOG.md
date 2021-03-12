@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Changed
+- [#2570] Support list of additional services URLs to be passed to `--pathfindingServiceAddress`
 - [#2581] CLI now defaults to `3% * fee + 0.05% * amount` for fee safety margin, same as PC
 
 ### Added
