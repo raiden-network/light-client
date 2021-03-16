@@ -1,4 +1,5 @@
-import isEmpty from 'lodash/isEmpty';
+import constant from 'lodash/constant';
+import uniq from 'lodash/uniq';
 import type { MatrixEvent } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
 import {
@@ -27,6 +28,7 @@ import {
   take,
   takeUntil,
   tap,
+  toArray,
   withLatestFrom,
 } from 'rxjs/operators';
 
@@ -37,6 +39,7 @@ import type { Delivered, Message } from '../../messages/types';
 import { MessageType, Processed, SecretRequest, SecretReveal } from '../../messages/types';
 import { encodeJsonMessage, isMessageReceivedOfType, signMessage } from '../../messages/utils';
 import { ServiceDeviceId } from '../../services/types';
+import { pfsInfoAddress } from '../../services/utils';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
@@ -50,7 +53,7 @@ import {
   pluckDistinct,
   retryWhile,
 } from '../../utils/rx';
-import { isntNil, Signed } from '../../utils/types';
+import { Address, isntNil, Signed } from '../../utils/types';
 import { matrixPresence } from '../actions';
 import { getAddressFromUserId, getNoDeliveryPeers } from '../utils';
 import { parseMessage } from './helpers';
@@ -255,18 +258,31 @@ export function matrixMessageSendEpic(
   );
 }
 
-function sendServiceMessage(
-  request: messageServiceSend.request,
-  { matrix$, config$, latest$ }: Pick<RaidenEpicDeps, 'matrix$' | 'config$' | 'latest$'>,
-) {
+function sendServiceMessage(request: messageServiceSend.request, deps: RaidenEpicDeps) {
+  const { matrix$, config$, latest$ } = deps;
   return matrix$.pipe(
-    withLatestFrom(latest$),
-    mergeMap(([matrix, { state }]) => {
-      assert(!isEmpty(state.services), 'no services to messageServiceSend to');
-      const serverName = getServerName(matrix.getHomeserverUrl());
-      const userIds = Object.keys(state.services).map(
-        (service) => `@${service.toLowerCase()}:${serverName}`,
+    withLatestFrom(latest$, config$),
+    mergeWith(([, , { additionalServices }]) =>
+      from(additionalServices).pipe(
+        mergeMap(
+          (serviceAddrOrUrl) =>
+            Address.is(serviceAddrOrUrl)
+              ? of(serviceAddrOrUrl)
+              : defer(async () => pfsInfoAddress(serviceAddrOrUrl, deps)).pipe(
+                  catchError(constant(EMPTY)),
+                ),
+          5,
+        ),
+        toArray(),
+      ),
+    ),
+    mergeMap(([[matrix, { state }], additionalServicesAddrs]) => {
+      const servicesAddrs = uniq(
+        additionalServicesAddrs.concat(Object.keys(state.services) as Address[]),
       );
+      assert(servicesAddrs.length, 'no services to messageServiceSend to');
+      const serverName = getServerName(matrix.getHomeserverUrl());
+      const userIds = servicesAddrs.map((service) => `@${service.toLowerCase()}:${serverName}`);
       // batch action messages in a single text body
       const content = {
         msgtype: 'm.text',
