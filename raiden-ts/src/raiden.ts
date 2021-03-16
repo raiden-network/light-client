@@ -87,7 +87,7 @@ import { createPersisterMiddleware } from './persister';
 import { raidenReducer } from './reducer';
 import { pathFind, udcDeposit, udcWithdraw } from './services/actions';
 import type { IOU, RaidenPaths, RaidenPFS, SuggestedPartner } from './services/types';
-import { Paths, PFS, SuggestedPartners } from './services/types';
+import { Paths, PFS, PfsMode, SuggestedPartners } from './services/types';
 import { pfsListInfo } from './services/utils';
 import type { RaidenState } from './state';
 import { transfer, transferSigned, withdraw } from './transfers/actions';
@@ -1166,14 +1166,11 @@ export class Raiden {
    * @returns Promise to array of PFS, which is the interface which describes a PFS
    */
   public async findPFS(): Promise<PFS[]> {
-    assert(this.config.pfs !== false, ErrorCodes.PFS_DISABLED, this.log.info);
+    assert(this.config.pfsMode !== PfsMode.disabled, ErrorCodes.PFS_DISABLED, this.log.info);
     await this.synced;
-    return (this.config.pfs !== true
-      ? of(this.config.pfs)
-      : of<readonly Address[]>(Object.keys(this.state.services) as Address[])
-    )
-      .pipe(mergeMap((service) => pfsListInfo(service, this.deps)))
-      .toPromise();
+    const services = [...this.config.additionalServices];
+    if (this.config.pfsMode === PfsMode.auto) services.push(...Object.keys(this.state.services));
+    return pfsListInfo(services, this.deps).toPromise();
   }
 
   /**

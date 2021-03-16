@@ -29,7 +29,6 @@ import {
   switchMap,
   take,
   takeUntil,
-  tap,
   timeout,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -79,7 +78,7 @@ import {
   udcWithdrawn,
 } from './actions';
 import type { IOU, Paths, PFS } from './types';
-import { LastIOUResults, PathResults, Service } from './types';
+import { LastIOUResults, PathResults, PfsMode, Service } from './types';
 import { channelCanRoute, packIOU, pfsInfo, pfsListInfo, signIOU } from './utils';
 
 /**
@@ -256,7 +255,10 @@ export function pfsCapacityUpdateEpic(
         pairwise(), // skips first emission on startup
         withLatestFrom(config$),
         // ignore actions if channel not open or while/if pfs is disabled
-        filter(([[, channel], { pfs }]) => channel.state === ChannelState.open && pfs !== false),
+        filter(
+          ([[, channel], { pfsMode }]) =>
+            channel.state === ChannelState.open && pfsMode !== PfsMode.disabled,
+        ),
         debounce(
           ([[prev, cur], { httpTimeout }]) =>
             cur.own.locks.length > prev.own.locks.length ||
@@ -1154,16 +1156,16 @@ function validateRouteTargetAndEventuallyThrow(
   );
 }
 
-function pfsIsDisabled(action: pathFind.request, config: Pick<RaidenConfig, 'pfs'>): boolean {
+function pfsIsDisabled(action: pathFind.request, config: Pick<RaidenConfig, 'pfsMode'>): boolean {
   const disabledByAction = action.payload.pfs === null;
-  const disabledByConfig = !action.payload.pfs && config.pfs === false;
+  const disabledByConfig = !action.payload.pfs && config.pfsMode === PfsMode.disabled;
   return disabledByAction || disabledByConfig;
 }
 
 function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Observable<Route> {
   return deps.config$.pipe(
     first(),
-    mergeWith((config) => getPfsInfo$(action.payload.pfs, config.pfs, deps)),
+    mergeWith((config) => getPfsInfo$(action.payload.pfs, config, deps)),
     mergeWith(([, pfs]) => prepareNextIOU$(pfs, action.meta.tokenNetwork, deps)),
     mergeWith(([[config, pfs], iou]) =>
       requestPfs$(pfs, iou, action.meta, { address: deps.address, config }),
@@ -1232,15 +1234,15 @@ function filterPaths(
 }
 
 function getPfsInfo$(
-  pfsByAction: PFS | null | undefined,
-  pfsByConfig: RaidenConfig['pfs'],
+  pfsByAction: pathFind.request['payload']['pfs'],
+  config: Pick<RaidenConfig, 'pfsMode' | 'additionalServices'>,
   deps: RaidenEpicDeps,
 ): Observable<PFS> {
   if (pfsByAction) return of(pfsByAction);
-  else if (typeof pfsByConfig !== 'boolean')
+  else if (config.pfsMode === PfsMode.onlyAdditional)
     return defer(async () => {
       let firstErr;
-      for (const pfsUrlOrAddr of pfsByConfig) {
+      for (const pfsUrlOrAddr of config.additionalServices) {
         try {
           return await pfsInfo(pfsUrlOrAddr, deps);
         } catch (e) {
@@ -1253,10 +1255,22 @@ function getPfsInfo$(
     const { log, latest$, init$ } = deps;
     return init$.pipe(
       lastMap(() => latest$.pipe(first(), pluck('state', 'services'))),
-      map((services) => Object.keys(services) as Address[]),
-      mergeMap((services) => pfsListInfo(services, deps)), // fetch pfsInfo from whole list & sort it
-      tap((pfsInfos) => log.info('Auto-selecting best PFS from:', pfsInfos)),
-      pluck(0), // pop best ranked
+      // fetch pfsInfo from whole list & sort it
+      mergeMap((services) =>
+        pfsListInfo(config.additionalServices.concat(Object.keys(services)), deps).pipe(
+          map((pfsInfos) => {
+            log.info('Auto-selecting best PFS from:', pfsInfos);
+            assert(pfsInfos.length, [
+              ErrorCodes.PFS_INVALID_INFO,
+              {
+                services: Object.keys(services).join(','),
+                additionalServices: config.additionalServices.join(','),
+              },
+            ]);
+            return pfsInfos[0]; // pop best ranked
+          }),
+        ),
+      ),
     );
   }
 }
