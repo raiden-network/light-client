@@ -31,7 +31,7 @@ import { messageServiceSend } from '@/messages/actions';
 import { MessageType } from '@/messages/types';
 import { raidenReducer } from '@/reducer';
 import { iouClear, iouPersist, pathFind, servicesValid } from '@/services/actions';
-import { IOU, Service } from '@/services/types';
+import { IOU, PfsMode, Service } from '@/services/types';
 import { signIOU } from '@/services/utils';
 import { matrixPresence } from '@/transport/actions';
 import { jsonStringify } from '@/utils/data';
@@ -67,9 +67,9 @@ describe('PFS: pathFindServiceEpic', () => {
   let raiden: MockedRaiden, partner: MockedRaiden, target: MockedRaiden;
   const pfsSafetyMargin = 2;
 
-  const mockedPfsInfoResponse: typeof fetch = jest.fn();
-  const mockedIouResponse: typeof fetch = jest.fn();
-  const mockedPfsResponse: typeof fetch = jest.fn();
+  const mockedPfsInfoResponse: jest.MockedFunction<typeof fetch> = jest.fn();
+  const mockedIouResponse: jest.MockedFunction<typeof fetch> = jest.fn();
+  const mockedPfsResponse: jest.MockedFunction<typeof fetch> = jest.fn();
 
   function makePfsInfoResponse() {
     return {
@@ -86,13 +86,6 @@ describe('PFS: pathFindServiceEpic', () => {
   }
 
   beforeEach(async () => {
-    [raiden, partner, target] = await makeRaidens(3);
-
-    await waitBlock(openBlock - 1);
-    await ensureChannelIsDeposited([raiden, partner], deposit);
-    await ensureChannelIsOpen([partner, target], { channelId: 18 });
-    await ensureChannelIsDeposited([partner, target], deposit);
-
     mockedPfsInfoResponse.mockImplementation(async () => {
       const pfsInfoResponse = makePfsInfoResponse();
       return {
@@ -125,20 +118,29 @@ describe('PFS: pathFindServiceEpic', () => {
       };
     });
 
-    fetch.mockImplementation(async (url) => {
+    fetch.mockImplementation(async (...args) => {
+      const url = args[0];
       if (url?.includes?.('/iou')) {
-        return mockedIouResponse();
+        return mockedIouResponse(...args);
       } else if (url?.includes?.('/info')) {
-        return mockedPfsInfoResponse();
+        return mockedPfsInfoResponse(...args);
       } else {
-        return mockedPfsResponse();
+        return mockedPfsResponse(...args);
       }
     });
+
+    [raiden, partner, target] = await makeRaidens(3);
+
+    await waitBlock(openBlock - 1);
+    await ensureChannelIsDeposited([raiden, partner], deposit);
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target], deposit);
 
     raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 30, pfsSafetyMargin }));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await new Promise(setImmediate);
     jest.clearAllMocks();
     mockedPfsInfoResponse.mockRestore();
     mockedIouResponse.mockRestore();
@@ -354,7 +356,7 @@ describe('PFS: pathFindServiceEpic', () => {
     // original test(old pattern) fails ;)
     expect.assertions(1);
 
-    const pfsUrl = (raiden.config.pfs as string[])[0]!;
+    const pfsUrl = raiden.config.additionalServices[0];
     const pathFindMeta = {
       tokenNetwork,
       target: target.address,
@@ -394,7 +396,6 @@ describe('PFS: pathFindServiceEpic', () => {
   });
 
   test('success request pfs from config', async () => {
-    // original test(old pattern) fails ;)
     expect.assertions(1);
 
     const pathFindMeta = {
@@ -421,62 +422,50 @@ describe('PFS: pathFindServiceEpic', () => {
     );
   });
 
-  test('success request pfs from pfsList', async () => {
-    // expect.assertions(4);
+  test('success request auto pfs from registered services', async () => {
+    expect.assertions(4);
 
     const pfsAddress1 = '0x0800000000000000000000000000000000000091' as Address,
       pfsAddress2 = '0x0800000000000000000000000000000000000092' as Address,
       pfsAddress3 = '0x0800000000000000000000000000000000000093' as Address;
 
-    // put config.pfs into auto mode
+    const urls = {
+      [pfsAddress]: 'https://pfs.raiden.test',
+      [pfsAddress1]: 'domain.only.url',
+      [pfsAddress2]: 'http://pfs2.raiden.test',
+      [pfsAddress3]: 'http://pfs3.raiden.test',
+    };
+
     const pfsSafetyMargin = 2;
-    raiden.store.dispatch(raidenConfigUpdate({ pfs: true }));
+    raiden.store.dispatch(raidenConfigUpdate({ pfsMode: PfsMode.auto, additionalServices: [] }));
 
     // pfsAddress1 will be accepted with default https:// schema
-    raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('domain.only.url');
+    raiden.deps.serviceRegistryContract.urls.mockImplementation(async (addr) => urls[addr]);
 
     const pfsInfoResponse = makePfsInfoResponse();
 
     const pfsInfoResponse1 = { ...pfsInfoResponse, payment_address: pfsAddress1 };
-    mockedPfsInfoResponse.mockImplementationOnce(
-      async () =>
-        new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve({
-                ok: true,
-                status: 200,
-                json: jest.fn(async () => pfsInfoResponse1),
-                text: jest.fn(async () => jsonStringify(pfsInfoResponse1)),
-              }),
-            23, // higher rtt for this PFS
-          ),
-        ),
-    );
-
     // 2 & 3, test sorting by price info
     const pfsInfoResponse2 = { ...pfsInfoResponse, payment_address: pfsAddress2, price_info: 5 };
-    mockedPfsInfoResponse.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse2),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse2)),
-    });
-
     const pfsInfoResponse3 = { ...pfsInfoResponse, payment_address: pfsAddress3, price_info: 10 };
-    mockedPfsInfoResponse.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse3),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse3)),
-    });
 
-    // pfsAddress succeeds main response
-    mockedPfsInfoResponse.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: jest.fn(async () => pfsInfoResponse),
-      text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+    mockedPfsInfoResponse.mockImplementation(async (url) => {
+      let response: unknown;
+      let rtt = 0;
+      if (url?.includes(urls[pfsAddress])) response = pfsInfoResponse;
+      else if (url?.includes(urls[pfsAddress1])) {
+        response = pfsInfoResponse1;
+        rtt = 23; // higher rtt for this PFS
+      } else if (url?.includes(urls[pfsAddress2])) response = pfsInfoResponse2;
+      else if (url?.includes(urls[pfsAddress3])) response = pfsInfoResponse3;
+      else throw new Error('should not happen');
+      if (rtt) await sleep(rtt);
+      return {
+        ok: true,
+        status: 200,
+        json: jest.fn(async () => response),
+        text: jest.fn(async () => jsonStringify(response)),
+      };
     });
 
     const pathFindMeta = {
@@ -517,7 +506,6 @@ describe('PFS: pathFindServiceEpic', () => {
         pathFindMeta,
       ),
     );
-    expect(fetch).toHaveBeenCalledTimes(4 + 1 + 1);
     expect(fetch).toHaveBeenCalledWith(
       expect.stringMatching(/^https:\/\/domain.only.url\/.*\/info/),
       expect.anything(),
@@ -531,8 +519,7 @@ describe('PFS: pathFindServiceEpic', () => {
   test('fail request pfs from pfsList, empty', async () => {
     expect.assertions(1);
 
-    // put config.pfs into auto mode
-    raiden.store.dispatch(raidenConfigUpdate({ pfs: true }));
+    raiden.store.dispatch(raidenConfigUpdate({ pfsMode: PfsMode.auto, additionalServices: [] }));
 
     // invalid url
     raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('""');
@@ -662,7 +649,6 @@ describe('PFS: pathFindServiceEpic', () => {
   });
 
   test('success with cached iou and valid route', async () => {
-    // Original test(old version) fails
     expect.assertions(2);
 
     const iou = makeIou(raiden);
@@ -673,6 +659,7 @@ describe('PFS: pathFindServiceEpic', () => {
       ),
     );
 
+    raiden.output.splice(0, raiden.output.length);
     const pathFindMeta = {
       tokenNetwork,
       target: target.address,
@@ -681,17 +668,7 @@ describe('PFS: pathFindServiceEpic', () => {
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
     await waitBlock();
-    await sleep(2 * raiden.config.pollingInterval);
-    expect(raiden.output).toContainEqual(
-      iouPersist(
-        {
-          iou: expect.objectContaining({
-            amount: iou.amount.add(2),
-          }),
-        },
-        { tokenNetwork, serviceAddress: iou.receiver },
-      ),
-    );
+    await sleep(raiden.config.httpTimeout);
     expect(raiden.output).toContainEqual(
       pathFind.success(
         {
@@ -700,6 +677,16 @@ describe('PFS: pathFindServiceEpic', () => {
           ],
         },
         pathFindMeta,
+      ),
+    );
+    expect(raiden.output).toContainEqual(
+      iouPersist(
+        {
+          iou: expect.objectContaining({
+            amount: iou.amount.add(2),
+          }),
+        },
+        { tokenNetwork, serviceAddress: iou.receiver },
       ),
     );
   });
@@ -983,11 +970,10 @@ describe('PFS: pathFindServiceEpic', () => {
   });
 
   test('fail pfs disabled', async () => {
-    expect.assertions(2);
+    expect.assertions(1);
 
     // disable pfs
-    raiden.store.dispatch(raidenConfigUpdate({ pfs: false }));
-    expect(raiden.config.pfs).toBe(false);
+    raiden.store.dispatch(raidenConfigUpdate({ pfsMode: PfsMode.disabled }));
 
     const pathFindMeta = {
       tokenNetwork,
@@ -1154,8 +1140,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
     const raiden = await makeRaiden(undefined, false);
     const { serviceRegistryContract } = raiden.deps;
 
-    // enable config.pfs auto ('')
-    raiden.store.dispatch(raidenConfigUpdate({ pfs: true }));
+    raiden.store.dispatch(raidenConfigUpdate({ pfsMode: PfsMode.auto }));
     await raiden.start();
 
     const validTill = BigNumber.from(Math.floor(Date.now() / 1000) + 86400), // tomorrow

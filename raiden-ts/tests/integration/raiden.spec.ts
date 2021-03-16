@@ -22,6 +22,8 @@ import { ServiceRegistry__factory } from '@/contracts';
 import type { RaidenDatabaseMeta } from '@/db/types';
 import { Raiden as OrigRaiden } from '@/raiden';
 import { udcWithdrawn } from '@/services/actions';
+import { PfsMode } from '@/services/types';
+import { pfsInfoAddress } from '@/services/utils';
 import type { RaidenState } from '@/state';
 import type { RaidenTransfer } from '@/transfers/state';
 import { RaidenTransferStatus } from '@/transfers/state';
@@ -209,6 +211,7 @@ describe('Raiden', () => {
     }
     httpBackend.stop();
     fetch.mockRestore();
+    pfsInfoAddress.cache.clear();
   });
 
   test('create from other params and RaidenState', async () => {
@@ -400,7 +403,7 @@ describe('Raiden', () => {
       settleTimeout: 20,
       revealTimeout: 5,
     });
-    expect(raiden.config.pfs).toBe('');
+    expect(raiden.config.pfsMode).toBe(PfsMode.auto);
     raiden.updateConfig({ revealTimeout: 8 });
     expect(raiden.config).toMatchObject({
       revealTimeout: 8,
@@ -893,7 +896,7 @@ describe('Raiden', () => {
 
       test('fail: direct channel without enough capacity, pfs disabled', async () => {
         expect.assertions(3);
-        raiden.updateConfig({ pfs: null });
+        raiden.updateConfig({ pfsMode: PfsMode.disabled });
 
         // there's some channel with enough capacity, but not the one returned by PFS
         const partner3 = accounts[3];
@@ -943,8 +946,7 @@ describe('Raiden', () => {
         });
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // auto pfs mode
-        raiden.updateConfig({ pfs: '' });
+        raiden.updateConfig({ pfsMode: PfsMode.auto });
 
         fetch.mockResolvedValueOnce({
           ok: true,
@@ -1003,7 +1005,7 @@ describe('Raiden', () => {
     test('fail config.pfs disabled', async () => {
       expect.assertions(1);
 
-      raiden.updateConfig({ pfs: null }); // disabled pfs
+      raiden.updateConfig({ pfsMode: PfsMode.disabled });
       await expect(raiden.findPFS()).rejects.toThrowError('disabled');
     });
 
@@ -1018,7 +1020,7 @@ describe('Raiden', () => {
         text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
 
-      raiden.updateConfig({ pfs: pfsUrl }); // pfs set
+      raiden.updateConfig({ pfsMode: PfsMode.onlyAdditional, additionalServices: [pfsUrl] });
       await expect(raiden.findPFS()).resolves.toEqual([
         {
           address: pfsAddress,
@@ -1041,7 +1043,7 @@ describe('Raiden', () => {
         text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
 
-      raiden.updateConfig({ pfs: '' });
+      raiden.updateConfig({ pfsMode: PfsMode.auto });
       await expect(raiden.findPFS()).resolves.toEqual([
         {
           address: pfsAddress,
@@ -1079,7 +1081,7 @@ describe('Raiden', () => {
       });
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      raiden.updateConfig({ pfs: pfsUrl });
+      raiden.updateConfig({ pfsMode: PfsMode.onlyAdditional, additionalServices: [pfsUrl] });
     });
 
     test('success with config.pfs', async () => {
@@ -1136,8 +1138,7 @@ describe('Raiden', () => {
         text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
 
-      // config.pfs in auto mode
-      raiden.updateConfig({ pfs: '' });
+      raiden.updateConfig({ pfsMode: PfsMode.auto });
 
       const pfss = await raiden.findPFS();
       expect(pfss).toEqual([
@@ -1483,7 +1484,7 @@ describe('Raiden', () => {
         json: jest.fn(async () => pfsInfoResponse),
         text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
-      raiden.updateConfig({ pfs: pfsUrl }); // pfs set
+      raiden.updateConfig({ pfsMode: PfsMode.onlyAdditional, additionalServices: [pfsUrl] });
 
       const suggestResponse = [
         {
@@ -1528,21 +1529,14 @@ describe('Raiden', () => {
         json: jest.fn(async () => pfsInfoResponse),
         text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
-      raiden.updateConfig({ pfs: pfsUrl }); // pfs set
+      raiden.updateConfig({ pfsMode: PfsMode.onlyAdditional, additionalServices: [pfsUrl] });
 
-      const suggestResponse: {
-        address: string;
-        capacity: string;
-        centrality: string;
-        score: string;
-        uptime: number;
-      }[] = [];
       // suggest_partner
       fetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: jest.fn(async () => suggestResponse),
-        text: jest.fn(async () => jsonStringify(suggestResponse)),
+        json: jest.fn(async () => []),
+        text: jest.fn(async () => jsonStringify([])),
       });
 
       await expect(raiden.suggestPartners(token)).resolves.toEqual([]);
@@ -1563,7 +1557,7 @@ describe('Raiden', () => {
         json: jest.fn(async () => pfsInfoResponse),
         text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
       });
-      raiden.updateConfig({ pfs: pfsUrl }); // pfs set
+      raiden.updateConfig({ pfsMode: PfsMode.onlyAdditional, additionalServices: [pfsUrl] });
       // suggest_partner
       fetch.mockResolvedValueOnce({
         ok: false,
@@ -1586,7 +1580,7 @@ describe('Raiden', () => {
       await raiden.monitorToken(token);
 
       raiden.findPFS = jest.fn().mockResolvedValueOnce(['pfs1', 'pfs2']);
-      raiden.updateConfig({ pfs: '' }); // set empty PFS, will trigger `findPFS`
+      raiden.updateConfig({ pfsMode: PfsMode.auto }); // set empty PFS, will trigger `findPFS`
 
       const suggestResponse1: {
         address: string;
@@ -1639,7 +1633,7 @@ describe('Raiden', () => {
       await raiden.monitorToken(token);
 
       raiden.findPFS = jest.fn().mockResolvedValueOnce(['pfs1', 'pfs2']);
-      raiden.updateConfig({ pfs: '' }); // set empty PFS, will trigger `findPFS`
+      raiden.updateConfig({ pfsMode: PfsMode.auto }); // set empty PFS, will trigger `findPFS`
 
       // suggest_partner
       fetch.mockResolvedValueOnce({
@@ -1676,7 +1670,7 @@ describe('Raiden', () => {
       await raiden.monitorToken(token);
 
       raiden.findPFS = jest.fn().mockResolvedValueOnce(['pfs1', 'pfs2']);
-      raiden.updateConfig({ pfs: '' }); // set empty PFS, will trigger `findPFS`
+      raiden.updateConfig({ pfsMode: PfsMode.auto }); // set empty PFS, will trigger `findPFS`
 
       const suggestResponseEmpty: {
         address: string;
