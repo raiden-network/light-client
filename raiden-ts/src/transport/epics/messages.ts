@@ -411,7 +411,7 @@ export function deliveredEpic(
         };
         log.info(`Signing "${delivered.type}" for "${message.type}" with id=${msgId.toString()}`);
         return from(signMessage(signer, delivered, { log })).pipe(
-          tap((signed) => cache.put(key, signed)),
+          tap((signed) => cache.set(key, signed)),
           map((signed) =>
             messageSend.request({ message: signed }, { address: action.meta.address, msgId: key }),
           ),

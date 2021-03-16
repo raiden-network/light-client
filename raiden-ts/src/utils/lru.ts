@@ -3,30 +3,30 @@
  *
  * @param max - Maximum size of cache
  */
-export class LruCache<K, V> {
-  public values: Map<K, V> = new Map<K, V>();
-  public max: number;
-
-  public constructor(max: number) {
-    this.max = max;
+export class LruCache<K, V> extends Map<K, V> {
+  constructor(public max: number) {
+    super();
   }
 
-  public get(key: K): V | undefined {
-    const entry = this.values.get(key);
-    if (entry) {
+  get(key: K): V | undefined {
+    let value;
+    if (this.has(key)) {
       // peek the entry, re-insert for LRU strategy
-      this.values.delete(key);
-      this.values.set(key, entry);
+      value = super.get(key) as V;
+      this.delete(key);
+      super.set(key, value);
     }
-    return entry;
+    return value;
   }
 
-  public put(key: K, value: V) {
-    if (this.values.size >= this.max) {
+  set(key: K, value: V) {
+    this.get(key); // bump key on set if exists
+    super.set(key, value);
+    while (this.size > this.max) {
       // least-recently used cache eviction strategy
-      const keyToDelete = this.values.keys().next().value;
-      this.values.delete(keyToDelete);
+      const keyToDelete = this.keys().next().value;
+      this.delete(keyToDelete);
     }
-    this.values.set(key, value);
+    return this;
   }
 }
