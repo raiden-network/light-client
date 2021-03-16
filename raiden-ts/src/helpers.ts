@@ -50,7 +50,7 @@ import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
 import { messageServiceSend } from './messages/actions';
-import { Service } from './services/types';
+import { PfsMode, Service } from './services/types';
 import { makeInitialState, RaidenState } from './state';
 import type { RaidenTransfer } from './transfers/state';
 import { Direction, TransferState } from './transfers/state';
@@ -556,7 +556,7 @@ export async function waitForPFSCapacityUpdate(
   state$: Observable<RaidenState>,
   { meta, config }: { meta: channelDeposit.request['meta']; config: RaidenConfig },
 ) {
-  if (!config.pfs) return;
+  if (config.pfsMode === PfsMode.disabled) return;
   const postMeta: messageServiceSend.request['meta'] = { service: Service.PFS, msgId: '' };
   let deposited = false;
   return asyncActionToPromise(

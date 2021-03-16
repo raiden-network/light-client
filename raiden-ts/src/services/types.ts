@@ -17,6 +17,14 @@ export const ServiceDeviceId: { readonly [K in Service]: string } = {
   [Service.MS]: 'MONITORING',
 };
 
+export const PfsMode = {
+  disabled: 'disabled',
+  auto: 'auto',
+  onlyAdditional: 'onlyAdditional',
+} as const;
+export type PfsMode = typeof PfsMode[keyof typeof PfsMode];
+export const PfsModeC = t.keyof(invert(PfsMode) as { [D in PfsMode]: string });
+
 /**
  * Codec for PFS API returned data
  */

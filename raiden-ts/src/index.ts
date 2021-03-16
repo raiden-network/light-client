@@ -6,7 +6,7 @@ export { RaidenAction, RaidenEvent } from './actions';
 export { ChannelState, RaidenChannel, RaidenChannels } from './channels/state';
 export { RaidenConfig } from './config';
 export * from './constants';
-export { RaidenPaths, RaidenPFS } from './services/types';
+export { PfsMode, RaidenPaths, RaidenPFS } from './services/types';
 export { RaidenState } from './state';
 export { RaidenTransfer, RaidenTransferStatus } from './transfers/state';
 export * from './types';

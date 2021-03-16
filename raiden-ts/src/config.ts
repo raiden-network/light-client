@@ -6,6 +6,7 @@ import type { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 
 import { Capabilities, DEFAULT_CONFIRMATIONS } from './constants';
+import { PfsMode, PfsModeC } from './services/types';
 import { exponentialBackoff } from './transfers/epics/utils';
 import { Caps } from './transport/types';
 import { getNetworkName } from './utils/ethers';
@@ -30,6 +31,10 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *    transfer expiration block should be
  * - httpTimeout - Used in http fetch requests
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
+ * - additionalServices - Array of extra services URLs (or addresses, if URL set on SecretRegistry)
+ * - pfsMode - One of 'disabled' (disables PFS usage and notifications), 'auto' (notifies all of
+ *    registered and additionalServices, picks cheapest for transfers without explicit pfs),
+ *    or 'onlyAdditional' (notifies all, but pick first responding from additionalServices only).
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
  * - monitoringRoom - MS global room to auto-join and send RequestMonitoring messages;
  *    use null to disable
@@ -68,9 +73,10 @@ export const RaidenConfig = t.readonly(
       expiryFactor: t.number, // must be > 1.0
       httpTimeout: t.number,
       discoveryRoom: t.union([t.string, t.null]),
+      additionalServices: t.readonlyArray(t.union([Address, t.string])),
+      pfsMode: PfsModeC,
       pfsRoom: t.union([t.string, t.null]),
       monitoringRoom: t.union([t.string, t.null]),
-      pfs: t.union([t.readonlyArray(t.union([Address, t.string])), t.boolean]),
       pfsSafetyMargin: t.union([t.number, t.tuple([t.number, t.number])]),
       pfsMaxPaths: t.number,
       pfsMaxFee: UInt(32),
@@ -144,9 +150,10 @@ export function makeDefaultConfig(
     expiryFactor: 1.1, // must be > 1.0
     httpTimeout: 30e3,
     discoveryRoom: `raiden_${networkName}_discovery`,
+    additionalServices: [],
+    pfsMode: PfsMode.auto,
     pfsRoom: `raiden_${networkName}_path_finding`,
     monitoringRoom: `raiden_${networkName}_monitoring`,
-    pfs: true, // true = auto mode
     pfsSafetyMargin: 1.0, // multiplier
     pfsMaxPaths: 3,
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
