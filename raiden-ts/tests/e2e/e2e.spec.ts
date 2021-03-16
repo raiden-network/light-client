@@ -6,6 +6,7 @@ import { promises as fs } from 'fs';
 
 import { Raiden } from '@/raiden';
 import type { RaidenPaths } from '@/services/types';
+import { PfsMode } from '@/services/types';
 import type { ContractsInfo } from '@/types';
 import { assert } from '@/utils';
 
@@ -46,7 +47,8 @@ async function createRaiden(account: number | string | Signer): Promise<Raiden> 
     { adapter: 'memory' },
     contractsInfo,
     {
-      pfs: 'http://localhost:5555',
+      additionalServices: ['http://localhost:5555'],
+      pfsMode: PfsMode.onlyAdditional,
       matrixServer: 'http://localhost',
       revealTimeout: 20,
       settleTimeout: 50,
