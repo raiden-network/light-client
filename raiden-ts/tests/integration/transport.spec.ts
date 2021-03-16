@@ -17,6 +17,7 @@ import { Service, ServiceDeviceId } from '@/services/types';
 import { makeMessageId } from '@/transfers/utils';
 import { matrixPresence, matrixSetup, rtcChannel } from '@/transport/actions';
 import { getSortedAddresses } from '@/transport/utils';
+import { jsonStringify } from '@/utils/data';
 import { ErrorCodes } from '@/utils/error';
 import { getServerName } from '@/utils/matrix';
 import type { Address, Signed } from '@/utils/types';
@@ -904,6 +905,29 @@ test('matrixMessageServiceSendEpic', async () => {
   expect.assertions(6);
 
   const raiden = await makeRaiden();
+  const additionalServices = raiden.config.additionalServices;
+  // disable additionalServices for now
+  raiden.store.dispatch(raidenConfigUpdate({ additionalServices: [] }));
+
+  const pfsAddress = makeAddress();
+  const pfsInfoResponse = {
+    message: 'pfs message',
+    network_info: {
+      chain_id: raiden.deps.network.chainId,
+      token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+    },
+    operator: 'pfs operator',
+    payment_address: pfsAddress,
+    price_info: 2,
+    version: '0.4.1',
+  };
+  fetch.mockResolvedValueOnce({
+    status: 200,
+    ok: true,
+    json: jest.fn(async () => pfsInfoResponse),
+    text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
+  });
+
   const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
   const service = makeAddress();
   const serviceUid = `@${service.toLowerCase()}:${getServerName(matrix.getHomeserverUrl())}`;
@@ -926,6 +950,8 @@ test('matrixMessageServiceSendEpic', async () => {
 
   raiden.output.splice(0, raiden.output.length);
   matrix.sendToDevice.mockClear();
+  // re-enable additionalServices
+  raiden.store.dispatch(raidenConfigUpdate({ additionalServices }));
   // network errors must be retried
   matrix.sendToDevice.mockRejectedValueOnce(
     Object.assign(new Error('Failed'), { httpStatus: 429 }),
