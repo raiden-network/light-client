@@ -273,7 +273,7 @@ export function withdrawMessageProcessedEpic(
               message_identifier: message.message_identifier,
             };
             processed$ = from(signMessage(signer, processed, { log })).pipe(
-              tap((signed) => cache.put(cacheKey, signed)),
+              tap((signed) => cache.set(cacheKey, signed)),
             );
           }
 

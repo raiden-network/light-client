@@ -235,24 +235,27 @@ describe('types', () => {
 
 test('LruCache', () => {
   const cache = new LruCache<string, { v: number }>(2);
-  expect(cache.values.size).toBe(0);
+  expect(cache.size).toBe(0);
   expect(cache.max).toBe(2);
 
   const v1 = { v: 1 },
     v2 = { v: 2 },
     v3 = { v: 3 };
-  cache.put('1', v1);
-  cache.put('2', v2);
+  cache.set('1', v1);
+  cache.set('2', v2);
 
   expect(cache.get('1')).toBe(v1);
   expect(cache.get('2')).toBe(v2);
   expect(cache.get('3')).toBeUndefined();
 
-  cache.put('3', v3);
+  cache.set('3', v3);
   expect(cache.get('3')).toBe(v3);
   expect(cache.get('2')).toBe(v2);
   expect(cache.get('1')).toBeUndefined();
-  expect(cache.values.size).toBe(2);
+  expect(cache.size).toBe(2);
+
+  cache.clear();
+  expect(cache.size).toBe(0);
 });
 
 describe('data', () => {
