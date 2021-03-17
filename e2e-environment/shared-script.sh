@@ -16,6 +16,12 @@ function finish() {
   docker stop "$DOCKER_CONTAINER_NAME" >/dev/null 2>&1 || true
 }
 
+function docker_image_exists_locally() {
+  local localImages
+  localImages=$(docker image ls --format '{{ .Repository }}:{{ .Tag }}')
+  grep --quiet "$DOCKER_IMAGE_NAME" <<< "$localImages"
+}
+
 function extract_deployment_information() {
   echo -e "\nExtract deployment information from Docker image"
 
