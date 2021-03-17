@@ -5,7 +5,7 @@ SHARED_SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")/shared-script.sh"
 source "$SHARED_SCRIPT_PATH"
 
 echo -e "\nBuild the Docker image for the end-to-end environment"
-docker build --tag "$DOCKER_IMAGE_TAG_NAME" "$E2E_ENVIRONMENT_DIRECTORY"
+docker build --tag "$DOCKER_IMAGE_NAME" "$E2E_ENVIRONMENT_DIRECTORY"
 
 extract_deployment_information
 

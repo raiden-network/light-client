@@ -30,7 +30,7 @@ if ! running_inside_circleci; then
     --publish 127.0.0.1:5001:5001 \
     --publish 127.0.0.1:5002:5002 \
     --publish 127.0.0.1:8545:8545 \
-    "$DOCKER_IMAGE_TAG_NAME" \
+    "$DOCKER_IMAGE_NAME" \
     >/dev/null
 
 fi

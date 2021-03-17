@@ -4,7 +4,9 @@
 # script related to the end-to-end environment. It is meant to be sourced at the
 # very beginning of each script.
 
-DOCKER_IMAGE_TAG_NAME="raidennetwork/lightclient-e2e-environment"
+DOCKER_IMAGE_REPOSITORY="raidennetwork/lightclient-e2e-environment"
+DOCKER_IMAGE_TAG="v1.1.1"
+DOCKER_IMAGE_NAME="${DOCKER_IMAGE_REPOSITORY}:${DOCKER_IMAGE_TAG}"
 DOCKER_CONTAINER_NAME="lc-e2e"
 E2E_ENVIRONMENT_DIRECTORY="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 DEPLOYMENT_INFORMATION_DIRECTORY="${E2E_ENVIRONMENT_DIRECTORY}/deployment_information"
@@ -20,7 +22,7 @@ function extract_deployment_information() {
   rm --recursive --force "$DEPLOYMENT_INFORMATION_DIRECTORY"
   mkdir --parents "$DEPLOYMENT_INFORMATION_DIRECTORY"
 
-  docker run --detach --rm --name "$DOCKER_CONTAINER_NAME" "$DOCKER_IMAGE_TAG_NAME" >/dev/null
+  docker run --detach --rm --name "$DOCKER_CONTAINER_NAME" "$DOCKER_IMAGE_NAME" >/dev/null
   sleep 5s
 
   docker cp "${DOCKER_CONTAINER_NAME}:/opt/deployment/deployment_private_net.json" "${DEPLOYMENT_INFORMATION_DIRECTORY}/"
