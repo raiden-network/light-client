@@ -10,6 +10,7 @@
 - [#2421] Fix account menu on mobile devices by making it scrollable
 - [#2422] Fix broken layout on RaidenAccount screen for mobile virtual keyboard
 - [#2383] Fix broken handling of path/query parameters of transfer route
+- [#2607] Fix endless navigation loop when canceling open channel route
 
 ### Added
 
@@ -22,6 +23,7 @@
 [#2421]: https://github.com/raiden-network/light-client/issues/2421
 [#2422]: https://github.com/raiden-network/light-client/issues/2422
 [#2383]: https://github.com/raiden-network/light-client/issues/2383
+[#2607]: https://github.com/raiden-network/light-client/issues/2607
 
 ## [0.15.0] - 2021-01-26
 
