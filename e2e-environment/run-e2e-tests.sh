@@ -11,12 +11,8 @@ source "$SHARED_SCRIPT_PATH"
 running_inside_circleci && echo -e "\nAssuming to run in CircleCI with end-to-end environment in place!"
 
 if [[ ! -d "$DEPLOYMENT_INFORMATION_DIRECTORY" ]]; then
-  if running_inside_circleci; then
-    echo -e "\nERROR: The deployment information are missing. They can't be extracted from inside CircleCI."
-    exit 1
-  else
-    extract_deployment_information
-  fi
+  echo -e "\nERROR: The deployment information are missing!"
+  exit 1
 else
   echo -e "\nWARNING: Please make sure that the local deployment information always match with the used image."
 fi
