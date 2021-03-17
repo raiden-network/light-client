@@ -164,6 +164,13 @@ function parseArguments() {
           'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
         coerce: parseFeeOption,
       },
+      proportionalFee: {
+        type: 'string',
+        nargs: 2,
+        desc:
+          'Sets the proportional fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
+        coerce: parseFeeOption,
+      },
     })
     .help()
     .alias('h', 'help')
@@ -322,9 +329,13 @@ function createRaidenConfig(
       },
     };
 
-  let mediationFees: { [token: string]: { flat: BigNumberish } } = {};
+  type Feetype = 'flat' | 'proportional';
+  let mediationFees: { [token: string]: { [K in Feetype]?: BigNumberish } } = {};
   for (const [addr, flat] of Object.entries(argv.flatFee ?? {})) {
     mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], flat } };
+  }
+  for (const [addr, proportional] of Object.entries(argv.proportionalFee ?? {})) {
+    mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], proportional } };
   }
   if (Object.keys(mediationFees).length) config = { ...config, mediationFees };
 
