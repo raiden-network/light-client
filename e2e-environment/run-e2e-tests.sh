@@ -8,16 +8,11 @@
 SHARED_SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")/shared-script.sh"
 source "$SHARED_SCRIPT_PATH"
 
-running_inside_circleci && echo -e "\nAssuming to run in CircleCI with end-to-end environment in place!"
+verify_deployment_information
 
-if [[ ! -d "$DEPLOYMENT_INFORMATION_DIRECTORY" ]]; then
-  echo -e "\nERROR: The deployment information are missing!"
-  exit 1
+if running_inside_circleci; then
+  echo -e "\nAssume for the following to run in CircleCI with end-to-end environment already in place!"
 else
-  echo -e "\nWARNING: Please make sure that the local deployment information always match with the used image."
-fi
-
-if ! running_inside_circleci; then
   echo -e "\nStart the Docker container with the end-to-end environment"
   docker run --detach --rm \
     --name "$DOCKER_CONTAINER_NAME" \
@@ -28,7 +23,6 @@ if ! running_inside_circleci; then
     --publish 127.0.0.1:8545:8545 \
     "$DOCKER_IMAGE_NAME" \
     >/dev/null
-
 fi
 
 echo -e "\nWait to make sure all services are up and running"
