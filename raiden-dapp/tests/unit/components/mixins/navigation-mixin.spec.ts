@@ -170,12 +170,8 @@ describe('NavigationMixin', () => {
       wrapper.vm.$route.name = RouteNames.SELECT_HUB;
       wrapper.vm.onBackClicked();
 
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.SELECT_TOKEN,
-        }),
-      );
+      expect(router.go).toHaveBeenCalledTimes(1);
+      expect(router.go).toHaveBeenCalledWith(-1);
     });
 
     test('from channels', async () => {
@@ -203,15 +199,8 @@ describe('NavigationMixin', () => {
       };
       wrapper.vm.onBackClicked();
 
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.SELECT_HUB,
-          params: {
-            token: '0xtoken',
-          },
-        }),
-      );
+      expect(router.go).toHaveBeenCalledTimes(1);
+      expect(router.go).toHaveBeenCalledWith(-1);
     });
 
     test('from transfer steps', async () => {
