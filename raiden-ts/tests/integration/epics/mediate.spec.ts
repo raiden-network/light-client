@@ -21,7 +21,7 @@ import { Capabilities } from '@/constants';
 import { MessageType } from '@/messages/types';
 import { transfer, transferSigned } from '@/transfers/actions';
 import type { FeeModel } from '@/transfers/mediate/types';
-import { flatFee, getStandardFeeCalculator } from '@/transfers/mediate/types';
+import { flatFee, getStandardFeeCalculator, proportionalFee } from '@/transfers/mediate/types';
 import { Direction } from '@/transfers/state';
 import { makePaymentId } from '@/transfers/utils';
 import { assert } from '@/utils';
@@ -291,4 +291,27 @@ test('flatFee', () => {
   );
 
   expect(flatFee.schedule(config, null as any)).toEqual({ flat: config });
+});
+
+test('proportionalFee', () => {
+  expect(proportionalFee.name).toEqual('proportional');
+  expect(proportionalFee.emptySchedule).toEqual({ proportional: Zero });
+  let config = proportionalFee.decodeConfig('99');
+  expect(config).toEqual(BigNumber.from(49));
+  // For sufficiently small amounts of proportional we get zero for the given input
+  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1337))).toEqual(
+    Zero,
+  );
+
+  config = proportionalFee.decodeConfig('999');
+  expect(config).toEqual(BigNumber.from(499));
+  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1337))).toEqual(
+    BigNumber.from(1),
+  );
+
+  config = proportionalFee.decodeConfig('9999');
+  expect(config).toEqual(BigNumber.from(4999));
+  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1337))).toEqual(
+    BigNumber.from(13),
+  );
 });
