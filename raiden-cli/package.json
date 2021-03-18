@@ -41,6 +41,7 @@
     "node-localstorage": "^2.1.6",
     "raiden-ts": "*",
     "rxjs": "^6.6.6",
+    "wrtc": "^0.4.7",
     "yargs": "^16.2.0"
   }
 }
