@@ -15,6 +15,11 @@ import DISCLAIMER from './disclaimer.json';
 import type { Cli } from './types';
 import { setupLoglevel } from './utils/logging';
 
+if (!('RTCPeerConnection' in globalThis)) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Object.assign(globalThis, require('wrtc'));
+}
+
 function parseFeeOption(args: readonly string[]) {
   assert(args.length && args.length % 2 === 0, 'fees must have the format [address, number]');
   const res: { [addr: string]: string } = {};
