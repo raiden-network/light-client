@@ -38,7 +38,7 @@ export namespace matrixPresence {
 
 export const rtcChannel = createAction(
   'rtc/channel',
-  t.union([t.undefined, instanceOf(RTCDataChannel)]),
+  t.union([t.undefined, instanceOf<RTCDataChannel>('RTCDataChannel')]),
   NodeId,
 );
 export interface rtcChannel extends ActionType<typeof rtcChannel> {}
