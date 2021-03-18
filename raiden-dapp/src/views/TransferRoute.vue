@@ -1,6 +1,6 @@
 <template>
   <v-container class="transfer" fluid>
-    <no-tokens v-if="noTokens" />
+    <no-tokens v-if="noTokenWithOpenChannel" />
     <template v-else>
       <transfer-headers
         class="transfer__menus"
@@ -73,7 +73,7 @@ export default class TransferRoute extends Vue {
   transferAmount = '';
   targetAddress = '';
 
-  get noTokens(): boolean {
+  get noTokenWithOpenChannel(): boolean {
     return Object.keys(this.tokensWithChannels).length === 0;
   }
 
@@ -151,7 +151,7 @@ export default class TransferRoute extends Vue {
   }
 
   selectFirstAvailableTokenIfAny(): void {
-    if (!this.noTokens) {
+    if (!this.noTokenWithOpenChannel) {
       this.token = Object.values(this.tokensWithChannels)[0];
     }
   }
