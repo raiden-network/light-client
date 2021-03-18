@@ -107,12 +107,12 @@
     "redux-devtools-extension": "^2.13.9",
     "redux-logger": "^3.0.6",
     "redux-observable": "^1.2.0",
-    "rxjs": "^6.6.6",
-    "wrtc": "^0.4.7"
+    "rxjs": "^6.6.6"
   },
   "optionalDependencies": {
     "pouchdb-adapter-indexeddb": "^7.2.2",
-    "pouchdb-adapter-leveldb": "^7.2.2"
+    "pouchdb-adapter-leveldb": "^7.2.2",
+    "wrtc": "^0.4.7"
   },
   "files": [
     "/dist",
