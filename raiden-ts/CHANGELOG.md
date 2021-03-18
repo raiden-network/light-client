@@ -13,6 +13,7 @@
 ### Removed
 - [#2550] **BREAKING** Remove migration of legacy state at localStorage during creation
 - [#2567] **BREAKING** Remove support for peer-to-peer communication through Matrix rooms; now supports only `toDevice` and WebRTC channels.
+- [#2600] `wrtc` auto-polyfill; now, if you're using `raiden-ts` in a NodeJS project, you're expected to polyfill `wrtc` or some WebRTC-compatible API to your global object; in exchange, the SDK doesn't require WebRTC, and therefore should work fine on environments without it (through matrix' toDevice messages).
 
 ### Fixed
 - [#2596] Fix unlocking sent transfers even if receiving is disabled
@@ -25,6 +26,7 @@
 [#2570]: https://github.com/raiden-network/light-client/issues/2570
 [#2581]: https://github.com/raiden-network/light-client/pull/2581
 [#2596]: https://github.com/raiden-network/light-client/issues/2596
+[#2600]: https://github.com/raiden-network/light-client/issues/2600
 
 ## [0.15.0] - 2021-01-26
 ### Added
