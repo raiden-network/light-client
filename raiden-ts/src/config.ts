@@ -139,7 +139,6 @@ export function makeDefaultConfig(
       : {
           [Capabilities.DELIVERY]: 0,
           [Capabilities.MEDIATE]: 0,
-          [Capabilities.WEBRTC]: 1,
           [Capabilities.TO_DEVICE]: 1,
           ...overwrites?.caps,
         };

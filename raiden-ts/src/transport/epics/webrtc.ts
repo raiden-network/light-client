@@ -55,7 +55,7 @@ import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isResponseOf } from '../../utils/actions';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { matchError } from '../../utils/error';
-import { completeWith, timeoutFirst } from '../../utils/rx';
+import { completeWith, takeIf, timeoutFirst } from '../../utils/rx';
 import type { Address } from '../../utils/types';
 import { decode, isntNil } from '../../utils/types';
 import type { matrixPresence } from '../actions';
@@ -463,7 +463,8 @@ function handlePresenceChange$(
   deps: RaidenEpicDeps,
 ): Observable<rtcChannel | messageSend.request | messageReceived> {
   // if peer goes offline in Matrix, reset dataChannel & unsubscribe defer to close dataChannel
-  // if (!action.payload.available) return of(rtcChannel(undefined, action.meta));
+  if (!getCap(action.payload.caps, Capabilities.WEBRTC))
+    return of(rtcChannel(undefined, action.meta));
 
   const { log, address } = deps;
   const isCaller = getSortedAddresses(address, action.meta.address)[0] === address;
@@ -583,14 +584,10 @@ export function rtcConnectEpic(
               !!getCap(b.payload.caps, Capabilities.WEBRTC),
         ),
         withLatestFrom(config$),
-        filter(
-          ([action, { caps }]) =>
-            !!getCap(action.payload.caps, Capabilities.WEBRTC) &&
-            !!getCap(caps, Capabilities.WEBRTC),
-        ),
         switchMap(([action, config]) => handlePresenceChange$(action, action$, config, deps)),
         completeWith(action$),
       ),
     ),
+    takeIf(config$.pipe(pluck('caps', Capabilities.WEBRTC))),
   );
 }

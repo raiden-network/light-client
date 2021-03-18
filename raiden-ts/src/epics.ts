@@ -54,6 +54,7 @@ function dynamicCaps({
   return {
     [Capabilities.RECEIVE]:
       !stale && monitoringReward?.gt(0) && monitoringReward.lte(udcBalance) ? 1 : 0,
+    [Capabilities.WEBRTC]: 'RTCPeerConnection' in globalThis ? 1 : 0,
   };
 }
 
