@@ -130,6 +130,15 @@ export default class TransferRoute extends Vue {
     }
   }
 
+  @Watch('noTokenWithOpenChannel')
+  onNoTokenWithOpenChannelChange(now: boolean, before: boolean): void {
+    const switchFromNoTokenWithOpenChannelToSome = before && !now;
+
+    if (switchFromNoTokenWithOpenChannelToSome) {
+      this.selectFirstAvailableTokenIfAny();
+    }
+  }
+
   @Watch('$route.query.amount', { immediate: true })
   async onAmountQueryParameterChanged(transferAmount: string | undefined) {
     this.transferAmount = transferAmount ?? '';
