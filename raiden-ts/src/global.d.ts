@@ -11,7 +11,6 @@ declare module 'matrix-js-sdk/lib/logger' {
 }
 
 declare module 'abort-controller/polyfill';
-declare module 'wrtc'; // types provided by @types/webrtc
 
 declare module 'pouchdb-adapter-indexeddb';
 declare module 'pouchdb-debug';

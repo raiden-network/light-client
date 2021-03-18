@@ -18,7 +18,3 @@ request((opts: Record<string, unknown>, cb: (err?: Error, res?: any, body?: any)
     },
   });
 });
-
-if (!('RTCPeerConnection' in globalThis)) {
-  Object.assign(globalThis, require('wrtc')); // eslint-disable-line @typescript-eslint/no-var-requires
-}
