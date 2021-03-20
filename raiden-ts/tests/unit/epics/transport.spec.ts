@@ -7,7 +7,7 @@ import type { MatrixClient } from 'matrix-js-sdk';
 import { first, pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate, raidenShutdown } from '@/actions';
-import { Capabilities, RAIDEN_DEVICE_ID } from '@/constants';
+import { Capabilities } from '@/constants';
 import { messageReceived, messageSend, messageServiceSend } from '@/messages/actions';
 import type { Delivered, Processed } from '@/messages/types';
 import { MessageType } from '@/messages/types';
@@ -647,7 +647,7 @@ describe('matrixMessageSendEpic', () => {
     expect(matrix.sendToDevice).toHaveBeenCalledWith(
       'm.room.message',
       expect.objectContaining({
-        [partnerMatrix.getUserId()!]: { [RAIDEN_DEVICE_ID]: { body: message, msgtype: 'm.text' } },
+        [partnerMatrix.getUserId()!]: { ['*']: { body: message, msgtype: 'm.text' } },
       }),
     );
   });
@@ -685,7 +685,7 @@ describe('matrixMessageSendEpic', () => {
     expect(matrix.sendToDevice).toHaveBeenCalledTimes(2);
     expect(matrix.sendToDevice).toHaveBeenCalledWith('m.room.message', {
       [partnerMatrix.getUserId()!]: {
-        [RAIDEN_DEVICE_ID]: { body: expect.stringMatching('"Processed"'), msgtype: 'm.text' },
+        ['*']: { body: expect.stringMatching('"Processed"'), msgtype: 'm.text' },
       },
     });
   });
@@ -732,16 +732,16 @@ describe('matrixMessageSendEpic', () => {
     // first message got sent immediately
     expect(mockedSendToDevice).toHaveBeenNthCalledWith(1, 'm.room.message', {
       [p1Matrix.getUserId()!]: {
-        [RAIDEN_DEVICE_ID]: { body: messages[0], msgtype: 'm.text' },
+        ['*']: { body: messages[0], msgtype: 'm.text' },
       },
     });
     // second message to first recipient, plus batched messages to 2nd recipient, in a single call
     expect(mockedSendToDevice).toHaveBeenNthCalledWith(2, 'm.room.message', {
       [p1Matrix.getUserId()!]: {
-        [RAIDEN_DEVICE_ID]: { body: messages[1], msgtype: 'm.text' },
+        ['*']: { body: messages[1], msgtype: 'm.text' },
       },
       [p2Matrix.getUserId()!]: {
-        [RAIDEN_DEVICE_ID]: { body: messages.slice(2).join('\n'), msgtype: 'm.text' },
+        ['*']: { body: messages.slice(2).join('\n'), msgtype: 'm.text' },
       },
     });
   });

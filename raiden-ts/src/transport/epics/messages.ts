@@ -32,7 +32,7 @@ import {
 import type { RaidenAction } from '../../actions';
 import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
-import { Capabilities, RAIDEN_DEVICE_ID } from '../../constants';
+import { Capabilities } from '../../constants';
 import { messageReceived, messageSend, messageServiceSend } from '../../messages/actions';
 import type { Delivered, Message } from '../../messages/types';
 import { MessageType, Processed, SecretRequest, SecretReveal } from '../../messages/types';
@@ -113,7 +113,7 @@ function flushQueueToDevice(
     // several messages can be batched in a single body, as long as they share same msgtype
     const body = peerQueue.map((action) => getMessageBody(action.payload.message)).join('\n');
     const content = { msgtype: getMsgType(peerQueue[0]), body };
-    payload[peerId] = { [RAIDEN_DEVICE_ID]: content };
+    payload[peerId] = { ['*']: content };
   }
 
   let retries = -1;
