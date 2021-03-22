@@ -85,7 +85,7 @@ import {
 } from './helpers';
 import { createPersisterMiddleware } from './persister';
 import { raidenReducer } from './reducer';
-import { pathFind, udcDeposit, udcWithdraw } from './services/actions';
+import { pathFind, udcDeposit, udcWithdrawPlan } from './services/actions';
 import type { IOU, RaidenPaths, RaidenPFS, SuggestedPartner } from './services/types';
 import { Paths, PFS, PfsMode, SuggestedPartners } from './services/types';
 import { pfsListInfo } from './services/utils';
@@ -1392,10 +1392,10 @@ export class Raiden {
     const meta = {
       amount: decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error),
     };
-    const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
+    const promise = asyncActionToPromise(udcWithdrawPlan, meta, this.action$, true).then(
       ({ txHash }) => txHash!,
     );
-    this.store.dispatch(udcWithdraw.request(undefined, meta));
+    this.store.dispatch(udcWithdrawPlan.request(undefined, meta));
     return promise;
   }
 
