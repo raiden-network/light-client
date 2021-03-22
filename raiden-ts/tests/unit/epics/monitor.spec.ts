@@ -68,7 +68,7 @@ test('monitorUdcBalanceEpic', async () => {
   expect(userDepositContract.effectiveBalance).toHaveBeenCalledTimes(2);
 });
 
-describe('monitorRequestEpic', () => {
+describe('msMonitorRequestEpic', () => {
   test('success: receiving a transfer triggers monitoring', async () => {
     expect.assertions(1);
     const [raiden, partner] = await makeRaidens(2);
