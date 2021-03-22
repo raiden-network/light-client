@@ -5,10 +5,10 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { Zero } from '@ethersproject/constants';
 import { parseEther } from '@ethersproject/units';
 
-import { udcWithdraw, udcWithdrawn } from '@/services/actions';
+import { udcWithdraw, udcWithdrawPlan } from '@/services/actions';
 import type { Hash, UInt } from '@/utils/types';
 
-describe('udcWithdraw', () => {
+describe('udcWithdrawPlan', () => {
   test('planned withdraw picked on startup', async () => {
     const [raiden] = await makeRaidens(1, false);
     const amount = parseEther('5');
@@ -18,7 +18,7 @@ describe('udcWithdraw', () => {
     );
     await raiden.start();
     expect(raiden.output).toContainEqual(
-      udcWithdraw.success(
+      udcWithdrawPlan.success(
         { block: withdrawBlock.toNumber(), confirmed: true },
         { amount: amount as UInt<32> },
       ),
@@ -43,12 +43,12 @@ describe('udcWithdraw', () => {
       blockNumber: raiden.deps.provider.blockNumber,
     });
 
-    raiden.store.dispatch(udcWithdraw.request(undefined, { amount: amount as UInt<32> }));
+    raiden.store.dispatch(udcWithdrawPlan.request(undefined, { amount: amount as UInt<32> }));
 
     await waitBlock(raiden.deps.provider.blockNumber + confirmationBlocks);
     await waitBlock();
     expect(raiden.output).toContainEqual(
-      udcWithdraw.success(
+      udcWithdrawPlan.success(
         {
           block: withdrawBlock.toNumber(),
           txHash: planTx.hash as Hash,
@@ -62,20 +62,20 @@ describe('udcWithdraw', () => {
 
   test('withdraw require: zero amount', async () => {
     const [raiden] = await makeRaidens(1);
-    raiden.store.dispatch(udcWithdraw.request(undefined, { amount: Zero as UInt<32> }));
+    raiden.store.dispatch(udcWithdrawPlan.request(undefined, { amount: Zero as UInt<32> }));
     await waitBlock();
     expect(raiden.output).toContainEqual(
-      udcWithdraw.failure(expect.any(Error), { amount: Zero as UInt<32> }),
+      udcWithdrawPlan.failure(expect.any(Error), { amount: Zero as UInt<32> }),
     );
   });
 
   test('withdraw require: not enough balance', async () => {
     const [raiden] = await makeRaidens(1);
     const amount = parseEther('500');
-    raiden.store.dispatch(udcWithdraw.request(undefined, { amount: amount as UInt<32> }));
+    raiden.store.dispatch(udcWithdrawPlan.request(undefined, { amount: amount as UInt<32> }));
     await waitBlock();
     expect(raiden.output).toContainEqual(
-      udcWithdraw.failure(expect.any(Error), { amount: amount as UInt<32> }),
+      udcWithdrawPlan.failure(expect.any(Error), { amount: amount as UInt<32> }),
     );
   });
 
@@ -89,12 +89,12 @@ describe('udcWithdraw', () => {
       .mockResolvedValueOnce(parseEther('5'))
       .mockResolvedValueOnce(Zero);
     raiden.store.dispatch(
-      udcWithdraw.success({ block: 200, confirmed: true }, { amount: amount as UInt<32> }),
+      udcWithdrawPlan.success({ block: 200, confirmed: true }, { amount: amount as UInt<32> }),
     );
     await waitBlock(200);
     await waitBlock();
     expect(raiden.output).toContainEqual(
-      udcWithdrawn(
+      udcWithdraw.success(
         {
           withdrawal: amount as UInt<32>,
           txHash: withdrawTx.hash as Hash,
@@ -113,12 +113,12 @@ describe('udcWithdraw', () => {
     raiden.deps.userDepositContract.withdraw.mockResolvedValue(withdrawTx);
     raiden.deps.userDepositContract.balances.mockClear().mockResolvedValueOnce(Zero);
     raiden.store.dispatch(
-      udcWithdraw.success({ block: 200, confirmed: true }, { amount: amount as UInt<32> }),
+      udcWithdrawPlan.success({ block: 200, confirmed: true }, { amount: amount as UInt<32> }),
     );
     await waitBlock(200);
     await waitBlock();
     expect(raiden.output).toContainEqual(
-      udcWithdraw.failure(expect.any(Error), { amount: amount as UInt<32> }),
+      udcWithdrawPlan.failure(expect.any(Error), { amount: amount as UInt<32> }),
     );
   });
 });
