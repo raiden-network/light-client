@@ -63,7 +63,7 @@ function makeValidServices(services: Address[]) {
   return Object.fromEntries(services.map((service) => [service, validTill]));
 }
 
-describe('PFS: pathFindServiceEpic', () => {
+describe('PFS: pfsRequestEpic', () => {
   let raiden: MockedRaiden, partner: MockedRaiden, target: MockedRaiden;
   const pfsSafetyMargin = 2;
 
@@ -156,7 +156,7 @@ describe('PFS: pathFindServiceEpic', () => {
       target: target.address,
       value: amount,
     };
-    // Emitting the pathFind.request action to check pathFindServiceEpic runs
+    // Emitting the pathFind.request action to check pfsRequestEpic runs
     // and gives error for incorrect tokenNetwork contract address
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
     await waitBlock();
@@ -193,7 +193,7 @@ describe('PFS: pathFindServiceEpic', () => {
       target: target.address,
       value: amount,
     };
-    // Emitting the pathFind.request action to check pathFindServiceEpic runs
+    // Emitting the pathFind.request action to check pfsRequestEpic runs
     // and gets the earlier matrix presence error for target
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
     await waitBlock();
