@@ -12,6 +12,7 @@ import {
   mapTo,
   mergeMap,
   pluck,
+  repeatWhen,
   startWith,
   take,
   withLatestFrom,
@@ -27,7 +28,7 @@ import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { assert, commonTxErrors, ErrorCodes, networkErrors } from '../../utils/error';
-import { pluckDistinct, retryAsync$, retryWhile } from '../../utils/rx';
+import { mergeWith, pluckDistinct, retryAsync$, retryWhile } from '../../utils/rx';
 import type { Address, UInt } from '../../utils/types';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '../actions';
 
@@ -221,66 +222,55 @@ export function udcDepositEpic(
  */
 export function udcWithdrawPlanRequestEpic(
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {}: Observable<RaidenState>,
   { userDepositContract, address, log, signer, provider, config$ }: RaidenEpicDeps,
 ): Observable<udcWithdrawPlan.success | udcWithdrawPlan.failure> {
   return action$.pipe(
     filter(udcWithdrawPlan.request.is),
-    mergeMap((action) =>
-      retryAsync$(
-        () =>
-          userDepositContract.callStatic
-            .balances(address)
-            .then((balance) => [action, balance] as const),
-        provider.pollingInterval,
-        { onErrors: networkErrors },
-      ),
-    ),
-    concatMap(([action, balance]) => {
+    concatMap((action) => {
       const contract = getContractWithSigner(userDepositContract, signer);
       const amount = action.meta.amount;
-      return defer(() => {
-        assert(amount.gt(Zero), [
-          ErrorCodes.UDC_PLAN_WITHDRAW_GT_ZERO,
-          {
-            amount: amount.toString(),
-          },
-        ]);
+      return retryAsync$(
+        async () => userDepositContract.callStatic.balances(address),
+        intervalFromConfig(config$),
+        { onErrors: networkErrors, log: log.info },
+      ).pipe(
+        mergeMap(async (balance) => {
+          assert(amount.gt(Zero), [
+            ErrorCodes.UDC_PLAN_WITHDRAW_GT_ZERO,
+            { amount: amount.toString() },
+          ]);
 
-        assert(balance.sub(amount).gte(Zero), [
-          ErrorCodes.UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE,
-          {
-            balance: balance.toString(),
-            amount: amount.toString(),
-          },
-        ]);
+          assert(amount.lte(balance), [
+            ErrorCodes.UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE,
+            { balance: balance.toString(), amount: amount.toString() },
+          ]);
 
-        return contract.planWithdraw(amount);
-      }).pipe(
+          return contract.planWithdraw(amount);
+        }),
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
-        retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
-        mergeMap(([, { transactionHash: txHash, blockNumber: txBlock }]) =>
-          state$.pipe(
-            pluckDistinct('blockNumber'),
-            exhaustMap(() =>
-              retryAsync$(
-                () => userDepositContract.callStatic.withdraw_plans(address),
-                provider.pollingInterval,
-                { onErrors: networkErrors },
-              ),
+        retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.info }),
+        mergeWith(() =>
+          retryAsync$(
+            async () => userDepositContract.callStatic.withdraw_plans(address),
+            intervalFromConfig(config$),
+            { onErrors: networkErrors },
+          ).pipe(
+            repeatWhen((comp$) =>
+              comp$.pipe(mergeMap(() => action$.pipe(filter(newBlock.is), take(1)))),
             ),
             first(({ amount }) => amount.gte(action.meta.amount)),
-            map(({ amount, withdraw_block }) =>
-              udcWithdrawPlan.success(
-                {
-                  block: withdraw_block.toNumber(),
-                  txHash,
-                  txBlock,
-                  confirmed: undefined,
-                },
-                { amount: amount as UInt<32> },
-              ),
-            ),
+          ),
+        ),
+        map(([[{ hash: txHash }, { blockNumber: txBlock }], { withdraw_block }]) =>
+          udcWithdrawPlan.success(
+            {
+              block: withdraw_block.toNumber(),
+              txHash,
+              txBlock,
+              confirmed: undefined,
+            },
+            action.meta,
           ),
         ),
         catchError((err) => of(udcWithdrawPlan.failure(err, action.meta))),
