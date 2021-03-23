@@ -6,6 +6,7 @@ import type {
 } from 'rxjs';
 import { defer, EMPTY, from, pairs, race, throwError, timer } from 'rxjs';
 import {
+  catchError,
   concatMap,
   delay,
   distinctUntilChanged,
@@ -26,8 +27,7 @@ import {
   tap,
 } from 'rxjs/operators';
 
-import type { ErrorMatches } from './error';
-import { matchError } from './error';
+import { shouldRetryError } from './error';
 import { isntNil } from './types';
 
 /**
@@ -111,8 +111,6 @@ function isIterable<T>(interval: Iterable<T> | Iterator<T>): interval is Iterabl
   return Symbol.iterator in interval;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PredicateFunc = (err: any, count: number) => boolean | undefined;
 /**
  * Operator to retry/re-subscribe input$ until a stopPredicate returns truthy or delayMs iterator
  * completes, waiting delayMs milliseconds between retries.
@@ -120,65 +118,46 @@ type PredicateFunc = (err: any, count: number) => boolean | undefined;
  *
  * @param interval - Interval, iterable or iterator of intervals to wait between retries;
  *    if it's an iterable, it resets (iterator recreated) if input$ emits
- * @param options - Retry options, conditions are ANDed
- * @param options.maxRetries - Throw (give up) after this many retries (defaults to 10,
- *    pass 0 to retry indefinitely or as long as iterator yields positive intervals)
- * @param options.onErrors - Retry if error.message or error.httpStatus matches any of these
- * @param options.neverOnErrors - Throw if error.message or error.httpStatus matches any of these
- * @param options.predicate - Retry if this function, receiving error+count returns truthy
- * @param options.stopPredicate - Throw if this function, receiving error+count returns truthy
- * @param options.log - Log with this function on every retry or when throwing, e.g. log.info
+ * @param options - shouldRetryError options, conditions are ANDed
  * @returns Operator function to retry if stopPredicate not truthy waiting between retries
  */
 export function retryWhile<T>(
   interval: number | Iterator<number> | Iterable<number>,
-  options: {
-    maxRetries?: number;
-    onErrors?: ErrorMatches;
-    neverOnErrors?: ErrorMatches;
-    predicate?: PredicateFunc;
-    stopPredicate?: PredicateFunc;
-    log?: (...args: any[]) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
-  } = {},
+  options: Parameters<typeof shouldRetryError>[0] = {},
 ): MonoTypeOperatorFunction<T> {
   let iter: Iterator<number> | undefined;
+  if (options.log) options = { ...options, log: options.log.bind(null, 'retryWhile') };
+  let shouldRetry: ReturnType<typeof shouldRetryError>;
   return (input$) =>
-    input$.pipe(
-      // if input$ emits, reset iter (only useful if delayMs is an Iterable)
-      tap(() => (iter = undefined)),
-      retryWhen((error$) =>
-        error$.pipe(
-          mergeMap((error, count) => {
-            let delayMs;
-            if (typeof interval === 'number') delayMs = interval;
-            else {
-              if (!iter) {
-                if (isIterable(interval)) iter = interval[Symbol.iterator]();
-                else iter = interval;
+    defer(() => {
+      iter = undefined;
+      shouldRetry = shouldRetryError(options);
+      return from(input$).pipe(
+        // if input$ emits, reset iter (only useful if delayMs is an Iterable) and shouldRetry func
+        tap(() => {
+          iter = undefined;
+          shouldRetry = shouldRetryError(options);
+        }),
+        retryWhen((error$) =>
+          error$.pipe(
+            mergeMap((error) => {
+              let delayMs;
+              if (typeof interval === 'number') delayMs = interval;
+              else {
+                if (!iter) {
+                  if (isIterable(interval)) iter = interval[Symbol.iterator]();
+                  else iter = interval;
+                }
+                const next = iter.next();
+                delayMs = !next.done ? next.value : -1;
               }
-              const next = iter.next();
-              delayMs = !next.done ? next.value : -1;
-            }
 
-            let retry = delayMs >= 0;
-
-            if (options.maxRetries !== 0) retry &&= count < (options.maxRetries ?? 10);
-            if (options.onErrors) retry &&= matchError(options.onErrors, error);
-            if (options.neverOnErrors) retry &&= !matchError(options.neverOnErrors, error);
-            if (options.predicate) retry &&= !!options.predicate(error, count);
-            if (options.stopPredicate) retry &&= !options.stopPredicate(error, count);
-
-            options.log?.(`retryWhile: ${retry ? 'retrying' : 'giving up'}`, {
-              count,
-              interval: delayMs,
-              error,
-            });
-
-            return retry ? timer(delayMs) : throwError(error);
-          }),
+              return delayMs >= 0 && shouldRetry(error) ? timer(delayMs) : throwError(error);
+            }),
+          ),
         ),
-      ),
-    );
+      );
+    });
 }
 
 /**
@@ -342,5 +321,28 @@ export function mergeWith<T, R>(
       mapFunc((value, index) =>
         from(project(value, index)).pipe(map((res) => [value, res] as [T, R])),
       ),
+    );
+}
+
+/**
+ * Operator to catch, log and suppress observable errors
+ *
+ * @param opts - shouldRetryError parameters
+ * @param logParams - Additional log parameters, message and details to bind to opts.log
+ * @returns Operator to catch errors, log and suppress if it matches the opts conditions,
+ *    Re-throws otherwise
+ */
+export function catchAndLog<T>(
+  opts: Parameters<typeof shouldRetryError>[0],
+  ...logParams: unknown[]
+): MonoTypeOperatorFunction<T> {
+  if (opts.log && logParams.length) opts = { ...opts, log: opts.log.bind(null, ...logParams) };
+  const shouldSuppress = shouldRetryError(opts);
+  return (input$) =>
+    input$.pipe(
+      catchError((err) => {
+        if (!shouldSuppress(err)) return throwError(err);
+        else return EMPTY;
+      }),
     );
 }
