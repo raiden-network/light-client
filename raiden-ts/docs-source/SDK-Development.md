@@ -288,22 +288,18 @@ The hardest to unit test are the epics. As they conceive most of the Raiden logi
 
 ### Integration tests
 
-Integration tests check the SDK as well as the dependency stack from the [public API](https://github.com/raiden-network/light-client/blob/master/raiden-ts/src/raiden.ts) perspective, by performing proper actions as a user would do. Adding tests here basically involve adding them to [raiden.spec.ts](https://github.com/raiden-network/light-client/blob/master/raiden-ts/tests/integration/raiden.spec.ts), with required Matrix endpoints and state.
-
-To try to make the integration tests as complete as possible, we move the mocks to the edges, and there answer as we expect these systems to:
-
-- Ethereum node is handled by [ganache-cli](https://github.com/raiden-network/light-client/blob/84afc0939d267e99636147e8241d7bda4f55cbb1/raiden/tests/e2e/provider.ts#L20), which is a complete EVM emulation layer.
-- Matrix is handled by [replacing only the HTTP requests](https://github.com/raiden-network/light-client/blob/84afc0939d267e99636147e8241d7bda4f55cbb1/raiden/tests/e2e/mocks.ts#L23) as per [matrix.org client-server spec](https://matrix.org/docs/spec/client_server/latest). Of course this isn't perfect, but have provided good enough results so far.
-
-As those tests are quite fast, they are run on every commit and pull request.
+The integration tests combine multiple units of the SDK and test if they work together as intended by their interface definitions. In the center of these tests are the epics which implement the Raiden protocol. They are the natural hub of the SDK where all units come together. Here the units dealing with the blockchain come together with units handling message on the transport layer.
+These test must not use any external end but rather to continue using mocks and stubs where needed while continuously remove mocks for 1st party units.
 
 ### E2E tests
 
 The end-to-end tests check the SDK without any mocking by running it on custom chain and with running synapse matrix servers. This setup is run in a container, with the configuration being available in the [`e2e-environment` directory](https://github.com/raiden-network/light-client/blob/master/e2e-environment).
 
-The end-to-end tests are defined in [e2e.spec.ts](https://github.com/raiden-network/light-client/blob/master/raiden-ts/tests/e2e/e2e.spec.ts). They only test the API of the [`Raiden`](https://github.com/raiden-network/light-client/blob/master/raiden-ts/src/raiden.ts) object.
+The key of these end-to-end tests is to find a good balance. The most important and extensive end-to-end tests are run by the [Scenario Player](https://github.com/raiden-network/scenario-player) on a nightly time shift. These test runs take very long, use a real blockchain with a real deployed Raiden Service Bundle. Furthermore they run on a special server cluster.
+Therefore it is the purpose of the end-to-end tests here to provide a more light-weight and fast complementation. The requirements are that they can run in an independent environment on any developers local PC, as well as within a continuous integration environment to verify pull requests. And they need to run fast enough so they do not hinder developers daily workflow (i.e. in maximum a couple of minutes).
+The goal of these tests is to increase the trust in changes by a pull request and decreasing the stress of developers (and reviewers). The tests should be just as good as it is necessary to catch mistakes early and before the nightlies must fail. The nightly tests by the Scenario player should fail rarely by changes introduced of a recent pull request. Merging a pull request to the `master` branch should be quite safe without the need of frequent follow-up PRs on the next day to fix the errors that got introduced, but discovered too late by the Scenario Player.
 
-As those tests are slower to run, they are not run on every pull request and commit, but once every night.
+The end-to-end tests are defined in [e2e.spec.ts](https://github.com/raiden-network/light-client/blob/master/raiden-ts/tests/e2e/e2e.spec.ts). They only test the API of the [`Raiden`](https://github.com/raiden-network/light-client/blob/master/raiden-ts/src/raiden.ts) object.
 
 ## Debugging
 
