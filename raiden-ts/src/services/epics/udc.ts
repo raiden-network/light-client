@@ -9,7 +9,6 @@ import {
   filter,
   first,
   map,
-  mapTo,
   mergeMap,
   pluck,
   repeatWhen,
@@ -26,9 +25,11 @@ import { intervalFromConfig } from '../../config';
 import type { HumanStandardToken, UserDeposit } from '../../contracts';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import type { RaidenState } from '../../state';
+import { dispatchAndWait$ } from '../../transfers/epics/utils';
 import type { RaidenEpicDeps } from '../../types';
+import { isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, networkErrors } from '../../utils/error';
-import { mergeWith, pluckDistinct, retryAsync$, retryWhile } from '../../utils/rx';
+import { catchAndLog, mergeWith, retryAsync$, retryWhile, takeIf } from '../../utils/rx';
 import type { Address, UInt } from '../../utils/types';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '../actions';
 
@@ -280,7 +281,8 @@ export function udcWithdrawPlanRequestEpic(
 }
 
 /**
- * At startup, check if there was a previous plan and re-emit udcWithdrawPlan.success action
+ * If config.autoUdcWithdraw is enabled, monitors planned withdraws and udcWithdraw.request when
+ * ready
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
@@ -288,34 +290,51 @@ export function udcWithdrawPlanRequestEpic(
  * @param deps.userDepositContract - UDC contract instance
  * @param deps.address - Our address
  * @param deps.config$ - Config observable
+ * @param deps.log - Logger instance
  * @returns Observable of udcWithdrawPlan.success actions
  */
-export function udcCheckWithdrawPlannedEpic(
-  {}: Observable<RaidenAction>,
+export function udcAutoWithdrawEpic(
+  action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { userDepositContract, address, config$ }: RaidenEpicDeps,
-): Observable<udcWithdrawPlan.success> {
-  return config$.pipe(
-    first(),
-    mergeMap(({ pollingInterval }) =>
-      retryAsync$(() => userDepositContract.withdraw_plans(address), pollingInterval, {
-        onErrors: networkErrors,
-      }),
-    ),
-    filter((value) => value.withdraw_block.gt(Zero)),
-    map(({ amount, withdraw_block }) =>
-      udcWithdrawPlan.success(
-        { block: withdraw_block.toNumber(), confirmed: true },
-        { amount: amount as UInt<32> },
+  { userDepositContract, address, config$, log }: RaidenEpicDeps,
+): Observable<udcWithdraw.request> {
+  const WITHDRAW_TIMEOUT = 100;
+  let nextCheckBlock = 0;
+  return action$.pipe(
+    filter(newBlock.is),
+    filter((action) => action.payload.blockNumber >= nextCheckBlock),
+    exhaustMap((action) =>
+      defer(async () => userDepositContract.withdraw_plans(address)).pipe(
+        catchAndLog({ onErrors: networkErrors, log: log.debug }),
+        filter(({ withdraw_block: withdrawBlock }) => {
+          const currentBlock = action.payload.blockNumber;
+          if (withdrawBlock.isZero()) {
+            nextCheckBlock = currentBlock + WITHDRAW_TIMEOUT;
+            return false;
+          } else if (withdrawBlock.gt(currentBlock)) {
+            nextCheckBlock = withdrawBlock.toNumber();
+            return false;
+          }
+          return true;
+        }),
+        mergeMap(({ amount }) => {
+          const meta = { amount: amount as UInt<32> };
+          return dispatchAndWait$(
+            action$,
+            udcWithdraw.request(undefined, meta),
+            isConfirmationResponseOf(udcWithdraw, meta),
+          );
+        }),
       ),
     ),
+    takeIf(config$.pipe(pluck('autoUdcWithdraw'))),
   );
 }
 
 /**
- * When a plan is detected (done on this session or previous), wait until timeout and withdraw
+ * Handle a udcWithdraw.request and attempt to withdraw from UDC
  *
- * @param action$ - Observable of udcWithdrawPlan.success actions
+ * @param action$ - Observable of udcWithdraw.request actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
  * @param deps.log - Logger instance
@@ -324,54 +343,40 @@ export function udcCheckWithdrawPlannedEpic(
  * @param deps.signer - Signer instance
  * @param deps.provider - Provider instance
  * @param deps.config$ - Config observable
- * @returns Observable of udcWithdraw.success|udcWithdrawPlan.failure actions
+ * @returns Observable of udcWithdraw.success|udcWithdraw.failure actions
  */
-export function udcWithdrawPlannedEpic(
+export function udcWithdrawEpic(
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {}: Observable<RaidenState>,
   { log, userDepositContract, address, signer, provider, config$ }: RaidenEpicDeps,
-): Observable<udcWithdraw.success | udcWithdrawPlan.failure> {
+): Observable<udcWithdraw.success | udcWithdraw.failure> {
   return action$.pipe(
-    filter(udcWithdrawPlan.success.is),
-    filter((action) => action.payload.confirmed === true),
-    mergeMap((action) =>
-      state$.pipe(
-        pluck('blockNumber'),
-        filter((blockNumber) => action.payload.block < blockNumber),
-        take(1),
-        mapTo(action),
-      ),
-    ),
-    mergeMap((action) =>
-      retryAsync$(
-        () =>
-          userDepositContract.callStatic
-            .balances(address)
-            .then((balance) => [action, balance] as const),
-        provider.pollingInterval,
-        { onErrors: networkErrors },
-      ),
-    ),
-    concatMap(([action, balance]) => {
+    filter(udcWithdraw.request.is),
+    concatMap((action) => {
       const contract = getContractWithSigner(userDepositContract, signer);
-      return defer(() => {
-        assert(balance.gt(Zero), [
-          ErrorCodes.UDC_WITHDRAW_NO_BALANCE,
-          {
-            balance: balance.toString(),
-          },
-        ]);
-        return contract.withdraw(action.meta.amount);
-      }).pipe(
+      let balance: UInt<32>;
+      return retryAsync$(
+        async () => userDepositContract.callStatic.balances(address),
+        intervalFromConfig(config$),
+        { onErrors: networkErrors, log: log.info },
+      ).pipe(
+        mergeMap(async (balance_) => {
+          assert(balance_.gt(Zero), [
+            ErrorCodes.UDC_WITHDRAW_NO_BALANCE,
+            { balance: balance_.toString() },
+          ]);
+          balance = balance_ as UInt<32>;
+          return contract.withdraw(action.meta.amount);
+        }),
         assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
-        concatMap(([, { transactionHash, blockNumber }]) =>
-          state$.pipe(
-            pluckDistinct('blockNumber'),
+        mergeMap(([, { transactionHash, blockNumber }]) =>
+          action$.pipe(
+            filter(newBlock.is),
             exhaustMap(() =>
-              retryAsync$(() => contract.callStatic.balances(address), provider.pollingInterval, {
-                onErrors: networkErrors,
-              }),
+              defer(async () => contract.callStatic.balances(address)).pipe(
+                catchAndLog({ onErrors: networkErrors, log: log.info }),
+              ),
             ),
             filter((newBalance) => newBalance.lt(balance)),
             take(1),
@@ -388,7 +393,7 @@ export function udcWithdrawPlannedEpic(
             ),
           ),
         ),
-        catchError((err) => of(udcWithdrawPlan.failure(err, action.meta))),
+        catchError((err) => of(udcWithdraw.failure(err, action.meta))),
       );
     }),
   );
