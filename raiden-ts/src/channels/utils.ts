@@ -148,7 +148,10 @@ export function assertTx(
   { log, provider }: Pick<RaidenEpicDeps, 'log' | 'provider'>,
 ): OperatorFunction<
   ContractTransaction,
-  [ContractTransaction, ContractReceipt & { transactionHash: Hash; blockNumber: number }]
+  [
+    ContractTransaction & { hash: Hash },
+    ContractReceipt & { transactionHash: Hash; blockNumber: number },
+  ]
 > {
   return (tx$) =>
     tx$.pipe(
@@ -167,7 +170,7 @@ export function assertTx(
           });
         log.debug(`${method} tx "${receipt.transactionHash}" successfuly mined!`);
         return [tx, receipt] as [
-          ContractTransaction,
+          ContractTransaction & { hash: Hash },
           ContractReceipt & { transactionHash: Hash; blockNumber: number },
         ];
       }),
