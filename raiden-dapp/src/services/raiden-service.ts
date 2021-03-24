@@ -217,12 +217,12 @@ export default class RaidenService {
               value.payload.reward,
               value.payload.txHash,
             );
-          } else if (value.type === 'udc/withdrawn') {
+          } else if (value.type === 'udc/withdraw/success') {
             if (!value.payload.confirmed) {
               return;
             }
             await this.notifyWithdrawal(value.meta.amount, value.payload.withdrawal);
-          } else if (value.type === 'udc/withdraw/failure') {
+          } else if (value.type === 'udc/withdraw/plan/failure') {
             await this.notifyWithdrawalFailure(
               value.payload?.code,
               value.meta.amount,
@@ -481,7 +481,7 @@ export default class RaidenService {
   }
 
   private async updatePlannedUserDepositWithdrawals(event: ObservedValueOf<Raiden['events$']>) {
-    if (event.type === 'udc/withdraw/success') {
+    if (event.type === 'udc/withdraw/plan/success') {
       if (event.payload.confirmed === false) {
         this.store.commit('userDepositContract/clearPlannedWithdrawal');
       } else {
@@ -493,7 +493,7 @@ export default class RaidenService {
           confirmed: event.payload.confirmed,
         });
       }
-    } else if (event.type === 'udc/withdrawn' && event.payload.confirmed) {
+    } else if (event.type === 'udc/withdraw/success' && event.payload.confirmed) {
       this.store.commit('userDepositContract/clearPlannedWithdrawal');
     }
   }
