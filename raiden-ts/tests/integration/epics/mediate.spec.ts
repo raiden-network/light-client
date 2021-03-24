@@ -296,22 +296,33 @@ test('flatFee', () => {
 test('proportionalFee', () => {
   expect(proportionalFee.name).toEqual('proportional');
   expect(proportionalFee.emptySchedule).toEqual({ proportional: Zero });
-  let config = proportionalFee.decodeConfig('99');
-  expect(config).toEqual(BigNumber.from(49));
-  // For sufficiently small amounts of proportional we get zero for the given input
-  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1337))).toEqual(
-    Zero,
+  let config = proportionalFee.decodeConfig('1000000');
+  expect(config).toEqual(BigNumber.from(1000000));
+  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1000))).toEqual(
+    BigNumber.from(1000),
   );
 
-  config = proportionalFee.decodeConfig('999');
-  expect(config).toEqual(BigNumber.from(499));
-  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1337))).toEqual(
-    BigNumber.from(1),
+  config = proportionalFee.decodeConfig('50000');
+  expect(config).toEqual(BigNumber.from(50000));
+  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1000))).toEqual(
+    BigNumber.from(50),
   );
 
-  config = proportionalFee.decodeConfig('9999');
-  expect(config).toEqual(BigNumber.from(4999));
-  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1337))).toEqual(
-    BigNumber.from(13),
+  config = proportionalFee.decodeConfig('4990');
+  expect(config).toEqual(BigNumber.from(4990));
+  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 100))).toEqual(
+    BigNumber.from(0),
+  );
+
+  config = proportionalFee.decodeConfig('10000');
+  expect(config).toEqual(BigNumber.from(10000));
+  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 10000))).toEqual(
+    BigNumber.from(100),
+  );
+
+  config = proportionalFee.decodeConfig('10000');
+  expect(config).toEqual(BigNumber.from(10000));
+  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 10100))).toEqual(
+    BigNumber.from(101),
   );
 });

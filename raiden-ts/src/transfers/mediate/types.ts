@@ -72,15 +72,13 @@ export const proportionalFee: FeeModel<Int<32>, { proportional: Int<32> }> = {
   name: 'proportional',
   emptySchedule: { proportional: Zero as Int<32> },
   decodeConfig(config, defaultConfig) {
-    // flat config uses 'half' the per-token config, one half for each channel [in, out]
-    return decode(Int(32), config ?? defaultConfig).div(2) as Int<32>;
+    return decode(Int(32), config ?? defaultConfig) as Int<32>;
   },
   fee(proportional) {
     return (amountIn) =>
       decode(
         Int(32),
         new BN(proportional.toHexString())
-          .times(2)
           .div(1e6)
           .times(amountIn.toHexString())
           .toFixed(0, BN.ROUND_HALF_EVEN),
