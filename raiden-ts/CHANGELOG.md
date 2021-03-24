@@ -4,6 +4,7 @@
 ### Added
 - [#1342] Flat (fixed) mediation fees for mediator nodes
 - [#2581] `config.pfsSafetyMargin` now also accepts a `[f, a]` pair, which will add `f*fee + a*amount` on top of PFS's estimated fee, if one wants finer-grain control on safety margin which is added on the transfer to be initiated.
+- [#2629] `config.autoUdcWithdraw` (default=true) to allow disabling automatically completing a planned UDC withdraw, and new `Raiden.getUdcWithdrawPlan` and `Raiden.udcWithdraw` to check and perform UDC withdraw when not in auto mode.
 
 ### Changed
 - [#2536] Wait for global messages before resolving deposits and channel open request
