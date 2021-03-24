@@ -731,7 +731,7 @@ describe('RaidenService', () => {
     await setupSDK();
 
     subject.next({
-      type: 'udc/withdrawn',
+      type: 'udc/withdraw/success',
       payload: {
         withdrawal: utils.parseEther('5'),
         confirmed: true,
@@ -760,7 +760,7 @@ describe('RaidenService', () => {
     await setupSDK({ subkey: true });
 
     subject.next({
-      type: 'udc/withdrawn',
+      type: 'udc/withdraw/success',
       payload: {
         withdrawal: utils.parseEther('5'),
         confirmed: true,
@@ -787,7 +787,7 @@ describe('RaidenService', () => {
     (raiden as any).events$ = subject;
     await setupSDK();
     subject.next({
-      type: 'udc/withdraw/failure',
+      type: 'udc/withdraw/plan/failure',
       payload: {
         code: 'UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE',
       },
@@ -808,7 +808,7 @@ describe('RaidenService', () => {
     (raiden as any).events$ = subject;
     await setupSDK();
     subject.next({
-      type: 'udc/withdraw/failure',
+      type: 'udc/withdraw/plan/failure',
       payload: {
         code: -3200,
         message: 'gas',
@@ -1060,7 +1060,7 @@ describe('RaidenService', () => {
       (raiden as any).events$ = subject;
       await setupSDK();
       subject.next({
-        type: 'udc/withdraw/success',
+        type: 'udc/withdraw/plan/success',
         payload: {
           block: 5,
           txHash: '0xTxHash',
@@ -1084,7 +1084,7 @@ describe('RaidenService', () => {
       (raiden as any).events$ = subject;
       await setupSDK();
       subject.next({
-        type: 'udc/withdraw/success',
+        type: 'udc/withdraw/plan/success',
         payload: {
           block: 5,
           txHash: '0xTxHash',
@@ -1105,7 +1105,7 @@ describe('RaidenService', () => {
       (raiden as any).events$ = subject;
       await setupSDK();
       subject.next({
-        type: 'udc/withdrawn',
+        type: 'udc/withdraw/success',
         payload: {
           confirmed: true,
           withdrawal: constants.One,
