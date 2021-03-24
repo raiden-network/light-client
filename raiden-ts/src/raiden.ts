@@ -85,7 +85,7 @@ import {
 } from './helpers';
 import { createPersisterMiddleware } from './persister';
 import { raidenReducer } from './reducer';
-import { pathFind, udcDeposit, udcWithdrawPlan } from './services/actions';
+import { pathFind, udcDeposit, udcWithdraw, udcWithdrawPlan } from './services/actions';
 import type { IOU, RaidenPaths, RaidenPFS, SuggestedPartner } from './services/types';
 import { Paths, PFS, PfsMode, SuggestedPartners } from './services/types';
 import { pfsListInfo } from './services/utils';
@@ -1388,6 +1388,36 @@ export class Raiden {
     return receipt.transactionHash as Hash;
   }
 
+  /**
+   * Fetches our current UDC withdraw plan
+   *
+   * @returns Promise to object containing maximum 'amount' planned for withdraw and 'block' at
+   *    which withdraw will become available, and 'ready' after it can be withdrawn with
+   *    [[udcWithdraw]]; resolves to undefined if there's no current plan
+   */
+  public async getUdcWithdrawPlan(): Promise<
+    { amount: UInt<32>; block: number; ready: boolean } | undefined
+  > {
+    const plan = await this.deps.userDepositContract.withdraw_plans(this.address);
+    if (plan.withdraw_block.isZero()) return;
+    return {
+      amount: plan.amount as UInt<32>,
+      block: plan.withdraw_block.toNumber(),
+      ready: plan.withdraw_block.lte(this.state.blockNumber),
+    };
+  }
+
+  /**
+   * Records a UDC withdraw plan for our UDC deposit
+   *
+   * The plan will be ready for withdraw after 100 blocks.
+   * Maximum 'value' which can be planned is current [[getUDCCapacity]] plus current
+   * [[getUdcWithdrawPlan]].amount, since new plan overwrites previous.
+   *
+   * @param value - Maximum value which we may try to withdraw. An error will be thrown if this
+   *    value is larger than [[getUDCCapacity]]+[[getUdcWithdrawPlan]].amount
+   * @returns Promise to hash of plan transaction, if it succeeds.
+   */
   public async planUdcWithdraw(value: BigNumberish): Promise<Hash> {
     const meta = {
       amount: decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error),
@@ -1396,6 +1426,37 @@ export class Raiden {
       ({ txHash }) => txHash!,
     );
     this.store.dispatch(udcWithdrawPlan.request(undefined, meta));
+    return promise;
+  }
+
+  /**
+   * Complete a planned UDC withdraw and get the deposit to account.
+   *
+   * Maximum 'value' is the one from current plan, attempting to withdraw a larger value will throw
+   * an error, but a smaller value is valid. This method may only be called after plan is 'ready',
+   * i.e. at least 100 blocks have passed after it was planned.
+   *
+   * @param value - Maximum value which we may try to withdraw. An error will be thrown if this
+   *    value is larger than [[getUDCCapacity]]+[[getUdcWithdrawPlan]].amount
+   * @returns Promise to hash of plan transaction, if it succeeds.
+   */
+  public async udcWithdraw(value?: BigNumberish): Promise<Hash> {
+    assert(!this.config.autoUdcWithdraw, ErrorCodes.UDC_WITHDRAW_AUTO_ENABLED, this.log.warn);
+    const plan = await this.getUdcWithdrawPlan();
+    assert(plan, ErrorCodes.UDC_WITHDRAW_NO_PLAN, this.log.warn);
+    assert(plan.ready, ErrorCodes.UDC_WITHDRAW_TOO_EARLY, this.log.warn);
+    if (!value) {
+      value = plan.amount;
+    } else {
+      assert(plan.amount.gte(value), ErrorCodes.UDC_WITHDRAW_TOO_LARGE, this.log.warn);
+    }
+    const meta = {
+      amount: decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error),
+    };
+    const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
+      ({ txHash }) => txHash,
+    );
+    this.store.dispatch(udcWithdraw.request(undefined, meta));
     return promise;
   }
 
