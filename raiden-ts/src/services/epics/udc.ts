@@ -20,7 +20,6 @@ import {
 import type { RaidenAction } from '../../actions';
 import { newBlock } from '../../channels/actions';
 import { approveIfNeeded$, assertTx } from '../../channels/utils';
-import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
 import type { HumanStandardToken, UserDeposit } from '../../contracts';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
@@ -80,21 +79,17 @@ function makeUdcDeposit$(
   [tokenContract, userDepositContract]: [HumanStandardToken, UserDeposit],
   [sender, address]: [Address, Address],
   [deposit, totalDeposit]: [UInt<32>, UInt<32>],
-  { pollingInterval, minimumAllowance }: RaidenConfig,
   { log, provider, config$ }: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$'>,
 ) {
-  return retryAsync$(
-    () =>
-      Promise.all([
-        tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
-        tokenContract.callStatic.allowance(sender, userDepositContract.address) as Promise<
-          UInt<32>
-        >,
-      ]),
-    pollingInterval,
-    { onErrors: networkErrors },
+  return defer(async () =>
+    Promise.all([
+      tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
+      tokenContract.callStatic.allowance(sender, userDepositContract.address) as Promise<UInt<32>>,
+    ]),
   ).pipe(
-    mergeMap(([balance, allowance]) =>
+    retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
+    withLatestFrom(config$),
+    mergeMap(([[balance, allowance], { minimumAllowance }]) =>
       approveIfNeeded$(
         [balance, allowance, deposit],
         tokenContract,
@@ -105,11 +100,8 @@ function makeUdcDeposit$(
       ),
     ),
     mergeMap(() =>
-      retryAsync$(
-        async () => userDepositContract.callStatic.total_deposit(address),
-        pollingInterval,
-        { onErrors: networkErrors },
-      ).pipe(
+      defer(async () => userDepositContract.callStatic.total_deposit(address)).pipe(
+        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
         mergeMap(async (deposited) => {
           assert(deposited.add(deposit).eq(totalDeposit), [
             ErrorCodes.UDC_DEPOSIT_OUTDATED,
@@ -178,7 +170,6 @@ export function udcDepositEpic(
             [tokenContract, udcContract],
             [onchainAddress, address],
             [action.payload.deposit, action.meta.totalDeposit],
-            config,
             { log, provider, config$ },
           );
         }),
