@@ -1393,9 +1393,9 @@ export class Raiden {
    *
    * @returns Promise to object containing maximum 'amount' planned for withdraw and 'block' at
    *    which withdraw will become available, and 'ready' after it can be withdrawn with
-   *    [[udcWithdraw]]; resolves to undefined if there's no current plan
+   *    [[withdrawFromUDC]]; resolves to undefined if there's no current plan
    */
-  public async getUdcWithdrawPlan(): Promise<
+  public async getUDCWithdrawPlan(): Promise<
     { amount: UInt<32>; block: number; ready: boolean } | undefined
   > {
     const plan = await this.deps.userDepositContract.withdraw_plans(this.address);
@@ -1410,15 +1410,14 @@ export class Raiden {
   /**
    * Records a UDC withdraw plan for our UDC deposit
    *
-   * The plan will be ready for withdraw after 100 blocks.
    * Maximum 'value' which can be planned is current [[getUDCCapacity]] plus current
-   * [[getUdcWithdrawPlan]].amount, since new plan overwrites previous.
+   * [[getUDCWithdrawPlan]].amount, since new plan overwrites previous.
    *
    * @param value - Maximum value which we may try to withdraw. An error will be thrown if this
-   *    value is larger than [[getUDCCapacity]]+[[getUdcWithdrawPlan]].amount
+   *    value is larger than [[getUDCCapacity]]+[[getUDCWithdrawPlan]].amount
    * @returns Promise to hash of plan transaction, if it succeeds.
    */
-  public async planUdcWithdraw(value: BigNumberish): Promise<Hash> {
+  public async planUDCWithdraw(value: BigNumberish): Promise<Hash> {
     const meta = {
       amount: decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error),
     };
@@ -1433,16 +1432,15 @@ export class Raiden {
    * Complete a planned UDC withdraw and get the deposit to account.
    *
    * Maximum 'value' is the one from current plan, attempting to withdraw a larger value will throw
-   * an error, but a smaller value is valid. This method may only be called after plan is 'ready',
-   * i.e. at least 100 blocks have passed after it was planned.
+   * an error, but a smaller value is valid. This method may only be called after plan is 'ready'
    *
    * @param value - Maximum value which we may try to withdraw. An error will be thrown if this
-   *    value is larger than [[getUDCCapacity]]+[[getUdcWithdrawPlan]].amount
+   *    value is larger than [[getUDCCapacity]]+[[getUDCWithdrawPlan]].amount
    * @returns Promise to hash of plan transaction, if it succeeds.
    */
-  public async udcWithdraw(value?: BigNumberish): Promise<Hash> {
-    assert(!this.config.autoUdcWithdraw, ErrorCodes.UDC_WITHDRAW_AUTO_ENABLED, this.log.warn);
-    const plan = await this.getUdcWithdrawPlan();
+  public async withdrawFromUDC(value?: BigNumberish): Promise<Hash> {
+    assert(!this.config.autoUDCWithdraw, ErrorCodes.UDC_WITHDRAW_AUTO_ENABLED, this.log.warn);
+    const plan = await this.getUDCWithdrawPlan();
     assert(plan, ErrorCodes.UDC_WITHDRAW_NO_PLAN, this.log.warn);
     assert(plan.ready, ErrorCodes.UDC_WITHDRAW_TOO_EARLY, this.log.warn);
     if (!value) {

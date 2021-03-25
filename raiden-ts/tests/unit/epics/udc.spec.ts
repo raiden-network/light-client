@@ -303,7 +303,7 @@ describe('udcWithdraw', () => {
     const withdrawTx = makeTransaction(1);
     const raiden = await makeRaiden(undefined, false);
 
-    raiden.store.dispatch(raidenConfigUpdate({ autoUdcWithdraw: false }));
+    raiden.store.dispatch(raidenConfigUpdate({ autoUDCWithdraw: false }));
     raiden.deps.userDepositContract.withdraw.mockResolvedValue(withdrawTx);
     raiden.deps.userDepositContract.balances
       .mockClear()
@@ -336,7 +336,7 @@ describe('udcWithdraw', () => {
     const withdrawTx = makeTransaction(0); // failed tx
     const raiden = await makeRaiden(undefined, false);
 
-    raiden.store.dispatch(raidenConfigUpdate({ autoUdcWithdraw: false }));
+    raiden.store.dispatch(raidenConfigUpdate({ autoUDCWithdraw: false }));
     raiden.deps.userDepositContract.withdraw.mockResolvedValue(withdrawTx);
     raiden.deps.userDepositContract.balances
       .mockClear()

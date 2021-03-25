@@ -58,7 +58,7 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *    approving tokens should be needed only once, trusting TokenNetwork's & UDC contracts;
  *    Set to Zero to fallback to approving the strictly needed deposit amounts
  * - autoSettle - Whether to channelSettle.request settleable channels automatically
- * - autoUdcWithdraw - Whether to udcWithdraw.request planned withdraws automatically
+ * - autoUDCWithdraw - Whether to udcWithdraw.request planned withdraws automatically
  * - mediationFees - deps.mediationFeeCalculator config. It's typed as unknown because it'll be
  *     validated and decoded by [[FeeModel.decodeConfig]].
  * - matrixServer? - Specify a matrix server to use.
@@ -98,7 +98,7 @@ export const RaidenConfig = t.readonly(
       pollingInterval: t.number,
       minimumAllowance: UInt(32),
       autoSettle: t.boolean,
-      autoUdcWithdraw: t.boolean,
+      autoUDCWithdraw: t.boolean,
       mediationFees: t.unknown,
     }),
     t.partial({
@@ -168,7 +168,7 @@ export function makeDefaultConfig(
     pollingInterval: 5000,
     minimumAllowance: MaxUint256 as UInt<32>,
     autoSettle: false,
-    autoUdcWithdraw: true,
+    autoUDCWithdraw: true,
     mediationFees: {},
     ...overwrites,
     caps, // merged caps overwrites 'overwrites.caps'
