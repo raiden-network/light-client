@@ -33,3 +33,4 @@ export const CapsFallback = {
 
 export const RAIDEN_DEVICE_ID = 'RAIDEN';
 export const DEFAULT_CONFIRMATIONS = 5;
+export const UDC_WITHDRAW_TIMEOUT = 100;

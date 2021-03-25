@@ -153,7 +153,7 @@ export default class UdcWithdrawalDialog extends Vue {
   async planWithdraw() {
     this.inProgress = true;
     try {
-      await this.$raiden.planUdcWithdraw(this.withdrawAmount);
+      await this.$raiden.planUDCWithdraw(this.withdrawAmount);
       this.done();
     } catch (e) {
       this.error = e;

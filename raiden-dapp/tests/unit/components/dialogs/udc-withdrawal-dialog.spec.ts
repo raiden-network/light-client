@@ -64,7 +64,7 @@ describe('UdcWithdrawalDialog.vue', function () {
     expect.assertions(1);
     await (wrapper.vm as any).planWithdraw();
     await flushPromises();
-    expect($raiden.planUdcWithdraw).toBeCalledTimes(1);
+    expect($raiden.planUDCWithdraw).toBeCalledTimes(1);
   });
 
   test('invalid withdraw amount is zero', async () => {

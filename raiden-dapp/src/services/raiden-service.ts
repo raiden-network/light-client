@@ -645,8 +645,8 @@ export default class RaidenService {
   }
 
   /* istanbul ignore next */
-  async planUdcWithdraw(amount: BigNumber): Promise<string> {
-    return this.raiden.planUdcWithdraw(amount);
+  async planUDCWithdraw(amount: BigNumber): Promise<string> {
+    return this.raiden.planUDCWithdraw(amount);
   }
 
   /* istanbul ignore next */

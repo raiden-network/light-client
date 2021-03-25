@@ -4,12 +4,13 @@
 ### Added
 - [#1342] Flat (fixed) mediation fees for mediator nodes
 - [#2581] `config.pfsSafetyMargin` now also accepts a `[f, a]` pair, which will add `f*fee + a*amount` on top of PFS's estimated fee, if one wants finer-grain control on safety margin which is added on the transfer to be initiated.
-- [#2629] `config.autoUdcWithdraw` (default=true) to allow disabling automatically completing a planned UDC withdraw, and new `Raiden.getUdcWithdrawPlan` and `Raiden.udcWithdraw` to check and perform UDC withdraw when not in auto mode.
+- [#2629] `config.autoUDCWithdraw` (default=true) to allow disabling automatically completing a planned UDC withdraw, and new `Raiden.getUDCWithdrawPlan` and `Raiden.withdrawFromUDC` to check and perform UDC withdraw when not in auto mode.
 
 ### Changed
 - [#2536] Wait for global messages before resolving deposits and channel open request
 - [#2566] Optimize initial sync and resume previous sync filters scans
 - [#2570] Support multiple custom services in config.pfs
+- [#2635] **BREAKING** Renamed `Raiden.planUdcWithdraw` to `Raiden.planUDCWithdraw` for consistency
 
 ### Removed
 - [#2550] **BREAKING** Remove migration of legacy state at localStorage during creation
@@ -28,6 +29,8 @@
 [#2581]: https://github.com/raiden-network/light-client/pull/2581
 [#2596]: https://github.com/raiden-network/light-client/issues/2596
 [#2600]: https://github.com/raiden-network/light-client/issues/2600
+[#2629]: https://github.com/raiden-network/light-client/issues/2629
+[#2635]: https://github.com/raiden-network/light-client/pull/2635
 
 ## [0.15.0] - 2021-01-26
 ### Added
