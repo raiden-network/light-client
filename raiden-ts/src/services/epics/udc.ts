@@ -9,9 +9,9 @@ import {
   filter,
   first,
   map,
+  mergeAll,
   mergeMap,
   pluck,
-  repeatWhen,
   startWith,
   take,
   withLatestFrom,
@@ -29,7 +29,14 @@ import { dispatchAndWait$ } from '../../transfers/epics/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, networkErrors } from '../../utils/error';
-import { catchAndLog, mergeWith, retryAsync$, retryWhile, takeIf } from '../../utils/rx';
+import {
+  catchAndLog,
+  completeWith,
+  mergeWith,
+  retryAsync$,
+  retryWhile,
+  takeIf,
+} from '../../utils/rx';
 import type { Address, UInt } from '../../utils/types';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '../actions';
 
@@ -223,11 +230,7 @@ export function udcWithdrawPlanRequestEpic(
     concatMap((action) => {
       const contract = getContractWithSigner(userDepositContract, signer);
       const amount = action.meta.amount;
-      return retryAsync$(
-        async () => userDepositContract.callStatic.balances(address),
-        intervalFromConfig(config$),
-        { onErrors: networkErrors, log: log.info },
-      ).pipe(
+      return defer(async () => userDepositContract.callStatic.balances(address)).pipe(
         mergeMap(async (balance) => {
           assert(amount.gt(Zero), [
             ErrorCodes.UDC_PLAN_WITHDRAW_GT_ZERO,
@@ -244,13 +247,13 @@ export function udcWithdrawPlanRequestEpic(
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.info }),
         mergeWith(() =>
-          retryAsync$(
-            async () => userDepositContract.callStatic.withdraw_plans(address),
-            intervalFromConfig(config$),
-            { onErrors: networkErrors },
-          ).pipe(
-            repeatWhen((comp$) =>
-              comp$.pipe(mergeMap(() => action$.pipe(filter(newBlock.is), take(1)))),
+          action$.pipe(
+            filter(newBlock.is),
+            startWith(0),
+            exhaustMap(() =>
+              defer(async () => userDepositContract.callStatic.withdraw_plans(address)).pipe(
+                catchAndLog({ onErrors: networkErrors, log: log.debug }),
+              ),
             ),
             first(({ amount }) => amount.gte(action.meta.amount)),
           ),
@@ -289,36 +292,41 @@ export function udcAutoWithdrawEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { userDepositContract, address, config$, log }: RaidenEpicDeps,
-): Observable<udcWithdraw.request> {
+): Observable<udcWithdraw.request | udcWithdrawPlan.success> {
   let nextCheckBlock = 0;
   return action$.pipe(
     filter(newBlock.is),
-    filter((action) => action.payload.blockNumber >= nextCheckBlock),
-    exhaustMap((action) =>
+    pluck('payload', 'blockNumber'),
+    filter((currentBlock) => currentBlock >= nextCheckBlock),
+    exhaustMap((currentBlock) =>
       defer(async () => userDepositContract.withdraw_plans(address)).pipe(
         catchAndLog({ onErrors: networkErrors, log: log.debug }),
-        filter(({ withdraw_block: withdrawBlock }) => {
-          const currentBlock = action.payload.blockNumber;
+        mergeMap(function* ({ amount, withdraw_block: withdrawBlock }) {
+          const meta = { amount: amount as UInt<32> };
           if (withdrawBlock.isZero()) {
             nextCheckBlock = currentBlock + UDC_WITHDRAW_TIMEOUT;
-            return false;
-          } else if (withdrawBlock.gt(currentBlock)) {
-            nextCheckBlock = withdrawBlock.toNumber();
-            return false;
+            return; // no plan, don't proceed to startupCheck
           }
-          return true;
+          const startupCheck = nextCheckBlock === 0;
+          if (startupCheck) {
+            yield of(
+              udcWithdrawPlan.success({ block: withdrawBlock.toNumber(), confirmed: true }, meta),
+            );
+          }
+          if (withdrawBlock.gt(currentBlock)) {
+            nextCheckBlock = withdrawBlock.toNumber();
+          } else {
+            yield dispatchAndWait$(
+              action$,
+              udcWithdraw.request(undefined, meta),
+              isConfirmationResponseOf(udcWithdraw, meta),
+            );
+          }
         }),
-        mergeMap(({ amount }) => {
-          const meta = { amount: amount as UInt<32> };
-          return dispatchAndWait$(
-            action$,
-            udcWithdraw.request(undefined, meta),
-            isConfirmationResponseOf(udcWithdraw, meta),
-          );
-        }),
+        mergeAll(), // mergeMap above yields observables, so merge them inside exhaustMap
       ),
     ),
-    takeIf(config$.pipe(pluck('autoUDCWithdraw'))),
+    takeIf(config$.pipe(pluck('autoUDCWithdraw'), completeWith(action$))),
   );
 }
 
