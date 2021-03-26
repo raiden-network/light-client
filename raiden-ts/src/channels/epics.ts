@@ -1301,7 +1301,7 @@ export function channelAutoSettleEpic(
         ),
       ),
     ),
-    takeIf(config$.pipe(pluck('autoSettle'))),
+    takeIf(config$.pipe(pluck('autoSettle'), completeWith(state$))),
   );
 }
 

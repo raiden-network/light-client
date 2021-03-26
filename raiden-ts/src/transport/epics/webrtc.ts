@@ -588,6 +588,6 @@ export function rtcConnectEpic(
         completeWith(action$),
       ),
     ),
-    takeIf(config$.pipe(pluck('caps', Capabilities.WEBRTC))),
+    takeIf(config$.pipe(pluck('caps', Capabilities.WEBRTC), completeWith(action$))),
   );
 }

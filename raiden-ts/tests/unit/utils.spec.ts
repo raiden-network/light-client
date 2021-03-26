@@ -6,8 +6,8 @@ import { Web3Provider } from '@ethersproject/providers';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 import * as t from 'io-ts';
-import { from, of, timer } from 'rxjs';
-import { delay, first, ignoreElements, map, mapTo, tap, toArray } from 'rxjs/operators';
+import { concat, defer, from, of, timer } from 'rxjs';
+import { delay, first, ignoreElements, map, mapTo, take, tap, toArray } from 'rxjs/operators';
 
 import type { Lock } from '@/channels';
 import { LocksrootZero } from '@/constants';
@@ -17,7 +17,7 @@ import { encode } from '@/utils/data';
 import { ErrorCodec, ErrorCodes, RaidenError } from '@/utils/error';
 import { fromEthersEvent, getLogsByChunk$, getNetworkName } from '@/utils/ethers';
 import { LruCache } from '@/utils/lru';
-import { completeWith, concatBuffer, lastMap, mergeWith } from '@/utils/rx';
+import { completeWith, concatBuffer, lastMap, mergeWith, takeIf } from '@/utils/rx';
 import { Address, BigNumberC, decode, HexString, Secret, Timed, timed, UInt } from '@/utils/types';
 
 describe('getLogsByChunk$', () => {
@@ -489,4 +489,50 @@ test('mergeWith', async () => {
   ]);
   expect(obs2).toHaveBeenCalledTimes(2);
   expect(obs3).toHaveBeenCalledTimes(3);
+});
+
+test('takeIf', async () => {
+  expect.assertions(7);
+
+  // sync emit passes if condition is truthy
+  await expect(
+    of(0)
+      .pipe(takeIf(of(true)))
+      .toPromise(),
+  ).resolves.toBe(0);
+
+  // falsy cond on sync emit emits nothing
+  await expect(
+    of(0)
+      .pipe(takeIf(of(false)))
+      .toPromise(),
+  ).resolves.toBeUndefined();
+
+  // async emit passes if condition is truthy
+  let source$ = jest.fn(() => timer(20));
+  await expect(
+    defer(source$)
+      .pipe(takeIf(of(true)))
+      .toPromise(),
+  ).resolves.toBe(0);
+  // source$ should be subscribed only once
+  expect(source$).toHaveBeenCalledTimes(1);
+
+  // falsy cond on async emit emits nothing
+  await expect(
+    timer(10)
+      .pipe(takeIf(of(false)))
+      .toPromise(),
+  ).resolves.toBe(undefined);
+
+  source$ = jest.fn(() => timer(20, 20));
+  // truthy - falsy - truthy..
+  const cond$ = jest.fn(() => concat(of(true), timer(30, 10)));
+  await expect(
+    defer(source$)
+      .pipe(takeIf(defer(cond$)), take(4), toArray())
+      .toPromise(),
+  ).resolves.toEqual([0, 0, 1, 2]);
+  // source$ should be subscribed twice: once for true, once for 1..
+  expect(source$).toHaveBeenCalledTimes(2);
 });
