@@ -4,7 +4,7 @@ import type {
   ObservableInput,
   OperatorFunction,
 } from 'rxjs';
-import { defer, EMPTY, from, pairs, race, throwError, timer } from 'rxjs';
+import { defer, EMPTY, from, pairs, race, Subject, throwError, timer } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -180,8 +180,10 @@ export function retryAsync$<T>(
 
 /**
  * RxJS operator to keep subscribed to input$ if condition is truty (or falsy, if negated),
- * unsubscribe if it becomes falsy, and re-subscribes if it becomes truty again (input$ must be
- * re-subscribable).
+ * unsubscribes from source if cond$ becomes falsy, and re-subscribes if it becomes truty again
+ * (input$ must be re-subscribable). While subscribed to source$, completes when source$ completes,
+ * otherwise, when cond$ completes (since source$ isn't subscribed then), so make sure cond$
+ * completes too when desired, or the output observable may hang until unsubscribed.
  *
  * @param cond$ - Condition observable
  * @param negate - Whether to negate condition
@@ -192,18 +194,18 @@ export function takeIf<T>(
   cond$: Observable<unknown>,
   negate = false,
 ): MonoTypeOperatorFunction<T> {
-  const distinctCond$ = cond$.pipe(
-    map((cond) => (negate ? !cond : !!cond)),
-    distinctUntilChanged(),
-  );
-  return (input$) =>
-    input$.pipe(
-      // unsubscribe input$ when cond becomes falsy
-      takeUntil(distinctCond$.pipe(filter((cond): cond is false => !cond))),
-      // re-subscribe input$ when cond becomes truty
-      repeatWhen(() => distinctCond$.pipe(filter((cond): cond is true => cond))),
-      completeWith(input$),
+  return (source$) => {
+    const completed$ = new Subject<true>();
+    return cond$.pipe(
+      map((cond) => (negate ? !cond : !!cond)),
+      distinctUntilChanged(),
+      takeUntil(completed$),
+      switchMap((cond) => {
+        if (!cond) return EMPTY;
+        return source$.pipe(tap({ complete: () => completed$.next(true) }));
+      }),
     );
+  };
 }
 
 /**
@@ -218,9 +220,9 @@ export function completeWith<T>(
   delayMs?: number,
 ): MonoTypeOperatorFunction<T> {
   return (input$) => {
-    let output$ = input$.pipe(takeUntil(complete$.pipe(ignoreElements(), endWith(null))));
-    if (delayMs !== undefined) output$ = output$.pipe(delay(delayMs));
-    return output$;
+    complete$ = complete$.pipe(ignoreElements(), endWith(null));
+    if (delayMs !== undefined) complete$ = complete$.pipe(delay(delayMs));
+    return input$.pipe(takeUntil(complete$));
   };
 }
 

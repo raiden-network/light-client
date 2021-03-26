@@ -436,6 +436,7 @@ export function transferAutoRegisterEpic(
       config$.pipe(
         pluck('caps'),
         map((caps) => getCap(caps, Capabilities.RECEIVE)),
+        completeWith(action$),
       ),
     ),
   );
