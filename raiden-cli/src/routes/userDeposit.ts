@@ -57,10 +57,10 @@ async function deposit(this: Cli, totalDeposit: string): Promise<DepositResponse
 
 async function planWithdraw(this: Cli, amount: string): Promise<PlanWithdrawResponse> {
   const transactionHash = await this.raiden.planUDCWithdraw(amount);
-  const plannedWithdrawBlockNumber = (await this.raiden.getBlockNumber()) + 95; // TODO: !!!
+  const withdrawPlan = await this.raiden.getUDCWithdrawPlan();
   return {
     transaction_hash: transactionHash,
-    planned_withdraw_block_number: plannedWithdrawBlockNumber,
+    planned_withdraw_block_number: withdrawPlan!.block, // The plan must exists here.
   };
 }
 
