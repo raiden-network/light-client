@@ -10,6 +10,7 @@ import { makePaymentsRouter } from './payments';
 import { makePendingTransfersRouter } from './pendingTransfers';
 import { makeTestingRouter } from './testing';
 import { makeTokensRouter } from './tokens';
+import { makeUserDepositRouter } from './userDeposit';
 
 /**
  * Make a Raiden APIv1 router, with all its bound endpoints
@@ -31,6 +32,7 @@ export function makeApiV1Router(this: Cli): Router {
     router.use('/connections', makeConnectionsRouter.call(this));
     router.use('/payments', makePaymentsRouter.call(this));
     router.use('/_testing', makeTestingRouter.call(this));
+    router.use('/user_deposit', makeUserDepositRouter.call(this));
   });
 
   router.get('/version', (_request: Request, response: Response) => {
