@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { BigNumber } from '@ethersproject/bignumber';
 import { AddressZero, Zero } from '@ethersproject/constants';
 import BN from 'bignumber.js';
 import * as t from 'io-ts';
@@ -72,20 +73,25 @@ export const proportionalFee: FeeModel<Int<32>, { proportional: Int<32> }> = {
   name: 'proportional',
   emptySchedule: { proportional: Zero as Int<32> },
   decodeConfig(config, defaultConfig) {
-    return decode(Int(32), config ?? defaultConfig) as Int<32>;
+    // https://raiden-network-specification.readthedocs.io/en/latest/mediation_fees.html#converting-per-hop-proportional-fees-in-per-channel-proportional-fees
+    // 1M is because config is received and returned as parts-per-million integers
+    const perHopRatio = new BN(BigNumber.from(config ?? defaultConfig).toHexString()).div(1e6);
+    const perChannelPPM = perHopRatio.div(perHopRatio.plus(2)).times(1e6);
+    return decode(Int(32), perChannelPPM.toFixed(0, BN.ROUND_HALF_EVEN));
   },
-  fee(proportional) {
-    return (amountIn) =>
-      decode(
-        Int(32),
-        new BN(proportional.toHexString())
-          .div(1e6)
-          .times(amountIn.toHexString())
-          .toFixed(0, BN.ROUND_HALF_EVEN),
-      ); // one for each side (channel)
+  fee(perChannelPPM) {
+    return (amountIn) => {
+      const perChannelRatio = new BN(perChannelPPM.toHexString()).div(1e6);
+      const One = new BN(1);
+      const amount = new BN(amountIn.toHexString());
+      // for proportional fees only: xout = xin*(1-q)/(1+q)
+      const amountOut = amount.times(One.minus(perChannelRatio).div(One.plus(perChannelRatio)));
+      const fee = amount.minus(amountOut);
+      return decode(Int(32), fee.toFixed(0, BN.ROUND_HALF_EVEN));
+    };
   },
-  schedule(proportional) {
-    return { proportional };
+  schedule(perChannelPPM) {
+    return { proportional: perChannelPPM };
   },
 };
 
