@@ -296,33 +296,40 @@ test('flatFee', () => {
 test('proportionalFee', () => {
   expect(proportionalFee.name).toEqual('proportional');
   expect(proportionalFee.emptySchedule).toEqual({ proportional: Zero });
-  let config = proportionalFee.decodeConfig('1000000');
-  expect(config).toEqual(BigNumber.from(1000000));
-  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1000))).toEqual(
-    BigNumber.from(1000),
-  );
 
-  config = proportionalFee.decodeConfig('50000');
-  expect(config).toEqual(BigNumber.from(50000));
-  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 1000))).toEqual(
-    BigNumber.from(50),
-  );
+  const config = proportionalFee.decodeConfig('10000'); // 1% = 0.01*1e6
+  expect(config).toEqual(BigNumber.from(4975)); // perChannel = perHop / (perHop + 2)
+  expect(proportionalFee.schedule(config, null as any)).toEqual({ proportional: config });
+  expect(
+    proportionalFee
+      .fee(
+        config,
+        null as any,
+        null as any,
+      )(decode(UInt(32), 10213))
+      .toNumber(),
+  ).toBeWithin(100 - 1, 100 + 2); // from SP MFEE2 fee = 100±1
 
-  config = proportionalFee.decodeConfig('4990');
-  expect(config).toEqual(BigNumber.from(4990));
-  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 100))).toEqual(
-    BigNumber.from(0),
-  );
+  const tests: [proportional: number, initial: number, expected: number][] = [
+    [1_000_000, 2000, 1000],
+    [100_000, 1100, 1000],
+    [50_000, 1050, 1000],
+    [10000, 1010, 1000],
+    [10000, 101, 100],
+    [4990, 100, 100],
+  ];
 
-  config = proportionalFee.decodeConfig('10000');
-  expect(config).toEqual(BigNumber.from(10000));
-  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 10000))).toEqual(
-    BigNumber.from(100),
-  );
-
-  config = proportionalFee.decodeConfig('10000');
-  expect(config).toEqual(BigNumber.from(10000));
-  expect(proportionalFee.fee(config, null as any, null as any)(decode(UInt(32), 10100))).toEqual(
-    BigNumber.from(101),
-  );
+  for (const [proportional, initial, expected] of tests) {
+    expect([
+      initial,
+      initial -
+        proportionalFee
+          .fee(
+            proportionalFee.decodeConfig(proportional),
+            null as any,
+            null as any,
+          )(decode(UInt(32), initial))
+          .toNumber(),
+    ]).toEqual([initial, expected]);
+  }
 });

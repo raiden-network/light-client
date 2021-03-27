@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Added
 - [#1342] Flat (fixed) mediation fees for mediator nodes
+- [#1343] Proportional (per transfer amount) mediation fees for mediator nodes
 - [#2581] `config.pfsSafetyMargin` now also accepts a `[f, a]` pair, which will add `f*fee + a*amount` on top of PFS's estimated fee, if one wants finer-grain control on safety margin which is added on the transfer to be initiated.
 - [#2629] `config.autoUDCWithdraw` (default=true) to allow disabling automatically completing a planned UDC withdraw, and new `Raiden.getUDCWithdrawPlan` and `Raiden.withdrawFromUDC` to check and perform UDC withdraw when not in auto mode.
 
@@ -21,6 +22,7 @@
 - [#2596] Fix unlocking sent transfers even if receiving is disabled
 
 [#1342]: https://github.com/raiden-network/light-client/issues/1342
+[#1343]: https://github.com/raiden-network/light-client/issues/1343
 [#2536]: https://github.com/raiden-network/light-client/issues/2536
 [#2550]: https://github.com/raiden-network/light-client/issues/2550
 [#2566]: https://github.com/raiden-network/light-client/issues/2566
