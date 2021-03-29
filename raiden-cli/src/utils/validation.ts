@@ -64,6 +64,8 @@ export function isInvalidParameterError(error: RaidenError): boolean {
     ErrorCodes.DTA_INVALID_PAYMENT_ID,
     ErrorCodes.DTA_INVALID_PATH,
     ErrorCodes.DTA_INVALID_PFS,
+    ErrorCodes.DTA_INVALID_DEPOSIT,
+    ErrorCodes.DTA_INVALID_AMOUNT,
   ].includes(error.message);
 }
 
@@ -110,6 +112,11 @@ export function isConflictError(error: Error): boolean {
       ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND,
       ErrorCodes.DTA_INVALID_DEPOSIT,
       ErrorCodes.DTA_INVALID_AMOUNT,
+      ErrorCodes.UDC_WITHDRAW_NO_BALANCE,
+      ErrorCodes.UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE,
+      ErrorCodes.UDC_WITHDRAW_NO_PLAN,
+      ErrorCodes.UDC_WITHDRAW_TOO_EARLY,
+      ErrorCodes.UDC_WITHDRAW_TOO_LARGE,
     ].includes(error.message) || isTransactionWouldFailError(error)
   );
 }

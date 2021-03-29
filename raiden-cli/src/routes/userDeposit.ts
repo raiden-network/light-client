@@ -1,15 +1,31 @@
-import { BigNumber } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 
-import { ErrorCodes } from 'raiden-ts';
-
 import type { Cli } from '../types';
-import { isInsuficientFundsError, isInvalidParameterError } from '../utils/validation';
+import {
+  isConflictError,
+  isInsuficientFundsError,
+  isInvalidParameterError,
+} from '../utils/validation';
 
 type DepositResponse = { transaction_hash: string };
 type PlanWithdrawResponse = { transaction_hash: string; planned_withdraw_block_number: number };
 type WithdrawResponse = { transaction_hash: string };
+
+const MalformedNumberValue = new Error('A provided number value was not decodable');
+const MalformedRequestFormat = new Error('The provided JSON is in some way malformed');
+const TotalDepositTooLowError = new Error(
+  'The provided total_deposit is not higher than the previous total_deposit',
+);
+
+function parseAsBigNumber(input: unknown): BigNumber {
+  try {
+    return BigNumber.from(input);
+  } catch {
+    throw MalformedNumberValue;
+  }
+}
 
 function getTotalDepositAmount(request: Request): string | undefined {
   return request.body.total_deposit?.toString();
@@ -48,9 +64,12 @@ function shouldWithdraw(request: Request): boolean {
 }
 
 async function deposit(this: Cli, totalDeposit: string): Promise<DepositResponse> {
-  const totalDepositTarget = BigNumber.from(totalDeposit); // TODO: handle error else 500;
+  const totalDepositTarget = parseAsBigNumber(totalDeposit);
   const currentTotalDeposit = await this.raiden.getUDCTotalDeposit();
-  const depositDifference = totalDepositTarget.sub(currentTotalDeposit); // TODO: greater zero else 500!
+  const depositDifference = totalDepositTarget.sub(currentTotalDeposit);
+
+  if (depositDifference.lte(constants.Zero)) throw TotalDepositTooLowError;
+
   const transactionHash = await this.raiden.depositToUDC(depositDifference);
   return { transaction_hash: transactionHash };
 }
@@ -83,8 +102,7 @@ async function determineAndExecuteRequestedInteraction(
     const amount = getWithdrawAmount(request)!; // Can't be undefined here.
     return await withdraw.call(this, amount);
   } else {
-    // TODO: This is not the actual error...
-    throw new Error(ErrorCodes.DTA_UNENCODABLE_DATA);
+    throw MalformedRequestFormat;
   }
 }
 
@@ -107,10 +125,16 @@ async function interactWithUDC(this: Cli, request: Request, response: Response):
     const interactionResponse = await determineAndExecuteRequestedInteraction.call(this, request);
     response.json(interactionResponse);
   } catch (error) {
-    if (isInvalidParameterError(error)) {
-      response.status(409).send(error.message);
+    if (
+      isInvalidParameterError(error) ||
+      error === MalformedNumberValue ||
+      error === MalformedRequestFormat
+    ) {
+      response.status(400).send(error.message);
     } else if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
+    } else if (isConflictError(error) || error === TotalDepositTooLowError) {
+      response.status(409).send(error.message);
     } else {
       response.status(500).send(error.message);
     }
