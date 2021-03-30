@@ -80,6 +80,7 @@ import {
   getUdcBalance,
   initTransfers$,
   mapRaidenChannels,
+  waitChannelSettleable$,
   waitConfirmation,
   waitForPFSCapacityUpdate,
 } from './helpers';
@@ -878,9 +879,13 @@ export class Raiden {
     const tokenNetwork = state.tokens[token];
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
     assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
+    assert(!this.config.autoSettle, ErrorCodes.CNL_SETTLE_AUTO_ENABLED, this.log.info);
+
+    const meta = { tokenNetwork, partner };
+    // wait for channel to become settleable
+    await waitChannelSettleable$(this.state$, meta).toPromise();
 
     // wait for the corresponding success or error action
-    const meta = { tokenNetwork, partner };
     const promise = asyncActionToPromise(channelSettle, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
@@ -1442,7 +1447,6 @@ export class Raiden {
     assert(!this.config.autoUDCWithdraw, ErrorCodes.UDC_WITHDRAW_AUTO_ENABLED, this.log.warn);
     const plan = await this.getUDCWithdrawPlan();
     assert(plan, ErrorCodes.UDC_WITHDRAW_NO_PLAN, this.log.warn);
-    assert(plan.ready, ErrorCodes.UDC_WITHDRAW_TOO_EARLY, this.log.warn);
     if (!value) {
       value = plan.amount;
     } else {
@@ -1451,6 +1455,14 @@ export class Raiden {
     const meta = {
       amount: decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error),
     };
+    // wait for plan to be ready if needed
+    if (!plan.ready)
+      await this.state$
+        .pipe(
+          pluckDistinct('blockNumber'),
+          first((blockNumber) => blockNumber >= plan.block),
+        )
+        .toPromise();
     const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );

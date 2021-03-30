@@ -15,6 +15,7 @@ import {
   filter,
   first,
   map,
+  mergeMap,
   pluck,
   take,
   takeWhile,
@@ -23,8 +24,10 @@ import {
 } from 'rxjs/operators';
 
 import type { RaidenAction } from './actions';
+import type { channelSettle } from './channels/actions';
 import { channelDeposit } from './channels/actions';
-import type { RaidenChannel, RaidenChannels } from './channels/state';
+import type { Channel, RaidenChannel, RaidenChannels } from './channels/state';
+import { ChannelState } from './channels/state';
 import { channelAmounts, channelKey } from './channels/utils';
 import type { RaidenConfig } from './config';
 import {
@@ -587,6 +590,39 @@ export async function waitForPFSCapacityUpdate(
       }),
       pluck(0),
       takeWhile((action) => !(channelDeposit.failure.is(action) && isEqual(action.meta, meta))),
+    ),
+  );
+}
+
+const settleableStates = [ChannelState.settleable, ChannelState.settling] as const;
+const preSettleableStates = [ChannelState.closed, ...settleableStates] as const;
+
+/**
+ * Waits for channel to become settleable
+ *
+ * Errors if channel doesn't exist or isn't closed, settleable ot settling (states which precede
+ * or are considered settleable)
+ *
+ * @param state$ - Observable of RaidenStates
+ * @param meta - meta of channel for which to wait
+ * @returns Observable which waits until channel becomes settleable
+ */
+export function waitChannelSettleable$(
+  state$: Observable<RaidenState>,
+  meta: channelSettle.request['meta'],
+) {
+  return state$.pipe(
+    first(),
+    mergeMap(({ channels }) => {
+      const channel = channels[channelKey(meta)];
+      assert(
+        channel && (preSettleableStates as readonly ChannelState[]).includes(channel.state),
+        ErrorCodes.CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND,
+      );
+      return state$.pipe(pluckDistinct('channels', channelKey(meta)));
+    }),
+    first((channel): channel is Channel & { state: typeof settleableStates[number] } =>
+      (settleableStates as readonly ChannelState[]).includes(channel.state),
     ),
   );
 }

@@ -21,8 +21,9 @@
   "CNL_OPENCHANNEL_FAILED": "TokenNetwork.openChannel transaction reverted.",
   "CNL_SETTOTALDEPOSIT_FAILED": "TokenNetwork.setTotalDeposit transaction reverted.",
   "CNL_CLOSECHANNEL_FAILED": "TokenNetwork.closeChannel transaction reverted.",
-  "CNL_SETTLECHANNEL_INVALID_BALANCEHASH": "Could not find BalanceProof matching on-chain closing data. This client may have had its state cleared and can't settle.",
-  "CNL_SETTLECHANNEL_FAILED": "TokenNetwork.settleChannel transaction reverted.",
+  "CNL_SETTLE_INVALID_BALANCEHASH": "Could not find BalanceProof matching on-chain closing data. This client may have had its state cleared and can't settle.",
+  "CNL_SETTLE_FAILED": "TokenNetwork.settleChannel transaction reverted.",
+  "CNL_SETTLE_AUTO_ENABLED": "Interactive channel settlement disabled when config.autoSettle is enabled; request will be made automatically",
   "CNL_UPDATE_NONCLOSING_BP_FAILED": "updateNonClosingBalanceProof transaction reverted.",
   "CNL_ONCHAIN_UNLOCK_FAILED": "on-chain unlock transaction reverted.",
 
@@ -94,7 +95,6 @@
   "UDC_WITHDRAW_FAILED" : "An error occurred while withdrawing from the UDC.",
   "UDC_WITHDRAW_AUTO_ENABLED": "Interactive UDC withdraw disabled when config.autoUDCWithdraw is enabled; request will be made automatically",
   "UDC_WITHDRAW_NO_PLAN": "No plan currently registered; you must call Raiden.planUDCWithdraw first",
-  "UDC_WITHDRAW_TOO_EARLY": "The current UDC withdraw plan is not yet ready to be withdrawn",
   "UDC_WITHDRAW_TOO_LARGE": "Your current plan is not enough to withdraw the requested amount"
 }
 

@@ -1375,7 +1375,7 @@ export function channelSettleEpic(
             ).pipe(
               catchError(() =>
                 throwError(
-                  new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH, {
+                  new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
                     address,
                     ownBalanceHash: ownBH,
                   }),
@@ -1397,7 +1397,7 @@ export function channelSettleEpic(
             ).pipe(
               catchError(() =>
                 throwError(
-                  new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH, {
+                  new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
                     address,
                     partnerBalanceHash: partnerBH,
                   }),
@@ -1439,7 +1439,7 @@ export function channelSettleEpic(
                   part2[1].locksroot,
                 ),
               ).pipe(
-                assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log, provider }),
+                assertTx('settleChannel', ErrorCodes.CNL_SETTLE_FAILED, { log, provider }),
                 retryWhile(intervalFromConfig(config$), {
                   onErrors: commonAndFailTxErrors,
                   log: log.info,

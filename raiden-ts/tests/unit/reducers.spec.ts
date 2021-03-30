@@ -663,7 +663,7 @@ describe('raidenReducer', () => {
         channelSettleable({ settleableBlock: settleBlock }, { tokenNetwork, partner }),
         channelSettle.request(undefined, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
-      const error = new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_FAILED);
+      const error = new RaidenError(ErrorCodes.CNL_SETTLE_FAILED);
       const newState2 = raidenReducer(
         newState,
         channelSettle.failure(error, { tokenNetwork, partner }),
