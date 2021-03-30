@@ -23,20 +23,7 @@ GENESIS_STUB: Dict = {
             "validators": []
         }
     },
-    "alloc": {
-        "0xCBC49ec22c93DB69c78348C90cd03A323267db86": {
-            "balance": "100000000000000000000000"
-        },
-        "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec": {
-            "balance": "100000000000000000000000"
-        },
-        "0x14791697260E4c9A71f18484C9f997B308e59325": {
-            "balance": "100000000000000000000000"
-        },
-        "0x9fe3a28D581c2e9d7b3632EfDdfc76022E9FA7Ea": {
-            "balance": "100000000000000000000000"
-        }
-    },
+    "alloc": {},
     "coinbase": "0x0000000000000000000000000000000000000000",
     "difficulty": "1",
     "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -55,6 +42,7 @@ def main(validator: str, output: str):
         "0xCBC49ec22c93DB69c78348C90cd03A323267db86",
         "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec",
         "0x14791697260E4c9A71f18484C9f997B308e59325",
+        "0x4C42F75ceae7b0CfA9588B940553EB7008546C29",
         "0x9fe3a28D581c2e9d7b3632EfDdfc76022E9FA7Ea"
     ]
 
