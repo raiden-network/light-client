@@ -68,15 +68,23 @@ describe('PathfindingService.vue', () => {
   test('emit a select event when the user selects a service', async () => {
     $raiden.fetchServices.mockResolvedValueOnce([raidenPFS, raidenPFS2]);
     const wrapper = createWrapper();
+
     await wrapper.vm.$nextTick();
-    expect(wrapper.find('.spinner').element).toBeVisible();
+
+    const spinner = wrapper.find('.spinner');
+    expect(spinner.exists()).toBe(true);
+
     await flushPromises();
-    expect(wrapper.find('.spinner').exists()).toBe(false);
-    expect(wrapper.find('.pathfinding-services__table').element).toBeVisible();
+
+    expect(spinner.exists()).toBe(false);
+
+    const pfsTable = wrapper.find('.pathfinding-services__table');
+    expect(pfsTable.exists()).toBe(true);
 
     wrapper.findAll('.pathfinding-services tbody tr').at(1).trigger('click');
     await wrapper.vm.$nextTick();
     const selectEvent = wrapper.emitted('select');
+
     expect(selectEvent).toBeTruthy();
     expect(selectEvent?.shift()).toContainEqual([raidenPFS, false]);
   });
