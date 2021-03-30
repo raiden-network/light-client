@@ -41,7 +41,7 @@ import type { Address, UInt } from '../../utils/types';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '../actions';
 
 /**
- * Monitors the balance of UDC and emits udcDeposited, made available in Latest['udcBalance']
+ * Monitors the balance of UDC and emits udcDeposited, made available in Latest['udcDeposit']
  *
  * @param action$ - Observable of newBlock actions
  * @param state$ - Observable of RaidenStates
@@ -78,7 +78,7 @@ export function monitorUdcBalanceEpic(
       ).pipe(catchError(constant(EMPTY))),
     ),
     withLatestFrom(latest$),
-    filter(([[balance], { udcBalance }]) => !udcBalance.eq(balance)),
+    filter(([[balance], { udcDeposit }]) => !udcDeposit.balance.eq(balance)),
     map(([[balance, totalDeposit]]) => udcDeposit.success({ balance }, { totalDeposit })),
   );
 }

@@ -93,7 +93,7 @@ describe('msMonitorRequestEpic', () => {
     const [raiden, partner] = await makeRaidens(2);
     raiden.store.dispatch(raidenConfigUpdate({ rateToSvt: {} }));
     expect(
-      (await raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise()).gte(
+      (await raiden.deps.latest$.pipe(pluck('udcDeposit', 'balance'), first()).toPromise()).gte(
         raiden.config.monitoringReward!,
       ),
     ).toBe(true);
@@ -130,7 +130,7 @@ describe('msMonitorRequestEpic', () => {
     );
   });
 
-  test('ignore: not enough udcBalance', async () => {
+  test('ignore: not enough udcDeposit.balance', async () => {
     expect.assertions(2);
 
     const [raiden, partner] = await makeRaidens(2);

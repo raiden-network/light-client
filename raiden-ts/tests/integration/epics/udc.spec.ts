@@ -25,7 +25,7 @@ test('monitorUdcBalanceEpic', async () => {
     udcDeposit.success({ balance: Zero as UInt<32> }, { totalDeposit: Zero as UInt<32> }),
   );
   await expect(
-    raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise(),
+    raiden.deps.latest$.pipe(pluck('udcDeposit', 'balance'), first()).toPromise(),
   ).resolves.toEqual(Zero);
 
   const balance = BigNumber.from(23) as UInt<32>;
@@ -35,7 +35,7 @@ test('monitorUdcBalanceEpic', async () => {
 
   expect(raiden.output).toContainEqual(udcDeposit.success({ balance }, { totalDeposit: balance }));
   await expect(
-    raiden.deps.latest$.pipe(pluck('udcBalance'), first()).toPromise(),
+    raiden.deps.latest$.pipe(pluck('udcDeposit', 'balance'), first()).toPromise(),
   ).resolves.toEqual(balance);
   expect(userDepositContract.effectiveBalance).toHaveBeenCalledTimes(2);
 });
