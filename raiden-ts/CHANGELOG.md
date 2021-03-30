@@ -6,6 +6,7 @@
 - [#1343] Proportional (per transfer amount) mediation fees for mediator nodes
 - [#2581] `config.pfsSafetyMargin` now also accepts a `[f, a]` pair, which will add `f*fee + a*amount` on top of PFS's estimated fee, if one wants finer-grain control on safety margin which is added on the transfer to be initiated.
 - [#2629] `config.autoUDCWithdraw` (default=true) to allow disabling automatically completing a planned UDC withdraw, and new `Raiden.getUDCWithdrawPlan` and `Raiden.withdrawFromUDC` to check and perform UDC withdraw when not in auto mode.
+- [#2644] `Raiden.getUDCTotalDeposit` method to fetch UDC total_deposit, base of `depositToUDC` amounts
 
 ### Changed
 - [#2536] Wait for global messages before resolving deposits and channel open request
@@ -33,6 +34,7 @@
 [#2600]: https://github.com/raiden-network/light-client/issues/2600
 [#2629]: https://github.com/raiden-network/light-client/issues/2629
 [#2635]: https://github.com/raiden-network/light-client/pull/2635
+[#2644]: https://github.com/raiden-network/light-client/pull/2644
 
 ## [0.15.0] - 2021-01-26
 ### Added

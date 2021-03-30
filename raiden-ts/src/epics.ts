@@ -46,14 +46,14 @@ import type { UInt } from './utils/types';
 // default values for dynamic capabilities not specified on defaultConfig nor userConfig
 function dynamicCaps({
   stale,
-  udcBalance,
+  udcDeposit,
   config: { monitoringReward },
-}: Pick<Latest, 'stale' | 'udcBalance'> & {
+}: Pick<Latest, 'stale' | 'udcDeposit'> & {
   config: Pick<RaidenConfig, 'monitoringReward'>;
 }): Caps {
   return {
     [Capabilities.RECEIVE]:
-      !stale && monitoringReward?.gt(0) && monitoringReward.lte(udcBalance) ? 1 : 0,
+      !stale && monitoringReward?.gt(0) && monitoringReward.lte(udcDeposit.balance) ? 1 : 0,
     [Capabilities.WEBRTC]: 'RTCPeerConnection' in globalThis ? 1 : 0,
   };
 }
@@ -148,14 +148,17 @@ export function getLatest$(
     mediationFeeCalculator,
   }: Pick<RaidenEpicDeps, 'defaultConfig' | 'mediationFeeCalculator'>,
 ): Observable<Latest> {
-  const initialUdcBalance = MaxUint256 as UInt<32>;
+  const initialUdcDeposit = {
+    balance: MaxUint256 as UInt<32>,
+    totalDeposit: MaxUint256 as UInt<32>,
+  };
   const initialStale = false;
-  const udcBalance$ = action$.pipe(
+  const udcDeposit$ = action$.pipe(
     filter(udcDeposit.success.is),
-    pluck('payload', 'balance'),
+    map((action) => ({ balance: action.payload.balance, totalDeposit: action.meta.totalDeposit })),
     // starts with max, to prevent receiving starting as disabled before actual balance is fetched
-    startWith(initialUdcBalance),
-    distinctUntilChanged((a, b) => a.eq(b)),
+    startWith(initialUdcDeposit),
+    distinctUntilChanged(({ balance: a }, { balance: b }) => a.eq(b)),
   );
   const blockTime$ = action$.pipe(
     filter(blockTime.is),
@@ -174,7 +177,7 @@ export function getLatest$(
       map(({ caps: userCaps, monitoringReward }) =>
         mergeCaps(
           dynamicCaps({
-            udcBalance: initialUdcBalance,
+            udcDeposit: initialUdcDeposit,
             stale: initialStale,
             config: { monitoringReward: monitoringReward ?? defaultConfig.monitoringReward },
           }),
@@ -211,15 +214,15 @@ export function getLatest$(
 
   return combineLatest([
     combineLatest([action$, state$, config$, presences$, rtc$]),
-    combineLatest([udcBalance$, blockTime$, stale$]),
+    combineLatest([udcDeposit$, blockTime$, stale$]),
   ]).pipe(
-    map(([[action, state, config, presences, rtc], [udcBalance, blockTime, stale]]) => ({
+    map(([[action, state, config, presences, rtc], [udcDeposit, blockTime, stale]]) => ({
       action,
       state,
       config,
       presences,
       rtc,
-      udcBalance,
+      udcDeposit,
       blockTime,
       stale,
     })),

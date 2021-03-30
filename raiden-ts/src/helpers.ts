@@ -438,7 +438,7 @@ export async function fetchContractsInfo(
 export async function getUdcBalance(latest$: Observable<Latest>): Promise<UInt<32>> {
   return latest$
     .pipe(
-      pluck('udcBalance'),
+      pluck('udcDeposit', 'balance'),
       first((balance) => !!balance && balance.lt(MaxUint256)),
     )
     .toPromise();
