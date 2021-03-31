@@ -13,6 +13,7 @@
 - [#2566] Optimize initial sync and resume previous sync filters scans
 - [#2570] Support multiple custom services in config.pfs
 - [#2635] **BREAKING** Renamed `Raiden.planUdcWithdraw` to `Raiden.planUDCWithdraw` for consistency
+- [#2645] Wait for condition to be ready on `settleChannel` and `withdrawFromUDC` in case it's called early instead of erroring
 
 ### Removed
 - [#2550] **BREAKING** Remove migration of legacy state at localStorage during creation
@@ -35,6 +36,7 @@
 [#2629]: https://github.com/raiden-network/light-client/issues/2629
 [#2635]: https://github.com/raiden-network/light-client/pull/2635
 [#2644]: https://github.com/raiden-network/light-client/pull/2644
+[#2645]: https://github.com/raiden-network/light-client/issues/2645
 
 ## [0.15.0] - 2021-01-26
 ### Added
