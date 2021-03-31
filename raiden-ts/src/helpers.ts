@@ -600,7 +600,7 @@ const preSettleableStates = [ChannelState.closed, ...settleableStates] as const;
 /**
  * Waits for channel to become settleable
  *
- * Errors if channel doesn't exist or isn't closed, settleable ot settling (states which precede
+ * Errors if channel doesn't exist or isn't closed, settleable or settling (states which precede
  * or are considered settleable)
  *
  * @param state$ - Observable of RaidenStates
