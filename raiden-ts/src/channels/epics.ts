@@ -1344,7 +1344,8 @@ export function channelSettleEpic(
         onchainSigner,
       );
       const channel = state.channels[channelKey(action.meta)];
-      if (channel?.state !== ChannelState.settleable && channel?.state !== ChannelState.settling) {
+      const settleableStates = [ChannelState.settleable, ChannelState.settling];
+      if (!settleableStates.includes(channel?.state)) {
         const error = new RaidenError(
           ErrorCodes.CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND,
           action.meta,
@@ -1482,21 +1483,17 @@ export function channelSettleableEpic(
   state$: Observable<RaidenState>,
 ): Observable<channelSettleable> {
   return action$.pipe(
-    filter(isActionOf(newBlock)),
+    filter(newBlock.is),
+    pluck('payload', 'blockNumber'),
     withLatestFrom(state$),
-    mergeMap(function* ([
-      {
-        payload: { blockNumber },
-      },
-      state,
-    ]) {
+    mergeMap(function* ([currentBlock, state]) {
       for (const channel of Object.values(state.channels)) {
         if (
           channel.state === ChannelState.closed &&
-          blockNumber > channel.closeBlock + channel.settleTimeout
+          currentBlock >= channel.closeBlock + channel.settleTimeout
         ) {
           yield channelSettleable(
-            { settleableBlock: blockNumber },
+            { settleableBlock: currentBlock },
             { tokenNetwork: channel.tokenNetwork, partner: channel.partner.address },
           );
         }
