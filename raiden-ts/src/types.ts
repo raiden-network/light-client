@@ -43,7 +43,7 @@ export interface Latest {
   config: RaidenConfig;
   presences: Presences;
   rtc: { [address: string]: RTCDataChannel };
-  udcBalance: UInt<32>;
+  udcDeposit: { balance: UInt<32>; totalDeposit: UInt<32> };
   blockTime: number;
   stale: boolean;
 }

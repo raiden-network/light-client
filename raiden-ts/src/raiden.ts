@@ -1255,6 +1255,23 @@ export class Raiden {
   }
 
   /**
+   * Fetches total_deposit of UserDeposit Contract for SDK's account
+   *
+   * The usable part of the deposit should be fetched with [[getUDCCapacity]], but this function
+   * is useful when trying to deposit based on the absolute value of totalDeposit.
+   *
+   * @returns Promise to UDC total deposit
+   */
+  public async getUDCTotalDeposit(): Promise<BigNumber> {
+    return this.deps.latest$
+      .pipe(
+        pluck('udcDeposit', 'totalDeposit'),
+        first((deposit) => !!deposit && deposit.lt(MaxUint256)),
+      )
+      .toPromise();
+  }
+
+  /**
    * Deposits the amount to the UserDeposit contract with the target/signer as a beneficiary.
    * The deposited amount can be used as a collateral in order to sign valid IOUs that will
    * be accepted by the Services.

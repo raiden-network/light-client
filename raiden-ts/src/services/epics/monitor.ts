@@ -67,11 +67,11 @@ function makeMonitoringRequest$({
     return combineLatest([latest$, config$]).pipe(
       // combineLatest + filter ensures it'll pass if anything here changes
       filter(
-        ([{ udcBalance }, { monitoringReward, rateToSvt }]) =>
+        ([{ udcDeposit }, { monitoringReward, rateToSvt }]) =>
           // ignore actions while/if config.monitoringReward isn't enabled
           !!monitoringReward?.gt(Zero) &&
-          // wait for udcBalance >= monitoringReward, fires immediately if already
-          udcBalance.gte(monitoringReward) &&
+          // wait for udcDepost.balance >= monitoringReward, fires immediately if already
+          udcDeposit.balance.gte(monitoringReward) &&
           // use partner's total off & on-chain unlocked, total we'd lose if don't update BP
           partnerUnlocked
             // use rateToSvt to convert to equivalent SVT, and pass only if > monitoringReward;
@@ -167,7 +167,7 @@ export function msMonitorRequestEpic(
           // otherwise transfer completed, emits immediately
           cur.partner.locks.length > prev.partner.locks.length ? timer(httpTimeout) : of(1),
         ),
-        // switchMap may unsubscribe from previous udcBalance wait/signature prompts if partner's
+        // switchMap may unsubscribe from previous udcDeposit wait/signature prompts if partner's
         // balanceProof balance changes in the meantime
         switchMap(makeMonitoringRequest$(deps)),
       ),
