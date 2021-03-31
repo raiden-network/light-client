@@ -106,6 +106,16 @@ async function determineAndExecuteRequestedInteraction(
   }
 }
 
+async function getUDCInfo(this: Cli, _request: Request, response: Response): Promise<void> {
+  const balance = await this.raiden.getUDCCapacity();
+  const totalDeposit = await this.raiden.getUDCTotalDeposit();
+
+  response.json({
+    balance: balance.toString(),
+    total_deposit: totalDeposit.toString(),
+  });
+}
+
 async function getUDCWithdrawPlan(
   this: Cli,
   _request: Request,
@@ -148,8 +158,9 @@ async function interactWithUDC(this: Cli, request: Request, response: Response):
 export function makeUserDepositRouter(this: Cli): Router {
   const router = Router();
 
-  router.get('/withdraw_plan', getUDCWithdrawPlan.bind(this));
+  router.get('/', getUDCInfo.bind(this));
   router.post('/', interactWithUDC.bind(this));
+  router.get('/withdraw_plan', getUDCWithdrawPlan.bind(this));
 
   return router;
 }
