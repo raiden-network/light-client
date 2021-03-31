@@ -12,8 +12,3 @@ PouchDB.plugin(MemAdapter);
 PouchDB.plugin(PouchDebug);
 
 logging.setLevel(logging.levels.DEBUG);
-
-if (!('RTCPeerConnection' in globalThis)) {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  Object.assign(globalThis, require('wrtc'));
-}

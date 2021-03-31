@@ -245,6 +245,8 @@ describe('e2e', () => {
      */
     await expect(raiden.closeChannel(getToken(), partner1)).resolves.toMatch('0x');
 
+    const settlePromise = raiden.settleChannel(getToken(), partner1);
+
     /*
      * Deposit and withdraw between two LCs
      *
@@ -303,10 +305,7 @@ describe('e2e', () => {
       BigNumber.from(amount - sendAmount),
     );
 
-    /*
-     * Settle channel of LC1
-     */
-    await expect(raiden.settleChannel(getToken(), partner1)).resolves.toMatch('0x');
+    await expect(settlePromise).resolves.toMatch('0x');
 
     /*
      * Withdraw from UDC

@@ -1022,6 +1022,13 @@ describe('rtcConnectEpic', () => {
   let raiden: MockedRaiden, partner: MockedRaiden;
   let RTCPeerConnection: ReturnType<typeof mockRTC>;
 
+  beforeAll(() => {
+    if (!('RTCPeerConnection' in globalThis)) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      Object.assign(globalThis, require('wrtc'));
+    }
+  });
+
   beforeEach(async () => {
     // ensure clients are sorted by address
     [raiden, partner] = getSortedClients(await makeRaidens(2));
