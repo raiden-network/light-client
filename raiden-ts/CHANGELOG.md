@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.16.0] - 2021-04-01
 ### Added
 - [#1342] Flat (fixed) mediation fees for mediator nodes
 - [#1343] Proportional (per transfer amount) mediation fees for mediator nodes
@@ -429,7 +431,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/raiden-network/light-client/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/raiden-network/light-client/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/raiden-network/light-client/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/raiden-network/light-client/compare/v0.12.0...v0.13.0
