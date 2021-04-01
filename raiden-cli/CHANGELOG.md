@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.16.0] - 2021-04-01
 ### Changed
 - [#2570] Support list of additional services URLs to be passed to `--pathfindingServiceAddress`
 - [#2581] CLI now defaults to `3% * fee + 0.05% * amount` for fee safety margin, same as PC
@@ -52,7 +54,8 @@
 [#2054]: https://github.com/raiden-network/light-client/pulls/2054
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/raiden-network/light-client/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/raiden-network/light-client/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/raiden-network/light-client/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/raiden-network/light-client/compare/v0.12.0...v0.13.0
