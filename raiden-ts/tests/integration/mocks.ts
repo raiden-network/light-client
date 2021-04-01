@@ -528,7 +528,6 @@ function mockedMatrixCreateClient({
           matrix.getRoom(roomId),
         );
       }
-      logging.info('__sendEvent', address, roomId, type, content);
       return true;
     }),
     sendToDevice: jest.fn(
@@ -545,7 +544,6 @@ function mockedMatrixCreateClient({
                 getContent: jest.fn(() => content),
                 event: { type, sender: userId, content },
               });
-              logging.info('__sendToDevice', address, type, content);
             }
           }
         }
