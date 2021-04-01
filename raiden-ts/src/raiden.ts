@@ -7,12 +7,10 @@ import { AddressZero, MaxUint256, Zero } from '@ethersproject/constants';
 import type { Network } from '@ethersproject/networks';
 import type { ExternalProvider } from '@ethersproject/providers';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
-import constant from 'lodash/constant';
 import isUndefined from 'lodash/isUndefined';
 import memoize from 'lodash/memoize';
 import omitBy from 'lodash/omitBy';
 import logging from 'loglevel';
-import type { MatrixClient } from 'matrix-js-sdk';
 import type { Store } from 'redux';
 import { applyMiddleware, createStore } from 'redux';
 import { composeWithDevTools } from 'redux-devtools-extension/developmentOnly';
@@ -20,7 +18,7 @@ import { createLogger } from 'redux-logger';
 import type { EpicMiddleware } from 'redux-observable';
 import { createEpicMiddleware } from 'redux-observable';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, defer, EMPTY, from, merge, of, ReplaySubject, throwError } from 'rxjs';
+import { defer, EMPTY, from, merge, of, throwError } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
 import {
   catchError,
@@ -35,14 +33,8 @@ import {
   toArray,
 } from 'rxjs/operators';
 
-import type { RaidenAction, RaidenEvent } from './actions';
-import {
-  raidenConfigUpdate,
-  RaidenEvents,
-  raidenShutdown,
-  raidenStarted,
-  raidenSynced,
-} from './actions';
+import type { RaidenAction, RaidenEvent, raidenSynced } from './actions';
+import { raidenConfigUpdate, RaidenEvents, raidenShutdown, raidenStarted } from './actions';
 import {
   channelClose,
   channelDeposit,
@@ -54,19 +46,9 @@ import type { RaidenChannels } from './channels/state';
 import { ChannelState } from './channels/state';
 import { channelAmounts, channelKey } from './channels/utils';
 import type { RaidenConfig } from './config';
-import { makeDefaultConfig, PartialRaidenConfig } from './config';
+import { PartialRaidenConfig } from './config';
 import { ShutdownReason } from './constants';
-import {
-  CustomToken__factory,
-  HumanStandardToken__factory,
-  MonitoringService__factory,
-  SecretRegistry__factory,
-  ServiceRegistry__factory,
-  TokenNetwork__factory,
-  TokenNetworkRegistry__factory,
-  UserDeposit__factory,
-} from './contracts';
-import type { RaidenDatabase } from './db/types';
+import { CustomToken__factory } from './contracts';
 import { dumpDatabaseToArray } from './db/utils';
 import { getLatest$, raidenRootEpic } from './epics';
 import {
@@ -79,6 +61,9 @@ import {
   getState,
   getUdcBalance,
   initTransfers$,
+  makeDependencies,
+  makeSyncedPromise,
+  makeTokenInfoGetter,
   mapRaidenChannels,
   waitChannelSettleable$,
   waitConfirmation,
@@ -92,7 +77,6 @@ import { Paths, PFS, PfsMode, SuggestedPartners } from './services/types';
 import { pfsListInfo } from './services/utils';
 import type { RaidenState } from './state';
 import { transfer, transferSigned, withdraw } from './transfers/actions';
-import { standardCalculator } from './transfers/mediate/types';
 import type { RaidenTransfer } from './transfers/state';
 import { Direction, TransferState } from './transfers/state';
 import {
@@ -104,7 +88,7 @@ import {
   transferKeyToMeta,
 } from './transfers/utils';
 import { matrixPresence } from './transport/actions';
-import type { ContractsInfo, Latest, OnChange, RaidenEpicDeps } from './types';
+import type { ContractsInfo, OnChange, RaidenEpicDeps } from './types';
 import { EventTypes } from './types';
 import { assert } from './utils';
 import { asyncActionToPromise, isActionOf, isResponseOf } from './utils/actions';
@@ -117,61 +101,55 @@ import { Address, decode, Hash, Secret, UInt } from './utils/types';
 import versions from './versions.json';
 
 export class Raiden {
-  private readonly store: Store<RaidenState, RaidenAction>;
-  private readonly deps: RaidenEpicDeps;
-
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
    * must not be relied on, as its actions interfaces and structures can change without warning.
    */
-  public readonly action$: Observable<RaidenAction>;
+  public readonly action$: Observable<RaidenAction> = this.deps.latest$.pipe(
+    pluckDistinct('action'),
+    skip(1),
+  );
   /**
    * state$ is exposed only so user can listen to state changes and persist them somewhere else.
    * Format/content of the emitted objects are subject to changes and not part of the public API
    */
-  public readonly state$: Observable<RaidenState>;
+  public readonly state$: Observable<RaidenState> = this.deps.latest$.pipe(pluckDistinct('state'));
   /**
    * channels$ is public interface, exposing a view of the currently known channels
    * Its format is expected to be kept backwards-compatible, and may be relied on
    */
-  public readonly channels$: Observable<RaidenChannels>;
+  public readonly channels$: Observable<RaidenChannels> = this.state$.pipe(
+    pluckDistinct('channels'),
+    map(mapRaidenChannels),
+  );
   /**
    * A subset ot RaidenActions exposed as public events.
    * The interface of the objects emitted by this Observable are expected not to change internally,
    * but more/new events may be added over time.
    */
-  public readonly events$: Observable<RaidenEvent>;
+  public readonly events$: Observable<RaidenEvent> = this.action$.pipe(
+    filter(isActionOf(RaidenEvents)),
+  );
 
   /**
    * Observable of completed and pending transfers
    * Every time a transfer state is updated, it's emitted here. 'key' property is unique and
    * may be used as identifier to know which transfer got updated.
    */
-  public readonly transfers$: Observable<RaidenTransfer>;
+  public readonly transfers$: Observable<RaidenTransfer> = initTransfers$(
+    this.state$,
+    this.deps.db,
+  );
 
   /** RaidenConfig object */
   public config!: RaidenConfig;
-  /** RaidenConfig observable (for reactive use)  */
-  public config$: Observable<RaidenConfig>;
-  /**
-   * Observable of latest average (10) block times
-   */
-  public blockTime$: Observable<number>;
+  /** RaidenConfig observable (for reactive use) */
+  public config$: Observable<RaidenConfig> = this.deps.config$;
+  /** Observable of latest average (10) block times */
+  public blockTime$: Observable<number> = this.deps.latest$.pipe(pluckDistinct('blockTime'));
 
-  /**
-   * Expose ether's Provider.resolveName for ENS support
-   */
-  public readonly resolveName: (name: string) => Promise<Address>;
-
-  /**
-   * When started, is set to a promise which resolves when node finishes syncing
-   */
-  public synced: Promise<raidenSynced['payload'] | undefined>;
-
-  /**
-   * The address of the token that is used to pay the services.
-   */
-  public userDepositTokenAddress: () => Promise<Address>;
+  /** When started, is set to a promise which resolves when node finishes syncing */
+  public synced: Promise<raidenSynced['payload'] | undefined> = makeSyncedPromise(this.action$);
 
   /**
    * Get constant token details from token contract, caches it.
@@ -182,15 +160,19 @@ export class Raiden {
    * @param token - address to fetch info from
    * @returns token info
    */
-  public getTokenInfo: (
-    this: Raiden,
-    token: string,
-  ) => Promise<{
-    totalSupply: BigNumber;
-    decimals: number;
-    name?: string;
-    symbol?: string;
-  }>;
+  public getTokenInfo = makeTokenInfoGetter(this.deps);
+
+  private readonly store: Store<RaidenState, RaidenAction>;
+
+  /** Expose ether's Provider.resolveName for ENS support */
+  public readonly resolveName = this.deps.provider.resolveName.bind(this.deps.provider) as (
+    name: string,
+  ) => Promise<Address>;
+
+  /** The address of the token that is used to pay the services (SVT/RDN).  */
+  public userDepositTokenAddress: () => Promise<Address> = memoize(
+    async () => this.deps.userDepositContract.callStatic.token() as Promise<Address>,
+  );
 
   private epicMiddleware?: EpicMiddleware<
     RaidenAction,
@@ -199,101 +181,29 @@ export class Raiden {
     RaidenEpicDeps
   > | null;
 
-  /** Instance's Logger, compatible with console's API */
-  private readonly log: logging.Logger;
-
+  /**
+   * Constructs a Raiden instance from state machine parameters
+   *
+   * It expects ready Redux and Epics params, with some async members already resolved and set in
+   * place, therefore this constructor is expected to be used only for tests and advancecd usage
+   * where finer control is needed to tweak how some of these members are initialized;
+   * Most users should usually prefer the [[create]] async factory, which already takes care of
+   * these async initialization steps and accepts more common parameters.
+   *
+   * @param state - Validated and decoded initial/rehydrated RaidenState
+   * @param deps - Constructed epics dependencies object, including signer, provider, fetched
+   *    network and contracts information.
+   * @param epic - State machine root epic
+   * @param reducer - State machine root reducer
+   */
   public constructor(
-    provider: JsonRpcProvider,
-    network: Network,
-    signer: Signer,
-    contractsInfo: ContractsInfo,
-    {
-      db,
-      state,
-      config,
-    }: { state: RaidenState; db: RaidenDatabase; config?: PartialRaidenConfig },
-    main?: { address: Address; signer: Signer },
+    state: RaidenState,
+    private readonly deps: RaidenEpicDeps,
+    private readonly epic = raidenRootEpic,
+    reducer = raidenReducer,
   ) {
-    const address = state.address;
-    this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
-    this.log = logging.getLogger(`raiden:${address}`);
-
-    const defaultConfig = makeDefaultConfig({ network }, config);
-
     // use next from latest known blockNumber as start block when polling
-    provider.resetEventsBlock(state.blockNumber + 1);
-
-    const latest$ = new ReplaySubject<Latest>(1);
-
-    // pipe cached state
-    this.state$ = latest$.pipe(pluckDistinct('state'));
-    // pipe action, skipping cached
-    this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
-    this.blockTime$ = latest$.pipe(pluckDistinct('blockTime'));
-    this.channels$ = this.state$.pipe(pluckDistinct('channels'), map(mapRaidenChannels));
-    this.transfers$ = initTransfers$(this.state$, db);
-    this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
-
-    this.getTokenInfo = memoize(async function (this: Raiden, token: string) {
-      assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
-      const tokenContract = this.deps.getTokenContract(token);
-      const [totalSupply, decimals, name, symbol] = await Promise.all([
-        tokenContract.callStatic.totalSupply(),
-        tokenContract.callStatic.decimals(),
-        tokenContract.callStatic.name().catch(constant(undefined)),
-        tokenContract.callStatic.symbol().catch(constant(undefined)),
-      ]);
-      // workaround for https://github.com/microsoft/TypeScript/issues/33752
-      assert(totalSupply && decimals != null, ErrorCodes.RDN_NOT_A_TOKEN, this.log.info);
-      return { totalSupply, decimals, name, symbol };
-    });
-
-    this.deps = {
-      latest$,
-      config$: latest$.pipe(pluckDistinct('config')),
-      matrix$: new AsyncSubject<MatrixClient>(),
-      provider,
-      network,
-      signer,
-      address,
-      log: this.log,
-      defaultConfig,
-      contractsInfo,
-      registryContract: TokenNetworkRegistry__factory.connect(
-        contractsInfo.TokenNetworkRegistry.address,
-        main?.signer ?? signer,
-      ),
-      getTokenNetworkContract: memoize((address: Address) =>
-        TokenNetwork__factory.connect(address, main?.signer ?? signer),
-      ),
-      getTokenContract: memoize((address: Address) =>
-        HumanStandardToken__factory.connect(address, main?.signer ?? signer),
-      ),
-      serviceRegistryContract: ServiceRegistry__factory.connect(
-        contractsInfo.ServiceRegistry.address,
-        main?.signer ?? signer,
-      ),
-      userDepositContract: UserDeposit__factory.connect(
-        contractsInfo.UserDeposit.address,
-        main?.signer ?? signer,
-      ),
-      secretRegistryContract: SecretRegistry__factory.connect(
-        contractsInfo.SecretRegistry.address,
-        main?.signer ?? signer,
-      ),
-      monitoringServiceContract: MonitoringService__factory.connect(
-        contractsInfo.MonitoringService.address,
-        main?.signer ?? signer,
-      ),
-      main,
-      db,
-      init$: new ReplaySubject(),
-      mediationFeeCalculator: standardCalculator,
-    };
-
-    this.userDepositTokenAddress = memoize(
-      async () => (await this.deps.userDepositContract.callStatic.token()) as Address,
-    );
+    deps.provider.resetEventsBlock(state.blockNumber + 1);
 
     const isBrowser = !!globalThis?.location;
     const loggerMiddleware = createLogger({
@@ -308,20 +218,17 @@ export class Raiden {
       ...(isBrowser ? {} : { colors: false }),
     });
 
-    this.config$ = this.deps.config$;
-    this.config$.subscribe((config) => (this.config = config));
-
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
       RaidenAction,
       RaidenAction,
       RaidenState,
       RaidenEpicDeps
-    >({ dependencies: this.deps });
-    const persisterMiddleware = createPersisterMiddleware(db);
+    >({ dependencies: deps });
+    const persisterMiddleware = createPersisterMiddleware(deps.db);
 
     this.store = createStore(
-      raidenReducer,
+      reducer,
       // workaround for redux's PreloadedState issues with branded values
       state as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       composeWithDevTools(
@@ -329,27 +236,12 @@ export class Raiden {
       ),
     );
 
-    this.synced = this.action$
-      .pipe(
-        first(isActionOf([raidenSynced, raidenShutdown])),
-        map((action) => {
-          if (raidenShutdown.is(action)) {
-            // don't reject if not stopped by an error
-            if (Object.values(ShutdownReason).some((reason) => reason === action.payload.reason))
-              return;
-            throw action.payload;
-          }
-          return action.payload;
-        }),
-      )
-      .toPromise();
+    deps.config$.subscribe((config) => (this.config = config));
 
     // populate deps.latest$, to ensure config, logger && pollingInterval are setup before start
-    getLatest$(
-      of(raidenConfigUpdate({})),
-      of(this.store.getState()),
-      this.deps,
-    ).subscribe((latest) => this.deps.latest$.next(latest));
+    getLatest$(of(raidenConfigUpdate({})), of(this.store.getState()), deps).subscribe((latest) =>
+      deps.latest$.next(latest),
+    );
   }
 
   /**
@@ -367,7 +259,7 @@ export class Raiden {
    *     </ul>
    * @param account - An account to use as main account, one of:
    *     <ul>
-   *       <li>Signer instance (e.g. Wallet) loadded with account/private key or</li>
+   *       <li>Signer instance (e.g. Wallet) loaded with account/private key or</li>
    *       <li>hex-encoded string address of a remote account in provider or</li>
    *       <li>hex-encoded string local private key or</li>
    *       <li>number index of a remote account loaded in provider
@@ -454,14 +346,8 @@ export class Raiden {
     );
     const cleanConfig = config && decode(PartialRaidenConfig, omitBy(config, isUndefined));
 
-    return new this(
-      provider,
-      network,
-      signer,
-      contractsInfo,
-      { db, state, config: cleanConfig },
-      main,
-    ) as InstanceType<R>;
+    const deps = makeDependencies(signer, contractsInfo, { db, state, config: cleanConfig, main });
+    return new this(state, deps) as InstanceType<R>;
   }
 
   /**
@@ -487,7 +373,7 @@ export class Raiden {
       complete: () => (this.epicMiddleware = null),
     });
 
-    this.epicMiddleware.run(raidenRootEpic);
+    this.epicMiddleware.run(this.epic);
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
     // dispatch a first, noop action, to next first state$ as current/initial state
@@ -514,6 +400,15 @@ export class Raiden {
     // this.epicMiddleware is set to null by latest$'s complete callback
     if (this.started) this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
     if (this.started !== undefined) await this.deps.db.busy$.toPromise();
+  }
+
+  /**
+   * Instance's Logger, compatible with console's API
+   *
+   * @returns Logger object
+   */
+  public get log() {
+    return this.deps.log;
   }
 
   /**
