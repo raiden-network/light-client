@@ -3,11 +3,12 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Closing a channel | raiden-ts - v0.15.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.15.0">
+	<title>Closing a channel | raiden-ts - v0.16.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.16.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../../assets/css/main.css">
 	<link rel="stylesheet" href="../../assets/css/pages.css">
+	<script async src="../../assets/js/search.js" id="search-script"></script>
 </head>
 <body>
 <header>
@@ -23,7 +24,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../../index.html" class="title">raiden-ts - v0.15.0</a>
+					<a href="../../index.html" class="title">raiden-ts - v0.16.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -50,7 +51,7 @@
 		<div class="container">
 			<ul class="tsd-breadcrumb">
 				<li>
-					<a href="../../globals.html">Globals</a>
+					<a href="../../modules.html">raiden-ts - v0.16.0</a>
 				</li>
 				<li>
 					<a href="opening-channel.html">Usage</a>
@@ -71,28 +72,29 @@
 					<h1>Closing a Channel</h1>
 				</a>
 				<p>Only close a channel if you really don&#39;t plan on using the respective channel anymore.</p>
-				<pre><code class="language-typescript">await raiden.closeChannel(&#x27;0xtoken&#x27;, &#x27;0xpartner&#x27;)
-# resolves to close transaction hash, after it is mined
+				<pre><code class="language-typescript"><span style="color: #AF00DB">await</span><span style="color: #000000"> </span><span style="color: #001080">raiden</span><span style="color: #000000">.</span><span style="color: #795E26">closeChannel</span><span style="color: #000000">(</span><span style="color: #A31515">&#039;0xtoken&#039;</span><span style="color: #000000">, </span><span style="color: #A31515">&#039;0xpartner&#039;</span><span style="color: #000000">)</span>
+<span style="color: #000000"># </span><span style="color: #001080">resolves</span><span style="color: #000000"> </span><span style="color: #001080">to</span><span style="color: #000000"> </span><span style="color: #001080">close</span><span style="color: #000000"> </span><span style="color: #001080">transaction</span><span style="color: #000000"> </span><span style="color: #001080">hash</span><span style="color: #000000">, </span><span style="color: #001080">after</span><span style="color: #000000"> </span><span style="color: #001080">it</span><span style="color: #000000"> </span><span style="color: #001080">is</span><span style="color: #000000"> </span><span style="color: #001080">mined</span>
 
-## channels$ output:
-# Raiden channels: {
-#   &#x27;0xtoken&#x27;: {
-#     &#x27;0xpartner&#x27;: {
-#       token: &#x27;0xtoken&#x27;,
-#       tokenNetwork: &#x27;0xtokenNetwork&#x27;,
-#       partner: &#x27;0xpartner&#x27;,
-#       state: &#x27;closed&#x27;,
-#       ownDeposit: BigNumber(100),
-#       partnerDeposit: BigNumber(0),
-#       id: 123,
-#       settleTimeout: 500,
-#       openBlock: 5123
-#       closeBlock: 5999,
-#       balance: BigNumber(-10),
-#       capacity: BigNumber(90),
-#     }
-#   }
-# }</code></pre>
+<span style="color: #000000">## </span><span style="color: #001080">channels$</span><span style="color: #000000"> output:</span>
+<span style="color: #000000"># </span><span style="color: #001080">Raiden</span><span style="color: #000000"> channels: {</span>
+<span style="color: #000000">#   </span><span style="color: #A31515">&#039;0xtoken&#039;</span><span style="color: #000000">: {</span>
+<span style="color: #000000">#     </span><span style="color: #A31515">&#039;0xpartner&#039;</span><span style="color: #001080">:</span><span style="color: #000000"> {</span>
+<span style="color: #000000">#       </span><span style="color: #001080">token:</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;0xtoken&#039;</span><span style="color: #000000">,</span>
+<span style="color: #000000">#       </span><span style="color: #001080">tokenNetwork:</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;0xtokenNetwork&#039;</span><span style="color: #000000">,</span>
+<span style="color: #000000">#       </span><span style="color: #001080">partner:</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;0xpartner&#039;</span><span style="color: #000000">,</span>
+<span style="color: #000000">#       </span><span style="color: #001080">state:</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;closed&#039;</span><span style="color: #000000">,</span>
+<span style="color: #000000">#       </span><span style="color: #001080">ownDeposit:</span><span style="color: #000000"> </span><span style="color: #795E26">BigNumber</span><span style="color: #000000">(</span><span style="color: #098658">100</span><span style="color: #000000">),</span>
+<span style="color: #000000">#       </span><span style="color: #001080">partnerDeposit:</span><span style="color: #000000"> </span><span style="color: #795E26">BigNumber</span><span style="color: #000000">(</span><span style="color: #098658">0</span><span style="color: #000000">),</span>
+<span style="color: #000000">#       </span><span style="color: #001080">id:</span><span style="color: #000000"> </span><span style="color: #098658">123</span><span style="color: #000000">,</span>
+<span style="color: #000000">#       </span><span style="color: #001080">settleTimeout:</span><span style="color: #000000"> </span><span style="color: #098658">500</span><span style="color: #000000">,</span>
+<span style="color: #000000">#       </span><span style="color: #001080">openBlock:</span><span style="color: #000000"> </span><span style="color: #098658">5123</span>
+<span style="color: #000000">#       </span><span style="color: #001080">closeBlock</span><span style="color: #000000">: </span><span style="color: #098658">5999</span><span style="color: #000000">,</span>
+<span style="color: #000000">#       </span><span style="color: #001080">balance:</span><span style="color: #000000"> </span><span style="color: #795E26">BigNumber</span><span style="color: #000000">(-</span><span style="color: #098658">10</span><span style="color: #000000">),</span>
+<span style="color: #000000">#       </span><span style="color: #001080">capacity:</span><span style="color: #000000"> </span><span style="color: #795E26">BigNumber</span><span style="color: #000000">(</span><span style="color: #098658">90</span><span style="color: #000000">),</span>
+<span style="color: #000000">#     }</span>
+<span style="color: #000000">#   }</span>
+<span style="color: #000000"># }</span>
+</code></pre>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
@@ -164,260 +166,8 @@
 					<li class="label pp-nav pp-group">
 						<span>API</span>
 					</li>
-					<li class="globals  ">
-						<a href="../../globals.html"><em>Globals</em></a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_actions_.html">&quot;actions&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_channels_actions_.html">&quot;channels/actions&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_channels_epics_.html">&quot;channels/epics&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_channels_index_.html">&quot;channels/index&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_channels_reducer_.html">&quot;channels/reducer&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_channels_state_.html">&quot;channels/state&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_channels_types_.html">&quot;channels/types&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_channels_utils_.html">&quot;channels/utils&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_config_.html">&quot;config&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_constants_.html">&quot;constants&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_customtoken__factory_.html">&quot;contracts/factories/<wbr>Custom<wbr>Token__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_deposit__factory_.html">&quot;contracts/factories/<wbr>Deposit__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_humanstandardtoken__factory_.html">&quot;contracts/factories/<wbr>Human<wbr>Standard<wbr>Token__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_monitoringservice__factory_.html">&quot;contracts/factories/<wbr>Monitoring<wbr>Service__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_oneton__factory_.html">&quot;contracts/factories/<wbr>One<wbr>ToN__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_secretregistry__factory_.html">&quot;contracts/factories/<wbr>Secret<wbr>Registry__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_serviceregistryconfigurableparameters__factory_.html">&quot;contracts/factories/<wbr>Service<wbr>Registry<wbr>Configurable<wbr>Parameters__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_serviceregistry__factory_.html">&quot;contracts/factories/<wbr>Service<wbr>Registry__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_standardtoken__factory_.html">&quot;contracts/factories/<wbr>Standard<wbr>Token__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_tokennetworkregistry__factory_.html">&quot;contracts/factories/<wbr>Token<wbr>Network<wbr>Registry__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_tokennetwork__factory_.html">&quot;contracts/factories/<wbr>Token<wbr>Network__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_token__factory_.html">&quot;contracts/factories/<wbr>Token__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_udctransfer__factory_.html">&quot;contracts/factories/UDCTransfer__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_userdeposit__factory_.html">&quot;contracts/factories/<wbr>User<wbr>Deposit__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_factories_utils__factory_.html">&quot;contracts/factories/<wbr>Utils__factory&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_contracts_index_.html">&quot;contracts/index&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_db_adapter_.html">&quot;db/adapter&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_db_epics_.html">&quot;db/epics&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_db_migrations_.html">&quot;db/migrations&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_db_types_.html">&quot;db/types&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_db_utils_.html">&quot;db/utils&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_epics_.html">&quot;epics&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_helpers_.html">&quot;helpers&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_index_.html">&quot;index&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_messages_actions_.html">&quot;messages/actions&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_messages_index_.html">&quot;messages/index&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_messages_types_.html">&quot;messages/types&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_messages_utils_.html">&quot;messages/utils&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_persister_.html">&quot;persister&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_raiden_.html">&quot;raiden&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_reducer_.html">&quot;reducer&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_services_actions_.html">&quot;services/actions&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_services_epics_.html">&quot;services/epics&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_services_reducer_.html">&quot;services/reducer&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_services_types_.html">&quot;services/types&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_services_utils_.html">&quot;services/utils&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_state_.html">&quot;state&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_actions_.html">&quot;transfers/actions&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_expire_.html">&quot;transfers/epics/expire&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_index_.html">&quot;transfers/epics/index&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_init_.html">&quot;transfers/epics/init&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_locked_.html">&quot;transfers/epics/locked&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_mediate_.html">&quot;transfers/epics/mediate&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_processed_.html">&quot;transfers/epics/processed&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_retry_.html">&quot;transfers/epics/retry&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_secret_.html">&quot;transfers/epics/secret&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_utils_.html">&quot;transfers/epics/utils&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_epics_withdraw_.html">&quot;transfers/epics/withdraw&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_reducer_.html">&quot;transfers/reducer&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_state_.html">&quot;transfers/state&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transfers_utils_.html">&quot;transfers/utils&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_actions_.html">&quot;transport/actions&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_epics_helpers_.html">&quot;transport/epics/helpers&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_epics_index_.html">&quot;transport/epics/index&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_epics_init_.html">&quot;transport/epics/init&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_epics_messages_.html">&quot;transport/epics/messages&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_epics_presence_.html">&quot;transport/epics/presence&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_epics_rooms_.html">&quot;transport/epics/rooms&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_epics_webrtc_.html">&quot;transport/epics/webrtc&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_reducer_.html">&quot;transport/reducer&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_state_.html">&quot;transport/state&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_types_.html">&quot;transport/types&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_transport_utils_.html">&quot;transport/utils&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_types_.html">&quot;types&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_actions_.html">&quot;utils/actions&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_data_.html">&quot;utils/data&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_error_.html">&quot;utils/error&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_ethers_.html">&quot;utils/ethers&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_index_.html">&quot;utils/index&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_lru_.html">&quot;utils/lru&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_matrix_.html">&quot;utils/matrix&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_redux_.html">&quot;utils/redux&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_rx_.html">&quot;utils/rx&quot;</a>
-					</li>
-					<li class=" tsd-kind-module">
-						<a href="../../modules/_utils_types_.html">&quot;utils/types&quot;</a>
+					<li class=" ">
+						<a href="../../modules.html">Exports</a>
 					</li>
 				</ul>
 			</nav>
@@ -433,24 +183,12 @@
 		<h2>Legend</h2>
 		<div class="tsd-legend-group">
 			<ul class="tsd-legend">
-				<li class="tsd-kind-namespace"><span class="tsd-kind-icon">Namespace</span></li>
-				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
-				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
-				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
-				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
-				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
-				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
+				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
 			</ul>
 			<ul class="tsd-legend">
-				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
-				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
-				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
 			</ul>
 		</div>
 	</div>
@@ -460,6 +198,5 @@
 </div>
 <div class="overlay"></div>
 <script src="../../assets/js/main.js"></script>
-<script>if (location.protocol == 'file:') document.write('<script src="../../assets/js/search.json"><' + '/script>');</script>
 </body>
 </html>

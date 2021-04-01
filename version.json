@@ -1,7 +1,7 @@
 {
   "version" : {
     "name":      "raiden-dapp",
-    "buildDate": "Tue Jan 26 2021 17:34:46 GMT+0000 (Coordinated Universal Time)",
-    "version":   "0.15.0"
+    "buildDate": "Thu Apr 01 2021 19:42:23 GMT+0000 (Coordinated Universal Time)",
+    "version":   "0.16.0"
   }
 }
