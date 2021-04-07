@@ -3,7 +3,6 @@ import '@/plugins/class-component.hooks';
 import '@/filters';
 import './class-component-hooks';
 
-import { Plugins } from '@capacitor/core';
 import Vue from 'vue';
 
 import { IdenticonPlugin } from '@/plugins/identicon-plugin';
@@ -30,8 +29,5 @@ new Vue({
   router,
   store,
   i18n,
-  mounted() {
-    Plugins.SplashScreen.hide();
-  },
   render: (h) => h(App),
 }).$mount('#app');
