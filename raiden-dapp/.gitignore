@@ -1,7 +1,7 @@
 .DS_Store
 node_modules
 /dist
-
+.gradle/
 /tests/e2e/results/
 
 # local env files
