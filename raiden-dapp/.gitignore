@@ -2,7 +2,13 @@
 node_modules
 /dist
 .gradle/
+
 /tests/e2e/results/
+
+# Fastlane
+fastlane/.env.secrets
+fastlane/report.xml
+keyfiles/*
 
 # local env files
 .env.local
