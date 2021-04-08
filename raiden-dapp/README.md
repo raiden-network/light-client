@@ -7,7 +7,7 @@ The Raiden dApp is a **work in progress** project which has been released for ma
 It is crucial to read the following [README](https://github.com/agatsoh/light-client/blob/master/README.md) including the security notes carefully before using the software.
 
 You can access the beta mainnet version of the Raiden dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/) and the full documentation is available at [https://lightclient.raiden.network/docs/](https://lightclient.raiden.network/docs).
-version of the Raiden dApp at [https://lightclient.raiden.network/](https://lightclient.raiden.network/) and the full documentation is available at [https://lightclient.raiden.network/docs/](https://lightclient.raiden.network/docs).
+
 
 # Development
 
@@ -21,7 +21,7 @@ Perform the following steps from the root directory:
    yarn install
    ```
 
-2. **Build the SKD**  
+2. **Build the SDK**  
 
    ```bash
    yarn workspace raiden-ts build

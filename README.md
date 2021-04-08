@@ -157,9 +157,9 @@ These step-by-step instructions will guide you through the process for trying ou
 
 The dApp is hosted on [https://lightclient.raiden.network](https://lightclient.raiden.network/) and in this quick start guide we will be making a transfer using the Light Client on both mainnet and the Goerli testnet with the [MetaMask](https://metamask.io) wallet.
 
-Fot a more in depth user guide, see the [Light Client documentation](https://lightclient.raiden.network/docs/).
+For a more in depth user guide, see the [Light Client documentation](https://lightclient.raiden.network/docs/).
 
-The dApp is hosted on [https://lightclient.raiden.network](https://lightclient.raiden.network/) and in this quick start guide we will be making a transfer using the Light Client on both mainnet and the Goerli testnet with the [MetaMask](https://metamask.io) wallet.
+### Prerequisites
 
 - MetaMask needs to be installed in your browser and can be [downloaded from their website](https://metamask.io/).
 - An ETH balance. for mainnet you'll have to purchase ETH, for the Goerli testnet you can acquire some test ETH by:  
@@ -172,19 +172,10 @@ The dApp is hosted on [https://lightclient.raiden.network](https://lightclient.r
 
 1. **Connect to the dApp**  
 
-   2. Click on the **Open Channel with Hub** button.
-   3. When redirected to the Light Client make sure **Goerli Test Network** is selected in MetaMask and click connect.
-
-1. **Connect to the dApp**  
-
    1. Visit the [Light Client](https://lightclient.raiden.network).
    2. Make sure **Ethereum Mainnet** is selected in MetaMask and click connect.
-   4. Enter the amount of tokens you want to deposit when opening the channel.
-   5. Click **Open Channel** and sign with MetaMask.
 
-   1. Enter the address of the node receiving your transfer.
-   2. Enter the amount you want to transfer.
-   3. Click the **Transfer** button.
+2. **Select a Hub and Open a Channel**  
 
    1. Click the **+** icon and select a mainnet token to use. You need to have a balance of the token.
    2. If you don't have any **RDN** (utility tokens), you can click the icon to open a dialog with a link for exchanging RDN and a button for depositing.
