@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="manifest" href="/staging/manifest.json">
+    <link rel="icon" href="/staging/favicon.ico">
+    <title>Raiden dApp</title>
+  <link href="/staging/js/0.js" rel="prefetch"><link href="/staging/js/1.js" rel="prefetch"><link href="/staging/js/10.js" rel="prefetch"><link href="/staging/js/11.js" rel="prefetch"><link href="/staging/js/12.js" rel="prefetch"><link href="/staging/js/13.js" rel="prefetch"><link href="/staging/js/14.js" rel="prefetch"><link href="/staging/js/15.js" rel="prefetch"><link href="/staging/js/16.js" rel="prefetch"><link href="/staging/js/17.js" rel="prefetch"><link href="/staging/js/18.js" rel="prefetch"><link href="/staging/js/19.js" rel="prefetch"><link href="/staging/js/2.js" rel="prefetch"><link href="/staging/js/20.js" rel="prefetch"><link href="/staging/js/21.js" rel="prefetch"><link href="/staging/js/22.js" rel="prefetch"><link href="/staging/js/23.js" rel="prefetch"><link href="/staging/js/24.js" rel="prefetch"><link href="/staging/js/25.js" rel="prefetch"><link href="/staging/js/26.js" rel="prefetch"><link href="/staging/js/3.js" rel="prefetch"><link href="/staging/js/4.js" rel="prefetch"><link href="/staging/js/5.js" rel="prefetch"><link href="/staging/js/6.js" rel="prefetch"><link href="/staging/js/7.js" rel="prefetch"><link href="/staging/js/8.js" rel="prefetch"><link href="/staging/js/9.js" rel="prefetch"><link href="/staging/js/app.js" rel="preload" as="script"><link href="/staging/js/chunk-vendors.js" rel="preload" as="script"></head>
+  <body>
+    <noscript>
+      <strong>We're sorry, but Raiden dApp doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
+
+    <div id="browser-unsupported-message" style="display: none">
+      <strong>We're sorry, but the RaidendApp doesn't work properly in your web-browser. Please update to the latest version.</strong>
+    </div>
+
+    <div id="app"></div>
+
+    <script type="text/javascript">
+      function areAllNecessaryFeaturesAvailable() {
+        return (
+          'serviceWorker' in navigator &&
+          'IntersectionObserver' in window &&
+          'indexedDB' in window &&
+          'localStorage' in window &&
+          'RTCPeerConnection' in window
+        );
+      }
+
+      function removeApp() {
+        const appElement = document.getElementById('app');
+        appElement.parentNode.removeChild(appElement);
+      }
+
+      function showMessage() {
+        const messageElement = document.getElementById('browser-unsupported-message');
+        messageElement.style.display = 'block';
+      }
+
+      if (!areAllNecessaryFeaturesAvailable()) {
+        removeApp();
+        showMessage();
+      }
+    </script>
+
+    <!-- Start Single Page Apps for GitHub Pages -->
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // https://github.com/rafrex/spa-github-pages
+      // Copyright (c) 2016 Rafael Pedicini, licensed under the MIT License
+      // ----------------------------------------------------------------------
+      // This script checks to see if a redirect is present in the query string
+      // and converts it back into the correct url and adds it to the
+      // browser's history using window.history.replaceState(...),
+      // which won't cause the browser to attempt to load the new url.
+      // When the single page app is loaded further down in this file,
+      // the correct url will be waiting in the browser's history for
+      // the single page app to route accordingly.
+      (function (l) {
+        if (l.search) {
+          var q = {};
+          l.search.slice(1).split('&').forEach(function (v) {
+            var a = v.split('=');
+            q[a[0]] = a.slice(1).join('=').replace(/~and~/g, '&');
+          });
+          if (q.p !== undefined) {
+            window.history.replaceState(null, null,
+              l.pathname.slice(0, -1) + (q.p || '') +
+              (q.q ? ('?' + q.q) : '') +
+              l.hash
+            );
+          }
+        }
+      }(window.location))
+    </script>
+    <!-- End Single Page Apps for GitHub Pages -->
+    <!-- built files will be auto injected -->
+  <script type="text/javascript" src="/staging/js/chunk-vendors.js"></script><script type="text/javascript" src="/staging/js/app.js"></script></body>
+</html>
