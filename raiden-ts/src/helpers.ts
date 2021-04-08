@@ -525,11 +525,11 @@ export async function getState(
   ].join('_');
 
   let db;
-  let { state: dump } = storage;
-  const { adapter, prefix } = storage;
+  const { state: stateDump, ...opts } = storage;
+  let dump = stateDump;
 
   // PouchDB configs are passed as custom database constructor using PouchDB.defaults
-  const dbCtor = await getDatabaseConstructorFromOptions({ log, adapter, prefix });
+  const dbCtor = await getDatabaseConstructorFromOptions({ ...opts, log });
 
   if (dump) {
     if (typeof dump === 'string') dump = jsonParse(dump);
