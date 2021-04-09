@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   base_executor_image:
     type: string
-    default: cimg/node:lts-browsers
+    default: cimg/ruby:3.0.1-browsers
 
   e2e_environment_executor_image:
     type: string
