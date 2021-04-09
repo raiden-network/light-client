@@ -75,7 +75,7 @@
     "babel-plugin-istanbul": "^6.0.0",
     "canvas": "^2.7.0",
     "copy-webpack-plugin": "^6.4.1",
-    "cypress": "3.8.3",
+    "cypress": "7.0.1",
     "cypress-jest-adapter": "^0.1.1",
     "cypress-plugin-retries": "^1.5.2",
     "eslint": "^7.23.0",
