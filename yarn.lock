@@ -6829,7 +6829,7 @@ debug@4.1.1:
   dependencies:
     ms "^2.1.1"
 
-debug@4.3.1, debug@^4.0.0, debug@^4.0.1, debug@^4.1.0, debug@^4.1.1, debug@^4.3.1:
+debug@4.3.1, debug@^4.0.0, debug@^4.0.1, debug@^4.1.0, debug@^4.1.1, debug@^4.3.0, debug@^4.3.1:
   version "4.3.1"
   resolved "https://registry.yarnpkg.com/debug/-/debug-4.3.1.tgz#f0d229c505e0c6d8c49ac553d1b13dc183f6b2ee"
   integrity sha512-doEwdvm4PCeK4K3RQN2ZC2BYUBaxwLARCqZmMjtF8a51J2Rb0xpVloFRnCODwqjpwnAoao4pelN8l3RJdv3gRQ==
@@ -18165,12 +18165,12 @@ vue-class-component@^7.2.6:
   resolved "https://registry.yarnpkg.com/vue-class-component/-/vue-class-component-7.2.6.tgz#8471e037b8e4762f5a464686e19e5afc708502e4"
   integrity sha512-+eaQXVrAm/LldalI272PpDe3+i4mPis0ORiMYxF6Ae4hyuCh15W8Idet7wPUEs4N4YptgFHGys4UrgNQOMyO6w==
 
-vue-cli-plugin-i18n@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/vue-cli-plugin-i18n/-/vue-cli-plugin-i18n-1.0.1.tgz#5a3077de5d62c9b4068e486db1fc97fce9fa0072"
-  integrity sha512-sLo6YzudaWgn5dOMvrKixE5bb/onYGxcxm+0YexqoOx0QtR+7hZ/P5WPFBMM9v/2i1ec2YYe2PvKTBel7KE+tA==
+vue-cli-plugin-i18n@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/vue-cli-plugin-i18n/-/vue-cli-plugin-i18n-2.1.0.tgz#2b6b0e07c42680558bff0ac42b74bce6015f29b8"
+  integrity sha512-YBLaoY61eQP1BoSu29xK5711HghTooLmtYbxdXHNz9pOjN4/kX1MDpl6hMaHNkec4/r2hR3MHDWyJqed51Iuaw==
   dependencies:
-    debug "^4.1.0"
+    debug "^4.3.0"
     deepmerge "^4.2.0"
     dotenv "^8.2.0"
     flat "^5.0.0"
