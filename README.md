@@ -168,7 +168,6 @@ For a more in depth user guide, see the [Light Client documentation](https://lig
   2. Follow the instructions on respective faucet on how to acquire the ETH.
 
 ### Making a First Transfer on Mainnet
-- An ETH balance. for mainnet you'll have to purchase ETH, for the Goerli testnet you can acquire some test ETH by:  
 
 1. **Connect to the dApp**  
 
