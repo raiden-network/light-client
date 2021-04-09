@@ -50,14 +50,22 @@ export default class RaidenService {
     stateBackup?: string,
     subkey?: true,
   ): Promise<Raiden> {
-    const { default: adapterPlugin } = await import('pouchdb-adapter-cordova-sqlite');
-    PouchDB.plugin(adapterPlugin);
-
-    const storageOpts = {
+    let storageOpts:
+      | { state: string | undefined }
+      | { state: string | undefined; adapter: string; iosDatabaseLocation: string } = {
       state: stateBackup,
-      adapter: 'cordova-sqlite',
-      iosDatabaseLocation: 'Library',
     };
+    // When running in capacitor, enable native sqlite plugin
+    if (process.env.VUE_APP_DB_ADAPTER === 'cordova-sqlite') {
+      const { default: adapterPlugin } = await import('pouchdb-adapter-cordova-sqlite');
+      PouchDB.plugin(adapterPlugin);
+
+      storageOpts = {
+        state: stateBackup,
+        adapter: 'cordova-sqlite',
+        iosDatabaseLocation: 'Library',
+      };
+    }
 
     try {
       const contracts = await ConfigProvider.contracts();
