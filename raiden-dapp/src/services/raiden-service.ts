@@ -1,5 +1,6 @@
 import type { BigNumber, BigNumberish, providers } from 'ethers';
 import { constants, utils } from 'ethers';
+import PouchDB from 'pouchdb';
 import type { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
@@ -49,14 +50,21 @@ export default class RaidenService {
     stateBackup?: string,
     subkey?: true,
   ): Promise<Raiden> {
+    const { default: adapterPlugin } = await import('pouchdb-adapter-cordova-sqlite');
+    PouchDB.plugin(adapterPlugin);
+
+    const storageOpts = {
+      state: stateBackup,
+      adapter: 'cordova-sqlite',
+      iosDatabaseLocation: 'Library',
+    };
+
     try {
       const contracts = await ConfigProvider.contracts();
       return await Raiden.create(
         provider,
         account,
-        {
-          state: stateBackup,
-        },
+        storageOpts,
         contracts,
         {
           pfsSafetyMargin: 1.1,
