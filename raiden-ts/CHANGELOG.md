@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+- [#2669] Update to Raiden contracts `v0.37.5`
+
+[#2669]: https://github.com/raiden-network/light-client/issues/2669
+
 ## [0.16.0] - 2021-04-01
 ### Added
 - [#1342] Flat (fixed) mediation fees for mediator nodes
