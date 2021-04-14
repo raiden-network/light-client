@@ -22,6 +22,9 @@ machines.
 - For _iOS_ releases, make sure that the _XCode_ tool-box is installed (only
   works on Mac).
 - Make sure `yarn` is executable to build the Raiden Light Client dApp itself.
+- The first 3 steps of the dApp's [installation
+  instructions](https://github.com/raiden-network/light-client#install-and-run-the-dapp)
+  have been executed.
 
 
 ## Installation
