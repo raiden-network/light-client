@@ -1,12 +1,21 @@
 platform :android do
   before_all do
-    Dotenv.overload ".env.secrets"
+    Dotenv.load '.env.secrets'
+    Dotenv.load '.env.versions'
   end
 
   desc "Deploy a new beta track version to the Google Play Store"
   lane :deploy do
     yarn(command: 'capacitor:build --android', package_path: './package.json')
     gradle(task: 'clean', project_dir: './android/')
+    android_set_version_name(
+      version_name: ENV['VERSION_NAME_INTERNAL_TEST'],
+      gradle_file: './android/app/build.gradle'
+    )
+    android_set_version_code(
+      version_code: ENV['VERSION_CODE_INTERNAL_TEST'],
+      gradle_file: './android/app/build.gradle'
+    )
     gradle(
       task: 'bundle',
       project_dir: './android/',
