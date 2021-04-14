@@ -6,8 +6,8 @@ platform :android do
     Dotenv.load '.env.versions'
   end
 
-  desc "Deploy a new beta track version to the Google Play Store"
-  lane :deploy do
+  desc 'Deploy a new new version to the internal test track to the Google Play Store in draft mode'
+  lane :deploy_internal_test_draft do
     yarn(command: 'capacitor:build --android', package_path: './package.json')
     gradle(task: 'clean', project_dir: './android/')
     android_set_version_name(
@@ -23,16 +23,16 @@ platform :android do
       project_dir: './android/',
       print_command: false, # do not reveal secrets
       properties: {
-        "android.injected.signing.store.file" => "#{Dir.pwd}/../keyfiles/google_play_store_upload_keystore.jks",
-        "android.injected.signing.store.password" => "#{ENV["GOOGLE_PLAY_STORE_UPLOAD_KEYSTORE_PASSWORD"]}",
-        "android.injected.signing.key.alias" => "upload",
-        "android.injected.signing.key.password" => "#{ENV["GOOGLE_PLAY_STORE_UPLOAD_KEYSTORE_PASSWORD"]}",
+        'android.injected.signing.store.file' => "#{Dir.pwd}/../keyfiles/google_play_store_upload_keystore.jks",
+        'android.injected.signing.store.password' => ENV['GOOGLE_PLAY_STORE_UPLOAD_KEYSTORE_PASSWORD'],
+        'android.injected.signing.key.alias' => 'upload',
+        'android.injected.signing.key.password' => ENV['GOOGLE_PLAY_STORE_UPLOAD_KEYSTORE_PASSWORD'],
       },
-
     )
     upload_to_play_store(
-      track: "beta",
-      aab: "#{lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH]}",
+      track: 'internal',
+      release_status: 'draft',
+      aab: lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH],
       skip_upload_apk: true,
     )
   end
