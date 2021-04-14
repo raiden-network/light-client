@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- [#2671] Fix preventing transfers to partners with closed channel
+
+[#2671]: https://github.com/raiden-network/light-client/issues/2671
+
 ## [0.16.0] - 2021-04-01
 
 ### Fixed
