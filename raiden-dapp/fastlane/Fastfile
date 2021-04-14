@@ -1,3 +1,5 @@
+skip_docs
+
 platform :android do
   before_all do
     Dotenv.load '.env.secrets'
