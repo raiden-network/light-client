@@ -21,6 +21,7 @@ platform :android do
     gradle(
       task: 'bundle',
       project_dir: './android/',
+      print_command: false, # do not reveal secrets
       properties: {
         "android.injected.signing.store.file" => "#{Dir.pwd}/../keyfiles/google_play_store_upload_keystore.jks",
         "android.injected.signing.store.password" => "#{ENV["GOOGLE_PLAY_STORE_UPLOAD_KEYSTORE_PASSWORD"]}",
