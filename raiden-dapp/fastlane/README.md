@@ -69,10 +69,10 @@ Example: Google Play Store upload keystore
 ## Usage
 
 At the moment of writing the _Fastlane_ actions are quite limited and only
-meant for beta releases. This will be changed/extended in future when the
-mobile application of the project gets a mature product.
+meant for releases to the internal test track. This will be changed/extended in
+future when the mobile application of the project gets a mature product.
 
-The basic syntax is `bundle exec fastlane <platform> deploy`. So for example
-`bundle exec fastlane android deploy` will build the dApp, assemble it with
-_Capacitor_, build the application bundle and upload it to the beta track of the
+The basic syntax is `bundle exec fastlane <platform> <lane>`. So for example
+`bundle exec fastlane android deploy_internal_test_draft` will build the dApp,
+assemble it with _Capacitor_, build the application bundle and upload it to the
 Google Play Store repository.
