@@ -229,7 +229,7 @@ export function getLatest$(
   );
 }
 
-const RaidenEpics = {
+const raidenEpics = {
   ...ConfigEpics,
   ...DatabaseEpics,
   ...ChannelsEpics,
@@ -238,71 +238,88 @@ const RaidenEpics = {
   ...ServicesEpics,
 };
 
-/**
- * @param action$ - Observable of RaidenActions
- * @param state$ - Observable of RaidenStates
- * @param deps - Epics dependencies
- * @returns Raiden root epic observable
- */
-export function raidenRootEpic(
+type RaidenEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<RaidenAction> {
-  // observable which emits once when a raidenShutdown action goes through actions pipeline
-  const shutdownNotification = action$.pipe(filter(raidenShutdown.is), take(1)),
-    // actions pipeline, but ends with (including) a raidenShutdown action
-    limitedAction$ = action$.pipe(takeWhile<RaidenAction>(negate(raidenShutdown.is), true)),
-    // states pipeline, but ends when shutdownNotification emits
-    limitedState$ = state$.pipe(takeUntil(shutdownNotification));
+) => Observable<RaidenAction>;
 
-  // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through;
-  return using(
-    // wire deps.latest$ when observableFactory below gets subscribed, and tears down on complete
-    () => {
-      const sub = getLatest$(action$, state$, deps).subscribe(deps.latest$);
-      // ensure deps.latest$ is completed if teardown happens before getLatest$ completion
-      sub.add(() => deps.latest$.complete());
-      return sub;
-    },
-    () => {
-      const subscribedEpics = new Set<string>();
-      // main epics output
-      const output$ = from(Object.values(RaidenEpics)).pipe(
-        mergeMap((epic) => {
-          subscribedEpics.add(epic.name);
-          return epic(limitedAction$, limitedState$, deps).pipe(
-            catchError((err) => {
-              deps.log.error('Epic error', epic.name, epic, err);
-              return of(raidenShutdown({ reason: err }));
-            }),
-            finalize(() => subscribedEpics.delete(epic.name)),
-          );
-        }),
-        takeUntil(
-          shutdownNotification.pipe(
-            withLatestFrom(deps.config$),
-            // give up to httpTimeout for the epics to complete on their own
-            delayWhen(([_, { httpTimeout }]) => timer(httpTimeout)),
-            tap(() => deps.log.warn('Pending Epics :', subscribedEpics)),
+/**
+ * Consumes epics from epics$ and returns a root epic which properly wraps deps.latest$ and
+ * limits action$ and state$ when raidenShutdown request goes through
+ *
+ * @param epics$ - Observable of raiden epics to compose the root epic
+ * @returns The rootEpic which properly wires latest$ and limits action$ & state$
+ */
+export function combineRaidenEpics(
+  epics$: Observable<RaidenEpic> = from(Object.values(raidenEpics)),
+): RaidenEpic {
+  /**
+   * @param action$ - Observable of RaidenActions
+   * @param state$ - Observable of RaidenStates
+   * @param deps - Epics dependencies
+   * @returns Raiden root epic observable
+   */
+  return function raidenRootEpic(
+    action$: Observable<RaidenAction>,
+    state$: Observable<RaidenState>,
+    deps: RaidenEpicDeps,
+  ): Observable<RaidenAction> {
+    // observable which emits once when a raidenShutdown action goes through actions pipeline
+    const shutdownNotification = action$.pipe(filter(raidenShutdown.is), take(1)),
+      // actions pipeline, but ends with (including) a raidenShutdown action
+      limitedAction$ = action$.pipe(takeWhile<RaidenAction>(negate(raidenShutdown.is), true)),
+      // states pipeline, but ends when shutdownNotification emits
+      limitedState$ = state$.pipe(takeUntil(shutdownNotification));
+
+    // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through;
+    return using(
+      // wire deps.latest$ when observableFactory below gets subscribed, and tears down on complete
+      () => {
+        const sub = getLatest$(action$, state$, deps).subscribe(deps.latest$);
+        // ensure deps.latest$ is completed if teardown happens before getLatest$ completion
+        sub.add(() => deps.latest$.complete());
+        return sub;
+      },
+      () => {
+        const subscribedEpics = new Set<string>();
+        // main epics output
+        const output$ = epics$.pipe(
+          mergeMap((epic) => {
+            subscribedEpics.add(epic.name);
+            return epic(limitedAction$, limitedState$, deps).pipe(
+              catchError((err) => {
+                deps.log.error('Epic error', epic.name, epic, err);
+                return of(raidenShutdown({ reason: err }));
+              }),
+              finalize(() => subscribedEpics.delete(epic.name)),
+            );
+          }),
+          takeUntil(
+            shutdownNotification.pipe(
+              withLatestFrom(deps.config$),
+              // give up to httpTimeout for the epics to complete on their own
+              delayWhen(([_, { httpTimeout }]) => timer(httpTimeout)),
+              tap(() => deps.log.warn('Pending Epics :', subscribedEpics)),
+            ),
           ),
-        ),
-      );
-      // also concat db teardown tasks, to be done after main epic completes
-      const teardown$ = deps.db.busy$.pipe(
-        first((busy) => !busy),
-        tap(() => deps.db.busy$.next(true)),
-        // ignore db.busy$ errors, they're merged in the output by dbErrorsEpic
-        catchError(() => of(null)),
-        mergeMap(async () => deps.db.close()),
-        ignoreElements(),
-        finalize(() => {
-          deps.db.busy$.next(false);
-          deps.db.busy$.complete();
-        }),
-      );
-      // subscribe to teardown$ only after output$ completes
-      return concat(output$, teardown$);
-    },
-  );
+        );
+        // also concat db teardown tasks, to be done after main epic completes
+        const teardown$ = deps.db.busy$.pipe(
+          first((busy) => !busy),
+          tap(() => deps.db.busy$.next(true)),
+          // ignore db.busy$ errors, they're merged in the output by dbErrorsEpic
+          catchError(() => of(null)),
+          mergeMap(async () => deps.db.close()),
+          ignoreElements(),
+          finalize(() => {
+            deps.db.busy$.next(false);
+            deps.db.busy$.complete();
+          }),
+        );
+        // subscribe to teardown$ only after output$ completes
+        return concat(output$, teardown$);
+      },
+    );
+  };
 }

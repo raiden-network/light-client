@@ -9,7 +9,7 @@ import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, ReplaySubject } from 'rxjs';
+import { AsyncSubject, BehaviorSubject, of, ReplaySubject } from 'rxjs';
 import { ignoreElements } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
@@ -23,6 +23,7 @@ import {
   TokenNetworkRegistry__factory,
   UserDeposit__factory,
 } from '@/contracts';
+import { combineRaidenEpics } from '@/epics';
 import { Raiden } from '@/raiden';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
@@ -72,7 +73,8 @@ function makeDummyDependencies(): RaidenEpicDeps {
   const latest$ = new ReplaySubject<Latest>(1);
   const config$ = latest$.pipe(pluckDistinct('config'));
   const matrix$ = new AsyncSubject<MatrixClient>();
-  const db = {} as any;
+  const busy$ = new BehaviorSubject(false);
+  const db = { busy$ } as any;
 
   const defaultConfig = makeDefaultConfig({ network });
   const log = logging.getLogger(`raiden:${address}`);
@@ -120,7 +122,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
 describe('Raiden', () => {
   test('address', () => {
     const deps = makeDummyDependencies();
-    const raiden = new Raiden(dummyState, deps, dummyEpic, dummyReducer);
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics(of(dummyEpic)), dummyReducer);
     expect(raiden.address).toBe(dummyState.address);
   });
 });

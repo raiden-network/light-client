@@ -57,7 +57,7 @@ import {
 } from '@/contracts';
 import type { RaidenDatabaseConstructor } from '@/db/types';
 import { getRaidenState, migrateDatabase, putRaidenState } from '@/db/utils';
-import { raidenRootEpic } from '@/epics';
+import { combineRaidenEpics } from '@/epics';
 import { signMessage } from '@/messages/utils';
 import { createPersisterMiddleware } from '@/persister';
 import { raidenReducer } from '@/reducer';
@@ -979,7 +979,7 @@ export async function makeRaiden(
       raiden.deps.config$
         .pipe(finalize(() => (raiden.started = false)))
         .subscribe((config) => (raiden.config = config));
-      epicMiddleware.run(raidenRootEpic);
+      epicMiddleware.run(combineRaidenEpics());
       raiden.store.dispatch(raidenStarted());
       await raiden.synced;
     },

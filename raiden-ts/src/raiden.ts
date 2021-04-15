@@ -50,7 +50,7 @@ import { PartialRaidenConfig } from './config';
 import { ShutdownReason } from './constants';
 import { CustomToken__factory } from './contracts';
 import { dumpDatabaseToArray } from './db/utils';
-import { getLatest$, raidenRootEpic } from './epics';
+import { combineRaidenEpics, getLatest$ } from './epics';
 import {
   callAndWaitMined,
   chooseOnchainAccount,
@@ -199,7 +199,7 @@ export class Raiden {
   public constructor(
     state: RaidenState,
     private readonly deps: RaidenEpicDeps,
-    private readonly epic = raidenRootEpic,
+    private readonly epic = combineRaidenEpics(),
     reducer = raidenReducer,
   ) {
     // use next from latest known blockNumber as start block when polling
