@@ -55,11 +55,11 @@ import {
   putRaidenState,
   replaceDatabase,
 } from './db/utils';
-import goerliDeploy from './deployment/deployment_goerli.json';
+import goerliDeploy from './deployment/deployment_goerli_unstable.json';
 import mainnetDeploy from './deployment/deployment_mainnet.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import ropstenDeploy from './deployment/deployment_ropsten.json';
-import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
+import goerliServicesDeploy from './deployment/deployment_services_goerli_unstable.json';
 import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
