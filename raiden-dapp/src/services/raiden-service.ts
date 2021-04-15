@@ -57,7 +57,7 @@ export default class RaidenService {
         {
           state: stateBackup,
         },
-        contracts,
+        process.env.VUE_APP_UDC_ADDRESS ?? contracts,
         {
           pfsSafetyMargin: 1.1,
           ...(process.env.VUE_APP_PFS
