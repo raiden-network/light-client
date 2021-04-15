@@ -18,12 +18,12 @@
   "author": "brainbot labs est.",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "1.2.6",
+    "@actions/core": "1.2.7",
     "@actions/github": "4.0.0"
   },
   "devDependencies": {
     "@zeit/ncc": "0.22.3",
-    "eslint": "7.23.0",
+    "eslint": "7.24.0",
     "eslint-config-airbnb-base": "14.2.1",
     "eslint-plugin-import": "2.22.1"
   }
