@@ -118,8 +118,6 @@ function parseArguments() {
         default: '127.0.0.1:5001',
         desc: 'host:port to bind to and listen for API requests',
       },
-    })
-    .options({
       routingMode: {
         choices: ['pfs', 'local', 'private'] as const,
         default: 'pfs',
