@@ -83,3 +83,25 @@ The basic syntax is `bundle exec fastlane <platform> <lane>`. So for example
 `bundle exec fastlane android deploy_internal_test_draft` will build the dApp,
 assemble it with _Capacitor_, build the application bundle and upload it to the
 Google Play Store repository.
+
+
+## Troubleshooting
+
+This sections tries to list some "common"/known errors which could occur and how
+to solve them.
+
+```
+FAILURE: Build failed with exception
+...
+    > SDK location not found. Define location with an ANDROID_SDK_ROOT environment variable or...
+```
+
+For this error you just need to follow the instructions of the message.
+Therefore you must to determine where the Java SDKs are stored on your computer.
+This highly depends on your local setup. If you used _AndroidStudio_ you can
+determine the location in the settings (`Ctrl+Alt+S`) at `Appereance & Behavior > System Settings > Android SDK`
+and watch out for the `Android SDK Location` property to copy its value.
+Then you need to set this environment variable in you shell. For example you can
+set it temporally via `export ANDROID_SDK_ROOT="<your-path-here>"`.
+Alternatively you can make it somehow persistent in your personal shell setup or
+use a `.env` file that gets sourced.
