@@ -68,6 +68,10 @@ Example: Google Play Store upload keystore
   - replace the placeholder value wit the password stored in the `1password`
     document entry
 
+List of requirement secret documents (at `keyfiles/`):
+  - `google_play_store_access_key.json`
+  - `google_play_store_upload_keystore.jks`
+
 
 ## Usage
 
