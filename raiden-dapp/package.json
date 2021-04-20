@@ -23,6 +23,7 @@
     "serve:no-logging": "export NODE_ENV=nologging && vue-cli-service serve"
   },
   "dependencies": {
+    "@capacitor/core": "^3.0.0-rc.0",
     "compare-versions": "^3.6.0",
     "cordova-sqlite-storage": "^6.0.0",
     "core-js": "^3.8.3",
@@ -57,7 +58,6 @@
     "@babel/preset-typescript": "^7.12.16",
     "@capacitor/android": "^3.0.0-rc.0",
     "@capacitor/cli": "^3.0.0-rc.0",
-    "@capacitor/core": "^3.0.0-rc.0",
     "@capacitor/ios": "^3.0.0-rc.0",
     "@cypress/code-coverage": "^3.9.2",
     "@cypress/webpack-preprocessor": "^5.6.0",

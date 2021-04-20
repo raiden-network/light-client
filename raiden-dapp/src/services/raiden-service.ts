@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import type { BigNumber, BigNumberish, providers } from 'ethers';
 import { constants, utils } from 'ethers';
 import PouchDB from 'pouchdb';
@@ -52,7 +53,12 @@ export default class RaidenService {
   ): Promise<Raiden> {
     let storageOpts:
       | { state: string | undefined }
-      | { state: string | undefined; adapter: string; iosDatabaseLocation: string } = {
+      | {
+          state: string | undefined;
+          adapter: string;
+          location?: string;
+          iosDatabaseLocation?: string;
+        } = {
       state: stateBackup,
     };
     // When running in capacitor, enable native sqlite plugin
@@ -60,11 +66,20 @@ export default class RaidenService {
       const { default: adapterPlugin } = await import('pouchdb-adapter-cordova-sqlite');
       PouchDB.plugin(adapterPlugin);
 
-      storageOpts = {
-        state: stateBackup,
-        adapter: 'cordova-sqlite',
-        iosDatabaseLocation: 'Library',
-      };
+      const platform = Capacitor.getPlatform();
+      if (platform === 'android') {
+        storageOpts = {
+          ...storageOpts,
+          adapter: 'cordova-sqlite',
+          location: 'default',
+        };
+      } else if (platform === 'ios') {
+        storageOpts = {
+          ...storageOpts,
+          adapter: 'cordova-sqlite',
+          iosDatabaseLocation: 'Library',
+        };
+      }
     }
 
     try {
