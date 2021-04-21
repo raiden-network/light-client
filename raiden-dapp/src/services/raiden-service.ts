@@ -56,8 +56,8 @@ export default class RaidenService {
       | {
           state: string | undefined;
           adapter: string;
-          location: string;
-          iosDatabaseLocation: string;
+          location?: string;
+          iosDatabaseLocation?: string;
         } = {
       state: stateBackup,
     };
