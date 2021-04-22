@@ -2,7 +2,7 @@ import WalletConnectProvider from '@walletconnect/web3-provider';
 import { providers } from 'ethers';
 
 export class Web3Provider {
-  static async provider(rpcEndpoint?: string) {
+  static async provider(rpcEndpoint?: string, rpcEndpointWalletConnect?: string) {
     let provider = null;
 
     if (rpcEndpoint) {
@@ -17,9 +17,12 @@ export class Web3Provider {
       provider = window.ethereum;
     } else if (window.web3) {
       provider = window.web3.currentProvider;
-    } else {
+    } else if (rpcEndpointWalletConnect) {
+      const chainId = await getRpcEndpointChainId(rpcEndpointWalletConnect);
       const provider = new WalletConnectProvider({
-        infuraId: '1d7828db440547969591f9ef1f81a04d', // TODO: Replace with configuration value
+        rpc: {
+          [chainId]: rpcEndpointWalletConnect,
+        },
       });
       await provider.enable();
       return new providers.Web3Provider(provider);
@@ -36,4 +39,22 @@ export class Web3Provider {
   }
 
   static injectedWeb3Available = (): boolean => window.ethereum || window.web3;
+}
+
+async function getRpcEndpointChainId(rpcEndpoint: string): Promise<number> {
+  const requestBody = { method: 'eth_chainId', params: [], id: 1, jsonrpc: '2.0' };
+  const response = await fetch(rpcEndpoint, {
+    method: 'POST',
+    body: JSON.stringify(requestBody),
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (response.ok) {
+    const responseBody = await response.json();
+    return parseInt(responseBody.result, 16);
+  } else {
+    throw new Error(
+      `Failed to get chain ID from '${rpcEndpoint}' with response: '${JSON.stringify(response)}'`,
+    );
+  }
 }

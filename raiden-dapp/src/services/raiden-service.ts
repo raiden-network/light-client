@@ -136,7 +136,10 @@ export default class RaidenService {
     try {
       let raiden;
       const configuration = await ConfigProvider.configuration();
-      const provider = await Web3Provider.provider(configuration.rpc_endpoint);
+      const provider = await Web3Provider.provider(
+        configuration.rpc_endpoint,
+        configuration.rpc_endpoint_wallet_connect,
+      );
 
       if (!provider) {
         this.store.commit('noProvider');
