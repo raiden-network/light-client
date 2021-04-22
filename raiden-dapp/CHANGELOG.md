@@ -6,7 +6,12 @@
 
 - [#2671] Fix preventing transfers to partners with closed channel
 
+### Added
+
+- [#2599] Add WalletConnect as another wallet/provider
+
 [#2671]: https://github.com/raiden-network/light-client/issues/2671
+[#2599]: https://github.com/raiden-network/light-client/issues/2599
 
 ## [0.16.0] - 2021-04-01
 
