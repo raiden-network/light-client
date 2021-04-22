@@ -26,9 +26,10 @@ export class Web3Provider {
     }
 
     /* istanbul ignore next */
-    if (provider && provider.isMetaMask) {
-      // TODO: do the same for WalletConnect
-      provider.on('chainChanged', () => window.location.replace(window.location.origin));
+    if (provider && (provider.isMetaMask || provider.isWalletConnect)) {
+      const resetHandler = () => window.location.replace(window.location.origin);
+      provider.on('chainChanged', resetHandler);
+      provider.on('disconnect', resetHandler);
     }
 
     return provider;
