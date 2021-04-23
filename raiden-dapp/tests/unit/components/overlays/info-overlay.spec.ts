@@ -35,14 +35,14 @@ const createWrapper = (): Wrapper<InfoOverlay> => {
 describe('InfoOverlay.vue', () => {
   test('displays info overlay title text', () => {
     const wrapper = createWrapper();
-    const infoOverlayTitle = wrapper.find('.info-overlay__title');
+    const infoOverlayTitle = wrapper.find('.info-overlay__content__title');
 
     expect(infoOverlayTitle.text()).toBe(header);
   });
 
   test('displays info overlay body text', () => {
     const wrapper = createWrapper();
-    const infoOverlayBody = wrapper.find('.info-overlay__body');
+    const infoOverlayBody = wrapper.find('.info-overlay__content__body');
 
     expect(infoOverlayBody.text()).toBe(body);
   });
