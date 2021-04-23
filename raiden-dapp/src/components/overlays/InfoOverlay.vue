@@ -48,6 +48,7 @@ export default class InfoOverlay extends Vue {
   background-color: $transfer-screen-bg-color;
   border-radius: 10px;
   height: 844px;
+  overflow-y: auto;
   position: absolute;
   width: 100%;
   z-index: 102;
@@ -55,7 +56,6 @@ export default class InfoOverlay extends Vue {
   @include respond-to(handhelds) {
     border-radius: 0;
     height: 100vh;
-    overflow-y: auto;
   }
 
   &__content {
@@ -63,9 +63,7 @@ export default class InfoOverlay extends Vue {
     display: flex;
     flex-direction: column;
     height: 100%;
-    @include respond-to(handhelds) {
-      margin-top: $ios-safe-area;
-    }
+    margin: 0 36px;
 
     &__header {
       display: flex;
@@ -79,7 +77,6 @@ export default class InfoOverlay extends Vue {
     &__close-icon {
       display: flex;
       justify-content: flex-end;
-      padding-right: 36px;
       width: 100%;
     }
 
@@ -98,7 +95,6 @@ export default class InfoOverlay extends Vue {
     &__body {
       font-size: 19px;
       text-align: center;
-      margin: 0 36px;
     }
 
     &__button {
