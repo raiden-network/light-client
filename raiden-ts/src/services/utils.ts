@@ -7,14 +7,8 @@ import type { Observable } from 'rxjs';
 import { defer, EMPTY, from } from 'rxjs';
 import { catchError, first, map, mergeMap, toArray } from 'rxjs/operators';
 
-import { ChannelState } from '../channels/state';
-import { channelAmounts, channelKey } from '../channels/utils';
-import { Capabilities } from '../constants';
 import type { ServiceRegistry } from '../contracts';
 import { MessageTypeId } from '../messages/utils';
-import type { RaidenState } from '../state';
-import type { Presences } from '../transport/types';
-import { getCap } from '../transport/utils';
 import type { RaidenEpicDeps } from '../types';
 import { encode, jsonParse } from '../utils/data';
 import { assert, ErrorCodes, networkErrors } from '../utils/error';
@@ -23,39 +17,6 @@ import { retryAsync$ } from '../utils/rx';
 import type { Signature, Signed } from '../utils/types';
 import { Address, decode, UInt } from '../utils/types';
 import type { IOU, PFS } from './types';
-
-/**
- * Either returns true if given channel can route a payment, or a reason as string if not
- *
- * @param state - current RaidenState
- * @param presences - latest Presences mapping
- * @param tokenNetwork - tokenNetwork where the channel is
- * @param partner - possibly a partner on given tokenNetwork
- * @param target - transfer target
- * @param value - amount of tokens to check if channel can route
- * @returns true if channel can route, string containing reason if not
- */
-export function channelCanRoute(
-  state: RaidenState,
-  presences: Presences,
-  tokenNetwork: Address,
-  partner: Address,
-  target: Address,
-  value: UInt<32>,
-): true | string {
-  if (!(partner in presences) || !presences[partner].payload.available)
-    return `path: partner "${partner}" not available in transport`;
-  if (target !== partner && !getCap(presences[partner].payload.caps, Capabilities.MEDIATE))
-    return `path: partner "${partner}" doesn't mediate transfers`;
-  const channel = state.channels[channelKey({ tokenNetwork, partner })];
-  if (!channel) return `path: there's no direct channel with partner "${partner}"`;
-  if (channel.state !== ChannelState.open)
-    return `path: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`;
-  const { ownCapacity: capacity } = channelAmounts(channel);
-  if (capacity.lt(value))
-    return `path: channel with "${partner}" doesn't have enough capacity=${capacity.toString()}`;
-  return true;
-}
 
 const serviceRegistryToken = memoize(
   async (serviceRegistryContract: ServiceRegistry, pollingInterval: number) =>
