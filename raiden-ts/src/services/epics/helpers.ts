@@ -8,27 +8,18 @@ import * as t from 'io-ts';
 import type { Observable } from 'rxjs';
 import { defer, from, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
-import {
-  filter,
-  first,
-  map,
-  mergeMap,
-  pluck,
-  take,
-  timeout,
-  withLatestFrom,
-} from 'rxjs/operators';
+import { first, map, mergeMap, pluck, timeout, withLatestFrom } from 'rxjs/operators';
 
-import type { RaidenAction } from '../../actions';
+import type { Channel } from '../../channels/state';
+import { ChannelState } from '../../channels/state';
+import { channelAmounts, channelKey } from '../../channels/utils';
 import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import type { RaidenState } from '../../state';
-import { matrixPresence } from '../../transport/actions';
-import type { Presences } from '../../transport/types';
+import type { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
 import type { Latest, RaidenEpicDeps } from '../../types';
-import { isResponseOf } from '../../utils/actions';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { lastMap, mergeWith, retryWhile } from '../../utils/rx';
@@ -37,7 +28,7 @@ import { decode, Int, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
 import type { IOU, Paths, PFS } from '../types';
 import { LastIOUResults, PathResults, PfsMode } from '../types';
-import { channelCanRoute, packIOU, pfsInfo, pfsListInfo, signIOU } from '../utils';
+import { packIOU, pfsInfo, pfsListInfo, signIOU } from '../utils';
 
 /**
  * Codec for PFS API returned error
@@ -145,10 +136,50 @@ function prepareNextIOU$(
   );
 }
 
-function validateRouteTargetAndEventuallyThrow(
+/**
+ * Either returns true if given channel can route a payment, or a reason as string if not
+ *
+ * @param channel - Channel to check
+ * @param value - amount of tokens to check if channel can route
+ * @returns true if channel can route, string containing reason if not
+ */
+function channelCanRoute(channel: Channel, value: UInt<32>): true | string {
+  const partner = channel.partner.address;
+  if (channel.state !== ChannelState.open)
+    return `path: channel with "${partner}" in state "${channel.state}" instead of "${ChannelState.open}"`;
+  const { ownCapacity: capacity } = channelAmounts(channel);
+  if (capacity.lt(value))
+    return `path: channel with "${partner}" doesn't have enough capacity=${capacity.toString()}`;
+  return true;
+}
+
+/**
+ * Either returns true if partner can route a payment, or a reason as string if not
+ *
+ * @param channel - current Channel state, or undefined
+ * @param partnerPresence - possibly a partner on given tokenNetwork
+ * @param direct - Whether this is a direct transfer or mediated one
+ * @param value - amount of tokens to check if channel can route
+ * @returns true if channel can route, string containing reason if not
+ */
+function partnerCanRoute(
+  channel: Channel | undefined,
+  partnerPresence: matrixPresence.success | undefined,
+  direct: boolean,
+  value: UInt<32>,
+): true | string {
+  if (!partnerPresence?.payload.available) return `path: partner not available in transport`;
+  const partner = partnerPresence.meta.address;
+  if (!direct && !getCap(partnerPresence.payload.caps, Capabilities.MEDIATE))
+    return `path: partner "${partner}" doesn't mediate transfers`;
+  if (!channel) return `path: there's no direct channel with partner "${partner}"`;
+  return channelCanRoute(channel, value);
+}
+
+function validateRouteTarget(
   action: pathFind.request,
   state: RaidenState,
-  presences: Presences,
+  targetPresence: matrixPresence.success,
 ): void {
   const { tokenNetwork, target, value } = action.meta;
 
@@ -157,19 +188,15 @@ function validateRouteTargetAndEventuallyThrow(
     { tokenNetwork },
   ]);
 
-  assert(presences[target].payload.available, [ErrorCodes.PFS_TARGET_OFFLINE, { target }]);
+  assert(targetPresence.payload.available, [ErrorCodes.PFS_TARGET_OFFLINE, { target }]);
 
-  assert(getCap(presences[target].payload.caps, Capabilities.RECEIVE), [
+  assert(getCap(targetPresence.payload.caps, Capabilities.RECEIVE), [
     ErrorCodes.PFS_TARGET_NO_RECEIVE,
     { target },
   ]);
 
   assert(
-    Object.values(state.channels).some(
-      (channel) =>
-        channelCanRoute(state, presences, tokenNetwork, channel.partner.address, target, value) ===
-        true,
-    ),
+    Object.values(state.channels).some((channel) => channelCanRoute(channel, value) === true),
     ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
   );
 }
@@ -202,9 +229,9 @@ function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Obser
 }
 
 function filterPaths(
+  state: RaidenState,
   action: pathFind.request,
   { address, log }: RaidenEpicDeps,
-  { state, presences }: Latest,
   paths: Paths,
 ): Paths {
   const filteredPaths: Paths = [];
@@ -218,16 +245,13 @@ function filterPaths(
     let shouldSelectPath = false;
     let reasonToNotSelect = '';
     if (!filteredPaths.length) {
-      const channelCanRoutePossible = channelCanRoute(
-        state,
-        presences,
-        action.meta.tokenNetwork,
-        recipient,
-        action.meta.target,
-        action.meta.value,
-      );
-      if (channelCanRoutePossible === true) shouldSelectPath = true;
-      else reasonToNotSelect = channelCanRoutePossible;
+      const channel =
+        state.channels[channelKey({ tokenNetwork: action.meta.tokenNetwork, partner: recipient })];
+      const partnerCanRoutePossible = channel
+        ? channelCanRoute(channel, action.meta.value)
+        : `path: there's no direct channel with partner "${recipient}"`;
+      if (partnerCanRoutePossible === true) shouldSelectPath = true;
+      else reasonToNotSelect = partnerCanRoutePossible;
     } else if (recipient !== filteredPaths[0].path[0]) {
       reasonToNotSelect = 'path: already selected another recipient';
     } else if (fee.gt(filteredPaths[0].fee)) {
@@ -376,56 +400,36 @@ function isNoRouteFoundError(error: PathError | undefined): boolean {
 }
 
 /**
- * Helper function to ensure Latest contains a peer's presence
- *
- * @param action$ - Observable of RaidenActions
- * @param deps - Epics dependencies
- * @param target - Peer's address
- * @returns Observable emitting a Latest object with peers presence in Latest.presences
- */
-export function waitForMatrixPresenceResponse$(
-  action$: Observable<RaidenAction>,
-  deps: RaidenEpicDeps,
-  target: Address,
-): Observable<Latest> {
-  return action$.pipe(
-    filter(
-      isResponseOf<typeof matrixPresence>(matrixPresence, { address: target }),
-    ),
-    take(1),
-    mergeMap((matrixPresenceResponse) => {
-      if (matrixPresence.success.is(matrixPresenceResponse)) {
-        return deps.latest$.pipe(first(({ presences }) => target in presences));
-      } else {
-        throw matrixPresenceResponse.payload;
-      }
-    }),
-  );
-}
-
-/**
  * @param action - pfs request action
  * @param deps - Epics dependencies
  * @param latest - Latest object
  * @param latest.state - Latest state
- * @param latest.presences - Latest presences
  * @param latest.config - Latest config
+ * @param targetPresence - Current presence of target
  * @returns Observable containing paths, new iou or error
  */
 export function getRoute$(
   action: pathFind.request,
   deps: RaidenEpicDeps,
-  { state, presences, config }: Latest,
+  { state, config }: Pick<Latest, 'state' | 'config'>,
+  targetPresence: matrixPresence.success,
 ): Observable<{ paths?: Paths; iou: Signed<IOU> | undefined; error?: PathError }> {
-  validateRouteTargetAndEventuallyThrow(action, state, presences);
+  validateRouteTarget(action, state, targetPresence);
 
   const { tokenNetwork, target, value } = action.meta;
 
   if (action.payload.paths) {
     return of({ paths: action.payload.paths, iou: undefined });
-  } else if (channelCanRoute(state, presences, tokenNetwork, target, target, value) === true) {
+  } else if (
+    partnerCanRoute(
+      state.channels[channelKey({ tokenNetwork, partner: target })],
+      targetPresence,
+      true,
+      value,
+    ) === true
+  ) {
     return of({
-      paths: [{ path: [deps.address, action.meta.target], fee: Zero as Int<32> }],
+      paths: [{ path: [deps.address, target], fee: Zero as Int<32> }],
       iou: undefined,
     });
   } else if (pfsIsDisabled(action, config)) {
@@ -436,17 +440,17 @@ export function getRoute$(
 }
 
 /**
+ * @param state - Latest RaidenState
  * @param action - pfs request action
  * @param deps - Epics dependencies
  * @param route - Received route to validate
- * @param latest - Latest object
  * @returns Observable of results actions after route is validated
  */
 export function validateRoute$(
+  state: RaidenState,
   action: pathFind.request,
   deps: RaidenEpicDeps,
   route: Route,
-  latest: Latest,
 ): Observable<pathFind.success | pathFind.failure | iouPersist | iouClear> {
   const { tokenNetwork } = action.meta;
   const { iou, paths, error } = route;
@@ -477,7 +481,7 @@ export function validateRoute$(
         }
       }
 
-      const filteredPaths = paths ? filterPaths(action, deps, latest, paths) : [];
+      const filteredPaths = paths ? filterPaths(state, action, deps, paths) : [];
 
       if (filteredPaths.length) {
         yield pathFind.success({ paths: filteredPaths }, action.meta);

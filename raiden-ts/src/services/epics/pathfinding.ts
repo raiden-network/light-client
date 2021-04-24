@@ -4,7 +4,7 @@ import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import pickBy from 'lodash/pickBy';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, combineLatest, defer, EMPTY, from, merge, of, timer } from 'rxjs';
+import { AsyncSubject, combineLatest, defer, EMPTY, from, of, timer } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -35,20 +35,15 @@ import type { RaidenState } from '../../state';
 import { makeMessageId } from '../../transfers/utils';
 import { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
-import type { Latest, RaidenEpicDeps } from '../../types';
+import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
-import { completeWith, pluckDistinct } from '../../utils/rx';
+import { completeWith, dispatchRequestAndGetResponse, pluckDistinct } from '../../utils/rx';
 import type { Int, UInt } from '../../utils/types';
 import type { iouClear, iouPersist } from '../actions';
 import { pathFind, servicesValid } from '../actions';
 import { PfsMode, Service } from '../types';
-import {
-  getRoute$,
-  makeTimestamp,
-  validateRoute$,
-  waitForMatrixPresenceResponse$,
-} from './helpers';
+import { getRoute$, makeTimestamp, validateRoute$ } from './helpers';
 
 /**
  * Check if a transfer can be made and return a set of paths for it.
@@ -66,33 +61,20 @@ export function pfsRequestEpic(
   matrixPresence.request | pathFind.success | pathFind.failure | iouPersist | iouClear
 > {
   return action$.pipe(
-    filter(isActionOf(pathFind.request)),
-    concatMap((action) =>
-      deps.latest$.pipe(
-        first(),
-        mergeMap((latest) => {
-          const { target } = action.meta;
-          let presenceRequest: Observable<matrixPresence.request>;
-          let latestWithTargetInPresences: Observable<Latest>;
-
-          if (target in latest.presences) {
-            presenceRequest = EMPTY;
-            latestWithTargetInPresences = of(latest);
-          } else {
-            presenceRequest = of(matrixPresence.request(undefined, { address: target }));
-            latestWithTargetInPresences = waitForMatrixPresenceResponse$(action$, deps, target);
-          }
-
-          return merge(
-            latestWithTargetInPresences.pipe(
-              mergeMap((latest) => getRoute$(action, deps, latest)),
-              withLatestFrom(deps.latest$),
-              mergeMap(([route, latest]) => validateRoute$(action, deps, route, latest)),
-              catchError((err) => of(pathFind.failure(err, action.meta))),
+    dispatchRequestAndGetResponse(matrixPresence, (dispatch) =>
+      action$.pipe(
+        filter(isActionOf(pathFind.request)),
+        concatMap((action) =>
+          dispatch(matrixPresence.request(undefined, { address: action.meta.target })).pipe(
+            withLatestFrom(deps.latest$),
+            mergeMap(([targetPresence, latest]) =>
+              getRoute$(action, deps, latest, targetPresence),
             ),
-            presenceRequest,
-          );
-        }),
+            withLatestFrom(deps.latest$),
+            mergeMap(([route, { state }]) => validateRoute$(state, action, deps, route)),
+            catchError((err) => of(pathFind.failure(err, action.meta))),
+          ),
+        ),
       ),
     ),
   );
