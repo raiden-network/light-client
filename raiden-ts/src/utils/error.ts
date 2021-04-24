@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { map } from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/pipeable';
+import { pipe } from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import findKey from 'lodash/findKey';
 
