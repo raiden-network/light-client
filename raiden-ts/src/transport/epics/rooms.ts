@@ -6,12 +6,10 @@ import { delayWhen, filter, ignoreElements, mergeMap, withLatestFrom } from 'rxj
 import type { RaidenAction } from '../../actions';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
-import { getServerName } from '../../utils/matrix';
 import { completeWith, mergeWith } from '../../utils/rx';
-import { globalRoomNames, roomMatch } from './helpers';
 
 /**
- * Leave any (new or invited) room which is not global
+ * Leave any (new or invited) room
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
@@ -36,12 +34,9 @@ export function matrixLeaveUnknownRoomsEpic(
     ),
     completeWith(state$),
     // filter for leave events to us
-    filter(([[matrix, room], config]) => {
+    filter(([[, room]]) => {
       const myMembership = room.getMyMembership();
       if (!myMembership || myMembership === 'leave') return false; // room already gone while waiting
-      const serverName = getServerName(matrix.getHomeserverUrl());
-      if (globalRoomNames(config).some((g) => roomMatch(`#${g}:${serverName}`, room)))
-        return false;
       return true;
     }),
     mergeMap(async ([[matrix, room]]) => {

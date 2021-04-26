@@ -3,7 +3,7 @@ import constant from 'lodash/constant';
 import isEmpty from 'lodash/isEmpty';
 import sortBy from 'lodash/sortBy';
 import type { Filter, LoginPayload, MatrixClient } from 'matrix-js-sdk';
-import { createClient, MatrixEvent } from 'matrix-js-sdk';
+import { createClient } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 import type { AsyncSubject, Observable } from 'rxjs';
 import { combineLatest, defer, EMPTY, from, merge, of, throwError, timer } from 'rxjs';
@@ -18,7 +18,6 @@ import {
   map,
   mapTo,
   mergeMap,
-  pluck,
   retryWhen,
   take,
   tap,
@@ -43,56 +42,18 @@ import { matrixSetup } from '../actions';
 import type { RaidenMatrixSetup } from '../state';
 import type { Caps } from '../types';
 import { stringifyCaps } from '../utils';
-import { globalRoomNames } from './helpers';
-
-/**
- * Joins the global broadcast rooms and returns the room ids.
- *
- * @param config - The {@link RaidenConfig} provides the global room aliases.
- * @param matrix - The {@link MatrixClient} instance used to create the filter.
- * @returns Observable of the list of room ids for the the broadcast rooms.
- */
-function joinGlobalRooms(config: RaidenConfig, matrix: MatrixClient): Observable<string[]> {
-  const serverName = getServerName(matrix.getHomeserverUrl())!;
-  return from(globalRoomNames(config)).pipe(
-    map((globalRoom) => `#${globalRoom}:${serverName}`),
-    mergeMap((alias) =>
-      matrix.joinRoom(alias).then((room) => {
-        // set alias in room state directly
-        // this trick is needed because global rooms aren't synced
-        const event = {
-          type: 'm.room.aliases' as const,
-          state_key: serverName,
-          origin_server_ts: Date.now(),
-          content: { aliases: [alias] },
-          event_id: `$local_${Date.now()}`,
-          room_id: room.roomId,
-          sender: matrix.getUserId()!,
-        };
-        room.currentState.setStateEvents([
-          new MatrixEvent<typeof event['content'], typeof event['type']>(event),
-        ] as MatrixEvent<any, any>[]); // eslint-disable-line @typescript-eslint/no-explicit-any
-        matrix.store.storeRoom(room);
-        matrix.emit('Room', room);
-        return room;
-      }),
-    ),
-    pluck('roomId'),
-    toArray(),
-  );
-}
 
 /**
  * Creates and returns a matrix filter. The filter reduces the size of the initial sync by
  * filtering out broadcast rooms, emphemeral messages like receipts etc.
  *
  * @param matrix - The {@link MatrixClient} instance used to create the filter.
- * @param roomIds - The ids of the rooms to filter out during sync.
+ * @param notRooms - The ids of the rooms to filter out during sync.
  * @returns Observable of the {@link Filter} that was created.
  */
-async function createMatrixFilter(matrix: MatrixClient, roomIds: string[]): Promise<Filter> {
+async function createMatrixFilter(matrix: MatrixClient, notRooms: string[] = []): Promise<Filter> {
   const roomFilter = {
-    not_rooms: roomIds,
+    not_rooms: notRooms,
     ephemeral: {
       not_types: ['m.receipt', 'm.typing'],
     },
@@ -124,8 +85,7 @@ function startMatrixSync(
     // wait 1s before starting matrix, so event listeners can be registered
     delayWhen(([, { pollingInterval }]) => timer(Math.ceil(pollingInterval / 5))),
     mergeMap(([, config]) =>
-      joinGlobalRooms(config, matrix).pipe(
-        mergeMap(async (roomIds) => createMatrixFilter(matrix, roomIds)),
+      defer(async () => createMatrixFilter(matrix)).pipe(
         mergeMap(async (filter) => {
           await matrix.setPushRuleEnabled('global', 'override', '.m.rule.master', true);
           return filter;

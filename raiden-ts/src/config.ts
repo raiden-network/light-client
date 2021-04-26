@@ -9,7 +9,6 @@ import { Capabilities, DEFAULT_CONFIRMATIONS } from './constants';
 import { PfsMode, PfsModeC } from './services/types';
 import { exponentialBackoff } from './transfers/epics/utils';
 import { Caps } from './transport/types';
-import { getNetworkName } from './utils/ethers';
 import { Address, UInt } from './utils/types';
 
 const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
@@ -30,7 +29,6 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - expiryFactor - Multiply revealTimeout to get how far in the future
  *    transfer expiration block should be
  * - httpTimeout - Used in http fetch requests
- * - discoveryRoom - Discovery Room to auto-join, use null to disable
  * - additionalServices - Array of extra services URLs (or addresses, if URL set on SecretRegistry)
  * - pfsMode - One of 'disabled' (disables PFS usage and notifications), 'auto' (notifies all of
  *    registered and additionalServices, picks cheapest for transfers without explicit pfs),
@@ -70,7 +68,6 @@ export const RaidenConfig = t.readonly(
       settleTimeout: t.number,
       expiryFactor: t.number, // must be > 1.0
       httpTimeout: t.number,
-      discoveryRoom: t.union([t.string, t.null]),
       additionalServices: t.readonlyArray(t.union([Address, t.string])),
       pfsMode: PfsModeC,
       pfsSafetyMargin: t.union([t.number, t.tuple([t.number, t.number])]),
@@ -124,7 +121,6 @@ export function makeDefaultConfig(
   { network }: { network: Network },
   overwrites?: PartialRaidenConfig,
 ): RaidenConfig {
-  const networkName = getNetworkName(network);
   const matrixServerInfos =
     network.chainId === 1
       ? 'https://raw.githubusercontent.com/raiden-network/raiden-service-bundle/master/known_servers/known_servers-production-v1.2.0.json'
@@ -146,7 +142,6 @@ export function makeDefaultConfig(
     revealTimeout: 50,
     expiryFactor: 1.1, // must be > 1.0
     httpTimeout: 30e3,
-    discoveryRoom: `raiden_${networkName}_discovery`,
     additionalServices: [],
     pfsMode: PfsMode.auto,
     pfsSafetyMargin: 1.0, // multiplier
