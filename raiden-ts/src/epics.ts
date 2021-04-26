@@ -1,4 +1,5 @@
 import { MaxUint256 } from '@ethersproject/constants';
+import { uniq } from 'lodash/fp';
 import unset from 'lodash/fp/unset';
 import isEqual from 'lodash/isEqual';
 import negate from 'lodash/negate';
@@ -35,10 +36,9 @@ import { udcDeposit } from './services/actions';
 import * as ServicesEpics from './services/epics';
 import type { RaidenState } from './state';
 import * as TransfersEpics from './transfers/epics';
-import { rtcChannel } from './transport/actions';
+import { matrixPresence, rtcChannel } from './transport/actions';
 import * as TransportEpics from './transport/epics';
 import type { Caps } from './transport/types';
-import { getPresences$ } from './transport/utils';
 import type { Latest, RaidenEpicDeps } from './types';
 import { completeWith, pluckDistinct } from './utils/rx';
 import type { UInt } from './utils/types';
@@ -200,7 +200,27 @@ export function getLatest$(
       ),
     })),
   );
-  const presences$ = getPresences$(action$);
+  const whitelisted$ = state$.pipe(
+    take(1),
+    mergeMap((initialState) => {
+      const initialPartners: Latest['whitelisted'] = uniq(
+        Object.values(initialState.channels).map(({ partner }) => partner.address),
+      );
+      return action$.pipe(
+        filter(matrixPresence.request.is),
+        scan(
+          (whitelist, request) =>
+            whitelist.includes(request.meta.address)
+              ? whitelist
+              : [...whitelist, request.meta.address],
+          initialPartners,
+        ),
+        startWith(initialPartners),
+        distinctUntilChanged(),
+      );
+    }),
+  );
+
   const rtc$ = action$.pipe(
     filter(rtcChannel.is),
     // scan: if v.payload is defined, set it; else, unset
@@ -213,14 +233,14 @@ export function getLatest$(
   );
 
   return combineLatest([
-    combineLatest([action$, state$, config$, presences$, rtc$]),
+    combineLatest([action$, state$, config$, whitelisted$, rtc$]),
     combineLatest([udcDeposit$, blockTime$, stale$]),
   ]).pipe(
-    map(([[action, state, config, presences, rtc], [udcDeposit, blockTime, stale]]) => ({
+    map(([[action, state, config, whitelisted, rtc], [udcDeposit, blockTime, stale]]) => ({
       action,
       state,
       config,
-      presences,
+      whitelisted,
       rtc,
       udcDeposit,
       blockTime,

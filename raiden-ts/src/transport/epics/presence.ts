@@ -1,13 +1,11 @@
-import { getAddress } from '@ethersproject/address';
 import { verifyMessage } from '@ethersproject/wallet';
 import getOr from 'lodash/fp/getOr';
 import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import minBy from 'lodash/minBy';
-import pick from 'lodash/pick';
-import type { MatrixClient, MatrixEvent, User } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { combineLatest, defer, EMPTY, fromEvent, of } from 'rxjs';
+import { defer, EMPTY, of } from 'rxjs';
 import {
   catchError,
   distinctUntilChanged,
@@ -18,10 +16,9 @@ import {
   map,
   mergeMap,
   pluck,
-  scan,
   skip,
-  startWith,
   switchMap,
+  tap,
   toArray,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -31,19 +28,17 @@ import { channelMonitored } from '../../channels/actions';
 import { intervalFromConfig } from '../../config';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
-import { assert } from '../../utils';
 import { isActionOf } from '../../utils/actions';
 import { ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { getUserPresence } from '../../utils/matrix';
-import { completeWith, pluckDistinct, retryWhile } from '../../utils/rx';
+import { completeWith, mergeWith, retryWhile } from '../../utils/rx';
 import type { Address } from '../../utils/types';
 import { matrixPresence } from '../actions';
-import { parseCaps, stringifyCaps } from '../utils';
+import { getAddressFromUserId, parseCaps, stringifyCaps } from '../utils';
 
 // unavailable just means the user didn't do anything over a certain amount of time, but they're
 // still there, so we consider the user as available/online then
 const AVAILABLE = ['online', 'unavailable'];
-const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
 
 /**
  * Search user directory for valid users matching a given address and return latest
@@ -68,8 +63,7 @@ function searchAddressPresence$(
       for (const user of results) {
         if (!user.display_name) continue;
         try {
-          const match = userRe.exec(user.user_id);
-          if (!match || getAddress(match[1]) !== address) continue;
+          if (getAddressFromUserId(user.user_id) !== address) continue;
           const recovered = verifyMessage(user.user_id, user.display_name);
           if (!recovered || recovered !== address) continue;
         } catch (err) {
@@ -128,7 +122,6 @@ function searchAddressPresence$(
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
  * @param deps.matrix$ - MatrixClient async subject
- * @param deps.latest$ - Latest values
  * @param deps.log - Logger instance
  * @param deps.config$ - Config observable
  * @returns Observable of presence updates or fail action
@@ -136,167 +129,31 @@ function searchAddressPresence$(
 export function matrixMonitorPresenceEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, latest$, config$, log }: RaidenEpicDeps,
+  { matrix$, config$, log }: RaidenEpicDeps,
 ): Observable<matrixPresence.success | matrixPresence.failure> {
+  const presences = new Map<Address, matrixPresence.success>();
   return action$.pipe(
     filter(isActionOf(matrixPresence.request)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
-    mergeMap((action) => matrix$.pipe(map((matrix) => ({ action, matrix })))),
-    groupBy(({ action }) => action.meta.address),
+    groupBy((action) => action.meta.address),
     mergeMap((grouped$) =>
       grouped$.pipe(
-        withLatestFrom(latest$),
+        mergeWith(() => matrix$),
+        withLatestFrom(config$),
         // if we're already fetching presence for this address, no need to fetch again
-        exhaustMap(([{ action, matrix }, { presences }]) => {
-          // we already monitored/saw this user's presence
-          if (action.meta.address in presences) return of(presences[action.meta.address]);
-          return searchAddressPresence$(matrix, action.meta.address, { log, config$ });
+        exhaustMap(([[action, matrix], { httpTimeout }]) => {
+          const cached = presences.get(action.meta.address);
+          // we already fetched this peer's presence recently
+          if (cached && Date.now() - cached.payload.ts < httpTimeout) return of(cached);
+          return searchAddressPresence$(matrix, action.meta.address, { log, config$ }).pipe(
+            tap((response) => {
+              if (matrixPresence.success.is(response))
+                presences.set(action.meta.address, response);
+            }),
+          );
         }),
       ),
     ),
-  );
-}
-
-const comparePresencesFields = ['userId', 'available', 'caps'] as const;
-type PresenceContent = ReturnType<typeof getUserPresence> extends PromiseLike<infer U> ? U : never;
-type MatrixPresenceEvent = Omit<MatrixEvent, 'getContent'> & {
-  getContent: () => PresenceContent;
-};
-
-// observable of all addresses whose presence monitoring was requested since init
-function toMonitor$(action$: Observable<RaidenAction>) {
-  const toMonitor = new Set<Address>();
-  return action$.pipe(
-    filter(matrixPresence.request.is),
-    scan((toMonitor, request) => toMonitor.add(request.meta.address), toMonitor),
-    startWith(toMonitor),
-  );
-}
-
-function fetchPresence$(
-  user: User,
-  address: Address,
-  event: MatrixPresenceEvent,
-  {
-    log,
-    config$,
-    latest$,
-    matrix$,
-  }: Pick<RaidenEpicDeps, 'log' | 'config$' | 'latest$' | 'matrix$'>,
-) {
-  return matrix$.pipe(
-    switchMap((matrix) =>
-      combineLatest([
-        // always fetch profile info, to get up-to-date displayname, avatar_url & presence
-        defer(async () => matrix.getProfileInfo(user.userId)),
-        defer(async () =>
-          AVAILABLE.includes(event.getContent().presence)
-            ? event.getContent()
-            : getUserPresence(matrix, user.userId),
-        ),
-        latest$.pipe(pluckDistinct('rtc', address)),
-      ]),
-    ),
-    map(([profile, { presence, last_active_ago }, rtc]) => {
-      // errors raised here will be logged and ignored on catchError below
-      assert(profile?.displayname, 'no displayname');
-      // ecrecover address, validating displayName is the signature of the userId
-      const recovered = verifyMessage(user.userId, profile.displayname) as Address | undefined;
-      assert(recovered === address, `invalid displayname signature: ${recovered} !== ${address}`);
-      if (presence !== user.presence)
-        log.warn('Presence mismatch', { user, presence, last_active_ago });
-      // react on both presence events and rtc channel presence
-      const available = AVAILABLE.includes(presence) || !!rtc;
-      return matrixPresence.success(
-        {
-          userId: user.userId,
-          available,
-          ts: last_active_ago ? Date.now() - last_active_ago : user.lastPresenceTs ?? Date.now(),
-          caps: parseCaps(profile.avatar_url),
-        },
-        { address: recovered },
-      );
-    }),
-    retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
-    catchError((err) => {
-      log.warn('Error validating presence event, ignoring', user.userId, event, err);
-      return EMPTY;
-    }),
-  );
-}
-
-/**
- * Monitor peers matrix presence from User.presence events
- * We aggregate all users of interest (i.e. for which a monitor request was emitted at some point)
- * and emit presence updates for any presence change happening to a user validating to this address
- *
- * @param action$ - Observable of RaidenActions
- * @param state$ - Observable of RaidenStates
- * @param deps - RaidenEpicDeps members
- * @param deps.log - Logger instance
- * @param deps.matrix$ - MatrixClient async subject
- * @param deps.latest$ - Latest values
- * @param deps.config$ - Config observable
- * @returns Observable of presence updates
- */
-export function matrixPresenceUpdateEpic(
-  action$: Observable<RaidenAction>,
-  {}: Observable<RaidenState>,
-  deps: RaidenEpicDeps,
-): Observable<matrixPresence.success> {
-  const { matrix$, latest$ } = deps;
-  return matrix$.pipe(
-    // when matrix finishes initialization, register to matrix presence events
-    switchMap((matrix) =>
-      // matrix's 'User.presence' sometimes fail to fire, but generic 'event' is always fired,
-      // and User (retrieved via matrix.getUser) is up-to-date before 'event' emits
-      fromEvent<MatrixPresenceEvent>(matrix, 'event').pipe(
-        completeWith(action$),
-        filter((event) => event.getType() === 'm.presence'),
-        // parse peer address from userId
-        mergeMap(function* (event) {
-          try {
-            // as 'event' is emitted after user is (created and) updated, getUser always returns it
-            const user = matrix.getUser(event.getSender());
-            assert(user?.presence);
-            const peerAddress = userRe.exec(user.userId)?.[1];
-            assert(peerAddress);
-            // getAddress will convert any valid address into checksummed-format
-            const address = getAddress(peerAddress) as Address;
-            // filter out events from users we don't care about
-            // i.e.: presence monitoring never requested
-            yield { user, address, event };
-          } catch (err) {}
-        }),
-      ),
-    ),
-    withLatestFrom(toMonitor$(action$)),
-    filter(([{ address }, toMonitor]) => toMonitor.has(address)),
-    groupBy(([{ address }]) => address),
-    mergeMap((grouped$) =>
-      grouped$.pipe(
-        switchMap(([{ user, address, event }]) => fetchPresence$(user, address, event, deps)),
-        completeWith(action$),
-      ),
-    ),
-    withLatestFrom(latest$),
-    // filter out if presence update is to offline, and address became online in another user
-    filter(
-      ([action, { presences }]) =>
-        action.payload.available ||
-        !(action.meta.address in presences) ||
-        !presences[action.meta.address].payload.available ||
-        action.payload.userId === presences[action.meta.address].payload.userId,
-    ),
-    // deduplicate updates
-    filter(
-      ([action, { presences }]) =>
-        !isEqual(
-          pick(action.payload, comparePresencesFields),
-          pick(presences[action.meta.address]?.payload, comparePresencesFields),
-        ),
-    ),
-    pluck(0),
   );
 }
 
