@@ -9,7 +9,9 @@ import {
   mapTo,
   mergeMap,
   pluck,
+  scan,
   share,
+  startWith,
   take,
   tap,
   withLatestFrom,
@@ -25,12 +27,14 @@ import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { isMessageReceivedOfType, MessageType, Processed, signMessage } from '../../messages';
 import { messageSend } from '../../messages/actions';
 import type { RaidenState } from '../../state';
+import { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { retryWhile } from '../../utils/rx';
+import type { Address } from '../../utils/types';
 import { Signed } from '../../utils/types';
 import { withdraw, withdrawCompleted, withdrawExpire, withdrawMessage } from '../actions';
 import { Direction } from '../state';
@@ -237,55 +241,60 @@ export function withdrawSendTxEpic(
  * @param deps - Epics dependencies
  * @param deps.signer - Signer instance
  * @param deps.log - Logger instance
- * @param deps.latest$ - Latest observable
  * @returns Observable of messageSend.request actions
  */
 export function withdrawMessageProcessedEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { signer, log, latest$ }: RaidenEpicDeps,
+  { signer, log }: RaidenEpicDeps,
 ): Observable<messageSend.request> {
   const cache = new LruCache<string, Signed<Processed>>(32);
+  const noDelivery = new Set<Address>();
   return action$.pipe(
     filter(isActionOf([withdrawMessage.request, withdrawMessage.success])),
     filter(
       (action) =>
         (action.meta.direction === Direction.RECEIVED) !== withdrawMessage.success.is(action),
     ),
-    concatMap((action) =>
-      latest$.pipe(
-        first(),
-        filter(
-          ({ presences }) =>
-            // if caps.Delivery is set for partner, they don't need this Processed either
-            action.meta.partner in presences &&
-            !!getCap(presences[action.meta.partner].payload.caps, Capabilities.DELIVERY),
-        ),
-        mergeMap(() => {
-          const message = action.payload.message;
-          let processed$: Observable<Signed<Processed>>;
-          const cacheKey = message.message_identifier.toString();
-          const cached = cache.get(cacheKey);
-          if (cached) processed$ = of(cached);
-          else {
-            const processed: Processed = {
-              type: MessageType.PROCESSED,
-              message_identifier: message.message_identifier,
-            };
-            processed$ = from(signMessage(signer, processed, { log })).pipe(
-              tap((signed) => cache.set(cacheKey, signed)),
-            );
-          }
-
-          return processed$.pipe(
-            map((processed) =>
-              messageSend.request(
-                { message: processed },
-                { address: action.meta.partner, msgId: processed.message_identifier.toString() },
-              ),
-            ),
+    withLatestFrom(
+      action$.pipe(
+        filter(matrixPresence.success.is),
+        scan((acc, presence) => {
+          if (!getCap(presence.payload.caps, Capabilities.DELIVERY))
+            acc.add(presence.meta.address);
+          else acc.delete(presence.meta.address);
+          return acc;
+        }, noDelivery),
+        startWith(noDelivery),
+      ),
+    ),
+    concatMap(([action, noDelivery]) =>
+      defer(() => {
+        if (noDelivery.has(action.meta.partner)) return EMPTY;
+        const message = action.payload.message;
+        let processed$: Observable<Signed<Processed>>;
+        const cacheKey = message.message_identifier.toString();
+        const cached = cache.get(cacheKey);
+        if (cached) processed$ = of(cached);
+        else {
+          const processed: Processed = {
+            type: MessageType.PROCESSED,
+            message_identifier: message.message_identifier,
+          };
+          processed$ = from(signMessage(signer, processed, { log })).pipe(
+            tap((signed) => cache.set(cacheKey, signed)),
           );
-        }),
+        }
+
+        return processed$.pipe(
+          map((processed) =>
+            messageSend.request(
+              { message: processed },
+              { address: action.meta.partner, msgId: processed.message_identifier.toString() },
+            ),
+          ),
+        );
+      }).pipe(
         catchError(
           (err) => (
             log.info('Signing Processed message for Withdraw message failed, ignoring', err), EMPTY
