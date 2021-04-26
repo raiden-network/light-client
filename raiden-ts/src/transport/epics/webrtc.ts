@@ -66,8 +66,7 @@ import {
 import type { Address } from '../../utils/types';
 import { decode, isntNil, last } from '../../utils/types';
 import { matrixPresence, rtcChannel } from '../actions';
-import { getCap } from '../utils';
-import { parseMessage } from './helpers';
+import { getCap, parseMessage } from '../utils';
 
 interface CallInfo {
   callId: string;
