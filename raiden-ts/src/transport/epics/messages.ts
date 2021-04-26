@@ -20,7 +20,9 @@ import {
   map,
   mergeMap,
   pluck,
+  scan,
   share,
+  startWith,
   take,
   takeUntil,
   tap,
@@ -47,11 +49,13 @@ import {
   concatBuffer,
   dispatchRequestAndGetResponse,
   mergeWith,
+  pluckDistinct,
   retryWhile,
 } from '../../utils/rx';
+import type { Address } from '../../utils/types';
 import { isntNil, Signed } from '../../utils/types';
 import { matrixPresence } from '../actions';
-import { getCap, getPresenceByUserId } from '../utils';
+import { getAddressFromUserId, getCap } from '../utils';
 import { getRoom$, globalRoomNames, parseMessage } from './helpers';
 
 function getMessageBody(message: string | Signed<Message>): string {
@@ -337,7 +341,6 @@ export function matrixMessageReceivedEpic(
   {}: Observable<RaidenState>,
   { log, matrix$, config$, latest$ }: RaidenEpicDeps,
 ): Observable<messageReceived> {
-  // gets/wait for the user to be in a room, and then sendMessage
   return matrix$.pipe(
     // when matrix finishes initialization, register to matrix timeline events
     mergeWith((matrix) => fromEvent<MatrixEvent>(matrix, 'toDeviceEvent')),
@@ -349,30 +352,36 @@ export function matrixMessageReceivedEpic(
     withLatestFrom(config$),
     mergeWith(([event, { httpTimeout }]) =>
       latest$.pipe(
-        filter(({ presences }) => !!getPresenceByUserId(presences, event.getSender())),
+        pluckDistinct('whitelisted'),
+        map((whitelisted) => {
+          const address = getAddressFromUserId(event.getSender());
+          // TODO: check if it's possible again to enforce message came from a client-side
+          // validated userId presence, even though the messages signatures are already validated
+          if (!!address && whitelisted.includes(address)) return address;
+        }),
+        filter(isntNil),
         take(1),
-        // take up to an arbitrary timeout to know presence status (monitor) from sender
+        // take up to an arbitrary timeout for sender to be whitelisted
         takeUntil(timer(httpTimeout)),
       ),
     ),
     completeWith(action$),
-    mergeMap(([[event], { presences }]) => {
-      const presence = getPresenceByUserId(presences, event.getSender())!;
+    mergeMap(([[event], senderAddress]) => {
       const lines: string[] = (event.getContent().body ?? '').split('\n');
       return scheduled(lines, asapScheduler).pipe(
         map((line) => {
           let message;
           if (event.getContent().msgtype === textMsgType)
-            message = parseMessage(line, presence.meta.address, { log });
+            message = parseMessage(line, senderAddress, { log });
           return messageReceived(
             {
               text: line,
               ...(message ? { message } : {}),
               ts: Date.now(),
-              userId: presence.payload.userId,
+              userId: event.getSender(),
               ...(event.getContent().msgtype ? { msgtype: event.getContent().msgtype } : {}),
             },
-            presence.meta,
+            { address: senderAddress },
           );
         }),
       );
@@ -388,26 +397,35 @@ export function matrixMessageReceivedEpic(
  * @param deps - RaidenEpicDeps members
  * @param deps.log - Logger instance
  * @param deps.signer - Signer instance
- * @param deps.latest$ - Latest observable
  * @returns Observable of messageSend.request actions
  */
 export function deliveredEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, signer, latest$ }: RaidenEpicDeps,
+  { log, signer }: RaidenEpicDeps,
 ): Observable<messageSend.request> {
   const cache = new LruCache<string, Signed<Delivered>>(32);
+  const noDelivery = new Set<Address>();
   return action$.pipe(
     filter(
       isMessageReceivedOfType([Signed(Processed), Signed(SecretRequest), Signed(SecretReveal)]),
     ),
-    withLatestFrom(latest$),
-    filter(
-      ([action, { presences }]) =>
-        action.meta.address in presences &&
-        // skip if peer supports !Capabilities.DELIVERY
-        !!getCap(presences[action.meta.address].payload.caps, Capabilities.DELIVERY),
+    // aggregate seen matrixPresence.success addresses with !DELIVERY set;
+    // if an address's presence hasn't been seen, it's assumed Delivered is needed
+    withLatestFrom(
+      action$.pipe(
+        filter(matrixPresence.success.is),
+        scan((acc, presence) => {
+          if (!getCap(presence.payload.caps, Capabilities.DELIVERY))
+            acc.add(presence.meta.address);
+          else acc.delete(presence.meta.address);
+          return acc;
+        }, noDelivery),
+        startWith(noDelivery),
+      ),
     ),
+    // skip iff peer supports !Capabilities.DELIVERY
+    filter(([action, noDelivery]) => !noDelivery.has(action.meta.address)),
     concatMap(([action]) => {
       const message = action.payload.message;
       // defer causes the cache check to be performed at subscription time

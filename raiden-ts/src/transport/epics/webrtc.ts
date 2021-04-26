@@ -19,7 +19,6 @@ import {
   catchError,
   delayWhen,
   distinct,
-  distinctUntilChanged,
   endWith,
   filter,
   finalize,
@@ -55,11 +54,10 @@ import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isResponseOf } from '../../utils/actions';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { matchError } from '../../utils/error';
-import { completeWith, takeIf, timeoutFirst } from '../../utils/rx';
+import { completeWith, dispatchRequestAndGetResponse, takeIf, timeoutFirst } from '../../utils/rx';
 import type { Address } from '../../utils/types';
 import { decode, isntNil } from '../../utils/types';
-import type { matrixPresence } from '../actions';
-import { rtcChannel } from '../actions';
+import { matrixPresence, rtcChannel } from '../actions';
 import { getCap, getSortedAddresses } from '../utils';
 import { parseMessage } from './helpers';
 
@@ -554,8 +552,8 @@ export function rtcConnectEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<rtcChannel | messageSend.request | messageReceived> {
-  const { latest$, config$, address } = deps;
+): Observable<rtcChannel | messageSend.request | messageReceived | matrixPresence.request> {
+  const { config$, address } = deps;
   return action$.pipe(
     // allow RTC connect to neighbors, initiators for received and targets for sent transfers
     filter(isActionOf([transferSigned, channelMonitored])),
@@ -574,18 +572,20 @@ export function rtcConnectEpic(
     }),
     distinct(),
     mergeMap((peer) =>
-      latest$.pipe(
-        pluck('presences', peer),
-        filter(isntNil),
-        distinctUntilChanged(
-          (a, b) =>
-            a.payload.userId === b.payload.userId &&
-            !!getCap(a.payload.caps, Capabilities.WEBRTC) ===
-              !!getCap(b.payload.caps, Capabilities.WEBRTC),
+      action$.pipe(
+        dispatchRequestAndGetResponse(matrixPresence, (dispatch) =>
+          dispatch(matrixPresence.request(undefined, { address: peer })).pipe(
+            withLatestFrom(config$),
+            switchMap(([presence, config]) =>
+              handlePresenceChange$(presence, action$, config, deps),
+            ),
+            completeWith(action$),
+            catchError((err) => {
+              deps.log.warn('Error fetching presence for WebRTC', peer, err);
+              return EMPTY;
+            }),
+          ),
         ),
-        withLatestFrom(config$),
-        switchMap(([action, config]) => handlePresenceChange$(action, action$, config, deps)),
-        completeWith(action$),
       ),
     ),
     takeIf(config$.pipe(pluck('caps', Capabilities.WEBRTC), completeWith(action$))),

@@ -28,7 +28,6 @@
   "CNL_ONCHAIN_UNLOCK_FAILED": "on-chain unlock transaction reverted.",
 
   "CNL_WITHDRAW_TRANSACTION_FAILED": "Withdraw transaction has failed.",
-  "CNL_WITHDRAW_PARTNER_OFFLINE": "Channel partner isn't online.",
   "CNL_WITHDRAW_EXPIRES_SOON": "Withdraw request expired or expires too soon.",
   "CNL_WITHDRAW_EXPIRED": "Withdraw request expired.",
   "CNL_WITHDRAW_AMOUNT_TOO_LOW": "Withdraw request contains an amount smaller than already withdrawn.",
