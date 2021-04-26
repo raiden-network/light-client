@@ -55,8 +55,7 @@ import {
 } from '../../utils/rx';
 import { Address, isntNil, Signed } from '../../utils/types';
 import { matrixPresence } from '../actions';
-import { getAddressFromUserId, getNoDeliveryPeers } from '../utils';
-import { parseMessage } from './helpers';
+import { getAddressFromUserId, getNoDeliveryPeers, parseMessage } from '../utils';
 
 function getMessageBody(message: string | Signed<Message>): string {
   return typeof message === 'string' ? message : encodeJsonMessage(message);

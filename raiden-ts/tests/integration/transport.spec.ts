@@ -682,8 +682,6 @@ describe('matrixMessageSendEpic', () => {
 describe('matrixMessageReceivedEpic', () => {
   test('receive: success', async () => {
     expect.assertions(1);
-    // Gets a log.warn(`Could not decode message: ${line}: ${err}`);
-    // at Object.parseMessage (src/transport/epics/helpers.ts:203:9)
     const message = 'test message';
     const [raiden, partner] = getSortedClients(await makeRaidens(2));
     const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
