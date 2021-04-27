@@ -1,40 +1,42 @@
 <template>
-  <div class="header-content">
-    <div class="header-content__back-button">
-      <v-btn
-        v-if="canNavigateBack"
-        data-cy="header-content_back-button"
-        height="40px"
-        width="40px"
-        icon
-        @click="navigateBack()"
-      >
-        <v-img :src="require('@/assets/app-header/back_arrow.svg')" />
-      </v-btn>
-    </div>
-    <div class="header-content__title">
-      <div class="header-content__title__route">
-        <span class="header-content__title__route__name">{{ $route.meta.title }}</span>
+  <v-container class="header-content pa-0" fluid>
+    <v-row align="center" no-gutters>
+      <v-col cols="2">
         <v-btn
-          v-if="availableInfoOverlay && !disableInfoButton"
-          class="header-content__title__route__info"
+          v-if="canNavigateBack"
+          data-cy="header-content_back-button"
+          height="36px"
+          width="36px"
           icon
-          height="20px"
-          width="20px"
+          @click="navigateBack()"
         >
-          <v-img
-            class="header-content__title__route__info__icon"
-            :src="require('@/assets/app-header/info.svg')"
-            @click="showInfo()"
-          />
+          <v-img :src="require('@/assets/app-header/back_arrow.svg')" />
         </v-btn>
-      </div>
-      <span v-if="showNetwork" class="header-content__title__network">{{ network }}</span>
-    </div>
-    <div class="header-content__items">
-      <slot />
-    </div>
-  </div>
+      </v-col>
+      <v-col cols="auto" class="header-content__title">
+        <div class="header-content__title__route">
+          <span class="header-content__title__route__name">{{ $route.meta.title }}</span>
+          <v-btn
+            v-if="availableInfoOverlay && !disableInfoButton"
+            class="header-content__title__route__info"
+            icon
+            x-small
+          >
+            <v-img
+              class="header-content__title__route__info__icon"
+              :src="require('@/assets/app-header/info.svg')"
+              width="10px"
+              @click="showInfo()"
+            />
+          </v-btn>
+        </div>
+        <span v-if="showNetwork" class="header-content__title__network">{{ network }}</span>
+      </v-col>
+      <v-col cols="2">
+        <slot />
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script lang="ts">
@@ -81,16 +83,13 @@ export default class HeaderContent extends Vue {
 
 <style lang="scss" scoped>
 @import '@/scss/colors';
+@import '@/scss/mixins';
 
 .header-content {
-  align-items: center;
-  display: flex;
-  flex: 1;
-  justify-content: center;
+  margin: 20px 20px;
 
-  &__back-button {
-    flex: 1;
-    margin-left: 20px;
+  @include respond-to(handhelds) {
+    margin: 10px 10px;
   }
 
   &__title {
@@ -105,12 +104,20 @@ export default class HeaderContent extends Vue {
       &__name {
         color: $color-white;
         font-size: 24px;
+
+        @include respond-to(handhelds) {
+          font-size: 20px;
+        }
       }
 
       &__info {
         align-self: center;
         cursor: pointer;
         margin-left: 10px;
+
+        @include respond-to(handhelds) {
+          margin-left: 3px;
+        }
       }
     }
 
@@ -118,12 +125,8 @@ export default class HeaderContent extends Vue {
       color: $secondary-text-color;
       font-size: 12px;
       font-weight: 500;
+      margin-top: -7px;
     }
-  }
-
-  &__items {
-    flex: 1;
-    margin-right: 20px;
   }
 }
 </style>
