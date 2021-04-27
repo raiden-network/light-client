@@ -8,7 +8,7 @@ describe('web3Provider', () => {
 
   test('return null when it detects no provider', async () => {
     const status = await Web3Provider.provider();
-    expect(status).toBe(null);
+    expect(status).toBeUndefined();
   });
 
   test('throw an exception when the user denies access to the provider', async () => {
@@ -27,6 +27,7 @@ describe('web3Provider', () => {
   test('return the provider when the user allows the connection to the provider', async () => {
     window.ethereum = {
       request: jest.fn().mockResolvedValue(true),
+      on: jest.fn(),
     };
 
     const status = await Web3Provider.provider();
@@ -35,7 +36,7 @@ describe('web3Provider', () => {
 
   test('return a legacy web3 provider when it exists', async () => {
     window.web3 = {
-      currentProvider: {},
+      currentProvider: { on: jest.fn() },
     };
 
     const status = await Web3Provider.provider();

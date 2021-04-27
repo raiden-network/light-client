@@ -1,47 +1,69 @@
 import WalletConnectProvider from '@walletconnect/web3-provider';
 import { providers } from 'ethers';
 
+import type { Configuration } from '@/services/config-provider';
+
+type Provider = string | (providers.JsonRpcProvider & { networkVersion?: string });
+
+function resetHandler() {
+  window.location.replace(window.location.origin);
+}
+
 export class Web3Provider {
-  static async provider(rpcEndpoint?: string, rpcEndpointWalletConnect?: string) {
-    let provider = null;
-
-    if (rpcEndpoint) {
-      if (!rpcEndpoint.startsWith('http')) {
-        provider = `https://${rpcEndpoint}`;
-      } else {
-        provider = rpcEndpoint;
-      }
-    } else if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.autoRefreshOnNetworkChange = false;
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      provider = window.ethereum;
-    } else if (window.web3) {
-      provider = window.web3.currentProvider;
-    } else if (rpcEndpointWalletConnect) {
-      const chainId = await getRpcEndpointChainId(rpcEndpointWalletConnect);
-      const provider = new WalletConnectProvider({
-        rpc: {
-          [chainId]: rpcEndpointWalletConnect,
-        },
-      });
-      await provider.enable();
-      return new providers.Web3Provider(provider);
+  static async provider(configuration?: Configuration): Promise<Provider | undefined> {
+    if (configuration?.rpc_endpoint) {
+      return getPureRpcProvider(configuration.rpc_endpoint);
+    } else if (this.injectedWeb3Available()) {
+      return await getInjectedProvider();
+    } else if (configuration?.rpc_endpoint_wallet_connect) {
+      return getWalletConnectProvider(configuration.rpc_endpoint_wallet_connect);
+    } else {
+      return undefined;
     }
-
-    /* istanbul ignore next */
-    if (provider && (provider.isMetaMask || provider.isWalletConnect)) {
-      const resetHandler = () => window.location.replace(window.location.origin);
-      provider.on('chainChanged', resetHandler);
-      provider.on('disconnect', resetHandler);
-    }
-
-    return provider;
   }
 
   static injectedWeb3Available = (): boolean => window.ethereum || window.web3;
 }
 
-async function getRpcEndpointChainId(rpcEndpoint: string): Promise<number> {
+function getPureRpcProvider(rpcEndpoint: string): Provider {
+  return rpcEndpoint.startsWith('http') ? rpcEndpoint : `https://${rpcEndpoint}`;
+}
+
+async function getInjectedProvider(): Promise<Provider> {
+  let provider;
+
+  if (window.ethereum) {
+    provider = window.ethereum;
+    provider.autoRefreshOnNetworkChange = false;
+    await provider.request({ method: 'eth_requestAccounts' });
+  } else if (window.web3) {
+    provider = window.web3.currentProvider;
+  }
+
+  registerResetHandler(provider);
+  return provider;
+}
+
+async function getWalletConnectProvider(rpcEndpoint: string): Promise<Provider> {
+  const chainId = await getChainIdOfRpcEndpoint(rpcEndpoint);
+  const provider = new WalletConnectProvider({
+    rpc: {
+      [chainId]: rpcEndpoint,
+    },
+  });
+  await provider.enable();
+  registerResetHandler(provider); // The packed Web3 provider does not have correct event handling anymore.
+  return new providers.Web3Provider(provider);
+}
+
+function registerResetHandler(provider: Provider | WalletConnectProvider): void {
+  if (typeof provider !== 'string') {
+    provider.on('chainChanged', resetHandler);
+    provider.on('disconnect', resetHandler);
+  }
+}
+
+async function getChainIdOfRpcEndpoint(rpcEndpoint: string): Promise<number> {
   const requestBody = { method: 'eth_chainId', params: [], id: 1, jsonrpc: '2.0' };
   const response = await fetch(rpcEndpoint, {
     method: 'POST',
