@@ -112,6 +112,12 @@ export default class AppHeader extends Mixins(NavigationMixin) {
       display: flex;
       justify-content: flex-end;
 
+      &__notifications-button {
+        @include respond-to(handhelds) {
+          margin-right: -10px;
+        }
+      }
+
       &__identicon {
         cursor: pointer;
         margin-left: 15px;
