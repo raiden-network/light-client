@@ -1,15 +1,15 @@
-import { verifyMessage } from '@ethersproject/wallet';
-import getOr from 'lodash/fp/getOr';
 import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
-import minBy from 'lodash/minBy';
+import uniq from 'lodash/uniq';
 import type { Observable } from 'rxjs';
-import { defer, EMPTY, merge, of } from 'rxjs';
+import { combineLatest, defer, from, merge, of } from 'rxjs';
 import {
   catchError,
+  concatMap,
   distinctUntilChanged,
   exhaustMap,
   filter,
+  first,
   groupBy,
   ignoreElements,
   map,
@@ -18,89 +18,64 @@ import {
   skip,
   switchMap,
   tap,
-  toArray,
+  timeout,
   withLatestFrom,
 } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
 import { channelMonitored } from '../../channels/actions';
 import { intervalFromConfig } from '../../config';
+import { PfsMode } from '../../services/types';
+import { getPresenceFromService$ } from '../../services/utils';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
-import { assert, ErrorCodes, networkErrors } from '../../utils/error';
-import { getUserPresence } from '../../utils/matrix';
-import { completeWith, mergeWith, retryWhile } from '../../utils/rx';
+import { networkErrors } from '../../utils/error';
+import { catchAndLog, completeWith, retryWhile } from '../../utils/rx';
 import type { Address } from '../../utils/types';
 import { matrixPresence } from '../actions';
-import { getAddressFromUserId, parseCaps, stringifyCaps } from '../utils';
-
-// unavailable just means the user didn't do anything over a certain amount of time, but they're
-// still there, so we consider the user as available/online then
-const AVAILABLE = ['online', 'unavailable'];
+import { stringifyCaps } from '../utils';
 
 /**
- * Search user directory for valid users matching a given address and return latest
+ * Fetch peer's presence info from services
  *
  * @param address - Address of interest
- * @param deps - Epics dependencies subset
- * @param deps.log - Logger instance
- * @param deps.matrix$ - Matrix client instance observable
- * @param deps.config$ - Config observable
+ * @param deps - Epics dependencies
  * @returns Observable of user with most recent presence
  */
 function searchAddressPresence$(
   address: Address,
-  { log, matrix$, config$ }: Pick<RaidenEpicDeps, 'log' | 'matrix$' | 'config$'>,
+  deps: Pick<RaidenEpicDeps, 'latest$' | 'config$' | 'serviceRegistryContract'>,
 ) {
-  // search for any user containing the address of interest in its userId
-  return matrix$.pipe(
-    mergeWith(async (matrix) => matrix.searchUserDirectory({ term: address.toLowerCase() })),
-    retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
-    // for every result matches, verify displayName signature is address of interest
-    mergeWith(function* ([, { results }]) {
-      for (const user of results) {
-        if (!user.display_name) continue;
-        try {
-          if (getAddressFromUserId(user.user_id) !== address) continue;
-          const recovered = verifyMessage(user.user_id, user.display_name);
-          if (!recovered || recovered !== address) continue;
-        } catch (err) {
-          continue;
-        }
-        yield user;
-      }
-    }),
-    mergeMap(
-      ([[matrix], user]) =>
-        defer(async () => getUserPresence(matrix, user.user_id)).pipe(
-          map((presence) => ({ ...presence, ...user })),
-          retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
-          catchError((err) => {
-            log.info('Error fetching user presence, ignoring:', err);
-            return EMPTY;
-          }),
+  const { config$, latest$ } = deps;
+  return combineLatest([latest$, config$]).pipe(
+    first(),
+    mergeMap(([{ state }, { pfsMode, additionalServices, httpTimeout }]) => {
+      let services = additionalServices;
+      if (pfsMode !== PfsMode.onlyAdditional)
+        services = uniq([...services, ...Object.keys(state.services)]);
+      return from(services).pipe(
+        concatMap((service) =>
+          getPresenceFromService$(address, service, deps).pipe(
+            timeout(httpTimeout),
+            catchAndLog(
+              { onErrors: networkErrors, maxRetries: 1 },
+              'Error fetching presence from service',
+              address,
+            ),
+          ),
         ),
-      3, // max parallelism on these requests
-    ),
-    toArray(),
-    // for all matched/verified users, get its presence through dedicated API
-    // it's required because, as the user events could already have been handled
-    // and filtered out by matrixPresenceUpdateEpic because it wasn't yet a
-    // user-of-interest, we could have missed presence updates, then we need to
-    // fetch it here directly, and from now on, that other epic will monitor its
-    // updates, and sort by most recently seen user
-    map((presences) => {
-      assert(presences.length, [ErrorCodes.TRNS_NO_VALID_USER, { address }]);
-      return minBy(presences, getOr(Number.POSITIVE_INFINITY, 'last_active_ago'))!;
+        // TODO: validate signature coming from service, once displayName is sent
+        first(),
+      );
     }),
-    map(({ presence, user_id: userId, avatar_url }) =>
+    map(({ user_id: userId, capabilities }) =>
       matrixPresence.success(
         {
           userId,
-          available: AVAILABLE.includes(presence),
+          available: true,
           ts: Date.now(),
-          caps: parseCaps(avatar_url),
+          caps: capabilities,
         },
         { address },
       ),
