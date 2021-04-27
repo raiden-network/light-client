@@ -5,13 +5,16 @@ import memoize from 'lodash/memoize';
 import uniqBy from 'lodash/uniqBy';
 import type { Observable } from 'rxjs';
 import { defer, EMPTY, from } from 'rxjs';
+import { fromFetch } from 'rxjs/fetch';
 import { catchError, first, map, mergeMap, toArray } from 'rxjs/operators';
 
 import type { ServiceRegistry } from '../contracts';
 import { MessageTypeId } from '../messages/utils';
+import { Caps } from '../transport/types';
+import { parseCaps } from '../transport/utils';
 import type { RaidenEpicDeps } from '../types';
 import { encode, jsonParse } from '../utils/data';
-import { assert, ErrorCodes, networkErrors } from '../utils/error';
+import { assert, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { LruCache } from '../utils/lru';
 import { retryAsync$ } from '../utils/rx';
 import type { Signature, Signed } from '../utils/types';
@@ -24,6 +27,22 @@ const serviceRegistryToken = memoize(
       onErrors: networkErrors,
     }).toPromise() as Promise<Address>,
 );
+
+/**
+ * Fetch, validate and cache the service URL for a given URL or service address
+ * (if registered on ServiceRegistry)
+ *
+ * @param pfsAddressUrl - service Address or URL
+ * @returns Promise to validated URL
+ */
+const pfsAddressUrl = memoize(async function pfsAddressUrl_(
+  pfsAddrOrUrl: string,
+  { serviceRegistryContract }: Pick<RaidenEpicDeps, 'serviceRegistryContract'>,
+): Promise<string> {
+  let url = pfsAddrOrUrl;
+  if (Address.is(pfsAddrOrUrl)) url = await serviceRegistryContract.callStatic.urls(pfsAddrOrUrl);
+  return validatePfsUrl(url);
+});
 
 const urlRegex =
   process.env.NODE_ENV === 'production'
@@ -68,7 +87,16 @@ export type ServiceError = t.TypeOf<typeof ServiceError>;
  */
 export async function pfsInfo(
   pfsAddrOrUrl: Address | string,
-  { serviceRegistryContract, network, contractsInfo, provider, config$ }: RaidenEpicDeps,
+  {
+    serviceRegistryContract,
+    network,
+    contractsInfo,
+    provider,
+    config$,
+  }: Pick<
+    RaidenEpicDeps,
+    'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
+  >,
 ): Promise<PFS> {
   const { pfsMaxFee } = await config$.pipe(first()).toPromise();
   /**
@@ -88,10 +116,8 @@ export async function pfsInfo(
   });
 
   // if it's an address, fetch url from ServiceRegistry, else it's already the URL
-  let url = pfsAddrOrUrl;
-  if (Address.is(pfsAddrOrUrl)) url = await serviceRegistryContract.callStatic.urls(pfsAddrOrUrl);
+  const url = await pfsAddressUrl(pfsAddrOrUrl, { serviceRegistryContract });
 
-  url = validatePfsUrl(url);
   const start = Date.now();
   const res = await fetch(url + '/api/v1/info', { mode: 'cors' });
   const text = await res.text();
@@ -122,7 +148,13 @@ export async function pfsInfo(
  * @returns Promise to Address of PFS on given URL
  */
 export const pfsInfoAddress = Object.assign(
-  async function pfsInfoAddress(url: string, deps: RaidenEpicDeps): Promise<Address> {
+  async function pfsInfoAddress(
+    url: string,
+    deps: Pick<
+      RaidenEpicDeps,
+      'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
+    >,
+  ): Promise<Address> {
     url = validatePfsUrl(url);
     let addrPromise = pfsAddressCache_.get(url);
     if (!addrPromise) {
@@ -149,7 +181,10 @@ export const pfsInfoAddress = Object.assign(
  */
 export function pfsListInfo(
   pfsList: readonly (string | Address)[],
-  deps: RaidenEpicDeps,
+  deps: Pick<
+    RaidenEpicDeps,
+    'log' | 'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
+  >,
 ): Observable<PFS[]> {
   const { log } = deps;
   return from(pfsList).pipe(
@@ -172,6 +207,46 @@ export function pfsListInfo(
         // if it's equal, tiebreak on rtt
         else return a.rtt - b.rtt;
       });
+    }),
+  );
+}
+
+const PresenceFromService = t.type({
+  user_id: t.string,
+  capabilities: t.union([Caps, t.string]),
+});
+
+/**
+ * @param peer - Peer address to fetch presence for
+ * @param pfsAddrOrUrl - PFS/service address to fetch presence from
+ * @param deps - Epics dependencies subset
+ * @param deps.serviceRegistryContract - Contract instance
+ * @returns Observable to peer's presence or error
+ */
+export function getPresenceFromService$(
+  peer: Address,
+  pfsAddrOrUrl: string,
+  { serviceRegistryContract }: Pick<RaidenEpicDeps, 'serviceRegistryContract'>,
+): Observable<{ readonly user_id: string; readonly capabilities: Caps }> {
+  return defer(async () => pfsAddressUrl(pfsAddrOrUrl, { serviceRegistryContract })).pipe(
+    mergeMap((url) => fromFetch(`${url}/api/v1/address/${peer}/metadata`)),
+    mergeMap(async (res) => res.json()),
+    map((json) => {
+      try {
+        const presence = decode(PresenceFromService, json);
+        const capabilities =
+          typeof presence.capabilities === 'string'
+            ? parseCaps(presence.capabilities)
+            : presence.capabilities;
+        assert(capabilities, ['Invalid capabilities format', presence.capabilities]);
+        return { ...presence, capabilities };
+      } catch (err) {
+        try {
+          const { errors: msg, ...details } = decode(ServiceError, json);
+          err = new RaidenError(msg, details);
+        } catch (e) {}
+        throw err;
+      }
     }),
   );
 }
