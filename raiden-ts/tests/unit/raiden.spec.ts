@@ -10,10 +10,13 @@ import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, BehaviorSubject, of, ReplaySubject } from 'rxjs';
-import { ignoreElements } from 'rxjs/operators';
+import { filter, first, ignoreElements, mapTo } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
+import { raidenConfigUpdate, raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
+import { tokenMonitored } from '@/channels/actions';
 import { makeDefaultConfig } from '@/config';
+import { ShutdownReason } from '@/constants';
 import {
   HumanStandardToken__factory,
   MonitoringService__factory,
@@ -74,7 +77,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
   const config$ = latest$.pipe(pluckDistinct('config'));
   const matrix$ = new AsyncSubject<MatrixClient>();
   const busy$ = new BehaviorSubject(false);
-  const db = { busy$ } as any;
+  const db = { busy$, close: jest.fn() } as any;
 
   const defaultConfig = makeDefaultConfig({ network });
   const log = logging.getLogger(`raiden:${address}`);
@@ -120,9 +123,100 @@ function makeDummyDependencies(): RaidenEpicDeps {
 }
 
 describe('Raiden', () => {
+  function initEpicMock(action$: Observable<RaidenAction>): Observable<raidenSynced> {
+    return action$.pipe(
+      filter(raidenStarted.is),
+      mapTo(
+        raidenSynced({
+          tookMs: 9,
+          initialBlock: 1,
+          currentBlock: 10,
+        }),
+      ),
+    );
+  }
+  const token = makeAddress();
+  const tokenNetwork = makeAddress();
+
   test('address', () => {
     const deps = makeDummyDependencies();
     const raiden = new Raiden(dummyState, deps, combineRaidenEpics(of(dummyEpic)), dummyReducer);
     expect(raiden.address).toBe(dummyState.address);
+  });
+
+  test('start', async () => {
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock)),
+      dummyReducer,
+    );
+    expect(raiden.network).toEqual({ name: 'test', chainId: 1337 });
+    expect(raiden.log).toEqual(expect.objectContaining({ name: `raiden:${raiden.address}` }));
+    expect(raiden.started).toBeUndefined();
+    await expect(raiden.start()).resolves.toBeUndefined();
+    expect(raiden.started).toEqual(true);
+  });
+
+  test('stop', async () => {
+    const deps = makeDummyDependencies();
+
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+    expect(raiden.started).toEqual(true);
+    const lastPromise = raiden.action$.toPromise();
+    await expect(raiden.stop()).resolves.toBeUndefined();
+    await expect(lastPromise).resolves.toEqual(raidenShutdown({ reason: ShutdownReason.STOP }));
+    expect(raiden.started).toBe(false);
+  });
+
+  test('updateConfig', async () => {
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+    const configPromise = raiden.action$.pipe(first(raidenConfigUpdate.is)).toPromise();
+    const mediationFees = { [token]: { flat: 400 } };
+    raiden.updateConfig({ mediationFees });
+    await expect(configPromise).resolves.toEqual(
+      raidenConfigUpdate(
+        expect.objectContaining({
+          mediationFees: { [token]: { flat: 400 } },
+        }),
+      ),
+    );
+  });
+
+  test('monitorToken', async () => {
+    const deps = makeDummyDependencies();
+    deps.registryContract = {
+      token_to_token_networks: jest.fn(async () => tokenNetwork),
+    } as any;
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+    const monitorTokenPromise = raiden.action$.pipe(first(tokenMonitored.is)).toPromise();
+    await expect(raiden.monitorToken(token.toString())).resolves.toEqual(tokenNetwork);
+    await expect(monitorTokenPromise).resolves.toEqual(
+      tokenMonitored({
+        token,
+        tokenNetwork,
+        fromBlock: 1,
+      }),
+    );
   });
 });
