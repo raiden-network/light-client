@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getAddress } from '@ethersproject/address';
+import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
 import type { Network } from '@ethersproject/providers';
 import { JsonRpcProvider } from '@ethersproject/providers';
@@ -10,7 +11,7 @@ import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, BehaviorSubject, of, ReplaySubject } from 'rxjs';
-import { filter, first, ignoreElements, mapTo } from 'rxjs/operators';
+import { filter, first, ignoreElements, map, mapTo } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
 import { raidenConfigUpdate, raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
@@ -28,12 +29,14 @@ import {
 } from '@/contracts';
 import { combineRaidenEpics } from '@/epics';
 import { Raiden } from '@/raiden';
+import { udcDeposit } from '@/services/actions';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
 import { standardCalculator } from '@/transfers/mediate/types';
+import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { pluckDistinct } from '@/utils/rx';
-import type { Address } from '@/utils/types';
+import type { Address, UInt } from '@/utils/types';
 
 jest.mock('@ethersproject/providers');
 
@@ -135,8 +138,26 @@ describe('Raiden', () => {
       ),
     );
   }
+
+  function UDCDepositEpicMock(action$: Observable<RaidenAction>) {
+    return action$.pipe(
+      filter(raidenStarted.is),
+      mapTo(
+        udcDeposit.success(
+          {
+            balance: BigNumber.from(42) as UInt<32>,
+          },
+          {
+            totalDeposit: BigNumber.from(100) as UInt<32>,
+          },
+        ),
+      ),
+    );
+  }
+
   const token = makeAddress();
   const tokenNetwork = makeAddress();
+  const partner = makeAddress();
 
   test('address', () => {
     const deps = makeDummyDependencies();
@@ -218,5 +239,73 @@ describe('Raiden', () => {
         fromBlock: 1,
       }),
     );
+  });
+
+  test('getAvailability', async () => {
+    function matrixPresenceEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(matrixPresence.request.is),
+        mapTo(
+          matrixPresence.success(
+            {
+              userId: 'John Doe',
+              available: true,
+              ts: 12345,
+            },
+            {
+              address: partner,
+            },
+          ),
+        ),
+      );
+    }
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock, matrixPresenceEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+
+    const payload = raiden.action$
+      .pipe(
+        first(matrixPresence.success.is),
+        map((e) => e.payload),
+      )
+      .toPromise();
+
+    raiden.getAvailability(partner);
+    await expect(payload).resolves.toEqual(
+      expect.objectContaining({ userId: 'John Doe', available: true, ts: 12345 }),
+    );
+  });
+
+  test('getUDCCapacity', async () => {
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock, UDCDepositEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+
+    const balance = await raiden.getUDCCapacity();
+    expect(balance).toEqual(BigNumber.from(42));
+  });
+
+  test('getUDCTotalCapacity', async () => {
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock, UDCDepositEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+
+    const balance = await raiden.getUDCTotalDeposit();
+    expect(balance).toEqual(BigNumber.from(100));
   });
 });
