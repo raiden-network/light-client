@@ -116,6 +116,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
 
   async disconnect() {
     await this.$raiden.disconnect();
+    localStorage.removeItem('walletconnect');
     this.$store.commit('reset');
   }
 
