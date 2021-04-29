@@ -31,6 +31,7 @@ import {
 import { combineRaidenEpics } from '@/epics';
 import { Raiden } from '@/raiden';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
+import { pfsListInfo } from '@/services/utils';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
 import { standardCalculator } from '@/transfers/mediate/types';
@@ -40,6 +41,11 @@ import { pluckDistinct } from '@/utils/rx';
 import type { Address, UInt } from '@/utils/types';
 
 jest.mock('@ethersproject/providers');
+
+jest.mock('@/services/utils', () => ({
+  ...jest.requireActual<any>('@/services/utils'),
+  pfsListInfo: jest.fn(() => of(['abc', 'def'])),
+}));
 
 // TODO: dedupe this from integrations/mocks.ts in a higher utility file
 // don't import from there to avoid pulling in all the patches there
@@ -469,5 +475,25 @@ describe('Raiden', () => {
         confirmed: true,
       }),
     );
+  });
+
+  test('findPFS', async () => {
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      makeInitialState(
+        { address, network, contractsInfo },
+        { config: { additionalServices: ['pfs1'] }, services: { pfs2: 1 } },
+      ),
+      deps,
+      combineRaidenEpics(of(initEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+
+    const pfsList = raiden.findPFS();
+    await expect(pfsList).resolves.toEqual(['abc', 'def']);
+
+    const mockedPfsListInfo = pfsListInfo as jest.MockedFunction<typeof pfsListInfo>;
+    expect(mockedPfsListInfo.mock.calls[0][0]).toEqual(['pfs1', 'pfs2']);
   });
 });
