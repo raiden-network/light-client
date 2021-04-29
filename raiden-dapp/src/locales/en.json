@@ -100,7 +100,8 @@
     },
     "connection-pending-dialog": {
       "title": "Connecting",
-      "text": "Please check if any actions are required in your wallet."
+      "text": "Please check if any actions are required in your wallet.",
+      "button": "Reset connection"
     }
   },
   "notifications": {
