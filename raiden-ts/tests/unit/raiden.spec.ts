@@ -25,7 +25,6 @@ import {
   ServiceRegistry__factory,
   TokenNetwork__factory,
   TokenNetworkRegistry__factory,
-  UserDeposit__factory,
 } from '@/contracts';
 import { combineRaidenEpics } from '@/epics';
 import { Raiden } from '@/raiden';
@@ -110,7 +109,11 @@ function makeDummyDependencies(): RaidenEpicDeps {
       contractsInfo.ServiceRegistry.address,
       signer,
     ),
-    userDepositContract: UserDeposit__factory.connect(contractsInfo.UserDeposit.address, signer),
+    userDepositContract: {
+      callStatic: {
+        total_deposit: jest.fn(async () => BigNumber.from(123)),
+      },
+    } as any,
     secretRegistryContract: SecretRegistry__factory.connect(
       contractsInfo.SecretRegistry.address,
       signer,
@@ -307,5 +310,46 @@ describe('Raiden', () => {
 
     const balance = await raiden.getUDCTotalDeposit();
     expect(balance).toEqual(BigNumber.from(100));
+  });
+
+  test('depositToUDC', async () => {
+    const amount = 10;
+
+    function udcDepositEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(udcDeposit.request.is),
+        mapTo(
+          udcDeposit.success(
+            {
+              balance: BigNumber.from(amount) as UInt<32>,
+            },
+            {
+              totalDeposit: BigNumber.from(0) as UInt<32>,
+            },
+          ),
+        ),
+      );
+    }
+
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock, udcDepositEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+
+    const payload = raiden.action$
+      .pipe(
+        first(udcDeposit.success.is),
+        map((e) => e.payload),
+      )
+      .toPromise();
+
+    raiden.depositToUDC(amount);
+    await expect(payload).resolves.toEqual(
+      expect.objectContaining({ balance: BigNumber.from(amount) }),
+    );
   });
 });
