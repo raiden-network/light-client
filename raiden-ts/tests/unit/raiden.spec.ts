@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { makeHash } from '../integration/mocks';
+
 import { getAddress } from '@ethersproject/address';
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
@@ -28,7 +30,7 @@ import {
 } from '@/contracts';
 import { combineRaidenEpics } from '@/epics';
 import { Raiden } from '@/raiden';
-import { udcDeposit, udcWithdrawPlan } from '@/services/actions';
+import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
 import { standardCalculator } from '@/transfers/mediate/types';
@@ -136,6 +138,12 @@ function makeDummyDependencies(): RaidenEpicDeps {
 }
 
 describe('Raiden', () => {
+  const token = makeAddress();
+  const tokenNetwork = makeAddress();
+  const partner = makeAddress();
+  const txBlock = 42;
+  const txHash = makeHash();
+
   function initEpicMock(action$: Observable<RaidenAction>): Observable<raidenSynced> {
     return action$.pipe(
       filter(raidenStarted.is),
@@ -164,10 +172,6 @@ describe('Raiden', () => {
       ),
     );
   }
-
-  const token = makeAddress();
-  const tokenNetwork = makeAddress();
-  const partner = makeAddress();
 
   test('address', () => {
     const deps = makeDummyDependencies();
@@ -417,5 +421,53 @@ describe('Raiden', () => {
 
     raiden.planUDCWithdraw(withdrawBlock);
     await expect(payload).resolves.toEqual(expect.objectContaining({ block: withdrawBlock }));
+  });
+
+  test('withdrawFromUDC', async () => {
+    const withdrawAmount = 10;
+
+    function udcWithdrawEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(udcWithdraw.request.is),
+        map((action) =>
+          udcWithdraw.success(
+            {
+              withdrawal: BigNumber.from(withdrawAmount) as UInt<32>,
+              txHash: txHash,
+              txBlock: txBlock,
+              confirmed: true,
+            },
+            action.meta,
+          ),
+        ),
+      );
+    }
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      makeInitialState(
+        { address, network, contractsInfo },
+        { config: { autoUDCWithdraw: false }, blockNumber: txBlock + 200 },
+      ),
+      deps,
+      combineRaidenEpics(of(initEpicMock, udcWithdrawEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+
+    const payload = raiden.action$
+      .pipe(
+        first(udcWithdraw.success.is),
+        map((e) => e.payload),
+      )
+      .toPromise();
+
+    raiden.withdrawFromUDC(withdrawAmount);
+    await expect(payload).resolves.toEqual(
+      expect.objectContaining({
+        withdrawal: BigNumber.from(withdrawAmount),
+        txBlock: txBlock,
+        confirmed: true,
+      }),
+    );
   });
 });
