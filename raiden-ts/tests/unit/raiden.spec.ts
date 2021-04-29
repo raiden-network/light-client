@@ -113,6 +113,13 @@ function makeDummyDependencies(): RaidenEpicDeps {
       callStatic: {
         total_deposit: jest.fn(async () => BigNumber.from(123)),
       },
+      withdraw_plans: jest.fn(async () => {
+        return {
+          amount: BigNumber.from(10) as UInt<32>,
+          withdraw_block: BigNumber.from(223),
+          block: BigNumber.from(123),
+        };
+      }),
     } as any,
     secretRegistryContract: SecretRegistry__factory.connect(
       contractsInfo.SecretRegistry.address,
@@ -350,6 +357,26 @@ describe('Raiden', () => {
     raiden.depositToUDC(amount);
     await expect(payload).resolves.toEqual(
       expect.objectContaining({ balance: BigNumber.from(amount) }),
+    );
+  });
+
+  test('getUDCWithdrawPlan', async () => {
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+
+    const withdrawPlan = await raiden.getUDCWithdrawPlan();
+    expect(withdrawPlan).toEqual(
+      expect.objectContaining({
+        amount: BigNumber.from(10),
+        block: 223,
+        ready: false,
+      }),
     );
   });
 });
