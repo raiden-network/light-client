@@ -53,7 +53,7 @@
       @connect="connect"
       @close="connectDialog = false"
     />
-    <connection-pending-dialog v-if="loading" />
+    <connection-pending-dialog v-if="loading" @reset-connection="resetConnection" />
   </v-container>
 </template>
 
@@ -138,6 +138,12 @@ export default class Home extends Vue {
       this.connectDialog = false;
       this.$router.push(this.navigationTarget);
     }
+  }
+
+  resetConnection(): void {
+    localStorage.removeItem('walletconnect');
+    // There is no clean way to cancel the asynchronous connection function, therefore reload page.
+    window.location.replace(window.location.origin);
   }
 }
 </script>
