@@ -1,5 +1,6 @@
 {
   "rpc_endpoint": "goerli.infura.io/v3/6d333faba41b4c3d8ae979417e281832",
+  "rpc_endpoint_wallet_connect": "goerli.infura.io/v3/6d333faba41b4c3d8ae979417e281832",
   "private_key": "0x6d333faba41b4c3d8ae979417e2818326d333faba41b4c3d8ae979417e281832",
   "per_network": {
     "5": {
