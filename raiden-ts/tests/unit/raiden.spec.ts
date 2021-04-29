@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
+import { AddressZero, One, Zero } from '@ethersproject/constants';
 import type { Network } from '@ethersproject/providers';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { randomBytes } from '@ethersproject/random';
@@ -9,12 +10,16 @@ import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, BehaviorSubject, of, ReplaySubject } from 'rxjs';
-import { filter, first, ignoreElements, map, mapTo } from 'rxjs/operators';
+import { asapScheduler, AsyncSubject, BehaviorSubject, of, ReplaySubject, scheduled } from 'rxjs';
+import { filter, first, ignoreElements, map, mapTo, mergeMap } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
 import { raidenConfigUpdate, raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
-import { tokenMonitored } from '@/channels/actions';
+import { channelDeposit, channelOpen, tokenMonitored } from '@/channels/actions';
+import type { Channel, ChannelEnd } from '@/channels/state';
+import { ChannelState } from '@/channels/state';
+import { BalanceProofZero } from '@/channels/types';
+import { channelKey, channelUniqueKey } from '@/channels/utils';
 import { makeDefaultConfig } from '@/config';
 import { ShutdownReason } from '@/constants';
 import {
@@ -26,8 +31,11 @@ import {
   TokenNetworkRegistry__factory,
 } from '@/contracts';
 import { combineRaidenEpics } from '@/epics';
+import { messageServiceSend } from '@/messages/actions';
+import { MessageType } from '@/messages/types';
 import { Raiden } from '@/raiden';
 import { pathFind, udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
+import { Service } from '@/services/types';
 import { pfsListInfo } from '@/services/utils';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
@@ -35,7 +43,7 @@ import { standardCalculator } from '@/transfers/mediate/types';
 import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { pluckDistinct } from '@/utils/rx';
-import type { Address, Int, UInt } from '@/utils/types';
+import type { Address, Int, Signature, UInt } from '@/utils/types';
 
 import { makeAddress, makeHash } from '../utils';
 
@@ -530,5 +538,146 @@ describe('Raiden', () => {
 
     const route2 = raiden.findRoutes(token, partner, transferAmount);
     await expect(route2).resolves.toEqual(expectedRoute);
+  });
+
+  test('openChannel', async () => {
+    const id = 10;
+    const settleTimeout = 500;
+    const isFirstParticipant = true;
+    const deposit: BigNumber = BigNumber.from('10000000000000000000');
+    const subkey = false;
+    const channelOpenHash = makeHash();
+    const channelDepositHash = makeHash();
+    const msgId = '123';
+    const chainId = 1337;
+    const updating_nonce = BigNumber.from(1) as UInt<8>;
+    const other_nonce = BigNumber.from(1) as UInt<8>;
+    const other_capacity = BigNumber.from(10) as UInt<32>;
+
+    const emptyChannelEnd: ChannelEnd = {
+      address: AddressZero as Address,
+      deposit: Zero as UInt<32>,
+      withdraw: Zero as UInt<32>,
+      locks: [],
+      balanceProof: BalanceProofZero,
+      pendingWithdraws: [],
+      nextNonce: One as UInt<8>,
+    };
+
+    function channelOpenSuccessReducer(
+      state: RaidenState = dummyState,
+      action: RaidenAction,
+    ): RaidenState {
+      if (!channelOpen.success.is(action) || !action.payload.confirmed) return state;
+      const key = channelKey(action.meta);
+      const channel: Channel = {
+        _id: channelUniqueKey({ ...action.meta, id: action.payload.id }),
+        id: action.payload.id,
+        state: ChannelState.open,
+        token: action.payload.token,
+        tokenNetwork: action.meta.tokenNetwork,
+        settleTimeout: action.payload.settleTimeout,
+        isFirstParticipant: action.payload.isFirstParticipant,
+        openBlock: action.payload.txBlock,
+        own: {
+          ...emptyChannelEnd,
+          address: state.address,
+        },
+        partner: {
+          ...emptyChannelEnd,
+          address: action.meta.partner,
+        },
+      };
+      return { ...state, channels: { ...state.channels, [key]: channel } };
+    }
+
+    function channelOpenEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(channelOpen.request.is),
+        mergeMap((action) => {
+          return scheduled(
+            [
+              channelDeposit.request(
+                {
+                  deposit: action.payload.deposit as UInt<32>,
+                  subkey: action.payload.subkey,
+                  waitOpen: true,
+                },
+                action.meta,
+              ),
+              channelOpen.success(
+                {
+                  id,
+                  token,
+                  settleTimeout,
+                  isFirstParticipant,
+                  txHash: channelOpenHash,
+                  txBlock: 9,
+                  confirmed: true,
+                },
+                { tokenNetwork, partner },
+              ),
+              channelDeposit.success(
+                {
+                  id,
+                  participant: address as Address,
+                  totalDeposit: deposit as UInt<32>,
+                  txHash: channelDepositHash,
+                  txBlock: 11,
+                  confirmed: true,
+                },
+                { tokenNetwork, partner },
+              ),
+              messageServiceSend.request(
+                {
+                  message: {
+                    type: MessageType.PFS_CAPACITY_UPDATE,
+                    updating_participant: address,
+                    other_participant: partner,
+                    signature: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Signature,
+                    updating_nonce,
+                    other_nonce,
+                    updating_capacity: deposit as UInt<32>,
+                    other_capacity,
+                    reveal_timeout: BigNumber.from(50) as UInt<32>,
+                    canonical_identifier: {
+                      chain_identifier: BigNumber.from(chainId) as UInt<32>,
+                      token_network_address: tokenNetwork,
+                      channel_identifier: BigNumber.from(id) as UInt<32>,
+                    },
+                  },
+                },
+                { service: Service.PFS, msgId },
+              ),
+              messageServiceSend.success(
+                { via: '!.:', tookMs: 10, retries: 1 },
+                { service: Service.PFS, msgId },
+              ),
+            ],
+            asapScheduler,
+          );
+        }),
+      );
+    }
+
+    const deps = makeDummyDependencies();
+    deps.registryContract = {
+      token_to_token_networks: jest.fn(async () => tokenNetwork),
+    } as any;
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock, channelOpenEpicMock)),
+      channelOpenSuccessReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+
+    await expect(
+      raiden.openChannel(token, partner, {
+        settleTimeout,
+        subkey,
+        deposit,
+      }),
+    ).resolves.toEqual(channelOpenHash);
   });
 });
