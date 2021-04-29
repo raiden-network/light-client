@@ -53,6 +53,7 @@
       @connect="connect"
       @close="connectDialog = false"
     />
+    <connection-pending-dialog v-if="loading" />
   </v-container>
 </template>
 
@@ -63,6 +64,7 @@ import { mapGetters, mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
+import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
 import type { TokenModel } from '@/model/types';
 import { DeniedReason } from '@/model/types';
@@ -79,6 +81,7 @@ import type { Settings } from '@/types';
   components: {
     ActionButton,
     ConnectDialog,
+    ConnectionPendingDialog,
     NoAccessMessage,
   },
 })
@@ -127,6 +130,7 @@ export default class Home extends Vue {
     this.$store.commit('reset');
     // Have to reset this explicitly, for some reason
     this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
+    this.$store.commit('loadStart');
 
     await this.$raiden.connect(stateBackup, useRaidenAccount ? true : undefined);
     this.connecting = false;

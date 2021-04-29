@@ -44,7 +44,9 @@ describe('store', () => {
     expect(store.getters.isConnected).toBe(false);
   });
 
-  test('loadComplete mutation changes the loading state', () => {
+  test('loadStart and loadComplete control the loading state', () => {
+    expect(store.state.loading).toBe(false);
+    store.commit('loadStart');
     expect(store.state.loading).toBe(true);
     store.commit('loadComplete');
     expect(store.state.loading).toBe(false);
@@ -225,10 +227,10 @@ describe('store', () => {
   });
 
   test('the reset mutation resets the state', () => {
-    store.commit('loadComplete', false);
-    expect(store.state.loading).toBe(false);
+    store.commit('updateBlock', 1);
+    expect(store.state.blockNumber).toBe(1);
     store.commit('reset');
-    expect(store.state.loading).toBe(true);
+    expect(store.state.blockNumber).toBe(defaultState().blockNumber);
   });
 
   test('the set available version mutation updates the version info', () => {
@@ -349,6 +351,7 @@ describe('store', () => {
   });
 
   test('isConnected should be false if loading', () => {
+    store.commit('loadStart');
     store.commit('account', '0x0000000000000000000000000000000000020001');
     expect(store.getters.isConnected).toBe(false);
   });

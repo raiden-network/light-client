@@ -97,6 +97,10 @@
       "description-raiden-account": "A Raiden Account will be generated.",
       "description-web3-account": "You can use your Web3 account directly by enabling it in the settings menu.",
       "no-provider": "No Web3 provider detected, please install e.g. MetaMask."
+    },
+    "connection-pending-dialog": {
+      "title": "Connecting",
+      "text": "Please check if any actions are required in your wallet."
     }
   },
   "notifications": {

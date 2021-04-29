@@ -27,7 +27,7 @@ import type { NotificationsState } from './notifications/types';
 Vue.use(Vuex);
 
 const _defaultState: RootState = {
-  loading: true,
+  loading: false,
   blockNumber: 0,
   defaultAccount: '',
   accountBalance: '0.0',
@@ -108,6 +108,9 @@ const store: StoreOptions<CombinedStoreState> = {
     },
     account(state: RootState, account: string) {
       state.defaultAccount = account;
+    },
+    loadStart(state: RootState) {
+      state.loading = true;
     },
     loadComplete(state: RootState) {
       state.loading = false;
