@@ -28,7 +28,7 @@ import {
 } from '@/contracts';
 import { combineRaidenEpics } from '@/epics';
 import { Raiden } from '@/raiden';
-import { udcDeposit } from '@/services/actions';
+import { udcDeposit, udcWithdrawPlan } from '@/services/actions';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
 import { standardCalculator } from '@/transfers/mediate/types';
@@ -378,5 +378,44 @@ describe('Raiden', () => {
         ready: false,
       }),
     );
+  });
+
+  test('planUDCWithdraw', async () => {
+    const withdrawAmount = 10;
+    const withdrawBlock = 123;
+    function udcWithdrawEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(udcWithdrawPlan.request.is),
+        mapTo(
+          udcWithdrawPlan.success(
+            {
+              block: withdrawBlock,
+            },
+            {
+              amount: BigNumber.from(withdrawAmount) as UInt<32>,
+            },
+          ),
+        ),
+      );
+    }
+
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics(of(initEpicMock, udcWithdrawEpicMock)),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+
+    const payload = raiden.action$
+      .pipe(
+        first(udcWithdrawPlan.success.is),
+        map((e) => e.payload),
+      )
+      .toPromise();
+
+    raiden.planUDCWithdraw(withdrawBlock);
+    await expect(payload).resolves.toEqual(expect.objectContaining({ block: withdrawBlock }));
   });
 });
