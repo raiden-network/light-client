@@ -20,7 +20,7 @@ export interface VersionInfo {
 }
 
 export interface RootState {
-  loading: boolean;
+  isConnected: boolean;
   blockNumber: number;
   defaultAccount: string;
   accountBalance: string;

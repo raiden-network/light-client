@@ -27,14 +27,13 @@ async function createWrapper(
 ): Promise<Wrapper<AccountContent>> {
   const vuetify = new Vuetify();
   const state = {
-    loading: false,
+    isConnected,
     defaultAccount,
     accountBalance,
     raidenAccountBalance,
   };
 
   const getters = {
-    isConnected: () => isConnected,
     usingRaidenAccount: () => usingRaidenAccount,
   };
 

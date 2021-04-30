@@ -44,7 +44,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { createNamespacedHelpers, mapGetters } from 'vuex';
+import { createNamespacedHelpers, mapState } from 'vuex';
 
 import HeaderContent from '@/components/HeaderContent.vue';
 import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
@@ -61,7 +61,7 @@ const { mapState: mapNotificationsState, mapMutations } = createNamespacedHelper
     HeaderIdenticon,
   },
   computed: {
-    ...mapGetters(['isConnected']),
+    ...mapState(['isConnected']),
     ...mapNotificationsState(['newNotifications']),
   },
   methods: {

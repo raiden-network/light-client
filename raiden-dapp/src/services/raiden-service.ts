@@ -286,8 +286,6 @@ export default class RaidenService {
       }
       this.store.commit('accessDenied', deniedReason);
     }
-
-    this.store.commit('loadComplete');
   }
 
   private async notifyNoReceive() {
