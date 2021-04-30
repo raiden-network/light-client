@@ -4,7 +4,6 @@ import { Zero } from '@ethersproject/constants';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
 import BN from 'bignumber.js';
-import * as t from 'io-ts';
 import type { Observable } from 'rxjs';
 import { defer, from, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
@@ -28,26 +27,12 @@ import { decode, Int, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
 import type { IOU, Paths, PFS } from '../types';
 import { LastIOUResults, PathResults, PfsMode } from '../types';
-import { packIOU, pfsInfo, pfsListInfo, signIOU } from '../utils';
-
-/**
- * Codec for PFS API returned error
- *
- * May contain other fields like error_details, but we don't care about them (for now)
- */
-const PathError = t.readonly(
-  t.type({
-    error_code: t.number,
-    errors: t.string,
-  }),
-);
-
-type PathError = t.TypeOf<typeof PathError>;
+import { packIOU, pfsInfo, pfsListInfo, ServiceError, signIOU } from '../utils';
 
 interface Route {
   iou: Signed<IOU> | undefined;
   paths?: Paths;
-  error?: PathError;
+  error?: ServiceError;
 }
 
 /**
@@ -220,7 +205,7 @@ function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Obser
       const data = jsonParse(text);
 
       if (!response.ok) {
-        const error = decode(PathError, data);
+        const error = decode(ServiceError, data);
         return { iou, error };
       }
       return { iou, paths: parsePfsResponse(action.meta.value, data, config) };
@@ -395,7 +380,7 @@ function getCleanPath(path: readonly Address[], address: Address): readonly Addr
   }
 }
 
-function isNoRouteFoundError(error: PathError | undefined): boolean {
+function isNoRouteFoundError(error: ServiceError | undefined): boolean {
   return error?.error_code === 2201;
 }
 
@@ -413,7 +398,7 @@ export function getRoute$(
   deps: RaidenEpicDeps,
   { state, config }: Pick<Latest, 'state' | 'config'>,
   targetPresence: matrixPresence.success,
-): Observable<{ paths?: Paths; iou: Signed<IOU> | undefined; error?: PathError }> {
+): Observable<{ paths?: Paths; iou: Signed<IOU> | undefined; error?: ServiceError }> {
   validateRouteTarget(action, state, targetPresence);
 
   const { tokenNetwork, target, value } = action.meta;
