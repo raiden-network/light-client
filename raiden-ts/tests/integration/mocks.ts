@@ -4,10 +4,8 @@ import './patches';
 import type { FilterByBlockHash } from '@ethersproject/abstract-provider';
 import { getAddress } from '@ethersproject/address';
 import { BigNumber } from '@ethersproject/bignumber';
-import { hexlify } from '@ethersproject/bytes';
 import { HashZero, MaxUint256, Zero } from '@ethersproject/constants';
 import type { Contract, ContractTransaction, EventFilter } from '@ethersproject/contracts';
-import { keccak256 } from '@ethersproject/keccak256';
 import type { Network } from '@ethersproject/networks';
 import type {
   EventType,
@@ -17,7 +15,6 @@ import type {
   Log,
 } from '@ethersproject/providers';
 import { Web3Provider } from '@ethersproject/providers';
-import { randomBytes } from '@ethersproject/random';
 import { parseEther } from '@ethersproject/units';
 import { verifyMessage, Wallet } from '@ethersproject/wallet';
 import { EventEmitter } from 'events';
@@ -70,8 +67,12 @@ import { assert } from '@/utils';
 import { getNetworkName } from '@/utils/ethers';
 import { getServerName } from '@/utils/matrix';
 import { pluckDistinct } from '@/utils/rx';
-import type { Hash, Signature } from '@/utils/types';
+import type { Signature } from '@/utils/types';
 import { Address, decode, Secret } from '@/utils/types';
+
+import { makeAddress, makeHash } from '../utils';
+
+export { makeAddress, makeHash } from '../utils';
 
 jest.mock('@/messages/utils', () => ({
   ...jest.requireActual<any>('@/messages/utils'),
@@ -169,24 +170,6 @@ function makeWallet() {
     } catch (err) {}
   } while (!wallet);
   return wallet;
-}
-
-/**
- * Generate a random address
- *
- * @returns address
- */
-export function makeAddress() {
-  return getAddress(hexlify(randomBytes(20))) as Address;
-}
-
-/**
- * Generate a random hash
- *
- * @returns hash
- */
-export function makeHash() {
-  return keccak256(randomBytes(32)) as Hash;
 }
 
 /**

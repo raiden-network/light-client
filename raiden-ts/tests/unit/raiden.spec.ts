@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { makeHash } from '../integration/mocks';
-
-import { getAddress } from '@ethersproject/address';
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
 import type { Network } from '@ethersproject/providers';
@@ -40,18 +37,14 @@ import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { pluckDistinct } from '@/utils/rx';
 import type { Address, UInt } from '@/utils/types';
 
+import { makeAddress, makeHash } from '../utils';
+
 jest.mock('@ethersproject/providers');
 
 jest.mock('@/services/utils', () => ({
   ...jest.requireActual<any>('@/services/utils'),
   pfsListInfo: jest.fn(() => of(['abc', 'def'])),
 }));
-
-// TODO: dedupe this from integrations/mocks.ts in a higher utility file
-// don't import from there to avoid pulling in all the patches there
-function makeAddress() {
-  return getAddress(hexlify(randomBytes(20))) as Address;
-}
 
 const wallet = new Wallet(hexlify(randomBytes(32)));
 const address = wallet.address as Address;
