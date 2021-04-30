@@ -2,7 +2,7 @@ import { MaxUint256 } from '@ethersproject/constants';
 import unset from 'lodash/fp/unset';
 import isEqual from 'lodash/isEqual';
 import negate from 'lodash/negate';
-import type { Observable } from 'rxjs';
+import type { Observable, ObservableInput } from 'rxjs';
 import { combineLatest, concat, from, merge, of, timer, using } from 'rxjs';
 import {
   catchError,
@@ -248,11 +248,11 @@ type RaidenEpic = (
  * Consumes epics from epics$ and returns a root epic which properly wraps deps.latest$ and
  * limits action$ and state$ when raidenShutdown request goes through
  *
- * @param epics$ - Observable of raiden epics to compose the root epic
+ * @param epics - Observable of raiden epics to compose the root epic
  * @returns The rootEpic which properly wires latest$ and limits action$ & state$
  */
 export function combineRaidenEpics(
-  epics$: Observable<RaidenEpic> = from(Object.values(raidenEpics)),
+  epics: ObservableInput<RaidenEpic> = Object.values(raidenEpics),
 ): RaidenEpic {
   /**
    * @param action$ - Observable of RaidenActions
@@ -284,7 +284,7 @@ export function combineRaidenEpics(
       () => {
         const subscribedEpics = new Set<string>();
         // main epics output
-        const output$ = epics$.pipe(
+        const output$ = from(epics).pipe(
           mergeMap((epic) => {
             subscribedEpics.add(epic.name);
             return epic(limitedAction$, limitedState$, deps).pipe(
