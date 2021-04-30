@@ -40,6 +40,18 @@ function validatePfsUrl(url: string) {
 
 const pfsAddressCache_ = new LruCache<string, Promise<Address>>(32);
 
+/** Codec for PFS API returned error */
+export const ServiceError = t.readonly(
+  t.intersection([
+    t.type({
+      error_code: t.number,
+      errors: t.string,
+    }),
+    t.partial({ error_details: t.record(t.string, t.unknown) }),
+  ]),
+);
+export type ServiceError = t.TypeOf<typeof ServiceError>;
+
 /**
  * Returns a cold observable which fetch PFS info & validate for a given server address or URL
  *
