@@ -48,12 +48,6 @@ describe('store', () => {
     expect(store.state.isConnected).toBe(false);
   });
 
-  test('noProvider mutation changes the providerDetected state', () => {
-    expect(store.state.providerDetected).toBe(true);
-    store.commit('noProvider');
-    expect(store.state.providerDetected).toBe(false);
-  });
-
   test('balance mutation changes the accountBalance state', () => {
     expect(store.state.accountBalance).toBe('0.0');
     store.commit('balance', '12.0');

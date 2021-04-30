@@ -32,7 +32,6 @@ const _defaultState: RootState = {
   defaultAccount: '',
   accountBalance: '0.0',
   raidenAccountBalance: '',
-  providerDetected: true,
   accessDenied: DeniedReason.UNDEFINED,
   channels: {},
   tokens: {},
@@ -104,9 +103,6 @@ const store: StoreOptions<CombinedStoreState> = {
     },
     setDisconnected(state: RootState) {
       state.isConnected = false;
-    },
-    noProvider(state: RootState) {
-      state.providerDetected = false;
     },
     accessDenied(state: RootState, reason: DeniedReason) {
       state.accessDenied = reason;
@@ -181,7 +177,7 @@ const store: StoreOptions<CombinedStoreState> = {
   },
   actions: {},
   getters: {
-    tokensWithChannels: function(state: RootState): Tokens {
+    tokensWithChannels: function (state: RootState): Tokens {
       const tokensWithChannels: Tokens = {};
 
       for (const [address, token] of Object.entries(state.tokens)) {
@@ -190,7 +186,7 @@ const store: StoreOptions<CombinedStoreState> = {
 
       return tokensWithChannels;
     },
-    tokens: function(state: RootState): TokenModel[] {
+    tokens: function (state: RootState): TokenModel[] {
       const reducer = (acc: AccTokenModel, channel: RaidenChannel): AccTokenModel => {
         acc.address = channel.token;
         (acc[channel.state] as number) += 1;

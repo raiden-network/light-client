@@ -138,9 +138,7 @@ export default class RaidenService {
       const configuration = await ConfigProvider.configuration();
       const provider = await Web3Provider.provider(configuration);
 
-      if (!provider) {
-        this.store.commit('noProvider');
-      } else {
+      if (provider) {
         // Check if trying to connect to main net
         // and whether main net is allowed
         /* istanbul ignore if */
