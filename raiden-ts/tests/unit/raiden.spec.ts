@@ -27,7 +27,7 @@ import {
 } from '@/contracts';
 import { combineRaidenEpics } from '@/epics';
 import { Raiden } from '@/raiden';
-import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
+import { pathFind, udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
 import { pfsListInfo } from '@/services/utils';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
@@ -35,7 +35,7 @@ import { standardCalculator } from '@/transfers/mediate/types';
 import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { pluckDistinct } from '@/utils/rx';
-import type { Address, UInt } from '@/utils/types';
+import type { Address, Int, UInt } from '@/utils/types';
 
 import { makeAddress, makeHash } from '../utils';
 
@@ -142,6 +142,7 @@ describe('Raiden', () => {
   const partner = makeAddress();
   const txBlock = 42;
   const txHash = makeHash();
+  const transferAmount = 42;
 
   function initEpicMock(action$: Observable<RaidenAction>): Observable<raidenSynced> {
     return action$.pipe(
@@ -488,5 +489,46 @@ describe('Raiden', () => {
 
     const mockedPfsListInfo = pfsListInfo as jest.MockedFunction<typeof pfsListInfo>;
     expect(mockedPfsListInfo.mock.calls[0][0]).toEqual(['pfs1', 'pfs2']);
+  });
+
+  test('directRoute/findRoutes', async () => {
+    const fee = BigNumber.from(2);
+
+    function pfsRequestEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(pathFind.request.is),
+        map((action) =>
+          pathFind.success(
+            {
+              paths: [{ path: [raiden.address, partner], fee: fee as Int<32> }],
+            },
+            action.meta,
+          ),
+        ),
+      );
+    }
+
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      makeInitialState({ address, network, contractsInfo }, { tokens: { [token]: tokenNetwork } }),
+      deps,
+      combineRaidenEpics(of(initEpicMock, pfsRequestEpicMock)),
+      dummyReducer,
+    );
+    await raiden.start();
+    await raiden.monitorToken(token);
+
+    const expectedRoute = expect.arrayContaining([
+      expect.objectContaining({
+        path: [raiden.address, partner],
+        fee: fee,
+      }),
+    ]);
+
+    const route = raiden.directRoute(token, partner, transferAmount);
+    await expect(route).resolves.toEqual(expectedRoute);
+
+    const route2 = raiden.findRoutes(token, partner, transferAmount);
+    await expect(route2).resolves.toEqual(expectedRoute);
   });
 });
