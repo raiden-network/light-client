@@ -10,7 +10,7 @@ import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { asapScheduler, AsyncSubject, BehaviorSubject, of, ReplaySubject, scheduled } from 'rxjs';
+import { AsyncSubject, BehaviorSubject, of, ReplaySubject } from 'rxjs';
 import { filter, first, ignoreElements, map, mapTo, mergeMap } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
@@ -21,7 +21,7 @@ import { ChannelState } from '@/channels/state';
 import { BalanceProofZero } from '@/channels/types';
 import { channelKey, channelUniqueKey } from '@/channels/utils';
 import { makeDefaultConfig } from '@/config';
-import { ShutdownReason } from '@/constants';
+import { ShutdownReason, SignatureZero } from '@/constants';
 import {
   HumanStandardToken__factory,
   MonitoringService__factory,
@@ -43,7 +43,7 @@ import { standardCalculator } from '@/transfers/mediate/types';
 import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { pluckDistinct } from '@/utils/rx';
-import type { Address, Int, Signature, UInt } from '@/utils/types';
+import type { Address, Int, UInt } from '@/utils/types';
 
 import { makeAddress, makeHash } from '../utils';
 
@@ -87,11 +87,15 @@ function makeDummyDependencies(): RaidenEpicDeps {
   const latest$ = new ReplaySubject<Latest>(1);
   const config$ = latest$.pipe(pluckDistinct('config'));
   const matrix$ = new AsyncSubject<MatrixClient>();
-  const busy$ = new BehaviorSubject(false);
-  const db = { busy$, close: jest.fn() } as any;
+  const db = {
+    busy$: new BehaviorSubject(false),
+    close: jest.fn(),
+    storageKeys: new Set<string>(),
+  } as any;
 
   const defaultConfig = makeDefaultConfig({ network });
   const log = logging.getLogger(`raiden:${address}`);
+  log.setLevel(logging.levels.INFO);
 
   return {
     latest$,
@@ -183,18 +187,13 @@ describe('Raiden', () => {
 
   test('address', () => {
     const deps = makeDummyDependencies();
-    const raiden = new Raiden(dummyState, deps, combineRaidenEpics(of(dummyEpic)), dummyReducer);
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([dummyEpic]), dummyReducer);
     expect(raiden.address).toBe(dummyState.address);
   });
 
   test('start', async () => {
     const deps = makeDummyDependencies();
-    const raiden = new Raiden(
-      dummyState,
-      deps,
-      combineRaidenEpics(of(initEpicMock)),
-      dummyReducer,
-    );
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     expect(raiden.network).toEqual({ name: 'test', chainId: 1337 });
     expect(raiden.log).toEqual(expect.objectContaining({ name: `raiden:${raiden.address}` }));
     expect(raiden.started).toBeUndefined();
@@ -205,12 +204,7 @@ describe('Raiden', () => {
   test('stop', async () => {
     const deps = makeDummyDependencies();
 
-    const raiden = new Raiden(
-      dummyState,
-      deps,
-      combineRaidenEpics(of(initEpicMock)),
-      dummyReducer,
-    );
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     await expect(raiden.start()).resolves.toBeUndefined();
     expect(raiden.started).toEqual(true);
     const lastPromise = raiden.action$.toPromise();
@@ -221,12 +215,7 @@ describe('Raiden', () => {
 
   test('updateConfig', async () => {
     const deps = makeDummyDependencies();
-    const raiden = new Raiden(
-      dummyState,
-      deps,
-      combineRaidenEpics(of(initEpicMock)),
-      dummyReducer,
-    );
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     await expect(raiden.start()).resolves.toBeUndefined();
     const configPromise = raiden.action$.pipe(first(raidenConfigUpdate.is)).toPromise();
     const mediationFees = { [token]: { flat: 400 } };
@@ -245,12 +234,7 @@ describe('Raiden', () => {
     deps.registryContract = {
       token_to_token_networks: jest.fn(async () => tokenNetwork),
     } as any;
-    const raiden = new Raiden(
-      dummyState,
-      deps,
-      combineRaidenEpics(of(initEpicMock)),
-      dummyReducer,
-    );
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     await expect(raiden.start()).resolves.toBeUndefined();
     const monitorTokenPromise = raiden.action$.pipe(first(tokenMonitored.is)).toPromise();
     await expect(raiden.monitorToken(token.toString())).resolves.toEqual(tokenNetwork);
@@ -285,7 +269,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       dummyState,
       deps,
-      combineRaidenEpics(of(initEpicMock, matrixPresenceEpicMock)),
+      combineRaidenEpics([initEpicMock, matrixPresenceEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
@@ -308,7 +292,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       dummyState,
       deps,
-      combineRaidenEpics(of(initEpicMock, UDCDepositEpicMock)),
+      combineRaidenEpics([initEpicMock, UDCDepositEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
@@ -322,7 +306,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       dummyState,
       deps,
-      combineRaidenEpics(of(initEpicMock, UDCDepositEpicMock)),
+      combineRaidenEpics([initEpicMock, UDCDepositEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
@@ -354,7 +338,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       dummyState,
       deps,
-      combineRaidenEpics(of(initEpicMock, udcDepositEpicMock)),
+      combineRaidenEpics([initEpicMock, udcDepositEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
@@ -374,12 +358,7 @@ describe('Raiden', () => {
 
   test('getUDCWithdrawPlan', async () => {
     const deps = makeDummyDependencies();
-    const raiden = new Raiden(
-      dummyState,
-      deps,
-      combineRaidenEpics(of(initEpicMock)),
-      dummyReducer,
-    );
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     await expect(raiden.start()).resolves.toBeUndefined();
 
     const withdrawPlan = await raiden.getUDCWithdrawPlan();
@@ -415,7 +394,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       dummyState,
       deps,
-      combineRaidenEpics(of(initEpicMock, udcWithdrawEpicMock)),
+      combineRaidenEpics([initEpicMock, udcWithdrawEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
@@ -457,7 +436,7 @@ describe('Raiden', () => {
         { config: { autoUDCWithdraw: false }, blockNumber: txBlock + 200 },
       ),
       deps,
-      combineRaidenEpics(of(initEpicMock, udcWithdrawEpicMock)),
+      combineRaidenEpics([initEpicMock, udcWithdrawEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
@@ -487,7 +466,7 @@ describe('Raiden', () => {
         { config: { additionalServices: ['pfs1'] }, services: { pfs2: 1 } },
       ),
       deps,
-      combineRaidenEpics(of(initEpicMock)),
+      combineRaidenEpics([initEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
@@ -520,7 +499,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       makeInitialState({ address, network, contractsInfo }, { tokens: { [token]: tokenNetwork } }),
       deps,
-      combineRaidenEpics(of(initEpicMock, pfsRequestEpicMock)),
+      combineRaidenEpics([initEpicMock, pfsRequestEpicMock]),
       dummyReducer,
     );
     await raiden.start();
@@ -594,69 +573,64 @@ describe('Raiden', () => {
     function channelOpenEpicMock(action$: Observable<RaidenAction>) {
       return action$.pipe(
         filter(channelOpen.request.is),
-        mergeMap((action) => {
-          return scheduled(
-            [
-              channelDeposit.request(
-                {
-                  deposit: action.payload.deposit as UInt<32>,
-                  subkey: action.payload.subkey,
-                  waitOpen: true,
+        mergeMap((action) => [
+          channelDeposit.request(
+            {
+              deposit: action.payload.deposit as UInt<32>,
+              subkey: action.payload.subkey,
+              waitOpen: true,
+            },
+            action.meta,
+          ),
+          channelOpen.success(
+            {
+              id,
+              token,
+              settleTimeout,
+              isFirstParticipant,
+              txHash: channelOpenHash,
+              txBlock: 9,
+              confirmed: true,
+            },
+            { tokenNetwork, partner },
+          ),
+          channelDeposit.success(
+            {
+              id,
+              participant: address as Address,
+              totalDeposit: deposit as UInt<32>,
+              txHash: channelDepositHash,
+              txBlock: 11,
+              confirmed: true,
+            },
+            { tokenNetwork, partner },
+          ),
+          messageServiceSend.request(
+            {
+              message: {
+                type: MessageType.PFS_CAPACITY_UPDATE,
+                updating_participant: address,
+                other_participant: partner,
+                signature: SignatureZero,
+                updating_nonce,
+                other_nonce,
+                updating_capacity: deposit as UInt<32>,
+                other_capacity,
+                reveal_timeout: BigNumber.from(50) as UInt<32>,
+                canonical_identifier: {
+                  chain_identifier: BigNumber.from(chainId) as UInt<32>,
+                  token_network_address: tokenNetwork,
+                  channel_identifier: BigNumber.from(id) as UInt<32>,
                 },
-                action.meta,
-              ),
-              channelOpen.success(
-                {
-                  id,
-                  token,
-                  settleTimeout,
-                  isFirstParticipant,
-                  txHash: channelOpenHash,
-                  txBlock: 9,
-                  confirmed: true,
-                },
-                { tokenNetwork, partner },
-              ),
-              channelDeposit.success(
-                {
-                  id,
-                  participant: address as Address,
-                  totalDeposit: deposit as UInt<32>,
-                  txHash: channelDepositHash,
-                  txBlock: 11,
-                  confirmed: true,
-                },
-                { tokenNetwork, partner },
-              ),
-              messageServiceSend.request(
-                {
-                  message: {
-                    type: MessageType.PFS_CAPACITY_UPDATE,
-                    updating_participant: address,
-                    other_participant: partner,
-                    signature: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Signature,
-                    updating_nonce,
-                    other_nonce,
-                    updating_capacity: deposit as UInt<32>,
-                    other_capacity,
-                    reveal_timeout: BigNumber.from(50) as UInt<32>,
-                    canonical_identifier: {
-                      chain_identifier: BigNumber.from(chainId) as UInt<32>,
-                      token_network_address: tokenNetwork,
-                      channel_identifier: BigNumber.from(id) as UInt<32>,
-                    },
-                  },
-                },
-                { service: Service.PFS, msgId },
-              ),
-              messageServiceSend.success(
-                { via: '!.:', tookMs: 10, retries: 1 },
-                { service: Service.PFS, msgId },
-              ),
-            ],
-            asapScheduler,
-          );
-        }),
+              },
+            },
+            { service: Service.PFS, msgId },
+          ),
+          messageServiceSend.success(
+            { via: '!.:', tookMs: 10, retries: 1 },
+            { service: Service.PFS, msgId },
+          ),
+        ]),
       );
     }
 
@@ -667,7 +641,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       dummyState,
       deps,
-      combineRaidenEpics(of(initEpicMock, channelOpenEpicMock)),
+      combineRaidenEpics([initEpicMock, channelOpenEpicMock]),
       channelOpenSuccessReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
