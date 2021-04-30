@@ -158,16 +158,6 @@ describe('RaidenService', () => {
     expect(store.commit).toBeCalledWith('accessDenied', DeniedReason.UNSUPPORTED_NETWORK);
   });
 
-  test('commit an noProvider when there is no provider detected', async () => {
-    providerMock.mockResolvedValue(null);
-
-    await raidenService.connect();
-    await flushPromises();
-
-    expect(store.commit).toBeCalledTimes(1);
-    expect(store.commit).toBeCalledWith('noProvider');
-  });
-
   test('throw an error when the user calls openChannel before calling connect', async () => {
     expect.assertions(1);
     await expect(
@@ -226,7 +216,7 @@ describe('RaidenService', () => {
 
     test('resolves when channel open and deposit are successful', async () => {
       raiden.openChannel.mockImplementation(
-        async ({ }, { }, _?, callback?: OnChange<EventTypes, any>): Promise<any> => {
+        async ({}, {}, _?, callback?: OnChange<EventTypes, any>): Promise<any> => {
           callback?.({ type: EventTypes.OPENED, payload: { txHash: '0xtxhash' } });
           return '0xtxhash';
         },
