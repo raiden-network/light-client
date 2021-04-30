@@ -41,7 +41,6 @@ const _defaultState: RootState = {
   network: PlaceHolderNetwork,
   stateBackup: '',
   settings: {
-    isFirstTimeConnect: true,
     useRaidenAccount: true,
   },
   config: {},

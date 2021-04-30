@@ -13,7 +13,7 @@ export class Web3Provider {
   static async provider(configuration?: Configuration): Promise<Provider | undefined> {
     if (configuration?.rpc_endpoint) {
       return getPureRpcProvider(configuration.rpc_endpoint);
-    } else if (this.injectedWeb3Available()) {
+    } else if (window.ethereum || window.web3) {
       return await getInjectedProvider();
     } else if (configuration?.rpc_endpoint_wallet_connect) {
       return getWalletConnectProvider(configuration.rpc_endpoint_wallet_connect);
@@ -21,8 +21,6 @@ export class Web3Provider {
       return undefined;
     }
   }
-
-  static injectedWeb3Available = (): boolean => window.ethereum || window.web3;
 }
 
 function getPureRpcProvider(rpcEndpoint: string): Provider {

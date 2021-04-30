@@ -49,13 +49,9 @@ describe('Home.vue', () => {
     });
   });
 
-  async function connect(settings?: {
-    useRaidenAccount?: boolean;
-    isFirstTimeConnect?: boolean;
-  }): Promise<void> {
+  async function connect(settings?: { useRaidenAccount?: boolean }): Promise<void> {
     store.commit('updateSettings', {
       useRaidenAccount: true,
-      isFirstTimeConnect: false,
       ...settings,
     });
 
@@ -63,11 +59,6 @@ describe('Home.vue', () => {
     await (wrapper.vm as any).connect();
     await flushPromises();
   }
-
-  test('shows connect dialog if there is no sub key setting yet', async () => {
-    await connect({ isFirstTimeConnect: true });
-    expect(wrapper.vm.$data.connectDialog).toBe(true);
-  });
 
   test('connects with sub key by default', async () => {
     await connect();
@@ -110,23 +101,5 @@ describe('Home.vue', () => {
     const gettingStartedText = wrapper.find('.home__getting-started');
 
     expect(gettingStartedText.text()).toContain('home.getting-started.link-name');
-  });
-
-  test('connect button displays connect dialog', async () => {
-    store.commit('updateSettings', {
-      useRaidenAccount: true,
-      isFirstTimeConnect: true,
-    });
-    expect(wrapper.vm.$data.connectDialog).toBe(false);
-
-    const connectButton = wrapper.find('button');
-    connectButton.trigger('click');
-    await wrapper.vm.$nextTick();
-
-    expect(wrapper.vm.$data.connectDialog).toBe(true);
-
-    const connectDialog = wrapper.find('.connect');
-
-    expect(connectDialog.exists()).toBe(true);
   });
 });

@@ -80,7 +80,7 @@ describe('dApp e2e tests', () => {
     navigateToAccountMenu();
     navigateToBackupState();
     downloadState();
-    connectToDApp(false);
+    connectToDApp();
     navigateToTokenSelect();
     navigateToConnectNewTokenFromTokenOverlay();
     navigateBackToTransferScreenFromOverlay();
