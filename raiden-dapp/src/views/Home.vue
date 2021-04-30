@@ -41,17 +41,10 @@
       class="home__connect-button"
       :text="$t('home.connect-button')"
       :loading="connecting"
-      syncing
       :enabled="!connecting"
+      syncing
       sticky
       @click="connect"
-    />
-    <connect-dialog
-      :connecting="connecting"
-      :visible="connectDialog"
-      :has-provider="hasProvider"
-      @connect="connect"
-      @close="connectDialog = false"
     />
     <connection-pending-dialog v-if="loading" @reset-connection="resetConnection" />
   </v-container>
@@ -63,14 +56,11 @@ import type { Location } from 'vue-router';
 import { mapGetters, mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
-import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
 import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
 import NoAccessMessage from '@/components/NoAccessMessage.vue';
 import type { TokenModel } from '@/model/types';
 import { DeniedReason } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
-import { ConfigProvider } from '@/services/config-provider';
-import { Web3Provider } from '@/services/web3-provider';
 import type { Settings } from '@/types';
 
 @Component({
@@ -80,7 +70,6 @@ import type { Settings } from '@/types';
   },
   components: {
     ActionButton,
-    ConnectDialog,
     ConnectionPendingDialog,
     NoAccessMessage,
   },
@@ -88,22 +77,11 @@ import type { Settings } from '@/types';
 export default class Home extends Vue {
   isConnected!: boolean;
   tokens!: TokenModel[];
-  connectDialog = false;
   connecting = false;
   loading!: boolean;
   accessDenied!: DeniedReason;
   stateBackup!: string;
   settings!: Settings;
-  hasProvider = false;
-
-  async created() {
-    if (Web3Provider.injectedWeb3Available()) {
-      this.hasProvider = true;
-      return;
-    }
-    const configuration = await ConfigProvider.configuration();
-    this.hasProvider = !!configuration.rpc_endpoint;
-  }
 
   get navigationTarget(): Location {
     const redirectTo = this.$route.query.redirectTo as string;
@@ -116,14 +94,6 @@ export default class Home extends Vue {
   }
 
   async connect() {
-    // On first time connect, show the connect dialog
-    let { useRaidenAccount, isFirstTimeConnect } = this.settings;
-    if (isFirstTimeConnect && useRaidenAccount) {
-      this.connectDialog = true;
-      return;
-    }
-
-    this.connectDialog = false;
     this.connecting = true;
     const stateBackup = this.stateBackup;
 
@@ -132,10 +102,10 @@ export default class Home extends Vue {
     this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
     this.$store.commit('loadStart');
 
-    await this.$raiden.connect(stateBackup, useRaidenAccount ? true : undefined);
+    await this.$raiden.connect(stateBackup, this.settings.useRaidenAccount ? true : undefined);
     this.connecting = false;
+
     if (!this.accessDenied) {
-      this.connectDialog = false;
       this.$router.push(this.navigationTarget);
     }
   }

@@ -11,19 +11,12 @@ export function acceptDisclaimer() {
 }
 
 /**
- * @param firstTimeConnect - Whether this is first time connecting
+ *
  */
-export function connectToDApp(firstTimeConnect = true) {
+export function connectToDApp() {
   // cypress selectors: raiden-dapp/src/views/Home.vue
   cy.get('[data-cy=home]').should('exist');
   cy.get('[data-cy=home_connect_button]').click();
-
-  if (firstTimeConnect) {
-    // cypress selectors: raiden-dapp/src/components/dialogs/ConnectDialog.vue
-    cy.getWithCustomTimeout('[data-cy=connect_button]').should('exist');
-    cy.get('[data-cy=connect_button]').click();
-  }
-
   cy.getWithCustomTimeout('[data-cy=home]').should('not.exist');
 }
 
