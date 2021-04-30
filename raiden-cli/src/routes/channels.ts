@@ -110,11 +110,9 @@ async function openChannel(this: Cli, request: Request, response: Response, next
       .toPromise();
     response.status(201).json(transformChannelFormatForApi(channel));
   } catch (error) {
-    if (isInvalidParameterError(error)) {
-      response.status(400).send(error.message);
-    } else if (isInsuficientFundsError(error)) {
+    if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
-    } else if (isConflictError(error)) {
+    } else if (isInvalidParameterError(error) || isConflictError(error)) {
       response.status(409).send({ message: error.message });
     } else {
       next(error);
@@ -217,11 +215,9 @@ async function updateChannel(this: Cli, request: Request, response: Response, ne
     }
     response.status(200).json(transformChannelFormatForApi(channel));
   } catch (error) {
-    if (isInvalidParameterError(error)) {
-      response.status(400).send(error.message);
-    } else if (isInsuficientFundsError(error)) {
+    if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
-    } else if (isConflictError(error)) {
+    } else if (isInvalidParameterError(error) || isConflictError(error)) {
       response.status(409).json({ message: error.message });
     } else {
       next(error);
