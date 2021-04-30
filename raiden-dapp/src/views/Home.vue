@@ -46,7 +46,7 @@
       sticky
       @click="connect"
     />
-    <connection-pending-dialog v-if="loading" @reset-connection="resetConnection" />
+    <connection-pending-dialog v-if="connecting" @reset-connection="resetConnection" />
   </v-container>
 </template>
 
@@ -65,8 +65,8 @@ import type { Settings } from '@/types';
 
 @Component({
   computed: {
-    ...mapState(['loading', 'accessDenied', 'stateBackup', 'settings']),
-    ...mapGetters(['isConnected', 'tokens']),
+    ...mapState(['isConnected', 'accessDenied', 'stateBackup', 'settings']),
+    ...mapGetters(['tokens']),
   },
   components: {
     ActionButton,
@@ -78,7 +78,6 @@ export default class Home extends Vue {
   isConnected!: boolean;
   tokens!: TokenModel[];
   connecting = false;
-  loading!: boolean;
   accessDenied!: DeniedReason;
   stateBackup!: string;
   settings!: Settings;
@@ -100,12 +99,12 @@ export default class Home extends Vue {
     this.$store.commit('reset');
     // Have to reset this explicitly, for some reason
     this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
-    this.$store.commit('loadStart');
 
     await this.$raiden.connect(stateBackup, this.settings.useRaidenAccount ? true : undefined);
     this.connecting = false;
 
     if (!this.accessDenied) {
+      this.$store.commit('setConnected');
       this.$router.push(this.navigationTarget);
     }
   }

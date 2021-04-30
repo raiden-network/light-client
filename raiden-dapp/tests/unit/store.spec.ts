@@ -40,16 +40,12 @@ describe('store', () => {
     });
   });
 
-  test('isConnected getter is false while disconnected', () => {
-    expect(store.getters.isConnected).toBe(false);
-  });
-
-  test('loadStart and loadComplete control the loading state', () => {
-    expect(store.state.loading).toBe(false);
-    store.commit('loadStart');
-    expect(store.state.loading).toBe(true);
-    store.commit('loadComplete');
-    expect(store.state.loading).toBe(false);
+  test('setConnected and setDisconnected mutations change isConnected state', () => {
+    expect(store.state.isConnected).toBe(false);
+    store.commit('setConnected');
+    expect(store.state.isConnected).toBe(true);
+    store.commit('setDisconnected');
+    expect(store.state.isConnected).toBe(false);
   });
 
   test('noProvider mutation changes the providerDetected state', () => {
@@ -348,12 +344,6 @@ describe('store', () => {
     ].forEach((transfer) => store.commit('updateTransfers', transfer));
     const transfer = store.getters.transfer('0x1');
     expect(transfer.key).toEqual('sent:0x1');
-  });
-
-  test('isConnected should be false if loading', () => {
-    store.commit('loadStart');
-    store.commit('account', '0x0000000000000000000000000000000000020001');
-    expect(store.getters.isConnected).toBe(false);
   });
 
   test('newBlock updates blockNumber', () => {

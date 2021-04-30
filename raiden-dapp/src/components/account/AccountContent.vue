@@ -1,6 +1,6 @@
 <template>
   <div class="account-content">
-    <div v-if="!loading && defaultAccount">
+    <div v-if="isConnected">
       <v-row class="account-content__account-details" dense>
         <v-col cols="3">
           <span class="account-content__account-details__address">
@@ -102,13 +102,12 @@ interface MenuItem {
     AddressDisplay,
   },
   computed: {
-    ...mapState(['loading', 'defaultAccount', 'accountBalance', 'raidenAccountBalance']),
-    ...mapGetters(['isConnected', 'usingRaidenAccount']),
+    ...mapState(['isConnected', 'defaultAccount', 'accountBalance', 'raidenAccountBalance']),
+    ...mapGetters(['usingRaidenAccount']),
   },
 })
 export default class AccountContent extends Mixins(NavigationMixin) {
   menuItems: MenuItem[] = [];
-  loading!: boolean;
   defaultAccount!: string;
   accountBalance!: string;
   raidenAccountBalance!: string;
@@ -117,6 +116,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
   async disconnect() {
     await this.$raiden.disconnect();
     localStorage.removeItem('walletconnect');
+    this.$store.commit('setDisconnected');
     this.$store.commit('reset');
   }
 

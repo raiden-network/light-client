@@ -41,11 +41,12 @@
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 
 @Component({
   computed: {
-    ...mapGetters(['network', 'isConnected']),
+    ...mapState(['isConnected']),
+    ...mapGetters(['network']),
   },
 })
 export default class HeaderContent extends Vue {

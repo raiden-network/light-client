@@ -25,27 +25,12 @@ const accountRoutes = [
 ];
 
 describe('redirectIfNotConnected()', () => {
-  // TODO: Properly mock the global store object (getters are read-only protected)
-  //
-  // The idea here is that the `isConnected` getter depends on the loading state
-  // and the account address. So it sets loading completed and then toggles the
-  // account to be either empty or not. As result, the connection state
-  // switches.
-  // An issue is, that the loading state is not re-settable with mutations.
-  beforeAll(() => {
-    store.commit('loadComplete');
+  beforeEach(() => {
+    store.commit('setDisconnected');
   });
-
-  afterEach(() => {
-    store.commit('account', '');
-  });
-
-  function connect(): void {
-    store.commit('account', 'not-empty');
-  }
 
   test('redirect to home route if not connected', () => {
-    expect(store.getters.isConnected).toBe(false);
+    expect(store.state.isConnected).toBe(false);
 
     Object.values(protectedRoutes).forEach((route) => {
       expect(redirectIfNotConnected(route)).toEqual(
@@ -55,7 +40,7 @@ describe('redirectIfNotConnected()', () => {
   });
 
   test('add redirect query parameter to original target when redirecting to home route', () => {
-    expect(store.getters.isConnected).toBe(false);
+    expect(store.state.isConnected).toBe(false);
 
     Object.values(protectedRoutes).forEach((route) => {
       expect(redirectIfNotConnected(route)).toEqual(
@@ -65,14 +50,14 @@ describe('redirectIfNotConnected()', () => {
   });
 
   test('continue navigation if not connected, but navigate to home route already', () => {
-    expect(store.getters.isConnected).toBe(false);
+    expect(store.state.isConnected).toBe(false);
 
     expect(redirectIfNotConnected(homeRoute)).toBeNull();
   });
 
   test('skip home route if already connected', () => {
-    connect();
-    expect(store.getters.isConnected).toBe(true);
+    store.commit('setConnected');
+    expect(store.state.isConnected).toBe(true);
 
     expect(redirectIfNotConnected(homeRoute)).toEqual({
       name: RouteNames.TRANSFER,
@@ -80,8 +65,8 @@ describe('redirectIfNotConnected()', () => {
   });
 
   test('do nothing if connected and not navigating to home route', () => {
-    connect();
-    expect(store.getters.isConnected).toBe(true);
+    store.commit('setConnected');
+    expect(store.state.isConnected).toBe(true);
 
     Object.values(protectedRoutes).forEach((route) => {
       expect(redirectIfNotConnected(route)).toBeUndefined();
@@ -89,7 +74,7 @@ describe('redirectIfNotConnected()', () => {
   });
 
   test('do nothing if not connected and navigating to any account route', () => {
-    expect(store.getters.isConnected).toBe(false);
+    expect(store.state.isConnected).toBe(false);
 
     Object.values(accountRoutes).forEach((route) => {
       expect(redirectIfNotConnected(route)).toBeUndefined();

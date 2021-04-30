@@ -27,7 +27,7 @@ import type { NotificationsState } from './notifications/types';
 Vue.use(Vuex);
 
 const _defaultState: RootState = {
-  loading: false,
+  isConnected: false,
   blockNumber: 0,
   defaultAccount: '',
   accountBalance: '0.0',
@@ -99,6 +99,12 @@ const store: StoreOptions<CombinedStoreState> = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   state: defaultState() as any, // 'notifications' member filled in by module
   mutations: {
+    setConnected(state: RootState) {
+      state.isConnected = true;
+    },
+    setDisconnected(state: RootState) {
+      state.isConnected = false;
+    },
     noProvider(state: RootState) {
       state.providerDetected = false;
     },
@@ -107,12 +113,6 @@ const store: StoreOptions<CombinedStoreState> = {
     },
     account(state: RootState, account: string) {
       state.defaultAccount = account;
-    },
-    loadStart(state: RootState) {
-      state.loading = true;
-    },
-    loadComplete(state: RootState) {
-      state.loading = false;
     },
     updateBlock(state: RootState, block: number) {
       state.blockNumber = block;
@@ -181,7 +181,7 @@ const store: StoreOptions<CombinedStoreState> = {
   },
   actions: {},
   getters: {
-    tokensWithChannels: function (state: RootState): Tokens {
+    tokensWithChannels: function(state: RootState): Tokens {
       const tokensWithChannels: Tokens = {};
 
       for (const [address, token] of Object.entries(state.tokens)) {
@@ -190,7 +190,7 @@ const store: StoreOptions<CombinedStoreState> = {
 
       return tokensWithChannels;
     },
-    tokens: function (state: RootState): TokenModel[] {
+    tokens: function(state: RootState): TokenModel[] {
       const reducer = (acc: AccTokenModel, channel: RaidenChannel): AccTokenModel => {
         acc.address = channel.token;
         (acc[channel.state] as number) += 1;
@@ -269,9 +269,6 @@ const store: StoreOptions<CombinedStoreState> = {
         }, {}),
     transfer: (state: RootState) => (paymentId: BigNumber) => {
       return Object.values(state.transfers).find((transfer) => transfer.paymentId.eq(paymentId));
-    },
-    isConnected: (state: RootState): boolean => {
-      return !state.loading && !!(state.defaultAccount && state.defaultAccount !== '');
     },
     usingRaidenAccount: (state: RootState): boolean => {
       return !!state.settings.useRaidenAccount;
