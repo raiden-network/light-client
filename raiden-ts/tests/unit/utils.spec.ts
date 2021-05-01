@@ -4,7 +4,7 @@ import { keccak256 } from '@ethersproject/keccak256';
 import type { JsonRpcProvider } from '@ethersproject/providers';
 import { Web3Provider } from '@ethersproject/providers';
 import { fold, isRight } from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/pipeable';
+import { pipe } from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import { concat, defer, from, of, timer } from 'rxjs';
 import { delay, first, ignoreElements, map, mapTo, take, tap, toArray } from 'rxjs/operators';
@@ -219,11 +219,10 @@ describe('types', () => {
     }
     expect(ErrorCodec.is(err)).toBe(true);
     const encoded = ErrorCodec.encode(err);
-    expect(encoded).toStrictEqual({
+    expect(encoded).toEqual({
       name: 'RaidenError',
       message: ErrorCodes.RDN_GENERAL_ERROR,
       stack: expect.any(String),
-      details: expect.anything(),
     });
     expect(decode(ErrorCodec, encoded)).toStrictEqual(err);
     const decoded = decode(ErrorCodec, encoded);
