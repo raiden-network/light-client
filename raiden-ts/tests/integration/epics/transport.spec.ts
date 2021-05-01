@@ -452,78 +452,6 @@ describe('matrixMonitorPresenceEpic', () => {
   });
 });
 
-describe('matrixPresenceUpdateEpic', () => {
-  test('success presence update with caps', async () => {
-    expect.assertions(1);
-    const [raiden, partner] = await makeRaidens(2);
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-
-    raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
-    await sleep(2 * raiden.config.pollingInterval);
-
-    matrix.getProfileInfo.mockResolvedValueOnce({
-      displayname: `${matrix.getUserId()}_display_name`,
-      avatar_url: `mxc://raiden.network/cap?Delivery=0`,
-    });
-
-    const presence = {
-      presence: 'offline',
-      last_active_ago: 123,
-    };
-    matrix._http.authedRequest.mockResolvedValueOnce(presence);
-
-    matrix.emit('event', {
-      getType: () => 'm.presence',
-      getSender: () => partnerMatrix.getUserId(),
-      getContent: () => presence,
-    });
-
-    await sleep(2 * raiden.config.pollingInterval);
-    expect(raiden.output).toContainEqual(
-      matrixPresence.success(
-        {
-          userId: partnerMatrix.getUserId()!,
-          available: false,
-          ts: expect.any(Number),
-          caps: expect.objectContaining({ [Capabilities.DELIVERY]: 0 }),
-        },
-        { address: partner.address },
-      ),
-    );
-  });
-
-  test('getProfileInfo error', async () => {
-    // need to check this test again
-    expect.assertions(2);
-
-    const [raiden, partner] = await makeRaidens(2);
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-
-    raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
-    await sleep(raiden.config.httpTimeout);
-    expect(raiden.output).toContainEqual(
-      matrixPresence.success(
-        expect.objectContaining({ available: true, userId: partnerMatrix.getUserId()! }),
-        { address: partner.address },
-      ),
-    );
-    raiden.output.splice(0, raiden.output.length);
-
-    matrix.getProfileInfo.mockRejectedValue(new Error('could not get user profile'));
-    matrix.emit('event', {
-      getType: () => 'm.presence',
-      getSender: () => partnerMatrix.getUserId(),
-    });
-
-    await sleep(2 * raiden.config.pollingInterval);
-    expect(raiden.output).not.toContainEqual(
-      matrixPresence.success(expect.anything(), expect.anything()),
-    );
-  });
-});
-
 test('matrixUpdateCapsEpic', async () => {
   // Please check this test thoroughly whether we are testing the right things
   expect.assertions(5);
@@ -1018,7 +946,7 @@ test('matrixMessageGlobalSendEpic', async () => {
   );
 });
 
-describe('rtcConnectEpic', () => {
+describe('rtcConnectionManagerEpic', () => {
   let raiden: MockedRaiden, partner: MockedRaiden;
   let RTCPeerConnection: ReturnType<typeof mockRTC>;
 
@@ -1031,7 +959,7 @@ describe('rtcConnectEpic', () => {
 
   beforeEach(async () => {
     // ensure clients are sorted by address
-    [raiden, partner] = getSortedClients(await makeRaidens(2));
+    [raiden, partner] = await makeRaidens(2);
 
     RTCPeerConnection = mockRTC();
     raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.WEBRTC]: 1 } }));
@@ -1057,9 +985,8 @@ describe('rtcConnectEpic', () => {
   });
 
   test('success: receive message & channel error', async () => {
-    expect.assertions(7);
-    // since we want to test callee's perspective, we need to swap them
-    [raiden, partner] = [partner, raiden];
+    expect.assertions(8);
+
     const partnerId = (await partner.deps.matrix$.toPromise()).getUserId()!;
 
     const promise = raiden.deps.latest$
@@ -1076,9 +1003,21 @@ describe('rtcConnectEpic', () => {
       messageSend.request(
         {
           msgtype: 'm.notice',
-          message: expect.stringMatching(/"type":\s*"answer"/),
+          message: expect.stringMatching(/"type":\s*"offer"/),
+          userId: partnerId,
         },
         { address: partner.address, msgId: expect.any(String) },
+      ),
+    );
+    expect(raiden.output).toContainEqual(
+      messageReceived(
+        {
+          msgtype: 'm.notice',
+          text: expect.stringMatching(/"type":\s*"answer"/),
+          userId: partnerId,
+          ts: expect.any(Number),
+        },
+        { address: partner.address },
       ),
     );
 

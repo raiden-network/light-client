@@ -1,11 +1,12 @@
 # Changelog
 
 ## [Unreleased]
-
 ### Changed
 - [#2669] Update to Raiden contracts `v0.37.5`
+- [#2677] Removed the dependency on reactive notifications of peer's presences changes and updated WebRTC signaling algorithm
 
 [#2669]: https://github.com/raiden-network/light-client/issues/2669
+[#2677]: https://github.com/raiden-network/light-client/issues/2677
 
 ## [0.16.0] - 2021-04-01
 ### Added
