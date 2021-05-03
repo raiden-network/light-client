@@ -72,13 +72,15 @@ describe('store', () => {
     expect(store.state.channels).toEqual(TestData.mockChannels);
   });
 
-  test('backupState mutation changes the stateBackup state', () => {
+  test('backupState and clearBackupState mutations change the stateBackup state', () => {
     expect(store.state.stateBackup).toEqual('');
 
     const mockStringStateFile = '{ ...stateFileContent }';
     store.commit('backupState', mockStringStateFile);
-
     expect(store.state.stateBackup).toEqual(mockStringStateFile);
+
+    store.commit('clearBackupState');
+    expect(store.state.stateBackup).toEqual('');
   });
 
   test('the tokens getter returns tokens that have channels', () => {
