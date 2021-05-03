@@ -43,7 +43,7 @@ export default class RaidenService {
 
   private static async createRaiden(
     provider: providers.JsonRpcProvider | providers.ExternalProvider | string,
-    account: string | number = 0,
+    privateKeyOrProviderAccountIndex: string | number = 0,
     stateBackup?: string,
     subkey?: true,
   ): Promise<Raiden> {
@@ -51,7 +51,7 @@ export default class RaidenService {
       const contracts = await ConfigProvider.contracts();
       return await Raiden.create(
         provider,
-        account,
+        privateKeyOrProviderAccountIndex,
         {
           state: stateBackup,
         },
@@ -132,7 +132,7 @@ export default class RaidenService {
 
   async connect(
     ethereumProvider: EthereumProvider,
-    privateKey?: string,
+    privateKeyOrProviderAccountIndex?: string | number,
     stateBackup?: string,
     presetTokens: Configuration['per_network'] = {},
     subkey?: true,
@@ -140,7 +140,7 @@ export default class RaidenService {
     try {
       const raiden = await RaidenService.createRaiden(
         ethereumProvider,
-        privateKey,
+        privateKeyOrProviderAccountIndex,
         stateBackup,
         subkey,
       );
