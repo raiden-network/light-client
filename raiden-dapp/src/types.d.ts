@@ -5,7 +5,7 @@ import type { BigNumber, providers } from 'ethers';
 
 import type { RaidenChannels, RaidenConfig, RaidenTransfer } from 'raiden-ts';
 
-import type { DeniedReason, Presences, Token } from '@/model/types';
+import type { Presences, Token } from '@/model/types';
 import type RaidenService from '@/services/raiden-service';
 
 export type Tokens = { [token: string]: Token };
@@ -25,7 +25,6 @@ export interface RootState {
   defaultAccount: string;
   accountBalance: string;
   raidenAccountBalance: string;
-  accessDenied: DeniedReason;
   channels: RaidenChannels;
   tokens: Tokens;
   network: providers.Network;

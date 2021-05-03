@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Wrapper } from '@vue/test-utils';
 import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
@@ -6,7 +7,7 @@ import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
 import Vuex from 'vuex';
 
-import { DeniedReason } from '@/model/types';
+import { ErrorCode } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 import type { Configuration } from '@/services/config-provider';
 import { ConfigProvider } from '@/services/config-provider';
@@ -67,7 +68,6 @@ describe('Home.vue', () => {
       ...settings,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (wrapper.vm as any).connect();
     await flushPromises();
   }
@@ -92,9 +92,9 @@ describe('Home.vue', () => {
   });
 
   test('connect can be called without displaying error after failing initially', async () => {
-    store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
+    (wrapper.vm as any).connectionError = ErrorCode.UNSUPPORTED_NETWORK;
     await connect();
-    expect(store.state.accessDenied).toEqual(DeniedReason.UNDEFINED);
+    expect((wrapper.vm as any).connectionError).toBe(null);
   });
 
   test('displays welcome title', () => {

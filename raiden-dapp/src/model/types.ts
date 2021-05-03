@@ -92,10 +92,9 @@ export const PlaceHolderNetwork: providers.Network = {
   chainId: -1,
 };
 
-export enum DeniedReason {
-  UNDEFINED,
-  NO_ACCOUNT,
-  UNSUPPORTED_NETWORK,
-  INITIALIZATION_FAILED,
-  RDN_STATE_MIGRATION,
+export enum ErrorCode {
+  NO_ETHEREUM_PROVIDER = 'no-ethereum-provider',
+  UNSUPPORTED_NETWORK = 'unsupported-network',
+  SDK_INITIALIZATION_FAILED = 'sdk-initialization-failed',
+  STATE_MIGRATION_FAILED = 'state-migration-failed',
 }

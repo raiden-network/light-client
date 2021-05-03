@@ -16,7 +16,7 @@ import type { RaidenChannel, RaidenChannels, RaidenConfig, RaidenTransfer } from
 import { ChannelState, getNetworkName } from 'raiden-ts';
 
 import type { AccTokenModel, Presences, Token, TokenModel } from '@/model/types';
-import { DeniedReason, emptyTokenModel, PlaceHolderNetwork } from '@/model/types';
+import { emptyTokenModel, PlaceHolderNetwork } from '@/model/types';
 import { notifications } from '@/store/notifications';
 import type { UserDepositContractState } from '@/store/user-deposit-contract';
 import { userDepositContract } from '@/store/user-deposit-contract';
@@ -32,7 +32,6 @@ const _defaultState: RootState = {
   defaultAccount: '',
   accountBalance: '0.0',
   raidenAccountBalance: '',
-  accessDenied: DeniedReason.UNDEFINED,
   channels: {},
   tokens: {},
   transfers: {},
@@ -103,9 +102,6 @@ const store: StoreOptions<CombinedStoreState> = {
     },
     setDisconnected(state: RootState) {
       state.isConnected = false;
-    },
-    accessDenied(state: RootState, reason: DeniedReason) {
-      state.accessDenied = reason;
     },
     account(state: RootState, account: string) {
       state.defaultAccount = account;
