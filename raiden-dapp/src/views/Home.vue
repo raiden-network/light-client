@@ -33,7 +33,14 @@
             {{ $t('home.getting-started.link-name') }}
           </a>
         </i18n>
-        <no-access-message v-if="accessDenied" :reason="accessDenied" class="home__no-access" />
+        <v-alert
+          v-if="connectionError"
+          class="home__no-access font-weight-light"
+          color="error"
+          icon="warning"
+        >
+          {{ translatedErrorCode }}
+        </v-alert>
       </v-col>
     </v-row>
     <action-button
@@ -55,34 +62,49 @@ import { Component, Vue } from 'vue-property-decorator';
 import type { Location } from 'vue-router';
 import { mapGetters, mapState } from 'vuex';
 
-import { ErrorCodes } from 'raiden-ts';
-
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
-import NoAccessMessage from '@/components/NoAccessMessage.vue';
 import type { TokenModel } from '@/model/types';
-import { DeniedReason } from '@/model/types';
+import { ErrorCode } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 import { ConfigProvider } from '@/services/config-provider';
 import { Web3Provider } from '@/services/web3-provider';
-import type { Settings } from '@/types';
+import type { EthereumProvider, Settings } from '@/types';
+
+function ethereumProviderConnectsToMainnet(ethereumProvider: EthereumProvider): boolean {
+  return (
+    typeof ethereumProvider !== 'string' &&
+    !!ethereumProvider.networkVersion &&
+    ethereumProvider.networkVersion === '1' &&
+    process.env.VUE_APP_ALLOW_MAINNET !== 'true'
+  );
+}
+
+function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
+  if (error.message && error.message.includes('No deploy info provided')) {
+    return ErrorCode.UNSUPPORTED_NETWORK;
+  } else if (error.message && error.message.includes('Could not replace stored state')) {
+    return ErrorCode.STATE_MIGRATION_FAILED;
+  } else {
+    return ErrorCode.SDK_INITIALIZATION_FAILED;
+  }
+}
 
 @Component({
   computed: {
-    ...mapState(['isConnected', 'accessDenied', 'stateBackup', 'settings']),
+    ...mapState(['isConnected', 'stateBackup', 'settings']),
     ...mapGetters(['tokens']),
   },
   components: {
     ActionButton,
     ConnectionPendingDialog,
-    NoAccessMessage,
   },
 })
 export default class Home extends Vue {
   isConnected!: boolean;
   tokens!: TokenModel[];
   connecting = false;
-  accessDenied!: DeniedReason;
+  connectionError: ErrorCode | null = null;
   stateBackup!: string;
   settings!: Settings;
 
@@ -96,48 +118,54 @@ export default class Home extends Vue {
     }
   }
 
+  get translatedErrorCode(): string {
+    if (!this.connectionError) {
+      return '';
+    } else {
+      const translationKey = `error-codes.${this.connectionError.toString()}`;
+      return this.$t(translationKey) as string;
+    }
+  }
+
   async connect() {
     this.connecting = true;
+    this.$store.commit('reset');
+    this.connectionError = null;
+
     const stateBackup = this.stateBackup;
     const configuration = await ConfigProvider.configuration();
     const useRaidenAccount = this.settings.useRaidenAccount ? true : undefined;
-
-    this.$store.commit('reset');
-    // Have to reset this explicitly, for some reason
-    this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
-
     const ethereumProvider = await Web3Provider.provider(configuration);
 
+    // TODO: This will become removed when we have the connection manager.
     if (!ethereumProvider) {
-      // TODO: No worries of the message, this will become removed later.
-      this.$store.commit('accessDenied', 'No Ethereum provider configred or available.');
+      this.connectionError = ErrorCode.NO_ETHEREUM_PROVIDER;
+      this.connecting = false;
       return;
     }
 
-    if (
-      typeof ethereumProvider !== 'string' &&
-      ethereumProvider.networkVersion &&
-      ethereumProvider.networkVersion === '1' &&
-      process.env.VUE_APP_ALLOW_MAINNET !== 'true'
-    ) {
-      this.$store.commit('accessDenied', ErrorCodes.RDN_UNRECOGNIZED_NETWORK);
+    if (ethereumProviderConnectsToMainnet(ethereumProvider)) {
+      this.connectionError = ErrorCode.UNSUPPORTED_NETWORK;
+      this.connecting = false;
       return;
     }
 
-    await this.$raiden.connect(
-      ethereumProvider,
-      configuration.private_key,
-      stateBackup,
-      configuration.per_network,
-      useRaidenAccount,
-    );
-
-    this.connecting = false;
-
-    if (!this.accessDenied) {
-      this.$store.commit('setConnected');
-      this.$router.push(this.navigationTarget);
+    try {
+      await this.$raiden.connect(
+        ethereumProvider,
+        configuration.private_key,
+        stateBackup,
+        configuration.per_network,
+        useRaidenAccount,
+      );
+    } catch (error) {
+      this.connectionError = mapRaidenServiceErrorToErrorCode(error);
+      this.connecting = false;
+      return
     }
+
+    this.$store.commit('setConnected');
+    this.$router.push(this.navigationTarget);
   }
 
   resetConnection(): void {
@@ -179,7 +207,10 @@ export default class Home extends Vue {
   &__disclaimer,
   &__getting-started,
   &__no-access {
+    font-size: 16px;
+    line-height: 20px;
     margin: 30px 130px 0 130px;
+
     @include respond-to(handhelds) {
       margin: 30px 20px 0 20px;
     }

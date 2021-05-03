@@ -1,7 +1,7 @@
 import { BigNumber, constants } from 'ethers';
 
 import type { Token } from '@/model/types';
-import { DeniedReason, emptyTokenModel } from '@/model/types';
+import { emptyTokenModel } from '@/model/types';
 import store, { defaultState } from '@/store/index';
 import { defaultState as defaultNotificationsState } from '@/store/notifications/state';
 import { defaultState as defaultUserDepositContractState } from '@/store/user-deposit-contract/state';
@@ -64,12 +64,6 @@ describe('store', () => {
     expect(store.state.defaultAccount).toBe('');
     store.commit('account', 'test');
     expect(store.state.defaultAccount).toBe('test');
-  });
-
-  test('accessDenied mutation changes the accessDenied state', () => {
-    expect(store.state.accessDenied).toBe(DeniedReason.UNDEFINED);
-    store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
-    expect(store.state.accessDenied).toBe(DeniedReason.NO_ACCOUNT);
   });
 
   test('updateChannel mutation changes the channels state', () => {

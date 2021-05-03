@@ -12,7 +12,6 @@ import type { Address, Hash, OnChange, RaidenTransfer } from 'raiden-ts';
 import { EventTypes, Raiden } from 'raiden-ts';
 
 import type { Token, TokenModel } from '@/model/types';
-import { DeniedReason } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 import type { Configuration } from '@/services/config-provider';
 import RaidenService from '@/services/raiden-service';
@@ -125,18 +124,6 @@ describe('RaidenService', () => {
     });
     expect(store.commit).toHaveBeenCalledWith('balance', '1.0');
     expect(store.commit).toBeCalledWith('raidenAccountBalance', '0.1');
-  });
-
-  test('commit a deniedAccess when the user attempts to connect on an unsupported network', async () => {
-    factory.mockRejectedValue(
-      new Error('No deploy info provided nor recognized network: {name: "homestead", chainId: 1}'),
-    );
-
-    await raidenService.connect(ethereumProvider);
-    await flushPromises();
-
-    expect(store.commit).toBeCalledTimes(1);
-    expect(store.commit).toBeCalledWith('accessDenied', DeniedReason.UNSUPPORTED_NETWORK);
   });
 
   test('throw an error when the user calls openChannel before calling connect', async () => {
@@ -629,15 +616,6 @@ describe('RaidenService', () => {
     await flushPromises();
 
     expect(router.push).toHaveBeenCalledWith({ name: RouteNames.HOME });
-  });
-
-  test('update the store with the proper reason when the factory throws an exception', async () => {
-    factory.mockRejectedValue(new Error('create failed'));
-    await raidenService.connect(ethereumProvider);
-    await flushPromises();
-
-    expect(store.commit).toBeCalledTimes(1);
-    expect(store.commit).toBeCalledWith('accessDenied', DeniedReason.INITIALIZATION_FAILED);
   });
 
   test('commit config$ updates', async () => {
