@@ -2,15 +2,14 @@ import WalletConnectProvider from '@walletconnect/web3-provider';
 import { providers } from 'ethers';
 
 import type { Configuration } from '@/services/config-provider';
-
-type Provider = string | (providers.JsonRpcProvider & { networkVersion?: string });
+import type { EthereumProvider } from '@/types';
 
 function resetHandler() {
   window.location.replace(window.location.origin);
 }
 
 export class Web3Provider {
-  static async provider(configuration?: Configuration): Promise<Provider | undefined> {
+  static async provider(configuration?: Configuration): Promise<EthereumProvider | undefined> {
     if (configuration?.rpc_endpoint) {
       return getPureRpcProvider(configuration.rpc_endpoint);
     } else if (window.ethereum || window.web3) {
@@ -23,11 +22,11 @@ export class Web3Provider {
   }
 }
 
-function getPureRpcProvider(rpcEndpoint: string): Provider {
+function getPureRpcProvider(rpcEndpoint: string): EthereumProvider {
   return rpcEndpoint.startsWith('http') ? rpcEndpoint : `https://${rpcEndpoint}`;
 }
 
-async function getInjectedProvider(): Promise<Provider> {
+async function getInjectedProvider(): Promise<EthereumProvider> {
   let provider;
 
   if (window.ethereum) {
@@ -42,7 +41,7 @@ async function getInjectedProvider(): Promise<Provider> {
   return provider;
 }
 
-async function getWalletConnectProvider(rpcEndpoint: string): Promise<Provider> {
+async function getWalletConnectProvider(rpcEndpoint: string): Promise<EthereumProvider> {
   const chainId = await getChainIdOfRpcEndpoint(rpcEndpoint);
   const provider = new WalletConnectProvider({
     rpc: {
@@ -54,7 +53,7 @@ async function getWalletConnectProvider(rpcEndpoint: string): Promise<Provider> 
   return new providers.Web3Provider(provider);
 }
 
-function registerResetHandler(provider: Provider | WalletConnectProvider): void {
+function registerResetHandler(provider: EthereumProvider | WalletConnectProvider): void {
   if (typeof provider !== 'string') {
     provider.on('chainChanged', resetHandler);
     provider.on('disconnect', resetHandler);

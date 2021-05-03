@@ -48,6 +48,8 @@ export interface SuggestedPartner {
   uptime: string | number;
 }
 
+export type EthereumProvider = string | (providers.JsonRpcProvider & { networkVersion?: string });
+
 declare global {
   interface Window {
     web3: any;

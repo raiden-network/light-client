@@ -8,14 +8,26 @@ import Vuex from 'vuex';
 
 import { DeniedReason } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
+import type { Configuration } from '@/services/config-provider';
 import { ConfigProvider } from '@/services/config-provider';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store/index';
+import type { EthereumProvider } from '@/types';
 import Home from '@/views/Home.vue';
 
 jest.mock('@/services/raiden-service');
 jest.mock('@/services/config-provider');
 jest.mock('@/i18n', () => jest.fn());
+jest.mock('@/services/web3-provider', () => {
+  class Web3Provider {
+    static async provider(_configuration?: Configuration): Promise<EthereumProvider | undefined> {
+      return 'https://some.rpc.provider';
+    }
+  }
+
+  return { Web3Provider };
+});
+
 import Mocked = jest.Mocked;
 
 Vue.use(Vuex);
