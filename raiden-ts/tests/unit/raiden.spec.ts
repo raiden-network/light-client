@@ -23,7 +23,6 @@ import { channelKey, channelUniqueKey } from '@/channels/utils';
 import { makeDefaultConfig } from '@/config';
 import { ShutdownReason, SignatureZero } from '@/constants';
 import {
-  HumanStandardToken__factory,
   MonitoringService__factory,
   SecretRegistry__factory,
   ServiceRegistry__factory,
@@ -83,6 +82,7 @@ const contractsInfo: ContractsInfo = {
   MonitoringService: { address: makeAddress(), block_number: 1 },
   OneToN: { address: makeAddress(), block_number: 1 },
 };
+const txHash = makeHash();
 
 const dummyState = makeInitialState({
   address,
@@ -100,7 +100,12 @@ function dummyReducer(state: RaidenState = dummyState) {
 
 function makeDummyDependencies(): RaidenEpicDeps {
   const provider = new JsonRpcProvider();
-  Object.assign(provider, { _isProvider: true });
+  Object.assign(provider, {
+    _isProvider: true,
+    getNetwork: jest.fn(async () => network),
+    getBalance: jest.fn(async () => BigNumber.from(1_000_000)),
+    getGasPrice: jest.fn(async () => BigNumber.from(5)),
+  });
   const signer = wallet.connect(provider);
   const latest$ = new ReplaySubject<Latest>(1);
   const config$ = latest$.pipe(pluckDistinct('config'));
@@ -133,8 +138,22 @@ function makeDummyDependencies(): RaidenEpicDeps {
     getTokenNetworkContract: memoize((address: Address) =>
       TokenNetwork__factory.connect(address, signer),
     ),
-    getTokenContract: memoize((address: Address) =>
-      HumanStandardToken__factory.connect(address, signer),
+    getTokenContract: memoize(
+      (_address: Address) =>
+        ({
+          signer: signer,
+          functions: {
+            transfer: jest.fn(async () => ({
+              wait: jest.fn(async () => ({
+                status: 1,
+                transactionHash: txHash,
+              })),
+            })) as any,
+          },
+          callStatic: {
+            balanceOf: async () => BigNumber.from(1_000_000),
+          },
+        } as any),
     ),
     serviceRegistryContract: ServiceRegistry__factory.connect(
       contractsInfo.ServiceRegistry.address,
@@ -171,7 +190,6 @@ describe('Raiden', () => {
   const tokenNetwork = makeAddress();
   const partner = makeAddress();
   const txBlock = 42;
-  const txHash = makeHash();
   const transferAmount = 42;
 
   function initEpicMock(action$: Observable<RaidenAction>): Observable<raidenSynced> {
@@ -754,5 +772,56 @@ describe('Raiden', () => {
         gasLimit: BigNumber.from(21_000),
       }),
     );
+  });
+
+  test('getTokenBalance/transferOnchainTokens', async () => {
+    const deps = makeDummyDependencies();
+    const mockTokenContract = {
+      signer: deps.signer,
+      functions: {
+        transfer: jest.fn(async () => ({
+          wait: jest.fn(async () => ({
+            status: 1,
+            transactionHash: txHash,
+          })),
+        })),
+      },
+      callStatic: {
+        balanceOf: jest.fn(async () => BigNumber.from(1_000_000)),
+      },
+    };
+    const mockGetTokenContract = jest.fn(() => mockTokenContract);
+    deps.getTokenContract = mockGetTokenContract as any;
+    const raiden = new Raiden(
+      makeInitialState({ address, network, contractsInfo }),
+      deps,
+      combineRaidenEpics([initEpicMock]),
+      dummyReducer,
+    );
+
+    await raiden.start();
+
+    const balance = raiden.getTokenBalance(token);
+    await expect(balance).resolves.toEqual(BigNumber.from(1_000_000));
+
+    const tokenContract = deps.getTokenContract(token);
+    const mockedBalanceOf = tokenContract.callStatic.balanceOf as jest.MockedFunction<
+      typeof tokenContract.callStatic.balanceOf
+    >;
+    expect(mockedBalanceOf.mock.calls[0][0]).toEqual(raiden.address);
+
+    // Test transfering a specified amount of tokens
+    const tx = raiden.transferOnchainTokens(token, partner, 1);
+    await expect(tx).resolves.toEqual(txHash);
+
+    const mockedTransfer = tokenContract.functions.transfer as jest.MockedFunction<
+      typeof tokenContract.functions.transfer
+    >;
+    expect(mockedTransfer.mock.calls[0]).toEqual([partner, One]);
+
+    // Test transfering all tokens
+    const tx2 = raiden.transferOnchainTokens(token, partner);
+    await expect(tx2).resolves.toEqual(txHash);
+    expect(mockedTransfer.mock.calls[1]).toEqual([partner, BigNumber.from(1_000_000)]);
   });
 });
