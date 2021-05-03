@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Wrapper } from '@vue/test-utils';
 import { mount } from '@vue/test-utils';
+import type { providers } from 'ethers';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
@@ -13,7 +14,6 @@ import type { Configuration } from '@/services/config-provider';
 import { ConfigProvider } from '@/services/config-provider';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store/index';
-import type { EthereumProvider } from '@/types';
 import Home from '@/views/Home.vue';
 
 jest.mock('@/services/raiden-service');
@@ -21,8 +21,11 @@ jest.mock('@/services/config-provider');
 jest.mock('@/i18n', () => jest.fn());
 jest.mock('@/services/web3-provider', () => {
   class Web3Provider {
-    static async provider(_configuration?: Configuration): Promise<EthereumProvider | undefined> {
-      return 'https://some.rpc.provider';
+    static async provider(
+      _configuration?: Configuration,
+    ): Promise<providers.JsonRpcProvider | undefined> {
+      const network = { chainId: 5 };
+      return ({ getNetwork: async () => network } as unknown) as providers.JsonRpcProvider;
     }
   }
 

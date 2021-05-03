@@ -18,7 +18,7 @@ import type { CombinedStoreState } from '@/store';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import type { NotificationPayload } from '@/store/notifications/types';
-import type { EthereumProvider, SuggestedPartner, Tokens } from '@/types';
+import type { SuggestedPartner, Tokens } from '@/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 function raidenActionConfirmationValueToStateTranslation(
@@ -130,7 +130,7 @@ export default class RaidenService {
   }
 
   async connect(
-    ethereumProvider: EthereumProvider,
+    ethereumProvider: providers.JsonRpcProvider,
     privateKeyOrProviderAccountIndex?: string | number,
     stateBackup?: string,
     presetTokens: Configuration['per_network'] = {},
