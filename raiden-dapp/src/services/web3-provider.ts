@@ -2,14 +2,15 @@ import WalletConnectProvider from '@walletconnect/web3-provider';
 import { providers } from 'ethers';
 
 import type { Configuration } from '@/services/config-provider';
-import type { EthereumProvider } from '@/types';
 
 function resetHandler() {
   window.location.replace(window.location.origin);
 }
 
 export class Web3Provider {
-  static async provider(configuration?: Configuration): Promise<EthereumProvider | undefined> {
+  static async provider(
+    configuration?: Configuration,
+  ): Promise<providers.JsonRpcProvider | undefined> {
     if (configuration?.rpc_endpoint) {
       return getPureRpcProvider(configuration.rpc_endpoint);
     } else if (window.ethereum || window.web3) {
@@ -22,11 +23,14 @@ export class Web3Provider {
   }
 }
 
-function getPureRpcProvider(rpcEndpoint: string): EthereumProvider {
-  return rpcEndpoint.startsWith('http') ? rpcEndpoint : `https://${rpcEndpoint}`;
+function getPureRpcProvider(rpcEndpoint: string): providers.JsonRpcProvider {
+  const rpcEndpointWithProtocol = rpcEndpoint.startsWith('http')
+    ? rpcEndpoint
+    : `https://${rpcEndpoint}`;
+  return new providers.JsonRpcProvider(rpcEndpointWithProtocol);
 }
 
-async function getInjectedProvider(): Promise<EthereumProvider> {
+async function getInjectedProvider(): Promise<providers.JsonRpcProvider> {
   let provider;
 
   if (window.ethereum) {
@@ -41,7 +45,7 @@ async function getInjectedProvider(): Promise<EthereumProvider> {
   return provider;
 }
 
-async function getWalletConnectProvider(rpcEndpoint: string): Promise<EthereumProvider> {
+async function getWalletConnectProvider(rpcEndpoint: string): Promise<providers.JsonRpcProvider> {
   const chainId = await getChainIdOfRpcEndpoint(rpcEndpoint);
   const provider = new WalletConnectProvider({
     rpc: {
@@ -53,11 +57,9 @@ async function getWalletConnectProvider(rpcEndpoint: string): Promise<EthereumPr
   return new providers.Web3Provider(provider);
 }
 
-function registerResetHandler(provider: EthereumProvider | WalletConnectProvider): void {
-  if (typeof provider !== 'string') {
-    provider.on('chainChanged', resetHandler);
-    provider.on('disconnect', resetHandler);
-  }
+function registerResetHandler(provider: providers.JsonRpcProvider | WalletConnectProvider): void {
+  provider.on('chainChanged', resetHandler);
+  provider.on('disconnect', resetHandler);
 }
 
 async function getChainIdOfRpcEndpoint(rpcEndpoint: string): Promise<number> {

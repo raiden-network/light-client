@@ -36,7 +36,11 @@ jest.mock('@/services/config-provider');
 const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual('raiden-ts');
 
 const path = [{ path: ['0xmediator'], fee: BigNumber.from(1 ** 10) }];
-const ethereumProvider = 'https://some.rpc.provider';
+
+// It doesn't really matter what we have here. Therefore force type-case it is fine.
+const ethereumProvider = ({
+  url: 'https://some.rpc.provider',
+} as unknown) as providers.JsonRpcProvider;
 
 describe('RaidenService', () => {
   let raidenService: RaidenService;

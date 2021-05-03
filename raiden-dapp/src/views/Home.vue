@@ -69,16 +69,7 @@ import { ErrorCode } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 import { ConfigProvider } from '@/services/config-provider';
 import { Web3Provider } from '@/services/web3-provider';
-import type { EthereumProvider, Settings } from '@/types';
-
-function ethereumProviderConnectsToMainnet(ethereumProvider: EthereumProvider): boolean {
-  return (
-    typeof ethereumProvider !== 'string' &&
-    !!ethereumProvider.networkVersion &&
-    ethereumProvider.networkVersion === '1' &&
-    process.env.VUE_APP_ALLOW_MAINNET !== 'true'
-  );
-}
+import type { Settings } from '@/types';
 
 function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
   if (error.message && error.message.includes('No deploy info provided')) {
@@ -144,7 +135,9 @@ export default class Home extends Vue {
       return;
     }
 
-    if (ethereumProviderConnectsToMainnet(ethereumProvider)) {
+    const ethereumNetwork = await ethereumProvider.getNetwork();
+
+    if (ethereumNetwork.chainId === 1 && process.env.VUE_APP_ALLOW_MAINNET !== 'true') {
       this.connectionError = ErrorCode.UNSUPPORTED_NETWORK;
       this.connecting = false;
       return;
