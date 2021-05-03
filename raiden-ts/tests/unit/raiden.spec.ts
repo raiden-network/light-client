@@ -15,7 +15,7 @@ import { filter, first, ignoreElements, map, mapTo, mergeMap } from 'rxjs/operat
 
 import type { RaidenAction } from '@/actions';
 import { raidenConfigUpdate, raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
-import { channelDeposit, channelOpen, tokenMonitored } from '@/channels/actions';
+import { channelClose, channelDeposit, channelOpen, tokenMonitored } from '@/channels/actions';
 import type { Channel, ChannelEnd } from '@/channels/state';
 import { ChannelState } from '@/channels/state';
 import { BalanceProofZero } from '@/channels/types';
@@ -191,6 +191,12 @@ describe('Raiden', () => {
   const partner = makeAddress();
   const txBlock = 42;
   const transferAmount = 42;
+  const channelId = 10;
+  const settleTimeout = 500;
+  const isFirstParticipant = true;
+  const channelOpenHash = makeHash();
+  const meta = { tokenNetwork, partner };
+  const key = channelKey(meta);
 
   function initEpicMock(action$: Observable<RaidenAction>): Observable<raidenSynced> {
     return action$.pipe(
@@ -219,6 +225,37 @@ describe('Raiden', () => {
         ),
       ),
     );
+  }
+
+  const emptyChannelEnd: ChannelEnd = {
+    address: AddressZero as Address,
+    deposit: Zero as UInt<32>,
+    withdraw: Zero as UInt<32>,
+    locks: [],
+    balanceProof: BalanceProofZero,
+    pendingWithdraws: [],
+    nextNonce: One as UInt<8>,
+  };
+
+  function getChannel(): Channel {
+    return {
+      _id: channelUniqueKey({ ...meta, id: channelId }),
+      id: channelId,
+      state: ChannelState.open,
+      token: token,
+      tokenNetwork: tokenNetwork,
+      settleTimeout: settleTimeout,
+      isFirstParticipant: isFirstParticipant,
+      openBlock: txBlock,
+      own: {
+        ...emptyChannelEnd,
+        address,
+      },
+      partner: {
+        ...emptyChannelEnd,
+        address: partner,
+      },
+    } as Channel;
   }
 
   test('address', () => {
@@ -556,28 +593,14 @@ describe('Raiden', () => {
   });
 
   test('openChannel', async () => {
-    const id = 10;
-    const settleTimeout = 500;
-    const isFirstParticipant = true;
     const deposit: BigNumber = BigNumber.from('10000000000000000000');
     const subkey = false;
-    const channelOpenHash = makeHash();
     const channelDepositHash = makeHash();
     const msgId = '123';
     const chainId = 1337;
     const updating_nonce = BigNumber.from(1) as UInt<8>;
     const other_nonce = BigNumber.from(1) as UInt<8>;
     const other_capacity = BigNumber.from(10) as UInt<32>;
-
-    const emptyChannelEnd: ChannelEnd = {
-      address: AddressZero as Address,
-      deposit: Zero as UInt<32>,
-      withdraw: Zero as UInt<32>,
-      locks: [],
-      balanceProof: BalanceProofZero,
-      pendingWithdraws: [],
-      nextNonce: One as UInt<8>,
-    };
 
     function channelOpenSuccessReducer(
       state: RaidenState = dummyState,
@@ -620,7 +643,7 @@ describe('Raiden', () => {
           ),
           channelOpen.success(
             {
-              id,
+              id: channelId,
               token,
               settleTimeout,
               isFirstParticipant,
@@ -632,7 +655,7 @@ describe('Raiden', () => {
           ),
           channelDeposit.success(
             {
-              id,
+              id: channelId,
               participant: address as Address,
               totalDeposit: deposit as UInt<32>,
               txHash: channelDepositHash,
@@ -656,7 +679,7 @@ describe('Raiden', () => {
                 canonical_identifier: {
                   chain_identifier: BigNumber.from(chainId) as UInt<32>,
                   token_network_address: tokenNetwork,
-                  channel_identifier: BigNumber.from(id) as UInt<32>,
+                  channel_identifier: BigNumber.from(channelId) as UInt<32>,
                 },
               },
             },
@@ -823,6 +846,42 @@ describe('Raiden', () => {
     const tx2 = raiden.transferOnchainTokens(token, partner);
     await expect(tx2).resolves.toEqual(txHash);
     expect(mockedTransfer.mock.calls[1]).toEqual([partner, BigNumber.from(1_000_000)]);
+  });
+
+  test('closeChannel', async () => {
+    const closeBlock = 60;
+    function channelCloseEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(channelClose.request.is),
+        mapTo(
+          channelClose.success(
+            {
+              id: channelId,
+              participant: address,
+              txHash,
+              txBlock: closeBlock,
+              confirmed: true,
+            },
+            { tokenNetwork, partner },
+          ),
+        ),
+      );
+    }
+    const deps = makeDummyDependencies();
+    deps.registryContract = {
+      token_to_token_networks: jest.fn(async () => tokenNetwork),
+    } as any;
+    const raiden = new Raiden(
+      makeInitialState(
+        { address, network, contractsInfo },
+        { tokens: { [token]: tokenNetwork }, channels: { [key]: getChannel() } },
+      ),
+      deps,
+      combineRaidenEpics([initEpicMock, channelCloseEpicMock]),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+    await expect(raiden.closeChannel(token, partner, { subkey: false })).resolves.toEqual(txHash);
   });
 
   test('mainAddress', async () => {
