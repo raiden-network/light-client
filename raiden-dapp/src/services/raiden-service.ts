@@ -7,7 +7,7 @@ import type Router from 'vue-router';
 import type { Store } from 'vuex';
 
 import type { ChangeEvent, RaidenPaths, RaidenPFS } from 'raiden-ts';
-import { Capabilities, ErrorCodes, EventTypes, PfsMode, Raiden, RaidenError } from 'raiden-ts';
+import { Capabilities, EventTypes, PfsMode, Raiden } from 'raiden-ts';
 
 import i18n from '@/i18n';
 import type { Progress, Token } from '@/model/types';
@@ -15,12 +15,11 @@ import { DeniedReason } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 import type { Configuration } from '@/services/config-provider';
 import { ConfigProvider } from '@/services/config-provider';
-import { Web3Provider } from '@/services/web3-provider';
 import type { CombinedStoreState } from '@/store';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import type { NotificationPayload } from '@/store/notifications/types';
-import type { SuggestedPartner, Tokens } from '@/types';
+import type { EthereumProvider, SuggestedPartner, Tokens } from '@/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 
 function raidenActionConfirmationValueToStateTranslation(
@@ -40,7 +39,6 @@ export default class RaidenService {
   private store: Store<CombinedStoreState>;
   private router: Router;
   private _userDepositTokenAddress = '';
-  private _configuration?: Configuration;
   public usingSubkey: boolean | undefined;
 
   private static async createRaiden(
@@ -132,144 +130,131 @@ export default class RaidenService {
     }
   }
 
-  async connect(stateBackup?: string, subkey?: true) {
+  async connect(
+    ethereumProvider: EthereumProvider,
+    privateKey?: string,
+    stateBackup?: string,
+    presetTokens: Configuration['per_network'] = {},
+    subkey?: true,
+  ) {
     try {
-      let raiden;
-      const configuration = await ConfigProvider.configuration();
-      const provider = await Web3Provider.provider(configuration);
+      const raiden = await RaidenService.createRaiden(
+        ethereumProvider,
+        privateKey,
+        stateBackup,
+        subkey,
+      );
 
-      if (provider) {
-        // Check if trying to connect to main net
-        // and whether main net is allowed
-        /* istanbul ignore if */
-        if (
-          typeof provider !== 'string' &&
-          'networkVersion' in provider &&
-          provider.networkVersion === '1' &&
-          process.env.VUE_APP_ALLOW_MAINNET !== 'true'
-        ) {
-          throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK);
+      this._raiden = raiden;
+      this.usingSubkey = subkey ?? false;
+
+      const account = this.getAccount();
+      this.store.commit('account', account);
+
+      this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
+      this.store.commit('userDepositContract/setTokenAddress', this._userDepositTokenAddress);
+
+      await this.monitorPreSetTokens(presetTokens);
+
+      // update connected tokens data on each newBlock
+      raiden.events$
+        .pipe(filter((value) => value.type === 'block/new'))
+        .subscribe((event) => this.store.commit('updateBlock', event.payload.blockNumber));
+
+      raiden.events$
+        .pipe(
+          filter((value) => value.type === 'block/new'),
+          exhaustMap(() => this.updateUserDepositContractToken()),
+        )
+        .subscribe();
+
+      raiden.events$.pipe(filter((value) => value.type === 'raiden/shutdown')).subscribe(() => {
+        this.store.commit('reset');
+        this.router.push({ name: RouteNames.HOME });
+      });
+
+      raiden.config$.subscribe(async (config) => {
+        this.store.commit('updateConfig', config);
+        if (!config.caps?.[Capabilities.RECEIVE]) {
+          await this.notifyNoReceive();
         }
+      });
 
-        raiden = await RaidenService.createRaiden(
-          provider,
-          configuration?.private_key,
-          stateBackup,
-          subkey,
-        );
-
-        this._raiden = raiden;
-        this._configuration = configuration;
-        this.usingSubkey = subkey ?? false;
-
-        const account = this.getAccount();
-        this.store.commit('account', account);
-
-        this._userDepositTokenAddress = await raiden.userDepositTokenAddress();
-        this.store.commit('userDepositContract/setTokenAddress', this._userDepositTokenAddress);
-
-        await this.monitorPreSetTokens();
-
-        // update connected tokens data on each newBlock
-        raiden.events$
-          .pipe(filter((value) => value.type === 'block/new'))
-          .subscribe((event) => this.store.commit('updateBlock', event.payload.blockNumber));
-
-        raiden.events$
-          .pipe(
-            filter((value) => value.type === 'block/new'),
-            exhaustMap(() => this.updateUserDepositContractToken()),
-          )
-          .subscribe();
-
-        raiden.events$.pipe(filter((value) => value.type === 'raiden/shutdown')).subscribe(() => {
-          this.store.commit('reset');
-          this.router.push({ name: RouteNames.HOME });
-        });
-
-        raiden.config$.subscribe(async (config) => {
-          this.store.commit('updateConfig', config);
-          if (!config.caps?.[Capabilities.RECEIVE]) {
-            await this.notifyNoReceive();
+      raiden.events$.subscribe(async (value) => {
+        if (value.type === 'token/monitored') {
+          this.store.commit('updateTokens', {
+            [value.payload.token]: { address: value.payload.token },
+          });
+          this.fetchAndUpdateTokenData([value.payload.token]);
+        } else if (value.type === 'matrix/presence/success') {
+          // Update presences on matrix presence updates
+          this.store.commit('updatePresence', {
+            [value.meta.address]: value.payload.available,
+          });
+        } else if (value.type === 'ms/balanceProof/sent') {
+          if (!value.payload.confirmed) {
+            return;
           }
-        });
-
-        raiden.events$.subscribe(async (value) => {
-          if (value.type === 'token/monitored') {
-            this.store.commit('updateTokens', {
-              [value.payload.token]: { address: value.payload.token },
-            });
-            this.fetchAndUpdateTokenData([value.payload.token]);
-          } else if (value.type === 'matrix/presence/success') {
-            // Update presences on matrix presence updates
-            this.store.commit('updatePresence', {
-              [value.meta.address]: value.payload.available,
-            });
-          } else if (value.type === 'ms/balanceProof/sent') {
-            if (!value.payload.confirmed) {
-              return;
-            }
-            await this.notifyBalanceProofSend(
-              value.payload.monitoringService,
-              value.payload.partner,
-              value.payload.reward,
-              value.payload.txHash,
-            );
-          } else if (value.type === 'udc/withdraw/success') {
-            if (!value.payload.confirmed) {
-              return;
-            }
-            await this.notifyWithdrawal(value.meta.amount, value.payload.withdrawal);
-          } else if (value.type === 'udc/withdraw/plan/failure') {
-            await this.notifyWithdrawalFailure(
-              value.payload?.code,
-              value.meta.amount,
-              value.payload.message,
-            );
-          } else if (value.type === 'channel/settle/success') {
-            if (value.payload.confirmed) {
-              await this.notifyChannelSettleSuccess(value.meta.partner);
-            }
-          } else if (value.type === 'channel/settle/failure') {
-            await this.notifyChannelSettleFailure(value.meta.partner);
-          } else if (value.type === 'channel/open/success') {
-            await this.notifyChannelOpenSuccess(
-              value.payload.txBlock,
-              value.payload.txHash,
-              value.payload.confirmed,
-              value.meta.partner,
-            );
-          } else if (value.type === 'channel/open/failed') {
-            await this.notifyChannelOpenFailed(value.payload.message);
+          await this.notifyBalanceProofSend(
+            value.payload.monitoringService,
+            value.payload.partner,
+            value.payload.reward,
+            value.payload.txHash,
+          );
+        } else if (value.type === 'udc/withdraw/success') {
+          if (!value.payload.confirmed) {
+            return;
           }
-        });
-
-        raiden.events$.subscribe((event) => {
-          this.updatePlannedUserDepositWithdrawals(event);
-        });
-
-        raiden.channels$.subscribe((value) => {
-          this.store.commit('updateChannels', value);
-        });
-
-        // Subscribe to our pending transfers
-        raiden.transfers$.subscribe((transfer) => {
-          this.store.commit('updateTransfers', transfer);
-        });
-
-        this.store.commit('network', raiden.network);
-
-        /* istanbul ignore next */
-        window.addEventListener('beforeunload', (event) => {
-          event.preventDefault();
-          return ''; // Some engines like Chrome expect this.
-        });
-
-        await raiden.start();
-        this.store.commit('balance', await this.getBalance());
-        if (subkey) {
-          this.store.commit('raidenAccountBalance', await this.getBalance(raiden.address));
+          await this.notifyWithdrawal(value.meta.amount, value.payload.withdrawal);
+        } else if (value.type === 'udc/withdraw/plan/failure') {
+          await this.notifyWithdrawalFailure(
+            value.payload?.code,
+            value.meta.amount,
+            value.payload.message,
+          );
+        } else if (value.type === 'channel/settle/success') {
+          if (value.payload.confirmed) {
+            await this.notifyChannelSettleSuccess(value.meta.partner);
+          }
+        } else if (value.type === 'channel/settle/failure') {
+          await this.notifyChannelSettleFailure(value.meta.partner);
+        } else if (value.type === 'channel/open/success') {
+          await this.notifyChannelOpenSuccess(
+            value.payload.txBlock,
+            value.payload.txHash,
+            value.payload.confirmed,
+            value.meta.partner,
+          );
+        } else if (value.type === 'channel/open/failed') {
+          await this.notifyChannelOpenFailed(value.payload.message);
         }
+      });
+
+      raiden.events$.subscribe((event) => {
+        this.updatePlannedUserDepositWithdrawals(event);
+      });
+
+      raiden.channels$.subscribe((value) => {
+        this.store.commit('updateChannels', value);
+      });
+
+      // Subscribe to our pending transfers
+      raiden.transfers$.subscribe((transfer) => {
+        this.store.commit('updateTransfers', transfer);
+      });
+
+      this.store.commit('network', raiden.network);
+
+      /* istanbul ignore next */
+      window.addEventListener('beforeunload', (event) => {
+        event.preventDefault();
+        return ''; // Some engines like Chrome expect this.
+      });
+
+      await raiden.start();
+      this.store.commit('balance', await this.getBalance());
+      if (subkey) {
+        this.store.commit('raidenAccountBalance', await this.getBalance(raiden.address));
       }
     } catch (e) {
       let deniedReason: DeniedReason;
@@ -296,15 +281,11 @@ export default class RaidenService {
     } as NotificationPayload);
   }
 
-  private async monitorPreSetTokens() {
+  private async monitorPreSetTokens(presetTokens: Configuration['per_network']) {
     const { chainId } = this.raiden.network;
-    if (!this._configuration?.per_network?.[chainId]) {
-      return;
-    }
+    const tokensToMonitor = presetTokens[chainId]?.monitored ?? [];
 
-    const networkConfiguration = this._configuration.per_network[chainId];
-
-    for (const token of networkConfiguration.monitored) {
+    for (const token of tokensToMonitor) {
       await this.raiden.monitorToken(token);
     }
   }
