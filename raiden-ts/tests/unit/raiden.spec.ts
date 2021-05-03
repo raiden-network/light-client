@@ -49,6 +49,24 @@ import { makeAddress, makeHash } from '../utils';
 
 jest.mock('@ethersproject/providers');
 
+export const fetch = jest.fn(async (_url?: string) => ({
+  ok: true,
+  status: 200,
+  json: jest.fn(async () => undefined),
+  text: jest.fn(async () =>
+    JSON.stringify([
+      {
+        address: makeAddress(),
+        capacity: 1,
+        centrality: 2,
+        score: 3,
+        uptime: 4,
+      },
+    ]),
+  ),
+}));
+Object.assign(globalThis, { fetch });
+
 jest.mock('@/services/utils', () => ({
   ...jest.requireActual<any>('@/services/utils'),
   pfsListInfo: jest.fn(() => of(['abc', 'def'])),
@@ -653,5 +671,30 @@ describe('Raiden', () => {
         deposit,
       }),
     ).resolves.toEqual(channelOpenHash);
+  });
+
+  test('suggestPartners', async () => {
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      makeInitialState({ address, network, contractsInfo }, { tokens: { [token]: tokenNetwork } }),
+      deps,
+      combineRaidenEpics([initEpicMock]),
+      dummyReducer,
+    );
+    await raiden.start();
+    await raiden.monitorToken(token);
+
+    const suggestedPartners = raiden.suggestPartners(token);
+    await expect(suggestedPartners).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          address: expect.toBeString(),
+          capacity: BigNumber.from(1),
+          centrality: 2,
+          score: 3,
+          uptime: 4,
+        }),
+      ]),
+    );
   });
 });
