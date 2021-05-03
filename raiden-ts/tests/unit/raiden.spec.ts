@@ -697,4 +697,62 @@ describe('Raiden', () => {
       ]),
     );
   });
+
+  test('getBalance/transferOnchainBalance', async () => {
+    const deps = makeDummyDependencies();
+    deps.signer = {
+      sendTransaction: jest.fn(async () => ({
+        wait: jest.fn(async () => ({
+          status: 1,
+        })),
+        hash: txHash,
+      })) as any,
+    } as any;
+
+    const raiden = new Raiden(
+      makeInitialState({ address, network, contractsInfo }),
+      deps,
+      combineRaidenEpics([initEpicMock]),
+      dummyReducer,
+    );
+
+    await raiden.start();
+
+    const balance = raiden.getBalance();
+    await expect(balance).resolves.toEqual(BigNumber.from(1_000_000));
+
+    const mockedGetBalance = deps.provider.getBalance as jest.MockedFunction<
+      typeof deps.provider.getBalance
+    >;
+    expect(mockedGetBalance.mock.calls[0][0]).toEqual(raiden.address);
+
+    // Test transfering the complete balance
+    const tx = raiden.transferOnchainBalance(partner);
+    await expect(tx).resolves.toEqual(txHash);
+
+    const mockedSendTransaction = deps.signer.sendTransaction as jest.MockedFunction<
+      typeof deps.signer.sendTransaction
+    >;
+    expect(mockedSendTransaction.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        to: partner,
+        value: BigNumber.from(1_000_000 - 5 * 21_000),
+        gasPrice: BigNumber.from(5),
+        gasLimit: BigNumber.from(21_000),
+      }),
+    );
+
+    // Test transfering a specified amount
+    const tx2 = raiden.transferOnchainBalance(partner, 1, { gasPrice: 1 });
+    await expect(tx2).resolves.toEqual(txHash);
+
+    expect(mockedSendTransaction.mock.calls[1][0]).toEqual(
+      expect.objectContaining({
+        to: partner,
+        value: BigNumber.from(1),
+        gasPrice: BigNumber.from(1),
+        gasLimit: BigNumber.from(21_000),
+      }),
+    );
+  });
 });
