@@ -7,68 +7,76 @@
           :key="channel.partner"
           class="channel-list__channels__channel"
         >
-          <v-list-item-avatar class="channel-list__channels__channel__icon">
-            <img
-              :src="$blockie(channel.partner)"
-              :alt="$t('channel-list.channel.blockie_alt')"
-              class="indenticon"
-            />
+          <v-list-item-avatar>
+            <img :src="$blockie(channel.partner)" :alt="$t('channel-list.channel.blockie_alt')" />
           </v-list-item-avatar>
-          <v-list-item-content class="channel-list__channels__channel__content">
-            <v-list-item-title class="channel-list__channels__channel__partner-address">
+          <v-list-item-content>
+            <v-list-item-title>
               <address-display :address="channel.partner" />
             </v-list-item-title>
-            <v-list-item-subtitle class="channel-list__channels__channel__state-info">
-              {{
-                $t('channel-list.channel.state', {
-                  value: displayFormat(channel.capacity, token.decimals || 0),
-                  state: capitalizeFirst(channel.state),
-                })
-              }}
+            <v-list-item-subtitle>
+              <span class="channel-list__channels__content__subtitle-desktop">
+                {{
+                  $t('channel-list.channel.capacity-and-state', {
+                    value: displayFormat(channel.capacity, token.decimals || 0),
+                    state: capitalizeFirst(channel.state),
+                  })
+                }}
+              </span>
+              <div class="channel-list__channels__content__subtitle-mobile">
+                <span>
+                  {{
+                    $t('channel-list.channel.capacity', {
+                      value: displayFormat(channel.capacity, token.decimals || 0),
+                    })
+                  }}
+                </span>
+                <span>
+                  {{
+                    $t('channel-list.channel.state', {
+                      state: capitalizeFirst(channel.state),
+                    })
+                  }}
+                </span>
+              </div>
             </v-list-item-subtitle>
           </v-list-item-content>
-          <v-list-item-icon class="channel-action channel-action-inline ml-2">
+          <div class="channel-list__capacity-buttons">
             <v-btn
               :id="`deposit-${channel.id}`"
-              text
-              data-cy="channel_action_button"
-              class="channel-action-button"
               :disabled="channel.state !== 'open' || !!busy[channel.id]"
+              data-cy="channel_action_button"
+              class="channel-list__capacity-buttons__deposit"
+              icon
               @click="action(['deposit', channel])"
             >
               <img :src="require('@/assets/deposit.svg')" />
-              <span class="action-title">
-                {{ $t('channel-actions.deposit') }}
-              </span>
             </v-btn>
             <v-btn
               :id="`withdraw-${channel.id}`"
-              text
-              data-cy="channel_action_button"
-              class="channel-action-button"
               :disabled="channel.state !== 'open' || !!busy[channel.id]"
+              data-cy="channel_action_button"
+              class="channel-list__capacity-buttons__withdrawal"
+              icon
               @click="action(['withdraw', channel])"
             >
               <img :src="require('@/assets/withdrawal.svg')" />
-              <span class="action-title">
-                {{ $t('channel-actions.withdraw') }}
-              </span>
             </v-btn>
-          </v-list-item-icon>
-          <v-list-item-icon data-cy="channel_action" class="channel-action">
+          </div>
+          <div data-cy="channel_action">
             <v-btn
               v-if="selectedChannel && channel.id === selectedChannel.id && !!busy[channel.id]"
               :id="`busy-${channel.id}`"
               disabled
-              class="channel-action__button text-capitalize channel-action__button__secondary"
+              class="channel-list__action-button"
             >
-              <spinner :size="28" :width="4" />
+              <spinner :size="18" :width="2" />
             </v-btn>
             <v-btn
               v-else-if="channel.state === 'open' || channel.state === 'closing'"
               :id="`close-${channel.id}`"
               :disabled="!!busy[channel.id]"
-              class="channel-action__button text-capitalize channel-action__button__secondary"
+              class="channel-list__action-button"
               @click="action(['close', channel])"
             >
               {{ $t('channel-actions.close') }}
@@ -77,7 +85,7 @@
               v-else
               :id="`settle-${channel.id}`"
               :disabled="channel.state === 'closed' || !!busy[channel.id]"
-              class="channel-action__button text-capitalize channel-action__button__primary"
+              class="channel-list__action-button"
               @click="action(['settle', channel])"
             >
               {{
@@ -86,7 +94,7 @@
                   : $t('channel-actions.settle')
               }}
             </v-btn>
-          </v-list-item-icon>
+          </div>
         </v-list-item>
       </v-list>
     </v-col>
@@ -135,119 +143,55 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 @import '@/scss/mixins';
 @import '@/scss/colors';
 
-::v-deep {
-  .v-dialog {
-    border-radius: 10px !important;
-  }
-}
-
 .channel-list {
   &__channels {
     background-color: transparent !important;
-    padding-bottom: 0;
-    padding-top: 0;
 
-    &__channel {
-      $channel: &;
-      background-color: #141414;
-      box-shadow: inset 0 -2px 0 0 rgba(0, 0, 0, 0.5);
-      height: 105px;
-      padding-left: 32px;
-      @include respond-to(handhelds) {
-        padding-left: 10px;
-      }
-
-      &__partner-address {
-        font-size: 16px;
-        line-height: 20px;
-      }
-
-      &__state-info {
-        color: #696969 !important;
-        font-size: 16px;
-        line-height: 20px;
+    &__content {
+      &__subtitle-desktop {
         @include respond-to(handhelds) {
-          font-size: 14px;
+          display: none;
         }
       }
 
-      &__lifecycle {
-        margin-bottom: 16px;
-      }
-
-      &__icon {
-        margin-right: 15px;
-      }
-
-      &__content {
-        overflow: initial;
+      &__subtitle-mobile {
+        display: none;
+        @include respond-to(handhelds) {
+          display: flex;
+          flex-direction: column;
+          font-size: 12px;
+        }
       }
     }
   }
-}
 
-.channel-action {
-  align-self: center;
+  &__capacity-buttons {
+    margin-left: 6px;
 
-  &__button {
+    &__deposit {
+      margin-right: 6px;
+      @include respond-to(handhelds) {
+        width: 26px;
+      }
+    }
+
+    &__withdrawal {
+      margin-left: 6px;
+      @include respond-to(handhelds) {
+        width: 26px;
+      }
+    }
+  }
+
+  &__action-button {
+    border: 2px solid $primary-color;
+    border-radius: 28px;
+    font-size: 12px;
+    margin-left: 36px;
     width: 85px;
-    border-radius: 29px;
     @include respond-to(handhelds) {
-      width: 25px;
-    }
-
-    &__secondary {
-      &:not([disabled]) {
-        border: 2px solid $primary-color;
-      }
-    }
-
-    &__primary {
-      background-color: $primary-color !important;
-    }
-  }
-
-  &.channel-action-inline {
-    $size: 29px;
-
-    .channel-action-button {
-      padding: 0 8px;
-      border-radius: $size;
-      min-width: unset;
-      text-transform: unset;
-
-      img {
-        width: $size;
-        height: $size;
-      }
-
-      span {
-        &.action-title {
-          max-width: 0;
-          display: inline-flex;
-          white-space: nowrap;
-          transition: max-width 0.5s, padding 0.45s;
-          overflow: hidden;
-          padding-left: 0px;
-          @include respond-to(handhelds) {
-            display: none;
-          }
-        }
-      }
-
-      &:hover,
-      &:focus {
-        span {
-          &.action-title {
-            max-width: 100px;
-            padding: 0 5px;
-          }
-        }
-      }
-
-      &[disabled] {
-        filter: saturate(0);
-      }
+      margin-left: 12px;
+      width: 26px;
     }
   }
 }
