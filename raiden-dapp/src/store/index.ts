@@ -149,6 +149,9 @@ const store: StoreOptions<CombinedStoreState> = {
     backupState(state: RootState, uploadedState: string) {
       state.stateBackup = uploadedState;
     },
+    clearBackupState(state: RootState) {
+      state.stateBackup = '';
+    },
     updateSettings(state: RootState, settings: Settings) {
       state.settings = settings;
     },

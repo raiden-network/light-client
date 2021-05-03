@@ -165,6 +165,7 @@ export default class Home extends Vue {
     }
 
     this.$store.commit('setConnected');
+    this.$store.commit('clearBackupState');
     this.$router.push(this.navigationTarget);
   }
 

@@ -152,23 +152,13 @@ export default class UploadStateDialog extends Mixins(NavigationMixin) {
         this.$store.commit('backupState', retrievedState);
         setTimeout(async () => {
           this.uploadingStateProgress = false;
-          this.cancel();
-          this.connectAndRedirect(retrievedState);
+          this.navigateToHome();
         }, 1000);
       } catch (err) {
         this.dropzoneError();
       }
     };
     reader.readAsText(uploadedFile[0]);
-  }
-
-  async connectAndRedirect(retrievedState: string) {
-    let { useRaidenAccount } = this.settings;
-
-    /* istanbul ignore next */
-    await this.$raiden.connect(retrievedState, useRaidenAccount ? true : undefined);
-
-    this.navigateToHome();
   }
 }
 </script>
