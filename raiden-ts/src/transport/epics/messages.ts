@@ -20,9 +20,7 @@ import {
   map,
   mergeMap,
   pluck,
-  scan,
   share,
-  startWith,
   take,
   takeUntil,
   tap,
@@ -32,7 +30,6 @@ import {
 import type { RaidenAction } from '../../actions';
 import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
-import { Capabilities } from '../../constants';
 import { messageReceived, messageSend, messageServiceSend } from '../../messages/actions';
 import type { Delivered, Message } from '../../messages/types';
 import { MessageType, Processed, SecretRequest, SecretReveal } from '../../messages/types';
@@ -52,10 +49,9 @@ import {
   pluckDistinct,
   retryWhile,
 } from '../../utils/rx';
-import type { Address } from '../../utils/types';
 import { isntNil, Signed } from '../../utils/types';
 import { matrixPresence } from '../actions';
-import { getAddressFromUserId, getCap } from '../utils';
+import { getAddressFromUserId, getNoDeliveryPeers } from '../utils';
 import { getRoom$, globalRoomNames, parseMessage } from './helpers';
 
 function getMessageBody(message: string | Signed<Message>): string {
@@ -405,25 +401,13 @@ export function deliveredEpic(
   { log, signer }: RaidenEpicDeps,
 ): Observable<messageSend.request> {
   const cache = new LruCache<string, Signed<Delivered>>(32);
-  const noDelivery = new Set<Address>();
   return action$.pipe(
     filter(
       isMessageReceivedOfType([Signed(Processed), Signed(SecretRequest), Signed(SecretReveal)]),
     ),
     // aggregate seen matrixPresence.success addresses with !DELIVERY set;
     // if an address's presence hasn't been seen, it's assumed Delivered is needed
-    withLatestFrom(
-      action$.pipe(
-        filter(matrixPresence.success.is),
-        scan((acc, presence) => {
-          if (!getCap(presence.payload.caps, Capabilities.DELIVERY))
-            acc.add(presence.meta.address);
-          else acc.delete(presence.meta.address);
-          return acc;
-        }, noDelivery),
-        startWith(noDelivery),
-      ),
-    ),
+    withLatestFrom(getNoDeliveryPeers()(action$)),
     // skip iff peer supports !Capabilities.DELIVERY
     filter(([action, noDelivery]) => !noDelivery.has(action.meta.address)),
     concatMap(([action]) => {

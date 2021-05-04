@@ -1,9 +1,13 @@
 import { getAddress } from '@ethersproject/address';
+import type { OperatorFunction } from 'rxjs';
+import { pipe } from 'rxjs';
+import { filter, scan, startWith } from 'rxjs/operators';
 
-import type { Capabilities } from '../constants';
-import { CapsFallback } from '../constants';
+import type { RaidenAction } from '../actions';
+import { Capabilities, CapsFallback } from '../constants';
 import { jsonParse } from '../utils/data';
 import type { Address } from '../utils/types';
+import { matrixPresence } from './actions';
 import type { Caps, CapsPrimitive } from './types';
 
 const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
@@ -93,4 +97,22 @@ export function getCap<C extends Capabilities>(caps: Caps | undefined | null, ca
  */
 export function getSortedAddresses<A extends Address[]>(...addresses: A) {
   return addresses.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())) as A;
+}
+
+/**
+ * Extracts peer's addresses which don't need Delivered messages as a set
+ *
+ * @returns custom operator mapping from stream of RaidenActions to address set
+ */
+export function getNoDeliveryPeers(): OperatorFunction<RaidenAction, Set<Address>> {
+  const noDelivery = new Set<Address>();
+  return pipe(
+    filter(matrixPresence.success.is),
+    scan((acc, presence) => {
+      if (!getCap(presence.payload.caps, Capabilities.DELIVERY)) acc.add(presence.meta.address);
+      else acc.delete(presence.meta.address);
+      return acc;
+    }, noDelivery),
+    startWith(noDelivery),
+  );
 }

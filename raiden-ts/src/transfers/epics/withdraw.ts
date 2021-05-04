@@ -9,9 +9,7 @@ import {
   mapTo,
   mergeMap,
   pluck,
-  scan,
   share,
-  startWith,
   take,
   tap,
   withLatestFrom,
@@ -22,19 +20,16 @@ import { ChannelState } from '../../channels';
 import { newBlock } from '../../channels/actions';
 import { assertTx, channelKey } from '../../channels/utils';
 import { intervalFromConfig } from '../../config';
-import { Capabilities } from '../../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { isMessageReceivedOfType, MessageType, Processed, signMessage } from '../../messages';
 import { messageSend } from '../../messages/actions';
 import type { RaidenState } from '../../state';
-import { matrixPresence } from '../../transport/actions';
-import { getCap } from '../../transport/utils';
+import { getNoDeliveryPeers } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { retryWhile } from '../../utils/rx';
-import type { Address } from '../../utils/types';
 import { Signed } from '../../utils/types';
 import { withdraw, withdrawCompleted, withdrawExpire, withdrawMessage } from '../actions';
 import { Direction } from '../state';
@@ -249,25 +244,13 @@ export function withdrawMessageProcessedEpic(
   { signer, log }: RaidenEpicDeps,
 ): Observable<messageSend.request> {
   const cache = new LruCache<string, Signed<Processed>>(32);
-  const noDelivery = new Set<Address>();
   return action$.pipe(
     filter(isActionOf([withdrawMessage.request, withdrawMessage.success])),
     filter(
       (action) =>
         (action.meta.direction === Direction.RECEIVED) !== withdrawMessage.success.is(action),
     ),
-    withLatestFrom(
-      action$.pipe(
-        filter(matrixPresence.success.is),
-        scan((acc, presence) => {
-          if (!getCap(presence.payload.caps, Capabilities.DELIVERY))
-            acc.add(presence.meta.address);
-          else acc.delete(presence.meta.address);
-          return acc;
-        }, noDelivery),
-        startWith(noDelivery),
-      ),
-    ),
+    withLatestFrom(getNoDeliveryPeers()(action$)),
     concatMap(([action, noDelivery]) =>
       defer(() => {
         if (noDelivery.has(action.meta.partner)) return EMPTY;
