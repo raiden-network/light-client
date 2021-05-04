@@ -23,7 +23,6 @@ import { channelKey, channelUniqueKey } from '@/channels/utils';
 import { makeDefaultConfig } from '@/config';
 import { ShutdownReason, SignatureZero } from '@/constants';
 import {
-  HumanStandardToken__factory,
   MonitoringService__factory,
   SecretRegistry__factory,
   ServiceRegistry__factory,
@@ -42,6 +41,7 @@ import { makeInitialState } from '@/state';
 import { standardCalculator } from '@/transfers/mediate/types';
 import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
+import { assert } from '@/utils';
 import { pluckDistinct } from '@/utils/rx';
 import type { Address, Int, UInt } from '@/utils/types';
 
@@ -115,9 +115,10 @@ function makeDummyDependencies(): RaidenEpicDeps {
     getTokenNetworkContract: memoize((address: Address) =>
       TokenNetwork__factory.connect(address, signer),
     ),
-    getTokenContract: memoize((address: Address) =>
-      HumanStandardToken__factory.connect(address, signer),
-    ),
+    getTokenContract: (address: Address): any => {
+      assert(address);
+      return { callStatic: { balanceOf: jest.fn(async () => BigNumber.from(100)) } };
+    },
     serviceRegistryContract: ServiceRegistry__factory.connect(
       contractsInfo.ServiceRegistry.address,
       signer,
@@ -653,5 +654,36 @@ describe('Raiden', () => {
         deposit,
       }),
     ).resolves.toEqual(channelOpenHash);
+  });
+
+  test('getBalance', async () => {
+    const deps = makeDummyDependencies();
+    const balance = BigNumber.from(10);
+    Object.assign(deps.provider, { getBalance: jest.fn(async () => balance) });
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
+    await expect(raiden.getBalance(raiden.address)).resolves.toEqual(balance);
+  });
+
+  test('getTokenBalance', async () => {
+    const tokenBalance = BigNumber.from(100);
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
+    await expect(raiden.getTokenBalance(token, address)).resolves.toEqual(tokenBalance);
+  });
+
+  test('mainAddress', async () => {
+    const mainAddress = makeAddress();
+    const deps = makeDummyDependencies();
+    Object.assign(deps, { main: { address: mainAddress } });
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
+    expect(raiden.mainAddress).toEqual(mainAddress);
+  });
+
+  test('getBlockNumber', async () => {
+    const blockNumber = 1;
+    const deps = makeDummyDependencies();
+    Object.assign(deps.provider, { blockNumber });
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
+    await expect(raiden.getBlockNumber()).resolves.toEqual(blockNumber);
   });
 });
