@@ -23,8 +23,6 @@ import {
   txHash,
 } from '../fixtures';
 import {
-  makeAddress,
-  makeHash,
   makeLog,
   makeRaiden,
   makeRaidens,
@@ -59,6 +57,8 @@ import { Direction } from '@/transfers/state';
 import { getLocksroot, transferKey } from '@/transfers/utils';
 import { ErrorCodes } from '@/utils/error';
 import type { UInt } from '@/utils/types';
+
+import { makeAddress, makeHash } from '../../utils';
 
 test('channelSettleableEpic', async () => {
   expect.assertions(3);

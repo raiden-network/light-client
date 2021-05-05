@@ -72,8 +72,6 @@ import { Address, decode, Secret } from '@/utils/types';
 
 import { makeAddress, makeHash } from '../utils';
 
-export { makeAddress, makeHash } from '../utils';
-
 jest.mock('@/messages/utils', () => ({
   ...jest.requireActual<any>('@/messages/utils'),
   signMessage: jest.fn(jest.requireActual<any>('@/messages/utils').signMessage),
