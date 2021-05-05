@@ -7,13 +7,18 @@ export class InjectedProvider extends EthereumConnection {
   public readonly provider: providers.JsonRpcProvider;
   public readonly account = 0; // Refers to the currently selected account in the wallet.
 
+  public static get isAvailable(): boolean {
+    return !!window.ethereum || !!window.web3;
+  }
+
   private constructor(injetedProvider: providers.ExternalProvider) {
     super();
     this.provider = new providers.Web3Provider(injetedProvider);
   }
 
   public static async connect(): Promise<InjectedProvider> {
-    if (!window.ethereum && !window.web3) {
+    // We can't use the check of the super constructor here, else this function does not work.
+    if (!InjectedProvider.isAvailable) {
       throw new Error('No injected provider is available.');
     }
 
