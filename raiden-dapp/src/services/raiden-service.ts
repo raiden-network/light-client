@@ -41,7 +41,7 @@ export default class RaidenService {
   public usingSubkey: boolean | undefined;
 
   private static async createRaiden(
-    provider: providers.JsonRpcProvider | providers.ExternalProvider | string,
+    provider: providers.JsonRpcProvider | string,
     privateKeyOrProviderAccountIndex: string | number = 0,
     stateBackup?: string,
     subkey?: true,
@@ -130,7 +130,7 @@ export default class RaidenService {
   }
 
   async connect(
-    ethereumProvider: providers.JsonRpcProvider,
+    ethereumProvider: providers.JsonRpcProvider | string,
     privateKeyOrProviderAccountIndex?: string | number,
     stateBackup?: string,
     presetTokens: Configuration['per_network'] = {},

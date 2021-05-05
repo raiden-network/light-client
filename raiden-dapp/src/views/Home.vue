@@ -67,8 +67,14 @@ import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialo
 import type { TokenModel } from '@/model/types';
 import { ErrorCode } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
+import type { Configuration } from '@/services/config-provider';
 import { ConfigProvider } from '@/services/config-provider';
-import { Web3Provider } from '@/services/web3-provider';
+import type { EthereumConnection } from '@/services/ethereum-connection';
+import {
+  DirectRpcProvider,
+  InjectedProvider,
+  WalletConnect,
+} from '@/services/ethereum-connection';
 import type { Settings } from '@/types';
 
 function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
@@ -126,16 +132,16 @@ export default class Home extends Vue {
     const stateBackup = this.stateBackup;
     const configuration = await ConfigProvider.configuration();
     const useRaidenAccount = this.settings.useRaidenAccount ? true : undefined;
-    const ethereumProvider = await Web3Provider.provider(configuration);
+    const ethereumConnection = await this.getEthereumConnection(configuration);
 
     // TODO: This will become removed when we have the connection manager.
-    if (!ethereumProvider) {
+    if (ethereumConnection === undefined) {
       this.connectionError = ErrorCode.NO_ETHEREUM_PROVIDER;
       this.connecting = false;
       return;
     }
 
-    const ethereumNetwork = await ethereumProvider.getNetwork();
+    const ethereumNetwork = await ethereumConnection.provider.getNetwork();
 
     if (ethereumNetwork.chainId === 1 && process.env.VUE_APP_ALLOW_MAINNET !== 'true') {
       this.connectionError = ErrorCode.UNSUPPORTED_NETWORK;
@@ -145,8 +151,8 @@ export default class Home extends Vue {
 
     try {
       await this.$raiden.connect(
-        ethereumProvider,
-        configuration.private_key,
+        ethereumConnection.provider,
+        ethereumConnection.account,
         stateBackup,
         configuration.per_network,
         useRaidenAccount,
@@ -154,7 +160,7 @@ export default class Home extends Vue {
     } catch (error) {
       this.connectionError = mapRaidenServiceErrorToErrorCode(error);
       this.connecting = false;
-      return
+      return;
     }
 
     this.$store.commit('setConnected');
@@ -166,6 +172,26 @@ export default class Home extends Vue {
     localStorage.removeItem('walletconnect');
     // There is no clean way to cancel the asynchronous connection function, therefore reload page.
     window.location.replace(window.location.origin);
+  }
+
+  async getEthereumConnection(
+    configuration: Configuration,
+  ): Promise<EthereumConnection | undefined> {
+    const {
+      rpc_endpoint: rpcUrl,
+      private_key: privateKey,
+      rpc_endpoint_wallet_connect: rpcUrlWalletConnect,
+    } = configuration;
+
+    if (rpcUrl && privateKey) {
+      return DirectRpcProvider.connect({ rpcUrl, privateKey });
+    } else if (!!window.ethereum || !!window.web3) {
+      return InjectedProvider.connect();
+    } else if (rpcUrlWalletConnect) {
+      return WalletConnect.connect({ rpcUrl: rpcUrlWalletConnect });
+    } else {
+      return undefined;
+    }
   }
 }
 </script>
