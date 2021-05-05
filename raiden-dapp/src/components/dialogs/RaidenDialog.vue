@@ -2,7 +2,7 @@
   <blurred-overlay :show="visible" fullscreen>
     <v-dialog
       :value="visible"
-      width="350"
+      :width="width"
       hide-overlay
       dark
       :persistent="hideClose"
@@ -29,6 +29,8 @@ export default class RaidenDialog extends Vue {
   visible!: boolean;
   @Prop({ required: false, default: false, type: Boolean })
   hideClose!: boolean;
+  @Prop({ required: false, default: '350', type: String })
+  width!: string;
 
   @Emit()
   close(): boolean {

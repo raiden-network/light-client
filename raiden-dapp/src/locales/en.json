@@ -98,6 +98,22 @@
       "description-web3-account": "You can use your Web3 account directly by enabling it in the settings menu.",
       "no-provider": "No Web3 provider detected, please install e.g. MetaMask."
     },
+    "wallet-connect-dialog": {
+      "wallet-connect-header": "WalletConnect",
+      "bridge-server-header": "Bridge Server",
+      "bridge-server-body": "Provide a bridge server URL",
+      "infura-button": "Infura",
+      "rpc-button": "RPC",
+      "infura-header": "Infura URL",
+      "infura-body": "Provide the URL for an Infura endpoint",
+      "rpc-header": "RPC URL",
+      "rpc-body": "Provide the URL for an RPC endpoint",
+      "placeholder": {
+        "bridge-server": "https://",
+        "infura": "Project ID",
+        "rpc": "https://"
+      }
+    },
     "connection-pending-dialog": {
       "title": "Connecting",
       "text": "Please check if any actions are required in your wallet.",
