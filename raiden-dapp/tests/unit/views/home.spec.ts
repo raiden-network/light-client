@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Wrapper } from '@vue/test-utils';
 import { mount } from '@vue/test-utils';
-import type { providers } from 'ethers';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
@@ -10,7 +9,6 @@ import Vuex from 'vuex';
 
 import { ErrorCode } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
-import type { Configuration } from '@/services/config-provider';
 import { ConfigProvider } from '@/services/config-provider';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store/index';
@@ -19,18 +17,7 @@ import Home from '@/views/Home.vue';
 jest.mock('@/services/raiden-service');
 jest.mock('@/services/config-provider');
 jest.mock('@/i18n', () => jest.fn());
-jest.mock('@/services/web3-provider', () => {
-  class Web3Provider {
-    static async provider(
-      _configuration?: Configuration,
-    ): Promise<providers.JsonRpcProvider | undefined> {
-      const network = { chainId: 5 };
-      return ({ getNetwork: async () => network } as unknown) as providers.JsonRpcProvider;
-    }
-  }
-
-  return { Web3Provider };
-});
+jest.mock('@/services/ethereum-connection/direct-rpc-provider');
 
 import Mocked = jest.Mocked;
 
@@ -45,6 +32,8 @@ describe('Home.vue', () => {
 
   beforeEach(() => {
     (ConfigProvider as jest.Mocked<typeof ConfigProvider>).configuration.mockResolvedValue({
+      rpc_endpoint: 'https://some.rpc.endpoint',
+      private_key: '0xprivateKey',
       per_network: {},
     });
     vuetify = new Vuetify();
