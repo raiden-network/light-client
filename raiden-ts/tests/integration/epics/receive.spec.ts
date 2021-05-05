@@ -9,7 +9,6 @@ import {
 } from '../fixtures';
 import {
   flushPromises,
-  makeHash,
   makeLog,
   makeRaiden,
   makeRaidens,
@@ -51,6 +50,8 @@ import { Direction } from '@/transfers/state';
 import { getSecrethash, makeMessageId, makePaymentId, makeSecret } from '@/transfers/utils';
 import type { Int, UInt } from '@/utils/types';
 import { Signed, untime } from '@/utils/types';
+
+import { makeHash } from '../../utils';
 
 const direction = Direction.RECEIVED;
 const paymentId = makePaymentId();
