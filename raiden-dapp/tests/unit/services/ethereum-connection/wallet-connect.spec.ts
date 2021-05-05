@@ -19,6 +19,10 @@ jest.mock('ethers', () => {
 });
 
 describe('WalletConnect', () => {
+  test('is always available', () => {
+    expect(WalletConnect.isAvailable).toBe(true);
+  });
+
   test('fail to connect when none of the options is provided', () => {
     expect(WalletConnect.connect({})).rejects.toThrow(
       'One of the options RPC URL or Infura Id are required to connect.',

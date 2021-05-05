@@ -14,19 +14,31 @@ jest.mock('ethers', () => {
   };
 });
 
-const originalWindow = window;
-
 describe('InjectedProvider', () => {
   beforeEach(() => {
-    window = originalWindow;
+    window.ethereum = undefined;
+    window.web3 = undefined;
     jest.clearAllMocks();
     jest.resetAllMocks();
   });
 
-  test('connect throws error if no injected provider is available', () => {
-    expect(window.ethereum).toBeUndefined();
-    expect(window.web3).toBeUndefined();
+  test('is not available when no injected provider is available', () => {
+    expect(InjectedProvider.isAvailable).toBe(false);
+  });
 
+  test('is available when ethereum provider is available', () => {
+    window.ethereum = new MockedJsonRpcProviderWithRequestHandler();
+
+    expect(InjectedProvider.isAvailable).toBe(true);
+  });
+
+  test('is available when web3 provider is available', () => {
+    window.web3 = { currentProvider: new MockedJsonRpcProvider() };
+
+    expect(InjectedProvider.isAvailable).toBe(true);
+  });
+
+  test('connect throws error if no injected provider is available', () => {
     expect(InjectedProvider.connect()).rejects.toThrow('No injected provider is available.');
   });
 

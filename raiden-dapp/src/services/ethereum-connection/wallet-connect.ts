@@ -5,6 +5,7 @@ import { EthereumConnection } from './types';
 
 export class WalletConnect extends EthereumConnection {
   public static readonly connection_name = 'wallet_connect';
+  public static readonly isAvailable = true;
   public readonly provider: providers.JsonRpcProvider;
   public readonly account = 0; // Refers to the currently selected account in the wallet.
 
