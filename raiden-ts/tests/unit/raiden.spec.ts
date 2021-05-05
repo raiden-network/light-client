@@ -824,4 +824,20 @@ describe('Raiden', () => {
     await expect(tx2).resolves.toEqual(txHash);
     expect(mockedTransfer.mock.calls[1]).toEqual([partner, BigNumber.from(1_000_000)]);
   });
+
+  test('mainAddress', async () => {
+    const mainAddress = makeAddress();
+    const deps = makeDummyDependencies();
+    Object.assign(deps, { main: { address: mainAddress } });
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
+    expect(raiden.mainAddress).toEqual(mainAddress);
+  });
+
+  test('getBlockNumber', async () => {
+    const blockNumber = 1;
+    const deps = makeDummyDependencies();
+    Object.assign(deps.provider, { blockNumber });
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
+    await expect(raiden.getBlockNumber()).resolves.toEqual(blockNumber);
+  });
 });
