@@ -55,10 +55,11 @@ describe('Home.vue', () => {
   });
 
   async function connect(settings?: { useRaidenAccount?: boolean }): Promise<void> {
-    store.commit('updateSettings', {
-      useRaidenAccount: true,
-      ...settings,
-    });
+    const useRaidenAccount = settings?.useRaidenAccount ?? true;
+    const mutation = useRaidenAccount
+      ? 'userSettings/enableRaidenAccount'
+      : 'userSettings/disableRaidenAccount';
+    store.commit(mutation);
 
     await (wrapper.vm as any).connect();
     await flushPromises();
@@ -77,6 +78,7 @@ describe('Home.vue', () => {
   test('successful connect navigates to redirect target if given in query', async () => {
     const redirectTo = 'connect/0x5Fc523e13fBAc2140F056AD7A96De2cC0C4Cc63A';
     wrapper.vm.$route.query = { redirectTo };
+    await wrapper.vm.$nextTick();
 
     await connect();
 
@@ -85,7 +87,10 @@ describe('Home.vue', () => {
 
   test('connect can be called without displaying error after failing initially', async () => {
     (wrapper.vm as any).connectionError = ErrorCode.UNSUPPORTED_NETWORK;
+    await wrapper.vm.$nextTick();
+
     await connect();
+
     expect((wrapper.vm as any).connectionError).toBe(null);
   });
 

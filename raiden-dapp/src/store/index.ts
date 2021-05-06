@@ -20,7 +20,8 @@ import { emptyTokenModel, PlaceHolderNetwork } from '@/model/types';
 import { notifications } from '@/store/notifications';
 import type { UserDepositContractState } from '@/store/user-deposit-contract';
 import { userDepositContract } from '@/store/user-deposit-contract';
-import type { RootState, Settings, Tokens, Transfers } from '@/types';
+import { userSettings, userSettingsLocalStorage } from '@/store/user-settings';
+import type { RootState, Tokens, Transfers } from '@/types';
 
 import type { NotificationsState } from './notifications/types';
 
@@ -38,9 +39,6 @@ const _defaultState: RootState = {
   presences: {},
   network: PlaceHolderNetwork,
   stateBackup: '',
-  settings: {
-    useRaidenAccount: true,
-  },
   config: {},
   disclaimerAccepted: false,
   stateBackupReminderDateMs: 0,
@@ -67,12 +65,6 @@ const hasNonZeroBalance = (a: Token, b: Token) =>
   a.balance &&
   b.balance &&
   (!(a.balance as BigNumber).isZero() || !(b.balance as BigNumber).isZero());
-
-const settingsLocalStorage = new VuexPersistence<RootState>({
-  reducer: (state) => ({ settings: state.settings }),
-  filter: (mutation) => mutation.type == 'updateSettings',
-  key: 'raiden_dapp_settings',
-});
 
 const disclaimerLocalStorage = new VuexPersistence<RootState>({
   reducer: (state) => ({
@@ -133,11 +125,10 @@ const store: StoreOptions<CombinedStoreState> = {
     },
     reset(state: RootState) {
       // Preserve settings and backup when resetting state
-      const { settings, disclaimerAccepted, stateBackup, stateBackupReminderDateMs } = state;
+      const { disclaimerAccepted, stateBackup, stateBackupReminderDateMs } = state;
 
       Object.assign(state, {
         ...defaultState(),
-        settings,
         disclaimerAccepted,
         stateBackup,
         stateBackupReminderDateMs,
@@ -151,9 +142,6 @@ const store: StoreOptions<CombinedStoreState> = {
     },
     clearBackupState(state: RootState) {
       state.stateBackup = '';
-    },
-    updateSettings(state: RootState, settings: Settings) {
-      state.settings = settings;
     },
     updateConfig(state: RootState, config: Partial<RaidenConfig>) {
       state.config = config;
@@ -265,9 +253,6 @@ const store: StoreOptions<CombinedStoreState> = {
     transfer: (state: RootState) => (paymentId: BigNumber) => {
       return Object.values(state.transfers).find((transfer) => transfer.paymentId.eq(paymentId));
     },
-    usingRaidenAccount: (state: RootState): boolean => {
-      return !!state.settings.useRaidenAccount;
-    },
     versionUpdateAvailable: (state: RootState): boolean => {
       const { activeVersion, availableVersion } = state.versionInfo;
       return (
@@ -278,13 +263,14 @@ const store: StoreOptions<CombinedStoreState> = {
     },
   },
   plugins: [
-    settingsLocalStorage.plugin,
+    userSettingsLocalStorage.plugin,
     disclaimerLocalStorage.plugin,
     backupReminderLocalStorage.plugin,
   ],
   modules: {
     notifications,
     userDepositContract,
+    userSettings,
   },
 };
 

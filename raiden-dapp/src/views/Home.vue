@@ -60,7 +60,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import type { Location } from 'vue-router';
-import { mapGetters, mapState } from 'vuex';
+import { createNamespacedHelpers, mapGetters, mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
@@ -75,7 +75,8 @@ import {
   InjectedProvider,
   WalletConnect,
 } from '@/services/ethereum-connection';
-import type { Settings } from '@/types';
+
+const { mapState: mapStateUserSettings } = createNamespacedHelpers('userSettings');
 
 function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
   if (error.message && error.message.includes('No deploy info provided')) {
@@ -90,6 +91,7 @@ function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
 @Component({
   computed: {
     ...mapState(['isConnected', 'stateBackup', 'settings']),
+    ...mapStateUserSettings(['useRaidenAccount']),
     ...mapGetters(['tokens']),
   },
   components: {
@@ -103,7 +105,7 @@ export default class Home extends Vue {
   connecting = false;
   connectionError: ErrorCode | null = null;
   stateBackup!: string;
-  settings!: Settings;
+  useRaidenAccount!: boolean;
 
   get navigationTarget(): Location {
     const redirectTo = this.$route.query.redirectTo as string;
@@ -131,7 +133,7 @@ export default class Home extends Vue {
 
     const stateBackup = this.stateBackup;
     const configuration = await ConfigProvider.configuration();
-    const useRaidenAccount = this.settings.useRaidenAccount ? true : undefined;
+    const useRaidenAccount = this.useRaidenAccount ? true : undefined;
     const ethereumConnection = await this.getEthereumConnection(configuration);
 
     // TODO: This will become removed when we have the connection manager.

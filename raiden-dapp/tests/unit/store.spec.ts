@@ -349,13 +349,6 @@ describe('store', () => {
     });
   });
 
-  test('usingRaidenAccount getter reflect settings state property', () => {
-    [true, false].forEach((useRaidenAccount) => {
-      store.commit('updateSettings', { useRaidenAccount });
-      expect(store.getters.usingRaidenAccount).toEqual(useRaidenAccount);
-    });
-  });
-
   test('version update is available if available version is higher than active one', () => {
     expect(store.getters.versionUpdateAvailable).toBe(false);
 
