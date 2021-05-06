@@ -264,6 +264,33 @@ describe('Raiden', () => {
     } as Channel;
   }
 
+  const messageServiceSendRequestAction: messageServiceSend.request = messageServiceSend.request(
+    {
+      message: {
+        type: MessageType.PFS_CAPACITY_UPDATE,
+        updating_participant: address,
+        other_participant: partner,
+        signature: SignatureZero,
+        updating_nonce,
+        other_nonce,
+        updating_capacity: deposit as UInt<32>,
+        other_capacity,
+        reveal_timeout: BigNumber.from(50) as UInt<32>,
+        canonical_identifier: {
+          chain_identifier: BigNumber.from(chainId) as UInt<32>,
+          token_network_address: tokenNetwork,
+          channel_identifier: BigNumber.from(channelId) as UInt<32>,
+        },
+      },
+    },
+    { service: Service.PFS, msgId },
+  );
+
+  const messageServiceSendSuccessAction: messageServiceSend.success = messageServiceSend.success(
+    { via: '!.:', tookMs: 10, retries: 1 },
+    { service: Service.PFS, msgId },
+  );
+
   test('address', () => {
     const deps = makeDummyDependencies();
     const raiden = new Raiden(dummyState, deps, combineRaidenEpics([dummyEpic]), dummyReducer);
@@ -664,31 +691,8 @@ describe('Raiden', () => {
             },
             { tokenNetwork, partner },
           ),
-          messageServiceSend.request(
-            {
-              message: {
-                type: MessageType.PFS_CAPACITY_UPDATE,
-                updating_participant: address,
-                other_participant: partner,
-                signature: SignatureZero,
-                updating_nonce,
-                other_nonce,
-                updating_capacity: deposit as UInt<32>,
-                other_capacity,
-                reveal_timeout: BigNumber.from(50) as UInt<32>,
-                canonical_identifier: {
-                  chain_identifier: BigNumber.from(chainId) as UInt<32>,
-                  token_network_address: tokenNetwork,
-                  channel_identifier: BigNumber.from(channelId) as UInt<32>,
-                },
-              },
-            },
-            { service: Service.PFS, msgId },
-          ),
-          messageServiceSend.success(
-            { via: '!.:', tookMs: 10, retries: 1 },
-            { service: Service.PFS, msgId },
-          ),
+          messageServiceSendRequestAction,
+          messageServiceSendSuccessAction,
         ]),
       );
     }
@@ -881,7 +885,13 @@ describe('Raiden', () => {
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
+    const channelCloseRequestPromise = raiden.action$
+      .pipe(first(channelClose.request.is))
+      .toPromise();
     await expect(raiden.closeChannel(token, partner, { subkey: false })).resolves.toEqual(txHash);
+    await expect(channelCloseRequestPromise).resolves.toEqual(
+      channelClose.request(undefined, meta),
+    );
   });
 
   test('mainAddress', async () => {
@@ -917,31 +927,8 @@ describe('Raiden', () => {
               },
               { tokenNetwork, partner },
             ),
-            messageServiceSend.request(
-              {
-                message: {
-                  type: MessageType.PFS_CAPACITY_UPDATE,
-                  updating_participant: address,
-                  other_participant: partner,
-                  signature: SignatureZero,
-                  updating_nonce,
-                  other_nonce,
-                  updating_capacity: deposit as UInt<32>,
-                  other_capacity,
-                  reveal_timeout: BigNumber.from(50) as UInt<32>,
-                  canonical_identifier: {
-                    chain_identifier: BigNumber.from(chainId) as UInt<32>,
-                    token_network_address: tokenNetwork,
-                    channel_identifier: BigNumber.from(channelId) as UInt<32>,
-                  },
-                },
-              },
-              { service: Service.PFS, msgId },
-            ),
-            messageServiceSend.success(
-              { via: '!.:', tookMs: 10, retries: 1 },
-              { service: Service.PFS, msgId },
-            ),
+            messageServiceSendRequestAction,
+            messageServiceSendSuccessAction,
           );
         }),
       );
@@ -961,8 +948,14 @@ describe('Raiden', () => {
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
+    const channelDepositRequestPromise = raiden.action$
+      .pipe(first(channelDeposit.request.is))
+      .toPromise();
     await expect(
       raiden.depositChannel(token, partner, deposit, { subkey: false }),
     ).resolves.toEqual(txHash);
+    await expect(channelDepositRequestPromise).resolves.toEqual(
+      channelDeposit.request({ deposit: deposit as UInt<32>, subkey: false }, meta),
+    );
   });
 });
