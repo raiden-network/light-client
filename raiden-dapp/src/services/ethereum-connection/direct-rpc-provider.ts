@@ -3,7 +3,7 @@ import { providers } from 'ethers';
 import { EthereumConnection } from './types';
 
 export class DirectRpcProvider extends EthereumConnection {
-  public static readonly connection_name = 'direct_rpc_provider';
+  public static readonly connectionName = 'direct_rpc_provider';
   public static readonly isAvailable = true;
   public readonly provider: providers.JsonRpcProvider;
   public readonly account: string;

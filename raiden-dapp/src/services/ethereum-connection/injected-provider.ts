@@ -3,7 +3,7 @@ import { providers } from 'ethers';
 import { EthereumConnection } from './types';
 
 export class InjectedProvider extends EthereumConnection {
-  public static readonly connection_name = 'injected_provider';
+  public static readonly connectionName = 'injected_provider';
   public readonly provider: providers.JsonRpcProvider;
   public readonly account = 0; // Refers to the currently selected account in the wallet.
 
