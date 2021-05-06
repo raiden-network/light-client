@@ -2,42 +2,77 @@ import type { Wrapper } from '@vue/test-utils';
 import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import Vuex from 'vuex';
 
-import store from '@/store';
 import Settings from '@/views/account/Settings.vue';
 
 jest.mock('vue-router');
 
 Vue.use(Vuetify);
+Vue.use(Vuex);
 
-describe('Settings.vue', () => {
-  let wrapper: Wrapper<Settings>;
-  let vuetify: Vuetify;
-  beforeEach(async () => {
-    vuetify = new Vuetify();
-    wrapper = mount(Settings, {
-      vuetify,
-      store,
-      mocks: {
-        $t: (msg: string) => msg,
-      },
-    });
+const enableRaidenAccount = jest.fn();
+const disableRaidenAccount = jest.fn();
 
-    await wrapper.vm.$nextTick();
+function createWrapper(options?: { useRaidenAccount?: boolean }): Wrapper<Settings> {
+  const vuetify = new Vuetify();
+  const state = {
+    useRaidenAccount: options?.useRaidenAccount ?? true,
+  };
+
+  const mutations = {
+    enableRaidenAccount,
+    disableRaidenAccount,
+  };
+
+  const userSettingsModule = {
+    namespaced: true,
+    state,
+    mutations,
+  };
+
+  const store = new Vuex.Store({
+    modules: { userSettings: userSettingsModule },
   });
 
-  test('toggling "use raiden account" updates setting state', async () => {
-    const toggleInput = wrapper.find('input');
+  return mount(Settings, {
+    vuetify,
+    store,
+    mocks: {
+      $t: (msg: string) => msg,
+    },
+  });
+}
 
-    store.commit('updateSettings', { useRaidenAccount: true });
-    await wrapper.vm.$nextTick();
+describe('Settings.vue', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
+  test('includes setting for using raiden account', () => {
+    const wrapper = createWrapper();
     expect(wrapper.text()).toContain('settings.raiden-account.title');
+  });
 
+  test('can enable raiden account usage setting', async () => {
+    const wrapper = createWrapper({ useRaidenAccount: false });
+
+    const toggleInput = wrapper.get('input');
     toggleInput.trigger('click');
     await wrapper.vm.$nextTick();
 
+    expect(enableRaidenAccount).toHaveBeenCalledTimes(1);
+    expect((toggleInput.element as HTMLInputElement).checked).toBe(true);
+  });
+
+  test('can disable raiden account usage setting', async () => {
+    const wrapper = createWrapper({ useRaidenAccount: true });
+
+    const toggleInput = wrapper.get('input');
+    toggleInput.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(disableRaidenAccount).toHaveBeenCalledTimes(1);
     expect((toggleInput.element as HTMLInputElement).checked).toBe(false);
-    expect(store.state.settings.useRaidenAccount).toBe(false);
   });
 });
