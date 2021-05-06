@@ -197,6 +197,12 @@ describe('Raiden', () => {
   const channelOpenHash = makeHash();
   const meta = { tokenNetwork, partner };
   const key = channelKey(meta);
+  const deposit: BigNumber = BigNumber.from('10000000000000000000');
+  const msgId = '123';
+  const chainId = 1337;
+  const updating_nonce = BigNumber.from(1) as UInt<8>;
+  const other_nonce = BigNumber.from(1) as UInt<8>;
+  const other_capacity = BigNumber.from(10) as UInt<32>;
 
   function initEpicMock(action$: Observable<RaidenAction>): Observable<raidenSynced> {
     return action$.pipe(
@@ -593,14 +599,8 @@ describe('Raiden', () => {
   });
 
   test('openChannel', async () => {
-    const deposit: BigNumber = BigNumber.from('10000000000000000000');
     const subkey = false;
     const channelDepositHash = makeHash();
-    const msgId = '123';
-    const chainId = 1337;
-    const updating_nonce = BigNumber.from(1) as UInt<8>;
-    const other_nonce = BigNumber.from(1) as UInt<8>;
-    const other_capacity = BigNumber.from(10) as UInt<32>;
 
     function channelOpenSuccessReducer(
       state: RaidenState = dummyState,
@@ -898,5 +898,71 @@ describe('Raiden', () => {
     Object.assign(deps.provider, { blockNumber });
     const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     await expect(raiden.getBlockNumber()).resolves.toEqual(blockNumber);
+  });
+
+  test('depositChannel', async () => {
+    function channelDepositEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(channelDeposit.request.is),
+        mergeMap(() => {
+          return of(
+            channelDeposit.success(
+              {
+                id: channelId,
+                participant: address as Address,
+                totalDeposit: deposit as UInt<32>,
+                txHash,
+                txBlock: 11,
+                confirmed: true,
+              },
+              { tokenNetwork, partner },
+            ),
+            messageServiceSend.request(
+              {
+                message: {
+                  type: MessageType.PFS_CAPACITY_UPDATE,
+                  updating_participant: address,
+                  other_participant: partner,
+                  signature: SignatureZero,
+                  updating_nonce,
+                  other_nonce,
+                  updating_capacity: deposit as UInt<32>,
+                  other_capacity,
+                  reveal_timeout: BigNumber.from(50) as UInt<32>,
+                  canonical_identifier: {
+                    chain_identifier: BigNumber.from(chainId) as UInt<32>,
+                    token_network_address: tokenNetwork,
+                    channel_identifier: BigNumber.from(channelId) as UInt<32>,
+                  },
+                },
+              },
+              { service: Service.PFS, msgId },
+            ),
+            messageServiceSend.success(
+              { via: '!.:', tookMs: 10, retries: 1 },
+              { service: Service.PFS, msgId },
+            ),
+          );
+        }),
+      );
+    }
+    const deps = makeDummyDependencies();
+    deps.registryContract = {
+      token_to_token_networks: jest.fn().mockImplementation(async () => tokenNetwork),
+    } as any;
+
+    const raiden = new Raiden(
+      makeInitialState(
+        { address, network, contractsInfo },
+        { tokens: { [token]: tokenNetwork }, channels: { [key]: getChannel() } },
+      ),
+      deps,
+      combineRaidenEpics([initEpicMock, channelDepositEpicMock]),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+    await expect(
+      raiden.depositChannel(token, partner, deposit, { subkey: false }),
+    ).resolves.toEqual(txHash);
   });
 });
