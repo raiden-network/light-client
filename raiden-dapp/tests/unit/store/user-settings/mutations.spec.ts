@@ -19,4 +19,14 @@ describe('user setttings store mutations', () => {
 
     expect(state.useRaidenAccount).toBe(false);
   });
+
+  test('can save ethereum connection options', () => {
+    const state = defaultState();
+    expect(state.ethereumConnectionOptions['test_connection']).toBeUndefined();
+
+    const payload = { connectionName: 'test_connection', connectionOptions: 'test_options' };
+    mutations.saveEthereumConnectionOptions(state, payload);
+
+    expect(state.ethereumConnectionOptions['test_connection']).toBe('test_options');
+  });
 });
