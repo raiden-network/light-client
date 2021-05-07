@@ -1,52 +1,58 @@
 <template>
-  <raiden-dialog width="472" class="wallet-connect" :visible="true" @close="cancel">
-    <span class="wallet-connect__header">
-      {{ $t('home.wallet-connect-dialog.wallet-connect-header') }}
+  <raiden-dialog width="472" class="wallet-connect-provider" :visible="true" @close="cancel">
+    <span class="wallet-connect-provider__header">
+      {{ $t('connection-manager.dialogs.wallet-connect-provider.header') }}
     </span>
 
-    <div class="wallet-connect__bridge-server">
-      <div class="wallet-connect__bridge-server__details">
-        <div class="wallet-connect__bridge-server__details__info">
-          <h3>{{ $t('home.wallet-connect-dialog.bridge-server-header') }}</h3>
-          <span>{{ $t('home.wallet-connect-dialog.bridge-server-body') }}</span>
+    <div class="wallet-connect-provider__bridge-server">
+      <div class="wallet-connect-provider__bridge-server__details">
+        <div class="wallet-connect-provider__bridge-server__details__info">
+          <h3>
+            {{ $t('connection-manager.dialogs.wallet-connect-provider.bridge-server-header') }}
+          </h3>
+          <span>
+            {{ $t('connection-manager.dialogs.wallet-connect-provider.bridge-server-body') }}
+          </span>
         </div>
         <v-switch
-          class="wallet-connect__bridge-server__details__toggle"
+          class="wallet-connect-provider__bridge-server__details__toggle"
           @change="toggleBridgeServerInputVisibility"
         />
       </div>
       <input
-        class="wallet-connect__input"
+        class="wallet-connect-provider__input"
         type="text"
         :value="bridgeServerUrl"
-        :placeholder="$t('home.wallet-connect-dialog.placeholder.bridge-server')"
+        :placeholder="
+          $t('connection-manager.dialogs.wallet-connect-provider.placeholder.bridge-server')
+        "
         :disabled="bridgeServerUrlInputDisabled"
         @input="bridgeServerUrl = $event.target.value"
       />
     </div>
 
-    <div class="wallet-connect__infura-or-rpc">
+    <div class="wallet-connect-provider__infura-or-rpc">
       <v-btn-toggle mandatory>
-        <v-btn class="wallet-connect__infura-or-rpc__button" @click="showInfura">
-          {{ $t('home.wallet-connect-dialog.infura-button') }}
+        <v-btn class="wallet-connect-provider__infura-or-rpc__button" @click="showInfura">
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.infura-button') }}
         </v-btn>
-        <v-btn class="wallet-connect__infura-or-rpc__button" @click="showRpc">
-          {{ $t('home.wallet-connect-dialog.rpc-button') }}
+        <v-btn class="wallet-connect-provider__infura-or-rpc__button" @click="showRpc">
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.rpc-button') }}
         </v-btn>
       </v-btn-toggle>
 
-      <div class="wallet-connect__infura-or-rpc__details">
-        <div v-if="infuraVisible" class="wallet-connect__infura-or-rpc__details--infura">
-          <h3>{{ $t('home.wallet-connect-dialog.infura-header') }}</h3>
-          <span>{{ $t('home.wallet-connect-dialog.infura-body') }}</span>
+      <div class="wallet-connect-provider__infura-or-rpc__details">
+        <div v-if="infuraVisible" class="wallet-connect-provider__infura-or-rpc__details--infura">
+          <h3>{{ $t('connection-manager.dialogs.wallet-connect-provider.infura-header') }}</h3>
+          <span>{{ $t('connection-manager.dialogs.wallet-connect-provider.infura-body') }}</span>
         </div>
-        <div v-if="rpcVisible" class="wallet-connect__infura-or-rpc__details--rpc">
-          <h3>{{ $t('home.wallet-connect-dialog.rpc-header') }}</h3>
-          <span>{{ $t('home.wallet-connect-dialog.rpc-body') }}</span>
+        <div v-if="rpcVisible" class="wallet-connect-provider__infura-or-rpc__details--rpc">
+          <h3>{{ $t('connection-manager.dialogs.wallet-connect-provider.rpc-header') }}</h3>
+          <span>{{ $t('connection-manager.dialogs.wallet-connect-provider.rpc-body') }}</span>
         </div>
 
         <input
-          class="wallet-connect__input"
+          class="wallet-connect-provider__input"
           type="text"
           :value="infuraIdOrRpcUrl"
           :placeholder="infuraIdOrRpcUrlInputPlaceholder"
@@ -56,8 +62,8 @@
 
       <action-button
         :enabled="canConnect"
-        class="wallet-connect__button"
-        :text="$t('home.connect-button')"
+        class="wallet-connect-provider__button"
+        :text="$t('connection-manager.dialogs.wallet-connect-provider.connect-button')"
         @click="connect"
       />
     </div>
@@ -81,7 +87,7 @@ enum InfuraOrRpcToggleState {
     ActionButton,
   },
 })
-export default class WalletConnectDialog extends Vue {
+export default class WalletConnectProviderDialog extends Vue {
   bridgeServerUrl = '';
   bridgeServerUrlInputDisabled = true;
   infuraIdOrRpcUrl = '';
@@ -107,7 +113,9 @@ export default class WalletConnectDialog extends Vue {
 
   get infuraIdOrRpcUrlInputPlaceholder(): string {
     const kind = this.infuraOrRpcToggleState.toString();
-    return this.$t(`home.wallet-connect-dialog.placeholder.${kind}`) as string;
+    return this.$t(
+      `connection-manager.dialogs.wallet-connect-provider.placeholder.${kind}`,
+    ) as string;
   }
 
   showInfura(): void {
@@ -132,7 +140,7 @@ export default class WalletConnectDialog extends Vue {
 @import '@/scss/mixins';
 @import '@/scss/colors';
 
-.wallet-connect {
+.wallet-connect-provider {
   display: flex;
 
   &__header {

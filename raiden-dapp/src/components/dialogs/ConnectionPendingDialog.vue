@@ -1,17 +1,17 @@
 <template>
   <raiden-dialog :visible="dialogVisible" :hide-close="true">
     <v-card-title>
-      {{ $t('home.connection-pending-dialog.title') }}
+      {{ $t('connection-manager.dialogs.connection-pending.title') }}
     </v-card-title>
 
     <v-card-text>
       <spinner :size="60" class="my-4" />
-      {{ $t('home.connection-pending-dialog.text') }}
+      {{ $t('connection-manager.dialogs.connection-pending.text') }}
     </v-card-text>
 
     <v-card-actions>
       <action-button
-        :text="$t('home.connection-pending-dialog.button')"
+        :text="$t('connection-manager.dialogs.connection-pending.button')"
         :enabled="true"
         @click="resetConnection"
       />

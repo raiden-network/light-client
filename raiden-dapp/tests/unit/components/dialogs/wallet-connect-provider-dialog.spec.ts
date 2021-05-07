@@ -4,14 +4,14 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 
 import ActionButton from '@/components/ActionButton.vue';
-import WalletConnectDialog from '@/components/dialogs/WalletConnectDialog.vue';
+import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
 
 Vue.use(Vuetify);
 
-const createWrapper = (): Wrapper<WalletConnectDialog> => {
+const createWrapper = (): Wrapper<WalletConnectProviderDialog> => {
   const vuetify = new Vuetify();
 
-  return mount(WalletConnectDialog, {
+  return mount(WalletConnectProviderDialog, {
     vuetify,
     stubs: { 'v-dialog': true, 'action-button': ActionButton },
     mocks: {
@@ -24,33 +24,35 @@ const createWrapper = (): Wrapper<WalletConnectDialog> => {
 };
 
 async function clickInfuraRpcToggle(
-  wrapper: Wrapper<WalletConnectDialog>,
+  wrapper: Wrapper<WalletConnectProviderDialog>,
   buttonIndex: number,
 ): Promise<void> {
-  const rpcToggle = wrapper.findAll('.wallet-connect__infura-or-rpc__button').at(buttonIndex);
+  const rpcToggle = wrapper
+    .findAll('.wallet-connect-provider__infura-or-rpc__button')
+    .at(buttonIndex);
   rpcToggle.trigger('click');
   await wrapper.vm.$nextTick();
 }
 
-describe('WalletConnectDialog.vue', () => {
+describe('WalletConnectProviderDialog.vue', () => {
   test('can toggle between Infura and RPC input', async () => {
     const wrapper = createWrapper();
 
-    wrapper.get('.wallet-connect__infura-or-rpc__details--infura');
+    wrapper.get('.wallet-connect-provider__infura-or-rpc__details--infura');
     await clickInfuraRpcToggle(wrapper, 1);
-    wrapper.get('.wallet-connect__infura-or-rpc__details--rpc');
+    wrapper.get('.wallet-connect-provider__infura-or-rpc__details--rpc');
     await clickInfuraRpcToggle(wrapper, 0);
-    wrapper.get('.wallet-connect__infura-or-rpc__details--infura');
+    wrapper.get('.wallet-connect-provider__infura-or-rpc__details--infura');
   });
 
   test('can enable bridge server input field', async () => {
     const wrapper = createWrapper();
-    const bridgeServerURLInput = wrapper.findAll('.wallet-connect__input').at(0);
+    const bridgeServerURLInput = wrapper.findAll('.wallet-connect-provider__input').at(0);
 
     expect(bridgeServerURLInput.attributes('disabled')).toBeTruthy();
 
     const bridgeServerInputToggle = wrapper
-      .find('.wallet-connect__bridge-server__details__toggle')
+      .find('.wallet-connect-provider__bridge-server__details__toggle')
       .find('input');
     bridgeServerInputToggle.trigger('click');
     await wrapper.vm.$nextTick();
