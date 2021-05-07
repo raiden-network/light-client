@@ -1,13 +1,18 @@
 export class DirectRpcProvider {
   public readonly account = 0;
+  private chainId: number;
 
-  public static link() {
-    return new this();
+  private constructor(chainId = 5) {
+    this.chainId = chainId;
+  }
+
+  public static async link(options?: { chainId?: number }) {
+    return new this(options?.chainId);
   }
 
   get provider() {
     return {
-      getNetwork: jest.fn().mockResolvedValue({ chainId: 5 }),
+      getNetwork: jest.fn().mockResolvedValue({ chainId: this.chainId }),
     };
   }
 }

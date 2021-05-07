@@ -12,6 +12,7 @@
         </div>
       </v-col>
     </v-row>
+
     <v-row no-gutters>
       <v-col cols="12">
         <div class="home__app-welcome text-center">
@@ -19,6 +20,7 @@
         </div>
       </v-col>
     </v-row>
+
     <v-row no-gutters>
       <v-col cols="12">
         <div class="home__disclaimer text-center font-weight-light">
@@ -33,79 +35,35 @@
             {{ $t('home.getting-started.link-name') }}
           </a>
         </i18n>
-        <v-alert
-          v-if="connectionError"
-          class="home__no-access font-weight-light"
-          color="error"
-          icon="warning"
-        >
-          {{ translatedErrorCode }}
-        </v-alert>
       </v-col>
     </v-row>
-    <action-button
-      data-cy="home_connect_button"
-      class="home__connect-button"
-      :text="$t('home.connect-button')"
-      :loading="connecting"
-      :enabled="!connecting"
-      syncing
-      sticky
-      @click="connect"
-    />
-    <connection-pending-dialog v-if="connecting" @reset-connection="resetConnection" />
+
+    <v-row>
+      <v-col cols="8" offset="2" class="mt-10">
+        <connection-manager />
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import type { Location } from 'vue-router';
-import { createNamespacedHelpers, mapGetters, mapState } from 'vuex';
+import { mapState } from 'vuex';
 
-import ActionButton from '@/components/ActionButton.vue';
-import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
-import type { TokenModel } from '@/model/types';
-import { ErrorCode } from '@/model/types';
+import ConnectionManager from '@/components/ConnectionManager.vue';
 import { RouteNames } from '@/router/route-names';
-import type { Configuration } from '@/services/config-provider';
-import { ConfigProvider } from '@/services/config-provider';
-import type { EthereumProvider } from '@/services/ethereum-provider';
-import {
-  DirectRpcProvider,
-  InjectedProvider,
-  WalletConnectProvider,
-} from '@/services/ethereum-provider';
-
-const { mapState: mapStateUserSettings } = createNamespacedHelpers('userSettings');
-
-function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
-  if (error.message && error.message.includes('No deploy info provided')) {
-    return ErrorCode.UNSUPPORTED_NETWORK;
-  } else if (error.message && error.message.includes('Could not replace stored state')) {
-    return ErrorCode.STATE_MIGRATION_FAILED;
-  } else {
-    return ErrorCode.SDK_INITIALIZATION_FAILED;
-  }
-}
 
 @Component({
   computed: {
-    ...mapState(['isConnected', 'stateBackup', 'settings']),
-    ...mapStateUserSettings(['useRaidenAccount']),
-    ...mapGetters(['tokens']),
+    ...mapState(['isConnected']),
   },
   components: {
-    ActionButton,
-    ConnectionPendingDialog,
+    ConnectionManager,
   },
 })
 export default class Home extends Vue {
   isConnected!: boolean;
-  tokens!: TokenModel[];
-  connecting = false;
-  connectionError: ErrorCode | null = null;
-  stateBackup!: string;
-  useRaidenAccount!: boolean;
 
   get navigationTarget(): Location {
     const redirectTo = this.$route.query.redirectTo as string;
@@ -117,80 +75,10 @@ export default class Home extends Vue {
     }
   }
 
-  get translatedErrorCode(): string {
-    if (!this.connectionError) {
-      return '';
-    } else {
-      const translationKey = `error-codes.${this.connectionError.toString()}`;
-      return this.$t(translationKey) as string;
-    }
-  }
-
-  async connect() {
-    this.connecting = true;
-    this.$store.commit('reset');
-    this.connectionError = null;
-
-    const stateBackup = this.stateBackup;
-    const configuration = await ConfigProvider.configuration();
-    const useRaidenAccount = this.useRaidenAccount ? true : undefined;
-    const ethereumProvider = await this.getEthereumProvider(configuration);
-
-    // TODO: This will become removed when we have the connection manager.
-    if (ethereumProvider === undefined) {
-      this.connectionError = ErrorCode.NO_ETHEREUM_PROVIDER;
-      this.connecting = false;
-      return;
-    }
-
-    const ethereumNetwork = await ethereumProvider.provider.getNetwork();
-
-    if (ethereumNetwork.chainId === 1 && process.env.VUE_APP_ALLOW_MAINNET !== 'true') {
-      this.connectionError = ErrorCode.UNSUPPORTED_NETWORK;
-      this.connecting = false;
-      return;
-    }
-
-    try {
-      await this.$raiden.connect(
-        ethereumProvider.provider,
-        ethereumProvider.account,
-        stateBackup,
-        configuration.per_network,
-        useRaidenAccount,
-      );
-    } catch (error) {
-      this.connectionError = mapRaidenServiceErrorToErrorCode(error);
-      this.connecting = false;
-      return;
-    }
-
-    this.$store.commit('setConnected');
-    this.$store.commit('clearBackupState');
-    this.$router.push(this.navigationTarget);
-  }
-
-  resetConnection(): void {
-    localStorage.removeItem('walletconnect');
-    // There is no clean way to cancel the asynchronous connection function, therefore reload page.
-    window.location.replace(window.location.origin);
-  }
-
-  async getEthereumProvider(configuration: Configuration): Promise<EthereumProvider | undefined> {
-    const {
-      rpc_endpoint: rpcUrl,
-      private_key: privateKey,
-      rpc_endpoint_wallet_connect: rpcUrlWalletConnect,
-    } = configuration;
-
-    if (rpcUrl && privateKey) {
-      return DirectRpcProvider.link({ rpcUrl, privateKey });
-    } else if (!!window.ethereum || !!window.web3) {
-      return InjectedProvider.link();
-    } else if (rpcUrlWalletConnect) {
-      return WalletConnectProvider.link({ rpcUrl: rpcUrlWalletConnect });
-    } else {
-      return undefined;
+  @Watch('isConnected', { immediate: true })
+  onConnectionEstablished(value: boolean): void {
+    if (value) {
+      this.$router.push(this.navigationTarget);
     }
   }
 }
@@ -225,8 +113,7 @@ export default class Home extends Vue {
   }
 
   &__disclaimer,
-  &__getting-started,
-  &__no-access {
+  &__getting-started {
     font-size: 16px;
     line-height: 20px;
     margin: 30px 130px 0 130px;
