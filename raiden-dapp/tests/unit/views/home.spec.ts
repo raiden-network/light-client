@@ -17,7 +17,7 @@ import Home from '@/views/Home.vue';
 jest.mock('@/services/raiden-service');
 jest.mock('@/services/config-provider');
 jest.mock('@/i18n', () => jest.fn());
-jest.mock('@/services/ethereum-connection/direct-rpc-provider');
+jest.mock('@/services/ethereum-provider/direct-rpc-provider');
 
 import Mocked = jest.Mocked;
 

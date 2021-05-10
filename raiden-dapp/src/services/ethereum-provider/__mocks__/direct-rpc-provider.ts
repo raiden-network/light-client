@@ -1,7 +1,7 @@
 export class DirectRpcProvider {
   public readonly account = 0;
 
-  public static connect() {
+  public static link() {
     return new this();
   }
 
