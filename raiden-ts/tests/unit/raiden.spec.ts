@@ -24,6 +24,7 @@ import {
 } from '@/channels/actions';
 import type { Channel, ChannelEnd } from '@/channels/state';
 import { ChannelState } from '@/channels/state';
+import type { Lock } from '@/channels/types';
 import { BalanceProofZero } from '@/channels/types';
 import { channelAmounts, channelKey, channelUniqueKey } from '@/channels/utils';
 import { makeDefaultConfig } from '@/config';
@@ -36,7 +37,9 @@ import {
   TokenNetworkRegistry__factory,
 } from '@/contracts';
 import { combineRaidenEpics } from '@/epics';
+import { signMessage } from '@/messages';
 import { messageServiceSend } from '@/messages/actions';
+import type { LockedTransfer } from '@/messages/types';
 import { MessageType } from '@/messages/types';
 import { Raiden } from '@/raiden';
 import { pathFind, udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
@@ -44,9 +47,10 @@ import { Service } from '@/services/types';
 import { pfsListInfo } from '@/services/utils';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
-import { withdraw } from '@/transfers/actions';
+import { transfer, transferSigned, withdraw } from '@/transfers/actions';
 import { standardCalculator } from '@/transfers/mediate/types';
 import { Direction } from '@/transfers/state';
+import { getLocksroot, getSecrethash, makeMessageId, makeSecret } from '@/transfers/utils';
 import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { pluckDistinct } from '@/utils/rx';
@@ -1077,6 +1081,118 @@ describe('Raiden', () => {
     await expect(raiden.withdrawChannel(token, partner, amount)).resolves.toEqual(txHash);
     await expect(withdrawRequestPromise).resolves.toEqual(
       withdraw.request(undefined, withdrawMeta),
+    );
+  });
+
+  test('transfer', async () => {
+    const deps = makeDummyDependencies();
+    const raiden: Raiden = new Raiden(
+      makeInitialState(
+        { address, network, contractsInfo },
+        { tokens: { [token]: tokenNetwork }, channels: { [key]: getChannel() } },
+      ),
+      deps,
+      combineRaidenEpics([initEpicMock, pfsRequestEpicMock, transferEpicMock]),
+      dummyReducer,
+    );
+
+    const paymentId = BigNumber.from(123) as UInt<8>;
+    const secret = makeSecret();
+    const secrethash = getSecrethash(secret);
+    const fee = BigNumber.from(2);
+    const expiration = BigNumber.from(20) as UInt<32>;
+    const amount = BigNumber.from(20).add(fee) as UInt<32>;
+    const lock: Lock = {
+      amount,
+      expiration,
+      secrethash,
+    };
+    const locksroot = getLocksroot([lock]);
+
+    const lockedTransferMessage: LockedTransfer = {
+      type: MessageType.LOCKED_TRANSFER,
+      message_identifier: makeMessageId(),
+      chain_id: BigNumber.from(network.chainId) as UInt<32>,
+      token_network_address: tokenNetwork,
+      channel_identifier: BigNumber.from(channelId) as UInt<32>,
+      nonce: BigNumber.from(1) as UInt<8>,
+      transferred_amount: amount,
+      locked_amount: amount,
+      locksroot,
+      payment_identifier: paymentId,
+      token: token,
+      recipient: partner,
+      lock,
+      target: partner,
+      initiator: raiden.address,
+      metadata: { routes: [] },
+    };
+    const signedMessage = await signMessage(deps.signer, lockedTransferMessage);
+
+    function pfsRequestEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(pathFind.request.is),
+        map((action) =>
+          pathFind.success(
+            {
+              paths: [{ path: [raiden.address, partner], fee: fee as Int<32> }],
+            },
+            action.meta,
+          ),
+        ),
+      );
+    }
+
+    function transferEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(transfer.request.is),
+        map((action) =>
+          transferSigned(
+            {
+              message: signedMessage,
+              fee: fee as Int<32>,
+              partner,
+            },
+            action.meta,
+          ),
+        ),
+      );
+    }
+    await raiden.start();
+    const pathFindRequestPromise = raiden.action$.pipe(first(pathFind.request.is)).toPromise();
+    const transferRequestPromise = raiden.action$.pipe(first(transfer.request.is)).toPromise();
+
+    const transferResult = raiden.transfer(token, partner, 1, {
+      paymentId,
+      secret,
+      secrethash,
+    });
+
+    await expect(transferResult).resolves.toEqual(`sent:${secrethash.toString()}`);
+    await expect(pathFindRequestPromise).resolves.toEqual(
+      pathFind.request(
+        expect.anything(),
+        expect.objectContaining({
+          target: partner,
+          tokenNetwork: tokenNetwork,
+          value: One,
+        }),
+      ),
+    );
+    await expect(transferRequestPromise).resolves.toEqual(
+      transfer.request(
+        expect.objectContaining({
+          tokenNetwork: tokenNetwork,
+          target: partner,
+          value: One as UInt<32>,
+          paths: expect.anything(),
+          paymentId: paymentId,
+        }),
+        {
+          secrethash: secrethash,
+          direction: Direction.SENT,
+        },
+      ),
     );
   });
 });
