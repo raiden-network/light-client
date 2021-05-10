@@ -1,9 +1,9 @@
 import { providers } from 'ethers';
 
-import { EthereumConnection } from './types';
+import { EthereumProvider } from './types';
 
-export class DirectRpcProvider extends EthereumConnection {
-  public static readonly connectionName = 'direct_rpc_provider';
+export class DirectRpcProvider extends EthereumProvider {
+  public static readonly providerName = 'direct_rpc_provider';
   public static readonly isAvailable = true;
   public readonly provider: providers.JsonRpcProvider;
   public readonly account: string;
@@ -14,7 +14,7 @@ export class DirectRpcProvider extends EthereumConnection {
     this.account = privateKey;
   }
 
-  public static async connect(options: {
+  public static async link(options: {
     rpcUrl: string;
     privateKey: string;
   }): Promise<DirectRpcProvider> {

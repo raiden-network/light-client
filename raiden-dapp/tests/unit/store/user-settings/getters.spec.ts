@@ -2,17 +2,17 @@ import { getters } from '@/store/user-settings/getters';
 import { defaultState } from '@/store/user-settings/state';
 
 describe('user settings store getters', () => {
-  test('get empty options for etherum connections per default', () => {
+  test('get empty options for etherum provider per default', () => {
     const state = defaultState();
 
-    expect(getters.getEthereumConnectionOptions(state)('test_connection')).toMatchObject({});
+    expect(getters.getEthereumProviderOptions(state)('test_provider')).toMatchObject({});
   });
 
-  test('get saved options for etherum connections', () => {
+  test('get saved options for etherum provider', () => {
     const state = defaultState();
-    state.ethereumConnectionOptions['test_connection'] = { option: 'test' };
+    state.ethereumProviderOptions['test_provider'] = { option: 'test' };
 
-    expect(getters.getEthereumConnectionOptions(state)('test_connection')).toMatchObject({
+    expect(getters.getEthereumProviderOptions(state)('test_provider')).toMatchObject({
       option: 'test',
     });
   });

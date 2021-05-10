@@ -1,6 +1,6 @@
 import { MockedJsonRpcProvider, MockedJsonRpcProviderWithRequestHandler } from '../../utils/mocks';
 
-import { InjectedProvider } from '@/services/ethereum-connection/injected-provider';
+import { InjectedProvider } from '@/services/ethereum-provider/injected-provider';
 
 jest.mock('ethers', () => {
   const originalEthers = jest.requireActual('ethers');
@@ -38,22 +38,22 @@ describe('InjectedProvider', () => {
     expect(InjectedProvider.isAvailable).toBe(true);
   });
 
-  test('connect throws error if no injected provider is available', () => {
-    expect(InjectedProvider.connect()).rejects.toThrow('No injected provider is available.');
+  test('link throws error if no injected provider is available', () => {
+    expect(InjectedProvider.link()).rejects.toThrow('No injected provider is available.');
   });
 
-  test('can connect with ethereum provider', async () => {
+  test('can link with ethereum provider', async () => {
     window.ethereum = new MockedJsonRpcProviderWithRequestHandler();
 
-    const connection = await InjectedProvider.connect();
+    const provider = await InjectedProvider.link();
 
-    expect(connection.account).toBe(0);
+    expect(provider.account).toBe(0);
   });
 
-  test('asks for permissions to access accounts on connect with ethereum provider', async () => {
+  test('asks for permissions to access accounts on link with ethereum provider', async () => {
     window.ethereum = new MockedJsonRpcProviderWithRequestHandler();
 
-    await InjectedProvider.connect();
+    await InjectedProvider.link();
 
     expect(window.ethereum.request).toHaveBeenCalledTimes(1);
     expect(window.ethereum.request).toHaveBeenCalledWith({
@@ -61,25 +61,25 @@ describe('InjectedProvider', () => {
     });
   });
 
-  test('connect throws error if user denies permissions to access accounts', () => {
+  test('link throws error if user denies permissions to access accounts', () => {
     window.ethereum = new MockedJsonRpcProviderWithRequestHandler();
     window.ethereum.request.mockRejectedValue(new Error('User rejected the request.'));
 
-    expect(InjectedProvider.connect()).rejects.toThrow('User rejected the request.');
+    expect(InjectedProvider.link()).rejects.toThrow('User rejected the request.');
   });
 
-  test('can connect with injected web3 provider', async () => {
+  test('can link with injected web3 provider', async () => {
     window.web3 = { currentProvider: new MockedJsonRpcProvider() };
 
-    const connection = await InjectedProvider.connect();
+    const link = await InjectedProvider.link();
 
-    expect(connection.account).toBe(0);
+    expect(link.account).toBe(0);
   });
 
-  test('connect registers event handler to reset connection', async () => {
+  test('link registers event handler to reset connection', async () => {
     window.ethereum = new MockedJsonRpcProviderWithRequestHandler();
 
-    await InjectedProvider.connect();
+    await InjectedProvider.link();
 
     expect(window.ethereum.on).toHaveBeenCalledTimes(2);
     // TOOD: check actual events that are listened. Hard to verify.

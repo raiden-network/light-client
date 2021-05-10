@@ -1,6 +1,6 @@
 import type { MutationTree } from 'vuex';
 
-import type { EthereumConnectionOptions } from '@/services/ethereum-connection';
+import type { EthereumProviderOptions } from '@/services/ethereum-provider';
 
 import type { UserSettingsState } from './types';
 
@@ -11,13 +11,13 @@ export const mutations: MutationTree<UserSettingsState> = {
   disableRaidenAccount(state) {
     state.useRaidenAccount = false;
   },
-  saveEthereumConnectionOptions(
+  saveEthereumProviderOptions(
     state,
     payload: {
-      connectionName: string;
-      connectionOptions: EthereumConnectionOptions;
+      providerName: string;
+      providerOptions: EthereumProviderOptions;
     },
   ) {
-    state.ethereumConnectionOptions[payload.connectionName] = payload.connectionOptions;
+    state.ethereumProviderOptions[payload.providerName] = payload.providerOptions;
   },
 };

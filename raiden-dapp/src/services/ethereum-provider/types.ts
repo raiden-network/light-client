@@ -4,21 +4,21 @@ import type { providers } from 'ethers';
 // the moment. Thereby it is not possible to have any better type restrictions
 // here. Though having the named type here in place will allows us to adopt it
 // later and being explicit about it at all places.
-export type EthereumConnectionOptions = any; // eslint-disable-line @typescript-eslint/no-explicit-any
+export type EthereumProviderOptions = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 // TOOD: watch-out when `static abstract` becomes possible in TypeScript
-export abstract class EthereumConnection {
-  static connectionName: string;
+export abstract class EthereumProvider {
+  static providerName: string;
   static isAvailable = false;
-  static connect: (options: EthereumConnectionOptions) => Promise<EthereumConnection>;
+  static link: (options: EthereumProviderOptions) => Promise<EthereumProvider>;
   abstract provider: providers.JsonRpcProvider;
   abstract account: string | number;
 
   constructor() {
-    const isAvailable = (this.constructor as typeof EthereumConnection).isAvailable;
+    const isAvailable = (this.constructor as typeof EthereumProvider).isAvailable;
 
     if (!isAvailable) {
-      throw new Error('The connection is not available.');
+      throw new Error('The provider is not available.');
     }
   }
 }

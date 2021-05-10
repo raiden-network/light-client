@@ -69,12 +69,12 @@ import { ErrorCode } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 import type { Configuration } from '@/services/config-provider';
 import { ConfigProvider } from '@/services/config-provider';
-import type { EthereumConnection } from '@/services/ethereum-connection';
+import type { EthereumProvider } from '@/services/ethereum-provider';
 import {
   DirectRpcProvider,
   InjectedProvider,
-  WalletConnect,
-} from '@/services/ethereum-connection';
+  WalletConnectProvider,
+} from '@/services/ethereum-provider';
 
 const { mapState: mapStateUserSettings } = createNamespacedHelpers('userSettings');
 
@@ -134,16 +134,16 @@ export default class Home extends Vue {
     const stateBackup = this.stateBackup;
     const configuration = await ConfigProvider.configuration();
     const useRaidenAccount = this.useRaidenAccount ? true : undefined;
-    const ethereumConnection = await this.getEthereumConnection(configuration);
+    const ethereumProvider = await this.getEthereumProvider(configuration);
 
     // TODO: This will become removed when we have the connection manager.
-    if (ethereumConnection === undefined) {
+    if (ethereumProvider === undefined) {
       this.connectionError = ErrorCode.NO_ETHEREUM_PROVIDER;
       this.connecting = false;
       return;
     }
 
-    const ethereumNetwork = await ethereumConnection.provider.getNetwork();
+    const ethereumNetwork = await ethereumProvider.provider.getNetwork();
 
     if (ethereumNetwork.chainId === 1 && process.env.VUE_APP_ALLOW_MAINNET !== 'true') {
       this.connectionError = ErrorCode.UNSUPPORTED_NETWORK;
@@ -153,8 +153,8 @@ export default class Home extends Vue {
 
     try {
       await this.$raiden.connect(
-        ethereumConnection.provider,
-        ethereumConnection.account,
+        ethereumProvider.provider,
+        ethereumProvider.account,
         stateBackup,
         configuration.per_network,
         useRaidenAccount,
@@ -176,9 +176,7 @@ export default class Home extends Vue {
     window.location.replace(window.location.origin);
   }
 
-  async getEthereumConnection(
-    configuration: Configuration,
-  ): Promise<EthereumConnection | undefined> {
+  async getEthereumProvider(configuration: Configuration): Promise<EthereumProvider | undefined> {
     const {
       rpc_endpoint: rpcUrl,
       private_key: privateKey,
@@ -186,11 +184,11 @@ export default class Home extends Vue {
     } = configuration;
 
     if (rpcUrl && privateKey) {
-      return DirectRpcProvider.connect({ rpcUrl, privateKey });
+      return DirectRpcProvider.link({ rpcUrl, privateKey });
     } else if (!!window.ethereum || !!window.web3) {
-      return InjectedProvider.connect();
+      return InjectedProvider.link();
     } else if (rpcUrlWalletConnect) {
-      return WalletConnect.connect({ rpcUrl: rpcUrlWalletConnect });
+      return WalletConnectProvider.link({ rpcUrl: rpcUrlWalletConnect });
     } else {
       return undefined;
     }

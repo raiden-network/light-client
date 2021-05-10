@@ -1,6 +1,6 @@
-import type { EthereumConnectionOptions } from '@/services/ethereum-connection';
+import type { EthereumProviderOptions } from '@/services/ethereum-provider';
 
 export interface UserSettingsState {
   useRaidenAccount: boolean;
-  ethereumConnectionOptions: { [connectionName: string]: EthereumConnectionOptions };
+  ethereumProviderOptions: { [providerName: string]: EthereumProviderOptions };
 }

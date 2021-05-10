@@ -2,7 +2,7 @@ import type { UserSettingsState } from './types';
 
 export const defaultState = (): UserSettingsState => ({
   useRaidenAccount: true,
-  ethereumConnectionOptions: {},
+  ethereumProviderOptions: {},
 });
 
 const state: UserSettingsState = defaultState();

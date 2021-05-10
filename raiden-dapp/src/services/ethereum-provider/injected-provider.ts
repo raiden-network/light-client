@@ -1,9 +1,9 @@
 import { providers } from 'ethers';
 
-import { EthereumConnection } from './types';
+import { EthereumProvider } from './types';
 
-export class InjectedProvider extends EthereumConnection {
-  public static readonly connectionName = 'injected_provider';
+export class InjectedProvider extends EthereumProvider {
+  public static readonly providerName = 'injected_provider';
   public readonly provider: providers.JsonRpcProvider;
   public readonly account = 0; // Refers to the currently selected account in the wallet.
 
@@ -16,7 +16,7 @@ export class InjectedProvider extends EthereumConnection {
     this.provider = new providers.Web3Provider(injetedProvider);
   }
 
-  public static async connect(): Promise<InjectedProvider> {
+  public static async link(): Promise<InjectedProvider> {
     // We can't use the check of the super constructor here, else this function does not work.
     if (!InjectedProvider.isAvailable) {
       throw new Error('No injected provider is available.');
