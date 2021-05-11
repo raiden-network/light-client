@@ -68,7 +68,3 @@ else
   kill -s TERM ${GETH_PID}
   exit 1
 fi
-
-
-
-
