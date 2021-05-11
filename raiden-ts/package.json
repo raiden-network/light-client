@@ -21,7 +21,8 @@
     "contracts": "yarn run contracts:pre && yarn run contracts:build",
     "versions": "node ./scripts/versions.js",
     "docs": "typedoc",
-    "prepack": "yarn clean && yarn build && yarn run docs"
+    "prepack": "yarn clean && yarn build && yarn run docs",
+    "update-submodules": "git submodule sync && git submodule update --init"
   },
   "repository": {
     "type": "git",

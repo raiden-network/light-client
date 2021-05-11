@@ -259,9 +259,7 @@ Go to the [CLI README](https://github.com/raiden-network/light-client/tree/maste
 3. **Update the sdk submodules**
 
    ```bash
-   cd raiden-ts
-   git submodule sync && git submodule update --init
-   cd ..
+   yarn workspace raiden-ts update-submodules
    ```
 
 4. **Build the Raiden SDK**
