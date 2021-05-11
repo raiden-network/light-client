@@ -34,7 +34,6 @@ export class ConfigProvider {
 
 export interface Configuration {
   readonly rpc_endpoint?: string;
-  readonly rpc_endpoint_wallet_connect?: string;
   readonly private_key?: string;
   readonly per_network: { [key: string]: NetworkConfiguration };
 }
