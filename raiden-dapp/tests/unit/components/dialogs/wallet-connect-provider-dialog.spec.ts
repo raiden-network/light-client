@@ -1,10 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Wrapper } from '@vue/test-utils';
 import { mount } from '@vue/test-utils';
+import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 
 import ActionButton from '@/components/ActionButton.vue';
 import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
+import { WalletConnectProvider } from '@/services/ethereum-provider/wallet-connect-provider';
+
+jest.mock('@/services/ethereum-provider/wallet-connect-provider');
 
 Vue.use(Vuetify);
 
@@ -16,9 +21,6 @@ const createWrapper = (): Wrapper<WalletConnectProviderDialog> => {
     stubs: { 'v-dialog': true, 'action-button': ActionButton },
     mocks: {
       $t: (msg: string) => msg,
-    },
-    propsData: {
-      visible: true,
     },
   });
 };
@@ -34,7 +36,27 @@ async function clickInfuraRpcToggle(
   await wrapper.vm.$nextTick();
 }
 
+async function insertInfuraIdOrRpcUrl(
+  wrapper: Wrapper<WalletConnectProviderDialog>,
+  input = 'an id',
+): Promise<void> {
+  const infuraOrRpcInput = wrapper.findAll('.wallet-connect-provider__input').at(1).find('input');
+  (infuraOrRpcInput.element as HTMLInputElement).value = input;
+  infuraOrRpcInput.trigger('input');
+  await wrapper.vm.$nextTick();
+}
+
+async function clickLinkButton(wrapper: Wrapper<WalletConnectProviderDialog>): Promise<void> {
+  const button = wrapper.findComponent(ActionButton).get('button');
+  button.trigger('click');
+  await flushPromises();
+}
+
 describe('WalletConnectProviderDialog.vue', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('can toggle between Infura and RPC input', async () => {
     const wrapper = createWrapper();
 
@@ -60,8 +82,49 @@ describe('WalletConnectProviderDialog.vue', () => {
     expect(bridgeServerURLInput.attributes('disabled')).toBeFalsy();
   });
 
-  // TODO: more tests to come. But for the moment the features of this
-  // component are too unstable as we have to figure out how the dialogs
-  // interact with the connection manager. Therefore it makes no sense to test
-  // anything beyond what is very specific to this dialog for the moment.
+  test('link emits linked provider instance', async () => {
+    const wrapper = createWrapper();
+
+    await insertInfuraIdOrRpcUrl(wrapper, 'testId');
+    await clickLinkButton(wrapper);
+
+    expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
+    expect(WalletConnectProvider.link).toHaveBeenCalledWith({ infuraId: 'testId' });
+    expect(wrapper.emitted().linkEstablished?.length).toBe(1);
+  });
+
+  test('shows error when linking fails', async () => {
+    const wrapper = createWrapper();
+    let errorMessage = wrapper.find('.wallet-connect-provider__error-message');
+    expect(errorMessage.exists()).toBeFalsy();
+
+    (WalletConnectProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
+    await insertInfuraIdOrRpcUrl(wrapper, 'testId');
+    await clickLinkButton(wrapper);
+
+    errorMessage = wrapper.find('.wallet-connect-provider__error-message');
+    expect(errorMessage.exists()).toBeTruthy();
+    expect(errorMessage.text()).toMatch(
+      'connection-manager.dialogs.wallet-connect-provider.error-message',
+    );
+    expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
+    expect(wrapper.emitted().linkEstablished).toBeUndefined();
+  });
+
+  test('linking again after error hides error message again', async () => {
+    const wrapper = createWrapper();
+
+    (WalletConnectProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
+    await insertInfuraIdOrRpcUrl(wrapper, 'testId');
+    await clickLinkButton(wrapper);
+
+    let errorMessage = wrapper.find('.wallet-connect-provider__error-message');
+    expect(errorMessage.exists()).toBeTruthy();
+
+    // Failing mock was only **once**.
+    await clickLinkButton(wrapper);
+
+    errorMessage = wrapper.find('.wallet-connect-provider__error-message');
+    expect(errorMessage.exists()).toBeFalsy();
+  });
 });

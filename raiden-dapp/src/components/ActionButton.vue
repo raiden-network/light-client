@@ -20,6 +20,7 @@
         }"
         depressed
         large
+        :style="{ width }"
         @click="click()"
       >
         {{ text }}
@@ -60,6 +61,9 @@ export default class ActionButton extends Vue {
   @Prop({ type: Boolean, default: false })
   ghost?: boolean;
 
+  @Prop({ type: String, default: '250px' })
+  width?: string;
+
   @Prop({ type: Boolean, default: false })
   fullWidth?: boolean;
 
@@ -86,7 +90,6 @@ export default class ActionButton extends Vue {
 .action-button {
   &__button {
     max-height: 40px;
-    width: 250px;
     border-radius: 29px;
     background-color: $primary-color !important;
 
@@ -110,7 +113,7 @@ export default class ActionButton extends Vue {
     }
 
     &--full-width {
-      width: 100%;
+      width: 100% !important;
     }
 
     &--ghost {

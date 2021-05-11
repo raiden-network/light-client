@@ -22,15 +22,18 @@ Vue.use(Vuex);
 const vuetify = new Vuetify();
 const storeCommitMock = jest.fn();
 
-function createWrapper(): Wrapper<ConnectionManager> {
+function createWrapper(options?: {
+  stateBackup?: string;
+  useRaidenAccount?: boolean;
+}): Wrapper<ConnectionManager> {
   const state = {
     isConnected: false,
-    stateBackup: '',
+    stateBackup: options?.stateBackup ?? '',
   };
 
   const userSettingsModule = {
     namespaced: true,
-    state: { useRaidenAccount: true },
+    state: { useRaidenAccount: options?.useRaidenAccount ?? false },
   };
 
   const store = new Store({ state, modules: { userSettings: userSettingsModule } });
@@ -51,9 +54,18 @@ function createWrapper(): Wrapper<ConnectionManager> {
   });
 }
 
-async function clickConnectButton(wrapper: Wrapper<ConnectionManager>): Promise<void> {
-  const button = wrapper.findComponent(ActionButton).find('button');
-  button.trigger('click');
+/*
+ * Unfortunately we can't easily test a "real" event call by a child component.
+ * But after all this is just a property of the dialogs. Thereby it is fine to
+ * test the callback directly here.
+ */
+async function dialogEmitLinkEstablished(
+  wrapper: Wrapper<ConnectionManager>,
+  options?: { chainId?: number },
+): Promise<void> {
+  const linkedProvider = await DirectRpcProvider.link(options);
+  (wrapper.vm as any).onProviderLinkEstablished(linkedProvider);
+  await wrapper.vm.$nextTick();
   await flushPromises();
 }
 
@@ -63,68 +75,75 @@ describe('ConnectionManager.vue', () => {
     delete process.env.VUE_APP_ALLOW_MAINNET;
   });
 
-  test('clicking on the connect button calls the raiden service to connect', async () => {
+  test('when a provider link got established the raiden service gets connected', async () => {
     const wrapper = createWrapper();
-    await clickConnectButton(wrapper);
+    await dialogEmitLinkEstablished(wrapper);
     expect(raidenServiceConnectMock).toHaveBeenCalledTimes(1);
   });
 
-  test('clicking on the connect button resets the store its state', async () => {
+  test('when a provider link got established the store state gets reset', async () => {
     const wrapper = createWrapper();
-    await clickConnectButton(wrapper);
+    await dialogEmitLinkEstablished(wrapper);
     expect(storeCommitMock).toHaveBeenCalledWith('reset');
   });
 
-  test('clicking on the connect button sets the store to being connected', async () => {
+  test('when the raiden service connects successfully the store state get set to be connected', async () => {
     const wrapper = createWrapper();
-    await clickConnectButton(wrapper);
+    await dialogEmitLinkEstablished(wrapper);
     expect(storeCommitMock).toHaveBeenCalledWith('setConnected');
   });
 
-  test('clicking on the connect button clears the state backup in the store', async () => {
+  test('uses the user settings to connect the raiden service', async () => {
+    const wrapper = createWrapper({ useRaidenAccount: true });
+    await dialogEmitLinkEstablished(wrapper);
+    expect(raidenServiceConnectMock).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      true,
+    );
+  });
+
+  test('uses the state backup of the user to connect the raiden service', async () => {
+    const wrapper = createWrapper({ stateBackup: 'testBackup' });
+    await dialogEmitLinkEstablished(wrapper);
+    expect(raidenServiceConnectMock).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'testBackup',
+      expect.anything(),
+      undefined, // Can't be anything (is the "false" useRaidenAccount)
+    );
+  });
+
+  test('when the connection was successful the state backup in the store gets cleared', async () => {
     const wrapper = createWrapper();
-    await clickConnectButton(wrapper);
+    await dialogEmitLinkEstablished(wrapper);
     expect(storeCommitMock).toHaveBeenCalledWith('clearBackupState');
   });
 
-  test('show error when no provider got configured', async () => {
+  test('show error when provider links to mainnet but it is not allowed', async () => {
     const wrapper = createWrapper();
-    (wrapper.vm as any).getProvider = jest.fn().mockResolvedValue(undefined);
+    let errorMessage = wrapper.find('.connection-manager__error-message');
+    expect(errorMessage.text().length).toBe(0); // For some reason does `isVisible` not work here.
 
-    await clickConnectButton(wrapper);
-
-    const errorMessage = wrapper.find('#connection-manager__error-message');
-    expect(errorMessage.exists()).toBeTruthy();
-    expect(errorMessage.text()).toBe('error-codes.no-ethereum-provider');
-    expect(raidenServiceConnectMock).not.toHaveBeenCalled();
-  });
-
-  test('show error when provider of connection links to mainnet but it is not allowed', async () => {
     process.env.VUE_APP_ALLOW_MAINNET = 'false';
-    const wrapper = createWrapper();
-    (wrapper.vm as any).getProvider = jest
-      .fn()
-      .mockResolvedValue(await DirectRpcProvider.link({ chainId: 1 }));
+    await dialogEmitLinkEstablished(wrapper, { chainId: 1 });
 
-    await clickConnectButton(wrapper);
-
-    const errorMessage = wrapper.find('#connection-manager__error-message');
-    expect(errorMessage.exists()).toBeTruthy();
+    errorMessage = wrapper.find('.connection-manager__error-message');
     expect(errorMessage.text()).toBe('error-codes.unsupported-network');
     expect(raidenServiceConnectMock).not.toHaveBeenCalled();
   });
 
   test('accept that provider of connection links to mainnet if it is allowed', async () => {
-    process.env.VUE_APP_ALLOW_MAINNET = 'true';
     const wrapper = createWrapper();
-    (wrapper.vm as any).getConnection = jest
-      .fn()
-      .mockResolvedValue(await DirectRpcProvider.link({ chainId: 1 }));
 
-    await clickConnectButton(wrapper);
+    process.env.VUE_APP_ALLOW_MAINNET = 'true';
+    await dialogEmitLinkEstablished(wrapper, { chainId: 1 });
 
-    const errorMessage = wrapper.find('#connection-manager__error-message');
-    expect(errorMessage.exists()).toBeFalsy();
+    const errorMessage = wrapper.find('.connection-manager__error-message');
+    expect(errorMessage.text().length).toBe(0); // For some reason does `isVisible` not work here.
     expect(raidenServiceConnectMock).toHaveBeenCalled();
   });
 
@@ -134,9 +153,9 @@ describe('ConnectionManager.vue', () => {
       .fn()
       .mockRejectedValue(new Error('No deploy info provided'));
 
-    await clickConnectButton(wrapper);
+    await dialogEmitLinkEstablished(wrapper);
 
-    const errorMessage = wrapper.find('#connection-manager__error-message');
-    expect(errorMessage.exists()).toBeTruthy();
+    const errorMessage = wrapper.find('.connection-manager__error-message');
+    expect(errorMessage.text().length).toBeGreaterThan(0); // For some reason does `isVisible` not work here.
   });
 });

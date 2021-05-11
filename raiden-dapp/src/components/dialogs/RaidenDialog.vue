@@ -42,6 +42,7 @@ export default class RaidenDialog extends Vue {
 <style scoped lang="scss">
 @import '@/scss/colors';
 @import '@/scss/fonts';
+@import '@/scss/mixins';
 
 ::v-deep {
   .v-dialog {
@@ -55,6 +56,10 @@ export default class RaidenDialog extends Vue {
   flex-direction: column;
   justify-content: center;
   padding: 25px;
+
+  @include respond-to(handhelds) {
+    padding: 10px;
+  }
 
   ::v-deep {
     .v-card {
