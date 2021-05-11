@@ -1,8 +1,6 @@
-export const raidenServiceConnectMock = jest.fn();
-
 export default class RaidenService {
   closeChannel = jest.fn().mockResolvedValue(undefined);
-  connect = raidenServiceConnectMock;
+  connect = jest.fn();
   deposit = jest.fn().mockResolvedValue(undefined);
   fetchAndUpdateTokenData = jest.fn().mockResolvedValue(undefined);
   monitorToken = jest.fn().mockResolvedValue(undefined);
