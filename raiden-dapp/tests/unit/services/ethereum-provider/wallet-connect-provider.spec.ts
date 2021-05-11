@@ -1,3 +1,5 @@
+import WalletConnect from '@walletconnect/web3-provider';
+
 import { WalletConnectProvider } from '@/services/ethereum-provider/wallet-connect-provider';
 
 jest.mock('@walletconnect/web3-provider');
@@ -19,6 +21,10 @@ jest.mock('ethers', () => {
 });
 
 describe('WalletConnectProvider', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('is always available', () => {
     expect(WalletConnectProvider.isAvailable).toBe(true);
   });
@@ -31,10 +37,20 @@ describe('WalletConnectProvider', () => {
 
   test('can link with a RPC URL', async () => {
     await WalletConnectProvider.link({ rpcUrl: 'https://some.rpc.url' });
+    expect(WalletConnect).toHaveBeenCalledWith({ rpc: { 5: 'https://some.rpc.url' } });
   });
 
   test('can link with an Infura ID', async () => {
-    await WalletConnectProvider.link({ infuraId: '6d333faba41b4c3d8ae979417e281832' });
+    await WalletConnectProvider.link({ infuraId: 'testId' });
+    expect(WalletConnect).toHaveBeenCalledWith({ infuraId: 'testId' });
+  });
+
+  test('can link with a custom bridge URL', async () => {
+    await WalletConnectProvider.link({ bridgeUrl: 'https://some.bridge.url', infuraId: 'testId' });
+    expect(WalletConnect).toHaveBeenCalledWith({
+      bridge: 'https://some.bridge.url',
+      infuraId: 'testId',
+    });
   });
 
   test('fail to link when multiple options are provided', () => {

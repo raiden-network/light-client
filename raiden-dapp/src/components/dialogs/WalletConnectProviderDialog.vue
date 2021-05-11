@@ -22,12 +22,12 @@
       <input
         class="wallet-connect-provider__input"
         type="text"
-        :value="bridgeServerUrl"
+        :value="bridgeUrl"
         :placeholder="
           $t('connection-manager.dialogs.wallet-connect-provider.placeholder.bridge-server')
         "
         :disabled="bridgeServerUrlInputDisabled"
-        @input="bridgeServerUrl = $event.target.value"
+        @input="bridgeUrl = $event.target.value"
       />
     </div>
 
@@ -99,7 +99,7 @@ enum InfuraOrRpcToggleState {
   },
 })
 export default class WalletConnectProviderDialog extends Vue {
-  bridgeServerUrl = '';
+  bridgeUrl = '';
   bridgeServerUrlInputDisabled = true;
   infuraIdOrRpcUrl = '';
   infuraOrRpcToggleState = InfuraOrRpcToggleState.INFURA;
@@ -135,10 +135,12 @@ export default class WalletConnectProviderDialog extends Vue {
   }
 
   get providerOptions(): Parameters<typeof WalletConnectProvider.link>[0] {
+    const bridgeUrl = this.bridgeUrl || undefined;
+
     if (this.infuraOrRpcToggleState === InfuraOrRpcToggleState.INFURA) {
-      return { infuraId: this.infuraIdOrRpcUrl };
+      return { infuraId: this.infuraIdOrRpcUrl, bridgeUrl };
     } else {
-      return { rpcUrl: this.infuraIdOrRpcUrl };
+      return { rpcUrl: this.infuraIdOrRpcUrl, bridgeUrl };
     }
   }
 

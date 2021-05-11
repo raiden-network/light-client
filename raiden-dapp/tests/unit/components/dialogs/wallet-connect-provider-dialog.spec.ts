@@ -25,6 +25,24 @@ const createWrapper = (): Wrapper<WalletConnectProviderDialog> => {
   });
 };
 
+async function clickBridgeToggle(wrapper: Wrapper<WalletConnectProviderDialog>): Promise<void> {
+  const bridgeToggle = wrapper
+    .find('.wallet-connect-provider__bridge-server__details__toggle')
+    .find('input');
+  bridgeToggle.trigger('click');
+  await wrapper.vm.$nextTick();
+}
+
+async function insertBridgeUrl(
+  wrapper: Wrapper<WalletConnectProviderDialog>,
+  input = 'testUrl',
+): Promise<void> {
+  const bridgeUrlInput = wrapper.findAll('.wallet-connect-provider__input').at(0).find('input');
+  (bridgeUrlInput.element as HTMLInputElement).value = input;
+  bridgeUrlInput.trigger('input');
+  await wrapper.vm.$nextTick();
+}
+
 async function clickInfuraRpcToggle(
   wrapper: Wrapper<WalletConnectProviderDialog>,
   buttonIndex: number,
@@ -38,7 +56,7 @@ async function clickInfuraRpcToggle(
 
 async function insertInfuraIdOrRpcUrl(
   wrapper: Wrapper<WalletConnectProviderDialog>,
-  input = 'an id',
+  input = 'testId',
 ): Promise<void> {
   const infuraOrRpcInput = wrapper.findAll('.wallet-connect-provider__input').at(1).find('input');
   (infuraOrRpcInput.element as HTMLInputElement).value = input;
@@ -70,14 +88,9 @@ describe('WalletConnectProviderDialog.vue', () => {
   test('can enable bridge server input field', async () => {
     const wrapper = createWrapper();
     const bridgeServerURLInput = wrapper.findAll('.wallet-connect-provider__input').at(0);
-
     expect(bridgeServerURLInput.attributes('disabled')).toBeTruthy();
 
-    const bridgeServerInputToggle = wrapper
-      .find('.wallet-connect-provider__bridge-server__details__toggle')
-      .find('input');
-    bridgeServerInputToggle.trigger('click');
-    await wrapper.vm.$nextTick();
+    await clickBridgeToggle(wrapper);
 
     expect(bridgeServerURLInput.attributes('disabled')).toBeFalsy();
   });
@@ -90,6 +103,22 @@ describe('WalletConnectProviderDialog.vue', () => {
 
     expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
     expect(WalletConnectProvider.link).toHaveBeenCalledWith({ infuraId: 'testId' });
+    expect(wrapper.emitted().linkEstablished?.length).toBe(1);
+  });
+
+  test('can link with optional bridge URL', async () => {
+    const wrapper = createWrapper();
+
+    await clickBridgeToggle(wrapper);
+    await insertBridgeUrl(wrapper, 'testUrl');
+    await insertInfuraIdOrRpcUrl(wrapper, 'testId');
+    await clickLinkButton(wrapper);
+
+    expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
+    expect(WalletConnectProvider.link).toHaveBeenCalledWith({
+      bridgeUrl: 'testUrl',
+      infuraId: 'testId',
+    });
     expect(wrapper.emitted().linkEstablished?.length).toBe(1);
   });
 
