@@ -85,8 +85,8 @@ export default class ConnectionManager extends Vue {
     }
   }
 
-  onProviderLinkEstablished(linkedProvider: EthereumProvider): void {
-    this.connect(linkedProvider);
+  async onProviderLinkEstablished(linkedProvider: EthereumProvider): Promise<void> {
+    await this.connect(linkedProvider);
   }
 
   openWalletConnectDialog(): void {
@@ -98,6 +98,12 @@ export default class ConnectionManager extends Vue {
   }
 
   async connect(provider: EthereumProvider): Promise<void> {
+    if (this.isConnected || this.inProgress) {
+      // Nobody catches this error. But if this case occurs, this is an
+      // implementation error that should show up in the console and tests.
+      throw new Error('Can only connect once!');
+    }
+
     this.inProgress = true;
     this.$store.commit('reset');
     this.errorCode = null;

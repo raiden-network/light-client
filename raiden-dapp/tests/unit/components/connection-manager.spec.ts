@@ -23,11 +23,13 @@ const vuetify = new Vuetify();
 const storeCommitMock = jest.fn();
 
 function createWrapper(options?: {
+  isConnected?: boolean;
   stateBackup?: string;
   useRaidenAccount?: boolean;
+  inProgress?: boolean;
 }): Wrapper<ConnectionManager> {
   const state = {
-    isConnected: false,
+    isConnected: options?.isConnected ?? false,
     stateBackup: options?.stateBackup ?? '',
   };
 
@@ -64,7 +66,7 @@ async function dialogEmitLinkEstablished(
   options?: { chainId?: number },
 ): Promise<void> {
   const linkedProvider = await DirectRpcProvider.link(options);
-  (wrapper.vm as any).onProviderLinkEstablished(linkedProvider);
+  await (wrapper.vm as any).onProviderLinkEstablished(linkedProvider);
   await wrapper.vm.$nextTick();
   await flushPromises();
 }
@@ -73,6 +75,14 @@ describe('ConnectionManager.vue', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     delete process.env.VUE_APP_ALLOW_MAINNET;
+  });
+
+  test('can not connect when already being connected', () => {
+    // Note that this is a theoretical case that should not be possible via the
+    // UI. Though it is important, so it must be guaranteed.
+    expect.assertions(1);
+    const wrapper = createWrapper({ isConnected: true });
+    expect(dialogEmitLinkEstablished(wrapper)).rejects.toThrowError('Can only connect once!');
   });
 
   test('when a provider link got established the raiden service gets connected', async () => {
