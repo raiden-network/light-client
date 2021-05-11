@@ -9,13 +9,6 @@ echo Synapse server is running at "${SYNAPSE_PID}"
 
 source /opt/raiden/bin/activate
 
-echo Preparing ROOMS
-
-python3 /usr/local/bin/room_ensurer.py --own-server "${SERVER_NAME}" \
-  --log-level "DEBUG" \
-  --credentials-file /opt/synapse/config/admin_user_cred.json \
-  -i 0
-
 echo Starting Chain
 ACCOUNT=$(cat /opt/deployment/miner.sh)
 
