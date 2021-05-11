@@ -17,7 +17,9 @@ export class WalletConnectProvider extends EthereumProvider {
   public static async link(options: {
     rpcUrl?: string;
     infuraId?: string;
+    bridgeUrl?: string;
   }): Promise<WalletConnectProvider> {
+    const bridgeUrl = options?.bridgeUrl || undefined;
     let walletConnect: WalletConnect;
 
     if (options.rpcUrl === undefined && options.infuraId === undefined) {
@@ -25,9 +27,9 @@ export class WalletConnectProvider extends EthereumProvider {
     } else if (options.rpcUrl !== undefined && options.infuraId !== undefined) {
       throw new Error('Only one link option allowed. Either a RPC URL or a Infura Id.');
     } else if (options.rpcUrl !== undefined) {
-      walletConnect = await getWalletConnectWithRpcUrl(options.rpcUrl);
+      walletConnect = await getWalletConnectWithRpcUrl(options.rpcUrl, bridgeUrl);
     } else if (options.infuraId) {
-      walletConnect = getWalletConnectWithInfuraId(options.infuraId);
+      walletConnect = getWalletConnectWithInfuraId(options.infuraId, bridgeUrl);
     }
 
     // The provider instance must be available here, though TypeScript can't see it.
@@ -39,10 +41,14 @@ export class WalletConnectProvider extends EthereumProvider {
   }
 }
 
-async function getWalletConnectWithRpcUrl(rpcUrl: string): Promise<WalletConnect> {
+async function getWalletConnectWithRpcUrl(
+  rpcUrl: string,
+  bridgeUrl?: string,
+): Promise<WalletConnect> {
   const temporaryJsonRpcProvider = new providers.JsonRpcProvider(rpcUrl);
   const networkOfProvider = await temporaryJsonRpcProvider.getNetwork();
   const options = {
+    bride: bridgeUrl,
     rpc: {
       [networkOfProvider.chainId]: rpcUrl,
     },
@@ -50,8 +56,8 @@ async function getWalletConnectWithRpcUrl(rpcUrl: string): Promise<WalletConnect
   return new WalletConnect(options);
 }
 
-function getWalletConnectWithInfuraId(infuraId: string): WalletConnect {
-  return new WalletConnect({ infuraId });
+function getWalletConnectWithInfuraId(infuraId: string, bridgeUrl?: string): WalletConnect {
+  return new WalletConnect({ bridge: bridgeUrl, infuraId });
 }
 
 function resetHandler() {
