@@ -10,10 +10,11 @@ import Vuex, { Store } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectionManager from '@/components/ConnectionManager.vue';
-import RaidenService, { raidenServiceConnectMock } from '@/services/__mocks__/raiden-service';
-import { DirectRpcProvider } from '@/services/ethereum-provider/__mocks__/direct-rpc-provider';
+import { DirectRpcProvider } from '@/services/ethereum-provider/direct-rpc-provider';
+import RaidenService from '@/services/raiden-service';
 
 jest.mock('@/services/ethereum-provider/direct-rpc-provider');
+jest.mock('@/services/raiden-service');
 jest.mock('@/services/config-provider');
 
 Vue.use(Vuetify);
@@ -21,6 +22,7 @@ Vue.use(Vuex);
 
 const vuetify = new Vuetify();
 const storeCommitMock = jest.fn();
+const $raiden = new (RaidenService as any)();
 
 function createWrapper(options?: {
   isConnected?: boolean;
@@ -39,7 +41,6 @@ function createWrapper(options?: {
   };
 
   const store = new Store({ state, modules: { userSettings: userSettingsModule } });
-  const $raiden = new RaidenService();
 
   store.commit = storeCommitMock;
 
@@ -65,7 +66,7 @@ async function dialogEmitLinkEstablished(
   wrapper: Wrapper<ConnectionManager>,
   options?: { chainId?: number },
 ): Promise<void> {
-  const linkedProvider = await DirectRpcProvider.link(options);
+  const linkedProvider = await (DirectRpcProvider as any).link(options);
   await (wrapper.vm as any).onProviderLinkEstablished(linkedProvider);
   await wrapper.vm.$nextTick();
   await flushPromises();
@@ -88,7 +89,7 @@ describe('ConnectionManager.vue', () => {
   test('when a provider link got established the raiden service gets connected', async () => {
     const wrapper = createWrapper();
     await dialogEmitLinkEstablished(wrapper);
-    expect(raidenServiceConnectMock).toHaveBeenCalledTimes(1);
+    expect($raiden.connect).toHaveBeenCalledTimes(1);
   });
 
   test('when a provider link got established the store state gets reset', async () => {
@@ -106,7 +107,7 @@ describe('ConnectionManager.vue', () => {
   test('uses the user settings to connect the raiden service', async () => {
     const wrapper = createWrapper({ useRaidenAccount: true });
     await dialogEmitLinkEstablished(wrapper);
-    expect(raidenServiceConnectMock).toHaveBeenLastCalledWith(
+    expect($raiden.connect).toHaveBeenLastCalledWith(
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -118,7 +119,7 @@ describe('ConnectionManager.vue', () => {
   test('uses the state backup of the user to connect the raiden service', async () => {
     const wrapper = createWrapper({ stateBackup: 'testBackup' });
     await dialogEmitLinkEstablished(wrapper);
-    expect(raidenServiceConnectMock).toHaveBeenLastCalledWith(
+    expect($raiden.connect).toHaveBeenLastCalledWith(
       expect.anything(),
       expect.anything(),
       'testBackup',
@@ -143,7 +144,7 @@ describe('ConnectionManager.vue', () => {
 
     errorMessage = wrapper.find('.connection-manager__error-message');
     expect(errorMessage.text()).toBe('error-codes.unsupported-network');
-    expect(raidenServiceConnectMock).not.toHaveBeenCalled();
+    expect($raiden.connect).not.toHaveBeenCalled();
   });
 
   test('accept that provider of connection links to mainnet if it is allowed', async () => {
@@ -154,7 +155,7 @@ describe('ConnectionManager.vue', () => {
 
     const errorMessage = wrapper.find('.connection-manager__error-message');
     expect(errorMessage.text().length).toBe(0); // For some reason does `isVisible` not work here.
-    expect(raidenServiceConnectMock).toHaveBeenCalled();
+    expect($raiden.connect).toHaveBeenCalled();
   });
 
   test('show error when raiden service connection throws', async () => {
