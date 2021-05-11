@@ -38,8 +38,8 @@
       </v-col>
     </v-row>
 
-    <v-row>
-      <v-col cols="8" offset="2" class="mt-10">
+    <v-row no-gutters>
+      <v-col cols="12" class="mt-10">
         <connection-manager />
       </v-col>
     </v-row>
@@ -86,10 +86,15 @@ export default class Home extends Vue {
 
 <style lang="scss" scoped>
 @import '@/scss/mixins';
+@import '@/scss/scroll';
 
 .home {
-  height: 100%;
   width: 100%;
+  height: 100% !important;
+
+  @include respond-to(handhelds) {
+    overflow-y: auto !important;
+  }
 
   ::v-deep {
     a {

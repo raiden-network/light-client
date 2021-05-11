@@ -35,7 +35,7 @@ export class WalletConnectProvider extends EthereumProvider {
     walletConnect!.on('chainChanged', resetHandler);
     walletConnect!.on('disconnect', resetHandler);
 
-    return new this(walletConnect!);
+    return new WalletConnectProvider(walletConnect!);
   }
 }
 

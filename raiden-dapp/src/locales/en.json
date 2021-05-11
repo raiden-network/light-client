@@ -406,7 +406,6 @@
     "title": "Error"
   },
   "error-codes": {
-    "no-ethereum-provider": "No Ethereum provider configured or available.",
     "unsupported-network": "The current network is unsupported. Please choose a different network.",
     "sdk-initialization-failed": "SDK initialization failed. Please check the console for more information.",
     "state-migration-failed": "Cannot replace state with older uploaded state."
@@ -771,8 +770,6 @@
     "message-desktop": "Install the Raiden dApp on your desktop"
   },
   "connection-manager": {
-    "connect-button": "Connect",
-    "connect-button-loading": "Syncing",
     "dialogs": {
       "wallet-connect-provider": {
         "header": "WalletConnect",
@@ -784,7 +781,8 @@
         "infura-body": "Provide the URL for an Infura endpoint",
         "rpc-header": "RPC URL",
         "rpc-body": "Provide the URL for an RPC endpoint",
-        "connect-button": "Connect",
+        "button": "Link Wallet",
+        "error-message": "Failed to link via WalletConnect. Please make sure the given parmaters are correct and confirm the connection in the wallet.",
         "placeholder": {
           "bridge-server": "https://",
           "infura": "Project ID",

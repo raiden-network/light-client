@@ -60,11 +60,21 @@
         />
       </div>
 
+      <v-alert
+        v-if="linkFailed"
+        class="wallet-connect-provider__error-message"
+        color="error"
+        icon="warning"
+      >
+        {{ $t('connection-manager.dialogs.wallet-connect-provider.error-message') }}
+      </v-alert>
+
       <action-button
-        :enabled="canConnect"
+        :enabled="canLink"
         class="wallet-connect-provider__button"
-        :text="$t('connection-manager.dialogs.wallet-connect-provider.connect-button')"
-        @click="connect"
+        :text="$t('connection-manager.dialogs.wallet-connect-provider.button')"
+        width="200px"
+        @click="link"
       />
     </div>
   </raiden-dialog>
@@ -75,6 +85,7 @@ import { Component, Emit, Vue } from 'vue-property-decorator';
 
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import { WalletConnectProvider } from '@/services/ethereum-provider';
 
 enum InfuraOrRpcToggleState {
   INFURA = 'infura',
@@ -92,10 +103,11 @@ export default class WalletConnectProviderDialog extends Vue {
   bridgeServerUrlInputDisabled = true;
   infuraIdOrRpcUrl = '';
   infuraOrRpcToggleState = InfuraOrRpcToggleState.INFURA;
+  linkFailed = false;
 
-  @Emit()
-  connect(): void {
-    // pass
+  @Emit('linkEstablished')
+  emitLinkEstablished(linkedProvider: WalletConnectProvider): WalletConnectProvider {
+    return linkedProvider;
   }
 
   @Emit()
@@ -118,6 +130,18 @@ export default class WalletConnectProviderDialog extends Vue {
     ) as string;
   }
 
+  get canLink(): boolean {
+    return this.infuraIdOrRpcUrl.length > 0;
+  }
+
+  get providerOptions(): Parameters<typeof WalletConnectProvider.link>[0] {
+    if (this.infuraOrRpcToggleState === InfuraOrRpcToggleState.INFURA) {
+      return { infuraId: this.infuraIdOrRpcUrl };
+    } else {
+      return { rpcUrl: this.infuraIdOrRpcUrl };
+    }
+  }
+
   showInfura(): void {
     this.infuraOrRpcToggleState = InfuraOrRpcToggleState.INFURA;
   }
@@ -130,8 +154,15 @@ export default class WalletConnectProviderDialog extends Vue {
     this.bridgeServerUrlInputDisabled = !this.bridgeServerUrlInputDisabled;
   }
 
-  get canConnect(): boolean {
-    return this.infuraIdOrRpcUrl.length > 0;
+  async link(): Promise<void> {
+    this.linkFailed = false;
+
+    try {
+      const provider = await WalletConnectProvider.link(this.providerOptions);
+      this.emitLinkEstablished(provider);
+    } catch {
+      this.linkFailed = true;
+    }
   }
 }
 </script>
@@ -145,7 +176,7 @@ export default class WalletConnectProviderDialog extends Vue {
 
   &__header {
     font-size: 26px;
-    margin-top: 12px;
+    margin-top: 10px;
     text-align: center;
   }
 
@@ -166,12 +197,13 @@ export default class WalletConnectProviderDialog extends Vue {
   &__bridge-server {
     background-color: $input-background;
     border-radius: 8px !important;
-    margin-top: 22px;
-    margin-bottom: 22px;
+    margin: 20px 0;
     padding: 16px;
     width: 422px;
+
     @include respond-to(handhelds) {
       width: 100%;
+      margin: 10px 0;
     }
 
     &__details {
@@ -211,29 +243,20 @@ export default class WalletConnectProviderDialog extends Vue {
       display: flex;
       flex-direction: column;
       font-size: 14px;
-      margin-top: 22px;
+      margin: 20px 0;
       padding: 16px;
       width: 422px;
+
       @include respond-to(handhelds) {
         width: 100%;
+        margin: 10px 0;
       }
     }
   }
 
   &__button {
-    margin-top: 86px;
-    width: 100%;
-    @include respond-to(handhelds) {
-      margin-top: 22px;
-    }
-
-    ::v-deep {
-      .v-btn {
-        @include respond-to(handhelds) {
-          width: 200px;
-        }
-      }
-    }
+    margin-top: 10px;
+    margin-left: -38px; // Something is off with the ActionButton component - ugly quickfix
   }
 }
 </style>

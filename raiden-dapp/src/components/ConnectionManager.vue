@@ -1,25 +1,31 @@
 <template>
   <div class="connection-manager">
     <v-alert
-      v-if="errorCode"
-      id="connection-manager__error-message"
-      class="font-weight-light"
+      class="connection-manager__error-message font-weight-light"
+      :class="{ 'connection-manager__error-message--hidden': !errorCode }"
       color="error"
       icon="warning"
     >
       {{ translatedErrorCode }}
     </v-alert>
 
-    <action-button
-      :enabled="connectButtonEnabled"
-      :text="$t('connection-manager.connect-button')"
-      :loading="inProgress"
-      :loading-text="$t('connection-manager.connect-button-loading')"
-      sticky
-      @click="connect"
-    />
+    <template v-if="showProviderButtons">
+      <action-button
+        :enabled="true"
+        text="Wallet Connect"
+        width="280px"
+        @click="openWalletConnectDialog"
+      />
+      <wallet-connect-provider-dialog
+        v-if="walletConnectDialogVisible"
+        @linkEstablished="onProviderLinkEstablished"
+        @cancel="closeWalletConnectDialog"
+      />
+    </template>
 
-    <connection-pending-dialog v-if="inProgress" @reset-connection="resetConnection" />
+    <template v-if="inProgress">
+      <connection-pending-dialog @reset-connection="resetConnection" />
+    </template>
   </div>
 </template>
 
@@ -29,15 +35,10 @@ import { createNamespacedHelpers, mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
+import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
 import { ErrorCode } from '@/model/types';
-import type { Configuration } from '@/services/config-provider';
 import { ConfigProvider } from '@/services/config-provider';
 import type { EthereumProvider } from '@/services/ethereum-provider';
-import {
-  DirectRpcProvider,
-  InjectedProvider,
-  WalletConnectProvider,
-} from '@/services/ethereum-provider';
 
 function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
   if (error.message && error.message.includes('No deploy info provided')) {
@@ -59,6 +60,7 @@ const { mapState: mapUserSettingsState } = createNamespacedHelpers('userSettings
   components: {
     ActionButton,
     ConnectionPendingDialog,
+    WalletConnectProviderDialog,
   },
 })
 export default class ConnectionManager extends Vue {
@@ -66,10 +68,11 @@ export default class ConnectionManager extends Vue {
   stateBackup!: string;
   useRaidenAccount!: boolean;
 
+  walletConnectDialogVisible = false;
   inProgress = false;
   errorCode: ErrorCode | null = null;
 
-  get connectButtonEnabled(): boolean {
+  get showProviderButtons(): boolean {
     return !this.isConnected && !this.inProgress;
   }
 
@@ -82,23 +85,25 @@ export default class ConnectionManager extends Vue {
     }
   }
 
-  async connect() {
+  onProviderLinkEstablished(linkedProvider: EthereumProvider): void {
+    this.connect(linkedProvider);
+  }
+
+  openWalletConnectDialog(): void {
+    this.walletConnectDialogVisible = true;
+  }
+
+  closeWalletConnectDialog(): void {
+    this.walletConnectDialogVisible = false;
+  }
+
+  async connect(provider: EthereumProvider): Promise<void> {
     this.inProgress = true;
     this.$store.commit('reset');
     this.errorCode = null;
 
-    const stateBackup = this.stateBackup;
     const configuration = await ConfigProvider.configuration();
     const useRaidenAccount = this.useRaidenAccount ? true : undefined;
-    const provider = await this.getProvider(configuration);
-
-    // TODO: This will become removed when the provider options are controlled by the user.
-    if (provider === undefined) {
-      this.errorCode = ErrorCode.NO_ETHEREUM_PROVIDER;
-      this.inProgress = false;
-      return;
-    }
-
     const network = await provider.provider.getNetwork();
 
     if (network.chainId === 1 && process.env.VUE_APP_ALLOW_MAINNET !== 'true') {
@@ -111,7 +116,7 @@ export default class ConnectionManager extends Vue {
       await this.$raiden.connect(
         provider.provider,
         provider.account,
-        stateBackup,
+        this.stateBackup,
         configuration.per_network,
         useRaidenAccount,
       );
@@ -125,24 +130,6 @@ export default class ConnectionManager extends Vue {
     this.$store.commit('clearBackupState');
   }
 
-  async getProvider(configuration: Configuration): Promise<EthereumProvider | undefined> {
-    const {
-      rpc_endpoint: rpcUrl,
-      private_key: privateKey,
-      rpc_endpoint_wallet_connect: rpcUrlWalletConnect,
-    } = configuration;
-
-    if (rpcUrl && privateKey) {
-      return await DirectRpcProvider.link({ rpcUrl, privateKey });
-    } else if (!!window.ethereum || !!window.web3) {
-      return await InjectedProvider.link();
-    } else if (rpcUrlWalletConnect) {
-      return await WalletConnectProvider.link({ rpcUrl: rpcUrlWalletConnect });
-    } else {
-      return undefined;
-    }
-  }
-
   resetConnection(): void {
     localStorage.removeItem('walletconnect');
     // There is no clean way to cancel the asynchronous connection function, therefore reload page.
@@ -152,8 +139,22 @@ export default class ConnectionManager extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '@/scss/mixins';
+
 .connection-manager {
   font-size: 16px;
   line-height: 20px;
+
+  &__error-message {
+    min-height: 70px;
+
+    &--hidden {
+      visibility: hidden; // Make sure it still takes its height to avoid jumping
+
+      @include respond-to(handhelds) {
+        display: none;
+      }
+    }
+  }
 }
 </style>

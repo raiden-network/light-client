@@ -93,7 +93,6 @@ export const PlaceHolderNetwork: providers.Network = {
 };
 
 export enum ErrorCode {
-  NO_ETHEREUM_PROVIDER = 'no-ethereum-provider',
   UNSUPPORTED_NETWORK = 'unsupported-network',
   SDK_INITIALIZATION_FAILED = 'sdk-initialization-failed',
   STATE_MIGRATION_FAILED = 'state-migration-failed',
