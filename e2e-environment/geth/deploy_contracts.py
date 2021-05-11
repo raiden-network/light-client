@@ -142,7 +142,8 @@ def main(keystore_file: str, contract_version: str, password: str, output: str, 
             decay_constant=SERVICE_DEPOSIT_DECAY_CONSTANT,
             min_price=SERVICE_DEPOSIT_MIN_PRICE,
             registration_duration=SERVICE_REGISTRATION_DURATION,
-            token_network_registry_address=token_network_registry_address
+            token_network_registry_address=token_network_registry_address,
+            reuse_service_registry_from_deploy_file=None,
         )
     except Exception as err:
         print(f'Service contract deployment failed: {err}')
