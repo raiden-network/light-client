@@ -39,6 +39,7 @@ import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProvi
 import { ErrorCode } from '@/model/types';
 import { ConfigProvider } from '@/services/config-provider';
 import type { EthereumProvider } from '@/services/ethereum-provider';
+import { DirectRpcProvider } from '@/services/ethereum-provider';
 
 function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
   if (error.message && error.message.includes('No deploy info provided')) {
@@ -82,6 +83,19 @@ export default class ConnectionManager extends Vue {
     } else {
       const translationKey = `error-codes.${this.errorCode.toString()}`;
       return this.$t(translationKey) as string;
+    }
+  }
+
+  /**
+   * This is a workaround to make the end-to-end tests working while the
+   * connection manager does not support user configured direct RPC provider
+   * connections.
+   */
+  async created(): Promise<void> {
+    const { rpc_endpoint: rpcUrl, private_key: privateKey } = await ConfigProvider.configuration();
+    if (rpcUrl && privateKey) {
+      const provider = await DirectRpcProvider.link({ rpcUrl, privateKey });
+      this.connect(provider);
     }
   }
 
