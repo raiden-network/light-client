@@ -32,6 +32,7 @@ import { channelAmounts, channelKey, channelUniqueKey } from '@/channels/utils';
 import { makeDefaultConfig } from '@/config';
 import { ShutdownReason, SignatureZero } from '@/constants';
 import {
+  CustomToken__factory,
   MonitoringService__factory,
   SecretRegistry__factory,
   ServiceRegistry__factory,
@@ -58,7 +59,8 @@ import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { assert } from '@/utils';
 import { ErrorCodes } from '@/utils/error';
 import { pluckDistinct } from '@/utils/rx';
-import type { Address, Int, UInt } from '@/utils/types';
+import type { Int, UInt } from '@/utils/types';
+import { Address } from '@/utils/types';
 
 import { makeAddress, makeHash } from '../utils';
 
@@ -121,6 +123,11 @@ function makeDummyDependencies(): RaidenEpicDeps {
     getNetwork: jest.fn(async () => network),
     getBalance: jest.fn(async () => BigNumber.from(1_000_000)),
     getGasPrice: jest.fn(async () => BigNumber.from(5)),
+    getTransactionReceipt: jest.fn(async (txHash) => ({
+      blockNumber: 118,
+      confirmations: 6,
+      transactionHash: txHash,
+    })),
   });
   const signer = wallet.connect(provider);
   const latest$ = new ReplaySubject<Latest>(1);
@@ -178,6 +185,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
     userDepositContract: {
       callStatic: {
         total_deposit: jest.fn(async () => BigNumber.from(123)),
+        token: jest.fn(async () => makeAddress()),
       },
       withdraw_plans: jest.fn(async () => {
         return {
@@ -1200,6 +1208,38 @@ describe('Raiden', () => {
     );
   });
 
+  test('mint', async () => {
+    const deps = makeDummyDependencies();
+    const beneficiary = makeAddress();
+    const blockNumber = 119;
+    const raiden = new Raiden(
+      { ...dummyState, blockNumber },
+      deps,
+      combineRaidenEpics([dummyEpic]),
+      dummyReducer,
+    );
+    const svtAddress = await raiden.userDepositTokenAddress();
+    const svtContract = {
+      address: svtAddress,
+      functions: {
+        mintFor: jest.fn(async () => ({
+          hash: txHash,
+          wait: jest.fn(async () => ({
+            blockNumber: blockNumber - 1,
+            status: 1,
+            transactionHash: txHash,
+          })),
+        })),
+      },
+    } as any;
+    const svtSpy = jest.spyOn(CustomToken__factory, 'connect').mockReturnValue(svtContract);
+
+    await expect(raiden.mint(svtAddress, 10, { to: beneficiary })).resolves.toBe(txHash);
+    expect(svtContract.functions.mintFor).toHaveBeenCalledWith(BigNumber.from(10), beneficiary);
+
+    svtSpy.mockRestore();
+  });
+
   test('create', async () => {
     // -- MOCKS --
     const { contractsInfo } = makeDummyDependencies();
@@ -1209,12 +1249,15 @@ describe('Raiden', () => {
     MockedProvider.mockClear();
 
     Object.defineProperty(MockedProvider.prototype, 'network', {
+      configurable: true,
       get: jest.fn().mockReturnValue(network),
     });
     Object.defineProperty(MockedProvider.prototype, '_isProvider', {
+      configurable: true,
       get: jest.fn().mockReturnValue(true),
     });
     Object.defineProperty(MockedProvider.prototype, 'formatter', {
+      configurable: true,
       get: jest.fn().mockReturnValue({ filterLog: jest.fn((l) => l) }),
     });
 
