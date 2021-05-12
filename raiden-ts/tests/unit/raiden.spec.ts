@@ -89,6 +89,8 @@ jest.mock('@/services/utils', () => ({
   pfsListInfo: jest.fn(() => of(['abc', 'def'])),
 }));
 
+const MockedProvider = JsonRpcProvider as jest.MockedClass<typeof JsonRpcProvider>;
+
 const wallet = new Wallet(hexlify(randomBytes(32)));
 const address = wallet.address as Address;
 const network: Network = { name: 'test', chainId: 1337 };
@@ -886,6 +888,31 @@ describe('Raiden', () => {
     expect(mockedTransfer.mock.calls[1]).toEqual([partner, BigNumber.from(1_000_000)]);
   });
 
+  test('getTokenList', async () => {
+    const blockNumber = 110;
+
+    // some mocks
+    jest.spyOn(Formatter, 'arrayOf').mockImplementation(() => jest.fn((logs) => logs));
+    MockedProvider.prototype.send.mockImplementation(async () => []);
+    MockedProvider.prototype.send.mockImplementationOnce(async () => [{ blockNumber: 99 }]);
+    Object.defineProperty(MockedProvider.prototype, 'formatter', {
+      configurable: true,
+      get: jest.fn().mockReturnValue({ filterLog: jest.fn((l) => l) }),
+    });
+
+    const deps = makeDummyDependencies();
+    Object.assign(deps.provider, { blockNumber });
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
+
+    jest.spyOn(deps.registryContract.interface, 'parseLog').mockImplementation(
+      () =>
+        ({
+          args: { token_address: token },
+        } as any),
+    );
+    await expect(raiden.getTokenList()).resolves.toEqual([token]);
+  });
+
   test('closeChannel', async () => {
     const closeBlock = 60;
     function channelCloseEpicMock(action$: Observable<RaidenAction>) {
@@ -1275,7 +1302,6 @@ describe('Raiden', () => {
     const { contractsInfo } = makeDummyDependencies();
     const MockedRaiden = jest.fn(() => ({ address }));
 
-    const MockedProvider = JsonRpcProvider as jest.MockedClass<typeof JsonRpcProvider>;
     MockedProvider.mockClear();
 
     Object.defineProperty(MockedProvider.prototype, 'network', {
