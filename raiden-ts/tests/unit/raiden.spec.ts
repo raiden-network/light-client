@@ -325,13 +325,19 @@ describe('Raiden', () => {
     expect(raiden.address).toBe(dummyState.address);
   });
 
-  test('start', async () => {
+  test('start & synced', async () => {
     const deps = makeDummyDependencies();
     const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     expect(raiden.network).toEqual({ name: 'test', chainId: 1337 });
-    expect(raiden.log).toEqual(expect.objectContaining({ name: `raiden:${raiden.address}` }));
+    expect(raiden.log).toMatchObject({ name: `raiden:${raiden.address}` });
     expect(raiden.started).toBeUndefined();
-    await expect(raiden.start()).resolves.toBeUndefined();
+    const startPromise = raiden.start();
+    await expect(raiden.synced).resolves.toEqual({
+      tookMs: expect.any(Number),
+      initialBlock: expect.any(Number),
+      currentBlock: expect.any(Number),
+    });
+    await expect(startPromise).resolves.toBeUndefined();
     expect(raiden.started).toEqual(true);
   });
 
