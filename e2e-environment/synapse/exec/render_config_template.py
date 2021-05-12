@@ -3,6 +3,8 @@ import os
 import random
 import string
 from pathlib import Path
+from eth_typing import ChecksumAddress
+from eth_utils import to_checksum_address
 
 PATH_CONFIG = Path("/opt/synapse/config/synapse.yaml")
 PATH_CONFIG_TEMPLATE = Path("/opt/synapse/config/synapse.template.yaml")
@@ -22,11 +24,17 @@ def get_macaroon_key() -> str:
     return macaroon
 
 
-def render_synapse_config(server_name: str) -> None:
+def render_synapse_config(
+    server_name: str,
+    eth_rpc_url: str,
+    service_registry_address: ChecksumAddress,
+) -> None:
     template_content = PATH_CONFIG_TEMPLATE.read_text()
     rendered_config = string.Template(template_content).substitute(
         MACAROON_KEY=get_macaroon_key(),
-        SERVER_NAME=server_name
+        SERVER_NAME=server_name,
+        ETH_RPC=eth_rpc_url,
+        SERVICE_REGISTRY=service_registry_address,
     )
     PATH_CONFIG.write_text(rendered_config)
 
@@ -53,9 +61,13 @@ def generate_admin_user_credentials():
 
 def main() -> None:
     server_name = os.environ["SERVER_NAME"]
+    eth_rpc_url = os.environ["ETH_RPC"]
+    service_registry_address = to_checksum_address(os.environ["SERVICE_REGISTRY"])
 
     render_synapse_config(
-        server_name=server_name
+        server_name=server_name,
+        eth_rpc_url=eth_rpc_url,
+        service_registry_address=service_registry_address,
     )
     render_well_known_file(server_name=server_name)
     generate_admin_user_credentials()
