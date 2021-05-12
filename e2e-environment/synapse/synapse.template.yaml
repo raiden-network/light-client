@@ -102,29 +102,25 @@ bcrypt_rounds: 12
 trusted_third_party_id_servers:
   - localhost
 
+presence:
+  enabled: true
+  presence_router:
+    module: raiden_synapse_modules.pfs_presence_router.PFSPresenceRouter
+    config:
+      ethereum_rpc: ${ETH_RPC}
+      service_registry_address: ${SERVICE_REGISTRY}
+      blockchain_sync_seconds: 15
 
 ## Metrics ###
 enable_metrics: False
 report_stats: False
 
-
-## API Configuration ##
-room_invite_state_types:
-  - "m.room.join_rules"
-  - "m.room.canonical_alias"
-  - "m.room.name"
-
 ## Room Creation Rules ##
 alias_creation_rules:
-  - user_id: "@admin*"
-    alias: "#raiden_*_*"
-    room_id: "*"
-    action: allow
   - user_id: "*"
-    alias: "#raiden_*_*"
+    alias: "*"
     room_id: "*"
     action: deny
-
 
 # A list of application service config file to use
 app_service_config_files: []
