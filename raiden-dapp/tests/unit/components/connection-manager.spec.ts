@@ -10,10 +10,11 @@ import Vuex, { Store } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectionManager from '@/components/ConnectionManager.vue';
-import { DirectRpcProvider } from '@/services/ethereum-provider/direct-rpc-provider';
+import { DirectRpcProvider, InjectedProvider } from '@/services/ethereum-provider';
 import RaidenService from '@/services/raiden-service';
 
 jest.mock('@/services/ethereum-provider/direct-rpc-provider');
+jest.mock('@/services/ethereum-provider/injected-provider');
 jest.mock('@/services/raiden-service');
 jest.mock('@/services/config-provider');
 
@@ -168,5 +169,29 @@ describe('ConnectionManager.vue', () => {
 
     const errorMessage = wrapper.find('.connection-manager__error-message');
     expect(errorMessage.text().length).toBeGreaterThan(0); // For some reason does `isVisible` not work here.
+  });
+
+  test('provider dialog button is enabled if provider is available', () => {
+    jest.spyOn(InjectedProvider, 'isAvailable', 'get').mockReturnValueOnce(true);
+    const wrapper = createWrapper();
+
+    const providerDialogButton = wrapper
+      .findAll('.connection-manager__provider-dialog-button')
+      .at(1)
+      .get('button');
+
+    expect(providerDialogButton.attributes('disabled')).toBeFalsy();
+  });
+
+  test('provider dialog button is disabled if provider is not available', () => {
+    jest.spyOn(InjectedProvider, 'isAvailable', 'get').mockReturnValueOnce(false);
+    const wrapper = createWrapper();
+
+    const providerDialogButton = wrapper
+      .findAll('.connection-manager__provider-dialog-button')
+      .at(1)
+      .get('button');
+
+    expect(providerDialogButton.attributes('disabled')).toBeTruthy();
   });
 });

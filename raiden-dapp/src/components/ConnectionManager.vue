@@ -12,14 +12,14 @@
     <template v-if="showProviderButtons">
       <action-button
         class="connection-manager__provider-dialog-button"
-        :enabled="true"
+        :enabled="walletConnectProviderAvailable"
         :text="$t('connection-manager.dialogs.wallet-connect-provider.header')"
         width="280px"
         @click="openWalletConnectProviderDialog"
       />
       <action-button
         class="connection-manager__provider-dialog-button"
-        :enabled="true"
+        :enabled="injectedProviderAvailable"
         :text="$t('connection-manager.dialogs.injected-provider.header')"
         width="280px"
         @click="openInjectedProviderDialog"
@@ -54,7 +54,11 @@ import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProvi
 import { ErrorCode } from '@/model/types';
 import { ConfigProvider } from '@/services/config-provider';
 import type { EthereumProvider } from '@/services/ethereum-provider';
-import { DirectRpcProvider } from '@/services/ethereum-provider';
+import {
+  DirectRpcProvider,
+  InjectedProvider,
+  WalletConnectProvider,
+} from '@/services/ethereum-provider';
 
 function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
   if (error.message && error.message.includes('No deploy info provided')) {
@@ -101,6 +105,14 @@ export default class ConnectionManager extends Vue {
       const translationKey = `error-codes.${this.errorCode.toString()}`;
       return this.$t(translationKey) as string;
     }
+  }
+
+  get walletConnectProviderAvailable(): boolean {
+    return WalletConnectProvider.isAvailable;
+  }
+
+  get injectedProviderAvailable(): boolean {
+    return InjectedProvider.isAvailable;
   }
 
   /**
