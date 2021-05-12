@@ -174,7 +174,11 @@ function makeDummyDependencies(): RaidenEpicDeps {
             })) as any,
           },
           callStatic: {
-            balanceOf: async () => BigNumber.from(1_000_000),
+            balanceOf: jest.fn().mockResolvedValue(BigNumber.from(1_000_000)),
+            totalSupply: jest.fn().mockResolvedValue(BigNumber.from(100_000_000)),
+            decimals: jest.fn().mockResolvedValue(18),
+            symbol: jest.fn().mockResolvedValue('TKN'),
+            name: jest.fn().mockRejectedValue('not set'),
           },
         } as any),
     ),
@@ -1206,6 +1210,26 @@ describe('Raiden', () => {
         },
       ),
     );
+  });
+
+  test('userDepositTokenAddress & getTokenInfo', async () => {
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([dummyEpic]), dummyReducer);
+    const svtAddress = await raiden.userDepositTokenAddress();
+    expect(Address.is(svtAddress)).toBe(true);
+    await raiden.userDepositTokenAddress(); // call again
+    expect(
+      deps.userDepositContract.callStatic.token as jest.MockedFunction<
+        RaidenEpicDeps['userDepositContract']['callStatic']['token']
+      >,
+    ).toHaveBeenCalledTimes(1); // memoized
+
+    await expect(raiden.getTokenInfo(svtAddress)).resolves.toEqual({
+      totalSupply: BigNumber.from(100_000_000),
+      decimals: 18,
+      symbol: 'TKN',
+      name: undefined, // name not defined doesn't error call
+    });
   });
 
   test('mint', async () => {
