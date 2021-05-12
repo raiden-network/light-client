@@ -11,11 +11,13 @@
 - [#2599] Add WalletConnect as another wallet/provider
 - [#2685] Add a hint dialog when the connection process takes very long
 - [#2690] Allow user to reset connections while in progress
+- [#2630] Allow user to customize WalletConnection options
 
 [#2671]: https://github.com/raiden-network/light-client/issues/2671
 [#2599]: https://github.com/raiden-network/light-client/issues/2599
 [#2685]: https://github.com/raiden-network/light-client/issues/2685
 [#2690]: https://github.com/raiden-network/light-client/issues/2690
+[#2630]: https://github.com/raiden-network/light-client/issues/2630
 
 ## [0.16.0] - 2021-04-01
 
