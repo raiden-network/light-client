@@ -771,9 +771,14 @@
   },
   "connection-manager": {
     "dialogs": {
+      "injected-provider": {
+        "header": "Injected Provider",
+        "link-button": "Link Provider",
+        "error-message": "Failed to link to provider. Please make sure to grant the requested permissions."
+      },
       "wallet-connect-provider": {
         "header": "WalletConnect",
-        "button": "Link Wallet",
+        "link-button": "Link Wallet",
         "error-message": "Failed to link via WalletConnect. Please make sure the given parmaters are correct and confirm the connection in the wallet.",
         "options": {
           "bridge-url": {

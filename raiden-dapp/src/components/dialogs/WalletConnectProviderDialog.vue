@@ -84,7 +84,7 @@
       <action-button
         :enabled="canLink"
         class="wallet-connect-provider__link-button"
-        :text="$t('connection-manager.dialogs.wallet-connect-provider.button')"
+        :text="$t('connection-manager.dialogs.wallet-connect-provider.link-button')"
         width="200px"
         @click="link"
       />

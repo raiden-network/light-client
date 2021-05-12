@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { $t } from '../../utils/mocks';
+
 import type { Wrapper } from '@vue/test-utils';
 import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
@@ -8,7 +10,7 @@ import Vuex from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
-import { WalletConnectProvider } from '@/services/ethereum-provider/wallet-connect-provider';
+import { WalletConnectProvider } from '@/services/ethereum-provider';
 
 jest.mock('@/services/ethereum-provider/wallet-connect-provider');
 
@@ -18,10 +20,10 @@ Vue.use(Vuetify);
 const vuetify = new Vuetify();
 const saveEthereumProviderOptionsMock = jest.fn();
 
-const createWrapper = (options?: {
+function createWrapper(options?: {
   infuraId?: string;
   bridgeUrl?: string;
-}): Wrapper<WalletConnectProviderDialog> => {
+}): Wrapper<WalletConnectProviderDialog> {
   const getters = {
     getEthereumProviderOptions: () => () => ({
       infuraId: options?.infuraId,
@@ -46,12 +48,10 @@ const createWrapper = (options?: {
   return mount(WalletConnectProviderDialog, {
     vuetify,
     store,
-    stubs: { 'v-dialog': true, 'action-button': ActionButton },
-    mocks: {
-      $t: (msg: string) => msg,
-    },
+    stubs: { 'action-button': ActionButton },
+    mocks: { $t },
   });
-};
+}
 
 async function clickBridgeUrlOptionToggle(
   wrapper: Wrapper<WalletConnectProviderDialog>,
@@ -212,8 +212,6 @@ describe('WalletConnectProviderDialog.vue', () => {
     expect(errorMessage.text()).toMatch(
       'connection-manager.dialogs.wallet-connect-provider.error-message',
     );
-    expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
-    expect(wrapper.emitted().linkEstablished).toBeUndefined();
   });
 
   test('linking again after error hides error message', async () => {
