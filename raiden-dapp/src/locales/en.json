@@ -773,20 +773,24 @@
     "dialogs": {
       "wallet-connect-provider": {
         "header": "WalletConnect",
-        "bridge-server-header": "Bridge Server",
-        "bridge-server-body": "Provide a bridge server URL",
-        "infura-button": "Infura",
-        "rpc-button": "RPC",
-        "infura-header": "Infura URL",
-        "infura-body": "Provide the URL for an Infura endpoint",
-        "rpc-header": "RPC URL",
-        "rpc-body": "Provide the URL for an RPC endpoint",
         "button": "Link Wallet",
         "error-message": "Failed to link via WalletConnect. Please make sure the given parmaters are correct and confirm the connection in the wallet.",
-        "placeholder": {
-          "bridge-server": "https://",
-          "infura": "Project ID",
-          "rpc": "https://"
+        "options": {
+          "bridge-url": {
+            "header": "Bridge Server",
+            "details": "Provide the URL for an alternative bridge server",
+            "placeholder": "https://"
+          },
+          "infura-id": {
+            "header": "Infura",
+            "details": "Provide the ID for an Infura project",
+            "placeholder": "Project ID"
+          },
+          "rpc-url": {
+            "header": "RPC",
+            "details": "Provide the URL for an RPC endpoint",
+            "placeholder": "https://"
+          }
         }
       },
       "connection-pending": {

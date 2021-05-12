@@ -1,82 +1,94 @@
 <template>
-  <raiden-dialog width="472" class="wallet-connect-provider" :visible="true" @close="cancel">
-    <span class="wallet-connect-provider__header">
+  <raiden-dialog width="472" class="wallet-connect-provider" :visible="true" @close="emitCancel">
+    <v-card-title>
       {{ $t('connection-manager.dialogs.wallet-connect-provider.header') }}
-    </span>
+    </v-card-title>
 
-    <div class="wallet-connect-provider__bridge-server">
-      <div class="wallet-connect-provider__bridge-server__details">
-        <div class="wallet-connect-provider__bridge-server__details__info">
-          <h3>
-            {{ $t('connection-manager.dialogs.wallet-connect-provider.bridge-server-header') }}
-          </h3>
-          <span>
-            {{ $t('connection-manager.dialogs.wallet-connect-provider.bridge-server-body') }}
-          </span>
-        </div>
+    <v-card-text>
+      <div class="wallet-connect-provider__options__bridge-url">
+        <h3>
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.header') }}
+        </h3>
+        <span>
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.details') }}
+        </span>
         <v-switch
-          class="wallet-connect-provider__bridge-server__details__toggle"
-          @change="toggleBridgeServerInputVisibility"
+          class="wallet-connect-provider__options__bridge-url__toggle"
+          @change="toggleBridgeUrlOption"
+        />
+        <input
+          v-model.trim="bridgeUrlOption"
+          class="wallet-connect-provider__input wallet-connect-provider__options__bridge-url__input"
+          :disabled="bridgeUrlOptionDisabled"
+          :placeholder="
+            $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.placeholder')
+          "
+          @input="hideErrorMessage"
         />
       </div>
-      <input
-        class="wallet-connect-provider__input"
-        type="text"
-        :value="bridgeUrl"
-        :placeholder="
-          $t('connection-manager.dialogs.wallet-connect-provider.placeholder.bridge-server')
-        "
-        :disabled="bridgeServerUrlInputDisabled"
-        @input="bridgeUrl = $event.target.value"
-      />
-    </div>
 
-    <div class="wallet-connect-provider__infura-or-rpc">
       <v-btn-toggle mandatory>
-        <v-btn class="wallet-connect-provider__infura-or-rpc__button" @click="showInfura">
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.infura-button') }}
+        <v-btn class="wallet-connect-provider__option-toggle-button" @click="showInfuraIdOption">
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.header') }}
         </v-btn>
-        <v-btn class="wallet-connect-provider__infura-or-rpc__button" @click="showRpc">
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.rpc-button') }}
+        <v-btn class="wallet-connect-provider__option-toggle-button" @click="showRpcUrlOption">
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.header') }}
         </v-btn>
       </v-btn-toggle>
 
-      <div class="wallet-connect-provider__infura-or-rpc__details">
-        <div v-if="infuraVisible" class="wallet-connect-provider__infura-or-rpc__details--infura">
-          <h3>{{ $t('connection-manager.dialogs.wallet-connect-provider.infura-header') }}</h3>
-          <span>{{ $t('connection-manager.dialogs.wallet-connect-provider.infura-body') }}</span>
-        </div>
-        <div v-if="rpcVisible" class="wallet-connect-provider__infura-or-rpc__details--rpc">
-          <h3>{{ $t('connection-manager.dialogs.wallet-connect-provider.rpc-header') }}</h3>
-          <span>{{ $t('connection-manager.dialogs.wallet-connect-provider.rpc-body') }}</span>
-        </div>
-
+      <div v-if="infuraIdOptionVisible" class="wallet-connect-provider__options__infura-id">
+        <h3>
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.header') }}
+        </h3>
+        <span>
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.details') }}
+        </span>
         <input
-          class="wallet-connect-provider__input"
-          type="text"
-          :value="infuraIdOrRpcUrl"
-          :placeholder="infuraIdOrRpcUrlInputPlaceholder"
-          @input="infuraIdOrRpcUrl = $event.target.value"
+          v-model.trim="infuraIdOption"
+          class="wallet-connect-provider__input wallet-connect-provider__options__infura-id__input"
+          :placeholder="
+            $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.placeholder')
+          "
+          @input="hideErrorMessage"
+        />
+      </div>
+
+      <div v-if="rpcUrlOptionVisible" class="wallet-connect-provider__options__rpc-url">
+        <h3>
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.header') }}
+        </h3>
+        <span>
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.details') }}
+        </span>
+        <input
+          v-model.trim="rpcUrlOption"
+          class="wallet-connect-provider__input wallet-connect-provider__options__rpc-url__input"
+          :placeholder="
+            $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.placeholder')
+          "
+          @input="hideErrorMessage"
         />
       </div>
 
       <v-alert
         v-if="linkFailed"
-        class="wallet-connect-provider__error-message"
+        class="wallet-connect-provider__error-message text-left font-weight-light"
         color="error"
         icon="warning"
       >
         {{ $t('connection-manager.dialogs.wallet-connect-provider.error-message') }}
       </v-alert>
+    </v-card-text>
 
+    <v-card-actions>
       <action-button
         :enabled="canLink"
-        class="wallet-connect-provider__button"
+        class="wallet-connect-provider__link-button"
         :text="$t('connection-manager.dialogs.wallet-connect-provider.button')"
         width="200px"
         @click="link"
       />
-    </div>
+    </v-card-actions>
   </raiden-dialog>
 </template>
 
@@ -87,10 +99,12 @@ import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import { WalletConnectProvider } from '@/services/ethereum-provider';
 
-enum InfuraOrRpcToggleState {
-  INFURA = 'infura',
-  RPC = 'rpc',
+enum OptionToggle {
+  INFURA_ID,
+  RPC_URL,
 }
+
+type WalletConnectProviderOptions = Parameters<typeof WalletConnectProvider.link>[0];
 
 @Component({
   components: {
@@ -99,61 +113,54 @@ enum InfuraOrRpcToggleState {
   },
 })
 export default class WalletConnectProviderDialog extends Vue {
-  bridgeUrl = '';
-  bridgeServerUrlInputDisabled = true;
-  infuraIdOrRpcUrl = '';
-  infuraOrRpcToggleState = InfuraOrRpcToggleState.INFURA;
+  bridgeUrlOptionDisabled = true;
+  optionToggleState = OptionToggle.INFURA_ID;
   linkFailed = false;
 
-  @Emit('linkEstablished')
-  emitLinkEstablished(linkedProvider: WalletConnectProvider): WalletConnectProvider {
-    return linkedProvider;
+  bridgeUrlOption = '';
+  infuraIdOption = '';
+  rpcUrlOption = '';
+
+  get infuraIdOptionVisible(): boolean {
+    return this.optionToggleState === OptionToggle.INFURA_ID;
   }
 
-  @Emit()
-  cancel(): void {
-    // pass
-  }
-
-  get infuraVisible(): boolean {
-    return this.infuraOrRpcToggleState === InfuraOrRpcToggleState.INFURA;
-  }
-
-  get rpcVisible(): boolean {
-    return this.infuraOrRpcToggleState === InfuraOrRpcToggleState.RPC;
-  }
-
-  get infuraIdOrRpcUrlInputPlaceholder(): string {
-    const kind = this.infuraOrRpcToggleState.toString();
-    return this.$t(
-      `connection-manager.dialogs.wallet-connect-provider.placeholder.${kind}`,
-    ) as string;
+  get rpcUrlOptionVisible(): boolean {
+    return this.optionToggleState === OptionToggle.RPC_URL;
   }
 
   get canLink(): boolean {
-    return this.infuraIdOrRpcUrl.length > 0;
+    return !!this.infuraIdOption || !!this.rpcUrlOption;
   }
 
-  get providerOptions(): Parameters<typeof WalletConnectProvider.link>[0] {
-    const bridgeUrl = this.bridgeUrl || undefined;
+  get providerOptions(): WalletConnectProviderOptions {
+    const bridgeUrl = this.bridgeUrlOption || undefined;
 
-    if (this.infuraOrRpcToggleState === InfuraOrRpcToggleState.INFURA) {
-      return { infuraId: this.infuraIdOrRpcUrl, bridgeUrl };
-    } else {
-      return { rpcUrl: this.infuraIdOrRpcUrl, bridgeUrl };
+    // We can't simply pass all options to the provider. In case the user
+    // specified an Infura ID **and** a RPC URL, the linking would fail.
+    switch (this.optionToggleState) {
+      case OptionToggle.INFURA_ID:
+        return { infuraId: this.infuraIdOption, bridgeUrl };
+
+      case OptionToggle.RPC_URL:
+        return { rpcUrl: this.rpcUrlOption, bridgeUrl };
     }
   }
 
-  showInfura(): void {
-    this.infuraOrRpcToggleState = InfuraOrRpcToggleState.INFURA;
+  showInfuraIdOption(): void {
+    this.optionToggleState = OptionToggle.INFURA_ID;
   }
 
-  showRpc(): void {
-    this.infuraOrRpcToggleState = InfuraOrRpcToggleState.RPC;
+  showRpcUrlOption(): void {
+    this.optionToggleState = OptionToggle.RPC_URL;
   }
 
-  toggleBridgeServerInputVisibility(): void {
-    this.bridgeServerUrlInputDisabled = !this.bridgeServerUrlInputDisabled;
+  toggleBridgeUrlOption(): void {
+    this.bridgeUrlOptionDisabled = !this.bridgeUrlOptionDisabled;
+  }
+
+  hideErrorMessage(): void {
+    this.linkFailed = false;
   }
 
   async link(): Promise<void> {
@@ -166,6 +173,16 @@ export default class WalletConnectProviderDialog extends Vue {
       this.linkFailed = true;
     }
   }
+
+  @Emit('linkEstablished')
+  emitLinkEstablished(linkedProvider: WalletConnectProvider): WalletConnectProvider {
+    return linkedProvider;
+  }
+
+  @Emit('cancel')
+  emitCancel(): void {
+    // pass
+  }
 }
 </script>
 
@@ -174,14 +191,7 @@ export default class WalletConnectProviderDialog extends Vue {
 @import '@/scss/colors';
 
 .wallet-connect-provider {
-  display: flex;
-
-  &__header {
-    font-size: 26px;
-    margin-top: 10px;
-    text-align: center;
-  }
-
+  // TODO: This is not nice. We need to get rid of it.
   &__input {
     background-color: $input-background;
     border-radius: 8px;
@@ -196,69 +206,40 @@ export default class WalletConnectProviderDialog extends Vue {
     }
   }
 
-  &__bridge-server {
-    background-color: $input-background;
-    border-radius: 8px !important;
-    margin: 20px 0;
-    padding: 16px;
-    width: 422px;
+  &__options {
+    &__bridge-url,
+    &__infura-id,
+    &__rpc-url {
+      display: flex;
+      flex-direction: column;
+      align-items: start;
+      color: $color-gray;
+      background-color: $input-background;
+      border-radius: 8px !important;
+      font-size: 14px;
+      text-align: left;
+      margin: 20px 0;
+      padding: 16px;
 
-    @include respond-to(handhelds) {
-      width: 100%;
-      margin: 10px 0;
+      @include respond-to(handhelds) {
+        margin: 10px 0;
+      }
     }
 
-    &__details {
-      color: $color-gray;
-      display: flex;
-
-      &__info {
-        display: flex;
-        flex: 1;
-        flex-direction: column;
-        font-size: 14px;
-        margin-right: 82px;
-        @include respond-to(handhelds) {
-          margin-right: 22px;
-        }
-      }
+    &__bridge-url {
+      position: relative;
 
       &__toggle {
+        position: absolute;
+        top: 0;
+        right: 10px;
         height: 32px;
       }
     }
   }
 
-  &__infura-or-rpc {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-
-    &__button {
-      width: 92px;
-    }
-
-    &__details {
-      background-color: $input-background;
-      border-radius: 8px !important;
-      color: $color-gray;
-      display: flex;
-      flex-direction: column;
-      font-size: 14px;
-      margin: 20px 0;
-      padding: 16px;
-      width: 422px;
-
-      @include respond-to(handhelds) {
-        width: 100%;
-        margin: 10px 0;
-      }
-    }
-  }
-
-  &__button {
-    margin-top: 10px;
-    margin-left: -38px; // Something is off with the ActionButton component - ugly quickfix
+  &__option-toggle-button {
+    width: 92px;
   }
 }
 </style>

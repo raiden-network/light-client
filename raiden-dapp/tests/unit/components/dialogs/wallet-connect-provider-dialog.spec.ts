@@ -25,42 +25,67 @@ const createWrapper = (): Wrapper<WalletConnectProviderDialog> => {
   });
 };
 
-async function clickBridgeToggle(wrapper: Wrapper<WalletConnectProviderDialog>): Promise<void> {
-  const bridgeToggle = wrapper
-    .find('.wallet-connect-provider__bridge-server__details__toggle')
+async function clickBridgeUrlOptionToggle(
+  wrapper: Wrapper<WalletConnectProviderDialog>,
+): Promise<void> {
+  const bridgeUrlOptionToggle = wrapper
+    .get('.wallet-connect-provider__options__bridge-url__toggle')
     .find('input');
-  bridgeToggle.trigger('click');
+  bridgeUrlOptionToggle.trigger('click');
   await wrapper.vm.$nextTick();
 }
 
-async function insertBridgeUrl(
+async function insertBridgeUrlOption(
   wrapper: Wrapper<WalletConnectProviderDialog>,
   input = 'testUrl',
 ): Promise<void> {
-  const bridgeUrlInput = wrapper.findAll('.wallet-connect-provider__input').at(0).find('input');
-  (bridgeUrlInput.element as HTMLInputElement).value = input;
-  bridgeUrlInput.trigger('input');
+  const bridgeUrlInputOption = wrapper
+    .get('.wallet-connect-provider__options__bridge-url__input')
+    .find('input');
+  (bridgeUrlInputOption.element as HTMLInputElement).value = input;
+  bridgeUrlInputOption.trigger('input');
   await wrapper.vm.$nextTick();
 }
 
-async function clickInfuraRpcToggle(
-  wrapper: Wrapper<WalletConnectProviderDialog>,
-  buttonIndex: number,
-): Promise<void> {
-  const rpcToggle = wrapper
-    .findAll('.wallet-connect-provider__infura-or-rpc__button')
-    .at(buttonIndex);
-  rpcToggle.trigger('click');
+async function selectInfuraIdOption(wrapper: Wrapper<WalletConnectProviderDialog>): Promise<void> {
+  const infuraIdOptionToggle = wrapper
+    .findAll('.wallet-connect-provider__option-toggle-button')
+    .at(0);
+  infuraIdOptionToggle.trigger('click');
   await wrapper.vm.$nextTick();
 }
 
-async function insertInfuraIdOrRpcUrl(
+async function insertInfuraIdOption(
   wrapper: Wrapper<WalletConnectProviderDialog>,
-  input = 'testId',
+  input: string,
 ): Promise<void> {
-  const infuraOrRpcInput = wrapper.findAll('.wallet-connect-provider__input').at(1).find('input');
-  (infuraOrRpcInput.element as HTMLInputElement).value = input;
-  infuraOrRpcInput.trigger('input');
+  await selectInfuraIdOption(wrapper);
+  const infuraIdInputOption = wrapper
+    .get('.wallet-connect-provider__options__infura-id__input')
+    .find('input');
+  (infuraIdInputOption.element as HTMLInputElement).value = input;
+  infuraIdInputOption.trigger('input');
+  await wrapper.vm.$nextTick();
+}
+
+async function selectRpcUrlOption(wrapper: Wrapper<WalletConnectProviderDialog>): Promise<void> {
+  const rpcUrlOptionToggle = wrapper
+    .findAll('.wallet-connect-provider__option-toggle-button')
+    .at(1);
+  rpcUrlOptionToggle.trigger('click');
+  await wrapper.vm.$nextTick();
+}
+
+async function insertRpcUrlOption(
+  wrapper: Wrapper<WalletConnectProviderDialog>,
+  input: string,
+): Promise<void> {
+  await selectRpcUrlOption(wrapper);
+  const rpcUrlInputOption = wrapper
+    .get('.wallet-connect-provider__options__rpc-url__input')
+    .find('input');
+  (rpcUrlInputOption.element as HTMLInputElement).value = input;
+  rpcUrlInputOption.trigger('input');
   await wrapper.vm.$nextTick();
 }
 
@@ -75,14 +100,18 @@ describe('WalletConnectProviderDialog.vue', () => {
     jest.clearAllMocks();
   });
 
-  test('can toggle between Infura and RPC input', async () => {
+  test('can toggle between Infura ID and RPC URL option', async () => {
     const wrapper = createWrapper();
+    let infuraIdOption = wrapper.get('.wallet-connect-provider__options__infura-id');
+    expect(infuraIdOption.isVisible()).toBeTruthy();
 
-    wrapper.get('.wallet-connect-provider__infura-or-rpc__details--infura');
-    await clickInfuraRpcToggle(wrapper, 1);
-    wrapper.get('.wallet-connect-provider__infura-or-rpc__details--rpc');
-    await clickInfuraRpcToggle(wrapper, 0);
-    wrapper.get('.wallet-connect-provider__infura-or-rpc__details--infura');
+    await selectRpcUrlOption(wrapper);
+    const rpcUrlOption = wrapper.get('.wallet-connect-provider__options__rpc-url');
+    expect(rpcUrlOption.isVisible()).toBeTruthy();
+
+    await selectInfuraIdOption(wrapper);
+    infuraIdOption = wrapper.get('.wallet-connect-provider__options__infura-id');
+    expect(infuraIdOption.isVisible()).toBeTruthy();
   });
 
   test('can enable bridge server input field', async () => {
@@ -90,28 +119,39 @@ describe('WalletConnectProviderDialog.vue', () => {
     const bridgeServerURLInput = wrapper.findAll('.wallet-connect-provider__input').at(0);
     expect(bridgeServerURLInput.attributes('disabled')).toBeTruthy();
 
-    await clickBridgeToggle(wrapper);
+    await clickBridgeUrlOptionToggle(wrapper);
 
     expect(bridgeServerURLInput.attributes('disabled')).toBeFalsy();
   });
 
-  test('link emits linked provider instance', async () => {
+  test('can link with Infura ID option only', async () => {
     const wrapper = createWrapper();
 
-    await insertInfuraIdOrRpcUrl(wrapper, 'testId');
+    await insertInfuraIdOption(wrapper, 'testId');
     await clickLinkButton(wrapper);
 
     expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
     expect(WalletConnectProvider.link).toHaveBeenCalledWith({ infuraId: 'testId' });
-    expect(wrapper.emitted().linkEstablished?.length).toBe(1);
   });
 
-  test('can link with optional bridge URL', async () => {
+  test('can link with RPC URL option only', async () => {
     const wrapper = createWrapper();
 
-    await clickBridgeToggle(wrapper);
-    await insertBridgeUrl(wrapper, 'testUrl');
-    await insertInfuraIdOrRpcUrl(wrapper, 'testId');
+    await insertRpcUrlOption(wrapper, 'https://some.rpc.endpoint');
+    await clickLinkButton(wrapper);
+
+    expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
+    expect(WalletConnectProvider.link).toHaveBeenCalledWith({
+      rpcUrl: 'https://some.rpc.endpoint',
+    });
+  });
+
+  test('can link with optional bridge URL option', async () => {
+    const wrapper = createWrapper();
+
+    await clickBridgeUrlOptionToggle(wrapper);
+    await insertBridgeUrlOption(wrapper, 'testUrl');
+    await insertInfuraIdOption(wrapper, 'testId');
     await clickLinkButton(wrapper);
 
     expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
@@ -122,13 +162,22 @@ describe('WalletConnectProviderDialog.vue', () => {
     expect(wrapper.emitted().linkEstablished?.length).toBe(1);
   });
 
+  test('successful link emits linked provider instance', async () => {
+    const wrapper = createWrapper();
+
+    await insertInfuraIdOption(wrapper, 'testId');
+    await clickLinkButton(wrapper);
+
+    expect(wrapper.emitted().linkEstablished?.length).toBe(1);
+  });
+
   test('shows error when linking fails', async () => {
     const wrapper = createWrapper();
     let errorMessage = wrapper.find('.wallet-connect-provider__error-message');
     expect(errorMessage.exists()).toBeFalsy();
 
     (WalletConnectProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
-    await insertInfuraIdOrRpcUrl(wrapper, 'testId');
+    await insertInfuraIdOption(wrapper, 'testId');
     await clickLinkButton(wrapper);
 
     errorMessage = wrapper.find('.wallet-connect-provider__error-message');
@@ -140,11 +189,11 @@ describe('WalletConnectProviderDialog.vue', () => {
     expect(wrapper.emitted().linkEstablished).toBeUndefined();
   });
 
-  test('linking again after error hides error message again', async () => {
+  test('linking again after error hides error message', async () => {
     const wrapper = createWrapper();
 
     (WalletConnectProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
-    await insertInfuraIdOrRpcUrl(wrapper, 'testId');
+    await insertInfuraIdOption(wrapper, 'testId');
     await clickLinkButton(wrapper);
 
     let errorMessage = wrapper.find('.wallet-connect-provider__error-message');
