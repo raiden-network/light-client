@@ -2,10 +2,12 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
 import { AddressZero, One, Zero } from '@ethersproject/constants';
-import type { Network } from '@ethersproject/providers';
-import { JsonRpcProvider } from '@ethersproject/providers';
+import { keccak256 } from '@ethersproject/keccak256';
+import type { ExternalProvider, Network } from '@ethersproject/providers';
+import { Formatter, JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 import { randomBytes } from '@ethersproject/random';
 import { Wallet } from '@ethersproject/wallet';
+import { Contract } from 'ethers';
 import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
@@ -53,6 +55,8 @@ import { Direction } from '@/transfers/state';
 import { getLocksroot, getSecrethash, makeMessageId, makeSecret } from '@/transfers/utils';
 import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
+import { assert } from '@/utils';
+import { ErrorCodes } from '@/utils/error';
 import { pluckDistinct } from '@/utils/rx';
 import type { Address, Int, UInt } from '@/utils/types';
 
@@ -1194,5 +1198,161 @@ describe('Raiden', () => {
         },
       ),
     );
+  });
+
+  test('create', async () => {
+    // -- MOCKS --
+    const { contractsInfo } = makeDummyDependencies();
+    const MockedRaiden = jest.fn(() => ({ address }));
+
+    const MockedProvider = JsonRpcProvider as jest.MockedClass<typeof JsonRpcProvider>;
+    MockedProvider.mockClear();
+
+    Object.defineProperty(MockedProvider.prototype, 'network', {
+      get: jest.fn().mockReturnValue(network),
+    });
+    Object.defineProperty(MockedProvider.prototype, '_isProvider', {
+      get: jest.fn().mockReturnValue(true),
+    });
+    Object.defineProperty(MockedProvider.prototype, 'formatter', {
+      get: jest.fn().mockReturnValue({ filterLog: jest.fn((l) => l) }),
+    });
+
+    MockedProvider.prototype.getNetwork.mockImplementation(async () => network);
+    const accounts: string[] = [address, makeAddress()];
+    MockedProvider.prototype.listAccounts.mockImplementation(async () => accounts);
+    MockedProvider.prototype.getBlockNumber.mockImplementation(async () => 123);
+    MockedProvider.prototype.send.mockImplementation(async () => []);
+    MockedProvider.prototype.getSigner.mockImplementation(function (
+      this: typeof MockedProvider,
+      indexOrAddress?: string | number,
+    ) {
+      assert(typeof indexOrAddress !== 'number' || indexOrAddress < accounts.length);
+      assert(typeof indexOrAddress !== 'string' || accounts.includes(indexOrAddress));
+      return {
+        _isSigner: true,
+        getAddress: jest.fn(async () =>
+          typeof indexOrAddress === 'number' ? accounts[indexOrAddress] : indexOrAddress,
+        ),
+        provider: this,
+      } as any;
+    });
+    // ensure Web3Provider is instanceof MockedProvider
+    Object.assign(Web3Provider, { prototype: Object.create(MockedProvider.prototype) });
+    Object.assign(Web3Provider.prototype, { constructor: Web3Provider });
+
+    Object.assign(Contract.prototype, {
+      msc_address: jest.fn(makeAddress),
+      token_network_registry: jest.fn(makeAddress),
+      secret_registry_address: jest.fn(makeAddress),
+      service_registry: jest.fn(makeAddress),
+      one_to_n_address: jest.fn(makeAddress),
+    });
+    (Formatter as jest.MockedClass<typeof Formatter>).arrayOf = jest.fn(() =>
+      jest.fn((logs) => logs),
+    );
+
+    // -- TESTS --
+
+    // test string-to-JsonRpcProvider, account by index, full contractsInfo
+    await expect(
+      Raiden.create.call(
+        MockedRaiden as any, // pass RaidenMock as 'this' to static factory
+        'http://test.provider', // JsonRpcProvider's url
+        0, // first account
+        { adapter: 'memory' },
+        contractsInfo, // mocked contractsInfo
+      ),
+    ).resolves.toBeDefined();
+    expect(MockedRaiden.mock.instances[0]).toBeObject();
+
+    MockedProvider.mockClear();
+
+    // test passing JsonRpcProvider instance, address & PK accounts
+    const provider = new MockedProvider('http://test.provider');
+    await expect(
+      Raiden.create.call(
+        MockedRaiden as any,
+        provider, // constructed provider
+        makeAddress(), // pass unknown address
+        { adapter: 'memory' },
+        contractsInfo,
+      ),
+    ).rejects.toMatchObject({ message: ErrorCodes.RDN_ACCOUNT_NOT_FOUND });
+    await expect(
+      Raiden.create.call(
+        MockedRaiden as any,
+        provider,
+        '123', // invalid account rejects
+        { adapter: 'memory' },
+        contractsInfo,
+      ),
+    ).rejects.toMatchObject({ message: ErrorCodes.RDN_STRING_ACCOUNT_INVALID });
+    await expect(
+      Raiden.create.call(
+        MockedRaiden as any,
+        provider,
+        accounts[1], // pass 2nd account directly as address
+        { adapter: 'memory' },
+        contractsInfo,
+      ),
+    ).resolves.toBeDefined();
+    await expect(
+      Raiden.create.call(
+        MockedRaiden as any,
+        provider,
+        provider.getSigner(0), // pass signer instance connected to provider directly
+        { adapter: 'memory' },
+        contractsInfo,
+      ),
+    ).resolves.toBeDefined();
+    await expect(
+      Raiden.create.call(
+        MockedRaiden as any,
+        provider,
+        // signer must be connected to provider, or it'll reject
+        Object.assign(provider.getSigner(0), { provider: null as any }),
+        { adapter: 'memory' },
+        contractsInfo,
+      ),
+    ).rejects.toMatchObject({ message: ErrorCodes.RDN_SIGNER_NOT_CONNECTED });
+    const privKey = keccak256([]); // hashes are valid private keys
+    await expect(
+      Raiden.create.call(
+        MockedRaiden as any,
+        provider,
+        privKey, // pass raw private key creates Wallet
+        { adapter: 'memory' },
+        contractsInfo,
+      ),
+    ).resolves.toBeDefined();
+
+    // test ExternalProvider, raw Wallet/PrivKey, fetch contracts from UDC, subkey
+    const extProvider: ExternalProvider = {
+      send: jest.fn(async () => '0x'),
+    };
+    const wallet = new Wallet(privKey);
+    const udcAddress = makeAddress();
+    MockedProvider.prototype.send.mockImplementationOnce(async () => [{ blockNumber: 99 }]);
+    await expect(
+      Raiden.create.call(
+        MockedRaiden as any,
+        extProvider, // external provider creates Web3Provider
+        wallet, // wallet can be connected directly
+        { adapter: 'memory' },
+        udcAddress, // fetch contracts from UDC address
+        undefined,
+        true, // subkey
+      ),
+    ).resolves.toBeDefined();
+
+    // test known network contracts
+    (provider as jest.Mocked<JsonRpcProvider>).getNetwork.mockImplementation(async () => ({
+      name: 'goerli',
+      chainId: 5,
+    }));
+    await expect(
+      Raiden.create.call(MockedRaiden as any, provider, wallet, { adapter: 'memory' }),
+    ).resolves.toBeDefined();
   });
 });
