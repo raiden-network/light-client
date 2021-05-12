@@ -11,17 +11,31 @@
 
     <template v-if="showProviderButtons">
       <action-button
+        class="connection-manager__provider-dialog-button"
         :enabled="true"
-        text="Wallet Connect"
+        :text="$t('connection-manager.dialogs.wallet-connect-provider.header')"
         width="280px"
-        @click="openWalletConnectDialog"
+        @click="openWalletConnectProviderDialog"
       />
-      <wallet-connect-provider-dialog
-        v-if="walletConnectDialogVisible"
-        @linkEstablished="onProviderLinkEstablished"
-        @cancel="closeWalletConnectDialog"
+      <action-button
+        class="connection-manager__provider-dialog-button"
+        :enabled="true"
+        :text="$t('connection-manager.dialogs.injected-provider.header')"
+        width="280px"
+        @click="openInjectedProviderDialog"
       />
     </template>
+
+    <wallet-connect-provider-dialog
+      v-if="walletConnectProviderDialogVisible"
+      @linkEstablished="onProviderLinkEstablished"
+      @cancel="closeWalletConnectProviderDialog"
+    />
+    <injected-provider-dialog
+      v-if="injectedProviderDialogVisible"
+      @linkEstablished="onProviderLinkEstablished"
+      @cancel="closeInjectedProviderDialog"
+    />
 
     <template v-if="inProgress">
       <connection-pending-dialog @reset-connection="resetConnection" />
@@ -35,6 +49,7 @@ import { createNamespacedHelpers, mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
+import InjectedProviderDialog from '@/components/dialogs/InjectedProviderDialog.vue';
 import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
 import { ErrorCode } from '@/model/types';
 import { ConfigProvider } from '@/services/config-provider';
@@ -61,6 +76,7 @@ const { mapState: mapUserSettingsState } = createNamespacedHelpers('userSettings
   components: {
     ActionButton,
     ConnectionPendingDialog,
+    InjectedProviderDialog,
     WalletConnectProviderDialog,
   },
 })
@@ -69,7 +85,8 @@ export default class ConnectionManager extends Vue {
   stateBackup!: string;
   useRaidenAccount!: boolean;
 
-  walletConnectDialogVisible = false;
+  walletConnectProviderDialogVisible = false;
+  injectedProviderDialogVisible = false;
   inProgress = false;
   errorCode: ErrorCode | null = null;
 
@@ -93,22 +110,37 @@ export default class ConnectionManager extends Vue {
    */
   async created(): Promise<void> {
     const { rpc_endpoint: rpcUrl, private_key: privateKey } = await ConfigProvider.configuration();
+
     if (rpcUrl && privateKey) {
       const provider = await DirectRpcProvider.link({ rpcUrl, privateKey });
       this.connect(provider);
     }
   }
 
+  openWalletConnectProviderDialog(): void {
+    this.walletConnectProviderDialogVisible = true;
+  }
+
+  closeWalletConnectProviderDialog(): void {
+    this.walletConnectProviderDialogVisible = false;
+  }
+
+  openInjectedProviderDialog(): void {
+    this.injectedProviderDialogVisible = true;
+  }
+
+  closeInjectedProviderDialog(): void {
+    this.injectedProviderDialogVisible = false;
+  }
+
+  closeAllProviderDialogs(): void {
+    this.closeWalletConnectProviderDialog();
+    this.closeInjectedProviderDialog();
+  }
+
   async onProviderLinkEstablished(linkedProvider: EthereumProvider): Promise<void> {
+    this.closeAllProviderDialogs();
     await this.connect(linkedProvider);
-  }
-
-  openWalletConnectDialog(): void {
-    this.walletConnectDialogVisible = true;
-  }
-
-  closeWalletConnectDialog(): void {
-    this.walletConnectDialogVisible = false;
   }
 
   async connect(provider: EthereumProvider): Promise<void> {
@@ -119,8 +151,8 @@ export default class ConnectionManager extends Vue {
     }
 
     this.inProgress = true;
-    this.$store.commit('reset');
     this.errorCode = null;
+    this.$store.commit('reset');
 
     const configuration = await ConfigProvider.configuration();
     const useRaidenAccount = this.useRaidenAccount ? true : undefined;
@@ -174,6 +206,14 @@ export default class ConnectionManager extends Vue {
       @include respond-to(handhelds) {
         display: none;
       }
+    }
+  }
+
+  &__provider-dialog-button {
+    margin: 20px 0;
+
+    @include respond-to(handhelds) {
+      margin: 10px 0;
     }
   }
 }
