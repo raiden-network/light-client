@@ -94,6 +94,7 @@
 
 <script lang="ts">
 import { Component, Emit, Vue } from 'vue-property-decorator';
+import { createNamespacedHelpers } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
@@ -106,20 +107,31 @@ enum OptionToggle {
 
 type WalletConnectProviderOptions = Parameters<typeof WalletConnectProvider.link>[0];
 
+const { mapGetters, mapMutations } = createNamespacedHelpers('userSettings');
+
 @Component({
   components: {
     RaidenDialog,
     ActionButton,
   },
+  methods: {
+    ...mapGetters(['getEthereumProviderOptions']),
+    ...mapMutations(['saveEthereumProviderOptions']),
+  },
 })
 export default class WalletConnectProviderDialog extends Vue {
+  bridgeUrlOption = '';
   bridgeUrlOptionDisabled = true;
+  infuraIdOption = '';
+  rpcUrlOption = '';
   optionToggleState = OptionToggle.INFURA_ID;
   linkFailed = false;
 
-  bridgeUrlOption = '';
-  infuraIdOption = '';
-  rpcUrlOption = '';
+  getEthereumProviderOptions!: () => (providerName: string) => WalletConnectProviderOptions;
+  saveEthereumProviderOptions!: (payload: {
+    providerName: string;
+    providerOptions: WalletConnectProviderOptions;
+  }) => void;
 
   get infuraIdOptionVisible(): boolean {
     return this.optionToggleState === OptionToggle.INFURA_ID;
@@ -134,17 +146,29 @@ export default class WalletConnectProviderDialog extends Vue {
   }
 
   get providerOptions(): WalletConnectProviderOptions {
-    const bridgeUrl = this.bridgeUrlOption || undefined;
+    let options: WalletConnectProviderOptions;
 
     // We can't simply pass all options to the provider. In case the user
     // specified an Infura ID **and** a RPC URL, the linking would fail.
     switch (this.optionToggleState) {
       case OptionToggle.INFURA_ID:
-        return { infuraId: this.infuraIdOption, bridgeUrl };
+        options = { infuraId: this.infuraIdOption };
+        break;
 
       case OptionToggle.RPC_URL:
-        return { rpcUrl: this.rpcUrlOption, bridgeUrl };
+        options = { rpcUrl: this.rpcUrlOption };
+        break;
     }
+
+    if (this.bridgeUrlOption) {
+      options.bridgeUrl = this.bridgeUrlOption;
+    }
+
+    return options;
+  }
+
+  created(): void {
+    this.loadSavedProviderOptions();
   }
 
   showInfuraIdOption(): void {
@@ -163,11 +187,32 @@ export default class WalletConnectProviderDialog extends Vue {
     this.linkFailed = false;
   }
 
+  loadSavedProviderOptions(): void {
+    const savedProviderOptions = this.getEthereumProviderOptions()(
+      WalletConnectProvider.providerName,
+    );
+    this.bridgeUrlOption = savedProviderOptions.bridgeUrl ?? '';
+    this.infuraIdOption = savedProviderOptions.infuraId ?? '';
+    this.rpcUrlOption = savedProviderOptions.rpcUrl ?? '';
+
+    if (!this.infuraIdOption && this.rpcUrlOption) {
+      this.showRpcUrlOption();
+    }
+  }
+
+  saveProviderOptions(): void {
+    this.saveEthereumProviderOptions({
+      providerName: WalletConnectProvider.providerName,
+      providerOptions: this.providerOptions,
+    });
+  }
+
   async link(): Promise<void> {
     this.linkFailed = false;
 
     try {
       const provider = await WalletConnectProvider.link(this.providerOptions);
+      this.saveProviderOptions();
       this.emitLinkEstablished(provider);
     } catch {
       this.linkFailed = true;
@@ -181,7 +226,7 @@ export default class WalletConnectProviderDialog extends Vue {
 
   @Emit('cancel')
   emitCancel(): void {
-    // pass
+    this.saveProviderOptions();
   }
 }
 </script>
