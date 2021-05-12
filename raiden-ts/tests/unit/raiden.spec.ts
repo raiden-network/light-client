@@ -15,11 +15,17 @@ import { filter, first, ignoreElements, map, mapTo, mergeMap } from 'rxjs/operat
 
 import type { RaidenAction } from '@/actions';
 import { raidenConfigUpdate, raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
-import { channelClose, channelDeposit, channelOpen, tokenMonitored } from '@/channels/actions';
+import {
+  channelClose,
+  channelDeposit,
+  channelOpen,
+  channelSettle,
+  tokenMonitored,
+} from '@/channels/actions';
 import type { Channel, ChannelEnd } from '@/channels/state';
 import { ChannelState } from '@/channels/state';
 import { BalanceProofZero } from '@/channels/types';
-import { channelKey, channelUniqueKey } from '@/channels/utils';
+import { channelAmounts, channelKey, channelUniqueKey } from '@/channels/utils';
 import { makeDefaultConfig } from '@/config';
 import { ShutdownReason, SignatureZero } from '@/constants';
 import {
@@ -38,7 +44,9 @@ import { Service } from '@/services/types';
 import { pfsListInfo } from '@/services/utils';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
+import { withdraw } from '@/transfers/actions';
 import { standardCalculator } from '@/transfers/mediate/types';
+import { Direction } from '@/transfers/state';
 import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { pluckDistinct } from '@/utils/rx';
@@ -243,11 +251,11 @@ describe('Raiden', () => {
     nextNonce: One as UInt<8>,
   };
 
-  function getChannel(): Channel {
+  function getChannel(state: ChannelState = ChannelState.open): Channel {
     return {
       _id: channelUniqueKey({ ...meta, id: channelId }),
       id: channelId,
-      state: ChannelState.open,
+      state,
       token: token,
       tokenNetwork: tokenNetwork,
       settleTimeout: settleTimeout,
@@ -956,6 +964,119 @@ describe('Raiden', () => {
     ).resolves.toEqual(txHash);
     await expect(channelDepositRequestPromise).resolves.toEqual(
       channelDeposit.request({ deposit: deposit as UInt<32>, subkey: false }, meta),
+    );
+  });
+
+  test('settleChannel', async () => {
+    function channelSettleEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(channelSettle.request.is),
+        mapTo(
+          channelSettle.success(
+            { id: channelId, txHash, txBlock: 60, confirmed: true, locks: [] },
+            { tokenNetwork, partner },
+          ),
+        ),
+      );
+    }
+    const deps = makeDummyDependencies();
+    deps.registryContract = {
+      token_to_token_networks: jest.fn().mockImplementation(async () => tokenNetwork),
+    } as any;
+
+    const raiden = new Raiden(
+      makeInitialState(
+        { address, network, contractsInfo },
+        {
+          tokens: { [token]: tokenNetwork },
+          channels: { [key]: getChannel(ChannelState.settleable) },
+        },
+      ),
+      deps,
+      combineRaidenEpics([initEpicMock, channelSettleEpicMock]),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+    const channelSettleRequestPromise = raiden.action$
+      .pipe(first(channelSettle.request.is))
+      .toPromise();
+    await expect(raiden.settleChannel(token, partner, { subkey: false })).resolves.toEqual(txHash);
+    await expect(channelSettleRequestPromise).resolves.toEqual(
+      channelSettle.request(undefined, meta),
+    );
+  });
+
+  test('withdrawChannel', async () => {
+    const amount = BigNumber.from('3000000000000000000');
+    const revealTimeout = 50;
+    const deps = makeDummyDependencies();
+    deps.registryContract = {
+      token_to_token_networks: jest.fn().mockImplementation(async () => tokenNetwork),
+    } as any;
+    const ownEnd: ChannelEnd = {
+      address,
+      deposit: deposit as UInt<32>,
+      withdraw: Zero as UInt<32>,
+      locks: [],
+      balanceProof: {
+        ...BalanceProofZero,
+        transferredAmount: BigNumber.from('2000000000000000000') as UInt<32>,
+      },
+      pendingWithdraws: [],
+      nextNonce: One as UInt<8>,
+    };
+    const partnerEnd: ChannelEnd = {
+      address: partner,
+      deposit: Zero as UInt<32>,
+      withdraw: Zero as UInt<32>,
+      locks: [],
+      balanceProof: BalanceProofZero,
+      pendingWithdraws: [],
+      nextNonce: One as UInt<8>,
+    };
+    const channel: Channel = {
+      _id: channelUniqueKey({ ...meta, id: channelId }),
+      id: channelId,
+      state: ChannelState.open,
+      token: token,
+      tokenNetwork: tokenNetwork,
+      settleTimeout: settleTimeout,
+      isFirstParticipant: isFirstParticipant,
+      openBlock: txBlock,
+      own: ownEnd,
+      partner: partnerEnd,
+    };
+    const { ownWithdraw } = channelAmounts(channel);
+    const withdrawMeta = {
+      direction: Direction.SENT,
+      tokenNetwork,
+      partner,
+      totalWithdraw: ownWithdraw.add(amount) as UInt<32>,
+      expiration: dummyState.blockNumber + 2 * revealTimeout,
+    };
+    function channelWithdrawEpicMock(action$: Observable<RaidenAction>) {
+      return action$.pipe(
+        filter(withdraw.request.is),
+        mapTo(withdraw.success({ txHash, txBlock, confirmed: true }, withdrawMeta)),
+      );
+    }
+    const raiden = new Raiden(
+      makeInitialState(
+        { address, network, contractsInfo },
+        {
+          tokens: { [token]: tokenNetwork },
+          channels: { [key]: channel },
+        },
+      ),
+      deps,
+      combineRaidenEpics([initEpicMock, channelWithdrawEpicMock]),
+      dummyReducer,
+    );
+    await expect(raiden.start()).resolves.toBeUndefined();
+    const withdrawRequestPromise = raiden.action$.pipe(first(withdraw.request.is)).toPromise();
+    await expect(raiden.withdrawChannel(token, partner, amount)).resolves.toEqual(txHash);
+    await expect(withdrawRequestPromise).resolves.toEqual(
+      withdraw.request(undefined, withdrawMeta),
     );
   });
 });
