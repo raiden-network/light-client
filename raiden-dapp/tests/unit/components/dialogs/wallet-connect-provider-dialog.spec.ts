@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
+import Vuex from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
@@ -11,13 +12,40 @@ import { WalletConnectProvider } from '@/services/ethereum-provider/wallet-conne
 
 jest.mock('@/services/ethereum-provider/wallet-connect-provider');
 
+Vue.use(Vuex);
 Vue.use(Vuetify);
 
-const createWrapper = (): Wrapper<WalletConnectProviderDialog> => {
-  const vuetify = new Vuetify();
+const vuetify = new Vuetify();
+const saveEthereumProviderOptionsMock = jest.fn();
+
+const createWrapper = (options?: {
+  infuraId?: string;
+  bridgeUrl?: string;
+}): Wrapper<WalletConnectProviderDialog> => {
+  const getters = {
+    getEthereumProviderOptions: () => () => ({
+      infuraId: options?.infuraId,
+      bridgeUrl: options?.bridgeUrl,
+    }),
+  };
+
+  const mutations = {
+    saveEthereumProviderOptions: saveEthereumProviderOptionsMock,
+  };
+
+  const userSettings = {
+    namespaced: true,
+    getters,
+    mutations,
+  };
+
+  const store = new Vuex.Store({
+    modules: { userSettings },
+  });
 
   return mount(WalletConnectProviderDialog, {
     vuetify,
+    store,
     stubs: { 'v-dialog': true, 'action-button': ActionButton },
     mocks: {
       $t: (msg: string) => msg,
@@ -57,7 +85,7 @@ async function selectInfuraIdOption(wrapper: Wrapper<WalletConnectProviderDialog
 
 async function insertInfuraIdOption(
   wrapper: Wrapper<WalletConnectProviderDialog>,
-  input: string,
+  input = 'testId',
 ): Promise<void> {
   await selectInfuraIdOption(wrapper);
   const infuraIdInputOption = wrapper
@@ -150,22 +178,21 @@ describe('WalletConnectProviderDialog.vue', () => {
     const wrapper = createWrapper();
 
     await clickBridgeUrlOptionToggle(wrapper);
-    await insertBridgeUrlOption(wrapper, 'testUrl');
+    await insertBridgeUrlOption(wrapper, 'https://some.bridge.server');
     await insertInfuraIdOption(wrapper, 'testId');
     await clickLinkButton(wrapper);
 
     expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
     expect(WalletConnectProvider.link).toHaveBeenCalledWith({
-      bridgeUrl: 'testUrl',
+      bridgeUrl: 'https://some.bridge.server',
       infuraId: 'testId',
     });
-    expect(wrapper.emitted().linkEstablished?.length).toBe(1);
   });
 
   test('successful link emits linked provider instance', async () => {
     const wrapper = createWrapper();
 
-    await insertInfuraIdOption(wrapper, 'testId');
+    await insertInfuraIdOption(wrapper);
     await clickLinkButton(wrapper);
 
     expect(wrapper.emitted().linkEstablished?.length).toBe(1);
@@ -177,7 +204,7 @@ describe('WalletConnectProviderDialog.vue', () => {
     expect(errorMessage.exists()).toBeFalsy();
 
     (WalletConnectProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
-    await insertInfuraIdOption(wrapper, 'testId');
+    await insertInfuraIdOption(wrapper);
     await clickLinkButton(wrapper);
 
     errorMessage = wrapper.find('.wallet-connect-provider__error-message');
@@ -193,7 +220,7 @@ describe('WalletConnectProviderDialog.vue', () => {
     const wrapper = createWrapper();
 
     (WalletConnectProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
-    await insertInfuraIdOption(wrapper, 'testId');
+    await insertInfuraIdOption(wrapper);
     await clickLinkButton(wrapper);
 
     let errorMessage = wrapper.find('.wallet-connect-provider__error-message');
@@ -204,5 +231,29 @@ describe('WalletConnectProviderDialog.vue', () => {
 
     errorMessage = wrapper.find('.wallet-connect-provider__error-message');
     expect(errorMessage.exists()).toBeFalsy();
+  });
+
+  test('can link with saved provider options from store', async () => {
+    const wrapper = createWrapper({ infuraId: 'testId', bridgeUrl: 'https://some.bridge.server' });
+
+    await clickLinkButton(wrapper);
+
+    expect(WalletConnectProvider.link).toHaveBeenCalledWith({
+      bridgeUrl: 'https://some.bridge.server',
+      infuraId: 'testId',
+    });
+  });
+
+  test('successful link saves provider options to store', async () => {
+    const wrapper = createWrapper();
+
+    await insertInfuraIdOption(wrapper, 'testId');
+    await clickLinkButton(wrapper);
+
+    expect(saveEthereumProviderOptionsMock).toHaveBeenCalledTimes(1);
+    expect(saveEthereumProviderOptionsMock).toHaveBeenCalledWith(expect.anything(), {
+      providerName: 'wallet_connect_mock',
+      providerOptions: { infuraId: 'testId' },
+    });
   });
 });

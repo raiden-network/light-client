@@ -3,6 +3,7 @@ import { VuexPersistence } from 'vuex-persist';
 
 import type { RootState } from '@/types';
 
+import { getters } from './getters';
 import { mutations } from './mutations';
 import state from './state';
 import type { UserSettingsState } from './types';
@@ -10,6 +11,7 @@ import type { UserSettingsState } from './types';
 export const userSettings: Module<UserSettingsState, RootState> = {
   namespaced: true,
   state,
+  getters,
   mutations,
 };
 
