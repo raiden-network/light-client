@@ -57,8 +57,9 @@ async function clickBridgeUrlOptionToggle(
   wrapper: Wrapper<WalletConnectProviderDialog>,
 ): Promise<void> {
   const bridgeUrlOptionToggle = wrapper
-    .get('.wallet-connect-provider__options__bridge-url__toggle')
-    .find('input');
+    .get('.wallet-connect-provider__options__bridge-url')
+    .findAll('input')
+    .at(0);
   bridgeUrlOptionToggle.trigger('click');
   await wrapper.vm.$nextTick();
 }
@@ -68,8 +69,9 @@ async function insertBridgeUrlOption(
   input = 'testUrl',
 ): Promise<void> {
   const bridgeUrlInputOption = wrapper
-    .get('.wallet-connect-provider__options__bridge-url__input')
-    .find('input');
+    .get('.wallet-connect-provider__options__bridge-url')
+    .findAll('input')
+    .at(1);
   (bridgeUrlInputOption.element as HTMLInputElement).value = input;
   bridgeUrlInputOption.trigger('input');
   await wrapper.vm.$nextTick();
@@ -89,7 +91,7 @@ async function insertInfuraIdOption(
 ): Promise<void> {
   await selectInfuraIdOption(wrapper);
   const infuraIdInputOption = wrapper
-    .get('.wallet-connect-provider__options__infura-id__input')
+    .get('.wallet-connect-provider__options__infura-id')
     .find('input');
   (infuraIdInputOption.element as HTMLInputElement).value = input;
   infuraIdInputOption.trigger('input');
@@ -110,7 +112,7 @@ async function insertRpcUrlOption(
 ): Promise<void> {
   await selectRpcUrlOption(wrapper);
   const rpcUrlInputOption = wrapper
-    .get('.wallet-connect-provider__options__rpc-url__input')
+    .get('.wallet-connect-provider__options__rpc-url')
     .find('input');
   (rpcUrlInputOption.element as HTMLInputElement).value = input;
   rpcUrlInputOption.trigger('input');
@@ -140,16 +142,6 @@ describe('WalletConnectProviderDialog.vue', () => {
     await selectInfuraIdOption(wrapper);
     infuraIdOption = wrapper.get('.wallet-connect-provider__options__infura-id');
     expect(infuraIdOption.isVisible()).toBeTruthy();
-  });
-
-  test('can enable bridge server input field', async () => {
-    const wrapper = createWrapper();
-    const bridgeServerURLInput = wrapper.findAll('.wallet-connect-provider__input').at(0);
-    expect(bridgeServerURLInput.attributes('disabled')).toBeTruthy();
-
-    await clickBridgeUrlOptionToggle(wrapper);
-
-    expect(bridgeServerURLInput.attributes('disabled')).toBeFalsy();
   });
 
   test('can link with Infura ID option only', async () => {

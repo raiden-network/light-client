@@ -782,17 +782,17 @@
         "error-message": "Failed to link via WalletConnect. Please make sure the given parmaters are correct and confirm the connection in the wallet.",
         "options": {
           "bridge-url": {
-            "header": "Bridge Server",
+            "name": "Bridge Server",
             "details": "Provide the URL for an alternative bridge server",
             "placeholder": "https://"
           },
           "infura-id": {
-            "header": "Infura",
+            "name": "Infura",
             "details": "Provide the ID for an Infura project",
             "placeholder": "Project ID"
           },
           "rpc-url": {
-            "header": "RPC",
+            "name": "RPC",
             "details": "Provide the URL for an RPC endpoint",
             "placeholder": "https://"
           }
