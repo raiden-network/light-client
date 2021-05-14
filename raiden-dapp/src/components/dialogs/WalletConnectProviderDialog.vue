@@ -5,72 +5,51 @@
     </v-card-title>
 
     <v-card-text>
-      <div class="wallet-connect-provider__options__bridge-url">
-        <h3>
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.header') }}
-        </h3>
-        <span>
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.details') }}
-        </span>
-        <v-switch
-          class="wallet-connect-provider__options__bridge-url__toggle"
-          @change="toggleBridgeUrlOption"
-        />
-        <input
-          v-model.trim="bridgeUrlOption"
-          class="
-            wallet-connect-provider__input wallet-connect-provider__options__bridge-url__input
-          "
-          :disabled="bridgeUrlOptionDisabled"
-          :placeholder="
-            $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.placeholder')
-          "
-          @input="hideErrorMessage"
-        />
-      </div>
+      <text-input-with-toggle
+        v-model="bridgeUrlOption"
+        class="wallet-connect-provider__options__bridge-url"
+        :name="$t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.name')"
+        :details="
+          $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.details')
+        "
+        :placeholder="
+          $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.placeholder')
+        "
+        optional
+      />
 
       <v-btn-toggle mandatory>
         <v-btn class="wallet-connect-provider__option-toggle-button" @click="showInfuraIdOption">
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.header') }}
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.name') }}
         </v-btn>
         <v-btn class="wallet-connect-provider__option-toggle-button" @click="showRpcUrlOption">
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.header') }}
+          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.name') }}
         </v-btn>
       </v-btn-toggle>
 
-      <div v-if="infuraIdOptionVisible" class="wallet-connect-provider__options__infura-id">
-        <h3>
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.header') }}
-        </h3>
-        <span>
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.details') }}
-        </span>
-        <input
-          v-model.trim="infuraIdOption"
-          class="wallet-connect-provider__input wallet-connect-provider__options__infura-id__input"
-          :placeholder="
-            $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.placeholder')
-          "
-          @input="hideErrorMessage"
-        />
-      </div>
+      <text-input-with-toggle
+        v-if="infuraIdOptionVisible"
+        v-model="infuraIdOption"
+        class="wallet-connect-provider__options__infura-id"
+        :name="$t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.name')"
+        :details="
+          $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.details')
+        "
+        :placeholder="
+          $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.placeholder')
+        "
+      />
 
-      <div v-if="rpcUrlOptionVisible" class="wallet-connect-provider__options__rpc-url">
-        <h3>
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.header') }}
-        </h3>
-        <span>
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.details') }}
-        </span>
-        <input
-          v-model.trim="rpcUrlOption"
-          class="wallet-connect-provider__input wallet-connect-provider__options__rpc-url__input"
-          :placeholder="
-            $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.placeholder')
-          "
-          @input="hideErrorMessage"
-        />
-      </div>
+      <text-input-with-toggle
+        v-if="rpcUrlOptionVisible"
+        v-model="rpcUrlOption"
+        class="wallet-connect-provider__options__rpc-url"
+        :name="$t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.name')"
+        :details="$t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.details')"
+        :placeholder="
+          $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.placeholder')
+        "
+      />
 
       <v-alert
         v-if="linkFailed"
@@ -100,6 +79,7 @@ import { createNamespacedHelpers } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import TextInputWithToggle from '@/components/TextInputWithToggle.vue';
 import { WalletConnectProvider } from '@/services/ethereum-provider';
 
 enum OptionToggle {
@@ -113,8 +93,9 @@ const { mapGetters, mapMutations } = createNamespacedHelpers('userSettings');
 
 @Component({
   components: {
-    RaidenDialog,
     ActionButton,
+    TextInputWithToggle,
+    RaidenDialog,
   },
   methods: {
     ...mapGetters(['getEthereumProviderOptions']),
@@ -123,7 +104,6 @@ const { mapGetters, mapMutations } = createNamespacedHelpers('userSettings');
 })
 export default class WalletConnectProviderDialog extends Vue {
   bridgeUrlOption = '';
-  bridgeUrlOptionDisabled = true;
   infuraIdOption = '';
   rpcUrlOption = '';
   optionToggleState = OptionToggle.INFURA_ID;
@@ -181,10 +161,6 @@ export default class WalletConnectProviderDialog extends Vue {
     this.optionToggleState = OptionToggle.RPC_URL;
   }
 
-  toggleBridgeUrlOption(): void {
-    this.bridgeUrlOptionDisabled = !this.bridgeUrlOptionDisabled;
-  }
-
   hideErrorMessage(): void {
     this.linkFailed = false;
   }
@@ -234,57 +210,7 @@ export default class WalletConnectProviderDialog extends Vue {
 </script>
 
 <style lang="scss" scoped>
-@import '@/scss/mixins';
-@import '@/scss/colors';
-
 .wallet-connect-provider {
-  // TODO: This is not nice. We need to get rid of it.
-  &__input {
-    background-color: $input-background;
-    border-radius: 8px;
-    color: $color-gray;
-    height: 36px;
-    margin-top: 8px;
-    padding: 8px 8px 8px 16px;
-    width: 100%;
-
-    &:disabled {
-      opacity: 30%;
-    }
-  }
-
-  &__options {
-    &__bridge-url,
-    &__infura-id,
-    &__rpc-url {
-      display: flex;
-      flex-direction: column;
-      align-items: start;
-      color: $color-gray;
-      background-color: $input-background;
-      border-radius: 8px !important;
-      font-size: 14px;
-      text-align: left;
-      margin: 20px 0;
-      padding: 16px;
-
-      @include respond-to(handhelds) {
-        margin: 10px 0;
-      }
-    }
-
-    &__bridge-url {
-      position: relative;
-
-      &__toggle {
-        position: absolute;
-        top: 0;
-        right: 10px;
-        height: 32px;
-      }
-    }
-  }
-
   &__option-toggle-button {
     width: 92px;
   }
