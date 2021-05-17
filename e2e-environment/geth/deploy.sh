@@ -6,6 +6,7 @@ echo "Setting up private chain"
 VENV=/tmp/deploy_venv
 python3 -m venv $VENV
 source $VENV/bin/activate
+pip install -U pip wheel
 pip install mypy_extensions
 pip install click>=7.0
 pip install raiden-contracts==${CONTRACTS_PACKAGE_VERSION}
@@ -42,8 +43,8 @@ deploy_contracts.py --contract-version "${CONTRACTS_VERSION}" \
   --password "${PASSWORD}"
 
 if [[ -f ${SMARTCONTRACTS_ENV_FILE} ]]; then
-  cp ${VENV}/lib/python3.7/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_private_net.json /opt/deployment/
-  cp ${VENV}/lib/python3.7/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_services_private_net.json /opt/deployment/
+  cp ${VENV}/lib/python3.9/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_private_net.json /opt/deployment/
+  cp ${VENV}/lib/python3.9/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_services_private_net.json /opt/deployment/
 
   if [[ ! -f /opt/deployment/deployment_private_net.json ]]; then
     echo 'Could not find the deployment_private_net.json'

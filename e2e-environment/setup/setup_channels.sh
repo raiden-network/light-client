@@ -2,6 +2,9 @@
 
 source "${SMARTCONTRACTS_ENV_FILE}"
 
+echo "${SERVICE_REGISTRY}"
+echo "${ETH_RPC}"
+
 synapse-entrypoint.sh &
 SYNAPSE_PID=$!
 
@@ -41,6 +44,9 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:5555/api/
   fi
   echo "Waiting for Pathfinding service to start (${PFS_RETRIES})"
   PFS_RETRIES=$((PFS_RETRIES + 1))
+
+  cat /opt/services/raiden-services/homeserver.log
+
   sleep 20
 done
 
