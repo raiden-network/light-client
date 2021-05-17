@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { $t } from '../../utils/mocks';
 
 import type { Wrapper } from '@vue/test-utils';
@@ -9,8 +8,9 @@ import Vuetify from 'vuetify';
 
 import ActionButton from '@/components/ActionButton.vue';
 import InjectedProviderDialog from '@/components/dialogs/InjectedProviderDialog.vue';
-import { InjectedProvider } from '@/services/ethereum-provider';
+import { InjectedProvider } from '@/services/ethereum-provider/injected-provider';
 
+jest.mock('@/mixins/ethereum-provider-dialog-mixin');
 jest.mock('@/services/ethereum-provider/injected-provider');
 
 Vue.use(Vuetify);
@@ -20,7 +20,7 @@ const vuetify = new Vuetify();
 function createWrapper(): Wrapper<InjectedProviderDialog> {
   return mount(InjectedProviderDialog, {
     vuetify,
-    stubs: { 'action-button': ActionButton },
+    stubs: { 'v-dialog': true, 'action-button': ActionButton },
     mocks: { $t },
   });
 }
@@ -34,48 +34,13 @@ async function clickLinkButton(wrapper: Wrapper<InjectedProviderDialog>): Promis
 describe('InjectedProviderDialog.vue', () => {
   test('can link', async () => {
     const wrapper = createWrapper();
+    expect(wrapper.emitted('linkEstablished')).toBeUndefined();
 
     await clickLinkButton(wrapper);
 
     expect(InjectedProvider.link).toHaveBeenCalledTimes(1);
-  });
-
-  test('successful link emits linked provider instance', async () => {
-    const wrapper = createWrapper();
-
-    await clickLinkButton(wrapper);
-
-    expect(wrapper.emitted().linkEstablished?.length).toBe(1);
-  });
-
-  test('shows error when linking fails', async () => {
-    const wrapper = createWrapper();
-    let errorMessage = wrapper.find('.injected-provider__error-message');
-    expect(errorMessage.exists()).toBeFalsy();
-
-    (InjectedProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
-    await clickLinkButton(wrapper);
-
-    errorMessage = wrapper.find('.injected-provider__error-message');
-    expect(errorMessage.exists()).toBeTruthy();
-    expect(errorMessage.text()).toMatch(
-      'connection-manager.dialogs.injected-provider.error-message',
-    );
-  });
-
-  test('linking again after error hides error message', async () => {
-    const wrapper = createWrapper();
-
-    (InjectedProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
-    await clickLinkButton(wrapper);
-
-    let errorMessage = wrapper.find('.injected-provider__error-message');
-    expect(errorMessage.exists()).toBeTruthy();
-
-    // Failing mock was only **once**.
-    await clickLinkButton(wrapper);
-
-    errorMessage = wrapper.find('.injected-provider__error-message');
-    expect(errorMessage.exists()).toBeFalsy();
+    expect(InjectedProvider.link).toHaveBeenCalledWith({});
+    expect(wrapper.emitted('linkEstablished')?.length).toBe(1);
+    expect(wrapper.emitted('linkEstablished')?.[0][0]).toBeInstanceOf(InjectedProvider);
   });
 });

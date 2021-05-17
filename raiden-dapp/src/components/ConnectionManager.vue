@@ -211,6 +211,11 @@ export default class ConnectionManager extends Vue {
 
   &__error-message {
     min-height: 70px;
+    margin: 0 90px;
+
+    @include respond-to(handhelds) {
+      margin: 0 10px;
+    }
 
     &--hidden {
       visibility: hidden; // Make sure it still takes its height to avoid jumping

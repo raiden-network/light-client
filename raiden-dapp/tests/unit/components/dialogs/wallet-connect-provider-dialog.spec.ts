@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { $t } from '../../utils/mocks';
 
 import type { Wrapper } from '@vue/test-utils';
@@ -12,43 +11,18 @@ import ActionButton from '@/components/ActionButton.vue';
 import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
 import { WalletConnectProvider } from '@/services/ethereum-provider';
 
+jest.mock('@/mixins/ethereum-provider-dialog-mixin');
 jest.mock('@/services/ethereum-provider/wallet-connect-provider');
 
 Vue.use(Vuex);
 Vue.use(Vuetify);
 
 const vuetify = new Vuetify();
-const saveEthereumProviderOptionsMock = jest.fn();
 
-function createWrapper(options?: {
-  infuraId?: string;
-  bridgeUrl?: string;
-}): Wrapper<WalletConnectProviderDialog> {
-  const getters = {
-    getEthereumProviderOptions: () => () => ({
-      infuraId: options?.infuraId,
-      bridgeUrl: options?.bridgeUrl,
-    }),
-  };
-
-  const mutations = {
-    saveEthereumProviderOptions: saveEthereumProviderOptionsMock,
-  };
-
-  const userSettings = {
-    namespaced: true,
-    getters,
-    mutations,
-  };
-
-  const store = new Vuex.Store({
-    modules: { userSettings },
-  });
-
+function createWrapper(): Wrapper<WalletConnectProviderDialog> {
   return mount(WalletConnectProviderDialog, {
     vuetify,
-    store,
-    stubs: { 'action-button': ActionButton },
+    stubs: { 'v-dialog': true, 'action-button': ActionButton },
     mocks: { $t },
   });
 }
@@ -146,16 +120,22 @@ describe('WalletConnectProviderDialog.vue', () => {
 
   test('can link with Infura ID option only', async () => {
     const wrapper = createWrapper();
+    expect(wrapper.emitted('linkEstablished')).toBeUndefined();
 
     await insertInfuraIdOption(wrapper, 'testId');
     await clickLinkButton(wrapper);
 
     expect(WalletConnectProvider.link).toHaveBeenCalledTimes(1);
-    expect(WalletConnectProvider.link).toHaveBeenCalledWith({ infuraId: 'testId' });
+    expect(WalletConnectProvider.link).toHaveBeenCalledWith({
+      infuraId: 'testId',
+    });
+    expect(wrapper.emitted('linkEstablished')?.length).toBe(1);
+    expect(wrapper.emitted('linkEstablished')?.[0][0]).toBeInstanceOf(WalletConnectProvider);
   });
 
   test('can link with RPC URL option only', async () => {
     const wrapper = createWrapper();
+    expect(wrapper.emitted('linkEstablished')).toBeUndefined();
 
     await insertRpcUrlOption(wrapper, 'https://some.rpc.endpoint');
     await clickLinkButton(wrapper);
@@ -164,10 +144,13 @@ describe('WalletConnectProviderDialog.vue', () => {
     expect(WalletConnectProvider.link).toHaveBeenCalledWith({
       rpcUrl: 'https://some.rpc.endpoint',
     });
+    expect(wrapper.emitted('linkEstablished')?.length).toBe(1);
+    expect(wrapper.emitted('linkEstablished')?.[0][0]).toBeInstanceOf(WalletConnectProvider);
   });
 
   test('can link with optional bridge URL option', async () => {
     const wrapper = createWrapper();
+    expect(wrapper.emitted('linkEstablished')).toBeUndefined();
 
     await clickBridgeUrlOptionToggle(wrapper);
     await insertBridgeUrlOption(wrapper, 'https://some.bridge.server');
@@ -179,71 +162,7 @@ describe('WalletConnectProviderDialog.vue', () => {
       bridgeUrl: 'https://some.bridge.server',
       infuraId: 'testId',
     });
-  });
-
-  test('successful link emits linked provider instance', async () => {
-    const wrapper = createWrapper();
-
-    await insertInfuraIdOption(wrapper);
-    await clickLinkButton(wrapper);
-
-    expect(wrapper.emitted().linkEstablished?.length).toBe(1);
-  });
-
-  test('shows error when linking fails', async () => {
-    const wrapper = createWrapper();
-    let errorMessage = wrapper.find('.wallet-connect-provider__error-message');
-    expect(errorMessage.exists()).toBeFalsy();
-
-    (WalletConnectProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
-    await insertInfuraIdOption(wrapper);
-    await clickLinkButton(wrapper);
-
-    errorMessage = wrapper.find('.wallet-connect-provider__error-message');
-    expect(errorMessage.exists()).toBeTruthy();
-    expect(errorMessage.text()).toMatch(
-      'connection-manager.dialogs.wallet-connect-provider.error-message',
-    );
-  });
-
-  test('linking again after error hides error message', async () => {
-    const wrapper = createWrapper();
-
-    (WalletConnectProvider as any).link.mockRejectedValueOnce(new Error('canceled'));
-    await insertInfuraIdOption(wrapper);
-    await clickLinkButton(wrapper);
-
-    let errorMessage = wrapper.find('.wallet-connect-provider__error-message');
-    expect(errorMessage.exists()).toBeTruthy();
-
-    // Failing mock was only **once**.
-    await clickLinkButton(wrapper);
-
-    errorMessage = wrapper.find('.wallet-connect-provider__error-message');
-    expect(errorMessage.exists()).toBeFalsy();
-  });
-
-  test('can link with saved provider options from store', async () => {
-    const wrapper = createWrapper({ infuraId: 'testId', bridgeUrl: 'https://some.bridge.server' });
-
-    await clickLinkButton(wrapper);
-
-    expect(WalletConnectProvider.link).toHaveBeenCalledWith({
-      bridgeUrl: 'https://some.bridge.server',
-      infuraId: 'testId',
-    });
-  });
-
-  test('successful link saves provider options to store', async () => {
-    const wrapper = createWrapper();
-
-    await insertInfuraIdOption(wrapper, 'testId');
-    await clickLinkButton(wrapper);
-
-    expect(saveEthereumProviderOptionsMock).toHaveBeenCalledTimes(1);
-    expect(saveEthereumProviderOptionsMock).toHaveBeenCalledWith(expect.anything(), {
-      providerName: 'wallet_connect_mock',
-      providerOptions: { infuraId: 'testId' },
-    });
+    expect(wrapper.emitted('linkEstablished')?.length).toBe(1);
+    expect(wrapper.emitted('linkEstablished')?.[0][0]).toBeInstanceOf(WalletConnectProvider);
   });
 });

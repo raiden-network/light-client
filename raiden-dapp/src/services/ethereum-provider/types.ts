@@ -6,11 +6,18 @@ import type { providers } from 'ethers';
 // later and being explicit about it at all places.
 export type EthereumProviderOptions = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
+export interface EthereumProviderFactory {
+  providerName: string;
+  isAvailable: boolean;
+  link: (options: EthereumProviderOptions) => Promise<EthereumProvider>;
+}
+
 // TOOD: watch-out when `static abstract` becomes possible in TypeScript
 export abstract class EthereumProvider {
   static providerName: string;
   static isAvailable = false;
   static link: (options: EthereumProviderOptions) => Promise<EthereumProvider>;
+
   abstract provider: providers.JsonRpcProvider;
   abstract account: string | number;
 

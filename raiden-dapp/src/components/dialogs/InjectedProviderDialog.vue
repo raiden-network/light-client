@@ -5,10 +5,10 @@
     </v-card-title>
 
     <v-card-text>
-      <spinner v-if="inProgress" />
+      <spinner v-if="linkingInProgress" />
 
       <v-alert
-        v-if="linkFailed"
+        v-if="linkingFailed"
         class="injected-provider__error-message text-left font-weight-light"
         color="error"
         icon="warning"
@@ -19,7 +19,7 @@
 
     <v-card-actions>
       <action-button
-        :enabled="!inProgress"
+        :enabled="!linkingInProgress"
         class="injected-provider__link-button"
         :text="$t('connection-manager.dialogs.injected-provider.link-button')"
         width="200px"
@@ -30,11 +30,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Vue } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
+import EthereumProviderDialogMixin from '@/mixins/ethereum-provider-dialog-mixin';
 import { InjectedProvider } from '@/services/ethereum-provider';
 
 @Component({
@@ -44,31 +45,7 @@ import { InjectedProvider } from '@/services/ethereum-provider';
     Spinner,
   },
 })
-export default class WalletConnectProviderDialog extends Vue {
-  linkFailed = false;
-  inProgress = false;
-
-  async link(): Promise<void> {
-    this.linkFailed = false;
-    this.inProgress = true;
-
-    try {
-      const provider = await InjectedProvider.link();
-      this.emitLinkEstablished(provider);
-    } catch {
-      this.linkFailed = true;
-      this.inProgress = false;
-    }
-  }
-
-  @Emit('linkEstablished')
-  emitLinkEstablished(linkedProvider: InjectedProvider): InjectedProvider {
-    return linkedProvider;
-  }
-
-  @Emit('cancel')
-  emitCancel(): void {
-    // pass
-  }
+export default class InjectedProviderDialog extends Mixins(EthereumProviderDialogMixin) {
+  providerFactory = InjectedProvider;
 }
 </script>
