@@ -12,14 +12,13 @@ source /opt/raiden/bin/activate
 echo Starting Chain
 ACCOUNT=$(cat /opt/deployment/miner.sh)
 
-geth --rpc --syncmode full --gcmode archive --datadir "${DATA_DIR}" \
+geth --syncmode full --gcmode archive --datadir "${DATA_DIR}" \
   --networkid 4321 \
   --nodiscover \
-  --rpc \
-  --rpcapi "eth,net,web3,txpool" \
-  --minerthreads=1 \
+  --http \
+  --http.api "eth,net,web3,txpool" \
+  --miner.threads 1 \
   --mine \
-  --nousb \
   --unlock "${ACCOUNT}" \
   --password "${PASSWORD_FILE}" \
   --allow-insecure-unlock &
