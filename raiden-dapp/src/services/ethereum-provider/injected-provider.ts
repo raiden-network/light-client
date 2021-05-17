@@ -11,9 +11,9 @@ export class InjectedProvider extends EthereumProvider {
     return !!window.ethereum || !!window.web3;
   }
 
-  private constructor(injetedProvider: providers.ExternalProvider) {
+  private constructor(injectedProvider: providers.ExternalProvider) {
     super();
-    this.provider = new providers.Web3Provider(injetedProvider);
+    this.provider = new providers.Web3Provider(injectedProvider);
   }
 
   public static async link(): Promise<InjectedProvider> {

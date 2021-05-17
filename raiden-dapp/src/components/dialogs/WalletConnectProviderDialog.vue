@@ -6,7 +6,7 @@
 
     <v-card-text>
       <text-input-with-toggle
-        v-model="bridgeUrlOption"
+        v-model="bridgeUrl"
         class="wallet-connect-provider__options__bridge-url"
         :name="$t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.name')"
         :details="
@@ -29,7 +29,7 @@
 
       <text-input-with-toggle
         v-if="infuraIdOptionVisible"
-        v-model="infuraIdOption"
+        v-model="infuraId"
         class="wallet-connect-provider__options__infura-id"
         :name="$t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.name')"
         :details="
@@ -42,7 +42,7 @@
 
       <text-input-with-toggle
         v-if="rpcUrlOptionVisible"
-        v-model="rpcUrlOption"
+        v-model="rpcUrl"
         class="wallet-connect-provider__options__rpc-url"
         :name="$t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.name')"
         :details="$t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.details')"
@@ -52,7 +52,7 @@
       />
 
       <v-alert
-        v-if="linkFailed"
+        v-if="linkingFailed"
         class="wallet-connect-provider__error-message text-left font-weight-light"
         color="error"
         icon="warning"
@@ -74,12 +74,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Vue } from 'vue-property-decorator';
-import { createNamespacedHelpers } from 'vuex';
+import { Component, Mixins } from 'vue-property-decorator';
 
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import TextInputWithToggle from '@/components/TextInputWithToggle.vue';
+import EthereumProviderDialogMixin from '@/mixins/ethereum-provider-dialog-mixin';
 import { WalletConnectProvider } from '@/services/ethereum-provider';
 
 enum OptionToggle {
@@ -89,31 +89,19 @@ enum OptionToggle {
 
 type WalletConnectProviderOptions = Parameters<typeof WalletConnectProvider.link>[0];
 
-const { mapGetters, mapMutations } = createNamespacedHelpers('userSettings');
-
 @Component({
   components: {
     ActionButton,
     TextInputWithToggle,
     RaidenDialog,
   },
-  methods: {
-    ...mapGetters(['getEthereumProviderOptions']),
-    ...mapMutations(['saveEthereumProviderOptions']),
-  },
 })
-export default class WalletConnectProviderDialog extends Vue {
-  bridgeUrlOption = '';
-  infuraIdOption = '';
-  rpcUrlOption = '';
+export default class WalletConnectProviderDialog extends Mixins(EthereumProviderDialogMixin) {
+  providerFactory = WalletConnectProvider;
+  bridgeUrl = '';
+  infuraId = '';
+  rpcUrl = '';
   optionToggleState = OptionToggle.INFURA_ID;
-  linkFailed = false;
-
-  getEthereumProviderOptions!: () => (providerName: string) => WalletConnectProviderOptions;
-  saveEthereumProviderOptions!: (payload: {
-    providerName: string;
-    providerOptions: WalletConnectProviderOptions;
-  }) => void;
 
   get infuraIdOptionVisible(): boolean {
     return this.optionToggleState === OptionToggle.INFURA_ID;
@@ -124,7 +112,7 @@ export default class WalletConnectProviderDialog extends Vue {
   }
 
   get canLink(): boolean {
-    return !!this.infuraIdOption || !!this.rpcUrlOption;
+    return !!this.infuraId || !!this.rpcUrl;
   }
 
   get providerOptions(): WalletConnectProviderOptions {
@@ -134,23 +122,29 @@ export default class WalletConnectProviderDialog extends Vue {
     // specified an Infura ID **and** a RPC URL, the linking would fail.
     switch (this.optionToggleState) {
       case OptionToggle.INFURA_ID:
-        options = { infuraId: this.infuraIdOption };
+        options = { infuraId: this.infuraId };
         break;
 
       case OptionToggle.RPC_URL:
-        options = { rpcUrl: this.rpcUrlOption };
+        options = { rpcUrl: this.rpcUrl };
         break;
     }
 
-    if (this.bridgeUrlOption) {
-      options.bridgeUrl = this.bridgeUrlOption;
+    if (this.bridgeUrl) {
+      options.bridgeUrl = this.bridgeUrl;
     }
 
     return options;
   }
 
   created(): void {
-    this.loadSavedProviderOptions();
+    this.switchOptionToggleIfNecessary();
+  }
+
+  switchOptionToggleIfNecessary(): void {
+    if (!this.infuraId && this.rpcUrl) {
+      this.showRpcUrlOption();
+    }
   }
 
   showInfuraIdOption(): void {
@@ -159,52 +153,6 @@ export default class WalletConnectProviderDialog extends Vue {
 
   showRpcUrlOption(): void {
     this.optionToggleState = OptionToggle.RPC_URL;
-  }
-
-  hideErrorMessage(): void {
-    this.linkFailed = false;
-  }
-
-  loadSavedProviderOptions(): void {
-    const savedProviderOptions = this.getEthereumProviderOptions()(
-      WalletConnectProvider.providerName,
-    );
-    this.bridgeUrlOption = savedProviderOptions.bridgeUrl ?? '';
-    this.infuraIdOption = savedProviderOptions.infuraId ?? '';
-    this.rpcUrlOption = savedProviderOptions.rpcUrl ?? '';
-
-    if (!this.infuraIdOption && this.rpcUrlOption) {
-      this.showRpcUrlOption();
-    }
-  }
-
-  saveProviderOptions(): void {
-    this.saveEthereumProviderOptions({
-      providerName: WalletConnectProvider.providerName,
-      providerOptions: this.providerOptions,
-    });
-  }
-
-  async link(): Promise<void> {
-    this.linkFailed = false;
-
-    try {
-      const provider = await WalletConnectProvider.link(this.providerOptions);
-      this.saveProviderOptions();
-      this.emitLinkEstablished(provider);
-    } catch {
-      this.linkFailed = true;
-    }
-  }
-
-  @Emit('linkEstablished')
-  emitLinkEstablished(linkedProvider: WalletConnectProvider): WalletConnectProvider {
-    return linkedProvider;
-  }
-
-  @Emit('cancel')
-  emitCancel(): void {
-    this.saveProviderOptions();
   }
 }
 </script>

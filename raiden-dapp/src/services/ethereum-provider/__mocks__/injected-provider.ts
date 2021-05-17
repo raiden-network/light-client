@@ -6,5 +6,5 @@ export class InjectedProvider {
     return true;
   }
 
-  public static link = jest.fn().mockResolvedValue(undefined);
+  public static link = jest.fn(async () => new InjectedProvider());
 }
