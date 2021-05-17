@@ -24,6 +24,13 @@
         width="280px"
         @click="openInjectedProviderDialog"
       />
+      <action-button
+        class="connection-manager__provider-dialog-button"
+        :enabled="directRpcProviderAvailable"
+        :text="$t('connection-manager.dialogs.direct-rpc-provider.header')"
+        width="280px"
+        @click="openDirectRpcProviderDialog"
+      />
     </template>
 
     <wallet-connect-provider-dialog
@@ -35,6 +42,12 @@
       v-if="injectedProviderDialogVisible"
       @linkEstablished="onProviderLinkEstablished"
       @cancel="closeInjectedProviderDialog"
+    />
+
+    <direct-rpc-provider-dialog
+      v-if="directRpcProviderDialogVisible"
+      @linkEstablished="onProviderLinkEstablished"
+      @cancel="closeDirectRpcProviderDialog"
     />
 
     <template v-if="inProgress">
@@ -49,6 +62,7 @@ import { createNamespacedHelpers, mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
+import DirectRpcProviderDialog from '@/components/dialogs/DirectRpcProviderDialog.vue';
 import InjectedProviderDialog from '@/components/dialogs/InjectedProviderDialog.vue';
 import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
 import { ErrorCode } from '@/model/types';
@@ -80,6 +94,7 @@ const { mapState: mapUserSettingsState } = createNamespacedHelpers('userSettings
   components: {
     ActionButton,
     ConnectionPendingDialog,
+    DirectRpcProviderDialog,
     InjectedProviderDialog,
     WalletConnectProviderDialog,
   },
@@ -91,6 +106,7 @@ export default class ConnectionManager extends Vue {
 
   walletConnectProviderDialogVisible = false;
   injectedProviderDialogVisible = false;
+  directRpcProviderDialogVisible = false;
   inProgress = false;
   errorCode: ErrorCode | null = null;
 
@@ -113,6 +129,10 @@ export default class ConnectionManager extends Vue {
 
   get injectedProviderAvailable(): boolean {
     return InjectedProvider.isAvailable;
+  }
+
+  get directRpcProviderAvailable(): boolean {
+    return DirectRpcProvider.isAvailable;
   }
 
   /**
@@ -145,9 +165,18 @@ export default class ConnectionManager extends Vue {
     this.injectedProviderDialogVisible = false;
   }
 
+  openDirectRpcProviderDialog(): void {
+    this.directRpcProviderDialogVisible = true;
+  }
+
+  closeDirectRpcProviderDialog(): void {
+    this.directRpcProviderDialogVisible = false;
+  }
+
   closeAllProviderDialogs(): void {
     this.closeWalletConnectProviderDialog();
     this.closeInjectedProviderDialog();
+    this.closeDirectRpcProviderDialog();
   }
 
   async onProviderLinkEstablished(linkedProvider: EthereumProvider): Promise<void> {
