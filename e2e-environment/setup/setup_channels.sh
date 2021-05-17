@@ -2,16 +2,6 @@
 
 source "${SMARTCONTRACTS_ENV_FILE}"
 
-echo "${SERVICE_REGISTRY}"
-echo "${ETH_RPC}"
-
-synapse-entrypoint.sh &
-SYNAPSE_PID=$!
-
-echo Synapse server is running at "${SYNAPSE_PID}"
-
-source /opt/raiden/bin/activate
-
 echo Starting Chain
 ACCOUNT=$(cat /opt/deployment/miner.sh)
 
@@ -27,6 +17,25 @@ geth --syncmode full --gcmode archive --datadir "${DATA_DIR}" \
   --allow-insecure-unlock &
 
 GETH_PID=$!
+
+source /opt/services/venv/bin/activate
+python3 -m raiden_libs.service_registry register \
+  --log-level DEBUG \
+  --keystore-file /opt/services/keystore/UTC--2020-03-11T15-39-16.935381228Z--2b5e1928c25c5a326dbb61fc9713876dd2904e34 \
+  --password 1234 \
+  --eth-rpc "http://localhost:8545" \
+  --accept-all \
+  --service-url "http://test.rsb"
+deactivate
+
+synapse-entrypoint.sh &
+SYNAPSE_PID=$!
+
+echo Synapse server is running at "${SYNAPSE_PID}"
+
+source /opt/raiden/bin/activate
+
+
 
 echo Start PFS
 source /opt/services/venv/bin/activate
@@ -44,8 +53,6 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:5555/api/
   fi
   echo "Waiting for Pathfinding service to start (${PFS_RETRIES})"
   PFS_RETRIES=$((PFS_RETRIES + 1))
-
-  cat /opt/services/raiden-services/homeserver.log
 
   sleep 20
 done
