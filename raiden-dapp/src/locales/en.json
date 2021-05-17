@@ -774,6 +774,22 @@
       "base": {
         "link-button": "Connect"
       },
+      "direct-rpc-provider": {
+        "header": "Direct RPC Provider",
+        "error-message": "Failed to link to configured provider. Please make sure the given parmaters and the service is available.",
+        "options": {
+          "rpc-url": {
+            "name": "RPC",
+            "details": "Provide the URL for an RPC endpoint",
+            "placeholder": "https://"
+          },
+          "private-key": {
+            "name": "Private Key",
+            "details": "Hex encoded private key of your Ethereum account.",
+            "placeholder": "f0a78..."
+          }
+        }
+      },
       "injected-provider": {
         "header": "Injected Provider",
         "error-message": "Failed to link to provider. Please make sure to grant the requested permissions."

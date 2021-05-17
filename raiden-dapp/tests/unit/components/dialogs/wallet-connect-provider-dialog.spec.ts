@@ -5,7 +5,6 @@ import { mount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
-import Vuex from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
@@ -14,7 +13,6 @@ import { WalletConnectProvider } from '@/services/ethereum-provider';
 jest.mock('@/mixins/ethereum-provider-dialog-mixin');
 jest.mock('@/services/ethereum-provider/wallet-connect-provider');
 
-Vue.use(Vuex);
 Vue.use(Vuetify);
 
 const vuetify = new Vuetify();
