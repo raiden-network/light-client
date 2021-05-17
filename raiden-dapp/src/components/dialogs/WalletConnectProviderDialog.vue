@@ -1,83 +1,63 @@
 <template>
-  <raiden-dialog width="472" class="wallet-connect-provider" :visible="true" @close="emitCancel">
-    <v-card-title>
-      {{ $t('connection-manager.dialogs.wallet-connect-provider.header') }}
-    </v-card-title>
+  <ethereum-provider-base-dialog
+    :header="$t('connection-manager.dialogs.wallet-connect-provider.header')"
+    :can-link="canLink"
+    :linking-in-progress="linkingInProgress"
+    :linking-failed="linkingFailed"
+    :error-message="$t('connection-manager.dialogs.wallet-connect-provider.error-message')"
+    @link="link"
+    @cancel="emitCancel"
+  >
+    <text-input-with-toggle
+      v-model="bridgeUrl"
+      class="wallet-connect-provider__options__bridge-url"
+      :name="$t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.name')"
+      :details="
+        $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.details')
+      "
+      :placeholder="
+        $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.placeholder')
+      "
+      optional
+    />
 
-    <v-card-text>
-      <text-input-with-toggle
-        v-model="bridgeUrl"
-        class="wallet-connect-provider__options__bridge-url"
-        :name="$t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.name')"
-        :details="
-          $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.details')
-        "
-        :placeholder="
-          $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.placeholder')
-        "
-        optional
-      />
+    <v-btn-toggle mandatory>
+      <v-btn class="wallet-connect-provider__option-toggle-button" @click="showInfuraIdOption">
+        {{ $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.name') }}
+      </v-btn>
+      <v-btn class="wallet-connect-provider__option-toggle-button" @click="showRpcUrlOption">
+        {{ $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.name') }}
+      </v-btn>
+    </v-btn-toggle>
 
-      <v-btn-toggle mandatory>
-        <v-btn class="wallet-connect-provider__option-toggle-button" @click="showInfuraIdOption">
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.name') }}
-        </v-btn>
-        <v-btn class="wallet-connect-provider__option-toggle-button" @click="showRpcUrlOption">
-          {{ $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.name') }}
-        </v-btn>
-      </v-btn-toggle>
+    <text-input-with-toggle
+      v-if="infuraIdOptionVisible"
+      v-model="infuraId"
+      class="wallet-connect-provider__options__infura-id"
+      :name="$t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.name')"
+      :details="$t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.details')"
+      :placeholder="
+        $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.placeholder')
+      "
+    />
 
-      <text-input-with-toggle
-        v-if="infuraIdOptionVisible"
-        v-model="infuraId"
-        class="wallet-connect-provider__options__infura-id"
-        :name="$t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.name')"
-        :details="
-          $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.details')
-        "
-        :placeholder="
-          $t('connection-manager.dialogs.wallet-connect-provider.options.infura-id.placeholder')
-        "
-      />
-
-      <text-input-with-toggle
-        v-if="rpcUrlOptionVisible"
-        v-model="rpcUrl"
-        class="wallet-connect-provider__options__rpc-url"
-        :name="$t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.name')"
-        :details="$t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.details')"
-        :placeholder="
-          $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.placeholder')
-        "
-      />
-
-      <v-alert
-        v-if="linkingFailed"
-        class="wallet-connect-provider__error-message text-left font-weight-light"
-        color="error"
-        icon="warning"
-      >
-        {{ $t('connection-manager.dialogs.wallet-connect-provider.error-message') }}
-      </v-alert>
-    </v-card-text>
-
-    <v-card-actions>
-      <action-button
-        :enabled="canLink"
-        class="wallet-connect-provider__link-button"
-        :text="$t('connection-manager.dialogs.wallet-connect-provider.link-button')"
-        width="200px"
-        @click="link"
-      />
-    </v-card-actions>
-  </raiden-dialog>
+    <text-input-with-toggle
+      v-if="rpcUrlOptionVisible"
+      v-model="rpcUrl"
+      class="wallet-connect-provider__options__rpc-url"
+      :name="$t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.name')"
+      :details="$t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.details')"
+      :placeholder="
+        $t('connection-manager.dialogs.wallet-connect-provider.options.rpc-url.placeholder')
+      "
+    />
+  </ethereum-provider-base-dialog>
 </template>
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
 
-import ActionButton from '@/components/ActionButton.vue';
-import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
+import EthereumProviderBaseDialog from '@/components/dialogs/EthereumProviderBaseDialog.vue';
 import TextInputWithToggle from '@/components/TextInputWithToggle.vue';
 import EthereumProviderDialogMixin from '@/mixins/ethereum-provider-dialog-mixin';
 import { WalletConnectProvider } from '@/services/ethereum-provider';
@@ -91,9 +71,8 @@ type WalletConnectProviderOptions = Parameters<typeof WalletConnectProvider.link
 
 @Component({
   components: {
-    ActionButton,
+    EthereumProviderBaseDialog,
     TextInputWithToggle,
-    RaidenDialog,
   },
 })
 export default class WalletConnectProviderDialog extends Mixins(EthereumProviderDialogMixin) {
