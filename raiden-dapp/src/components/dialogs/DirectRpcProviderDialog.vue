@@ -2,6 +2,7 @@
   <ethereum-provider-base-dialog
     data-cy="direct-rpc-provider"
     :header="$t('connection-manager.dialogs.direct-rpc-provider.header')"
+    :description="$t('connection-manager.dialogs.direct-rpc-provider.description')"
     :can-link="canLink"
     :linking-in-progress="linkingInProgress"
     :linking-failed="linkingFailed"
