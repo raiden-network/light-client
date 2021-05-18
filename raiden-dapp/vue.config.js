@@ -120,13 +120,6 @@ module.exports = {
       );
     }
 
-    if (process.env.E2E) {
-      patterns.push({
-        from: path.resolve(__dirname, 'tests', 'e2e', 'e2e.json'),
-        to: distributionDirectoryPath,
-      });
-    }
-
     if (patterns.length > 0) {
       config.plugins.push(
         new CopyWebpackPlugin({

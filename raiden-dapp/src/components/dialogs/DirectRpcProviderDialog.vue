@@ -1,5 +1,6 @@
 <template>
   <ethereum-provider-base-dialog
+    data-cy="direct-rpc-provider"
     :header="$t('connection-manager.dialogs.direct-rpc-provider.header')"
     :can-link="canLink"
     :linking-in-progress="linkingInProgress"
@@ -11,6 +12,7 @@
     <text-input-with-toggle
       v-model="rpcUrl"
       class="direct-rpc-provider__options__rpc-url"
+      data-cy="direct-rpc-provider__options__rpc-url"
       :name="$t('connection-manager.dialogs.direct-rpc-provider.options.rpc-url.name')"
       :details="$t('connection-manager.dialogs.direct-rpc-provider.options.rpc-url.details')"
       :placeholder="
@@ -21,6 +23,7 @@
     <text-input-with-toggle
       v-model="privateKey"
       class="direct-rpc-provider__options__private-key"
+      data-cy="direct-rpc-provider__options__private-key"
       :name="$t('connection-manager.dialogs.direct-rpc-provider.options.private-key.name')"
       :details="$t('connection-manager.dialogs.direct-rpc-provider.options.private-key.details')"
       :placeholder="

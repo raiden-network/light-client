@@ -26,6 +26,7 @@
       />
       <action-button
         class="connection-manager__provider-dialog-button"
+        data-cy="connection-manager__provider-dialog-button"
         :enabled="directRpcProviderAvailable"
         :text="$t('connection-manager.dialogs.direct-rpc-provider.header')"
         width="280px"
@@ -133,20 +134,6 @@ export default class ConnectionManager extends Vue {
 
   get directRpcProviderAvailable(): boolean {
     return DirectRpcProvider.isAvailable;
-  }
-
-  /**
-   * This is a workaround to make the end-to-end tests working while the
-   * connection manager does not support user configured direct RPC provider
-   * connections.
-   */
-  async created(): Promise<void> {
-    const { rpc_endpoint: rpcUrl, private_key: privateKey } = await ConfigProvider.configuration();
-
-    if (rpcUrl && privateKey) {
-      const provider = await DirectRpcProvider.link({ rpcUrl, privateKey });
-      this.connect(provider);
-    }
   }
 
   openWalletConnectProviderDialog(): void {

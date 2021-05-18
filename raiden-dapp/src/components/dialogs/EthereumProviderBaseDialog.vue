@@ -24,6 +24,7 @@
 
     <v-card-actions>
       <action-button
+        data-cy="ethereum-provider-base-dialog__button"
         :enabled="buttonEnabled"
         :text="$t('connection-manager.dialogs.base.link-button')"
         width="200px"

@@ -16,7 +16,17 @@ export function acceptDisclaimer() {
 export function connectToDApp() {
   // cypress selectors: raiden-dapp/src/views/Home.vue
   cy.get('[data-cy=home]').should('exist');
-  cy.get('[data-cy=home_connect_button]').click();
+  cy.get('[data-cy=connection-manager__provider-dialog-button]').click();
+  cy.get('[data-cy=direct-rpc-provider]').should('exist');
+  cy.get('[data-cy=direct-rpc-provider__options__rpc-url]')
+    .find('.text-input-with-toggle__input')
+    .clear()
+    .type('http://localhost:8545');
+  cy.get('[data-cy=direct-rpc-provider__options__private-key]')
+    .find('.text-input-with-toggle__input')
+    .clear()
+    .type('0x6d333faba41b4c3d8ae979417e2818326d333faba41b4c3d8ae979417e281832');
+  cy.get('[data-cy=ethereum-provider-base-dialog__button]').click();
   cy.getWithCustomTimeout('[data-cy=home]').should('not.exist');
 }
 
