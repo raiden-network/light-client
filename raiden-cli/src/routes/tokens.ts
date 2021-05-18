@@ -3,7 +3,12 @@ import { Router } from 'express';
 import { first } from 'rxjs/operators';
 
 import type { Cli } from '../types';
-import { validateAddressParameter } from '../utils/validation';
+import {
+  isConflictError,
+  isInsuficientFundsError,
+  isInvalidParameterError,
+  validateAddressParameter,
+} from '../utils/validation';
 
 export interface ApiTokenPartner {
   partner_address: string;
@@ -39,6 +44,22 @@ async function getTokenPartners(this: Cli, request: Request, response: Response)
   );
 }
 
+async function registerToken(this: Cli, request: Request, response: Response) {
+  const token: string = request.params.tokenAddress;
+  try {
+    const address = await this.raiden.registerToken(token);
+    response.status(201).json({ token_network_address: address });
+  } catch (error) {
+    if (isInsuficientFundsError(error)) {
+      response.status(402).send(error.message);
+    } else if (isInvalidParameterError(error) || isConflictError(error)) {
+      response.status(409).send({ message: error.message });
+    } else {
+      response.status(500).send(error.message);
+    }
+  }
+}
+
 /**
  * @param this - Cli object
  * @returns Router instance
@@ -60,9 +81,11 @@ export function makeTokensRouter(this: Cli): Router {
     getTokenPartners.bind(this),
   );
 
-  router.put('/:tokenAddress', (_request: Request, response: Response) => {
-    response.status(404).send('Not implemented yet');
-  });
+  router.put(
+    '/:tokenAddress',
+    validateAddressParameter.bind('tokenAddress'),
+    registerToken.bind(this),
+  );
 
   return router;
 }

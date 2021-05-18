@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+- [#1576] Add functionality to deploy token networks
+
+[#1576]: https://github.com/raiden-network/light-client/issues/1576
+
 ## [0.16.0] - 2021-04-01
 ### Changed
 - [#2570] Support list of additional services URLs to be passed to `--pathfindingServiceAddress`
