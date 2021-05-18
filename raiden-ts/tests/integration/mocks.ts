@@ -129,7 +129,7 @@ export async function flushPromises() {
 
 type ZipTuple<
   T extends readonly [string, ...string[]],
-  U extends [any, ...any[]] & { length: T['length'] }
+  U extends [any, ...any[]] & { length: T['length'] },
 > = {
   [K in keyof T]: [T[K], K extends keyof U ? U[K] : never];
 };
@@ -141,7 +141,7 @@ type ZipTuple<
  */
 export function makeStruct<
   Keys extends readonly [string, ...string[]],
-  Values extends [any, ...any[]] & { length: Keys['length'] }
+  Values extends [any, ...any[]] & { length: Keys['length'] },
 >(keys: Keys, values: Values) {
   return Object.assign(
     [...values],
@@ -222,15 +222,16 @@ export function makeTransaction(
 // array of cleanup functions registered on current test
 const mockedCleanups: (() => void)[] = [];
 
-export const fetch = jest.fn<
-  Promise<{
-    ok: boolean;
-    status: number;
-    json: jest.MockedFunction<() => Promise<any>>;
-    text?: jest.MockedFunction<() => Promise<string>>;
-  }>,
-  [string?, any?]
->();
+export const fetch =
+  jest.fn<
+    Promise<{
+      ok: boolean;
+      status: number;
+      json: jest.MockedFunction<() => Promise<any>>;
+      text?: jest.MockedFunction<() => Promise<string>>;
+    }>,
+    [string?, any?]
+  >();
 Object.assign(globalThis, { fetch });
 
 beforeEach(() => {
@@ -342,7 +343,7 @@ function mockedMatrixCreateClient({
   }
 
   let stopped: typeof mockedMatrixUsers[string] | undefined;
-  const matrix = (Object.assign(new EventEmitter(), {
+  const matrix = Object.assign(new EventEmitter(), {
     startClient: jest.fn(async () => {
       if (!(userId in mockedMatrixUsers) && stopped) mockedMatrixUsers[userId] = stopped;
       stopped = undefined;
@@ -557,7 +558,7 @@ function mockedMatrixCreateClient({
       storeRoom: jest.fn(),
     },
     createFilter: jest.fn(async () => true),
-  }) as unknown) as jest.Mocked<MatrixClient>;
+  }) as unknown as jest.Mocked<MatrixClient>;
   return matrix;
 }
 
@@ -720,58 +721,54 @@ export async function makeRaiden(
   spyContract(registryContract, 'TokenNetworkRegistry');
   registryContract.token_to_token_networks.mockImplementation(async () => makeAddress());
 
-  const getTokenNetworkContract = memoize(
-    (address: string): MockedContract<TokenNetwork> => {
-      const tokenNetworkContract = TokenNetwork__factory.connect(
-        address,
-        signer,
-      ) as MockedContract<TokenNetwork>;
-      spyContract(tokenNetworkContract, `TokenNetwork[${address}]`);
-      tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
-        Zero,
-        Zero,
-        false,
-        HashZero,
-        Zero,
-        HashZero,
-        Zero,
-      ]);
-      tokenNetworkContract.openChannel.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.setTotalDeposit.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.setTotalWithdraw.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.closeChannel.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.updateNonClosingBalanceProof.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.settleChannel.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.unlock.mockResolvedValue(makeTransaction(undefined, { to: address }));
-      return tokenNetworkContract;
-    },
-  );
+  const getTokenNetworkContract = memoize((address: string): MockedContract<TokenNetwork> => {
+    const tokenNetworkContract = TokenNetwork__factory.connect(
+      address,
+      signer,
+    ) as MockedContract<TokenNetwork>;
+    spyContract(tokenNetworkContract, `TokenNetwork[${address}]`);
+    tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
+      Zero,
+      Zero,
+      false,
+      HashZero,
+      Zero,
+      HashZero,
+      Zero,
+    ]);
+    tokenNetworkContract.openChannel.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.setTotalDeposit.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.setTotalWithdraw.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.closeChannel.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.updateNonClosingBalanceProof.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.settleChannel.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.unlock.mockResolvedValue(makeTransaction(undefined, { to: address }));
+    return tokenNetworkContract;
+  });
 
-  const getTokenContract = memoize(
-    (address: string): MockedContract<HumanStandardToken> => {
-      const tokenContract = HumanStandardToken__factory.connect(
-        address,
-        signer,
-      ) as MockedContract<HumanStandardToken>;
-      spyContract(tokenContract, `Token[${address}]`);
-      tokenContract.approve.mockResolvedValue(makeTransaction(undefined, { to: address }));
-      tokenContract.allowance.mockResolvedValue(Zero);
-      tokenContract.balanceOf.mockResolvedValue(parseEther('1000'));
-      return tokenContract;
-    },
-  );
+  const getTokenContract = memoize((address: string): MockedContract<HumanStandardToken> => {
+    const tokenContract = HumanStandardToken__factory.connect(
+      address,
+      signer,
+    ) as MockedContract<HumanStandardToken>;
+    spyContract(tokenContract, `Token[${address}]`);
+    tokenContract.approve.mockResolvedValue(makeTransaction(undefined, { to: address }));
+    tokenContract.allowance.mockResolvedValue(Zero);
+    tokenContract.balanceOf.mockResolvedValue(parseEther('1000'));
+    return tokenContract;
+  });
 
   const serviceRegistryContract = ServiceRegistry__factory.connect(
     serviceRegistryAddress,

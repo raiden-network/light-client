@@ -148,7 +148,7 @@ const _matrixIceServersCache = new WeakMap<MatrixClient, [number, RTCIceServer[]
 async function getMatrixIceServers(matrix: MatrixClient): Promise<RTCIceServer[]> {
   const cached = _matrixIceServersCache.get(matrix);
   if (cached && Date.now() < cached[0]) return cached[1];
-  const fetched = ((await matrix.turnServer().catch(() => undefined)) as unknown) as
+  const fetched = (await matrix.turnServer().catch(() => undefined)) as unknown as
     | {
         uris: string | string[];
         ttl: number;

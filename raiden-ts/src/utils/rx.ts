@@ -396,7 +396,7 @@ export function dispatchRequestAndGetResponse<
   T,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
-  R
+  R,
 >(
   aac: AAC,
   project: (

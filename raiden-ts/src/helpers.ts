@@ -91,25 +91,25 @@ import { Address, decode, isntNil, PrivateKey } from './utils/types';
 export const getContracts = (network: Network): ContractsInfo => {
   switch (network.name) {
     case 'rinkeby':
-      return ({
+      return {
         ...rinkebyDeploy.contracts,
         ...rinkebyServicesDeploy.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     case 'ropsten':
-      return ({
+      return {
         ...ropstenDeploy.contracts,
         ...ropstenServicesDeploy.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     case 'goerli':
-      return ({
+      return {
         ...goerliDeploy.contracts,
         ...goerliServicesDeploy.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     case 'homestead':
-      return ({
+      return {
         ...mainnetDeploy.contracts,
         ...mainnetServicesDeploy.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     default:
       throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, { network: network.name });
   }
@@ -316,7 +316,7 @@ export function getContractWithSigner<C extends Contract>(contract: C, signer: S
 export async function callAndWaitMined<
   C extends Contract,
   M extends keyof C['functions'],
-  P extends Parameters<C['functions'][M]>
+  P extends Parameters<C['functions'][M]>,
 >(
   contract: C,
   method: M,
@@ -413,7 +413,8 @@ export async function fetchContractsInfo(
     provider,
   );
 
-  const tokenNetworkRegistry = (await monitoringServiceContract.token_network_registry()) as Address;
+  const tokenNetworkRegistry =
+    (await monitoringServiceContract.token_network_registry()) as Address;
   const tokenNetworkRegistryContract = TokenNetworkRegistry__factory.connect(
     tokenNetworkRegistry,
     provider,
@@ -491,9 +492,7 @@ export function makeSyncedPromise(
 export function makeTokenInfoGetter({
   log,
   getTokenContract,
-}: Pick<RaidenEpicDeps, 'log' | 'getTokenContract'>): (
-  token: string,
-) => Promise<{
+}: Pick<RaidenEpicDeps, 'log' | 'getTokenContract'>): (token: string) => Promise<{
   totalSupply: BigNumber;
   decimals: number;
   name?: string;
@@ -521,7 +520,7 @@ function validateDump(
     contractsInfo,
   }: Pick<RaidenEpicDeps, 'address' | 'network' | 'contractsInfo'>,
 ) {
-  const meta = (dump[0] as unknown) as RaidenDatabaseMeta;
+  const meta = dump[0] as unknown as RaidenDatabaseMeta;
   assert(meta?._id === '_meta', ErrorCodes.RDN_STATE_MIGRATION);
   assert(meta.address === address, ErrorCodes.RDN_STATE_ADDRESS_MISMATCH);
   assert(

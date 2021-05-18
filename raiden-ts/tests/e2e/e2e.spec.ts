@@ -38,10 +38,10 @@ async function createRaiden(account: number | string | Signer): Promise<Raiden> 
   const deploy = JSON.parse(deployFile);
   const servicesDeploy = JSON.parse(servicesDeployFile);
 
-  const contractsInfo = ({
+  const contractsInfo = {
     ...deploy.contracts,
     ...servicesDeploy.contracts,
-  } as unknown) as ContractsInfo;
+  } as unknown as ContractsInfo;
 
   return await Raiden.create(
     'http://localhost:8545',

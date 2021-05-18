@@ -51,7 +51,7 @@ function mockRTC() {
       close = jest.fn();
       send = jest.fn();
     }
-    const channel = (new RTCDataChannel() as unknown) as MockedDataChannel;
+    const channel = new RTCDataChannel() as unknown as MockedDataChannel;
 
     class RTCPeerConnection extends EventEmitter {
       createDataChannel = jest.fn(() => channel);
@@ -77,7 +77,7 @@ function mockRTC() {
       });
       close = jest.fn();
     }
-    const connection = (new RTCPeerConnection() as unknown) as MockedPeerConnection;
+    const connection = new RTCPeerConnection() as unknown as MockedPeerConnection;
     connection.addIceCandidate.mockRejectedValueOnce(new Error('addIceCandidate failed'));
 
     return connection;
