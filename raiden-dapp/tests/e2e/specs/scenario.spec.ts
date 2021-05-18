@@ -30,7 +30,7 @@ import {
 import {
   acceptDisclaimer,
   closeNotificationPanel,
-  // connectToDApp,
+  connectToDApp,
   deleteTopNotification,
   dismissNotificationSnackbar,
   downloadState,
@@ -62,7 +62,7 @@ describe('dApp e2e tests', () => {
     cy.viewport('macbook-13');
     navigateToDisclaimer();
     acceptDisclaimer();
-    // connectToDApp();
+    connectToDApp();
     navigateToSelectHub();
     mintAndDepositUtilityTokenFromSelectHubScreen();
     mintConnectedTokenFromSelectHubScreen();
@@ -82,7 +82,7 @@ describe('dApp e2e tests', () => {
     navigateToAccountMenu();
     navigateToBackupState();
     downloadState();
-    // connectToDApp();
+    connectToDApp();
     navigateToTokenSelect();
     navigateToConnectNewTokenFromTokenOverlay();
     navigateBackToTransferScreenFromOverlay();
