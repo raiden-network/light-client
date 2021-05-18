@@ -543,12 +543,15 @@ describe('sign/verify, pack & encode/decode ', () => {
         channel_identifier: BigNumber.from(1338) as UInt<32>,
         balance_hash: balanceHash,
         // data from LockedTransfer test
-        additional_hash: '0xb6ab946232e2b8271c21a921389b8fc8537ebb05e25e7d5eca95e25ce82c7da5' as Hash,
-        signature: '0xa4beb47c2067e196de4cd9d5643d1c7af37caf4ac87de346e10ac27351505d405272f3d68960322bd53d1ea95460e4dd323dbef7c862fa6596444a57732ddb2b1c' as Signature,
+        additional_hash:
+          '0xb6ab946232e2b8271c21a921389b8fc8537ebb05e25e7d5eca95e25ce82c7da5' as Hash,
+        signature:
+          '0xa4beb47c2067e196de4cd9d5643d1c7af37caf4ac87de346e10ac27351505d405272f3d68960322bd53d1ea95460e4dd323dbef7c862fa6596444a57732ddb2b1c' as Signature,
       },
       monitoring_service_contract_address: '0x2A915FDA69746F515b46C520eD511401d5CCD5e2' as Address,
       non_closing_participant: address,
-      non_closing_signature: '0x8c52419a6f5c71b7618c066e2570592e861544f3a9d7c8de87965ee09281983068ac46f0e9116eac43f6a3628667d5109fa18ce86fc03f94321203df75c8afd81b' as Signature,
+      non_closing_signature:
+        '0x8c52419a6f5c71b7618c066e2570592e861544f3a9d7c8de87965ee09281983068ac46f0e9116eac43f6a3628667d5109fa18ce86fc03f94321203df75c8afd81b' as Signature,
       reward_amount: BigNumber.from(5) as UInt<32>,
     };
 

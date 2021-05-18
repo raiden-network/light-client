@@ -68,17 +68,19 @@ export function createBalanceHash({
   lockedAmount,
   locksroot,
 }: Pick<BalanceProof, 'transferredAmount' | 'lockedAmount' | 'locksroot'>): Hash {
-  return (transferredAmount.isZero() &&
-  lockedAmount.isZero() &&
-  (locksroot === HashZero || locksroot === LocksrootZero)
-    ? HashZero
-    : keccak256(
-        concatBytes([
-          encode(transferredAmount, 32),
-          encode(lockedAmount, 32),
-          encode(locksroot, 32),
-        ]),
-      )) as Hash;
+  return (
+    transferredAmount.isZero() &&
+    lockedAmount.isZero() &&
+    (locksroot === HashZero || locksroot === LocksrootZero)
+      ? HashZero
+      : keccak256(
+          concatBytes([
+            encode(transferredAmount, 32),
+            encode(lockedAmount, 32),
+            encode(locksroot, 32),
+          ]),
+        )
+  ) as Hash;
 }
 
 /**

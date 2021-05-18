@@ -448,13 +448,8 @@ function mapChannelEventsToAction(
   { address, latest$, getTokenNetworkContract }: RaidenEpicDeps,
 ) {
   const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
-  const {
-    openTopic,
-    depositTopic,
-    withdrawTopic,
-    closedTopic,
-    settledTopic,
-  } = getChannelEventsTopics(tokenNetworkContract);
+  const { openTopic, depositTopic, withdrawTopic, closedTopic, settledTopic } =
+    getChannelEventsTopics(tokenNetworkContract);
   return (input$: Observable<ChannelEvents>) =>
     input$.pipe(
       withLatestFrom(latest$),

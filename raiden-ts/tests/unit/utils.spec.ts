@@ -25,11 +25,11 @@ describe('getLogsByChunk$', () => {
   const error = new Error('getLogs error');
 
   beforeEach(() => {
-    provider = ({
+    provider = {
       pollingInterval: 10,
       send: jest.fn(async () => []),
       formatter: { filterLog: jest.fn(() => true) },
-    } as unknown) as jest.Mocked<JsonRpcProvider>;
+    } as unknown as jest.Mocked<JsonRpcProvider>;
   });
 
   test('success: fail to minChunk', async () => {
