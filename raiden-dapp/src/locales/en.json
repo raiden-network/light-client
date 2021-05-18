@@ -776,7 +776,8 @@
       },
       "direct-rpc-provider": {
         "header": "Direct RPC Provider",
-        "error-message": "Failed to link to configured provider. Please make sure the given parmaters and the service is available.",
+        "description": "Connect directly to an Ethereum node and use your accounts private key. This approach is NOT RECOMMENDED for security concerns.",
+        "error-message": "Failed to link to configured provider. Please make sure the given paramaters and the service is available.",
         "options": {
           "rpc-url": {
             "name": "RPC",
@@ -792,10 +793,12 @@
       },
       "injected-provider": {
         "header": "Injected Provider",
+        "description": "Connect with a provider in your web browser.",
         "error-message": "Failed to link to provider. Please make sure to grant the requested permissions."
       },
       "wallet-connect-provider": {
         "header": "WalletConnect",
+        "description": "Connect with any mobile wallet app that supports WalletConnect.",
         "error-message": "Failed to link via WalletConnect. Please make sure the given parmaters are correct and confirm the connection in the wallet.",
         "options": {
           "bridge-url": {

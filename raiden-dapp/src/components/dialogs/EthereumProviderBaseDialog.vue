@@ -8,6 +8,10 @@
     <v-card-title class="ethereum-provider-base-dialog__header">{{ header }}</v-card-title>
 
     <v-card-text>
+      <p v-if="description" class="ethereum-provider-base-dialog__description">
+        {{ description }}
+      </p>
+
       <slot v-if="!linkingInProgress" />
 
       <spinner v-if="linkingInProgress" />
@@ -51,6 +55,9 @@ import Spinner from '@/components/icons/Spinner.vue';
 export default class EthereumProviderBaseDialog extends Vue {
   @Prop({ type: String, required: true })
   header!: string;
+
+  @Prop({ type: String })
+  description!: string;
 
   @Prop({ type: Boolean, required: true })
   canLink!: boolean;

@@ -15,6 +15,7 @@ const vuetify = new Vuetify();
 
 function createWrapper(options?: {
   header?: string;
+  description?: string;
   canLink?: boolean;
   linkingInProgress?: boolean;
   linkingFailed?: boolean;
@@ -24,6 +25,7 @@ function createWrapper(options?: {
     vuetify,
     propsData: {
       header: options?.header ?? 'header',
+      description: options?.description,
       canLink: options?.canLink ?? true,
       linkingInProgress: options?.linkingInProgress ?? false,
       linkingFailed: options?.linkingFailed ?? false,
@@ -41,6 +43,14 @@ describe('EthereumProviderBaseDialog.vue', () => {
 
     expect(header.isVisible()).toBeTruthy();
     expect(header.text()).toMatch('testHeader');
+  });
+
+  test('shows description it given', () => {
+    const wrapper = createWrapper({ description: 'testDescription' });
+    const description = wrapper.find('.ethereum-provider-base-dialog__description');
+
+    expect(description.isVisible()).toBeTruthy();
+    expect(description.text()).toMatch('testDescription');
   });
 
   test('shows spinner if in progress', () => {

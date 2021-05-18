@@ -1,6 +1,7 @@
 <template>
   <ethereum-provider-base-dialog
     :header="$t('connection-manager.dialogs.wallet-connect-provider.header')"
+    :description="$t('connection-manager.dialogs.wallet-connect-provider.description')"
     :can-link="canLink"
     :linking-in-progress="linkingInProgress"
     :linking-failed="linkingFailed"
