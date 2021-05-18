@@ -1130,6 +1130,55 @@ export class Raiden {
   }
 
   /**
+   * Registers and creates a new token network for the provided token address.
+   * Throws an error, if
+   * <ol>
+   *  <li>Executed on main net</li>
+   *  <li>`token` is not a valid address</li>
+   *  <li>Token is already registered</li>
+   *  <li>Token could not be registered</li>
+   * </ol>
+   *
+   * @param token - Address of the token to be registered
+   * @param channelParticipantDepositLimit - The deposit limit per channel participant
+   * @param tokenNetworkDepositLimit - The deposit limit of the whole token network
+   * @returns Address of new token network
+   */
+  public async registerToken(
+    token: string,
+    channelParticipantDepositLimit: BigNumberish = MaxUint256,
+    tokenNetworkDepositLimit: BigNumberish = MaxUint256,
+  ): Promise<Address> {
+    // Check whether address is valid
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+
+    // Check whether we are on a test network
+    assert(this.deps.network.chainId !== 1, ErrorCodes.RDN_REGISTER_TOKEN_MAINNET, this.log.info);
+
+    const { signer } = chooseOnchainAccount(this.deps, this.config.subkey);
+    const tokenNetworkRegistry = getContractWithSigner(this.deps.registryContract, signer);
+
+    // Check whether token is already registered
+    await this.monitorToken(token).then(
+      (tokenNetwork) => {
+        throw new RaidenError(ErrorCodes.RDN_REGISTER_TOKEN_REGISTERED, { tokenNetwork });
+      },
+      () => undefined,
+    );
+
+    const receipt = await callAndWaitMined(
+      tokenNetworkRegistry,
+      'createERC20TokenNetwork',
+      [token, channelParticipantDepositLimit, tokenNetworkDepositLimit],
+      ErrorCodes.RDN_REGISTER_TOKEN_FAILED,
+      { log: this.log },
+    );
+    await waitConfirmation(receipt, this.deps);
+
+    return await this.monitorToken(token);
+  }
+
+  /**
    * Fetches balance of UserDeposit Contract for SDK's account minus cached spent IOUs
    *
    * @returns Promise to UDC remaining capacity

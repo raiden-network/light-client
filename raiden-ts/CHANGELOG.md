@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#1576] Add functionality to deploy token networks
+
+[#1576]: https://github.com/raiden-network/light-client/issues/1576
+
 ### Changed
 - [#2669] Update to Raiden contracts `v0.37.5`
 - [#2677] Removed the dependency on reactive notifications of peer's presences changes and updated WebRTC signaling algorithm
