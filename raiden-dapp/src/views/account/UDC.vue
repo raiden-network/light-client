@@ -64,7 +64,7 @@
 <script lang="ts">
 import { constants } from 'ethers';
 import { Component, Vue } from 'vue-property-decorator';
-import { mapGetters, mapState } from 'vuex';
+import { createNamespacedHelpers, mapGetters, mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
@@ -75,6 +75,9 @@ import Spinner from '@/components/icons/Spinner.vue';
 import PlannedUdcWithdrawalInformation from '@/components/PlannedUdcWithdrawalInformation.vue';
 import type { Token } from '@/model/types';
 import type { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
+
+const { mapState: mapStateUserSettings } = createNamespacedHelpers('userSettings');
+const { mapState: mapStateUserDepositContract } = createNamespacedHelpers('userDepositContract');
 
 @Component({
   components: {
@@ -88,11 +91,12 @@ import type { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
   },
   computed: {
     ...mapState(['blockNumber', 'accountBalance', 'raidenAccountBalance']),
-    ...mapState('userDepositContract', {
+    ...mapStateUserSettings(['useRaidenAccount']),
+    ...mapStateUserDepositContract({
       udcToken: 'token',
       plannedUdcWithdrawal: 'plannedWithdrawal',
     }),
-    ...mapGetters(['mainnet', 'usingRaidenAccount']),
+    ...mapGetters(['mainnet']),
   },
 })
 export default class UDC extends Vue {
@@ -105,7 +109,7 @@ export default class UDC extends Vue {
   mainnet!: boolean;
   udcToken!: Token;
   plannedUdcWithdrawal!: PlannedUdcWithdrawal | undefined;
-  usingRaidenAccount!: boolean;
+  useRaidenAccount!: boolean;
   showUdcDeposit = false;
   withdrawFromUdc = false;
 
@@ -114,7 +118,7 @@ export default class UDC extends Vue {
   }
 
   get relevantEthBalanceForWithdrawal(): string {
-    return this.usingRaidenAccount ? this.raidenAccountBalance : this.accountBalance;
+    return this.useRaidenAccount ? this.raidenAccountBalance : this.accountBalance;
   }
 
   async mounted() {
