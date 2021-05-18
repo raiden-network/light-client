@@ -6896,13 +6896,6 @@ cypress-jest-adapter@^0.1.1:
     jest-jquery-matchers "^2.1.0"
     jquery "^3.4.0"
 
-cypress-plugin-retries@^1.5.2:
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/cypress-plugin-retries/-/cypress-plugin-retries-1.5.2.tgz#21d5247cd77013b95bbfdd914f2de66f91f76a2e"
-  integrity sha512-o1xVIGtv4WvNVxoVJ2X08eAuvditPHrePRzHqhwwHbMKu3C2rtxCdanRCZdO5fjh8ww+q4v4V0e9GmysbOvu3A==
-  dependencies:
-    chalk "^3.0.0"
-
 cypress@7.2.0:
   version "7.2.0"
   resolved "https://registry.yarnpkg.com/cypress/-/cypress-7.2.0.tgz#6a3364e18972f898fff1fb12c1ff747939e45ddc"
@@ -8331,7 +8324,6 @@ ethereum-cryptography@^0.1.3:
 
 "ethereumjs-abi@git+https://github.com/ethereumjs/ethereumjs-abi.git":
   version "0.6.8"
-  uid "1a27c59c15ab1e95ee8e5c4ed6ad814c49cc439e"
   resolved "git+https://github.com/ethereumjs/ethereumjs-abi.git#1a27c59c15ab1e95ee8e5c4ed6ad814c49cc439e"
   dependencies:
     bn.js "^4.11.8"
