@@ -31,6 +31,15 @@ export const routes: RouteConfig[] = [
     component: Home,
   },
   {
+    path: '/no_connected_token',
+    name: RouteNames.NO_CONNECTED_TOKEN,
+    meta: {
+      title: 'Connect',
+      cannotNavigateBack: true,
+    },
+    component: () => import('../views/NoConnectedTokenRoute.vue'),
+  },
+  {
     path: '/transfer/:token?',
     name: RouteNames.TRANSFER,
     meta: {

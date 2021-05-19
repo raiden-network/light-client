@@ -9,7 +9,6 @@ import Vuex from 'vuex';
 import type { RaidenChannel } from 'raiden-ts';
 
 import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
-import NoTokens from '@/components/NoTokens.vue';
 import TransactionList from '@/components/transaction-history/TransactionList.vue';
 import TransferHeaders from '@/components/transfer/TransferHeaders.vue';
 import TransferInputs from '@/components/transfer/TransferInputs.vue';
@@ -95,22 +94,25 @@ describe('TransferRoute.vue', () => {
     jest.clearAllMocks();
   });
 
-  // TODO: This and the following test case their description are a hint that
-  // the components template is not too nice.
-  test('displays no tokens component if there are no tokens and hide rest', async () => {
+  test('displays transfer headers', async () => {
     const wrapper = await createWrapper({ tokens: {} });
-    expect(wrapper.findComponent(NoTokens).exists()).toBe(true);
-    expect(wrapper.findComponent(TransferHeaders).exists()).toBe(false);
-    expect(wrapper.findComponent(TransferInputs).exists()).toBe(false);
-    expect(wrapper.findComponent(TransactionList).exists()).toBe(false);
+    const transferHeaders = wrapper.findComponent(TransferHeaders);
+
+    expect(transferHeaders.isVisible()).toBeTruthy();
   });
 
-  test('does not display no tokens component if there are no tokens, but rest', async () => {
-    const wrapper = await createWrapper();
-    expect(wrapper.findComponent(NoTokens).exists()).toBe(false);
-    expect(wrapper.findComponent(TransferHeaders).exists()).toBe(true);
-    expect(wrapper.findComponent(TransferInputs).exists()).toBe(true);
-    expect(wrapper.findComponent(TransactionList).exists()).toBe(true);
+  test('displays transfer inputs', async () => {
+    const wrapper = await createWrapper({ tokens: {} });
+    const transferInputs = wrapper.findComponent(TransferInputs);
+
+    expect(transferInputs.isVisible()).toBeTruthy();
+  });
+
+  test('displays transation list', async () => {
+    const wrapper = await createWrapper({ tokens: {} });
+    const transactionList = wrapper.findComponent(TransactionList);
+
+    expect(transactionList.isVisible()).toBeTruthy();
   });
 
   test('shows dialog if there are no open channels', async () => {

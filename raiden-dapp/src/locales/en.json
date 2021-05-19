@@ -411,9 +411,7 @@
     "state-migration-failed": "Cannot replace state with older uploaded state."
   },
   "tokens": {
-    "connected": {
-      "header": "Connected Tokens"
-    },
+    "connected-tokens": "Connected Tokens",
     "connect-new": "Connect new token",
     "disconnect-dialog": {
       "header": "Disconnect token",

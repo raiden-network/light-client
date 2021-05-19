@@ -5,6 +5,7 @@ export enum RouteNames {
   SELECT_TOKEN = 'select-token',
   SELECT_HUB = 'select-hub',
   HOME = 'home',
+  NO_CONNECTED_TOKEN = 'no-connected-token',
   CHANNELS = 'channels',
   OPEN_CHANNEL = 'open-channel',
   ACCOUNT_ROOT = 'account-root',

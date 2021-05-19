@@ -6,6 +6,7 @@ import store from '@/store';
 import {
   globalNavigationGuard,
   redirectIfDisclaimerIsNotAccepted,
+  redirectIfNoConnectedToken,
   redirectIfNotConnected,
 } from './guards';
 import { routes } from './routes';
@@ -24,6 +25,7 @@ router.beforeEach(
     children: [
       redirectIfDisclaimerIsNotAccepted,
       redirectIfNotConnected,
+      redirectIfNoConnectedToken,
     ],
   }),
 );

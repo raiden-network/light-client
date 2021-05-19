@@ -1,24 +1,21 @@
 <template>
   <v-container class="transfer" fluid>
-    <no-tokens v-if="noTokenWithOpenChannel" />
-    <template v-else>
-      <transfer-headers
-        class="transfer__menus"
-        :token="token"
-        :no-channels="noChannels"
-        :total-capacity="totalCapacity"
-      />
-      <transfer-inputs
-        class="transfer__inputs"
-        :token.sync="token"
-        :transfer-amount.sync="transferAmount"
-        :target-address.sync="targetAddress"
-        :no-channels="noChannels"
-        :max-channel-capacity="maxChannelCapacity"
-      />
-      <transaction-list class="transfer__list" :token="token" />
-      <no-channels-dialog :visible="!openChannels" />
-    </template>
+    <transfer-headers
+      class="transfer__menus"
+      :token="token"
+      :no-channels="noChannels"
+      :total-capacity="totalCapacity"
+    />
+    <transfer-inputs
+      class="transfer__inputs"
+      :token.sync="token"
+      :transfer-amount.sync="transferAmount"
+      :target-address.sync="targetAddress"
+      :no-channels="noChannels"
+      :max-channel-capacity="maxChannelCapacity"
+    />
+    <transaction-list class="transfer__list" :token="token" />
+    <no-channels-dialog :visible="!openChannels" />
   </v-container>
 </template>
 
@@ -73,10 +70,6 @@ export default class TransferRoute extends Vue {
   transferAmount = '';
   targetAddress = '';
 
-  get noTokenWithOpenChannel(): boolean {
-    return Object.keys(this.tokensWithChannels).length === 0;
-  }
-
   get noChannels(): boolean {
     if (this.token) {
       return this.channels(this.token.address).length === 0;
@@ -130,15 +123,6 @@ export default class TransferRoute extends Vue {
     }
   }
 
-  @Watch('noTokenWithOpenChannel')
-  onNoTokenWithOpenChannelChange(now: boolean, before: boolean): void {
-    const switchFromNoTokenWithOpenChannelToSome = before && !now;
-
-    if (switchFromNoTokenWithOpenChannelToSome) {
-      this.selectFirstAvailableTokenIfAny();
-    }
-  }
-
   @Watch('$route.query.amount', { immediate: true })
   async onAmountQueryParameterChanged(transferAmount: string | undefined) {
     this.transferAmount = transferAmount ?? '';
@@ -160,9 +144,7 @@ export default class TransferRoute extends Vue {
   }
 
   selectFirstAvailableTokenIfAny(): void {
-    if (!this.noTokenWithOpenChannel) {
-      this.token = Object.values(this.tokensWithChannels)[0];
-    }
+    this.token = Object.values(this.tokensWithChannels)[0];
   }
 
   handleBackupNotification(): void {
