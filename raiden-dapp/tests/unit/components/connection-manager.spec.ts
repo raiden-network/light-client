@@ -189,7 +189,7 @@ describe('ConnectionManager.vue', () => {
 
     const providerDialogButton = wrapper
       .findAll('.connection-manager__provider-dialog-button')
-      .at(1)
+      .at(0)
       .get('button');
 
     expect(providerDialogButton.attributes('disabled')).toBeTruthy();
