@@ -14,21 +14,11 @@ const {
   [RouteNames.HOME]: homeRoute,
   [RouteNames.ACCOUNT_ROOT]: accountRootRoute,
   [RouteNames.ACCOUNT_BACKUP]: accountBackupRoute,
-  [RouteNames.ACCOUNT_RAIDEN]: accountRaidenRoute,
   [RouteNames.ACCOUNT_SETTINGS]: accountSettingsRoute,
-  [RouteNames.ACCOUNT_WITHDRAWAL]: accountWithdrawalRoute,
-  [RouteNames.ACCOUNT_UDC]: accountUdcRoute,
   ...protectedRoutes
 } = transformRouteConfigsToRoutes();
 
-const accountRoutes = [
-  accountRootRoute,
-  accountBackupRoute,
-  accountRaidenRoute,
-  accountSettingsRoute,
-  accountWithdrawalRoute,
-  accountUdcRoute,
-];
+const freeAccountRoutes = [accountRootRoute, accountBackupRoute, accountSettingsRoute];
 
 function createStore(options?: { isConnected?: boolean }): Store<CombinedStoreState> {
   const state = {
@@ -81,10 +71,10 @@ describe('redirectIfNotConnected()', () => {
     });
   });
 
-  test('do nothing if not connected and navigating to any account route', () => {
+  test('do nothing if navigating to a free account route', () => {
     const store = createStore({ isConnected: false });
 
-    Object.values(accountRoutes).forEach((route) => {
+    Object.values(freeAccountRoutes).forEach((route) => {
       expect(redirectIfNotConnected(route, store)).toBeUndefined();
     });
   });
