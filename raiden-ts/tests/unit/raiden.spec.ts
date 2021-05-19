@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
-import { AddressZero, One, Zero } from '@ethersproject/constants';
+import { AddressZero, MaxUint256, One, Zero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import type { ExternalProvider, Network } from '@ethersproject/providers';
 import { Formatter, JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
@@ -1295,6 +1295,42 @@ describe('Raiden', () => {
     expect(svtContract.functions.mintFor).toHaveBeenCalledWith(BigNumber.from(10), beneficiary);
 
     svtSpy.mockRestore();
+  });
+
+  test('registerToken', async () => {
+    const deps = makeDummyDependencies();
+    deps.registryContract = {
+      ...deps.registryContract,
+      functions: {
+        createERC20TokenNetwork: jest.fn(async () => ({
+          hash: txHash,
+          wait: jest.fn(async () => ({
+            blockNumber: blockNumber - 5,
+            status: 1,
+          })),
+        })),
+      },
+    } as any;
+    const blockNumber = 119;
+    const raiden = new Raiden(
+      { ...dummyState, blockNumber },
+      deps,
+      combineRaidenEpics([dummyEpic]),
+      dummyReducer,
+    );
+
+    const tokenNetworkAddress = makeAddress();
+    const monitorTokenMock = jest.fn();
+    monitorTokenMock.mockReturnValueOnce(Promise.reject());
+    monitorTokenMock.mockReturnValueOnce(Promise.resolve(tokenNetworkAddress));
+    raiden.monitorToken = monitorTokenMock;
+
+    await expect(raiden.registerToken(token)).resolves.toBe(tokenNetworkAddress);
+    expect(deps.registryContract.functions.createERC20TokenNetwork).toHaveBeenCalledWith(
+      token,
+      MaxUint256,
+      MaxUint256,
+    );
   });
 
   test('create', async () => {
