@@ -27,7 +27,7 @@
 
     <div class="token-overlay__connected-tokens mt-8">
       <token-list
-        :header="$t('tokens.connected.header')"
+        :header="$t('tokens.connected-tokens')"
         :tokens="tokens"
         @select="handleTokenClick"
       />

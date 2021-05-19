@@ -12,8 +12,8 @@ export function navigateToDisclaimer() {
  */
 export function navigateToSelectHub() {
   // cypress selectors: raiden-dapp/src/components/NoTokens.vue
-  cy.getWithCustomTimeout('[data-cy=no_tokens_add]').should('exist');
-  cy.get('[data-cy=no_tokens_add]').click();
+  cy.getWithCustomTimeout('[data-cy=no-connected-token__connect-button]').should('exist');
+  cy.get('[data-cy=no-connected-token__connect-button]').click();
   // cypress selectors: raiden-dapp/src/components/tokens/TokenListItem.vue
   cy.getWithCustomTimeout('[data-cy=token_list_item]').eq(0).should('exist');
   cy.get('[data-cy=token_list_item]').eq(0).click();
