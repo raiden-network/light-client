@@ -18,10 +18,10 @@ import { RouteNames } from '@/router/route-names';
 import TransferSteps from '@/views/TransferStepsRoute.vue';
 
 import { generateToken } from '../utils/data-generator';
+import Mocked = jest.Mocked;
 
 jest.useFakeTimers();
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

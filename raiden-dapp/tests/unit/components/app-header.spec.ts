@@ -10,9 +10,9 @@ import Vuex from 'vuex';
 
 import AppHeader from '@/components/AppHeader.vue';
 import { RouteNames } from '@/router/route-names';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuex);
 Vue.use(Vuetify);

@@ -20,11 +20,11 @@ import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
 
 import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
+import Mocked = jest.Mocked;
 
 jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
 jest.useFakeTimers();
-import Mocked = jest.Mocked;
 
 jest.mock('@/i18n', () => jest.fn());
 

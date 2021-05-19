@@ -4,10 +4,8 @@ import store from '@/store';
 
 import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 
-const {
-  [RouteNames.DISCLAIMER]: disclaimerRoute,
-  ...routesWithoutDisclaimer
-} = transformRouteConfigsToRoutes();
+const { [RouteNames.DISCLAIMER]: disclaimerRoute, ...routesWithoutDisclaimer } =
+  transformRouteConfigsToRoutes();
 
 function acceptDisclaimer() {
   store.commit('acceptDisclaimer', true);
