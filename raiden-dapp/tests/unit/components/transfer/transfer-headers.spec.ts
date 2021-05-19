@@ -14,9 +14,9 @@ import store from '@/store';
 
 import { generateToken } from '../../utils/data-generator';
 
-jest.mock('vue-router');
-
 import Mocked = jest.Mocked;
+
+jest.mock('vue-router');
 
 Vue.use(Vuetify);
 

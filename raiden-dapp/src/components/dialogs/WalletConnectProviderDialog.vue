@@ -18,7 +18,9 @@
         />
         <input
           v-model.trim="bridgeUrlOption"
-          class="wallet-connect-provider__input wallet-connect-provider__options__bridge-url__input"
+          class="
+            wallet-connect-provider__input wallet-connect-provider__options__bridge-url__input
+          "
           :disabled="bridgeUrlOptionDisabled"
           :placeholder="
             $t('connection-manager.dialogs.wallet-connect-provider.options.bridge-url.placeholder')

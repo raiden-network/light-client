@@ -17,10 +17,10 @@ export class ConfigProvider {
         deploymentServicesInfoFile.json(),
       ]);
 
-      return ({
+      return {
         ...deployment.contracts,
         ...serviceDeployment.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     }
     return undefined;
   }

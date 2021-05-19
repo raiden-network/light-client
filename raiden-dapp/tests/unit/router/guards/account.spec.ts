@@ -5,10 +5,8 @@ import { RouteNames } from '@/router/route-names';
 
 import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 
-const {
-  [RouteNames.ACCOUNT_ROOT]: accountRoute,
-  ...routesWithoutAccount
-} = transformRouteConfigsToRoutes();
+const { [RouteNames.ACCOUNT_ROOT]: accountRoute, ...routesWithoutAccount } =
+  transformRouteConfigsToRoutes();
 
 const next: NavigationGuardNext = jest.fn();
 

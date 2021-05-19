@@ -7,9 +7,9 @@ import NavigationMixin from '@/mixins/navigation-mixin';
 import { RouteNames } from '@/router/route-names';
 
 import { TestData } from '../../data/mock-data';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 describe('NavigationMixin', () => {
   let wrapper: Wrapper<NavigationMixin>;

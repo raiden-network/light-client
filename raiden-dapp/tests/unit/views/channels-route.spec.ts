@@ -15,9 +15,9 @@ import store from '@/store';
 import ChannelsRoute from '@/views/ChannelsRoute.vue';
 
 import { TestData } from '../data/mock-data';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 jest.mock('@/i18n', () => jest.fn());
 

@@ -2,7 +2,7 @@ const path = require('path');
 
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const VersionFile = require('webpack-version-file-plugin');
-const { DefinePlugin } = require('webpack'); // eslint-disable-line import/no-extraneous-dependencies
+const { DefinePlugin } = require('webpack');
 const { InjectManifest } = require('workbox-webpack-plugin');
 
 const sourceDirectoryPath = path.resolve(__dirname, 'src');

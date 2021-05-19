@@ -13,10 +13,10 @@ import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
 import Filters from '@/filters';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store';
+import Mocked = jest.Mocked;
 
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.filter('upperCase', Filters.upperCase);

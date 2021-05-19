@@ -8,11 +8,11 @@ import Vuex from 'vuex';
 import App from '@/App.vue';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store/index';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
-import Mocked = jest.Mocked;
 
 Vue.use(VueRouter);
 Vue.use(Vuex);

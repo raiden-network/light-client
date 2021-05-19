@@ -16,10 +16,10 @@ import SelectHubRoute from '@/views/SelectHubRoute.vue';
 import { TestData } from '../data/mock-data';
 import { generateToken } from '../utils/data-generator';
 import { mockInput } from '../utils/interaction-utils';
+import Mocked = jest.Mocked;
 
 jest.useFakeTimers();
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

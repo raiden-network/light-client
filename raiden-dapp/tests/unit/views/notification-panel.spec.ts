@@ -8,9 +8,9 @@ import Vuex from 'vuex';
 import store from '@/store/index';
 import NotificationPanel from '@/views/NotificationPanel.vue';
 
-jest.mock('vue-router');
-
 import Mocked = jest.Mocked;
+
+jest.mock('vue-router');
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
