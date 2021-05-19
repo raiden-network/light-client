@@ -16,7 +16,7 @@
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "clean": "rimraf dist/ dist:cjs/ .coverage/ src/contracts/ src/abi/ src/deployment/ src/versions.json docs/",
     "contracts:pre": "node ./scripts/copyContracts.js prebuild",
-    "contracts:build": "typechain --target=ethers-v5 'src/abi/*.json' --outDir src/contracts",
+    "contracts:build": "typechain --target=ethers-v5 'src/abi/*.json' --out-dir src/contracts",
     "contracts:post": "node ./scripts/copyContracts.js postbuild",
     "contracts": "yarn run contracts:pre && yarn run contracts:build",
     "versions": "node ./scripts/versions.js",
