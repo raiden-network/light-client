@@ -1,4 +1,7 @@
 import type { NavigationGuardNext, RawLocation, Route } from 'vue-router';
+import type { Store } from 'vuex';
+
+import type { CombinedStoreState } from '@/store';
 
 export type GuardArguments = [Route, Route, NavigationGuardNext];
 
@@ -17,4 +20,7 @@ export type NavigationGuardNextArgument = RawLocation | false | null;
  * Note that a returned location of `void` (or `null`) causes an immediate
  * routing to the already targeting location.
  */
-export type NavigationGuardChild = (to: Route) => NavigationGuardNextArgument | undefined;
+export type NavigationGuardChild = (
+  to: Route,
+  store: Store<CombinedStoreState>,
+) => NavigationGuardNextArgument | undefined;
