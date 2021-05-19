@@ -1,9 +1,5 @@
-import type { Route } from 'vue-router';
-
-import store from '@/store';
-
 import { RouteNames } from '../route-names';
-import type { NavigationGuardNextArgument } from './types';
+import type { NavigationGuardChild } from './types';
 
 const accountRoutes = [
   RouteNames.ACCOUNT_ROOT,
@@ -14,11 +10,7 @@ const accountRoutes = [
   RouteNames.ACCOUNT_UDC,
 ] as string[];
 
-/**
- * @param to - navigation target
- * @returns eventual navigation instruction for middleware of global guard
- */
-export function redirectIfNotConnected(to: Route): NavigationGuardNextArgument | undefined {
+export const redirectIfNotConnected: NavigationGuardChild = (to, store) => {
   const { isConnected } = store.state;
   const routingToAccount = accountRoutes.includes(to.name ?? '');
   const routingToHome = to.name === RouteNames.HOME;
@@ -31,4 +23,4 @@ export function redirectIfNotConnected(to: Route): NavigationGuardNextArgument |
   if (!isConnected && routingToHome) return null;
 
   if (isConnected && routingToHome) return { name: RouteNames.TRANSFER };
-}
+};
