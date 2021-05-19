@@ -91,7 +91,6 @@ async function setDbForLogger(loggerName: string) {
 
 /**
  * @param additionalLoggers - logger names to add as well
- *
  */
 export async function setupLogStore(additionalLoggers: string[] = ['matrix']): Promise<void> {
   if (typeof db !== 'undefined') return;
