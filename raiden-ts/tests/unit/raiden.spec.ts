@@ -12,7 +12,7 @@ import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, BehaviorSubject, of, ReplaySubject } from 'rxjs';
+import { AsyncSubject, BehaviorSubject, EMPTY, of, ReplaySubject } from 'rxjs';
 import { filter, first, ignoreElements, map, mapTo, mergeMap } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
@@ -39,6 +39,7 @@ import {
   TokenNetwork__factory,
   TokenNetworkRegistry__factory,
 } from '@/contracts';
+import { changes$, dumpDatabaseToArray } from '@/db/utils';
 import { combineRaidenEpics } from '@/epics';
 import { signMessage } from '@/messages';
 import { messageServiceSend } from '@/messages/actions';
@@ -65,6 +66,9 @@ import { Address } from '@/utils/types';
 import { makeAddress, makeHash } from '../utils';
 
 jest.mock('@ethersproject/providers');
+jest.mock('@/db/utils');
+
+(changes$ as jest.MockedFunction<typeof changes$>).mockReturnValue(EMPTY);
 
 export const fetch = jest.fn(async (_url?: string) => ({
   ok: true,
@@ -1331,6 +1335,30 @@ describe('Raiden', () => {
       MaxUint256,
       MaxUint256,
     );
+  });
+
+  test('dumpDatabase', async () => {
+    const mockDump = dumpDatabaseToArray as jest.MockedFunction<typeof dumpDatabaseToArray>;
+    const result = [{ _id: '1', value: 345 }];
+    mockDump.mockResolvedValue(result);
+
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics([dummyEpic, initEpicMock]),
+      dummyReducer,
+    );
+    await raiden.start();
+
+    const promise = raiden.dumpDatabase();
+    // test dump promise waits for raiden to be stopped
+    await expect(
+      Promise.race([promise, new Promise((resolve) => setTimeout(resolve, 10))]),
+    ).resolves.toBeUndefined(); // timeout wins, promise pending
+    raiden.stop(); // stop will cause it to continue
+    await expect(promise).resolves.toBe(result);
+    expect(mockDump).toHaveBeenCalled();
   });
 
   test('create', async () => {
