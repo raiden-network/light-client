@@ -12,17 +12,17 @@
     <template v-if="showProviderButtons">
       <action-button
         class="connection-manager__provider-dialog-button"
-        :enabled="walletConnectProviderAvailable"
-        :text="$t('connection-manager.dialogs.wallet-connect-provider.header')"
-        width="280px"
-        @click="openWalletConnectProviderDialog"
-      />
-      <action-button
-        class="connection-manager__provider-dialog-button"
         :enabled="injectedProviderAvailable"
         :text="$t('connection-manager.dialogs.injected-provider.header')"
         width="280px"
         @click="openInjectedProviderDialog"
+      />
+      <action-button
+        class="connection-manager__provider-dialog-button"
+        :enabled="walletConnectProviderAvailable"
+        :text="$t('connection-manager.dialogs.wallet-connect-provider.header')"
+        width="280px"
+        @click="openWalletConnectProviderDialog"
       />
       <action-button
         class="connection-manager__provider-dialog-button"
@@ -34,15 +34,16 @@
       />
     </template>
 
-    <wallet-connect-provider-dialog
-      v-if="walletConnectProviderDialogVisible"
-      @linkEstablished="onProviderLinkEstablished"
-      @cancel="closeWalletConnectProviderDialog"
-    />
     <injected-provider-dialog
       v-if="injectedProviderDialogVisible"
       @linkEstablished="onProviderLinkEstablished"
       @cancel="closeInjectedProviderDialog"
+    />
+
+    <wallet-connect-provider-dialog
+      v-if="walletConnectProviderDialogVisible"
+      @linkEstablished="onProviderLinkEstablished"
+      @cancel="closeWalletConnectProviderDialog"
     />
 
     <direct-rpc-provider-dialog
@@ -105,8 +106,8 @@ export default class ConnectionManager extends Vue {
   stateBackup!: string;
   useRaidenAccount!: boolean;
 
-  walletConnectProviderDialogVisible = false;
   injectedProviderDialogVisible = false;
+  walletConnectProviderDialogVisible = false;
   directRpcProviderDialogVisible = false;
   inProgress = false;
   errorCode: ErrorCode | null = null;
@@ -124,24 +125,16 @@ export default class ConnectionManager extends Vue {
     }
   }
 
-  get walletConnectProviderAvailable(): boolean {
-    return WalletConnectProvider.isAvailable;
-  }
-
   get injectedProviderAvailable(): boolean {
     return InjectedProvider.isAvailable;
   }
 
+  get walletConnectProviderAvailable(): boolean {
+    return WalletConnectProvider.isAvailable;
+  }
+
   get directRpcProviderAvailable(): boolean {
     return DirectRpcProvider.isAvailable;
-  }
-
-  openWalletConnectProviderDialog(): void {
-    this.walletConnectProviderDialogVisible = true;
-  }
-
-  closeWalletConnectProviderDialog(): void {
-    this.walletConnectProviderDialogVisible = false;
   }
 
   openInjectedProviderDialog(): void {
@@ -150,6 +143,14 @@ export default class ConnectionManager extends Vue {
 
   closeInjectedProviderDialog(): void {
     this.injectedProviderDialogVisible = false;
+  }
+
+  openWalletConnectProviderDialog(): void {
+    this.walletConnectProviderDialogVisible = true;
+  }
+
+  closeWalletConnectProviderDialog(): void {
+    this.walletConnectProviderDialogVisible = false;
   }
 
   openDirectRpcProviderDialog(): void {
@@ -161,8 +162,8 @@ export default class ConnectionManager extends Vue {
   }
 
   closeAllProviderDialogs(): void {
-    this.closeWalletConnectProviderDialog();
     this.closeInjectedProviderDialog();
+    this.closeWalletConnectProviderDialog();
     this.closeDirectRpcProviderDialog();
   }
 
