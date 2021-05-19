@@ -1,15 +1,15 @@
-// estlint-disable @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import 'isomorphic-fetch'; // Solve ReferenceError undefined Response
 
 import flushPromises from 'flush-promises';
-import type { CommitOptions } from 'vuex';
-import { Store } from 'vuex';
+import type { CommitOptions, Store as VuexStore } from 'vuex';
 
 import ServiceWorkerAssistant from '@/service-worker/assistant';
 import { ServiceWorkerAssistantMessages, ServiceWorkerMessages } from '@/service-worker/messages';
 import type { CombinedStoreState } from '@/store/index';
 
-jest.mock('vuex');
+const Store = jest.fn((..._: any[]) => ({ commit: jest.fn() }));
+type Store<S> = VuexStore<S>;
 
 interface SimplifiedResponse {
   json: () => Promise<unknown>;
@@ -85,8 +85,9 @@ async function createAssistant(
 
 describe('ServiceWorkerAssistant', () => {
   let intervalIds: Array<number>;
-  let windowReloadSpy: jest.SpyInstance;
+  let windowReloadSpy: jest.Mock;
   let consoleWarnSpy: jest.SpyInstance;
+  const origLocation = global.window.location;
 
   beforeAll(() => {
     // Make sure we can set these non-writable properties for each test case.
@@ -94,7 +95,12 @@ describe('ServiceWorkerAssistant', () => {
     Object.defineProperty(global, 'fetch', { writable: true });
 
     consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((_message) => undefined);
-    windowReloadSpy = jest.spyOn(window.location, 'reload').mockImplementation(() => undefined);
+    windowReloadSpy = jest.fn().mockImplementation(() => undefined);
+    Reflect.deleteProperty(global.window, 'location');
+    global.window.location = {
+      ...origLocation,
+      reload: windowReloadSpy,
+    };
 
     const originalSetInterval = global.setInterval;
 
@@ -107,6 +113,7 @@ describe('ServiceWorkerAssistant', () => {
 
   afterAll(() => {
     jest.resetAllMocks(); // Better safe than sorry.
+    global.window.location = origLocation;
   });
 
   beforeEach(() => {
