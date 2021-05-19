@@ -20,9 +20,10 @@ if (!('RTCPeerConnection' in globalThis)) {
   Object.assign(globalThis, require('wrtc'));
 }
 
-function parseFeeOption(args: readonly string[]) {
-  assert(args.length && args.length % 2 === 0, 'fees must have the format [address, number]');
+function parseFeeOption(args?: readonly string[]) {
   const res: { [addr: string]: string } = {};
+  if (!args?.length) return res;
+  assert(args.length % 2 === 0, 'fees must have the format [address, number]');
   for (let i = 0; i < args.length; i += 2) {
     assert(Address.is(args[i]), 'Invalid address');
     assert(args[i + 1].match(/^\d+$/), 'Invalid numeric value');
