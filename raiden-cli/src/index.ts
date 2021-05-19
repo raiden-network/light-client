@@ -70,8 +70,7 @@ function parseArguments() {
       },
       acceptDisclaimer: {
         type: 'boolean',
-        desc:
-          'By setting this parameter you confirm that you have read, understood and accepted the disclaimer, privacy warning and terms of use.',
+        desc: 'By setting this parameter you confirm that you have read, understood and accepted the disclaimer, privacy warning and terms of use.',
       },
       blockchainQueryInterval: {
         type: 'number',
@@ -125,8 +124,7 @@ function parseArguments() {
       },
       pathfindingServiceAddress: {
         type: 'array',
-        desc:
-          'Force given PFS URL list to be used, automatically chosing the first responding provider for transfers, instead of auto-selecting valid from "ServiceRegistry" contract',
+        desc: 'Force given PFS URL list to be used, automatically chosing the first responding provider for transfers, instead of auto-selecting valid from "ServiceRegistry" contract',
       },
       pathfindingMaxPaths: {
         type: 'number',
@@ -158,15 +156,13 @@ function parseArguments() {
       flatFee: {
         type: 'string',
         nargs: 2,
-        desc:
-          'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
+        desc: 'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
         coerce: parseFeeOption,
       },
       proportionalFee: {
         type: 'string',
         nargs: 2,
-        desc:
-          'Sets the proportional fee required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
+        desc: 'Sets the proportional fee required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
         coerce: parseFeeOption,
       },
     })
