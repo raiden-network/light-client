@@ -5,6 +5,7 @@
 ### Fixed
 
 - [#2671] Fix preventing transfers to partners with closed channel
+- [#2675] Fix insecure behavior on navigation without connected token
 
 ### Added
 
@@ -22,6 +23,7 @@
 [#2630]: https://github.com/raiden-network/light-client/issues/2630
 [#2598]: https://github.com/raiden-network/light-client/issues/2598
 [#2589]: https://github.com/raiden-network/light-client/issues/2598
+[#2675]: https://github.com/raiden-network/light-client/issues/2675
 
 ## [0.16.0] - 2021-04-01
 
