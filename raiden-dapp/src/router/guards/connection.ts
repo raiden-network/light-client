@@ -19,7 +19,7 @@ const accountRoutes = [
  * @returns eventual navigation instruction for middleware of global guard
  */
 export function redirectIfNotConnected(to: Route): NavigationGuardNextArgument | undefined {
-  const { isConnected } = store.getters;
+  const { isConnected } = store.state;
   const routingToAccount = accountRoutes.includes(to.name ?? '');
   const routingToHome = to.name === RouteNames.HOME;
 

@@ -5,13 +5,12 @@ import type { BigNumber, providers } from 'ethers';
 
 import type { RaidenChannels, RaidenConfig, RaidenTransfer } from 'raiden-ts';
 
-import type { DeniedReason, Presences, Token } from '@/model/types';
+import type { Presences, Token } from '@/model/types';
 import type RaidenService from '@/services/raiden-service';
 
 export type Tokens = { [token: string]: Token };
 export type Transfers = { [key: string]: RaidenTransfer };
 export type ChannelAction = 'close' | 'deposit' | 'withdraw' | 'settle';
-export type Settings = { [setting: string]: boolean | number | string };
 
 export interface VersionInfo {
   activeVersion: string;
@@ -20,20 +19,17 @@ export interface VersionInfo {
 }
 
 export interface RootState {
-  loading: boolean;
+  isConnected: boolean;
   blockNumber: number;
   defaultAccount: string;
   accountBalance: string;
   raidenAccountBalance: string;
-  providerDetected: boolean;
-  accessDenied: DeniedReason;
   channels: RaidenChannels;
   tokens: Tokens;
   network: providers.Network;
   presences: Presences;
   transfers: Transfers;
   stateBackup: string;
-  settings: Settings;
   config: Partial<RaidenConfig>;
   disclaimerAccepted: boolean;
   stateBackupReminderDateMs: number;

@@ -97,13 +97,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   })
   exclude!: Array<string>;
 
-  @Prop({
-    default: function () {
-      return [''];
-    },
-  })
-  block!: Array<string>;
-
   @Emit()
   inputError(errorMessage: string) {
     return errorMessage;
@@ -209,8 +202,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
         message = this.$t('address-input.error.no-checksum', { ethsum: ETHSUM }) as string;
       } else if (this.exclude.includes(value)) {
         message = this.$t('address-input.error.invalid-excluded-address') as string;
-      } else if (this.block.includes(value)) {
-        message = this.$t('address-input.error.channel-not-open') as string;
       }
 
       if (message) {

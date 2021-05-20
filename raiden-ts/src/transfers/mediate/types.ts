@@ -113,7 +113,7 @@ export const proportionalFee: FeeModel<Int<32>, { proportional: Int<32> }> = {
  * @returns Standard Fee calculator
  */
 export function getStandardFeeCalculator<
-  Models extends { [K: string]: FeeModel<any, Record<string, any>> }
+  Models extends { [K: string]: FeeModel<any, Record<string, any>> },
 >(models: Models) {
   type PerTokenConfig = { [K in keyof Models]?: ConfigOf<Models[K]> };
   type UnifiedConfig = { readonly [token: string]: Readonly<PerTokenConfig> };

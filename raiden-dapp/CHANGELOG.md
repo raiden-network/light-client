@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- [#2671] Fix preventing transfers to partners with closed channel
+
+### Added
+
+- [#2599] Add WalletConnect as another wallet/provider
+- [#2685] Add a hint dialog when the connection process takes very long
+- [#2690] Allow user to reset connections while in progress
+- [#2630] Allow user to customize WalletConnection options
+- [#2598] Allow user to customize direct RPC provider options
+- [#2689] Add new connection manager to let the user select and configure provider
+
+[#2671]: https://github.com/raiden-network/light-client/issues/2671
+[#2599]: https://github.com/raiden-network/light-client/issues/2599
+[#2685]: https://github.com/raiden-network/light-client/issues/2685
+[#2690]: https://github.com/raiden-network/light-client/issues/2690
+[#2630]: https://github.com/raiden-network/light-client/issues/2630
+[#2598]: https://github.com/raiden-network/light-client/issues/2598
+[#2589]: https://github.com/raiden-network/light-client/issues/2598
+
 ## [0.16.0] - 2021-04-01
 
 ### Fixed

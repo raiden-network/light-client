@@ -115,7 +115,7 @@
 import type { BigNumber } from 'ethers';
 import { utils } from 'ethers';
 import { Component, Vue } from 'vue-property-decorator';
-import { mapGetters, mapState } from 'vuex';
+import { mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import AmountInput from '@/components/AmountInput.vue';
@@ -127,11 +127,9 @@ import type { Token } from '@/model/types';
   components: { AmountInput, ActionButton, ErrorMessage, Spinner },
   computed: {
     ...mapState(['raidenAccountBalance', 'accountBalance']),
-    ...mapGetters(['isConnected']),
   },
 })
 export default class RaidenAccount extends Vue {
-  isConnected!: boolean;
   isFromMainToRaidenAccount = true;
   amount = '0.0';
   loading = false;

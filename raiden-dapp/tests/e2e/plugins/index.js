@@ -1,4 +1,3 @@
-// require('cypress-plugin-retries')
 const path = require('path');
 
 const wp = require('@cypress/webpack-preprocessor');

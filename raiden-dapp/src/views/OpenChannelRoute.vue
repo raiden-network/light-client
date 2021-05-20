@@ -109,7 +109,7 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
     return this.getToken(address) || ({ address } as Token);
   }
 
-  beforeRouteLeave(to: Route, from: Route, next: NavigationGuardNext) {
+  beforeRouteLeave(_to: Route, _from: Route, next: NavigationGuardNext) {
     if (!this.loading) {
       next();
     } else {

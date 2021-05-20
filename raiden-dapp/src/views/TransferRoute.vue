@@ -179,7 +179,7 @@ export default class TransferRoute extends Vue {
       link: this.$t('notifications.backup-state.link') as string,
       dappRoute: RouteNames.ACCOUNT_BACKUP,
       description: this.$t('notifications.backup-state.description') as string,
-      duration: 60000,
+      duration: -1,
       importance: NotificationImportance.HIGH,
       context: NotificationContext.WARNING,
     } as NotificationPayload;

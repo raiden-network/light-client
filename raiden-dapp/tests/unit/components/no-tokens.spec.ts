@@ -8,9 +8,9 @@ import Vuex from 'vuex';
 import NoTokens from '@/components/NoTokens.vue';
 import { RouteNames } from '@/router/route-names';
 import store from '@/store/index';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuex);
 Vue.use(Vuetify);

@@ -104,7 +104,7 @@ export interface HexStringC<S extends number>
  * @returns branded codec for hex-encoded bytestrings
  */
 export const HexString: <S extends number = number>(size?: S) => HexStringC<S> = memoize(function <
-  S extends number = number
+  S extends number = number,
 >(size?: S) {
   return t.brand(
     t.string,
@@ -132,7 +132,7 @@ export interface IntC<S extends number>
  * @returns branded codec for hex-encoded bytestrings
  */
 export const Int: <S extends number = number>(size?: S) => IntC<S> = memoize(function <
-  S extends number = number
+  S extends number = number,
 >(size?: S) {
   const min = size ? Zero.sub(Two.pow(size * 8 - 1)) : undefined,
     max = size ? Two.pow(size * 8 - 1) : undefined;
@@ -161,7 +161,7 @@ export interface UIntC<S extends number = number>
  * @returns branded codec for hex-encoded bytestrings
  */
 export const UInt: <S extends number = number>(size?: S) => UIntC<S> = memoize(function <
-  S extends number = number
+  S extends number = number,
 >(size?: S) {
   const min = size ? Zero : undefined,
     max = size ? Two.pow(size * 8) : undefined;
@@ -232,10 +232,8 @@ export interface TimedC<T extends t.Mixed>
  * @param codec - Codec to compose with a ts timestamp property
  * @returns Codec validating such subtype
  */
-export const Timed: <T extends t.Mixed>(
-  codec: T,
-) => TimedC<T> = memoize(<T extends t.Mixed>(codec: T) =>
-  t.intersection([codec, t.readonly(t.type({ ts: t.number }))]),
+export const Timed: <T extends t.Mixed>(codec: T) => TimedC<T> = memoize(
+  <T extends t.Mixed>(codec: T) => t.intersection([codec, t.readonly(t.type({ ts: t.number }))]),
 );
 
 /**
@@ -265,10 +263,9 @@ export function untime<T extends { readonly ts: number }>(v: T): Omit<T, 'ts'> {
 export type Signed<M> = M & { readonly signature: Signature };
 export interface SignedC<C extends t.Mixed>
   extends t.IntersectionC<[C, t.ReadonlyC<t.TypeC<{ signature: typeof Signature }>>]> {}
-export const Signed: <C extends t.Mixed>(
-  codec: C,
-) => SignedC<C> = memoize(<C extends t.Mixed>(codec: C) =>
-  t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),
+export const Signed: <C extends t.Mixed>(codec: C) => SignedC<C> = memoize(
+  <C extends t.Mixed>(codec: C) =>
+    t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),
 );
 
 /**

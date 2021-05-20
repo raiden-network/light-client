@@ -11,9 +11,9 @@ import Filters from '@/filters';
 import { RouteNames } from '@/router/route-names';
 
 import { TestData } from '../../data/mock-data';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

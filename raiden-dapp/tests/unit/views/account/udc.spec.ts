@@ -23,7 +23,7 @@ const token = generateToken();
 
 async function createWrapper(
   mainnet = false,
-  usingRaidenAccount = false,
+  useRaidenAccount = false,
   udcCapacity = constants.Zero,
   monitoringReward = constants.One,
 ): Promise<Wrapper<UDC>> {
@@ -43,10 +43,14 @@ async function createWrapper(
 
   const getters = {
     mainnet: () => mainnet,
-    usingRaidenAccount: () => usingRaidenAccount,
   };
 
-  const userDepositContractModule = {
+  const userSettings = {
+    namespaced: true,
+    state: { useRaidenAccount },
+  };
+
+  const userDepositContract = {
     namespaced: true,
     state: { token },
   };
@@ -54,7 +58,7 @@ async function createWrapper(
   const store = new Vuex.Store({
     state,
     getters,
-    modules: { userDepositContract: userDepositContractModule },
+    modules: { userDepositContract, userSettings },
   });
 
   const wrapper = mount(UDC, {

@@ -63,9 +63,9 @@ export default class AddressDisplay extends Vue {
       clearTimeout(this.timeout);
     }
 
-    this.timeout = (setTimeout(() => {
+    this.timeout = setTimeout(() => {
       this.copied = false;
-    }, 2000) as unknown) as number;
+    }, 2000) as unknown as number;
   }
 }
 </script>

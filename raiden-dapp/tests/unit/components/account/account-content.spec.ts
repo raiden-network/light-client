@@ -8,9 +8,9 @@ import Vuex from 'vuex';
 
 import AccountContent from '@/components/account/AccountContent.vue';
 import { RouteNames } from '@/router/route-names';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -20,29 +20,27 @@ const $router = new VueRouter() as Mocked<VueRouter>;
 async function createWrapper(
   defaultAccount = '0xAccount',
   accountBalance = '0',
-  usingRaidenAccount = false,
+  useRaidenAccount = false,
   raidenAccountBalance = '0',
   isConnected = true,
-  useSubkey = false,
 ): Promise<Wrapper<AccountContent>> {
   const vuetify = new Vuetify();
   const state = {
-    loading: false,
+    isConnected,
     defaultAccount,
     accountBalance,
     raidenAccountBalance,
   };
 
-  const getters = {
-    isConnected: () => isConnected,
-    usingRaidenAccount: () => usingRaidenAccount,
+  const userSettings = {
+    namespaced: true,
+    state: { useRaidenAccount },
   };
 
-  const store = new Vuex.Store({ state, getters });
+  const store = new Vuex.Store({ state, modules: { userSettings } });
 
   const $raiden = {
-    usingSubkey: useSubkey,
-    getAccount: jest.fn(() => (useSubkey ? '0xAccount' : undefined)),
+    getAccount: jest.fn(() => (useRaidenAccount ? '0xAccount' : undefined)),
   };
 
   const wrapper = mount(AccountContent, {
@@ -144,7 +142,7 @@ describe('AccountContent.vue', () => {
   });
 
   test('udc menu item', async () => {
-    const wrapper = await createWrapper();
+    const wrapper = await createWrapper(undefined, undefined, false);
     const udcMenuItem = wrapper.findAll('.account-content__menu__list-items').at(0);
     const udcMenuTitle = udcMenuItem.find('.v-list-item__title');
     const udcMenuSubtitle = udcMenuItem.find('.v-list-item__subtitle');
@@ -163,14 +161,7 @@ describe('AccountContent.vue', () => {
   });
 
   test('show raiden account menu item, if connected via sub key', async () => {
-    const wrapper = await createWrapper(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      true,
-    );
+    const wrapper = await createWrapper(undefined, undefined, true, undefined, undefined);
     expect(wrapper.vm.$data.menuItems[0].title).toEqual(
       'account-content.menu-items.raiden-account.title',
     );
@@ -206,28 +197,14 @@ describe('AccountContent.vue', () => {
   });
 
   test('does not display "Disconnect" button when not connected', async () => {
-    const wrapper = await createWrapper(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      false,
-      undefined,
-    );
+    const wrapper = await createWrapper(undefined, undefined, undefined, undefined, false);
     const disconnectButton = getDisconnectButton(wrapper);
 
     expect(disconnectButton.exists()).toBe(false);
   });
 
   test('displays "Disconnect" button when connected', async () => {
-    const wrapper = await createWrapper(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      true,
-      undefined,
-    );
+    const wrapper = await createWrapper(undefined, undefined, undefined, undefined, true);
     const disconnectButton = getDisconnectButton(wrapper);
 
     expect(disconnectButton.exists()).toBe(true);

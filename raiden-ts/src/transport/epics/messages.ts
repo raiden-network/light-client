@@ -16,10 +16,8 @@ import {
   catchError,
   concatMap,
   filter,
-  first,
   groupBy,
   map,
-  mapTo,
   mergeMap,
   pluck,
   share,
@@ -32,22 +30,28 @@ import {
 import type { RaidenAction } from '../../actions';
 import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
-import { Capabilities } from '../../constants';
 import { messageReceived, messageSend, messageServiceSend } from '../../messages/actions';
 import type { Delivered, Message } from '../../messages/types';
 import { MessageType, Processed, SecretRequest, SecretReveal } from '../../messages/types';
 import { encodeJsonMessage, isMessageReceivedOfType, signMessage } from '../../messages/utils';
 import { Service } from '../../services/types';
 import type { RaidenState } from '../../state';
-import type { Latest, RaidenEpicDeps } from '../../types';
+import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { assert, networkErrors } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { getServerName } from '../../utils/matrix';
-import { completeWith, concatBuffer, mergeWith, retryWhile } from '../../utils/rx';
-import { Signed } from '../../utils/types';
-import type { Presences } from '../types';
-import { getCap, getPresenceByUserId } from '../utils';
+import {
+  completeWith,
+  concatBuffer,
+  dispatchRequestAndGetResponse,
+  mergeWith,
+  pluckDistinct,
+  retryWhile,
+} from '../../utils/rx';
+import { isntNil, Signed } from '../../utils/types';
+import { matrixPresence } from '../actions';
+import { getAddressFromUserId, getNoDeliveryPeers } from '../utils';
 import { getRoom$, globalRoomNames, parseMessage } from './helpers';
 
 function getMessageBody(message: string | Signed<Message>): string {
@@ -60,20 +64,17 @@ function getMsgType(request: messageSend.request): string {
   return request.payload.msgtype ?? textMsgType;
 }
 
-function canSendThroughRtc([action, { rtc }]: readonly [
-  messageSend.request,
-  Pick<Latest, 'rtc'>,
-]) {
-  return getMsgType(action) === textMsgType && rtc[action.meta.address]?.readyState === 'open';
-}
+/** a messageSend.request which is guaranteed to have its payload.userId property set */
+type requestWithUserId = messageSend.request & {
+  payload: { userId: NonNullable<messageSend.request['payload']['userId']> };
+};
 
 // toDevice API can send multiple messages to multiple userIds+deviceIds, but for each, only a
 // single `msgtype` is allowed; This function walks through the queue and on each call pops at most
 // masBatchSize messages from as many recipients as needed as long as all messages popped for a
 // peer are of the same msgtype; left messages will be picked on next iteration
-function popMessagesOfSameType<T extends messageSend.request>(
+function popMessagesOfSameType<T extends requestWithUserId>(
   queue: T[],
-  presences: Latest['presences'],
   maxBatchSize: number,
 ): Map<string, [T, ...T[]]> {
   let selectedCount = 0;
@@ -82,7 +83,7 @@ function popMessagesOfSameType<T extends messageSend.request>(
   for (let i = 0; i < queue.length && selectedCount < maxBatchSize; i++) {
     const request = queue[i];
     // guaranteed to be defined from request$
-    const peerId = presences[request.meta.address].payload.userId;
+    const peerId = request.payload.userId;
     const peerQueue = selected.get(peerId);
 
     const msgTypeDiffersPeerQueue = peerQueue && getMsgType(request) !== getMsgType(peerQueue[0]);
@@ -96,15 +97,11 @@ function popMessagesOfSameType<T extends messageSend.request>(
   return selected;
 }
 
-function flushQueueToDevice(
-  queue: messageSend.request[],
-  presences: Presences,
-  deps: RaidenEpicDeps,
-) {
+function flushQueueToDevice(queue: requestWithUserId[], deps: RaidenEpicDeps) {
   if (!queue.length) return EMPTY;
   const start = Date.now();
   // limit each batch size to prevent API errors if request's payload is too big
-  const batch = popMessagesOfSameType(queue, presences, 20);
+  const batch = popMessagesOfSameType(queue, 20);
 
   const payload: {
     [peerId: string]: { [deviceId: string]: { msgtype: string; body: string } };
@@ -134,12 +131,9 @@ function flushQueueToDevice(
       const tookMs = Date.now() - start;
       for (const [peerId, peerQueue] of batch) {
         for (const action of peerQueue) {
-          // wait independently on each peer's presence when resolving to success
-          yield deps.latest$.pipe(
-            filter(({ presences }) => presences[action.meta.address].payload.available),
-            take(1),
-            mapTo(messageSend.success({ via: peerId, tookMs, retries }, action.meta)),
-          );
+          // FIXME: if possible, restore waiting for some condition which indicates the
+          // peer has received the message; maybe an incoming message, rtc channel or presence
+          yield of(messageSend.success({ via: peerId, tookMs, retries }, action.meta));
         }
       }
     }),
@@ -155,22 +149,14 @@ function flushQueueToDevice(
 }
 
 function sendBatchedToDevice(
-  action$: Observable<messageSend.request>,
+  action$: Observable<readonly [messageSend.request, string]>,
   deps: RaidenEpicDeps,
 ): Observable<messageSend.success | messageSend.failure> {
-  const queue: messageSend.request[] = [];
+  const queue: requestWithUserId[] = [];
   return action$.pipe(
-    tap((action) => queue.push(action)),
+    tap(([action, userId]) => queue.push({ ...action, payload: { ...action.payload, userId } })),
     // like concatBuffer, but takes queue control in order to do custom batch selection
-    concatMap(() =>
-      deps.latest$.pipe(
-        first(),
-        // completeWith with some delay gives a minimal time for queue to be flushed
-        mergeMap(({ presences }) =>
-          flushQueueToDevice(queue, presences, deps).pipe(completeWith(action$, 10)),
-        ),
-      ),
-    ),
+    concatMap(() => defer(() => flushQueueToDevice(queue, deps).pipe(completeWith(action$, 10)))),
     // notice the emitted elements are observables, which can be merged in the output *after*
     // the concatMap was released in order to "wait" for some condition before success|failure
     mergeMap((obs$: Observable<messageSend.success | messageSend.failure>) =>
@@ -180,12 +166,11 @@ function sendBatchedToDevice(
 }
 
 function sendNowToRtc(
-  toRtc$: Observable<[messageSend.request, Pick<Latest, 'rtc'>]>,
+  toRtc$: Observable<readonly [messageSend.request, RTCDataChannel]>,
 ): Observable<messageSend.success> {
   return toRtc$.pipe(
-    map(([action, { rtc }]) => {
+    map(([action, rtcChannel]) => {
       const start = Date.now();
-      const rtcChannel = rtc[action.meta.address]; // guaranteed to be defined from request$
       rtcChannel.send(getMessageBody(action.payload.message));
       const payload = { via: rtcChannel.label, tookMs: Date.now() - start, retries: 0 };
       return messageSend.success(payload, action.meta);
@@ -206,29 +191,59 @@ export function matrixMessageSendEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<messageSend.success | messageSend.failure> {
-  const request$ = action$.pipe(
-    filter(messageSend.request.is),
-    // "holds" message until it can be handled: there's either a rtcChannel or presence for peer
-    mergeWith((action) =>
-      deps.latest$.pipe(
-        filter(
-          ({ rtc, presences }) =>
-            canSendThroughRtc([action, { rtc }]) || action.meta.address in presences,
-        ),
-        take(1),
-        completeWith(action$),
-      ),
-    ),
-    share(),
-  );
-  // split messages which can be sent right away through rtc and the ones which need to be queued
-  // and sent through toDevice messages
-  const [toRtc$, toDevice$] = partition(request$, canSendThroughRtc);
+): Observable<messageSend.success | messageSend.failure | matrixPresence.request> {
+  return action$.pipe(
+    dispatchRequestAndGetResponse(
+      matrixPresence,
+      (dispatch) => {
+        const request$ = action$.pipe(
+          filter(messageSend.request.is),
+          // "holds" message until it can be handled: there's either a rtcChannel or presence for peer
+          mergeWith((action) => {
+            const address = action.meta.address;
+            const rtc$ =
+              getMsgType(action) !== textMsgType
+                ? EMPTY // don't send through rtc if msgtype is text
+                : deps.latest$.pipe(pluck('rtc', address), filter(isntNil));
+            const userId$ = action.payload.userId
+              ? of(action.payload.userId)
+              : dispatch(matrixPresence.request(undefined, { address })).pipe(
+                  pluck('payload', 'userId'),
+                  catchError((err) => of(err as Error)),
+                );
+            return merge(rtc$, userId$).pipe(take(1), completeWith(action$));
+          }),
+          share(),
+        );
+        // split messages which can be sent right away through rtc and the ones which need to be queued
+        // and sent through toDevice messages
+        const [toRtc$, toDeviceOrError$] = partition(
+          request$,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ([, rtcOrPresence]) => !!rtcOrPresence && (rtcOrPresence as any)?.readyState,
+        ) as [
+          Observable<readonly [messageSend.request, RTCDataChannel]>,
+          Observable<readonly [messageSend.request, string | Error]>,
+        ]; // partition isn't smart enough to detect the split condition, so we need to cast
+        const [toDevice$, presenceError$] = partition(
+          toDeviceOrError$,
+          ([, userIdOrError]) => typeof userIdOrError === 'string',
+        ) as [
+          Observable<readonly [messageSend.request, string]>,
+          Observable<readonly [messageSend.request, Error]>,
+        ];
 
-  const sendToRtc$ = sendNowToRtc(toRtc$);
-  const sendToDevice$ = sendBatchedToDevice(toDevice$.pipe(pluck(0)), deps);
-  return merge(sendToRtc$, sendToDevice$);
+        const sendToRtc$ = sendNowToRtc(toRtc$);
+        const sendToDevice$ = sendBatchedToDevice(toDevice$, deps);
+        const presenceRequestErrored$ = presenceError$.pipe(
+          map(([request, error]) => messageSend.failure(error, request.meta)),
+        );
+        return merge(presenceRequestErrored$, sendToRtc$, sendToDevice$);
+      },
+      undefined,
+      ({ meta }) => meta.address, // deduplicate parallel matrixPresence.request's by address
+    ),
+  );
 }
 
 function sendGlobalMessages(
@@ -322,7 +337,6 @@ export function matrixMessageReceivedEpic(
   {}: Observable<RaidenState>,
   { log, matrix$, config$, latest$ }: RaidenEpicDeps,
 ): Observable<messageReceived> {
-  // gets/wait for the user to be in a room, and then sendMessage
   return matrix$.pipe(
     // when matrix finishes initialization, register to matrix timeline events
     mergeWith((matrix) => fromEvent<MatrixEvent>(matrix, 'toDeviceEvent')),
@@ -334,30 +348,36 @@ export function matrixMessageReceivedEpic(
     withLatestFrom(config$),
     mergeWith(([event, { httpTimeout }]) =>
       latest$.pipe(
-        filter(({ presences }) => !!getPresenceByUserId(presences, event.getSender())),
+        pluckDistinct('whitelisted'),
+        map((whitelisted) => {
+          const address = getAddressFromUserId(event.getSender());
+          // TODO: check if it's possible again to enforce message came from a client-side
+          // validated userId presence, even though the messages signatures are already validated
+          if (!!address && whitelisted.includes(address)) return address;
+        }),
+        filter(isntNil),
         take(1),
-        // take up to an arbitrary timeout to know presence status (monitor) from sender
+        // take up to an arbitrary timeout for sender to be whitelisted
         takeUntil(timer(httpTimeout)),
       ),
     ),
     completeWith(action$),
-    mergeMap(([[event], { presences }]) => {
-      const presence = getPresenceByUserId(presences, event.getSender())!;
+    mergeMap(([[event], senderAddress]) => {
       const lines: string[] = (event.getContent().body ?? '').split('\n');
       return scheduled(lines, asapScheduler).pipe(
         map((line) => {
           let message;
           if (event.getContent().msgtype === textMsgType)
-            message = parseMessage(line, presence.meta.address, { log });
+            message = parseMessage(line, senderAddress, { log });
           return messageReceived(
             {
               text: line,
               ...(message ? { message } : {}),
               ts: Date.now(),
-              userId: presence.payload.userId,
+              userId: event.getSender(),
               ...(event.getContent().msgtype ? { msgtype: event.getContent().msgtype } : {}),
             },
-            presence.meta,
+            { address: senderAddress },
           );
         }),
       );
@@ -373,26 +393,23 @@ export function matrixMessageReceivedEpic(
  * @param deps - RaidenEpicDeps members
  * @param deps.log - Logger instance
  * @param deps.signer - Signer instance
- * @param deps.latest$ - Latest observable
  * @returns Observable of messageSend.request actions
  */
 export function deliveredEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, signer, latest$ }: RaidenEpicDeps,
+  { log, signer }: RaidenEpicDeps,
 ): Observable<messageSend.request> {
   const cache = new LruCache<string, Signed<Delivered>>(32);
   return action$.pipe(
     filter(
       isMessageReceivedOfType([Signed(Processed), Signed(SecretRequest), Signed(SecretReveal)]),
     ),
-    withLatestFrom(latest$),
-    filter(
-      ([action, { presences }]) =>
-        action.meta.address in presences &&
-        // skip if peer supports !Capabilities.DELIVERY
-        !!getCap(presences[action.meta.address].payload.caps, Capabilities.DELIVERY),
-    ),
+    // aggregate seen matrixPresence.success addresses with !DELIVERY set;
+    // if an address's presence hasn't been seen, it's assumed Delivered is needed
+    withLatestFrom(getNoDeliveryPeers()(action$)),
+    // skip iff peer supports !Capabilities.DELIVERY
+    filter(([action, noDelivery]) => !noDelivery.has(action.meta.address)),
     concatMap(([action]) => {
       const message = action.payload.message;
       // defer causes the cache check to be performed at subscription time

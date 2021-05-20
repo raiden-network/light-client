@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { map } from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/pipeable';
+import { pipe } from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import findKey from 'lodash/findKey';
 
@@ -8,9 +8,6 @@ import errorCodes from '../errors.json';
 
 export const ErrorCodes = errorCodes;
 export type ErrorCodes = keyof typeof ErrorCodes;
-
-export const ErrorDetails = t.record(t.string, t.union([t.string, t.number, t.boolean, t.null]));
-export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
 
 export type ErrorMatch = string | number | { [k: string]: string | number };
 export type ErrorMatches = readonly ErrorMatch[];
@@ -127,7 +124,7 @@ export const commonAndFailTxErrors: ErrorMatches = [...commonTxErrors, ...txFail
 export class RaidenError extends Error {
   public name = 'RaidenError';
 
-  public constructor(message?: string, public details: ErrorDetails = {}) {
+  public constructor(message?: string, public details?: unknown) {
     super(message);
     Object.setPrototypeOf(this, RaidenError.prototype);
   }
@@ -169,7 +166,7 @@ export function assert<E extends Error = RaidenError>(
 
 const serializedErr = t.intersection([
   t.type({ name: t.string }),
-  t.partial({ message: t.string, stack: t.string, details: ErrorDetails }),
+  t.partial({ message: t.string, stack: t.string, details: t.unknown }),
 ]);
 
 /**
@@ -181,7 +178,7 @@ const serializedErr = t.intersection([
  */
 export const ErrorCodec = new t.Type<
   Error,
-  { name: string; message?: string; stack?: string; details?: ErrorDetails }
+  { name: string; message?: string; stack?: string; details?: unknown }
 >(
   'Error',
   // if it quacks like a duck... without relying on instanceof

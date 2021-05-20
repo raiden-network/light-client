@@ -93,7 +93,7 @@ export function matchWithdraw<
     | MessageType.WITHDRAW_REQUEST
     | MessageType.WITHDRAW_CONFIRMATION
     | MessageType.WITHDRAW_EXPIRED,
-  M extends WithdrawRequest | WithdrawConfirmation | WithdrawExpired
+  M extends WithdrawRequest | WithdrawConfirmation | WithdrawExpired,
 >(
   type: T,
   data?:

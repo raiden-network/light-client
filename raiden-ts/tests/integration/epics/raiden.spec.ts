@@ -9,7 +9,7 @@ import {
   tokenNetwork,
   txHash,
 } from '../fixtures';
-import { makeAddress, makeLog, makeRaiden, sleep, waitBlock } from '../mocks';
+import { makeLog, makeRaiden, sleep, waitBlock } from '../mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { HashZero, One } from '@ethersproject/constants';
@@ -20,6 +20,8 @@ import { channelMonitored, channelOpen, newBlock, tokenMonitored } from '@/chann
 import { ShutdownReason } from '@/constants';
 import { ErrorCodes, RaidenError } from '@/utils/error';
 import { last } from '@/utils/types';
+
+import { makeAddress } from '../../utils';
 
 const partner = makeAddress();
 

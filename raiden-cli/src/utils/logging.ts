@@ -1,3 +1,4 @@
+import { BigNumber } from 'ethers';
 import fs from 'fs';
 import logging from 'loglevel';
 import util from 'util';
@@ -43,3 +44,11 @@ export function setupLoglevel(output?: string): void {
   };
   logging.setLevel(process.env.NODE_ENV === 'production' ? 'INFO' : 'DEBUG');
 }
+
+// better BigNumber inspect representation for logs
+Object.defineProperty(BigNumber.prototype, util.inspect.custom, {
+  enumerable: false,
+  value(this: BigNumber, _: number, opts: util.InspectOptionsStylized) {
+    return `${opts.stylize('BN', 'special')}(${opts.stylize(this.toString(), 'number')})`;
+  },
+});

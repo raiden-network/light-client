@@ -20,9 +20,10 @@ if (!('RTCPeerConnection' in globalThis)) {
   Object.assign(globalThis, require('wrtc'));
 }
 
-function parseFeeOption(args: readonly string[]) {
-  assert(args.length && args.length % 2 === 0, 'fees must have the format [address, number]');
+function parseFeeOption(args?: readonly string[]) {
   const res: { [addr: string]: string } = {};
+  if (!args?.length) return res;
+  assert(args.length % 2 === 0, 'fees must have the format [address, number]');
   for (let i = 0; i < args.length; i += 2) {
     assert(Address.is(args[i]), 'Invalid address');
     assert(args[i + 1].match(/^\d+$/), 'Invalid numeric value');
@@ -70,8 +71,7 @@ function parseArguments() {
       },
       acceptDisclaimer: {
         type: 'boolean',
-        desc:
-          'By setting this parameter you confirm that you have read, understood and accepted the disclaimer, privacy warning and terms of use.',
+        desc: 'By setting this parameter you confirm that you have read, understood and accepted the disclaimer, privacy warning and terms of use.',
       },
       blockchainQueryInterval: {
         type: 'number',
@@ -118,8 +118,6 @@ function parseArguments() {
         default: '127.0.0.1:5001',
         desc: 'host:port to bind to and listen for API requests',
       },
-    })
-    .options({
       routingMode: {
         choices: ['pfs', 'local', 'private'] as const,
         default: 'pfs',
@@ -127,8 +125,7 @@ function parseArguments() {
       },
       pathfindingServiceAddress: {
         type: 'array',
-        desc:
-          'Force given PFS URL list to be used, automatically chosing the first responding provider for transfers, instead of auto-selecting valid from "ServiceRegistry" contract',
+        desc: 'Force given PFS URL list to be used, automatically chosing the first responding provider for transfers, instead of auto-selecting valid from "ServiceRegistry" contract',
       },
       pathfindingMaxPaths: {
         type: 'number',
@@ -160,15 +157,13 @@ function parseArguments() {
       flatFee: {
         type: 'string',
         nargs: 2,
-        desc:
-          'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
+        desc: 'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
         coerce: parseFeeOption,
       },
       proportionalFee: {
         type: 'string',
         nargs: 2,
-        desc:
-          'Sets the proportional fee required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
+        desc: 'Sets the proportional fee required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
         coerce: parseFeeOption,
       },
     })

@@ -25,12 +25,12 @@ function createWrapper(
 ): Wrapper<UpdateSnackbar> {
   const vuetify = new Vuetify();
   const state = {
+    isConnected,
     versionInfo: {
       updateIsMandatory,
     },
   };
   const getters = {
-    isConnected: () => isConnected,
     versionUpdateAvailable: () => versionUpdateAvailable,
   };
 

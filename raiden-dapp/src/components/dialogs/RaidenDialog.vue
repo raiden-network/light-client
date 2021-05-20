@@ -2,7 +2,7 @@
   <blurred-overlay :show="visible" fullscreen>
     <v-dialog
       :value="visible"
-      width="350"
+      :width="width"
       hide-overlay
       dark
       :persistent="hideClose"
@@ -29,6 +29,8 @@ export default class RaidenDialog extends Vue {
   visible!: boolean;
   @Prop({ required: false, default: false, type: Boolean })
   hideClose!: boolean;
+  @Prop({ required: false, default: '350', type: String })
+  width!: string;
 
   @Emit()
   close(): boolean {
@@ -40,6 +42,7 @@ export default class RaidenDialog extends Vue {
 <style scoped lang="scss">
 @import '@/scss/colors';
 @import '@/scss/fonts';
+@import '@/scss/mixins';
 
 ::v-deep {
   .v-dialog {
@@ -53,6 +56,10 @@ export default class RaidenDialog extends Vue {
   flex-direction: column;
   justify-content: center;
   padding: 25px;
+
+  @include respond-to(handhelds) {
+    padding: 10px;
+  }
 
   ::v-deep {
     .v-card {

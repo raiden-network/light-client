@@ -11,7 +11,7 @@
           </v-list-item-subtitle>
         </v-list-item-content>
         <v-list-item-action>
-          <v-switch v-model="settings.useRaidenAccount" @change="toggleMainAccount" />
+          <v-switch v-model="useRaidenAccount" @change="toggleRaidenAccountUsage" />
         </v-list-item-action>
       </v-list-item>
     </v-list>
@@ -20,18 +20,24 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { mapState } from 'vuex';
+import { createNamespacedHelpers } from 'vuex';
 
-import type { Settings } from '@/types';
+const { mapState, mapMutations } = createNamespacedHelpers('userSettings');
 
 @Component({
-  computed: { ...mapState(['settings']) },
+  computed: {
+    ...mapState(['useRaidenAccount']),
+    ...mapMutations(['enableRaidenAccount', 'disableRaidenAccount']),
+  },
 })
 export default class RaidenSettings extends Vue {
-  settings!: Settings;
+  useRaidenAccount!: boolean;
 
-  toggleMainAccount() {
-    this.$store.commit('updateSettings', this.settings);
+  enableRaidenAccount!: () => void;
+  disableRaidenAccount!: () => void;
+
+  toggleRaidenAccountUsage(value: boolean): void {
+    value ? this.enableRaidenAccount() : this.disableRaidenAccount();
   }
 }
 </script>

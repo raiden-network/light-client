@@ -32,6 +32,7 @@ import {
   closeNotificationPanel,
   connectToDApp,
   deleteTopNotification,
+  dismissNotificationSnackbar,
   downloadState,
   enterAndSelectHub,
   enterChannelDepositAmount,
@@ -71,6 +72,7 @@ describe('dApp e2e tests', () => {
     navigateToNotificationPanel();
     deleteTopNotification();
     closeNotificationPanel();
+    dismissNotificationSnackbar(); // This is the backup reminder which blocks sticky buttons.
     enterTransferAddress(uiTimeout, partnerAddress);
     enterTransferAmount(uiTimeout);
     makeDirectTransfer(uiTimeout);
@@ -80,7 +82,7 @@ describe('dApp e2e tests', () => {
     navigateToAccountMenu();
     navigateToBackupState();
     downloadState();
-    connectToDApp(false);
+    connectToDApp();
     navigateToTokenSelect();
     navigateToConnectNewTokenFromTokenOverlay();
     navigateBackToTransferScreenFromOverlay();

@@ -12,12 +12,9 @@ import type { Address, Hash, OnChange, RaidenTransfer } from 'raiden-ts';
 import { EventTypes, Raiden } from 'raiden-ts';
 
 import type { Token, TokenModel } from '@/model/types';
-import { DeniedReason } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 import type { Configuration } from '@/services/config-provider';
-import { ConfigProvider } from '@/services/config-provider';
 import RaidenService from '@/services/raiden-service';
-import { Web3Provider } from '@/services/web3-provider';
 import type { CombinedStoreState } from '@/store';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
@@ -38,6 +35,13 @@ jest.mock('@/i18n', () => ({
 jest.mock('@/services/config-provider');
 const { RaidenError, ErrorCodes, Capabilities } = jest.requireActual('raiden-ts');
 
+const path = [{ path: ['0xmediator'], fee: BigNumber.from(1 ** 10) }];
+
+// It doesn't really matter what we have here. Therefore force type-case it is fine.
+const ethereumProvider = {
+  url: 'https://some.rpc.provider',
+} as unknown as providers.JsonRpcProvider;
+
 describe('RaidenService', () => {
   let raidenService: RaidenService;
   let raiden: jest.Mocked<Raiden>;
@@ -45,13 +49,7 @@ describe('RaidenService', () => {
   let store: jest.Mocked<Store<CombinedStoreState>> & {
     commit: jest.Mock<void, [string, any?, CommitOptions?]>;
   };
-  let providerMock: jest.Mock;
   let factory: jest.Mock;
-  const mockProvider = {
-    send: jest.fn(),
-    sendAsync: jest.fn(),
-  };
-  const path = [{ path: ['0xmediator'], fee: BigNumber.from(1 ** 10) }];
 
   const setupMock = (mock: jest.Mocked<Raiden>) => {
     mock.getBalance.mockResolvedValue(constants.Zero);
@@ -83,18 +81,16 @@ describe('RaidenService', () => {
   };
 
   async function setupSDK({
-    config,
+    presetTokens,
     stateBackup,
     subkey,
   }: {
     stateBackup?: string;
     subkey?: true;
-    config?: Configuration;
+    presetTokens?: Configuration['per_network'];
   } = {}) {
-    providerMock.mockResolvedValue(mockProvider);
     factory.mockResolvedValue(raiden);
-    (ConfigProvider as any).configuration.mockResolvedValue(config ?? {});
-    await raidenService.connect(stateBackup, subkey);
+    await raidenService.connect(ethereumProvider, undefined, stateBackup, presetTokens, subkey);
     await flushPromises();
   }
 
@@ -102,7 +98,6 @@ describe('RaidenService', () => {
     raiden = new (Raiden as any)() as jest.Mocked<Raiden>;
     setupMock(raiden);
     factory = Raiden.create = jest.fn();
-    providerMock = Web3Provider.provider = jest.fn();
     store = new Store({}) as typeof store;
     (store.state as any) = {
       userDepositContract: { token: undefined },
@@ -133,42 +128,6 @@ describe('RaidenService', () => {
     });
     expect(store.commit).toHaveBeenCalledWith('balance', '1.0');
     expect(store.commit).toBeCalledWith('raidenAccountBalance', '0.1');
-  });
-
-  test('commit a deniedAccess when the throws a denied access error', async () => {
-    providerMock.mockRejectedValue('denied');
-
-    await raidenService.connect();
-    await flushPromises();
-
-    expect(store.commit).toBeCalledTimes(2);
-    expect(store.commit).toBeCalledWith('accessDenied', DeniedReason.NO_ACCOUNT);
-    expect(store.commit).toBeCalledWith('loadComplete');
-  });
-
-  test('commit a deniedAccess when the user attempts to connect on an unsupported network', async () => {
-    providerMock.mockResolvedValue(mockProvider);
-    factory.mockRejectedValue(
-      new Error('No deploy info provided nor recognized network: {name: "homestead", chainId: 1}'),
-    );
-
-    await raidenService.connect();
-    await flushPromises();
-
-    expect(store.commit).toBeCalledTimes(2);
-    expect(store.commit).toBeCalledWith('accessDenied', DeniedReason.UNSUPPORTED_NETWORK);
-    expect(store.commit).toBeCalledWith('loadComplete');
-  });
-
-  test('commit an noProvider when there is no provider detected', async () => {
-    providerMock.mockResolvedValue(null);
-
-    await raidenService.connect();
-    await flushPromises();
-
-    expect(store.commit).toBeCalledTimes(2);
-    expect(store.commit).toBeCalledWith('noProvider');
-    expect(store.commit).toBeCalledWith('loadComplete');
   });
 
   test('throw an error when the user calls openChannel before calling connect', async () => {
@@ -267,7 +226,6 @@ describe('RaidenService', () => {
       raidenService.disconnect();
       expect(raiden.stop).toHaveBeenCalledTimes(1);
       expect(raiden.start).toHaveBeenCalledTimes(1);
-      expect(store.commit).toHaveBeenLastCalledWith('loadComplete');
     });
 
     test('resolves successfully when the channel closes', async () => {
@@ -447,10 +405,9 @@ describe('RaidenService', () => {
           completed: false,
         };
         (raiden as any).transfers$ = new BehaviorSubject(dummyTransfer);
-        providerMock.mockResolvedValue(mockProvider);
         factory.mockResolvedValue(raiden);
 
-        await raidenService.connect();
+        await raidenService.connect(ethereumProvider);
         await flushPromises();
 
         expect(store.commit).toHaveBeenCalledWith(
@@ -464,12 +421,11 @@ describe('RaidenService', () => {
 
     describe('raiden account balances', () => {
       beforeEach(async () => {
-        providerMock.mockResolvedValue(mockProvider);
         const stub = new BehaviorSubject({});
         raiden.getTokenList = jest.fn().mockResolvedValue([]);
         factory.mockResolvedValue(raiden);
         stub.next({});
-        await raidenService.connect();
+        await raidenService.connect(ethereumProvider);
       });
 
       test('empty list is returned if not subkey', async () => {
@@ -561,7 +517,6 @@ describe('RaidenService', () => {
       raiden.getTokenList = jest.fn().mockResolvedValue([mockToken1, mockToken2]);
       raiden.getTokenInfo = jest.fn().mockImplementation(mockToken);
 
-      providerMock.mockResolvedValue(mockProvider);
       factory.mockResolvedValue(raiden);
     });
 
@@ -584,7 +539,7 @@ describe('RaidenService', () => {
       });
 
       test('updates the tokens when it fetches a non-cached token ', async () => {
-        await raidenService.connect();
+        await raidenService.connect(ethereumProvider);
         await flushPromises();
 
         expect(store.commit).toBeCalledWith('account', '123');
@@ -595,7 +550,6 @@ describe('RaidenService', () => {
         expect(store.commit).toHaveBeenLastCalledWith('updateTokens', {
           [mockToken1]: tokens[mockToken1],
         });
-        expect(store.commit).toHaveBeenCalledWith('loadComplete');
       });
     });
 
@@ -666,17 +620,6 @@ describe('RaidenService', () => {
     await flushPromises();
 
     expect(router.push).toHaveBeenCalledWith({ name: RouteNames.HOME });
-  });
-
-  test('update the store with the proper reason when the factory throws an exception', async () => {
-    providerMock.mockResolvedValue(mockProvider);
-    factory.mockRejectedValue(new Error('create failed'));
-    await raidenService.connect();
-    await flushPromises();
-
-    expect(store.commit).toBeCalledTimes(2);
-    expect(store.commit).toBeCalledWith('accessDenied', DeniedReason.INITIALIZATION_FAILED);
-    expect(store.commit).toBeCalledWith('loadComplete');
   });
 
   test('commit config$ updates', async () => {
@@ -873,14 +816,8 @@ describe('RaidenService', () => {
 
   test('pre-set tokens are monitored', async () => {
     expect.assertions(1);
-    const config: Configuration = {
-      per_network: {
-        '1337': {
-          monitored: ['0xtoken'],
-        },
-      },
-    };
-    await setupSDK({ config });
+    const presetTokens = { '1337': { monitored: ['0xtoken'] } };
+    await setupSDK({ presetTokens });
     expect(raiden.monitorToken).toHaveBeenCalledWith('0xtoken');
   });
 

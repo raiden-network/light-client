@@ -7,7 +7,9 @@ import { createAction, createAsyncAction } from '../utils/actions';
 import { Address, Signed } from '../utils/types';
 import { Message } from './types';
 
-/** One-shot send payload.message to meta.address user in transport */
+/**
+ * One-shot send payload.message to meta.address user in transport
+ */
 export const messageSend = createAsyncAction(
   t.type({ address: Address, msgId: t.string }),
   'message/send/request',
@@ -15,7 +17,7 @@ export const messageSend = createAsyncAction(
   'message/send/failure',
   t.intersection([
     t.type({ message: t.union([t.string, Signed(Message)]) }),
-    t.partial({ msgtype: t.string }),
+    t.partial({ msgtype: t.string, userId: t.string }),
   ]),
   t.union([t.undefined, t.type({ via: t.string, tookMs: t.number, retries: t.number })]),
 );
