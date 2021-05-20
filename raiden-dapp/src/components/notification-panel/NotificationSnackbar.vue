@@ -96,8 +96,6 @@ export default class NotificationSnackbar extends Mixins(NavigationMixin) {
 </script>
 
 <style scoped lang="scss">
-@import '@/scss/scroll';
-
 .notification-snackbar {
   &__area {
     cursor: pointer;

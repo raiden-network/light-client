@@ -107,11 +107,17 @@ export default class App extends Mixins(NavigationMixin) {
   height: 844px;
   margin-top: 25px;
   width: 620px;
+
   @include respond-to(handhelds) {
     border-radius: 0;
     height: 100vh;
     margin-top: 0;
     width: 100%;
+    scrollbar-width: none !important;
+
+    &::-webkit-scrollbar {
+      display: none !important;
+    }
   }
 }
 

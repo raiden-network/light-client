@@ -170,7 +170,6 @@ export default class ChannelsRoute extends Mixins(NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '@/scss/dimensions';
-@import '@/scss/scroll';
 
 .channels {
   width: 100%;
@@ -194,7 +193,6 @@ export default class ChannelsRoute extends Mixins(NavigationMixin) {
     height: calc(100% - 60px);
     width: 100%;
     overflow-y: auto;
-    @extend .themed-scrollbar;
   }
 
   &__header {

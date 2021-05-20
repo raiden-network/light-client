@@ -95,7 +95,6 @@ export default class NotificationCard extends Vue {
 
 <style scoped lang="scss">
 @import '@/scss/colors';
-@import '@/scss/scroll';
 
 .notification-card {
   background-color: $notification-card-bg;
