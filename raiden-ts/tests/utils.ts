@@ -22,3 +22,13 @@ export function makeAddress() {
 export function makeHash() {
   return keccak256(randomBytes(32)) as Hash;
 }
+
+/**
+ * Asynchronously wait for some time
+ *
+ * @param ms - milliseconds to wait
+ * @returns Promise to void
+ */
+export async function sleep(ms = 10): Promise<void> {
+  return new Promise((resolve) => setTimeout(() => process.nextTick(resolve), ms));
+}

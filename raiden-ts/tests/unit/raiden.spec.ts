@@ -12,7 +12,7 @@ import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, BehaviorSubject, EMPTY, of, ReplaySubject } from 'rxjs';
+import { AsyncSubject, BehaviorSubject, EMPTY, of, ReplaySubject, Subject } from 'rxjs';
 import { filter, first, ignoreElements, map, mapTo, mergeMap } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
@@ -53,17 +53,24 @@ import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
 import { transfer, transferSigned, withdraw } from '@/transfers/actions';
 import { standardCalculator } from '@/transfers/mediate/types';
+import type { TransferState } from '@/transfers/state';
 import { Direction } from '@/transfers/state';
-import { getLocksroot, getSecrethash, makeMessageId, makeSecret } from '@/transfers/utils';
+import {
+  getLocksroot,
+  getSecrethash,
+  makeMessageId,
+  makeSecret,
+  transferKey,
+} from '@/transfers/utils';
 import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { assert } from '@/utils';
 import { ErrorCodes } from '@/utils/error';
-import { pluckDistinct } from '@/utils/rx';
-import type { Int, UInt } from '@/utils/types';
-import { Address } from '@/utils/types';
+import { completeWith, pluckDistinct } from '@/utils/rx';
+import type { Int, Secret, UInt } from '@/utils/types';
+import { Address, timed } from '@/utils/types';
 
-import { makeAddress, makeHash } from '../utils';
+import { makeAddress, makeHash, sleep } from '../utils';
 
 jest.mock('@ethersproject/providers');
 jest.mock('@/db/utils');
@@ -143,6 +150,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
     busy$: new BehaviorSubject(false),
     close: jest.fn(),
     storageKeys: new Set<string>(),
+    get: jest.fn(),
   } as any;
 
   const defaultConfig = makeDefaultConfig({ network });
@@ -216,6 +224,13 @@ function makeDummyDependencies(): RaidenEpicDeps {
     db,
     init$: new ReplaySubject(),
     mediationFeeCalculator: standardCalculator,
+  };
+}
+
+// makes an epic from a subject which just emits the actions to the state machine
+function makePassthroughEpic(injected$: Subject<RaidenAction>) {
+  return function passthroughEpic(action$: Observable<RaidenAction>) {
+    return injected$.pipe(completeWith(action$));
   };
 }
 
@@ -296,6 +311,46 @@ describe('Raiden', () => {
         address: partner,
       },
     } as Channel;
+  }
+
+  function getTransfer(
+    initiator: Address,
+  ): [transfer: LockedTransfer, fee: Int<32>, secret: Secret] {
+    const paymentId = BigNumber.from(123) as UInt<8>;
+    const secret = makeSecret();
+    const secrethash = getSecrethash(secret);
+    const fee = BigNumber.from(2) as Int<32>;
+    const expiration = BigNumber.from(20) as UInt<32>;
+    const amount = BigNumber.from(20).add(fee) as UInt<32>;
+    const lock: Lock = {
+      amount,
+      expiration,
+      secrethash,
+    };
+    const locksroot = getLocksroot([lock]);
+
+    return [
+      {
+        type: MessageType.LOCKED_TRANSFER,
+        message_identifier: makeMessageId(),
+        chain_id: BigNumber.from(network.chainId) as UInt<32>,
+        token_network_address: tokenNetwork,
+        channel_identifier: BigNumber.from(channelId) as UInt<32>,
+        nonce: BigNumber.from(1) as UInt<8>,
+        transferred_amount: amount,
+        locked_amount: amount,
+        locksroot,
+        payment_identifier: paymentId,
+        token: token,
+        recipient: partner,
+        lock,
+        target: partner,
+        initiator,
+        metadata: { routes: [] },
+      },
+      fee,
+      secret,
+    ];
   }
 
   const messageServiceSendRequestAction: messageServiceSend.request = messageServiceSend.request(
@@ -1149,37 +1204,7 @@ describe('Raiden', () => {
       dummyReducer,
     );
 
-    const paymentId = BigNumber.from(123) as UInt<8>;
-    const secret = makeSecret();
-    const secrethash = getSecrethash(secret);
-    const fee = BigNumber.from(2);
-    const expiration = BigNumber.from(20) as UInt<32>;
-    const amount = BigNumber.from(20).add(fee) as UInt<32>;
-    const lock: Lock = {
-      amount,
-      expiration,
-      secrethash,
-    };
-    const locksroot = getLocksroot([lock]);
-
-    const lockedTransferMessage: LockedTransfer = {
-      type: MessageType.LOCKED_TRANSFER,
-      message_identifier: makeMessageId(),
-      chain_id: BigNumber.from(network.chainId) as UInt<32>,
-      token_network_address: tokenNetwork,
-      channel_identifier: BigNumber.from(channelId) as UInt<32>,
-      nonce: BigNumber.from(1) as UInt<8>,
-      transferred_amount: amount,
-      locked_amount: amount,
-      locksroot,
-      payment_identifier: paymentId,
-      token: token,
-      recipient: partner,
-      lock,
-      target: partner,
-      initiator: raiden.address,
-      metadata: { routes: [] },
-    };
+    const [lockedTransferMessage, fee, secret] = getTransfer(raiden.address);
     const signedMessage = await signMessage(deps.signer, lockedTransferMessage);
 
     function pfsRequestEpicMock(action$: Observable<RaidenAction>) {
@@ -1188,7 +1213,7 @@ describe('Raiden', () => {
         map((action) =>
           pathFind.success(
             {
-              paths: [{ path: [raiden.address, partner], fee: fee as Int<32> }],
+              paths: [{ path: [raiden.address, partner], fee }],
             },
             action.meta,
           ),
@@ -1203,7 +1228,7 @@ describe('Raiden', () => {
           transferSigned(
             {
               message: signedMessage,
-              fee: fee as Int<32>,
+              fee,
               partner,
             },
             action.meta,
@@ -1216,12 +1241,12 @@ describe('Raiden', () => {
     const transferRequestPromise = raiden.action$.pipe(first(transfer.request.is)).toPromise();
 
     const transferResult = raiden.transfer(token, partner, 1, {
-      paymentId,
+      paymentId: lockedTransferMessage.payment_identifier,
       secret,
-      secrethash,
+      secrethash: lockedTransferMessage.lock.secrethash,
     });
 
-    await expect(transferResult).resolves.toEqual(`sent:${secrethash.toString()}`);
+    await expect(transferResult).resolves.toEqual(`sent:${lockedTransferMessage.lock.secrethash}`);
     await expect(pathFindRequestPromise).resolves.toEqual(
       pathFind.request(
         expect.anything(),
@@ -1239,14 +1264,91 @@ describe('Raiden', () => {
           target: partner,
           value: One as UInt<32>,
           paths: expect.anything(),
-          paymentId: paymentId,
+          paymentId: lockedTransferMessage.payment_identifier,
         }),
         {
-          secrethash: secrethash,
+          secrethash: lockedTransferMessage.lock.secrethash,
           direction: Direction.SENT,
         },
       ),
     );
+  });
+
+  test('waitTransfer', async () => {
+    const deps = makeDummyDependencies();
+    deps.db.busy$.next(true); // disable db persistency
+    // eslint-disable-next-line prefer-const
+    let transferState!: TransferState;
+    function dummyTransferReducer(
+      state: RaidenState = dummyState,
+      action: RaidenAction,
+    ): RaidenState {
+      if (transferSigned.is(action))
+        return {
+          ...state,
+          transfers: {
+            ...state.transfers,
+            [transferKey(action.meta)]: transferState,
+          },
+        };
+      if (!transfer.success.is(action)) return state;
+      return {
+        ...state,
+        transfers: {
+          ...state.transfers,
+          [transferKey(action.meta)]: {
+            ...state.transfers[transferKey(action.meta)],
+            unlockProcessed: timed({} as any),
+          },
+        },
+      };
+    }
+    const inject$ = new Subject<RaidenAction>();
+    const raiden = new Raiden(
+      dummyState,
+      deps,
+      combineRaidenEpics([dummyEpic, initEpicMock, makePassthroughEpic(inject$)]),
+      dummyTransferReducer,
+    );
+    await raiden.start();
+
+    const [lockedTransfer, fee, secret] = getTransfer(raiden.address);
+    const secrethash = lockedTransfer.lock.secrethash;
+    const signedMessage = await signMessage(deps.signer, lockedTransfer);
+    transferState = {
+      _id: `${Direction.SENT}:${secrethash}`,
+      channel: channelUniqueKey(getChannel()),
+      direction: Direction.SENT,
+      secrethash,
+      expiration: 991,
+      fee,
+      partner,
+      cleared: 0,
+      transfer: timed(signedMessage),
+      secret,
+    };
+    (deps.db.get as jest.Mock).mockImplementation(async () => {
+      // when db.get, set transfer in state
+      inject$.next(
+        transferSigned(
+          { message: signedMessage, fee, partner },
+          {
+            direction: transferState.direction,
+            secrethash,
+          },
+        ),
+      );
+      return transferState;
+    });
+
+    const promise = raiden.waitTransfer(transferState._id);
+    await sleep();
+    inject$.next(transfer.success({}, { direction: Direction.SENT, secrethash }));
+
+    await expect(promise).resolves.toMatchObject({
+      status: 'UNLOCKED',
+      changedAt: expect.any(Date),
+    });
   });
 
   test('userDepositTokenAddress & getTokenInfo', async () => {
