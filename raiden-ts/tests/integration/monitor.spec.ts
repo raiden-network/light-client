@@ -9,7 +9,7 @@ import {
   id,
   token,
   tokenNetwork,
-} from '../fixtures';
+} from './fixtures';
 import {
   makeLog,
   makeRaidens,
@@ -17,7 +17,7 @@ import {
   originalSignMessage,
   providersEmit,
   waitBlock,
-} from '../mocks';
+} from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
@@ -33,7 +33,7 @@ import { msBalanceProofSent, udcDeposit } from '@/services/actions';
 import { Service } from '@/services/types';
 import type { UInt } from '@/utils/types';
 
-import { makeAddress, makeHash } from '../../utils';
+import { makeAddress, makeHash } from '../utils';
 
 describe('msMonitorRequestEpic', () => {
   test('success: receiving a transfer triggers monitoring', async () => {
