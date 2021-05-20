@@ -86,7 +86,6 @@ export default class Home extends Vue {
 
 <style lang="scss" scoped>
 @import '@/scss/mixins';
-@import '@/scss/scroll';
 
 .home {
   width: 100%;
