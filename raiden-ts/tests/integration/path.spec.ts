@@ -9,8 +9,8 @@ import {
   openBlock,
   token,
   tokenNetwork,
-} from '../fixtures';
-import { fetch, makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } from '../mocks';
+} from './fixtures';
+import { fetch, makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
@@ -29,8 +29,8 @@ import { ErrorCodes } from '@/utils/error';
 import type { Address, Int, Signature, UInt } from '@/utils/types';
 import { Signed } from '@/utils/types';
 
-import { makeAddress, sleep } from '../../utils';
-import type { MockedRaiden } from '../mocks';
+import { makeAddress, sleep } from '../utils';
+import type { MockedRaiden } from './mocks';
 
 const pfsAddress = makeAddress();
 

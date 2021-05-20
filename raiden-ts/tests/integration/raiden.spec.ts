@@ -8,8 +8,8 @@ import {
   token,
   tokenNetwork,
   txHash,
-} from '../fixtures';
-import { makeLog, makeRaiden, waitBlock } from '../mocks';
+} from './fixtures';
+import { makeLog, makeRaiden, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { HashZero, One } from '@ethersproject/constants';
@@ -21,7 +21,7 @@ import { ShutdownReason } from '@/constants';
 import { ErrorCodes, RaidenError } from '@/utils/error';
 import { last } from '@/utils/types';
 
-import { makeAddress, sleep } from '../../utils';
+import { makeAddress, sleep } from '../utils';
 
 const partner = makeAddress();
 

@@ -7,8 +7,8 @@ import {
   getChannel,
   id,
   tokenNetwork,
-} from '../fixtures';
-import { makeRaidens, makeTransaction, waitBlock } from '../mocks';
+} from './fixtures';
+import { makeRaidens, makeTransaction, waitBlock } from './mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { Zero } from '@ethersproject/constants';
@@ -26,8 +26,8 @@ import { makeMessageId } from '@/transfers/utils';
 import { ErrorCodes } from '@/utils/error';
 import type { Hash, UInt } from '@/utils/types';
 
-import { sleep } from '../../utils';
-import type { MockedRaiden } from '../mocks';
+import { sleep } from '../utils';
+import type { MockedRaiden } from './mocks';
 
 describe('withdraw receive request', () => {
   const direction = Direction.RECEIVED;

@@ -21,7 +21,7 @@ import {
   token,
   tokenNetwork,
   txHash,
-} from '../fixtures';
+} from './fixtures';
 import {
   makeLog,
   makeRaiden,
@@ -29,7 +29,7 @@ import {
   makeTransaction,
   providersEmit,
   waitBlock,
-} from '../mocks';
+} from './mocks';
 
 import { defaultAbiCoder, Interface } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
@@ -57,7 +57,7 @@ import { getLocksroot, transferKey } from '@/transfers/utils';
 import { ErrorCodes } from '@/utils/error';
 import type { UInt } from '@/utils/types';
 
-import { makeAddress, makeHash, sleep } from '../../utils';
+import { makeAddress, makeHash, sleep } from '../utils';
 
 test('channelSettleableEpic', async () => {
   expect.assertions(3);

@@ -8,8 +8,8 @@ import {
   secret,
   secrethash,
   tokenNetwork,
-} from '../fixtures';
-import { makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } from '../mocks';
+} from './fixtures';
+import { makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } from './mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { Two, Zero } from '@ethersproject/constants';
@@ -37,8 +37,8 @@ import { getSecrethash, makePaymentId, makeSecret, transferKey } from '@/transfe
 import { isResponseOf } from '@/utils/actions';
 import type { Int, UInt } from '@/utils/types';
 
-import { makeHash, sleep } from '../../utils';
-import type { MockedRaiden } from '../mocks';
+import { makeHash, sleep } from '../utils';
+import type { MockedRaiden } from './mocks';
 
 const direction = Direction.SENT;
 const paymentId = makePaymentId();

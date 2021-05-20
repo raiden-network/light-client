@@ -6,7 +6,7 @@ import {
   secret,
   secrethash,
   tokenNetwork,
-} from '../fixtures';
+} from './fixtures';
 import {
   flushPromises,
   makeLog,
@@ -14,7 +14,7 @@ import {
   makeRaidens,
   providersEmit,
   waitBlock,
-} from '../mocks';
+} from './mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { One, Zero } from '@ethersproject/constants';
@@ -50,7 +50,7 @@ import { getSecrethash, makeMessageId, makePaymentId, makeSecret } from '@/trans
 import type { Int, UInt } from '@/utils/types';
 import { Signed, untime } from '@/utils/types';
 
-import { makeHash, sleep } from '../../utils';
+import { makeHash, sleep } from '../utils';
 
 const direction = Direction.RECEIVED;
 const paymentId = makePaymentId();
