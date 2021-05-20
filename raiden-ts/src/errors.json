@@ -28,7 +28,6 @@
   "CNL_ONCHAIN_UNLOCK_FAILED": "on-chain unlock transaction reverted.",
 
   "CNL_WITHDRAW_TRANSACTION_FAILED": "Withdraw transaction has failed.",
-  "CNL_WITHDRAW_PARTNER_OFFLINE": "Channel partner isn't online.",
   "CNL_WITHDRAW_EXPIRES_SOON": "Withdraw request expired or expires too soon.",
   "CNL_WITHDRAW_EXPIRED": "Withdraw request expired.",
   "CNL_WITHDRAW_AMOUNT_TOO_LOW": "Withdraw request contains an amount smaller than already withdrawn.",
@@ -50,6 +49,9 @@
   "RDN_ASSERT_ERROR": "An unknown assertion failed.",
   "RDN_MINT_FAILED": "Failed to mint tokens.",
   "RDN_MINT_MAINNET": "Minting is only allowed on test networks.",
+  "RDN_REGISTER_TOKEN_FAILED": "Failed to register tokens.",
+  "RDN_REGISTER_TOKEN_MAINNET": "Registering a token is only allowed on test networks.",
+  "RDN_REGISTER_TOKEN_REGISTERED": "Token is already registered.",
   "RDN_APPROVE_TRANSACTION_FAILED": "Approve transaction has failed.",
   "RDN_DEPOSIT_TRANSACTION_FAILED": "Deposit transaction has failed.",
   "RDN_TRANSFER_ONCHAIN_BALANCE_FAILED": "Failed to transfer on-chain balance.",
@@ -97,4 +99,3 @@
   "UDC_WITHDRAW_NO_PLAN": "No plan currently registered; you must call Raiden.planUDCWithdraw first",
   "UDC_WITHDRAW_TOO_LARGE": "Your current plan is not enough to withdraw the requested amount"
 }
-

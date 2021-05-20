@@ -1,15 +1,19 @@
 import { Signer } from '@ethersproject/abstract-signer';
+import type { BigNumber } from '@ethersproject/bignumber';
 import { MaxUint256 } from '@ethersproject/constants';
 import type { Contract, ContractReceipt, ContractTransaction } from '@ethersproject/contracts';
 import type { Network } from '@ethersproject/networks';
-import type { JsonRpcProvider } from '@ethersproject/providers';
+import { JsonRpcProvider } from '@ethersproject/providers';
 import { sha256 } from '@ethersproject/sha2';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { Wallet } from '@ethersproject/wallet';
+import constant from 'lodash/constant';
 import isEqual from 'lodash/isEqual';
+import memoize from 'lodash/memoize';
 import logging from 'loglevel';
+import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { defer, merge } from 'rxjs';
+import { AsyncSubject, defer, merge, ReplaySubject } from 'rxjs';
 import {
   exhaustMap,
   filter,
@@ -24,14 +28,21 @@ import {
 } from 'rxjs/operators';
 
 import type { RaidenAction } from './actions';
+import { raidenShutdown, raidenSynced } from './actions';
 import type { channelSettle } from './channels/actions';
 import { channelDeposit } from './channels/actions';
 import type { Channel, RaidenChannel, RaidenChannels } from './channels/state';
 import { ChannelState } from './channels/state';
 import { channelAmounts, channelKey } from './channels/utils';
-import type { RaidenConfig } from './config';
+import type { PartialRaidenConfig, RaidenConfig } from './config';
+import { makeDefaultConfig } from './config';
+import { ShutdownReason } from './constants';
 import {
+  HumanStandardToken__factory,
   MonitoringService__factory,
+  SecretRegistry__factory,
+  ServiceRegistry__factory,
+  TokenNetwork__factory,
   TokenNetworkRegistry__factory,
   UserDeposit__factory,
 } from './contracts';
@@ -44,23 +55,24 @@ import {
   putRaidenState,
   replaceDatabase,
 } from './db/utils';
-import goerliDeploy from './deployment/deployment_goerli.json';
+import goerliDeploy from './deployment/deployment_goerli_unstable.json';
 import mainnetDeploy from './deployment/deployment_mainnet.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import ropstenDeploy from './deployment/deployment_ropsten.json';
-import goerliServicesDeploy from './deployment/deployment_services_goerli.json';
+import goerliServicesDeploy from './deployment/deployment_services_goerli_unstable.json';
 import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
 import { messageServiceSend } from './messages/actions';
 import { PfsMode, Service } from './services/types';
 import { makeInitialState, RaidenState } from './state';
+import { standardCalculator } from './transfers/mediate/types';
 import type { RaidenTransfer } from './transfers/state';
 import { Direction, TransferState } from './transfers/state';
 import { raidenTransfer } from './transfers/utils';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from './types';
 import { assert } from './utils';
-import { asyncActionToPromise } from './utils/actions';
+import { asyncActionToPromise, isActionOf } from './utils/actions';
 import { jsonParse } from './utils/data';
 import { ErrorCodes, RaidenError } from './utils/error';
 import { getLogsByChunk$, getNetworkName } from './utils/ethers';
@@ -79,25 +91,25 @@ import { Address, decode, isntNil, PrivateKey } from './utils/types';
 export const getContracts = (network: Network): ContractsInfo => {
   switch (network.name) {
     case 'rinkeby':
-      return ({
+      return {
         ...rinkebyDeploy.contracts,
         ...rinkebyServicesDeploy.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     case 'ropsten':
-      return ({
+      return {
         ...ropstenDeploy.contracts,
         ...ropstenServicesDeploy.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     case 'goerli':
-      return ({
+      return {
         ...goerliDeploy.contracts,
         ...goerliServicesDeploy.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     case 'homestead':
-      return ({
+      return {
         ...mainnetDeploy.contracts,
         ...mainnetServicesDeploy.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     default:
       throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, { network: network.name });
   }
@@ -304,7 +316,7 @@ export function getContractWithSigner<C extends Contract>(contract: C, signer: S
 export async function callAndWaitMined<
   C extends Contract,
   M extends keyof C['functions'],
-  P extends Parameters<C['functions'][M]>
+  P extends Parameters<C['functions'][M]>,
 >(
   contract: C,
   method: M,
@@ -401,7 +413,8 @@ export async function fetchContractsInfo(
     provider,
   );
 
-  const tokenNetworkRegistry = (await monitoringServiceContract.token_network_registry()) as Address;
+  const tokenNetworkRegistry =
+    (await monitoringServiceContract.token_network_registry()) as Address;
   const tokenNetworkRegistryContract = TokenNetworkRegistry__factory.connect(
     tokenNetworkRegistry,
     provider,
@@ -447,6 +460,57 @@ export async function getUdcBalance(latest$: Observable<Latest>): Promise<UInt<3
     .toPromise();
 }
 
+/**
+ * @param action$ - Observable of RaidenActions
+ * @returns Promise which resolves when Raiden is synced
+ */
+export function makeSyncedPromise(
+  action$: Observable<RaidenAction>,
+): Promise<raidenSynced['payload'] | undefined> {
+  return action$
+    .pipe(
+      first(isActionOf([raidenSynced, raidenShutdown])),
+      map((action) => {
+        if (raidenShutdown.is(action)) {
+          // don't reject if not stopped by an error
+          if (Object.values(ShutdownReason).some((reason) => reason === action.payload.reason))
+            return;
+          throw action.payload;
+        }
+        return action.payload;
+      }),
+    )
+    .toPromise();
+}
+
+/**
+ * @param deps - Epics dependencies
+ * @param deps.log - Logger instance
+ * @param deps.getTokenContract - Token contract factory/getter
+ * @returns Memoized function to fetch token info
+ */
+export function makeTokenInfoGetter({
+  log,
+  getTokenContract,
+}: Pick<RaidenEpicDeps, 'log' | 'getTokenContract'>): (token: string) => Promise<{
+  totalSupply: BigNumber;
+  decimals: number;
+  name?: string;
+  symbol?: string;
+}> {
+  return memoize(async function getTokenInfo(token: string) {
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], log.info);
+    const tokenContract = getTokenContract(token);
+    const [totalSupply, decimals, name, symbol] = await Promise.all([
+      tokenContract.callStatic.totalSupply(),
+      tokenContract.callStatic.decimals(),
+      tokenContract.callStatic.name().catch(constant(undefined)),
+      tokenContract.callStatic.symbol().catch(constant(undefined)),
+    ]);
+    return { totalSupply, decimals, name, symbol };
+  });
+}
+
 function validateDump(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dump: { _id: string; value: any }[],
@@ -456,7 +520,7 @@ function validateDump(
     contractsInfo,
   }: Pick<RaidenEpicDeps, 'address' | 'network' | 'contractsInfo'>,
 ) {
-  const meta = (dump[0] as unknown) as RaidenDatabaseMeta;
+  const meta = dump[0] as unknown as RaidenDatabaseMeta;
   assert(meta?._id === '_meta', ErrorCodes.RDN_STATE_MIGRATION);
   assert(meta.address === address, ErrorCodes.RDN_STATE_ADDRESS_MISMATCH);
   assert(
@@ -514,11 +578,11 @@ export async function getState(
   ].join('_');
 
   let db;
-  let { state: dump } = storage;
-  const { adapter, prefix } = storage;
+  const { state: stateDump, ...opts } = storage;
+  let dump = stateDump;
 
   // PouchDB configs are passed as custom database constructor using PouchDB.defaults
-  const dbCtor = await getDatabaseConstructorFromOptions({ log, adapter, prefix });
+  const dbCtor = await getDatabaseConstructorFromOptions({ ...opts, log });
 
   if (dump) {
     if (typeof dump === 'string') dump = jsonParse(dump);
@@ -625,4 +689,91 @@ export function waitChannelSettleable$(
       (settleableStates as readonly ChannelState[]).includes(channel.state),
     ),
   );
+}
+
+/**
+ * Helper function to create the RaidenEpicDeps dependencies object for Raiden Epics
+ *
+ * @param signer - Signer holding raiden account connected to a JsonRpcProvider
+ * @param contractsInfo - Object holding deployment information from Raiden contracts on current network
+ * @param opts - Options
+ * @param opts.state - Initial/previous RaidenState
+ * @param opts.db - Database instance
+ * @param opts.config - defaultConfig overwrites
+ * @param opts.main - Main account object, set when using a subkey as raiden signer
+ * @param opts.main.address - Address of main signer
+ * @param opts.main.signer - Signer instance from which the subkey used raiden account was derived
+ * @returns Constructed epics dependencies object
+ */
+export function makeDependencies(
+  signer: Signer,
+  contractsInfo: ContractsInfo,
+  {
+    db,
+    state,
+    config,
+    main,
+  }: {
+    state: RaidenState;
+    db: RaidenDatabase;
+    config?: PartialRaidenConfig;
+    main?: { address: Address; signer: Signer };
+  },
+): RaidenEpicDeps {
+  const provider = signer.provider;
+  assert(
+    provider && provider instanceof JsonRpcProvider && provider.network,
+    'Signer must be connected to a JsonRpcProvider',
+  );
+  const network = provider.network;
+  const latest$ = new ReplaySubject<Latest>(1);
+  const config$ = latest$.pipe(pluckDistinct('config'));
+  const matrix$ = new AsyncSubject<MatrixClient>();
+
+  const address = state.address;
+  const defaultConfig = makeDefaultConfig({ network }, config);
+  const log = logging.getLogger(`raiden:${address}`);
+
+  return {
+    latest$,
+    config$,
+    matrix$,
+    provider,
+    network,
+    signer,
+    address: state.address,
+    log,
+    defaultConfig,
+    contractsInfo,
+    registryContract: TokenNetworkRegistry__factory.connect(
+      contractsInfo.TokenNetworkRegistry.address,
+      main?.signer ?? signer,
+    ),
+    getTokenNetworkContract: memoize((address: Address) =>
+      TokenNetwork__factory.connect(address, main?.signer ?? signer),
+    ),
+    getTokenContract: memoize((address: Address) =>
+      HumanStandardToken__factory.connect(address, main?.signer ?? signer),
+    ),
+    serviceRegistryContract: ServiceRegistry__factory.connect(
+      contractsInfo.ServiceRegistry.address,
+      main?.signer ?? signer,
+    ),
+    userDepositContract: UserDeposit__factory.connect(
+      contractsInfo.UserDeposit.address,
+      main?.signer ?? signer,
+    ),
+    secretRegistryContract: SecretRegistry__factory.connect(
+      contractsInfo.SecretRegistry.address,
+      main?.signer ?? signer,
+    ),
+    monitoringServiceContract: MonitoringService__factory.connect(
+      contractsInfo.MonitoringService.address,
+      main?.signer ?? signer,
+    ),
+    main,
+    db,
+    init$: new ReplaySubject(),
+    mediationFeeCalculator: standardCalculator,
+  };
 }

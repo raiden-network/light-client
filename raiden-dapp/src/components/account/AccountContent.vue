@@ -1,6 +1,6 @@
 <template>
   <div class="account-content">
-    <div v-if="!loading && defaultAccount">
+    <div v-if="isConnected">
       <v-row class="account-content__account-details" dense>
         <v-col cols="3">
           <span class="account-content__account-details__address">
@@ -33,7 +33,7 @@
           </span>
         </v-col>
       </v-row>
-      <v-row v-if="usingRaidenAccount" class="account-content__account-details__eth" dense>
+      <v-row v-if="useRaidenAccount" class="account-content__account-details__eth" dense>
         <v-col cols="3">
           <span class="account-content__account-details__eth__account">
             {{ $t('account-content.account.raiden') }}
@@ -84,7 +84,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { mapGetters, mapState } from 'vuex';
+import { createNamespacedHelpers, mapState } from 'vuex';
 
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -97,25 +97,29 @@ interface MenuItem {
   route: () => void;
 }
 
+const { mapState: mapStateUserSettings } = createNamespacedHelpers('userSettings');
+
 @Component({
   components: {
     AddressDisplay,
   },
   computed: {
-    ...mapState(['loading', 'defaultAccount', 'accountBalance', 'raidenAccountBalance']),
-    ...mapGetters(['isConnected', 'usingRaidenAccount']),
+    ...mapState(['isConnected', 'defaultAccount', 'accountBalance', 'raidenAccountBalance']),
+    ...mapStateUserSettings(['useRaidenAccount']),
   },
 })
 export default class AccountContent extends Mixins(NavigationMixin) {
   menuItems: MenuItem[] = [];
-  loading!: boolean;
   defaultAccount!: string;
   accountBalance!: string;
   raidenAccountBalance!: string;
   isConnected!: boolean;
+  useRaidenAccount!: boolean;
 
   async disconnect() {
     await this.$raiden.disconnect();
+    localStorage.removeItem('walletconnect');
+    this.$store.commit('setDisconnected');
     this.$store.commit('reset');
   }
 
@@ -150,7 +154,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
         },
       });
 
-      if (this.$raiden.usingSubkey) {
+      if (this.useRaidenAccount) {
         const raidenAccount = {
           icon: 'account_eth.svg',
           title: this.$t('account-content.menu-items.raiden-account.title') as string,

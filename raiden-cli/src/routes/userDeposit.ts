@@ -135,15 +135,15 @@ async function interactWithUDC(this: Cli, request: Request, response: Response):
     const interactionResponse = await determineAndExecuteRequestedInteraction.call(this, request);
     response.json(interactionResponse);
   } catch (error) {
-    if (
-      isInvalidParameterError(error) ||
-      error === MalformedNumberValue ||
-      error === MalformedRequestFormat
-    ) {
+    if (error === MalformedNumberValue || error === MalformedRequestFormat) {
       response.status(400).send(error.message);
     } else if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
-    } else if (isConflictError(error) || error === TotalDepositTooLowError) {
+    } else if (
+      isInvalidParameterError(error) ||
+      isConflictError(error) ||
+      error === TotalDepositTooLowError
+    ) {
       response.status(409).send(error.message);
     } else {
       response.status(500).send(error.message);

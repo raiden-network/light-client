@@ -23,7 +23,7 @@ type _Action<
   TType extends string,
   TPayload extends t.Mixed | undefined = undefined,
   TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined
+  TError extends boolean | undefined = undefined,
 > = TError extends boolean
   ? TMeta extends t.Mixed
     ? TPayload extends t.Mixed
@@ -52,7 +52,7 @@ type ActionCodec<
   TType extends string,
   TPayload extends t.Mixed | undefined = undefined,
   TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined
+  TError extends boolean | undefined = undefined,
 > = TError extends boolean
   ? TMeta extends t.Mixed
     ? TPayload extends t.Mixed
@@ -81,7 +81,7 @@ type ActionFactory<
   TType extends string,
   TPayload extends t.Mixed | undefined = undefined,
   TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined
+  TError extends boolean | undefined = undefined,
 > = TPayload extends t.Mixed
   ? TMeta extends t.Mixed
     ? (
@@ -105,7 +105,7 @@ type ActionCreatorMembers<
   TType extends string,
   TPayload extends t.Mixed | undefined = undefined,
   TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined
+  TError extends boolean | undefined = undefined,
 > = {
   codec: ActionCodec<TType, TPayload, TMeta, TError>;
   type: TType;
@@ -119,7 +119,7 @@ export type ActionCreator<
   TType extends string,
   TPayload extends t.Mixed | undefined = undefined,
   TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined
+  TError extends boolean | undefined = undefined,
 > = ActionFactory<TType, TPayload, TMeta, TError> &
   ActionCreatorMembers<TType, TPayload, TMeta, TError>;
 
@@ -187,7 +187,7 @@ type ActionParams<
   TType extends string,
   TPayload extends t.Mixed | undefined = undefined,
   TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined
+  TError extends boolean | undefined = undefined,
 > = TError extends boolean
   ? TMeta extends t.Mixed
     ? TPayload extends t.Mixed
@@ -213,13 +213,13 @@ export function createAction<TType extends string, TPayload extends t.Mixed | un
 export function createAction<
   TType extends string,
   TPayload extends t.Mixed | undefined,
-  TMeta extends t.Mixed | undefined
+  TMeta extends t.Mixed | undefined,
 >(type: TType, payload: TPayload, meta: TMeta): ActionCreator<TType, TPayload, TMeta>;
 export function createAction<
   TType extends string,
   TPayload extends t.Mixed | undefined,
   TMeta extends t.Mixed | undefined,
-  TError extends boolean | undefined
+  TError extends boolean | undefined,
 >(
   type: TType,
   payload: TPayload,
@@ -241,7 +241,7 @@ export function createAction<
   TType extends string,
   TPayload extends t.Mixed | undefined = undefined,
   TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined
+  TError extends boolean | undefined = undefined,
 >(
   ...args: ActionParams<TType, TPayload, TMeta, TError>
 ): ActionCreator<TType, TPayload, TMeta, TError> {
@@ -281,7 +281,7 @@ export type AsyncActionCreator<
   TFailureType extends string,
   TRequestPayload extends t.Mixed | undefined,
   TSuccessPayload extends t.Mixed | undefined,
-  TFailurePayload extends t.Mixed | undefined = typeof t.any
+  TFailurePayload extends t.Mixed | undefined = typeof t.any,
 > = {
   request: ActionCreator<TRequestType, TRequestPayload, TMeta>;
   success: ActionCreator<TSuccessType, TSuccessPayload, TMeta>;
@@ -297,7 +297,7 @@ export function createAsyncAction<
   TSuccessType extends string,
   TFailureType extends string,
   TRequestPayload extends t.Mixed | undefined,
-  TSuccessPayload extends t.Mixed | undefined
+  TSuccessPayload extends t.Mixed | undefined,
 >(
   meta: TMeta,
   rtype: TRequestType,
@@ -321,7 +321,7 @@ export function createAsyncAction<
   TFailureType extends string,
   TRequestPayload extends t.Mixed | undefined,
   TSuccessPayload extends t.Mixed | undefined,
-  TFailurePayload extends t.Mixed | undefined
+  TFailurePayload extends t.Mixed | undefined,
 >(
   meta: TMeta,
   rtype: TRequestType,
@@ -365,7 +365,7 @@ export function createAsyncAction<
   TFailureType extends string,
   TRequestPayload extends t.Mixed | undefined,
   TSuccessPayload extends t.Mixed | undefined,
-  TFailurePayload extends t.Mixed | undefined = typeof t.any
+  TFailurePayload extends t.Mixed | undefined = typeof t.any,
 >(
   meta: TMeta,
   rtype: TRequestType,
@@ -421,14 +421,14 @@ function matchMeta(meta: any, ...args: [{ meta: any }] | []) {
 
 // curried overloads
 export function isResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
 >(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
   action: unknown,
 ): action is ActionType<AAC['success'] | AAC['failure']>;
 export function isResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
 >(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
@@ -447,7 +447,7 @@ export function isResponseOf<
  * @returns type guard function to filter deep-equal meta success|failure actions
  */
 export function isResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
 >(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], ...args: [unknown] | []) {
   const _isResponseOf = (action: unknown): action is ActionType<AAC['success'] | AAC['failure']> =>
     isActionOf([asyncAction.success, asyncAction.failure], action) && matchMeta(meta, action);
@@ -458,7 +458,7 @@ export function isResponseOf<
 
 // curried overloads
 export function isConfirmationResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
 >(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
@@ -467,7 +467,7 @@ export function isConfirmationResponseOf<
   | (ActionType<AAC['success']> & { payload: { confirmed: boolean } })
   | ActionType<AAC['failure']>;
 export function isConfirmationResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
 >(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
@@ -491,7 +491,7 @@ export function isConfirmationResponseOf<
  * @returns type guard function to filter deep-equal meta success|failure actions
  */
 export function isConfirmationResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
 >(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], ...args: [unknown] | []) {
   /**
    * @param action - action to check
@@ -513,14 +513,14 @@ export function isConfirmationResponseOf<
 }
 
 export function asyncActionToPromise<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
 >(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
   action$: Observable<Action>,
 ): Promise<ActionType<AAC['success']>['payload']>;
 export function asyncActionToPromise<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
 >(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
@@ -534,7 +534,7 @@ export function asyncActionToPromise<
   }
 >;
 export function asyncActionToPromise<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
 >(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
@@ -555,7 +555,7 @@ export function asyncActionToPromise<
  * @returns Promise which rejects with payload in case of failure, or resolves payload otherwise
  */
 export async function asyncActionToPromise<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
 >(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
@@ -622,7 +622,7 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
   type HandleNew<ACs> = <
     AC extends AnyAC & NotHandled<ACs, AD>,
     H extends Handler<AC>,
-    AD extends AnyAC = AC
+    AD extends AnyAC = AC,
   >(
     ac: AC | AC[],
     handler: H,
@@ -652,7 +652,7 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
     function handle<
       AC extends AnyAC & NotHandled<ACs, AD>,
       H extends Handler<AC>,
-      AD extends AnyAC = AC
+      AD extends AnyAC = AC,
     >(ac: AC | AC[], handler: H) {
       const arr = Array.isArray(ac) ? ac : [ac];
       assert(!arr.some((a) => a.type in handlers), 'Already handled');

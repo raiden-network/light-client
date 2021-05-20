@@ -21,7 +21,13 @@
       </v-col>
     </v-row>
     <template #action="{ attrs }">
-      <v-btn icon left v-bind="attrs" @click="dismiss()">
+      <v-btn
+        data-cy="notification-snackbar__dismiss-button"
+        icon
+        left
+        v-bind="attrs"
+        @click="dismiss()"
+      >
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </template>

@@ -10,9 +10,9 @@ import Vuex from 'vuex';
 
 import AppHeader from '@/components/AppHeader.vue';
 import { RouteNames } from '@/router/route-names';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuex);
 Vue.use(Vuetify);
@@ -22,12 +22,14 @@ const vuetify = new Vuetify();
 const network = 'Selected Network';
 
 const createWrapper = (
-  connected = true,
+  isConnected = true,
   newNotifications = false,
   routeName = RouteNames.CHANNELS,
 ): Wrapper<AppHeader> => {
+  const state = {
+    isConnected,
+  };
   const getters = {
-    isConnected: () => connected,
     network: () => network,
   };
   const notificationsModule = {
@@ -40,7 +42,11 @@ const createWrapper = (
     },
   };
 
-  const store = new Vuex.Store({ getters, modules: { notifications: notificationsModule } });
+  const store = new Vuex.Store({
+    state,
+    getters,
+    modules: { notifications: notificationsModule },
+  });
 
   return mount(AppHeader, {
     vuetify,

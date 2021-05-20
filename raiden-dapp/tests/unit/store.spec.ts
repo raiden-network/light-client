@@ -1,7 +1,7 @@
 import { BigNumber, constants } from 'ethers';
 
 import type { Token } from '@/model/types';
-import { DeniedReason, emptyTokenModel } from '@/model/types';
+import { emptyTokenModel } from '@/model/types';
 import store, { defaultState } from '@/store/index';
 import { defaultState as defaultNotificationsState } from '@/store/notifications/state';
 import { defaultState as defaultUserDepositContractState } from '@/store/user-deposit-contract/state';
@@ -40,20 +40,12 @@ describe('store', () => {
     });
   });
 
-  test('isConnected getter is false while disconnected', () => {
-    expect(store.getters.isConnected).toBe(false);
-  });
-
-  test('loadComplete mutation changes the loading state', () => {
-    expect(store.state.loading).toBe(true);
-    store.commit('loadComplete');
-    expect(store.state.loading).toBe(false);
-  });
-
-  test('noProvider mutation changes the providerDetected state', () => {
-    expect(store.state.providerDetected).toBe(true);
-    store.commit('noProvider');
-    expect(store.state.providerDetected).toBe(false);
+  test('setConnected and setDisconnected mutations change isConnected state', () => {
+    expect(store.state.isConnected).toBe(false);
+    store.commit('setConnected');
+    expect(store.state.isConnected).toBe(true);
+    store.commit('setDisconnected');
+    expect(store.state.isConnected).toBe(false);
   });
 
   test('balance mutation changes the accountBalance state', () => {
@@ -74,25 +66,21 @@ describe('store', () => {
     expect(store.state.defaultAccount).toBe('test');
   });
 
-  test('accessDenied mutation changes the accessDenied state', () => {
-    expect(store.state.accessDenied).toBe(DeniedReason.UNDEFINED);
-    store.commit('accessDenied', DeniedReason.NO_ACCOUNT);
-    expect(store.state.accessDenied).toBe(DeniedReason.NO_ACCOUNT);
-  });
-
   test('updateChannel mutation changes the channels state', () => {
     expect(store.state.channels).toEqual({});
     store.commit('updateChannels', TestData.mockChannels);
     expect(store.state.channels).toEqual(TestData.mockChannels);
   });
 
-  test('backupState mutation changes the stateBackup state', () => {
+  test('backupState and clearBackupState mutations change the stateBackup state', () => {
     expect(store.state.stateBackup).toEqual('');
 
     const mockStringStateFile = '{ ...stateFileContent }';
     store.commit('backupState', mockStringStateFile);
-
     expect(store.state.stateBackup).toEqual(mockStringStateFile);
+
+    store.commit('clearBackupState');
+    expect(store.state.stateBackup).toEqual('');
   });
 
   test('the tokens getter returns tokens that have channels', () => {
@@ -225,10 +213,10 @@ describe('store', () => {
   });
 
   test('the reset mutation resets the state', () => {
-    store.commit('loadComplete', false);
-    expect(store.state.loading).toBe(false);
+    store.commit('updateBlock', 1);
+    expect(store.state.blockNumber).toBe(1);
     store.commit('reset');
-    expect(store.state.loading).toBe(true);
+    expect(store.state.blockNumber).toBe(defaultState().blockNumber);
   });
 
   test('the set available version mutation updates the version info', () => {
@@ -348,11 +336,6 @@ describe('store', () => {
     expect(transfer.key).toEqual('sent:0x1');
   });
 
-  test('isConnected should be false if loading', () => {
-    store.commit('account', '0x0000000000000000000000000000000000020001');
-    expect(store.getters.isConnected).toBe(false);
-  });
-
   test('newBlock updates blockNumber', () => {
     store.commit('updateBlock', 1337);
     expect(store.state.blockNumber).toBe(1337);
@@ -363,13 +346,6 @@ describe('store', () => {
       store.commit('acceptDisclaimer', persistDecistion);
       expect(store.state.disclaimerAccepted).toBe(true);
       expect(store.state.persistDisclaimerAcceptance).toBe(persistDecistion);
-    });
-  });
-
-  test('usingRaidenAccount getter reflect settings state property', () => {
-    [true, false].forEach((useRaidenAccount) => {
-      store.commit('updateSettings', { useRaidenAccount });
-      expect(store.getters.usingRaidenAccount).toEqual(useRaidenAccount);
     });
   });
 

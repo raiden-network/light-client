@@ -30,7 +30,6 @@
           :disabled="noChannels"
           :exclude="[token.address, defaultAccount]"
           hide-error-label
-          :block="blockedHubs"
           @input-error="targetAddressError = $event"
         />
       </v-row>
@@ -64,7 +63,6 @@ import type { VForm } from 'vuetify/lib';
 import { mapGetters, mapState } from 'vuex';
 
 import type { RaidenChannel } from 'raiden-ts';
-import { ChannelState } from 'raiden-ts';
 
 import ActionButton from '@/components/ActionButton.vue';
 import AddressInput from '@/components/AddressInput.vue';
@@ -108,12 +106,6 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
   valid = false;
   targetAddressError = '';
   transferAmountError = '';
-
-  get blockedHubs(): string[] {
-    return this.channels(this.token.address)
-      .filter((channel: RaidenChannel) => channel.state !== ChannelState.open)
-      .map((channel: RaidenChannel) => channel.partner as string);
-  }
 
   @Watch('$route', { deep: true })
   onRouteChange() {

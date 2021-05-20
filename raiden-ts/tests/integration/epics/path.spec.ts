@@ -12,7 +12,6 @@ import {
 } from '../fixtures';
 import {
   fetch,
-  makeAddress,
   makeLog,
   makeRaiden,
   makeRaidens,
@@ -39,6 +38,7 @@ import { ErrorCodes } from '@/utils/error';
 import type { Address, Int, Signature, UInt } from '@/utils/types';
 import { Signed } from '@/utils/types';
 
+import { makeAddress } from '../../utils';
 import type { MockedRaiden } from '../mocks';
 
 const pfsAddress = makeAddress();
@@ -214,9 +214,9 @@ describe('PFS: pfsRequestEpic', () => {
 
     const matrix = await raiden.deps.matrix$.toPromise();
     const matrixError = new Error('Unspecific matrix error for testing purpose');
-    (matrix.searchUserDirectory as jest.MockedFunction<
-      typeof matrix.searchUserDirectory
-    >).mockRejectedValue(matrixError);
+    (
+      matrix.searchUserDirectory as jest.MockedFunction<typeof matrix.searchUserDirectory>
+    ).mockRejectedValue(matrixError);
 
     const pathFindMeta = {
       tokenNetwork,
@@ -885,7 +885,8 @@ describe('PFS: pfsRequestEpic', () => {
     const lastIOUResult = {
       last_iou: Signed(IOU).encode({
         ...iou,
-        signature: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Signature,
+        signature:
+          '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Signature,
       }),
     };
     mockedIouResponse.mockResolvedValue({

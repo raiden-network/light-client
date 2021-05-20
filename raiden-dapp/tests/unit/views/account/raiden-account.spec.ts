@@ -21,6 +21,9 @@ describe('RaidenAccount.vue', () => {
     getAccount: jest.fn().mockResolvedValue('0x2'),
   };
   beforeEach(async () => {
+    store.commit('balance', '3.0');
+    store.commit('raidenAccountBalance', '2.0');
+
     vuetify = new Vuetify();
 
     wrapper = mount(RaidenAccount, {
@@ -32,9 +35,6 @@ describe('RaidenAccount.vue', () => {
       },
       store,
     });
-
-    store.commit('balance', '3.0');
-    store.commit('raidenAccountBalance', '2.0');
 
     wrapper.vm.$nextTick();
     await flushPromises();

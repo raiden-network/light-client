@@ -169,6 +169,7 @@
       class="transfer__button"
       :enabled="continueBtnEnabled"
       :text="callToActionText"
+      full-width
       sticky
       arrow
       @click="handleStep()"

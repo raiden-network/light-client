@@ -1,7 +1,7 @@
 import unset from 'lodash/fp/unset';
 
 import type { RaidenAction } from './actions';
-import { raidenConfigUpdate } from './actions';
+import { raidenConfigUpdate, raidenStarted } from './actions';
 import channelsReducer from './channels/reducer';
 import type { PartialRaidenConfig } from './config';
 import servicesReducer from './services/reducer';
@@ -13,9 +13,8 @@ import { createReducer } from './utils/actions';
 
 // update state.config on raidenConfigUpdate action
 // resets key to default value if value is undefined, otherwise overwrites it
-const configReducer = createReducer(initialState).handle(
-  raidenConfigUpdate,
-  (state, { payload }) => {
+const configReducer = createReducer(initialState)
+  .handle(raidenConfigUpdate, (state, { payload }) => {
     let config: PartialRaidenConfig = state.config;
     for (const [k, v] of Object.entries(payload)) {
       if (v !== undefined) config = { ...config, [k]: v };
@@ -23,8 +22,9 @@ const configReducer = createReducer(initialState).handle(
     }
     if (config === state.config) return state;
     return { ...state, config };
-  },
-);
+  })
+  // raidenStarted changes reference to ensure state$ emits when starting
+  .handle(raidenStarted, (state) => ({ ...state }));
 
 const raidenReducers = {
   configReducer,

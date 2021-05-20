@@ -15,10 +15,6 @@ import type { Address } from '@/utils/types';
 
 jest.setTimeout(500_000);
 
-process.on('beforeExit', (code) => {
-  process.exit(code);
-});
-
 const svtBalance = '1000000000000000000000';
 const signer = new Wallet('0x0123456789012345678901234567890123456789012345678901234567890123');
 const signer2 = new Wallet('0x0123456789012345678901234567890123456789012345678901234567890124');
@@ -42,10 +38,10 @@ async function createRaiden(account: number | string | Signer): Promise<Raiden> 
   const deploy = JSON.parse(deployFile);
   const servicesDeploy = JSON.parse(servicesDeployFile);
 
-  const contractsInfo = ({
+  const contractsInfo = {
     ...deploy.contracts,
     ...servicesDeploy.contracts,
-  } as unknown) as ContractsInfo;
+  } as unknown as ContractsInfo;
 
   return await Raiden.create(
     'http://localhost:8545',

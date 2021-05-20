@@ -23,8 +23,8 @@ import type { VersionInfo } from '@/types';
 @Component({
   components: { BlurredOverlay },
   computed: {
-    ...mapState(['versionInfo']),
-    ...mapGetters(['isConnected', 'versionUpdateAvailable']),
+    ...mapState(['isConnected', 'versionInfo']),
+    ...mapGetters(['versionUpdateAvailable']),
   },
 })
 export default class UpdateSnackbar extends Vue {

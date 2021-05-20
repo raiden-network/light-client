@@ -9,15 +9,7 @@ import {
   secrethash,
   tokenNetwork,
 } from '../fixtures';
-import {
-  makeHash,
-  makeLog,
-  makeRaiden,
-  makeRaidens,
-  providersEmit,
-  sleep,
-  waitBlock,
-} from '../mocks';
+import { makeLog, makeRaiden, makeRaidens, providersEmit, sleep, waitBlock } from '../mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { Two, Zero } from '@ethersproject/constants';
@@ -45,6 +37,7 @@ import { getSecrethash, makePaymentId, makeSecret, transferKey } from '@/transfe
 import { isResponseOf } from '@/utils/actions';
 import type { Int, UInt } from '@/utils/types';
 
+import { makeHash } from '../../utils';
 import type { MockedRaiden } from '../mocks';
 
 const direction = Direction.SENT;

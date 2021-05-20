@@ -4,10 +4,8 @@ import './patches';
 import type { FilterByBlockHash } from '@ethersproject/abstract-provider';
 import { getAddress } from '@ethersproject/address';
 import { BigNumber } from '@ethersproject/bignumber';
-import { hexlify } from '@ethersproject/bytes';
 import { HashZero, MaxUint256, Zero } from '@ethersproject/constants';
 import type { Contract, ContractTransaction, EventFilter } from '@ethersproject/contracts';
-import { keccak256 } from '@ethersproject/keccak256';
 import type { Network } from '@ethersproject/networks';
 import type {
   EventType,
@@ -17,7 +15,6 @@ import type {
   Log,
 } from '@ethersproject/providers';
 import { Web3Provider } from '@ethersproject/providers';
-import { randomBytes } from '@ethersproject/random';
 import { parseEther } from '@ethersproject/units';
 import { verifyMessage, Wallet } from '@ethersproject/wallet';
 import { EventEmitter } from 'events';
@@ -57,7 +54,7 @@ import {
 } from '@/contracts';
 import type { RaidenDatabaseConstructor } from '@/db/types';
 import { getRaidenState, migrateDatabase, putRaidenState } from '@/db/utils';
-import { raidenRootEpic } from '@/epics';
+import { combineRaidenEpics } from '@/epics';
 import { signMessage } from '@/messages/utils';
 import { createPersisterMiddleware } from '@/persister';
 import { raidenReducer } from '@/reducer';
@@ -70,8 +67,10 @@ import { assert } from '@/utils';
 import { getNetworkName } from '@/utils/ethers';
 import { getServerName } from '@/utils/matrix';
 import { pluckDistinct } from '@/utils/rx';
-import type { Hash, Signature } from '@/utils/types';
+import type { Signature } from '@/utils/types';
 import { Address, decode, Secret } from '@/utils/types';
+
+import { makeAddress, makeHash } from '../utils';
 
 jest.mock('@/messages/utils', () => ({
   ...jest.requireActual<any>('@/messages/utils'),
@@ -130,7 +129,7 @@ export async function flushPromises() {
 
 type ZipTuple<
   T extends readonly [string, ...string[]],
-  U extends [any, ...any[]] & { length: T['length'] }
+  U extends [any, ...any[]] & { length: T['length'] },
 > = {
   [K in keyof T]: [T[K], K extends keyof U ? U[K] : never];
 };
@@ -142,7 +141,7 @@ type ZipTuple<
  */
 export function makeStruct<
   Keys extends readonly [string, ...string[]],
-  Values extends [any, ...any[]] & { length: Keys['length'] }
+  Values extends [any, ...any[]] & { length: Keys['length'] },
 >(keys: Keys, values: Values) {
   return Object.assign(
     [...values],
@@ -169,24 +168,6 @@ function makeWallet() {
     } catch (err) {}
   } while (!wallet);
   return wallet;
-}
-
-/**
- * Generate a random address
- *
- * @returns address
- */
-export function makeAddress() {
-  return getAddress(hexlify(randomBytes(20))) as Address;
-}
-
-/**
- * Generate a random hash
- *
- * @returns hash
- */
-export function makeHash() {
-  return keccak256(randomBytes(32)) as Hash;
 }
 
 /**
@@ -241,15 +222,16 @@ export function makeTransaction(
 // array of cleanup functions registered on current test
 const mockedCleanups: (() => void)[] = [];
 
-export const fetch = jest.fn<
-  Promise<{
-    ok: boolean;
-    status: number;
-    json: jest.MockedFunction<() => Promise<any>>;
-    text?: jest.MockedFunction<() => Promise<string>>;
-  }>,
-  [string?, any?]
->();
+export const fetch =
+  jest.fn<
+    Promise<{
+      ok: boolean;
+      status: number;
+      json: jest.MockedFunction<() => Promise<any>>;
+      text?: jest.MockedFunction<() => Promise<string>>;
+    }>,
+    [string?, any?]
+  >();
 Object.assign(globalThis, { fetch });
 
 beforeEach(() => {
@@ -361,7 +343,7 @@ function mockedMatrixCreateClient({
   }
 
   let stopped: typeof mockedMatrixUsers[string] | undefined;
-  const matrix = (Object.assign(new EventEmitter(), {
+  const matrix = Object.assign(new EventEmitter(), {
     startClient: jest.fn(async () => {
       if (!(userId in mockedMatrixUsers) && stopped) mockedMatrixUsers[userId] = stopped;
       stopped = undefined;
@@ -528,7 +510,6 @@ function mockedMatrixCreateClient({
           matrix.getRoom(roomId),
         );
       }
-      logging.info('__sendEvent', address, roomId, type, content);
       return true;
     }),
     sendToDevice: jest.fn(
@@ -545,7 +526,6 @@ function mockedMatrixCreateClient({
                 getContent: jest.fn(() => content),
                 event: { type, sender: userId, content },
               });
-              logging.info('__sendToDevice', address, type, content);
             }
           }
         }
@@ -578,7 +558,7 @@ function mockedMatrixCreateClient({
       storeRoom: jest.fn(),
     },
     createFilter: jest.fn(async () => true),
-  }) as unknown) as jest.Mocked<MatrixClient>;
+  }) as unknown as jest.Mocked<MatrixClient>;
   return matrix;
 }
 
@@ -741,58 +721,54 @@ export async function makeRaiden(
   spyContract(registryContract, 'TokenNetworkRegistry');
   registryContract.token_to_token_networks.mockImplementation(async () => makeAddress());
 
-  const getTokenNetworkContract = memoize(
-    (address: string): MockedContract<TokenNetwork> => {
-      const tokenNetworkContract = TokenNetwork__factory.connect(
-        address,
-        signer,
-      ) as MockedContract<TokenNetwork>;
-      spyContract(tokenNetworkContract, `TokenNetwork[${address}]`);
-      tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
-        Zero,
-        Zero,
-        false,
-        HashZero,
-        Zero,
-        HashZero,
-        Zero,
-      ]);
-      tokenNetworkContract.openChannel.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.setTotalDeposit.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.setTotalWithdraw.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.closeChannel.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.updateNonClosingBalanceProof.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.settleChannel.mockResolvedValue(
-        makeTransaction(undefined, { to: address }),
-      );
-      tokenNetworkContract.unlock.mockResolvedValue(makeTransaction(undefined, { to: address }));
-      return tokenNetworkContract;
-    },
-  );
+  const getTokenNetworkContract = memoize((address: string): MockedContract<TokenNetwork> => {
+    const tokenNetworkContract = TokenNetwork__factory.connect(
+      address,
+      signer,
+    ) as MockedContract<TokenNetwork>;
+    spyContract(tokenNetworkContract, `TokenNetwork[${address}]`);
+    tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
+      Zero,
+      Zero,
+      false,
+      HashZero,
+      Zero,
+      HashZero,
+      Zero,
+    ]);
+    tokenNetworkContract.openChannel.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.setTotalDeposit.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.setTotalWithdraw.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.closeChannel.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.updateNonClosingBalanceProof.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.settleChannel.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
+    tokenNetworkContract.unlock.mockResolvedValue(makeTransaction(undefined, { to: address }));
+    return tokenNetworkContract;
+  });
 
-  const getTokenContract = memoize(
-    (address: string): MockedContract<HumanStandardToken> => {
-      const tokenContract = HumanStandardToken__factory.connect(
-        address,
-        signer,
-      ) as MockedContract<HumanStandardToken>;
-      spyContract(tokenContract, `Token[${address}]`);
-      tokenContract.approve.mockResolvedValue(makeTransaction(undefined, { to: address }));
-      tokenContract.allowance.mockResolvedValue(Zero);
-      tokenContract.balanceOf.mockResolvedValue(parseEther('1000'));
-      return tokenContract;
-    },
-  );
+  const getTokenContract = memoize((address: string): MockedContract<HumanStandardToken> => {
+    const tokenContract = HumanStandardToken__factory.connect(
+      address,
+      signer,
+    ) as MockedContract<HumanStandardToken>;
+    spyContract(tokenContract, `Token[${address}]`);
+    tokenContract.approve.mockResolvedValue(makeTransaction(undefined, { to: address }));
+    tokenContract.allowance.mockResolvedValue(Zero);
+    tokenContract.balanceOf.mockResolvedValue(parseEther('1000'));
+    return tokenContract;
+  });
 
   const serviceRegistryContract = ServiceRegistry__factory.connect(
     serviceRegistryAddress,
@@ -981,7 +957,7 @@ export async function makeRaiden(
       raiden.deps.config$
         .pipe(finalize(() => (raiden.started = false)))
         .subscribe((config) => (raiden.config = config));
-      epicMiddleware.run(raidenRootEpic);
+      epicMiddleware.run(combineRaidenEpics());
       raiden.store.dispatch(raidenStarted());
       await raiden.synced;
     },

@@ -14,6 +14,15 @@ if (!('IntersectionObserver' in global)) {
   Object.assign(global, { IntersectionObserver });
 }
 
+if (typeof window.URL.createObjectURL === 'undefined') {
+  window.URL.createObjectURL = () => {
+    /*
+     * Mock URL.createObjectURL which were causing
+     * the qr-code-overlay.spec.ts to fail.
+     */
+  };
+}
+
 class EventTarget {
   listeners = {};
 

@@ -11,8 +11,6 @@ import {
   tokenNetwork,
 } from '../fixtures';
 import {
-  makeAddress,
-  makeHash,
   makeLog,
   makeRaidens,
   mockedSignMessage,
@@ -34,6 +32,8 @@ import { createBalanceHash } from '@/messages/utils';
 import { msBalanceProofSent, udcDeposit } from '@/services/actions';
 import { Service } from '@/services/types';
 import type { UInt } from '@/utils/types';
+
+import { makeAddress, makeHash } from '../../utils';
 
 describe('msMonitorRequestEpic', () => {
   test('success: receiving a transfer triggers monitoring', async () => {

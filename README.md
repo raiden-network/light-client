@@ -2,9 +2,9 @@
 
 <h2 align="center">
   <br/>
-  <a href='https://raiden.network/'><img 
-      width='400px' 
-      alt='Raiden Logo' 
+  <a href='https://raiden.network/'><img
+      width='400px'
+      alt='Raiden Logo'
       src="https://user-images.githubusercontent.com/35398162/54018436-ee3f6300-4188-11e9-9b4e-0666c44cda53.png" /></a>
   <br/>
   Raiden Light Client SDK, CLI and dApp
@@ -32,7 +32,7 @@
     <img src="https://codecov.io/gh/raiden-network/light-client/branch/master/graph/badge.svg?token=QzmREKozOH" alt="Codecov Badge">
   </a>
   <a href="https://codeclimate.com/github/raiden-network/light-client/maintainability">
-    <img src="https://api.codeclimate.com/v1/badges/d59cce05c229296c848d/maintainability" 
+    <img src="https://api.codeclimate.com/v1/badges/d59cce05c229296c848d/maintainability"
     alt="Code Climate Badge"/>
   </a>
   <a href="https://github.com/prettier/prettier">
@@ -83,9 +83,9 @@ The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, 
 The Raiden client code is available [here](https://github.com/raiden-network/raiden) and has been [released for mainnet](https://medium.com/raiden-network/alderaan-mainnet-release-announcement-7f701e58c236).
 
 <center>
-<img 
-      width='750px' 
-      alt='Raiden Diagram' 
+<img
+      width='750px'
+      alt='Raiden Diagram'
       src="https://user-images.githubusercontent.com/43838780/85526750-8ecdc680-b60a-11ea-8a42-07da6b0f8296.png" />
 </center>
 
@@ -205,7 +205,7 @@ An ETH balance is also needed. For mainnet you'll have to purchase ETH, for the 
 
 ### Making a First Transfer on Testnet
 
-1. **Connect to the dApp**  
+1. **Connect to the dApp**
 
    1. Visit the [Raiden Hub page](https://hub.raiden.network).
    2. Click on the **Open Channel with Hub** button.
@@ -226,7 +226,7 @@ An ETH balance is also needed. For mainnet you'll have to purchase ETH, for the 
      4. Click on **Link Wallet**.
      6. Scan the QR code using a wallet of your choice. Make sure **Goerli Test Network** is used and sign all necessary signatures.
 
-2. **Select a Hub and Open a Channel**  
+2. **Select a Hub and Open a Channel**
 
    1. If you don't have any **SVT** (utility tokens), you can click the icon to mint and deposit **SVT**.
    2. Click on the icon at the very bottom to the right of the **TTT** symbol to mint **TTT** tokens.
@@ -234,19 +234,19 @@ An ETH balance is also needed. For mainnet you'll have to purchase ETH, for the 
    4. Enter the amount of tokens you want to deposit when opening the channel.
    5. Click **Open Channel** and sign with MetaMask.
 
-3. **Make a Transfer**  
+3. **Make a Transfer**
 
    1. Enter the address of the node receiving your transfer.
    2. Enter the amount you want to transfer.
    3. Click the **Transfer** button.
 
-### Receiving Transfers  
+### Receiving Transfers
 
 Receiving of transfers will be disabled if the utility token (RND on mainnet and SVT on testnet) balance is too low.
 
 To enable receiving again, make sure to add a utility token balance by either making an exchange and deposit if using the Light Client on mainnet or by minting and depositing if using the Light Client on testnet.
 
-### **Backup the State to Keep Your Tokens**  
+### **Backup the State to Keep Your Tokens**
 
    You should store a backup of your state to **avoid losing tokens** in case:
 
@@ -295,26 +295,32 @@ Go to the [CLI README](https://github.com/raiden-network/light-client/tree/maste
 
 ### Install and Run the dApp
 
-1. **Clone repository**  
+1. **Clone repository**
 
    ```bash
    git clone --recurse-submodules https://github.com/raiden-network/light-client.git
    cd light-client
    ```
 
-2. **Install dependencies**  
+2. **Install dependencies**
 
    ```bash
    yarn install
    ```
 
-3. **Build the Raiden SDK**  
+3. **Update the sdk submodules**
+
+   ```bash
+   yarn workspace raiden-ts update-submodules
+   ```
+
+4. **Build the Raiden SDK**
 
    ```bash
    yarn workspace raiden-ts build
    ```
 
-4. **Run the dApp locally**  
+5. **Run the dApp locally**
 
    ```
    yarn workspace raiden-dapp serve

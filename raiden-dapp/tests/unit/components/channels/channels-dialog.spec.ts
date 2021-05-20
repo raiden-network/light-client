@@ -16,10 +16,10 @@ import store from '@/store';
 import type { Tokens } from '@/types';
 
 import { TestData } from '../../data/mock-data';
+import Mocked = jest.Mocked;
 
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);

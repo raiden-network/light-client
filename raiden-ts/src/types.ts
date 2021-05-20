@@ -20,7 +20,6 @@ import type { RaidenDatabase } from './db/types';
 import type { PFSFeeUpdate } from './messages/types';
 import type { RaidenState } from './state';
 import type { FeeModel } from './transfers/mediate/types';
-import type { Presences } from './transport/types';
 import type { Address, UInt } from './utils/types';
 
 interface Info {
@@ -41,7 +40,7 @@ export interface Latest {
   action: RaidenAction;
   state: RaidenState;
   config: RaidenConfig;
-  presences: Presences;
+  whitelisted: readonly Address[];
   rtc: { [address: string]: RTCDataChannel };
   udcDeposit: { balance: UInt<32>; totalDeposit: UInt<32> };
   blockTime: number;
