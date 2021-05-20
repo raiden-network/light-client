@@ -44,6 +44,10 @@ export type FilteredLog<F extends TypedEventFilter<any[], any>> = Log & {
   readonly [_filter]: F;
 };
 type FilterFromLog<L extends Log> = L extends { readonly [_filter]: infer F } ? F : never;
+// a part of a Filter which definitely has fromBlock & toBlock defined and numeric
+type BlockRange = { fromBlock: number; toBlock: number };
+// like Filter, but 'address' can be a set of contracts addresses, instead of a single one
+type MultiFilter = Omit<Filter, 'address'> & { address?: string | string[] };
 
 /**
  * For given TypedEventFilters, return the tuple of arguments plus the TypedEvent as last element
@@ -59,18 +63,13 @@ export type EventTuple<F extends TypedEventFilter<any[], any>> = F extends Typed
 
 export function getLogsByChunk$<F extends TypedEventFilter<any[], any>>(
   provider: JsonRpcProvider,
-  filter: F & { fromBlock: number; toBlock: number },
+  filter: F & BlockRange,
   chunk?: number,
   minChunk?: number,
 ): Observable<FilteredLog<F>>;
 export function getLogsByChunk$(
   provider: JsonRpcProvider,
-  filter: {
-    address?: string | string[];
-    topics?: ((string | null) | (string | null)[])[];
-    fromBlock: number;
-    toBlock: number;
-  },
+  filter: MultiFilter & BlockRange,
   chunk?: number,
   minChunk?: number,
 ): Observable<Log>;
@@ -92,12 +91,7 @@ export function getLogsByChunk$(
  */
 export function getLogsByChunk$(
   provider: JsonRpcProvider,
-  filter: {
-    address?: string | string[];
-    topics?: ((string | null) | (string | null)[])[];
-    fromBlock: number;
-    toBlock: number;
-  },
+  filter: MultiFilter & BlockRange,
   chunk = 1e5,
   minChunk = 1e3,
 ): Observable<Log> {
