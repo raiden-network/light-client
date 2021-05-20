@@ -179,7 +179,7 @@ An ETH balance is also needed. For mainnet you'll have to purchase ETH, for the 
      3. Click on **Injected Provider**.
      4. Click on **Link Provider** and sign the messages on MetaMask to establish a connection.
 
-  - **Connect using _*WalletConnect*_**  
+   - **Connect using _*WalletConnect*_**  
 
      1. Visit the [Light Client](https://lightclient.raiden.network).
      2. Click on **WalletConnect**.
