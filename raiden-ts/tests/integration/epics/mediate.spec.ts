@@ -10,7 +10,7 @@ import {
   token,
   tokenNetwork,
 } from '../fixtures';
-import { makeRaidens, sleep } from '../mocks';
+import { makeRaidens } from '../mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { AddressZero, MaxUint256, Zero } from '@ethersproject/constants';
@@ -27,7 +27,7 @@ import { makePaymentId } from '@/transfers/utils';
 import { assert } from '@/utils';
 import { decode, Int, UInt } from '@/utils/types';
 
-import { makeAddress } from '../../utils';
+import { makeAddress, sleep } from '../../utils';
 
 describe('mediate transfers', () => {
   test('success with flat fees', async () => {

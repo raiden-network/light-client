@@ -13,7 +13,6 @@ import {
   makeRaiden,
   makeRaidens,
   providersEmit,
-  sleep,
   waitBlock,
 } from '../mocks';
 
@@ -51,7 +50,7 @@ import { getSecrethash, makeMessageId, makePaymentId, makeSecret } from '@/trans
 import type { Int, UInt } from '@/utils/types';
 import { Signed, untime } from '@/utils/types';
 
-import { makeHash } from '../../utils';
+import { makeHash, sleep } from '../../utils';
 
 const direction = Direction.RECEIVED;
 const paymentId = makePaymentId();

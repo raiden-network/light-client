@@ -1,5 +1,5 @@
 import { confirmationBlocks } from '../fixtures';
-import { makeRaiden, makeRaidens, makeStruct, makeTransaction, sleep, waitBlock } from '../mocks';
+import { makeRaiden, makeRaidens, makeStruct, makeTransaction, waitBlock } from '../mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { MaxUint256, Zero } from '@ethersproject/constants';
@@ -10,6 +10,8 @@ import { raidenConfigUpdate } from '@/actions';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
 import { ErrorCodes } from '@/utils/error';
 import type { Hash, UInt } from '@/utils/types';
+
+import { sleep } from '../../utils';
 
 test('monitorUdcBalanceEpic', async () => {
   expect.assertions(5);

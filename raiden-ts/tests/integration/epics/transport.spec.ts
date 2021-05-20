@@ -1,5 +1,5 @@
 import { ensureChannelIsOpen, ensurePresence, matrixServer, token } from '../fixtures';
-import { fetch, makeRaiden, makeRaidens, makeSignature, sleep } from '../mocks';
+import { fetch, makeRaiden, makeRaidens, makeSignature } from '../mocks';
 
 import { verifyMessage } from '@ethersproject/wallet';
 import { EventEmitter } from 'events';
@@ -20,6 +20,7 @@ import { ErrorCodes } from '@/utils/error';
 import type { Address, Signed } from '@/utils/types';
 import { isntNil } from '@/utils/types';
 
+import { sleep } from '../../utils';
 import type { MockedRaiden } from '../mocks';
 
 const accessToken = 'access_token';
