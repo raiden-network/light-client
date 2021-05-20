@@ -70,7 +70,9 @@ import { pluckDistinct } from '@/utils/rx';
 import type { Signature } from '@/utils/types';
 import { Address, decode, Secret } from '@/utils/types';
 
-import { makeAddress, makeHash } from '../utils';
+import { makeAddress, makeHash, sleep } from '../utils';
+
+export { sleep } from '../utils';
 
 jest.mock('@/messages/utils', () => ({
   ...jest.requireActual<any>('@/messages/utils'),
@@ -991,16 +993,6 @@ export async function makeRaiden(
  */
 export async function makeRaidens(length: number, start = true): Promise<MockedRaiden[]> {
   return Promise.all(Array.from({ length }, () => makeRaiden(undefined, start)));
-}
-
-/**
- * Asynchronously wait for some time
- *
- * @param ms - milliseconds to wait
- * @returns Promise to void
- */
-export async function sleep(ms = pollingInterval): Promise<void> {
-  return new Promise((resolve) => setTimeout(() => process.nextTick(resolve), ms));
 }
 
 /**
