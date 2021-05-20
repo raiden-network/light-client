@@ -70,6 +70,15 @@ export function closeNotificationPanel() {
 }
 
 /**
+ *
+ */
+export function dismissNotificationSnackbar() {
+  cy.get('[data-cy=notification-snackbar__dismiss-button]').should('exist');
+  cy.get('[data-cy=notification-snackbar__dismiss-button]').click();
+  cy.getWithCustomTimeout('[data-cy=notification-snackbar__dismiss-button]').should('not.exist');
+}
+
+/**
  * @param uiTimeout - Timeout to wait
  * @param partnerAddress - Partner address
  */
