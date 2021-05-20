@@ -28,7 +28,6 @@ import {
   makeRaidens,
   makeTransaction,
   providersEmit,
-  sleep,
   waitBlock,
 } from '../mocks';
 
@@ -58,7 +57,7 @@ import { getLocksroot, transferKey } from '@/transfers/utils';
 import { ErrorCodes } from '@/utils/error';
 import type { UInt } from '@/utils/types';
 
-import { makeAddress, makeHash } from '../../utils';
+import { makeAddress, makeHash, sleep } from '../../utils';
 
 test('channelSettleableEpic', async () => {
   expect.assertions(3);

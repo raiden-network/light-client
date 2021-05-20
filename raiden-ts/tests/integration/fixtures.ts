@@ -1,4 +1,4 @@
-import { makeLog, providersEmit, sleep, waitBlock } from './mocks';
+import { makeLog, providersEmit, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
@@ -24,7 +24,7 @@ import { assert } from '@/utils';
 import { isResponseOf } from '@/utils/actions';
 import type { Address, Hash, Int, Secret, UInt } from '@/utils/types';
 
-import { makeAddress, makeHash } from '../utils';
+import { makeAddress, makeHash, sleep } from '../utils';
 import type { MockedRaiden } from './mocks';
 
 // fixture constants
