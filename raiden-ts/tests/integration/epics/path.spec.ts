@@ -20,7 +20,6 @@ import { raidenConfigUpdate, raidenShutdown } from '@/actions';
 import { Capabilities } from '@/constants';
 import { messageServiceSend } from '@/messages/actions';
 import { MessageType } from '@/messages/types';
-import { raidenReducer } from '@/reducer';
 import { iouClear, iouPersist, pathFind, servicesValid } from '@/services/actions';
 import { IOU, PfsMode, Service } from '@/services/types';
 import { signIOU } from '@/services/utils';
@@ -1197,37 +1196,6 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
 
     expect(raiden.store.getState()).toMatchObject({
       services: { [pfsAddress]: expect.any(Number) },
-    });
-  });
-});
-
-describe('PFS: reducer', () => {
-  test('persist and clear', async () => {
-    expect.assertions(2);
-
-    const raiden = await makeRaiden(undefined);
-    const iou = makeIou(raiden);
-    const newState = raidenReducer(
-      raiden.store.getState(),
-      iouPersist(
-        { iou: await signIOU(raiden.deps.signer, iou) },
-        { tokenNetwork, serviceAddress: iou.receiver },
-      ),
-    );
-
-    expect(newState.iou).toMatchObject({
-      [tokenNetwork]: {
-        [iou.receiver]: iou,
-      },
-    });
-
-    const lastState = raidenReducer(
-      newState,
-      iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
-    );
-
-    expect(lastState.iou).toMatchObject({
-      [tokenNetwork]: {},
     });
   });
 });

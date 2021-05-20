@@ -2,6 +2,7 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { AddressZero, Zero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { getNetwork } from '@ethersproject/networks';
+import { Wallet } from '@ethersproject/wallet';
 
 import { raidenShutdown } from '@/actions';
 import { ChannelState } from '@/channels';
@@ -18,11 +19,15 @@ import {
 import { channelKey, channelUniqueKey } from '@/channels/utils';
 import { ShutdownReason } from '@/constants';
 import { raidenReducer } from '@/reducer';
+import { iouClear, iouPersist } from '@/services/actions';
+import { signIOU } from '@/services/utils';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
 import { matrixSetup } from '@/transport/actions';
 import { ErrorCodes, RaidenError } from '@/utils/error';
 import type { Address, Hash, UInt } from '@/utils/types';
+
+import { makeAddress } from '../utils';
 
 describe('raidenReducer', () => {
   let state: RaidenState;
@@ -867,6 +872,42 @@ describe('raidenReducer', () => {
       // no pending in state for this confirmation == noop
       const confirmed = { ...pending, payload: { ...pending.payload, confirmed: true } };
       expect(raidenReducer(state, confirmed).pendingTxs).toBe(state.pendingTxs);
+    });
+  });
+
+  test('iou persist and clear', async () => {
+    expect.assertions(2);
+
+    const signer = new Wallet(txHash);
+    const address = signer.address as Address;
+    const pfsAddress = makeAddress();
+    const iou = {
+      sender: address,
+      receiver: pfsAddress,
+      one_to_n_address: '0x0A0000000000000000000000000000000000000a' as Address,
+      chain_id: BigNumber.from(1337) as UInt<32>,
+      expiration_block: BigNumber.from(3232341) as UInt<32>,
+      amount: BigNumber.from(100) as UInt<32>,
+    };
+    const signedIou = await signIOU(signer, iou);
+    const newState = raidenReducer(
+      state,
+      iouPersist({ iou: signedIou }, { tokenNetwork, serviceAddress: iou.receiver }),
+    );
+
+    expect(newState.iou).toMatchObject({
+      [tokenNetwork]: {
+        [iou.receiver]: iou,
+      },
+    });
+
+    const lastState = raidenReducer(
+      newState,
+      iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
+    );
+
+    expect(lastState.iou).toMatchObject({
+      [tokenNetwork]: {},
     });
   });
 });
