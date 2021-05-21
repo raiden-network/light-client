@@ -5,7 +5,7 @@
     </v-card-title>
 
     <v-card-text>
-      <spinner :size="60" class="my-4" />
+      <spinner />
       {{ $t('connection-manager.dialogs.connection-pending.text') }}
     </v-card-text>
 

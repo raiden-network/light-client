@@ -1,9 +1,7 @@
 <template>
   <raiden-dialog class="error-dialog" :visible="showDialog" @close="dismiss">
     <v-card-text>
-      <v-row align="center" justify="center">
-        <error-message :error="error" />
-      </v-row>
+      <error-message :error="error" />
     </v-card-text>
   </raiden-dialog>
 </template>

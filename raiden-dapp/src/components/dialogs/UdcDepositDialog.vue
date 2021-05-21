@@ -1,65 +1,45 @@
 <template>
   <raiden-dialog :visible="visible" @close="cancel">
     <v-card-title v-if="!error">
-      <div>
-        {{ $t('udc-deposit-dialog.title') }}
-      </div>
-      <div class="udc-deposit-dialog__balance">
-        {{
-          $t('udc-deposit-dialog.available-utility-token', {
-            utilityTokenSymbol: udcToken.symbol,
-            utilityTokenBalance: utilityTokenBalance,
-          })
-        }}
-      </div>
+      {{ $t('udc-deposit-dialog.title') }}
     </v-card-title>
+
+    <v-card-subtitle v-if="!error" class="udc-deposit-dialog__balance">
+      {{
+        $t('udc-deposit-dialog.available-utility-token', {
+          utilityTokenSymbol: udcToken.symbol,
+          utilityTokenBalance: utilityTokenBalance,
+        })
+      }}
+    </v-card-subtitle>
+
     <v-card-text>
-      <v-row v-if="!loading && !error" justify="center" no-gutters>
-        <amount-input
-          v-model="defaultUtilityTokenAmount"
-          :token="udcToken"
-          :placeholder="$t('transfer.amount-placeholder')"
-        />
-      </v-row>
-      <v-row v-else-if="error">
-        <error-message :error="error" />
-      </v-row>
-      <v-row v-else class="udc-deposit-dialog--progress">
-        <v-col cols="12">
-          <v-row>
-            <spinner />
-          </v-row>
-          <v-row no-gutters align="center" justify="center">
-            <span v-if="step === 'mint'">
-              {{
-                $t('udc-deposit-dialog.progress.mint', {
-                  currency: udcToken.symbol,
-                })
-              }}
-            </span>
-            <span v-else-if="step === 'approve'">
-              {{
-                $t('udc-deposit-dialog.progress.approve', {
-                  currency: udcToken.symbol,
-                })
-              }}
-            </span>
-            <span v-else-if="step === 'deposit'">
-              {{
-                $t('udc-deposit-dialog.progress.deposit', {
-                  currency: udcToken.symbol,
-                })
-              }}
-            </span>
-          </v-row>
-        </v-col>
-      </v-row>
-      <v-row v-if="mainnet && !loading && !error" no-gutters justify="center">
-        <a class="udc-deposit-dialog--uniswap-url" :href="uniswapURL" target="_blank">
-          {{ $t('udc-deposit-dialog.uniswap-url-title') }}
-        </a>
-      </v-row>
+      <amount-input
+        v-if="!loading && !error"
+        v-model="defaultUtilityTokenAmount"
+        :token="udcToken"
+        :placeholder="$t('transfer.amount-placeholder')"
+      />
+
+      <error-message v-else-if="error" :error="error" />
+
+      <div v-else class="udc-deposit-dialog--progress">
+        <spinner />
+        <span v-if="currentStepDescription">
+          {{ currentStepDescription }}
+        </span>
+      </div>
+
+      <a
+        v-if="mainnet && !loading && !error"
+        class="udc-deposit-dialog--uniswap-url"
+        :href="uniswapURL"
+        target="_blank"
+      >
+        {{ $t('udc-deposit-dialog.uniswap-url-title') }}
+      </a>
     </v-card-text>
+
     <v-card-actions v-if="!error">
       <action-button
         arrow
@@ -91,6 +71,13 @@ import Filters from '@/filters';
 import type { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 
+enum DepositSteps {
+  MINT = 'mint',
+  APPROVE = 'approve',
+  DEPOSIT = 'deposit',
+  NONE = 'none',
+}
+
 @Component({
   components: {
     ActionButton,
@@ -109,7 +96,7 @@ export default class UdcDepositDialog extends Vue {
   uniswapURL = '';
   udcToken!: Token;
   defaultUtilityTokenAmount = '';
-  step: 'mint' | 'approve' | 'deposit' | '' = '';
+  step: DepositSteps = DepositSteps.NONE;
   loading = false;
   error: Error | RaidenError | null = null;
 
@@ -147,6 +134,15 @@ export default class UdcDepositDialog extends Vue {
     }
   }
 
+  get currentStepDescription(): string {
+    if (this.step === DepositSteps.NONE) {
+      return '';
+    } else {
+      const translate_key = `udc-deposit-dialog.progress.${this.step.toString()}`;
+      return this.$t(translate_key, { currency: this.udcToken.symbol }) as string;
+    }
+  }
+
   mounted() {
     const mainAccountAddress = this.$raiden.getMainAccount() ?? this.$raiden.getAccount();
 
@@ -165,20 +161,21 @@ export default class UdcDepositDialog extends Vue {
 
     try {
       if (!this.mainnet && depositAmount.gt(token.balance!)) {
-        this.step = 'mint';
+        this.step = DepositSteps.MINT;
         await this.$raiden.mint(token.address, depositAmount);
       }
 
-      this.step = 'approve';
+      this.step = DepositSteps.APPROVE;
+
       await this.$raiden.depositToUDC(depositAmount, () => {
-        this.step = 'deposit';
+        this.step = DepositSteps.DEPOSIT;
       });
       this.$emit('done');
     } catch (e) {
       this.error = e;
     }
 
-    this.step = '';
+    this.step = DepositSteps.NONE;
     this.loading = false;
   }
 }
@@ -194,6 +191,7 @@ export default class UdcDepositDialog extends Vue {
 
   &__balance {
     font-size: 14px;
+    text-align: center;
     width: 100%;
   }
 

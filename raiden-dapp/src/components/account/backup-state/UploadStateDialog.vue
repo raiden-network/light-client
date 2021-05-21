@@ -42,7 +42,6 @@
           <input ref="stateInput" type="file" hidden @change="onFileSelect" />
           <action-button
             :enabled="!activeDropzone"
-            ghost
             :text="$t('backup-state.upload-button')"
             @click="$refs.stateInput.click()"
           />
