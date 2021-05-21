@@ -361,12 +361,6 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     }
   }
 
-  @include respond-to(handhelds) {
-    padding-top: 30px;
-    padding-bottom: 30px;
-    border: 0;
-  }
-
   ::v-deep {
     input {
       color: $color-white;

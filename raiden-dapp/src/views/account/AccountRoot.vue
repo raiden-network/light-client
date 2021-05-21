@@ -34,7 +34,7 @@ export default class AccountRoot extends Vue {}
     padding-bottom: 30px;
 
     @include respond-to(handhelds) {
-      margin: 0 30px 0 30px;
+      margin: 0;
     }
   }
 

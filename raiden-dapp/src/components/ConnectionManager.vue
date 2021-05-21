@@ -223,6 +223,9 @@ export default class ConnectionManager extends Vue {
 @import '@/scss/mixins';
 
 .connection-manager {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   font-size: 16px;
   line-height: 20px;
 
@@ -244,11 +247,7 @@ export default class ConnectionManager extends Vue {
   }
 
   &__provider-dialog-button {
-    margin: 20px 0;
-
-    @include respond-to(handhelds) {
-      margin: 10px 0;
-    }
+    margin: 10px 0;
   }
 }
 </style>
