@@ -37,7 +37,7 @@ const connectTokenRoutes = [selectTokenRoute, selectHubRoute, openChannelRoute];
 
 const tokens = {
   '0xtoken': {
-    '0xpartner': 1, // just something...
+    '0xpartner': 'channel-data',
   },
 };
 
