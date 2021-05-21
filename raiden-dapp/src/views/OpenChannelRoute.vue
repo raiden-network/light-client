@@ -6,18 +6,18 @@
     class="open-channel"
     @submit.prevent="openChannel()"
   >
-    <div class="open-channel__amount">
-      <amount-input
-        v-model="deposit"
-        :token="token"
-        :max="token.balance"
-        :placeholder="$t('transfer.amount-placeholder')"
-        limit
-      />
-    </div>
+    <amount-input
+      v-model="deposit"
+      :token="token"
+      :max="token.balance"
+      :placeholder="$t('transfer.amount-placeholder')"
+      limit
+    />
+
     <div class="open-channel__token-information">
       <token-information :token="token" />
     </div>
+
     <div class="open-channel__hub">
       <span class="open-channel__hub__label">
         {{ $t('open-channel.hub') }}
@@ -26,13 +26,14 @@
         <address-display :address="partner" />
       </div>
     </div>
-    <div class="open-channel__button">
-      <action-button
-        data-cy="open_channel_button"
-        :enabled="valid"
-        :text="$t('open-channel.open-button')"
-      />
-    </div>
+
+    <action-button
+      data-cy="open_channel_button"
+      :enabled="valid"
+      :text="$t('open-channel.open-button')"
+      sticky
+    />
+
     <open-channel-dialog
       :visible="loading"
       :steps="steps"
@@ -209,13 +210,7 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
   height: 100%;
   margin: 0 26px;
   width: 100%;
-
-  &__amount {
-    display: flex;
-    flex-direction: column;
-    height: 200px;
-    justify-content: center;
-  }
+  padding-bottom: 50px;
 
   &__token-information,
   &__hub {
@@ -241,33 +236,6 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
 
     &__address {
       flex: none;
-    }
-  }
-
-  &__button {
-    align-items: flex-end;
-    display: flex;
-    flex: 1;
-    margin-bottom: 38px;
-
-    @include respond-to(handhelds) {
-      flex: none;
-      margin-bottom: none;
-
-      ::v-deep {
-        .col-10 {
-          padding-top: 28px;
-          @include respond-to(handhelds) {
-            min-width: 100%;
-          }
-        }
-
-        .v-btn {
-          @include respond-to(handhelds) {
-            min-width: 100%;
-          }
-        }
-      }
     }
   }
 }

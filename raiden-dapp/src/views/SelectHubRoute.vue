@@ -40,26 +40,24 @@
         {{ $t('select-hub.service-token-description').toUpperCase() }}
       </span>
     </div>
-    <div class="select-hub__address-input">
-      <address-input
-        v-model="partner"
-        :value="partner"
-        :exclude="[token.address, defaultAccount]"
-      />
-    </div>
+
+    <address-input v-model="partner" :value="partner" :exclude="[token.address, defaultAccount]" />
+
     <div class="select-hub__hub-list">
       <hub-list :token-address="token.address" @select-hub="setSuggestedPartner($event)" />
     </div>
     <div class="select-hub__token-balance">
       <token-information :token="token" />
     </div>
-    <div class="select-hub__button">
-      <action-button
-        data-cy="select_hub_button"
-        :enabled="valid"
-        :text="$t('select-hub.select-button')"
-      />
-    </div>
+
+    <action-button
+      data-cy="select_hub_button"
+      class="select_hub__address-input"
+      :enabled="valid"
+      :text="$t('select-hub.select-button')"
+      sticky
+    />
+
     <udc-deposit-dialog
       :visible="showUdcDeposit"
       @cancel="showUdcDeposit = false"
@@ -196,6 +194,8 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
   height: 100%;
   margin: 0 26px;
   width: 100%;
+  padding-bottom: 50px;
+
   @include respond-to(handhelds) {
     overflow-y: auto;
   }
@@ -242,10 +242,6 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
     }
   }
 
-  &__address-input {
-    flex: none;
-  }
-
   &__hub-list {
     height: auto;
     padding-bottom: 16px;
@@ -253,32 +249,6 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
 
   &__token-balance {
     height: 48px;
-  }
-
-  &__button {
-    align-items: flex-end;
-    display: flex;
-    flex: 1;
-    margin-bottom: 38px;
-    @include respond-to(handhelds) {
-      flex: none;
-      margin-bottom: none;
-
-      ::v-deep {
-        .col-10 {
-          padding-top: 28px;
-          @include respond-to(handhelds) {
-            min-width: 100%;
-          }
-        }
-
-        .v-btn {
-          @include respond-to(handhelds) {
-            min-width: 100%;
-          }
-        }
-      }
-    }
   }
 }
 </style>

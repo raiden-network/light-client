@@ -178,23 +178,17 @@ export default class TransferRoute extends Vue {
 .transfer {
   display: flex;
   flex-direction: column;
-  @include respond-to(handhelds) {
-    overflow-y: auto;
-  }
 
   &__menus,
   &__inputs,
   &__list {
-    margin: 0 auto;
+    margin: 0 auto 20px;
     width: 550px;
-    @include respond-to(handhelds) {
-      width: 100%;
-    }
-  }
 
-  &__inputs,
-  &__list {
-    margin-top: 20px;
+    @include respond-to(handhelds) {
+      margin: 0 10px 10px;
+      width: calc(100% - 20px);
+    }
   }
 }
 </style>
