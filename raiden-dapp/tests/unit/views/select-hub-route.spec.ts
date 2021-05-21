@@ -11,6 +11,7 @@ import Vuex from 'vuex';
 
 import Filters from '@/filters';
 import { RouteNames } from '@/router/route-names';
+import ActionButton from '@/components/ActionButton.vue';
 import SelectHubRoute from '@/views/SelectHubRoute.vue';
 
 import { TestData } from '../data/mock-data';
@@ -122,7 +123,7 @@ describe('SelectHubRoute.vue', () => {
   test('disables button if UDC capacity is not sufficient', async () => {
     const wrapper = await createWrapper(undefined, BigNumber.from('2'), BigNumber.from('1'));
 
-    expect(wrapper.find('.action-button__button').element.getAttribute('disabled')).toBe(
+    expect(wrapper.findComponent(ActionButton).attributes('disabled')).toBe(
       'disabled',
     );
   });

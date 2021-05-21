@@ -7,6 +7,7 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 import Vuex from 'vuex';
 
+import ActionButton from '@/components/ActionButton.vue';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 
 import { generateToken } from '../../utils/data-generator';
@@ -55,7 +56,7 @@ function createWrapper(mainnet = false, balance = constants.Zero): Wrapper<UdcDe
 
 async function clickActionButton(wrapper: Wrapper<UdcDepositDialog>): Promise<void> {
   await wrapper.vm.$nextTick(); // Else the button does not get enabled.
-  wrapper.find('.udc-deposit-dialog__action button').trigger('click');
+  wrapper.findComponent(ActionButton).trigger('click');
   await flushPromises();
 }
 
@@ -83,8 +84,8 @@ describe('UdcDepositDialog.vue', () => {
       expect(wrapper.emitted()['done']).toHaveLength(1);
     });
 
-    expect.assertions(3);
     test('show an error message when the minting fails', async () => {
+      expect.assertions(3);
       $raiden.mint.mockRejectedValueOnce(new Error('error'));
       const wrapper = createWrapper();
 
