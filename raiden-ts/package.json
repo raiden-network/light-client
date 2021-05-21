@@ -101,6 +101,7 @@
     "io-ts": "^2.2.16",
     "isomorphic-fetch": "^3.0.0",
     "json-bigint": "^1.0.0",
+    "json-canonicalize": "^1.0.4",
     "lodash": "^4.17.21",
     "loglevel": "^1.7.1",
     "matrix-js-sdk": "^11.2.0",
