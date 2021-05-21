@@ -1,9 +1,7 @@
 <template>
   <raiden-dialog class="confirmation" :visible="visible" @close="cancel">
     <v-card-title>
-      <span>
-        <slot name="header" />
-      </span>
+      <slot name="header" />
     </v-card-title>
 
     <v-card-text>
@@ -16,6 +14,7 @@
         class="confirmation__button"
         :enabled="true"
         :text="positiveAction"
+        full-width
         @click="confirm()"
       />
     </v-card-actions>
@@ -53,5 +52,3 @@ export default class ConfirmationDialog extends Vue {
   }
 }
 </script>
-
-<style scoped lang="scss"></style>

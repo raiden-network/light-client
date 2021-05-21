@@ -5,14 +5,8 @@
     </v-card-title>
 
     <v-card-text>
-      <v-row align="center" justify="center" no-gutters>
-        <v-col cols="6">
-          <v-img class="download-state__warning" :src="require('@/assets/warning.svg')" />
-        </v-col>
-        <v-col cols="12">
-          {{ $t('backup-state.download-warning') }}
-        </v-col>
-      </v-row>
+      <v-img class="download-state__warning my-4" :src="require('@/assets/warning.svg')" />
+      <span>{{ $t('backup-state.download-warning') }}</span>
     </v-card-text>
 
     <v-card-actions>
@@ -92,7 +86,8 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
 .download-state {
   &__warning {
     height: 110px;
-    margin-bottom: 20px;
+    width: 110px;
+    margin: 0 auto;
   }
 }
 </style>

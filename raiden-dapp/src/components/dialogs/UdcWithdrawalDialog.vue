@@ -6,72 +6,55 @@
     @close="cancel"
   >
     <v-card-title>{{ $t('udc.withdrawal') }}</v-card-title>
+
     <v-card-text>
-      <v-row align="center" justify="center" no-gutters>
-        <v-col v-if="error">
-          <v-row>
-            <error-message :error="error" />
-          </v-row>
-        </v-col>
-        <v-col v-else-if="isDone" cols="12">
-          <v-row align="center" justify="center">
-            <v-col cols="6">
-              <v-img class="udc-withdrawal-dialog__done" :src="require('@/assets/done.svg')" />
-            </v-col>
-          </v-row>
-          <v-row align="center" justify="center">
-            <v-col cols="10"> {{ $t('udc.withdrawal-planned') }}</v-col>
-          </v-row>
-        </v-col>
-        <v-col v-else-if="inProgress">
-          <spinner class="udc-withdrawal-dialog__progress" />
-        </v-col>
-        <v-col v-else cols="12">
-          <v-row no-gutters justify="center">
-            <v-col cols="10">
-              <amount-input
-                v-model="amount"
-                class="udc-withdrawal-dialog__amount"
-                data-cy="udc-withdrawal-dialog__amount"
-                :token="tokenWithAsteriskAtSymbol"
-                :placeholder="$t('transfer.amount-placeholder')"
-                autofocus
-              />
-            </v-col>
-          </v-row>
-          <v-row no-gutters>
-            <div
-              class="udc-withdrawal-dialog__available-eth"
-              :class="{ 'udc-withdrawal-dialog__available-eth--too-low': accountBalanceTooLow }"
-            >
-              {{
-                $t('udc-deposit-dialog.available-eth', {
-                  balance: accountBalance,
-                  currency: $t('app-header.currency'),
-                }) | upperCase
-              }}
-            </div>
-          </v-row>
-        </v-col>
-      </v-row>
+      <spinner v-if="inProgress" class="udc-withdrawal-dialog__progress" />
+      <error-message v-else-if="error" :error="error" />
+
+      <template v-else-if="isDone">
+        <v-img class="udc-withdrawal-dialog__done my-4" :src="require('@/assets/done.svg')" />
+        <span>{{ $t('udc.withdrawal-planned') }}</span>
+      </template>
+
+      <template v-else>
+        <amount-input
+          v-model="amount"
+          class="udc-withdrawal-dialog__amount"
+          data-cy="udc-withdrawal-dialog__amount"
+          :token="tokenWithAsteriskAtSymbol"
+          :placeholder="$t('transfer.amount-placeholder')"
+          autofocus
+        />
+
+        <div
+          class="udc-withdrawal-dialog__available-eth"
+          :class="{ 'udc-withdrawal-dialog__available-eth--too-low': accountBalanceTooLow }"
+        >
+          {{
+            $t('udc-deposit-dialog.available-eth', {
+              balance: accountBalance,
+              currency: $t('app-header.currency'),
+            }) | upperCase
+          }}
+        </div>
+      </template>
     </v-card-text>
-    <v-card-actions v-if="!error && !isDone">
+
+    <v-card-actions v-if="!error && !isDone" class="flex-column">
       <action-button
         data-cy="udc-withdrawal-dialog__button"
         class="udc-withdrawal-dialog__button"
         :enabled="isValid && !accountBalanceTooLow"
         :text="$t('general.buttons.confirm')"
+        full-width
         @click="planWithdraw"
       />
+
+      <span v-if="!error" class="mt-2">
+        <sup>{{ $t('udc.asterisk') }}</sup>
+        {{ $t('udc.withdrawal-footnote') }}
+      </span>
     </v-card-actions>
-    <v-card-text v-if="!error">
-      <v-row class="udc-withdrawal-dialog__footnote" no-gutters>
-        <span>
-          <sup>{{ $t('udc.asterisk') }}</sup>
-          {{ $t('udc.withdrawal-footnote') }}
-        </span>
-      </v-row>
-    </v-card-text>
   </raiden-dialog>
 </template>
 
@@ -173,18 +156,11 @@ export default class UdcWithdrawalDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '@/scss/colors';
-
 .udc-withdrawal-dialog {
-  &__progress {
-    margin-bottom: 15px;
-    margin-top: 15px;
-    color: $secondary-color;
-  }
-
   &__done {
     width: 110px;
     height: 110px;
+    margin: 0 auto;
   }
 
   &__available-eth {
@@ -200,10 +176,6 @@ export default class UdcWithdrawalDialog extends Vue {
       color: #ff0000;
       background-color: #420d0d;
     }
-  }
-
-  &__footnote {
-    margin-left: 5px;
   }
 }
 </style>

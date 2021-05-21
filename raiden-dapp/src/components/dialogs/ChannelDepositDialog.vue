@@ -6,63 +6,38 @@
     @close="cancel"
   >
     <v-card-title>
-      <v-row align="center" justify="center">
-        <v-col>
-          <span v-if="loading">
-            {{ $t('transfer.steps.deposit.title') }}
-          </span>
-          <span v-else-if="done">
-            {{ $t('transfer.steps.deposit-done.title') }}
-          </span>
-          <span v-else>
-            {{ $t('transfer.steps.deposit.label') }}
-          </span>
-        </v-col>
-      </v-row>
+      {{ title }}
     </v-card-title>
 
-    <v-card-actions>
-      <v-row v-if="loading">
-        <spinner />
-      </v-row>
-      <v-row v-else-if="done" align="center" justify="center">
-        <v-col cols="6">
-          <v-img class="channel-deposit__done" :src="require('@/assets/done.svg')" />
-        </v-col>
-      </v-row>
-      <v-row v-else align="center" justify="center">
-        <v-col>
-          <v-form v-model="valid" @submit.prevent="depositTokens()">
-            <amount-input
-              v-model="deposit"
-              data-cy="channel_deposit_input"
-              class="channel-deposit__input"
-              :token="token"
-              :max="token.balance"
-              limit
-            />
-            <div data-cy="channel_deposit_button" class="channel-deposit__button">
-              <action-button
-                :id="`confirm-${identifier}`"
-                :enabled="valid"
-                :text="$t('channel-deposit.buttons.confirm')"
-                full-width
-              />
-            </div>
-          </v-form>
-        </v-col>
-      </v-row>
-    </v-card-actions>
-
     <v-card-text>
-      <v-row align="center" justify="center">
-        <span v-if="loading">
-          {{ $t('transfer.steps.deposit.description') }}
-        </span>
-        <span v-else-if="done">
-          {{ $t('transfer.steps.deposit-done.description') }}
-        </span>
-      </v-row>
+      <template v-if="loading">
+        <spinner />
+        <span>{{ $t('transfer.steps.deposit.description') }}</span>
+      </template>
+
+      <template v-else-if="done">
+        <v-img class="channel-deposit__done my-4" :src="require('@/assets/done.svg')" />
+        <span>{{ $t('transfer.steps.deposit-done.description') }}</span>
+      </template>
+
+      <v-form v-else v-model="valid" @submit.prevent="depositTokens()">
+        <amount-input
+          v-model="deposit"
+          data-cy="channel_deposit_input"
+          class="channel-deposit__input"
+          :token="token"
+          :max="token.balance"
+          limit
+        />
+        <action-button
+          :id="`confirm-${identifier}`"
+          data-cy="channel_deposit_button"
+          class="mt-8"
+          :enabled="valid"
+          :text="$t('channel-deposit.buttons.confirm')"
+          full-width
+        />
+      </v-form>
     </v-card-text>
   </raiden-dialog>
 </template>
@@ -100,6 +75,16 @@ export default class ChannelDepositDialog extends Vue {
   deposit = '';
   valid = false;
 
+  get title(): string {
+    if (this.loading) {
+      return this.$t('transfer.steps.deposit.title') as string;
+    } else if (this.done) {
+      return this.$t('transfer.steps.deposit-done.title') as string;
+    } else {
+      return this.$t('transfer.steps.deposit.label') as string;
+    }
+  }
+
   @Watch('visible')
   onVisibilityChanged(visible: boolean) {
     if (!visible) {
@@ -132,17 +117,11 @@ export default class ChannelDepositDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '@/scss/colors';
-
 .channel-deposit {
-  &__button {
-    margin-top: 45px;
-  }
-
   &__done {
     height: 110px;
-    margin: 0 auto;
     width: 110px;
+    margin: 0 auto;
   }
 }
 </style>

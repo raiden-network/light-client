@@ -3,17 +3,15 @@
     <v-card-title v-if="!error">
       {{ $t('mint-dialog.title', { symbol: token.symbol }) }}
     </v-card-title>
+
     <v-card-text>
-      <v-row v-if="loading">
-        <spinner />
-      </v-row>
-      <v-row v-if="error">
-        <error-message :error="error" />
-      </v-row>
-      <v-row v-if="!loading && !error">
+      <spinner v-if="loading" />
+      <error-message v-if="error" :error="error" />
+      <span v-if="!loading && !error">
         {{ $t('mint-dialog.description') }}
-      </v-row>
+      </span>
     </v-card-text>
+
     <v-card-actions v-if="!error">
       <action-button
         data-cy="mint_dialog_button"

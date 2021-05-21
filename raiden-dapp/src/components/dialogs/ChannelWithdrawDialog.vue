@@ -6,63 +6,38 @@
     @close="cancel"
   >
     <v-card-title>
-      <v-row align="center" justify="center">
-        <v-col>
-          <span v-if="loading">
-            {{ $t('channel-withdraw.dialog.title') }}
-          </span>
-          <span v-else-if="done">
-            {{ $t('channel-withdraw.done.title') }}
-          </span>
-          <span v-else>
-            {{ $t('channel-withdraw.dialog.label') }}
-          </span>
-        </v-col>
-      </v-row>
+      {{ title }}
     </v-card-title>
 
-    <v-card-actions>
-      <v-row v-if="loading">
-        <spinner />
-      </v-row>
-      <v-row v-else-if="done" align="center" justify="center">
-        <v-col cols="6">
-          <v-img class="channel-withdraw__done" :src="require('@/assets/done.svg')" />
-        </v-col>
-      </v-row>
-      <v-row v-else align="center" justify="center">
-        <v-col>
-          <v-form v-model="valid" @submit.prevent="withdrawTokens()">
-            <amount-input
-              v-model="withdraw"
-              data-cy="channel_withdraw_input"
-              class="channel-withdraw__input"
-              :token="token"
-              :max="channel.ownWithdrawable"
-              limit
-            />
-            <div data-cy="channel_withdraw_button" class="channel-withdraw__button">
-              <action-button
-                :id="`confirm-${identifier}`"
-                :enabled="valid"
-                :text="$t('channel-withdraw.buttons.confirm')"
-                full-width
-              />
-            </div>
-          </v-form>
-        </v-col>
-      </v-row>
-    </v-card-actions>
-
     <v-card-text>
-      <v-row align="center" justify="center">
-        <span v-if="loading">
-          {{ $t('channel-withdraw.dialog.description') }}
-        </span>
-        <span v-else-if="done">
-          {{ $t('channel-withdraw.done.description') }}
-        </span>
-      </v-row>
+      <template v-if="loading">
+        <spinner />
+        <span>{{ $t('channel-withdraw.dialog.description') }}</span>
+      </template>
+
+      <template v-else-if="done">
+        <v-img class="channel-withdraw__done my-4" :src="require('@/assets/done.svg')" />
+        <span>{{ $t('channel-withdraw.done.description') }}</span>
+      </template>
+
+      <v-form v-else v-model="valid" @submit.prevent="withdrawTokens()">
+        <amount-input
+          v-model="withdraw"
+          data-cy="channel_withdraw_input"
+          class="channel-withdraw__input"
+          :token="token"
+          :max="channel.ownWithdrawable"
+          limit
+        />
+        <action-button
+          :id="`confirm-${identifier}`"
+          data-cy="channel_withdraw_button"
+          class="mt-8"
+          :enabled="valid"
+          :text="$t('channel-withdraw.buttons.confirm')"
+          full-width
+        />
+      </v-form>
     </v-card-text>
   </raiden-dialog>
 </template>
@@ -104,6 +79,16 @@ export default class ChannelWithdrawDialog extends Vue {
   withdraw = '';
   valid = false;
 
+  get title(): string {
+    if (this.loading) {
+      return this.$t('channel-withdraw.dialog.title') as string;
+    } else if (this.done) {
+      return this.$t('channel-withdraw.done.title') as string;
+    } else {
+      return this.$t('channel-withdraw.dialog.label') as string;
+    }
+  }
+
   @Watch('visible')
   onVisibilityChanged(visible: boolean) {
     if (!visible) {
@@ -136,17 +121,11 @@ export default class ChannelWithdrawDialog extends Vue {
 </script>
 
 <style scoped lang="scss">
-@import '@/scss/colors';
-
 .channel-withdraw {
-  &__button {
-    margin-top: 45px;
-  }
-
   &__done {
     height: 110px;
-    margin: 0 auto;
     width: 110px;
+    margin: 0 auto;
   }
 }
 </style>
