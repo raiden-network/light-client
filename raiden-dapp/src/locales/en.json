@@ -541,9 +541,7 @@
   },
   "transfer-history": {
     "title": "History",
-    "sent-title": "Sent to",
     "sent-symbol": "-",
-    "received-title": "Received from",
     "received-symbol": "+",
     "pending-transfer": "PENDING",
     "successful-transfer": "CONFIRMED",

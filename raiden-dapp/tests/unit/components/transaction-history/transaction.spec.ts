@@ -33,20 +33,6 @@ describe('Transaction.vue', () => {
       },
     });
   };
-  test('transactions are prefixed with "sent to" for sent transfers', () => {
-    const wrapper = createWrapper();
-    const transactionHistoryDirection = wrapper.find('.transaction__item__details-left');
-
-    expect(transactionHistoryDirection.text()).toContain('transfer-history.sent-title');
-  });
-
-  test('transactions are prefixed with "Received from" for received transfers', () => {
-    const receivedTransfer = generateTransfer({ direction: 'received' }, token);
-    const wrapper = createWrapper(receivedTransfer);
-    const transactionHistoryDirection = wrapper.find('.transaction__item__details-left');
-
-    expect(transactionHistoryDirection.text()).toContain('transfer-history.received-title');
-  });
 
   test('transaction item displays a "CONFIRMED" chip for successful transfers', () => {
     const wrapper = createWrapper();
@@ -73,7 +59,7 @@ describe('Transaction.vue', () => {
 
   test('transaction item display correctly formatted date', () => {
     const wrapper = createWrapper();
-    const transactionTimeStamp = wrapper.find('.transaction__item__details-left__time-stamp');
+    const transactionTimeStamp = wrapper.find('.transaction__details-left__time-stamp');
     expect(transactionTimeStamp.text()).toContain('6/5/1986 11:00:00 PM');
   });
 });

@@ -1,74 +1,38 @@
 <template>
   <div class="transaction">
-    <v-row class="transaction__item" no-gutters>
-      <v-col class="transaction__item__icon" cols="1">
-        <v-img
-          v-if="transfer.direction === 'sent'"
-          height="38px"
-          width="38px"
-          :src="require('@/assets/sent_transfer.svg')"
+    <img class="transaction__icon" :src="iconSource" />
+
+    <div class="transaction__details-left">
+      <address-display
+        class="transaction__details-left__address"
+        :address="transfer.direction === 'sent' ? transfer.target : transfer.initiator"
+      />
+
+      <span class="transaction__details-left__time-stamp">
+        {{ transfer.changedAt | formatDate }}
+      </span>
+    </div>
+
+    <div class="transaction__details-right">
+      <span class="transaction__details-right__amount">
+        {{ amountDirectionSign }}
+        <amount-display
+          exact-amount
+          :amount="transfer.amount"
+          :token="tokens[transfer.token]"
+          inline
         />
-        <v-img
-          v-else
-          height="38px"
-          width="38px"
-          :src="require('@/assets/received_transfer.svg')"
-        />
-      </v-col>
-      <v-col class="transaction__item__details-left">
-        <v-row no-gutters>
-          {{
-            transfer.direction === 'sent'
-              ? $t('transfer-history.sent-title')
-              : $t('transfer-history.received-title')
-          }}
-          <address-display
-            class="transaction__item__details-left__address"
-            :address="transfer.direction === 'sent' ? transfer.target : transfer.initiator"
-          />
-        </v-row>
-        <v-row class="transaction__item__details-left__time-stamp" no-gutters>
-          {{ transfer.changedAt | formatDate }}
-        </v-row>
-      </v-col>
-      <v-col class="transaction__item__details-right">
-        <v-row no-gutters>
-          <div class="transaction__item__details-right__amount">
-            <span class="transaction__item__details-right__amount--direction">
-              {{
-                transfer.direction === 'sent'
-                  ? $t('transfer-history.sent-symbol')
-                  : $t('transfer-history.received-symbol')
-              }}
-            </span>
-            <amount-display
-              class="transaction__item__details-right__amount--sum"
-              exact-amount
-              :amount="transfer.amount"
-              :token="tokens[transfer.token]"
-            />
-          </div>
-        </v-row>
-        <v-row no-gutters>
-          <span class="transaction__item__details-right--status">
-            <v-chip
-              v-if="transfer.success === undefined"
-              color="pending-chip"
-              x-small
-              text-color="pending"
-            >
-              {{ $t('transfer-history.pending-transfer') }}
-            </v-chip>
-            <v-chip v-else-if="transfer.success" color="success-chip" x-small text-color="success">
-              {{ $t('transfer-history.successful-transfer') }}
-            </v-chip>
-            <v-chip v-else color="failed-chip" x-small text-color="failed">
-              {{ $t('transfer-history.failed-transfer') }}
-            </v-chip>
-          </span>
-        </v-row>
-      </v-col>
-    </v-row>
+      </span>
+
+      <v-chip
+        class="transaction__details-right__state"
+        :color="`${transferStateColor}-chip`"
+        :text-color="transferStateColor"
+        x-small
+      >
+        {{ transferStateText }}
+      </v-chip>
+    </div>
   </div>
 </template>
 
@@ -95,6 +59,38 @@ export default class Transaction extends Vue {
   @Prop({ required: true })
   transfer!: RaidenTransfer;
   tokens!: Tokens;
+
+  get iconSource() {
+    return this.transfer.direction === 'sent'
+      ? require('@/assets/sent_transfer.svg')
+      : require('@/assets/received_transfer.svg');
+  }
+
+  get amountDirectionSign(): string {
+    return this.transfer.direction === 'sent'
+      ? (this.$t('transfer-history.sent-symbol') as string)
+      : (this.$t('transfer-history.received-symbol') as string);
+  }
+
+  get transferStateColor(): string {
+    if (this.transfer.success === undefined) {
+      return 'pending';
+    } else if (this.transfer.success) {
+      return 'success';
+    } else {
+      return 'failed';
+    }
+  }
+
+  get transferStateText(): string {
+    if (this.transfer.success === undefined) {
+      return this.$t('transfer-history.pending-transfer') as string;
+    } else if (this.transfer.success) {
+      return this.$t('transfer-history.successful-transfer') as string;
+    } else {
+      return this.$t('transfer-history.failed-transfer') as string;
+    }
+  }
 }
 </script>
 
@@ -104,48 +100,52 @@ export default class Transaction extends Vue {
 @import '@/scss/colors';
 
 .transaction {
+  display: flex;
   height: 74px;
-  @include respond-to(handhelds) {
-    height: 90px;
+
+  &__icon {
+    height: 35px;
+    width: 35px;
+    margin-right: 20px;
+
+    @include respond-to(handhelds) {
+      margin-right: 7px;
+    }
   }
 
-  &__item {
-    &__icon {
-      margin-top: 2px;
+  &__details-left,
+  &__details-right {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__details-left {
+    margin-right: auto;
+
+    &__address {
+      display: inline;
     }
 
-    &__details-left {
-      margin-left: 20px;
-
-      &__address {
-        padding: 1px 0 2px 5px;
-      }
-
-      &__time-stamp {
-        color: $secondary-text-color;
-        font-size: 12px;
-      }
+    &__time-stamp {
+      color: $secondary-text-color;
+      font-size: 12px;
     }
-    &__details-right {
-      &__amount {
-        display: flex;
-        flex: 1;
+  }
 
-        &--direction {
-          flex: 1;
-          font-weight: bold;
-          text-align: right;
+  &__details-right {
+    margin-top: -4px; // Awkward padding amount component makes it not aligned else
+
+    &__amount {
+      font-weight: bold;
+    }
+
+    &__state {
+      ::v-deep {
+        .v-chip {
+          &__content {
+            margin: auto;
+          }
         }
-
-        &--sum {
-          flex: none;
-          font-weight: bold;
-        }
-      }
-
-      &--status {
-        flex: 1;
-        text-align: right;
       }
     }
   }
