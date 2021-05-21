@@ -3,8 +3,10 @@ import { arrayify, concat as concatBytes, hexlify } from '@ethersproject/bytes';
 import { HashZero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { encode as rlpEncode } from '@ethersproject/rlp';
+import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
 import type * as t from 'io-ts';
+import { canonicalize } from 'json-canonicalize';
 import logging from 'loglevel';
 
 import type { BalanceProof } from '../channels/types';
@@ -50,8 +52,7 @@ export enum MessageTypeId {
  * @returns Hash of the metadata.
  */
 function createMetadataHash(metadata: Metadata): Hash {
-  const routeHashes = metadata.routes.map((value) => keccak256(rlpEncode(value.route)) as Hash);
-  return keccak256(rlpEncode(routeHashes)) as Hash;
+  return keccak256(toUtf8Bytes(canonicalize(metadata))) as Hash;
 }
 
 /**

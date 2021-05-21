@@ -8267,7 +8267,6 @@ ethereum-cryptography@^0.1.3:
 
 "ethereumjs-abi@git+https://github.com/ethereumjs/ethereumjs-abi.git":
   version "0.6.8"
-  uid "1a27c59c15ab1e95ee8e5c4ed6ad814c49cc439e"
   resolved "git+https://github.com/ethereumjs/ethereumjs-abi.git#1a27c59c15ab1e95ee8e5c4ed6ad814c49cc439e"
   dependencies:
     bn.js "^4.11.8"
@@ -12096,6 +12095,11 @@ json-buffer@3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/json-buffer/-/json-buffer-3.0.0.tgz#5b1f397afc75d677bde8bcfc0e47e1f9a3d9a898"
   integrity sha1-Wx85evx11ne96Lz8Dkfh+aPZqJg=
+
+json-canonicalize@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/json-canonicalize/-/json-canonicalize-1.0.4.tgz#efb2d0b07df12365e39028aa70f879237ec102ea"
+  integrity sha512-YNr/ePzgReHwlnAm3EVV1pcimwesI+1DZr5v7WBKOc1zE1t7pjxWAPRxJFT3ll6flLIdRe0DPia/8cl2FLAZNA==
 
 json-parse-better-errors@^1.0.1, json-parse-better-errors@^1.0.2:
   version "1.0.2"
