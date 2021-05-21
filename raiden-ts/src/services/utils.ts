@@ -1,5 +1,6 @@
 import type { Signer } from '@ethersproject/abstract-signer';
 import { concat as concatBytes } from '@ethersproject/bytes';
+import { verifyMessage } from '@ethersproject/wallet';
 import * as t from 'io-ts';
 import memoize from 'lodash/memoize';
 import uniqBy from 'lodash/uniqBy';
@@ -9,8 +10,9 @@ import { fromFetch } from 'rxjs/fetch';
 import { catchError, first, map, mergeMap, toArray } from 'rxjs/operators';
 
 import type { ServiceRegistry } from '../contracts';
+import { AddressMetadata } from '../messages/types';
 import { MessageTypeId } from '../messages/utils';
-import { Caps } from '../transport/types';
+import type { Caps } from '../transport/types';
 import { parseCaps } from '../transport/utils';
 import type { RaidenEpicDeps } from '../types';
 import { encode, jsonParse } from '../utils/data';
@@ -211,11 +213,6 @@ export function pfsListInfo(
   );
 }
 
-const PresenceFromService = t.type({
-  user_id: t.string,
-  capabilities: t.union([Caps, t.string]),
-});
-
 /**
  * @param peer - Peer address to fetch presence for
  * @param pfsAddrOrUrl - PFS/service address to fetch presence from
@@ -233,11 +230,12 @@ export function getPresenceFromService$(
     mergeMap(async (res) => res.json()),
     map((json) => {
       try {
-        const presence = decode(PresenceFromService, json);
-        const capabilities =
-          typeof presence.capabilities === 'string'
-            ? parseCaps(presence.capabilities)
-            : presence.capabilities;
+        const presence = decode(AddressMetadata, json);
+        assert(verifyMessage(presence.user_id, presence.displayname) === peer, [
+          'Invalid metadata signature',
+          { peer, presence },
+        ]);
+        const capabilities = parseCaps(presence.capabilities);
         assert(capabilities, ['Invalid capabilities format', presence.capabilities]);
         return { ...presence, capabilities };
       } catch (err) {
