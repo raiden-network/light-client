@@ -4,8 +4,8 @@ import { mount } from '@vue/test-utils';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 
-import ActionButton from '@/components/ActionButton.vue';
 import DownloadStateDialog from '@/components/account/backup-state/DownloadStateDialog.vue';
+import ActionButton from '@/components/ActionButton.vue';
 
 Vue.use(Vuetify);
 

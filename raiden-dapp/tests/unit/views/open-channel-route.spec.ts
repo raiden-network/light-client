@@ -9,6 +9,7 @@ import Vuetify from 'vuetify';
 
 import { ErrorCodes, RaidenError } from 'raiden-ts';
 
+import ActionButton from '@/components/ActionButton.vue';
 import Filters from '@/filters';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import type { Token } from '@/model/types';
@@ -16,7 +17,6 @@ import { RouteNames } from '@/router/route-names';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store';
 import type { Tokens } from '@/types';
-import ActionButton from '@/components/ActionButton.vue';
 import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
 
 import { TestData } from '../data/mock-data';
