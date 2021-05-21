@@ -514,9 +514,11 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   box-shadow: none;
   width: 100%;
   position: relative;
+  padding-bottom: 50px;
 
   &__container {
     height: 100%;
+    overflow-y: auto;
   }
 
   &__header {
