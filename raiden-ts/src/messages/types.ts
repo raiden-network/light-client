@@ -99,10 +99,23 @@ const EnvelopeMessage = t.readonly(
   ]),
 );
 
-const _RouteMetadata = t.readonly(
+const _AddressMetadata = t.readonly(
   t.type({
-    route: t.readonlyArray(Address),
+    user_id: t.string,
+    displayname: t.string,
+    capabilities: t.string,
   }),
+);
+export interface AddressMetadata extends t.TypeOf<typeof _AddressMetadata> {}
+export interface AddressMetadataC
+  extends t.Type<AddressMetadata, t.OutputOf<typeof _AddressMetadata>> {}
+export const AddressMetadata: AddressMetadataC = _AddressMetadata;
+
+const _RouteMetadata = t.readonly(
+  t.intersection([
+    t.type({ route: t.readonlyArray(Address) }),
+    t.partial({ address_metadata: t.record(t.string, AddressMetadata) }),
+  ]),
 );
 export interface RouteMetadata extends t.TypeOf<typeof _RouteMetadata> {}
 export interface RouteMetadataC extends t.Type<RouteMetadata, t.OutputOf<typeof _RouteMetadata>> {}
