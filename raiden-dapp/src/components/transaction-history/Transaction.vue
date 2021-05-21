@@ -14,15 +14,14 @@
     </div>
 
     <div class="transaction__details-right">
-      <span class="transaction__details-right__amount">
-        {{ amountDirectionSign }}
-        <amount-display
-          exact-amount
-          :amount="transfer.amount"
-          :token="tokens[transfer.token]"
-          inline
-        />
-      </span>
+      <amount-display
+        class="transaction__details-right__amount"
+        exact-amount
+        :amount="transfer.amount"
+        :token="tokens[transfer.token]"
+        :sign="amountDirectionSign"
+        inline
+      />
 
       <v-chip
         class="transaction__details-right__state"
@@ -67,9 +66,7 @@ export default class Transaction extends Vue {
   }
 
   get amountDirectionSign(): string {
-    return this.transfer.direction === 'sent'
-      ? (this.$t('transfer-history.sent-symbol') as string)
-      : (this.$t('transfer-history.received-symbol') as string);
+    return this.transfer.direction === 'sent' ? '-' : '+';
   }
 
   get transferStateColor(): string {
