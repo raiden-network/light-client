@@ -5,10 +5,10 @@
     @mouseleave="exactAmount ? (displayExactAmount = false) : null"
   >
     <span v-if="displayExactAmount">
-      {{ amount | toUnits(token.decimals) }} {{ token.symbol || '' }}
+      {{ sign }}{{ amount | toUnits(token.decimals) }} {{ token.symbol || '' }}
     </span>
     <span v-else>
-      {{ amount | displayFormat(token.decimals) }}
+      {{ sign }}{{ amount | displayFormat(token.decimals) }}
       {{ token.symbol || '' }}
     </span>
   </div>
@@ -24,10 +24,16 @@ import type { Token } from '@/model/types';
 export default class AmountDisplay extends Vue {
   @Prop({ required: false, default: false, type: Boolean })
   exactAmount!: boolean;
+
   @Prop({ required: true })
   amount!: string | BigNumber;
+
+  @Prop({ type: String, default: '' })
+  sign!: string;
+
   @Prop({ required: true })
   token!: Token;
+
   @Prop({ required: false, default: false, type: Boolean })
   inline!: boolean;
 

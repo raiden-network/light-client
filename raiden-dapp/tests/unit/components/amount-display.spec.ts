@@ -20,12 +20,13 @@ describe('AmountDisplay.vue', () => {
     name: 'Test Token',
   };
 
-  const createWrapper = (exactAmount: boolean) => {
+  const createWrapper = (exactAmount: boolean, sign?: string) => {
     return mount(AmountDisplay, {
       propsData: {
         exactAmount: exactAmount,
         amount: token.balance,
         token: token,
+        sign,
       },
     });
   };
@@ -59,5 +60,12 @@ describe('AmountDisplay.vue', () => {
     await wrapper.vm.$nextTick();
 
     expect(amountDisplay.text()).toContain('<0.000001');
+  });
+
+  test('uses sign propery if given', () => {
+    wrapper = createWrapper(true, '+');
+    const amountDisplay = wrapper.find('div');
+
+    expect(amountDisplay.text()).toContain('+');
   });
 });
