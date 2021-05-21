@@ -773,7 +773,7 @@
         "link-button": "Connect"
       },
       "direct-rpc-provider": {
-        "header": "Direct RPC Provider",
+        "header": "Private Key",
         "description": "Connect directly to an Ethereum node and use your accounts private key. This approach is NOT RECOMMENDED for security concerns.",
         "error-message": "Failed to link to configured provider. Please make sure the given paramaters and the service is available.",
         "options": {
@@ -790,7 +790,7 @@
         }
       },
       "injected-provider": {
-        "header": "Injected Provider",
+        "header": "Browser Extension",
         "description": "Connect with a provider in your web browser.",
         "error-message": "Failed to link to provider. Please make sure to grant the requested permissions."
       },
