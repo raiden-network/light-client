@@ -1,7 +1,7 @@
 import { RouteNames } from '../route-names';
 import type { NavigationGuardChild } from './types';
 
-const freeAccountRoutes = [
+const unprotectedAccountRoutes = [
   RouteNames.ACCOUNT_ROOT,
   RouteNames.ACCOUNT_BACKUP,
   RouteNames.ACCOUNT_SETTINGS,
@@ -9,7 +9,7 @@ const freeAccountRoutes = [
 
 export const redirectIfNotConnected: NavigationGuardChild = (to, store) => {
   const { isConnected } = store.state;
-  const routingToFreeAccountRoute = freeAccountRoutes.includes(to.name ?? '');
+  const routingToFreeAccountRoute = unprotectedAccountRoutes.includes(to.name ?? '');
   const routingToHomeRoute = to.name === RouteNames.HOME;
 
   if (routingToFreeAccountRoute) return undefined;

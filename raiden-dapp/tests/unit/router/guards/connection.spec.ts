@@ -18,7 +18,7 @@ const {
   ...protectedRoutes
 } = transformRouteConfigsToRoutes();
 
-const freeAccountRoutes = [accountRootRoute, accountBackupRoute, accountSettingsRoute];
+const unprotectedAccountRoutes = [accountRootRoute, accountBackupRoute, accountSettingsRoute];
 
 function createStore(options?: { isConnected?: boolean }): Store<CombinedStoreState> {
   const state = {
@@ -74,7 +74,7 @@ describe('redirectIfNotConnected()', () => {
   test('do nothing if navigating to a free account route', () => {
     const store = createStore({ isConnected: false });
 
-    Object.values(freeAccountRoutes).forEach((route) => {
+    Object.values(unprotectedAccountRoutes).forEach((route) => {
       expect(redirectIfNotConnected(route, store)).toBeUndefined();
     });
   });
