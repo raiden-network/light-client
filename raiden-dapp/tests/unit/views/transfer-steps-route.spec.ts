@@ -114,7 +114,7 @@ async function createWrapper(
 }
 
 async function clickTransferButton(wrapper: Wrapper<TransferSteps>): Promise<void> {
-  const button = wrapper.find('.transfer__button button');
+  const button = wrapper.findComponent(ActionButton);
   expect(button.attributes()['disabled']).toBeUndefined();
   button.trigger('click');
   await flushPromises();

@@ -1,39 +1,29 @@
 <template>
-  <v-row
-    class="action-button"
-    no-gutters
-    align-content="center"
-    justify="center"
-    :class="{ sticky: sticky }"
+  <v-btn
+    type="submit"
+    :disabled="!enabled"
+    :loading="loading"
+    data-cy="action_button"
+    class="text-capitalize action-button"
+    :class="{
+      'action-button--sticky': sticky,
+      'action-button--full-width': fullWidth,
+      'action-button--angular': angular,
+    }"
+    depressed
+    large
+    :style="{ width, height }"
+    @click="click()"
   >
-    <v-col :cols="sticky ? 12 : 10" class="text-center">
-      <v-btn
-        type="submit"
-        :disabled="!enabled"
-        :loading="loading"
-        data-cy="action_button"
-        class="text-capitalize action-button__button"
-        :class="{
-          sticky: sticky,
-          'action-button__button--ghost': ghost,
-          'action-button__button--full-width': fullWidth,
-        }"
-        depressed
-        large
-        :style="{ width }"
-        @click="click()"
-      >
-        {{ text }}
-        <v-icon v-if="arrow" right>keyboard_arrow_right</v-icon>
-        <template v-if="loadingText" #loader>
-          <div class="action-button__loading">
-            <span>{{ loadingText }}</span>
-            <v-progress-linear class="action-button__loading__indicator" indeterminate rounded />
-          </div>
-        </template>
-      </v-btn>
-    </v-col>
-  </v-row>
+    {{ text }}
+    <v-icon v-if="arrow" right>keyboard_arrow_right</v-icon>
+    <template v-if="loadingText" #loader>
+      <div class="action-button__loading">
+        <span>{{ loadingText }}</span>
+        <v-progress-linear class="action-button__loading__indicator" indeterminate rounded />
+      </div>
+    </template>
+  </v-btn>
 </template>
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
@@ -58,14 +48,17 @@ export default class ActionButton extends Vue {
   @Prop({ type: Boolean, default: false })
   arrow?: boolean;
 
-  @Prop({ type: Boolean, default: false })
-  ghost?: boolean;
-
   @Prop({ type: String, default: '250px' })
   width?: string;
 
   @Prop({ type: Boolean, default: false })
   fullWidth?: boolean;
+
+  @Prop({ type: String, default: '40px' })
+  height?: string;
+
+  @Prop({ type: Boolean, default: false })
+  angular?: boolean;
 
   @Emit()
   click(): boolean {
@@ -77,84 +70,39 @@ export default class ActionButton extends Vue {
 @import '@/scss/colors';
 @import '@/scss/mixins';
 
-::v-deep {
-  .v-btn {
-    letter-spacing: 0 !important;
-
-    &--disabled {
-      background-color: $primary-color !important;
-    }
-  }
-}
-
 .action-button {
-  &__button {
-    max-height: 40px;
-    border-radius: 29px;
-    background-color: $primary-color !important;
+  border-radius: 29px;
+  background-color: $primary-color !important;
+  margin: auto;
 
-    &.sticky {
-      width: 100%;
-      height: 45px;
-      max-height: 45px;
-      font-size: 16px;
-      border-radius: 0;
-      border-bottom-left-radius: 10px;
-      border-bottom-right-radius: 10px;
-
-      @include respond-to(handhelds) {
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-      }
-    }
-
-    &:hover {
-      background-color: rgba($primary-color, 0.8) !important;
-    }
-
-    &--full-width {
-      width: 100% !important;
-    }
-
-    &--ghost {
-      border: 2px solid rgba($primary-color, 0.8);
-      background-color: transparent !important;
-
-      &.theme {
-        &--dark {
-          &.v-btn {
-            &.v-btn {
-              &--disabled {
-                /* stylelint-disable */
-                // can't nest class inside nesting
-                &:not(.v-btn--icon) {
-                  &:not(.v-btn--text) {
-                    &:not(.v-btn--outline) {
-                      background-color: transparent !important;
-                    }
-                  }
-                }
-                /* stylelint-enable */
-              }
-            }
-          }
-        }
-      }
-
-      &.v-btn {
-        &--disabled {
-          border-color: $primary-disabled-color;
-        }
-      }
-    }
+  &:hover {
+    background-color: rgba($primary-color, 0.8) !important;
   }
 
-  &.sticky {
-    margin: 0;
+  &--full-width {
+    width: 100% !important;
+  }
+
+  &--sticky {
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 100%;
+    width: 100% !important;
+    height: 45px;
+    max-height: 45px;
+    font-size: 16px;
+    border-radius: 0;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+
+    @include respond-to(handhelds) {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+  }
+
+  &--angular {
+    border-radius: 8px !important;
   }
 
   &__loading {
