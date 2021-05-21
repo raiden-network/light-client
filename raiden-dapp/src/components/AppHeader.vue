@@ -103,7 +103,7 @@ export default class AppHeader extends Mixins(NavigationMixin) {
 
 .app-header {
   display: flex;
-  height: 80px;
+  height: 70px;
   position: relative;
 
   &__content {
