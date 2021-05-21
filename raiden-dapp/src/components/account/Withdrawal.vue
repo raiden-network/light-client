@@ -1,90 +1,72 @@
 <template>
-  <v-container>
-    <v-row justify="center">
-      <v-col cols="10">
-        <div class="withdrawal__info-box">
-          <img
-            class="mr-2 mt-1"
-            :src="require('@/assets/info-gray.svg')"
-            height="18px"
-            width="18px"
-          />
+  <div class="withdrawal">
+    <div class="withdrawal__info-box">
+      <img class="mr-2 mt-1" :src="require('@/assets/info-gray.svg')" height="18px" width="18px" />
 
-          <span>
-            {{ $t('withdrawal.title') }}
+      <span>
+        {{ $t('withdrawal.title') }}
 
-            <a class="withdrawal__info-box__link" @click="navigateToUDC">
-              {{ $t('withdrawal.navigation-link-title') }}
-            </a>
-          </span>
-        </div>
-      </v-col>
-    </v-row>
+        <a class="withdrawal__info-box__link" @click="navigateToUDC">
+          {{ $t('withdrawal.navigation-link-title') }}
+        </a>
+      </span>
+    </div>
 
-    <v-row v-if="loading" class="withdrawal__loading">
-      <spinner />
-    </v-row>
+    <spinner v-if="loading" class="withdrawal__loading" />
 
-    <v-row
+    <div
       v-else-if="balances.length === 0"
       data-cy="withdrawal_empty"
       class="withdrawal__empty"
       align="center"
       justify="center"
     >
-      <v-col cols="auto">
-        <v-row align="center" justify="center">
-          <div>
-            <v-img height="150px" width="150px" :src="require('@/assets/info.svg')" />
-          </div>
-        </v-row>
-        <v-row>
-          <v-col cols="auto">{{ $t('withdrawal.no-tokens') }}</v-col>
-        </v-row>
-      </v-col>
-    </v-row>
-    <v-row v-else align="center" justify="center">
-      <v-col cols="10">
-        <v-list data-cy="withdrawal_tokens" class="withdrawal__token-list" flat>
-          <template v-for="(token, index) in balances">
-            <v-list-item :key="token.address" class="withdrawal__token-list__item">
-              <v-list-item-avatar class="withdrawal__token-list__item__icon">
-                <img
-                  :src="$blockie(token.address)"
-                  :alt="$t('withdrawal.blockie-alt')"
-                  class="indenticon"
-                />
-              </v-list-item-avatar>
-              <v-list-item-content>
-                <v-list-item-title class="withdrawal__token-list__item__name">
-                  {{ token.name || '' }}
-                </v-list-item-title>
-                <v-list-item-subtitle class="withdrawal__token-list__item__address">
-                  <address-display :address="token.address" />
-                </v-list-item-subtitle>
-              </v-list-item-content>
-              <v-list-item-icon>
-                <div
-                  data-cy="withdrawal_tokens_button"
-                  class="withdrawal__token-list__item__button"
-                  @click="withdraw = token"
-                >
-                  <amount-display :amount="token.balance" :token="token" />
-                  <img :src="require('@/assets/icon-withdraw.svg')" />
-                </div>
-              </v-list-item-icon>
-            </v-list-item>
-            <v-divider v-if="index < balances.length - 1" :key="index" />
-          </template>
-        </v-list>
-      </v-col>
-    </v-row>
+      <v-img class="my-4" height="150px" width="150px" :src="require('@/assets/info.svg')" />
+      <span>{{ $t('withdrawal.no-tokens') }}</span>
+    </div>
+
+    <v-list data-cy="withdrawal_tokens" class="withdrawal__token-list mt-4" flat>
+      <template v-for="(token, index) in balances">
+        <v-list-item :key="token.address" class="withdrawal__token-list__item">
+          <v-list-item-avatar class="withdrawal__token-list__item__icon">
+            <img
+              :src="$blockie(token.address)"
+              :alt="$t('withdrawal.blockie-alt')"
+              class="indenticon"
+            />
+          </v-list-item-avatar>
+
+          <v-list-item-content>
+            <v-list-item-title class="withdrawal__token-list__item__name">
+              {{ token.name || '' }}
+            </v-list-item-title>
+            <v-list-item-subtitle class="withdrawal__token-list__item__address">
+              <address-display :address="token.address" />
+            </v-list-item-subtitle>
+          </v-list-item-content>
+
+          <v-list-item-icon>
+            <div
+              data-cy="withdrawal_tokens_button"
+              class="withdrawal__token-list__item__button"
+              @click="withdraw = token"
+            >
+              <amount-display :amount="token.balance" :token="token" />
+              <img :src="require('@/assets/icon-withdraw.svg')" />
+            </div>
+          </v-list-item-icon>
+        </v-list-item>
+        <v-divider v-if="index < balances.length - 1" :key="index" />
+      </template>
+    </v-list>
+
     <raiden-dialog v-if="!!withdraw" visible @close="withdraw = null">
       <v-card-title>
         <i18n path="withdrawal.dialog.title" tag="span">
           <amount-display inline :amount="withdraw.balance" :token="withdraw" />
         </i18n>
       </v-card-title>
+
       <v-card-text>
         <div v-if="!withdrawing">
           <i18n path="withdrawal.dialog.body" tag="span">
@@ -99,17 +81,19 @@
           <div class="mt-4">{{ $t('withdrawal.dialog.progress') }}</div>
         </div>
       </v-card-text>
+
       <v-card-actions v-if="!withdrawing">
         <action-button
           data-cy="withdrawal_dialog_action"
           class="withdrawal-dialog__action"
           :enabled="parseFloat(raidenAccountBalance) > 0"
           :text="$t('withdrawal.dialog.button')"
+          full-witdh
           @click="withdrawTokens()"
         />
       </v-card-actions>
     </raiden-dialog>
-  </v-container>
+  </div>
 </template>
 
 <script lang="ts">
@@ -196,6 +180,12 @@ $border-radius: 8px;
 $height: 72px;
 
 .withdrawal {
+  margin: 0 64px 0 64px;
+
+  @include respond-to(handhelds) {
+    margin: 0 20px 0 20px;
+  }
+
   &__info-box {
     $color: #7a7a80;
     display: flex;

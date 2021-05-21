@@ -1,23 +1,27 @@
 <template>
-  <v-row class="error-message">
-    <v-col cols="12">
-      <div class="error-message__image">
-        <v-img :src="require('@/assets/error.png')" />
-      </div>
-      <h2 class="error-message__title">{{ title }}</h2>
-      <label class="error-message__label">
-        {{ $t('error-message.problem') }}
-      </label>
-      <p>{{ problem }}</p>
-      <label v-if="solution" class="error-message__label">
-        {{ $t('error-message.solution') }}
-      </label>
-      <ol v-if="Array.isArray(solution)">
-        <li v-for="step in solution" :key="step">{{ step }}</li>
-      </ol>
-      <p v-else>{{ solution }}</p>
-    </v-col>
-  </v-row>
+  <div class="error-message">
+    <div class="error-message__image">
+      <v-img :src="require('@/assets/error.png')" />
+    </div>
+
+    <h2 class="error-message__title">{{ title }}</h2>
+
+    <label class="error-message__label">
+      {{ $t('error-message.problem') }}
+    </label>
+
+    <p>{{ problem }}</p>
+
+    <label v-if="solution" class="error-message__label">
+      {{ $t('error-message.solution') }}
+    </label>
+
+    <ol v-if="Array.isArray(solution)">
+      <li v-for="step in solution" :key="step">{{ step }}</li>
+    </ol>
+
+    <p v-else>{{ solution }}</p>
+  </div>
 </template>
 
 <script lang="ts">
@@ -66,20 +70,20 @@ export default class ErrorMessage extends Vue {
   width: 100%;
   text-align: left;
 
-  &__label {
-    font-weight: bold;
-    margin-right: 5px;
+  &__image {
+    max-width: 75px;
+    margin: 15px auto;
   }
 
   &__title {
     width: 100%;
     text-align: center;
-    margin-bottom: 7px;
+    margin-bottom: 15px;
   }
 
-  &__image {
-    max-width: 75px;
-    margin: 0 auto;
+  &__label {
+    font-weight: bold;
+    margin-bottom: 15px;
   }
 }
 </style>

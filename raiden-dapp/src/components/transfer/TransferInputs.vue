@@ -50,6 +50,8 @@
           class="transfer-inputs__form__button"
           :enabled="valid"
           :text="$t('general.buttons.continue')"
+          height="49px"
+          angular
         />
       </v-row>
     </v-form>
@@ -123,6 +125,10 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
   border-radius: 15px;
   padding: 20px;
 
+  @include respond-to(handhelds) {
+    padding: 15px 10px;
+  }
+
   &__form {
     width: 100%;
 
@@ -147,50 +153,24 @@ export default class TransferInputs extends Mixins(NavigationMixin) {
 
     &__address {
       width: 100%;
-      @include respond-to(handhelds) {
-        padding: 0px;
-      }
-
-      ::v-deep {
-        .v-input {
-          padding-top: 0;
-        }
-      }
     }
 
     &__amount {
       width: 70%;
+      padding-right: 16px;
+
       @include respond-to(handhelds) {
         width: 100%;
-        padding: 0px;
+        padding-right: 0;
       }
     }
 
     &__button {
-      padding-bottom: 30px;
+      width: 30% !important;
+      margin-top: 16px;
 
       @include respond-to(handhelds) {
-        padding: 0;
-        width: 100%;
-      }
-
-      ::v-deep {
-        .col-10 {
-          display: flex;
-          padding-top: 16px;
-          @include respond-to(handhelds) {
-            min-width: 100%;
-          }
-        }
-
-        .v-btn {
-          border-radius: 8px;
-          min-height: 49px;
-          max-width: 140px;
-          @include respond-to(handhelds) {
-            min-width: 100%;
-          }
-        }
+        width: 100% !important;
       }
     }
   }

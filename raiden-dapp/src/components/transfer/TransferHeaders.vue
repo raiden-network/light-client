@@ -195,7 +195,9 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
     height: 100px;
     text-align: center;
     width: 100%;
+
     @include respond-to(handhelds) {
+      height: 70px;
       font-size: 35px;
     }
   }

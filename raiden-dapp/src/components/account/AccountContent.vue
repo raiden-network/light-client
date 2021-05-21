@@ -225,7 +225,7 @@ export default class AccountContent extends Mixins(NavigationMixin) {
   margin: 0 64px 0 64px;
 
   @include respond-to(handhelds) {
-    margin: 0 30px 0 30px;
+    margin: 0 20px 0 20px;
   }
 
   &__account-details {

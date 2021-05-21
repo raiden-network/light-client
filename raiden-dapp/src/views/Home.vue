@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid data-cy="home" class="home">
+  <div fluid data-cy="home" class="home">
     <v-row no-gutters>
       <v-col cols="12">
         <div class="home__logo-container">
@@ -43,7 +43,7 @@
         <connection-manager />
       </v-col>
     </v-row>
-  </v-container>
+  </div>
 </template>
 
 <script lang="ts">
@@ -92,6 +92,7 @@ export default class Home extends Vue {
   height: 100% !important;
 
   @include respond-to(handhelds) {
+    padding: 0 10px;
     overflow-y: auto !important;
   }
 
