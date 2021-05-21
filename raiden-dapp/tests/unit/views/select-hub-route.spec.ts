@@ -9,9 +9,9 @@ import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
 import Vuex from 'vuex';
 
+import ActionButton from '@/components/ActionButton.vue';
 import Filters from '@/filters';
 import { RouteNames } from '@/router/route-names';
-import ActionButton from '@/components/ActionButton.vue';
 import SelectHubRoute from '@/views/SelectHubRoute.vue';
 
 import { TestData } from '../data/mock-data';
@@ -123,9 +123,7 @@ describe('SelectHubRoute.vue', () => {
   test('disables button if UDC capacity is not sufficient', async () => {
     const wrapper = await createWrapper(undefined, BigNumber.from('2'), BigNumber.from('1'));
 
-    expect(wrapper.findComponent(ActionButton).attributes('disabled')).toBe(
-      'disabled',
-    );
+    expect(wrapper.findComponent(ActionButton).attributes('disabled')).toBe('disabled');
   });
 
   test('navigate to "Home" when the token address is not in checksum format', async () => {

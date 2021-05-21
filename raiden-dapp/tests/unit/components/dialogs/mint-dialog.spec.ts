@@ -7,8 +7,8 @@ import Vuetify from 'vuetify';
 import { ErrorCodes, RaidenError } from 'raiden-ts';
 
 import ActionButton from '@/components/ActionButton.vue';
-import ErrorMessage from '@/components/ErrorMessage.vue';
 import MintDialog from '@/components/dialogs/MintDialog.vue';
+import ErrorMessage from '@/components/ErrorMessage.vue';
 import Filters from '@/filters';
 
 import { TestData } from '../../data/mock-data';

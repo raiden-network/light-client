@@ -4,8 +4,8 @@ import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 
-import store from '@/store';
 import ActionButton from '@/components/ActionButton.vue';
+import store from '@/store';
 import RaidenAccount from '@/views/account/RaidenAccount.vue';
 
 jest.useFakeTimers();
