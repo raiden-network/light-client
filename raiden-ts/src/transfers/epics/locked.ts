@@ -21,7 +21,7 @@ import { channelAmounts, channelKey, channelUniqueKey } from '../../channels/uti
 import type { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { messageReceived, messageSend } from '../../messages/actions';
-import type { Metadata, Processed, SecretRequest } from '../../messages/types';
+import type { Processed, SecretRequest } from '../../messages/types';
 import {
   LockedTransfer,
   LockExpired,
@@ -117,15 +117,7 @@ function makeAndSignTransfer$(
   { revealTimeout, confirmationBlocks, expiryFactor }: RaidenConfig,
   { log, address, network, signer }: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned> {
-  // assume paths are valid and recipient is first hop of first route
-  // compose metadata from it, and use first path fee
-  const metadata: Metadata = {
-    routes: action.payload.paths.map(({ path }) => ({ route: path })),
-  };
-  const fee = action.payload.paths[0].fee;
-  const partner = action.payload.paths[0].path[0];
-
-  const tokenNetwork = action.payload.tokenNetwork;
+  const { tokenNetwork, fee, partner, userId } = action.payload;
   const channel = getOpenChannel(state, { tokenNetwork, partner });
 
   assert(
@@ -170,7 +162,7 @@ function makeAndSignTransfer$(
     ', to',
     action.payload.target,
     ', through routes',
-    action.payload.paths,
+    action.payload.metadata.routes,
     ', paying',
     fee.toString(),
     'in fees.',
@@ -192,13 +184,13 @@ function makeAndSignTransfer$(
     lock,
     target: action.payload.target,
     initiator: action.payload.initiator ?? address,
-    metadata,
+    metadata: action.payload.metadata, // passthrough unchanged metadata
   };
 
   return from(signMessage(signer, message, { log })).pipe(
     mergeMap(function* (signed) {
       // messageSend LockedTransfer handled by transferRetryMessageEpic
-      yield transferSigned({ message: signed, fee, partner }, action.meta);
+      yield transferSigned({ message: signed, fee, partner, userId }, action.meta);
       // besides transferSigned, also yield transferSecret (for registering) if we know it
       if (action.payload.secret)
         yield transferSecret({ secret: action.payload.secret }, action.meta);

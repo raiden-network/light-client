@@ -6,15 +6,15 @@ import { ChannelState } from '../../channels/state';
 import { channelKey } from '../../channels/utils';
 import type { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
-import type { RouteMetadata } from '../../messages/types';
+import { validateAddressMetadata } from '../../messages/utils';
 import type { RaidenState } from '../../state';
+import type { Via } from '../../transport/types';
 import { getCap } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import type { Address, Int } from '../../utils/types';
 import { isntNil } from '../../utils/types';
 import { transfer, transferSigned } from '../actions';
 import { Direction } from '../state';
-import { transferKey } from '../utils';
 
 function shouldMediate(action: transferSigned, address: Address, { caps }: RaidenConfig): boolean {
   const isMediationEnabled = getCap(caps, Capabilities.MEDIATE);
@@ -30,52 +30,64 @@ function shouldMediate(action: transferSigned, address: Address, { caps }: Raide
  * we return a clean set of routes where all of them go through the same partner, since we need to
  * know the outbound channel in order to calculate the mediation fees.
  *
- * @param routes - RouteMetadata array containing the received routes
+ * @param received - received transferSigned
  * @param state - Current state (to check for open channels)
- * @param tokenNetwork - Transfer's TokenNetwork address
+ * @param config - Current config
  * @param deps - Epics dependencies subset
  * @param deps.address - Our address
  * @param deps.log - Logger instance
+ * @param deps.mediationFeeCalculator - Calculator for mediating transfer's fee
  * @returns Filtered and cleaned routes array, or undefined if no valid route was found
  */
-function filterAndCleanValidRoutes(
-  routes: readonly RouteMetadata[],
+function findValidPartner(
+  received: transferSigned,
   state: RaidenState,
-  tokenNetwork: Address,
-  { address, log }: Pick<RaidenEpicDeps, 'address' | 'log'>,
-) {
-  const allPartnersWithOpenChannels = new Set(
+  config: RaidenConfig,
+  { address, log, mediationFeeCalculator }: RaidenEpicDeps,
+): Pick<transfer.request['payload'], 'partner' | 'fee' | keyof Via> | undefined {
+  const message = received.payload.message;
+  const inPartner = received.payload.partner;
+  const tokenNetwork = message.token_network_address;
+  const partnersWithOpenChannels = new Set(
     Object.values(state.channels)
       .filter((channel) => channel.tokenNetwork === tokenNetwork)
       .filter((channel) => channel.state === ChannelState.open)
       .map(({ partner }) => partner.address),
   );
-
-  function clearRoute(metadata: RouteMetadata) {
-    let route = metadata.route;
+  for (const { route, address_metadata } of message.metadata.routes) {
     const ourIndex = route.findIndex((hop) => hop === address);
-    // if we're in the path (front or mid), forward only remaining path, starting with partner/next hop
-    if (ourIndex >= 0) route = route.slice(ourIndex + 1);
-    // next hop must be our partner, otherwise return null to drop this route
-    if (!allPartnersWithOpenChannels.has(route[0])) return null;
-    return { ...metadata, route };
-  }
-  let result = routes.map(clearRoute).filter(isntNil);
+    const outPartner = route[ourIndex + 1];
+    if (!outPartner || !partnersWithOpenChannels.has(outPartner)) continue;
 
-  const outPartner = result[0]?.route[0];
-  if (!outPartner) {
-    log.warn('Mediation: could not find a suitable route, ignoring', {
-      inputRoutes: routes,
-      openPartners: allPartnersWithOpenChannels,
-    });
-    return;
-  }
-  // filter only for routes matching first hop; in the old days of RefundTransfer,
-  // we could/should retry the following partners upon receiving a refund, but now we only
-  // support a single outgoing partner, and drop the others (if any)
-  result = result.filter(({ route }) => route[0] === outPartner);
+    const channelIn = state.channels[channelKey({ tokenNetwork, partner: inPartner })];
+    const channelOut = state.channels[channelKey({ tokenNetwork, partner: outPartner })];
 
-  return result;
+    let fee: Int<32>;
+    try {
+      fee = mediationFeeCalculator.fee(
+        config.mediationFees,
+        channelIn,
+        channelOut,
+      )(message.lock.amount);
+    } catch (error) {
+      log.warn('Mediation: could not calculate mediation fee, ignoring', { error });
+      return;
+    }
+    // on a transfer.request, fee is *added* to the value to get final sent amount,
+    // therefore here it needs to contain a negative fee, which we will "earn" instead of pay
+    fee = fee.mul(-1) as Int<32>;
+
+    const outPartnerMetadata = validateAddressMetadata(
+      address_metadata?.[outPartner],
+      outPartner,
+      { log },
+    );
+    return { partner: outPartner, fee, userId: outPartnerMetadata?.user_id };
+  }
+  log.warn('Mediation: could not find a suitable route, ignoring', {
+    inputRoutes: message.metadata.routes,
+    openPartners: partnersWithOpenChannels,
+  });
 }
 
 /**
@@ -99,45 +111,19 @@ function filterAndCleanValidRoutes(
 export function transferMediateEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, config$, log, mediationFeeCalculator }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ) {
+  const { address, config$ } = deps;
   return action$.pipe(
     filter(transferSigned.is),
     withLatestFrom(config$, state$),
     filter(([action, config]) => shouldMediate(action, address, config)),
     map(([action, config, state]) => {
-      const receivedState = state.transfers[transferKey(action.meta)];
       const message = action.payload.message;
-
-      const tokenNetwork = message.token_network_address;
       const secrethash = action.meta.secrethash;
-      const inPartner = receivedState.partner;
 
-      const cleanRoutes = filterAndCleanValidRoutes(message.metadata.routes, state, tokenNetwork, {
-        address,
-        log,
-      });
-      if (!cleanRoutes) return;
-      const outPartner = cleanRoutes[0].route[0];
-
-      const channelIn = state.channels[channelKey({ tokenNetwork, partner: inPartner })];
-      const channelOut = state.channels[channelKey({ tokenNetwork, partner: outPartner })];
-
-      let fee: Int<32>;
-      try {
-        fee = mediationFeeCalculator.fee(
-          config.mediationFees,
-          channelIn,
-          channelOut,
-        )(message.lock.amount);
-      } catch (error) {
-        log.warn('Mediation: could not calculate mediation fee, ignoring', { error });
-        return;
-      }
-      // on a transfer.request, fee is *added* to the value to get final sent amount,
-      // therefore here it needs to contain a negative fee, which we will "earn" instead of pay
-      fee = fee.mul(-1) as Int<32>;
-      const paths = cleanRoutes.map(({ route }) => ({ path: route, fee }));
+      const outVia = findValidPartner(action, state, config, deps);
+      if (!outVia) return;
 
       // request an outbound transfer to target; will fail if already sent
       return transfer.request(
@@ -146,9 +132,10 @@ export function transferMediateEpic(
           target: message.target,
           paymentId: message.payment_identifier,
           value: message.lock.amount,
-          paths,
           expiration: message.lock.expiration.toNumber(),
           initiator: message.initiator,
+          metadata: message.metadata, // passthrough unchanged metadata
+          ...outVia,
         },
         { secrethash, direction: Direction.SENT },
       );
