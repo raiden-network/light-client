@@ -1,6 +1,7 @@
 import * as t from 'io-ts';
 import invert from 'lodash/invert';
 
+import { AddressMetadata } from '../messages/types';
 import type { Decodable } from '../utils/types';
 import { Address, Int, Signed, UInt } from '../utils/types';
 
@@ -26,34 +27,17 @@ export type PfsMode = typeof PfsMode[keyof typeof PfsMode];
 export const PfsModeC = t.keyof(invert(PfsMode) as { [D in PfsMode]: string });
 
 /**
- * Codec for PFS API returned data
- */
-export const PathResults = t.readonly(
-  t.intersection([
-    t.type({
-      result: t.array(
-        t.readonly(
-          t.type({
-            path: t.readonlyArray(Address),
-            estimated_fee: Int(32),
-          }),
-        ),
-      ),
-    }),
-    t.partial({ feedback_token: t.string }),
-  ]),
-);
-export interface PathResults extends t.TypeOf<typeof PathResults> {}
-
-/**
  * Codec for raiden-ts internal representation of a PFS result/routes
  */
-export const Paths = t.array(
+export const Paths = t.readonlyArray(
   t.readonly(
-    t.type({
-      path: t.readonlyArray(Address),
-      fee: Int(32),
-    }),
+    t.intersection([
+      t.type({
+        path: t.readonlyArray(Address),
+        fee: Int(32),
+      }),
+      t.partial({ address_metadata: t.readonly(t.record(t.string, AddressMetadata)) }),
+    ]),
   ),
 );
 export type Paths = t.TypeOf<typeof Paths>;

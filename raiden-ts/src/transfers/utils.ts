@@ -13,12 +13,20 @@ import type { Lock } from '../channels/types';
 import { BalanceProofZero } from '../channels/types';
 import { channelUniqueKey } from '../channels/utils';
 import type { RaidenDatabase, TransferStateish } from '../db/types';
-import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from '../messages';
+import type { Metadata } from '../messages';
+import {
+  createBalanceHash,
+  getBalanceProofFromEnvelopeMessage,
+  validateAddressMetadata,
+} from '../messages';
+import type { Paths } from '../services/types';
 import type { RaidenState } from '../state';
+import type { Via } from '../transport/types';
 import { assert } from '../utils';
 import { encode } from '../utils/data';
 import type { Hash, HexString, Secret, UInt } from '../utils/types';
 import { decode, isntNil } from '../utils/types';
+import type { transfer } from './actions';
 import type { RaidenTransfer } from './state';
 import { Direction, RaidenTransferStatus, TransferState } from './state';
 
@@ -245,4 +253,23 @@ export async function getTransfer(
   if (!('address' in state)) state = await state.pipe(first()).toPromise();
   if (key in state.transfers) return state.transfers[key];
   return decode(TransferState, await db.get<TransferStateish>(key));
+}
+
+/**
+ * Contructs transfer.request's payload paramaters from received PFS's Paths
+ *
+ * @param paths - Paths array coming from PFS
+ * @returns Respective members of transfer.request's payload
+ */
+export function metadataFromPaths(
+  paths: Paths,
+): Pick<transfer.request['payload'], 'metadata' | 'fee' | 'partner' | keyof Via> {
+  const routes = paths.map(({ path: route, fee: _, ...rest }) => ({ route, ...rest }));
+  const metadata: Metadata = { routes };
+  const viaPath = paths[0]; // assume incoming Paths is clean and best path is first
+  const partner = viaPath.path[0];
+  const fee = viaPath.fee;
+  const partnerMetadata = validateAddressMetadata(viaPath.address_metadata?.[partner], partner);
+  const via: Via = { userId: partnerMetadata?.user_id };
+  return { metadata, fee, partner, ...via };
 }

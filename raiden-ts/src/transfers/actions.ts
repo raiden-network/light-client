@@ -5,6 +5,7 @@ import { BalanceProof } from '../channels/types';
 import {
   LockedTransfer,
   LockExpired,
+  Metadata,
   Processed,
   SecretRequest,
   SecretReveal,
@@ -13,7 +14,7 @@ import {
   WithdrawExpired,
   WithdrawRequest,
 } from '../messages/types';
-import { Paths } from '../services/types';
+import { Via } from '../transport/types';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
 import { Address, Hash, Int, Secret, Signed, UInt } from '../utils/types';
@@ -51,9 +52,12 @@ export const transfer = createAsyncAction(
       tokenNetwork: Address,
       target: Address,
       value: UInt(32),
-      paths: Paths,
       paymentId: UInt(8),
+      metadata: Metadata,
+      fee: Int(32),
+      partner: Address,
     }),
+    Via,
     t.partial({
       secret: Secret,
       expiration: t.number,
@@ -72,7 +76,10 @@ export namespace transfer {
 /** A LockedTransfer was signed and should be sent to partner */
 export const transferSigned = createAction(
   'transfer/signed',
-  t.type({ message: Signed(LockedTransfer), fee: Int(32), partner: Address }),
+  t.intersection([
+    t.type({ message: Signed(LockedTransfer), fee: Int(32), partner: Address }),
+    Via,
+  ]),
   TransferId,
 );
 export interface transferSigned extends ActionType<typeof transferSigned> {}
