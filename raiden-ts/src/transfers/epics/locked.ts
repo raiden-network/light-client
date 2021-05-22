@@ -65,7 +65,14 @@ import {
 } from '../actions';
 import type { TransferState } from '../state';
 import { Direction } from '../state';
-import { getLocksroot, getSecrethash, getTransfer, makeMessageId, transferKey } from '../utils';
+import {
+  getLocksroot,
+  getSecrethash,
+  getTransfer,
+  makeMessageId,
+  searchValidViaAddress,
+  transferKey,
+} from '../utils';
 import { matchWithdraw } from './utils';
 
 // calculate locks array for channel end without lock with given secrethash
@@ -301,7 +308,10 @@ function makeAndSignUnlock$(
           channel.own.locks.find((lock) => lock.secrethash === secrethash && lock.registered),
         'lock expired',
       );
-      return transferUnlock.success({ message: signed, partner }, action.meta);
+      return transferUnlock.success(
+        { message: signed, partner, userId: action.payload?.userId },
+        action.meta,
+      );
       // messageSend Unlock handled by transferRetryMessageEpic
       // we don't check if transfer was refunded. If partner refunded the transfer but still
       // forwarded the payment, we still act honestly and unlock if they revealed
@@ -455,7 +465,10 @@ function receiveTransferSigned(
         ) {
           // transferProcessed again will trigger messageSend.request
           return of(
-            transferProcessed({ message: untime(transferState.transferProcessed!) }, meta),
+            transferProcessed(
+              { message: untime(transferState.transferProcessed!), userId: action.payload.userId },
+              meta,
+            ),
           );
         }
         return EMPTY;
@@ -554,12 +567,18 @@ function receiveTransferSigned(
         mergeMap(function* ([processed, request]) {
           yield transferSigned({ message: locked, fee: Zero as Int<32>, partner }, meta);
           // sets TransferState.transferProcessed
-          yield transferProcessed({ message: processed }, meta);
+          yield transferProcessed({ message: processed, userId: action.payload.userId }, meta);
           if (request) {
             // request initiator's presence, to be able to request secret
             yield matrixPresence.request(undefined, { address: locked.initiator });
             // request secret iff we're the target and receiving is enabled
-            yield transferSecretRequest({ message: request }, meta);
+            yield transferSecretRequest(
+              {
+                message: request,
+                ...searchValidViaAddress(locked.metadata, locked.initiator),
+              },
+              meta,
+            );
           }
         }),
       );
@@ -596,7 +615,10 @@ function receiveTransferUnlocked(
         ) {
           // transferProcessed again will trigger messageSend.request
           return of(
-            transferUnlockProcessed({ message: untime(transferState.unlockProcessed!) }, meta),
+            transferUnlockProcessed(
+              { message: untime(transferState.unlockProcessed!), userId: action.payload.userId },
+              meta,
+            ),
           );
         } else return EMPTY;
       }
@@ -631,7 +653,10 @@ function receiveTransferUnlocked(
           if (!transferState.secret) yield transferSecret({ secret: unlock.secret }, meta);
           yield transferUnlock.success({ message: unlock, partner }, meta);
           // sets TransferState.transferProcessed
-          yield transferUnlockProcessed({ message: processed }, meta);
+          yield transferUnlockProcessed(
+            { message: processed, userId: action.payload.userId },
+            meta,
+          );
           yield transfer.success(
             { balanceProof: getBalanceProofFromEnvelopeMessage(unlock) },
             meta,
@@ -672,7 +697,10 @@ function receiveTransferExpired(
         ) {
           // transferProcessed again will trigger messageSend.request
           return of(
-            transferExpireProcessed({ message: untime(transferState.expiredProcessed!) }, meta),
+            transferExpireProcessed(
+              { message: untime(transferState.expiredProcessed!), userId: action.payload.userId },
+              meta,
+            ),
           );
         } else return EMPTY;
       }
@@ -710,7 +738,10 @@ function receiveTransferExpired(
         mergeMap(function* (processed) {
           yield transferExpire.success({ message: expired, partner }, meta);
           // sets TransferState.transferProcessed
-          yield transferExpireProcessed({ message: processed }, meta);
+          yield transferExpireProcessed(
+            { message: processed, userId: action.payload.userId },
+            meta,
+          );
           yield transfer.failure(
             new RaidenError(ErrorCodes.XFER_EXPIRED, {
               block: locked.lock.expiration.toString(),

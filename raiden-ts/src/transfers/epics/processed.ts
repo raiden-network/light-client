@@ -98,13 +98,10 @@ export function transferProcessedSendEpic(
       ),
     ),
     map(([action, transferState]) =>
-      messageSend.request(
-        { message: action.payload.message },
-        {
-          address: transferState.partner,
-          msgId: action.payload.message.message_identifier.toString(),
-        },
-      ),
+      messageSend.request(action.payload, {
+        address: transferState.partner,
+        msgId: action.payload.message.message_identifier.toString(),
+      }),
     ),
   );
 }

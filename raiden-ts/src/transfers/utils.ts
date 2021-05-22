@@ -24,7 +24,7 @@ import type { RaidenState } from '../state';
 import type { Via } from '../transport/types';
 import { assert } from '../utils';
 import { encode } from '../utils/data';
-import type { Hash, HexString, Secret, UInt } from '../utils/types';
+import type { Address, Hash, HexString, Secret, UInt } from '../utils/types';
 import { decode, isntNil } from '../utils/types';
 import type { transfer } from './actions';
 import type { RaidenTransfer } from './state';
@@ -272,4 +272,21 @@ export function metadataFromPaths(
   const partnerMetadata = validateAddressMetadata(viaPath.address_metadata?.[partner], partner);
   const via: Via = { userId: partnerMetadata?.user_id };
   return { metadata, fee, partner, ...via };
+}
+
+/**
+ * @param metadata - Transfer metadata to search on
+ * @param address - Address metadata to search for
+ * @returns Via object or undefined
+ */
+export function searchValidViaAddress(
+  metadata: Metadata | undefined,
+  address: Address | undefined,
+): Via | undefined {
+  let userId;
+  if (!metadata || !address) return;
+  for (const { address_metadata } of metadata.routes) {
+    if ((userId = validateAddressMetadata(address_metadata?.[address], address)?.user_id))
+      return { userId };
+  }
 }
