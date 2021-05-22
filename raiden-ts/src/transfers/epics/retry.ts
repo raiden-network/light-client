@@ -52,11 +52,13 @@ export function transferRetryMessageEpic(
       const transfer$ = state$.pipe(pluckDistinct('transfers', transferKey(action.meta)));
 
       let to: Address | undefined;
+      let viaUserId: string | undefined;
       let stop$: Observable<any> | undefined;
       switch (action.type) {
         case transferSigned.type:
           if (action.meta.direction === Direction.SENT) {
             to = action.payload.partner;
+            viaUserId = action.payload.userId;
             stop$ = transfer$.pipe(
               filter(
                 (transfer) =>
@@ -115,7 +117,7 @@ export function transferRetryMessageEpic(
 
       return retrySendUntil$(
         messageSend.request(
-          { message: action.payload.message },
+          { message: action.payload.message, userId: viaUserId },
           { address: to, msgId: action.payload.message.message_identifier.toString() },
         ),
         action$,

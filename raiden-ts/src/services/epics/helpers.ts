@@ -4,6 +4,7 @@ import { Zero } from '@ethersproject/constants';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
 import BN from 'bignumber.js';
+import * as t from 'io-ts';
 import type { Observable } from 'rxjs';
 import { defer, from, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
@@ -15,6 +16,7 @@ import { channelAmounts, channelKey } from '../../channels/utils';
 import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
 import { Capabilities } from '../../constants';
+import { AddressMetadata } from '../../messages/types';
 import type { RaidenState } from '../../state';
 import type { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
@@ -22,18 +24,30 @@ import type { Latest, RaidenEpicDeps } from '../../types';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { lastMap, mergeWith, retryWhile } from '../../utils/rx';
-import type { Address, Signature, Signed } from '../../utils/types';
-import { decode, Int, UInt } from '../../utils/types';
+import type { Signature, Signed } from '../../utils/types';
+import { Address, decode, Int, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
 import type { IOU, Paths, PFS } from '../types';
-import { LastIOUResults, PathResults, PfsMode } from '../types';
+import { LastIOUResults, PfsMode } from '../types';
 import { packIOU, pfsInfo, pfsListInfo, ServiceError, signIOU } from '../utils';
 
-interface Route {
-  iou: Signed<IOU> | undefined;
-  paths?: Paths;
-  error?: ServiceError;
-}
+type Route = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { error: ServiceError });
+
+/**
+ * Codec for PFS API returned data
+ */
+const PathResults = t.type({
+  result: t.array(
+    t.intersection([
+      t.type({
+        path: t.array(Address),
+        estimated_fee: Int(32),
+      }),
+      t.partial({ address_metadata: t.record(t.string, AddressMetadata) }),
+    ]),
+  ),
+});
+type PathResults = t.TypeOf<typeof PathResults>;
 
 /**
  * Returns a ISO string truncated at the integer second resolution
@@ -216,13 +230,13 @@ function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Obser
 function filterPaths(
   state: RaidenState,
   action: pathFind.request,
-  { address, log }: RaidenEpicDeps,
+  { address, log }: Pick<RaidenEpicDeps, 'address' | 'log'>,
   paths: Paths,
 ): Paths {
-  const filteredPaths: Paths = [];
+  const filteredPaths: Mutable<Paths> = [];
   const invalidatedRecipients = new Set<Address>();
 
-  for (const { path, fee } of paths) {
+  for (const { path, fee, ...rest } of paths) {
     const cleanPath = getCleanPath(path, address);
     const recipient = cleanPath[0];
     if (invalidatedRecipients.has(recipient)) continue;
@@ -244,7 +258,7 @@ function filterPaths(
     } else shouldSelectPath = true;
 
     if (shouldSelectPath) {
-      filteredPaths.push({ path: cleanPath, fee });
+      filteredPaths.push({ path: cleanPath, fee, ...rest });
     } else {
       log.warn('Invalidated received route. Reason:', reasonToNotSelect, 'Route:', cleanPath);
       invalidatedRecipients.add(recipient);
@@ -353,23 +367,20 @@ function addFeeSafetyMargin(
   );
 }
 
-function parsePfsResponse(amount: UInt<32>, data: unknown, config: RaidenConfig) {
+function parsePfsResponse(amount: UInt<32>, data: unknown, config: RaidenConfig): Paths {
   // decode results and cap also client-side for pfsMaxPaths
   const results = decode(PathResults, data).result.slice(0, config.pfsMaxPaths);
-  return results.map(({ path, estimated_fee }) => {
-    let fee;
-    if (estimated_fee.lte(0)) fee = estimated_fee;
+  return results.map(({ estimated_fee, ...rest }) => {
     // add fee margins iff estimated_fee is greater than zero
-    else {
-      fee = addFeeSafetyMargin(estimated_fee, amount, config);
-    }
-    return { path, fee } as const;
+    const fee = estimated_fee.lte(0)
+      ? estimated_fee
+      : addFeeSafetyMargin(estimated_fee, amount, config);
+    return { ...rest, fee };
   });
 }
 
 function shouldPersistIou(route: Route): boolean {
-  const { paths, error } = route;
-  return paths !== undefined || isNoRouteFoundError(error);
+  return 'paths' in route || isNoRouteFoundError(route.error);
 }
 
 function getCleanPath(path: readonly Address[], address: Address): readonly Address[] {
@@ -398,7 +409,7 @@ export function getRoute$(
   deps: RaidenEpicDeps,
   { state, config }: Pick<Latest, 'state' | 'config'>,
   targetPresence: matrixPresence.success,
-): Observable<{ paths?: Paths; iou: Signed<IOU> | undefined; error?: ServiceError }> {
+): Observable<Route> {
   validateRouteTarget(action, state, targetPresence);
 
   const { tokenNetwork, target, value } = action.meta;
@@ -438,7 +449,7 @@ export function validateRoute$(
   route: Route,
 ): Observable<pathFind.success | pathFind.failure | iouPersist | iouClear> {
   const { tokenNetwork } = action.meta;
-  const { iou, paths, error } = route;
+  const { iou } = route;
 
   return from(
     // looks like mergeMap with generator doesn't handle exceptions correctly
@@ -455,7 +466,8 @@ export function validateRoute$(
         }
       }
 
-      if (error) {
+      if ('error' in route) {
+        const { error } = route;
         if (isNoRouteFoundError(error)) {
           throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES);
         } else {
@@ -466,7 +478,8 @@ export function validateRoute$(
         }
       }
 
-      const filteredPaths = paths ? filterPaths(state, action, deps, paths) : [];
+      const { paths } = route;
+      const filteredPaths = filterPaths(state, action, deps, paths);
 
       if (filteredPaths.length) {
         yield pathFind.success({ paths: filteredPaths }, action.meta);
