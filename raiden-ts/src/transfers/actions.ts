@@ -87,7 +87,7 @@ export interface transferSigned extends ActionType<typeof transferSigned> {}
 /** Partner acknowledge they received and processed our LockedTransfer */
 export const transferProcessed = createAction(
   'transfer/processed',
-  t.type({ message: Signed(Processed) }),
+  t.intersection([t.type({ message: Signed(Processed) }), Via]),
   TransferId,
 );
 export interface transferProcessed extends ActionType<typeof transferProcessed> {}
@@ -124,7 +124,7 @@ export namespace transferSecretRegister {
 /** A valid SecretRequest received from target */
 export const transferSecretRequest = createAction(
   'transfer/secret/request',
-  t.type({ message: Signed(SecretRequest) }),
+  t.intersection([t.type({ message: Signed(SecretRequest) }), Via]),
   TransferId,
 );
 export interface transferSecretRequest extends ActionType<typeof transferSecretRequest> {}
@@ -132,7 +132,7 @@ export interface transferSecretRequest extends ActionType<typeof transferSecretR
 /** A SecretReveal sent to target */
 export const transferSecretReveal = createAction(
   'transfer/secret/reveal',
-  t.type({ message: Signed(SecretReveal) }),
+  t.intersection([t.type({ message: Signed(SecretReveal) }), Via]),
   TransferId,
 );
 export interface transferSecretReveal extends ActionType<typeof transferSecretReveal> {}
@@ -142,8 +142,8 @@ export const transferUnlock = createAsyncAction(
   'transfer/unlock/request',
   'transfer/unlock/success',
   'transfer/unlock/failure',
-  undefined,
-  t.type({ message: Signed(Unlock), partner: Address }),
+  t.union([t.undefined, Via]),
+  t.intersection([t.type({ message: Signed(Unlock), partner: Address }), Via]),
 );
 
 export namespace transferUnlock {
@@ -155,7 +155,7 @@ export namespace transferUnlock {
 /** Partner acknowledge they received and processed our Unlock */
 export const transferUnlockProcessed = createAction(
   'transfer/unlock/processed',
-  t.type({ message: Signed(Processed) }),
+  t.intersection([t.type({ message: Signed(Processed) }), Via]),
   TransferId,
 );
 export interface transferUnlockProcessed extends ActionType<typeof transferUnlockProcessed> {}
@@ -185,7 +185,7 @@ export namespace transferExpire {
 /** Partner acknowledge they received and processed our LockExpired */
 export const transferExpireProcessed = createAction(
   'transfer/expire/processed',
-  t.type({ message: Signed(Processed) }),
+  t.intersection([t.type({ message: Signed(Processed) }), Via]),
   TransferId,
 );
 export interface transferExpireProcessed extends ActionType<typeof transferExpireProcessed> {}

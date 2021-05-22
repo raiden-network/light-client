@@ -75,6 +75,7 @@ export function transferRetryMessageEpic(
         case transferUnlock.success.type:
           if (action.meta.direction === Direction.SENT) {
             to = action.payload.partner;
+            viaUserId = action.payload.userId;
             stop$ = transfer$.pipe(
               filter((transfer) => !!(transfer.unlockProcessed || transfer.channelClosed)),
             );
@@ -91,6 +92,7 @@ export function transferRetryMessageEpic(
         case transferSecretRequest.type:
           if (action.meta.direction === Direction.RECEIVED && transfer) {
             to = transfer.transfer.initiator;
+            viaUserId = action.payload.userId;
             stop$ = combineLatest([state$, transfer$]).pipe(
               filter(
                 ([{ blockNumber }, transfer]) =>
@@ -106,6 +108,7 @@ export function transferRetryMessageEpic(
         case transferSecretReveal.type:
           if (action.meta.direction === Direction.RECEIVED && transfer) {
             to = transfer.partner;
+            viaUserId = action.payload.userId;
             stop$ = transfer$.pipe(
               filter((transfer) => !!(transfer.unlock || transfer.channelClosed)),
             );

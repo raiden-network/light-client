@@ -42,7 +42,7 @@ import {
   transferUnlock,
 } from '../actions';
 import { Direction } from '../state';
-import { getSecrethash, makeMessageId, transferKey } from '../utils';
+import { getSecrethash, makeMessageId, searchValidViaAddress, transferKey } from '../utils';
 import { dispatchAndWait$ } from './utils';
 
 /**
@@ -82,7 +82,7 @@ export function transferSecretRequestedEpic(
         return;
       }
       yield transferSecretRequest(
-        { message },
+        { message, userId: action.payload.userId },
         { secrethash: message.secrethash, direction: Direction.SENT },
       );
     }),
@@ -143,7 +143,7 @@ const secretReveal$ = (
         mergeMap(function* (message) {
           yield transferSecretReveal({ message }, action.meta);
           yield messageSend.request(
-            { message },
+            { message, userId: action.payload.userId },
             { address: target, msgId: message.message_identifier.toString() },
           );
         }),
@@ -225,8 +225,11 @@ export function transferSecretRevealedEpic(
           !sent.channelClosed
           // accepts secretReveal/unlock request even if registered on-chain
         ) {
+          let viaPayload: transferUnlock.request['payload'];
+          // unlock _through_ sender iff message is signed
+          if ('signature' in message) viaPayload = { userId: action.payload.userId };
           // request unlock to be composed, signed & sent to partner
-          yield transferUnlock.request(undefined, meta);
+          yield transferUnlock.request(viaPayload, meta);
         }
       }
       // avoid unlocking received transfers if receiving is disabled
@@ -270,19 +273,27 @@ export function transferRequestUnlockEpic(
         first(),
         filter(({ transfers }) => transferKey(action.meta) in transfers),
         mergeMap(({ transfers }) => {
-          const cached = transfers[transferKey(action.meta)]?.secretReveal;
+          const transferState = transfers[transferKey(action.meta)]!;
+          const cached = transferState.secretReveal;
+          let signed$;
           if (cached) {
-            return of(untime(cached));
+            signed$ = of(untime(cached));
           } else {
             const message: SecretReveal = {
               type: MessageType.SECRET_REVEAL,
               message_identifier: makeMessageId(),
               secret: action.payload.secret,
             };
-            return signMessage(signer, message, { log });
+            signed$ = from(signMessage(signer, message, { log }));
           }
+          const via = searchValidViaAddress(
+            transferState.transfer.metadata,
+            transferState.partner,
+          );
+          return signed$.pipe(
+            map((message) => transferSecretReveal({ message, ...via }, action.meta)),
+          );
         }),
-        map((message) => transferSecretReveal({ message }, action.meta)),
         catchError((err) => {
           log.warn('Error trying to sign SecretReveal - ignoring', err, action.meta);
           return EMPTY;
