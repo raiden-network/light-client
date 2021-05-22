@@ -1275,8 +1275,8 @@ describe('Raiden', () => {
           tokenNetwork: tokenNetwork,
           target: partner,
           value: One as UInt<32>,
-          paths: expect.anything(),
           paymentId: lockedTransferMessage.payment_identifier,
+          metadata: expect.anything(),
         }),
         {
           secrethash: lockedTransferMessage.lock.secrethash,
