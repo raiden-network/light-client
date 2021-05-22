@@ -1,10 +1,8 @@
 import * as t from 'io-ts';
 
-import type { matrixPresence } from './actions';
-
-export interface Presences {
-  [address: string]: matrixPresence.success;
-}
+/** Partner through which to send transfer through */
+export const Via = t.partial({ userId: t.string });
+export type Via = t.TypeOf<typeof Via>;
 
 export const CapsPrimitive = t.union([t.string, t.number, t.boolean, t.null], 'CapsPrimitive');
 export type CapsPrimitive = t.TypeOf<typeof CapsPrimitive>;

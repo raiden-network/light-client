@@ -16,7 +16,7 @@ import { encode, jsonParse, jsonStringify } from '../utils/data';
 import type { Address, Hash, HexString } from '../utils/types';
 import { decode, Signature, Signed } from '../utils/types';
 import { messageReceived } from './actions';
-import type { EnvelopeMessage, Metadata } from './types';
+import type { AddressMetadata, EnvelopeMessage, Metadata } from './types';
 import { Message, MessageType } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
@@ -400,4 +400,23 @@ export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | C[
     (Array.isArray(messageCodecs)
       ? messageCodecs.some((c) => c.is(action.payload.message))
       : messageCodecs.is(action.payload.message));
+}
+
+/**
+ * Validates metadata was signed by address
+ *
+ * @param metadata - Peer's metadata
+ * @param address - Peer's address
+ * @param opts - Options
+ * @param opts.log - Logger instance
+ * @returns Metadata iff it's valid and was signed by address
+ */
+export function validateAddressMetadata(
+  metadata: AddressMetadata | undefined,
+  address: Address,
+  { log }: { log: logging.Logger } = { log: logging },
+): AddressMetadata | undefined {
+  if (metadata && verifyMessage(metadata.user_id, metadata.displayname) === address)
+    return metadata;
+  else if (metadata) log?.warn('Invalid address metadata', { address, metadata });
 }

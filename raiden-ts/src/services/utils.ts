@@ -1,6 +1,5 @@
 import type { Signer } from '@ethersproject/abstract-signer';
 import { concat as concatBytes } from '@ethersproject/bytes';
-import { verifyMessage } from '@ethersproject/wallet';
 import * as t from 'io-ts';
 import memoize from 'lodash/memoize';
 import uniqBy from 'lodash/uniqBy';
@@ -11,7 +10,7 @@ import { catchError, first, map, mergeMap, toArray } from 'rxjs/operators';
 
 import type { ServiceRegistry } from '../contracts';
 import { AddressMetadata } from '../messages/types';
-import { MessageTypeId } from '../messages/utils';
+import { MessageTypeId, validateAddressMetadata } from '../messages/utils';
 import type { Caps } from '../transport/types';
 import { parseCaps } from '../transport/utils';
 import type { RaidenEpicDeps } from '../types';
@@ -231,7 +230,7 @@ export function getPresenceFromService$(
     map((json) => {
       try {
         const presence = decode(AddressMetadata, json);
-        assert(verifyMessage(presence.user_id, presence.displayname) === peer, [
+        assert(validateAddressMetadata(presence, peer), [
           'Invalid metadata signature',
           { peer, presence },
         ]);
