@@ -2,6 +2,7 @@
 import * as t from 'io-ts';
 
 import { ServiceC } from '../services/types';
+import { Via } from '../transport/types';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
 import { Address, Signed } from '../utils/types';
@@ -17,7 +18,8 @@ export const messageSend = createAsyncAction(
   'message/send/failure',
   t.intersection([
     t.type({ message: t.union([t.string, Signed(Message)]) }),
-    t.partial({ msgtype: t.string, userId: t.string }),
+    t.partial({ msgtype: t.string }),
+    Via,
   ]),
   t.union([t.undefined, t.type({ via: t.string, tookMs: t.number, retries: t.number })]),
 );
