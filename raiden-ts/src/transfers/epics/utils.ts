@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Observable } from 'rxjs';
-import { merge, of } from 'rxjs';
+import { defer, merge, of } from 'rxjs';
 import { filter, ignoreElements, take } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
@@ -73,10 +73,17 @@ export function retrySendUntil$(
   notifier: Observable<any>,
   delayMs: number | Iterator<number> = 30e3,
 ): Observable<messageSend.request> {
-  return dispatchAndWait$(action$, send, isResponseOf(messageSend, send.meta)).pipe(
-    repeatUntil(notifier, delayMs),
-    completeWith(action$),
-  );
+  let first = true;
+  return defer(() => {
+    if (first) {
+      first = false;
+    } else if (send.payload.userId) {
+      // from 1st retry on, pop payload.userId, to force re-fetch presence/metadata
+      const { userId: _, ...payload } = send.payload;
+      send = { ...send, payload };
+    }
+    return dispatchAndWait$(action$, send, isResponseOf(messageSend, send.meta));
+  }).pipe(repeatUntil(notifier, delayMs), completeWith(action$));
 }
 
 /**
