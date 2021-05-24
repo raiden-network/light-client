@@ -44,15 +44,19 @@ const raidenPFS = {
   url: 'https://pfs-goerli-with-fee.services-test.raiden.network',
 } as RaidenPFS;
 
-const transferRoute = {
+const transferRoute: Route = {
+  key: 0,
+  hops: 1,
   fee: BigNumber.from(100),
   path: [transferToken.address],
-} as Route;
+};
 
-const freeTransferRoute = {
+const freeTransferRoute: Route = {
+  key: 0,
+  hops: 1,
   fee: constants.Zero,
   path: [transferToken.address],
-} as Route;
+};
 
 const $raiden = {
   getAccount: jest.fn(),
