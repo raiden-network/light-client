@@ -331,10 +331,9 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
 
       this.selectedRoute = {
         key: 0,
-        fee: constants.Zero,
         displayFee: '0',
-        path: [...route.path],
         hops: 0,
+        ...route,
       };
 
       this.step = 3;
@@ -368,15 +367,12 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
     }
 
     if (fetchedRoutes) {
-      this.routes = fetchedRoutes.map(
-        ({ path, fee }, index: number) =>
-          ({
-            key: index,
-            hops: path.length - 1,
-            fee,
-            path,
-          } as Route),
-      );
+      this.routes = fetchedRoutes.map(({ path, ...rest }, index: number) => ({
+        key: index,
+        ...rest,
+        hops: path.length - 1,
+        path,
+      }));
 
       // Automatically select cheapest route
       const [route] = this.routes;
@@ -402,7 +398,9 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
       // If we received only one route and it has zero mediation fees,
       // then head straight to the 3rd summary step
       const onlySingleFreeRoute =
-        this.routes.length === 1 && this.selectedRoute && this.selectedRoute.fee.isZero();
+        this.routes.length === 1 &&
+        this.selectedRoute &&
+        BigNumber.from(this.selectedRoute.fee).isZero();
 
       if (onlySingleFreeRoute) {
         setTimeout(() => {
@@ -474,7 +472,6 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
 
   async transfer() {
     const { address, decimals } = this.token;
-    const { path, fee } = this.selectedRoute!;
 
     try {
       this.processingTransfer = true;
@@ -482,7 +479,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
         address,
         this.target,
         BalanceUtils.parse(this.amount, decimals!),
-        [{ path, fee }],
+        [this.selectedRoute!],
         this.paymentId,
       );
 

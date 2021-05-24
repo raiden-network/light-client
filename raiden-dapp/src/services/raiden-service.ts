@@ -570,12 +570,7 @@ export default class RaidenService {
     await this.raiden.waitTransfer(key);
   }
 
-  async findRoutes(
-    token: string,
-    target: string,
-    amount: BigNumber,
-    raidenPFS?: RaidenPFS,
-  ): Promise<RaidenPaths> {
+  async findRoutes(token: string, target: string, amount: BigNumber, raidenPFS?: RaidenPFS) {
     return await this.raiden.findRoutes(token, target, amount, {
       pfs: raidenPFS,
     });
