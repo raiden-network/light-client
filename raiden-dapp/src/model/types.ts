@@ -1,5 +1,7 @@
 import type { BigNumber, BigNumberish, providers } from 'ethers';
 
+import type { RaidenPaths } from 'raiden-ts';
+
 export interface Token {
   readonly address: string;
   readonly decimals?: number;
@@ -48,12 +50,11 @@ export interface StepDescription {
   readonly description: string;
 }
 
-export interface Route {
+type RaidenPath = RaidenPaths[number];
+export interface Route extends RaidenPath {
   readonly key: number;
   readonly hops: number;
-  readonly path: string[];
-  readonly fee: BigNumber;
-  readonly displayFee: string;
+  readonly displayFee?: string;
 }
 
 export interface Transfer {
