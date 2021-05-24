@@ -32,9 +32,9 @@ function parseFeeOption(args?: readonly string[]) {
   return res;
 }
 
-function parseArguments() {
+async function parseArguments() {
   const argv = yargs(process.argv.slice(2));
-  return argv
+  return await argv
     .env('RAIDEN')
     .usage('Usage: $0 [options]')
     .options({
@@ -282,8 +282,10 @@ function registerShutdownHooks(this: Cli): void {
   });
 }
 
+type Await<T> = T extends Promise<infer U> ? U : T;
+
 function createRaidenConfig(
-  argv: ReturnType<typeof parseArguments>,
+  argv: Await<ReturnType<typeof parseArguments>>,
 ): Partial<Decodable<RaidenConfig>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let config: Partial<Decodable<RaidenConfig>> = DEFAULT_RAIDEN_CONFIG as any;
@@ -364,7 +366,7 @@ async function checkDisclaimer(accepted?: boolean): Promise<void> {
 }
 
 async function main() {
-  const argv = parseArguments();
+  const argv = await parseArguments();
   await checkDisclaimer(argv.acceptDisclaimer);
   const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
   setupLoglevel(argv.logFile);
