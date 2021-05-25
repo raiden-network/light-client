@@ -383,12 +383,8 @@ function shouldPersistIou(route: Route): boolean {
   return 'paths' in route || isNoRouteFoundError(route.error);
 }
 
-function getCleanPath(path: readonly Address[], address: Address): readonly Address[] {
-  if (path[0] === address) {
-    return path.slice(1);
-  } else {
-    return path;
-  }
+function getCleanPath(path: readonly Address[], address: Address) {
+  return path.slice(path.indexOf(address) + 1);
 }
 
 function isNoRouteFoundError(error: ServiceError | undefined): boolean {
