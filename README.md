@@ -161,23 +161,23 @@ For a more in depth user guide, see the [Light Client documentation](https://lig
 
 ### Prerequisites
 
-For these step-by-step instructions MetaMask will be used as injected provider. Make sure MetaMask is installed on your browser. the plugin can be [downloaded from their website](https://metamask.io/). Alternatively WalletConnect can be used for connecting with [supported wallets](https://registry.walletconnect.org/wallets), note that this is an experimental feature limited to how well any of the external wallets integrate with WalletConnect.
+For these step-by-step instructions the MetaMask browser extension will be used. Make sure MetaMask is installed on your browser. the plugin can be [downloaded from their website](https://metamask.io/). Alternatively WalletConnect can be used for connecting with [supported wallets](https://registry.walletconnect.org/wallets), note that this is an experimental feature limited to how well any of the external wallets integrate with WalletConnect.
 
 An ETH balance is also needed. For mainnet you'll have to purchase ETH, for the Goerli testnet you can acquire some test ETH by:  
 
-  1. By visiting a Goerli faucet either at [https://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/).
+  1. visiting a Goerli faucet either at [https://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/).
   2. Follow the instructions on respective faucet on how to acquire the ETH.
 
 ### Making a First Transfer on Mainnet
 
 1. **Connect to the dApp**  
    
-   - **Connect using _*Injected Provider*_**  
+   - **Connect using the _*Browser Extension*_**  
 
      1. Visit the [Light Client](https://lightclient.raiden.network).
      2. Make sure **Ethereum Mainnet** is selected in MetaMask.
-     3. Click on **Injected Provider**.
-     4. Click on **Link Provider** and sign the messages on MetaMask to establish a connection.
+     3. Click on **Browser Extension**.
+     4. Click on **Connect** and sign the messages on MetaMask to establish a connection.
 
    - **Connect using _*WalletConnect*_**  
 
@@ -185,7 +185,7 @@ An ETH balance is also needed. For mainnet you'll have to purchase ETH, for the 
      2. Click on **WalletConnect**.
      3. By default a bridge server provided by WalletConnect is used. It is however possible to use an alternative bridge server.
      4. Choose to provide either an Infura ID or a RPC endpoint.
-     5. Click on **Link Wallet**.
+     5. Click on **Connect**.
      6. Scan the QR code using a wallet of your choice. Make sure **mainnet** is used and sign all necessary signatures.
 
 2. **Select a Hub and Open a Channel**  
@@ -212,18 +212,18 @@ An ETH balance is also needed. For mainnet you'll have to purchase ETH, for the 
 
    When redirected to the Light Client choose to connect by using either:
 
-   - **Injected Provider**  
+   - **Browser Extension**  
 
      1. Make sure **Goerli Test Network** is selected in MetaMask.
-     2. Click on **Injected Provider**.
-     3. Click on **Link Provider** and sign the messages on MetaMask to establish a connection.
+     2. Click on **Browser Extension**.
+     3. Click on **Connect** and sign the messages on MetaMask to establish a connection.
 
    - **WalletConnect**  
 
      1. Click on **WalletConnect**.
      2. By default the bridge server provided by WalletConnect is used. It is however possible to use an alternative bridge server.
      3. Choose to provide either an Infura ID or a RPC endpoint.
-     4. Click on **Link Wallet**.
+     4. Click on **Connect**.
      6. Scan the QR code using a wallet of your choice. Make sure **Goerli Test Network** is used and sign all necessary signatures.
 
 2. **Select a Hub and Open a Channel**
