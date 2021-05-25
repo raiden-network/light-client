@@ -5,6 +5,7 @@ import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
 import BN from 'bignumber.js';
 import * as t from 'io-ts';
+import isEmpty from 'lodash/isEmpty';
 import type { Observable } from 'rxjs';
 import { defer, from, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
@@ -19,7 +20,7 @@ import { Capabilities } from '../../constants';
 import { AddressMetadata } from '../../messages/types';
 import type { RaidenState } from '../../state';
 import type { matrixPresence } from '../../transport/actions';
-import { getCap } from '../../transport/utils';
+import { getCap, stringifyCaps } from '../../transport/utils';
 import type { Latest, RaidenEpicDeps } from '../../types';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
@@ -420,8 +421,22 @@ export function getRoute$(
       value,
     ) === true
   ) {
+    const addressMetadata: { [k: string]: AddressMetadata } = {};
+    if (state.transport.setup) {
+      addressMetadata[deps.address] = {
+        user_id: state.transport.setup.userId,
+        displayname: state.transport.setup.displayName,
+        capabilities: stringifyCaps(config.caps ?? {}),
+      };
+    }
     return of({
-      paths: [{ path: [deps.address, target], fee: Zero as Int<32> }],
+      paths: [
+        {
+          path: [deps.address, target],
+          fee: Zero as Int<32>,
+          ...(!isEmpty(addressMetadata) ? { address_metadata: addressMetadata } : {}),
+        },
+      ],
       iou: undefined,
     });
   } else if (pfsIsDisabled(action, config)) {
