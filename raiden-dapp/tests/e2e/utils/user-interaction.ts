@@ -16,6 +16,7 @@ export function acceptDisclaimer() {
 export function connectToDApp() {
   // cypress selectors: raiden-dapp/src/views/Home.vue
   cy.get('[data-cy=home]').should('exist');
+  cy.get('[data-cy=connection-manager__provider-dialog-button]').should('exist');
   cy.get('[data-cy=connection-manager__provider-dialog-button]').click();
   cy.get('[data-cy=direct-rpc-provider]').should('exist');
   cy.get('[data-cy=direct-rpc-provider__options__rpc-url]')
@@ -77,15 +78,6 @@ export function closeNotificationPanel() {
   cy.get('[data-cy=notification_panel_content_close_button]').should('exist');
   cy.get('[data-cy=notification_panel_content_close_button]').click();
   cy.getWithCustomTimeout('[data-cy=notification_panel]').should('not.exist');
-}
-
-/**
- *
- */
-export function dismissNotificationSnackbar() {
-  cy.get('[data-cy=notification-snackbar__dismiss-button]').should('exist');
-  cy.get('[data-cy=notification-snackbar__dismiss-button]').click();
-  cy.getWithCustomTimeout('[data-cy=notification-snackbar__dismiss-button]').should('not.exist');
 }
 
 /**
