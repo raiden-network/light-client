@@ -4,14 +4,14 @@ To get familiarized with the dApp, a brief introduction to some of the screens a
 
 There are three ways to connect to the dApp:
 
-- Using an injected provider
+- Using a browser extension
 - Using WalletConnect
-- Using a direct RPC provider
+- Using a private key
 
-### Connect using Injected Provider
+### Connect using a browser extension
 
 1. Make sure a Web3 provider is available in the browser, e.g. MetaMask.
-2. Click on **Injected Provider**.
+2. Click on **Browser Extension**.
 3. Click on **Connect** and sign the messages necessary for establishing a connection.
 
 ### Connect using WalletConnect
@@ -24,11 +24,11 @@ WalletConnect can be used for connecting with [supported wallets](https://regist
 4. Click on **Connect**.
 5. Scan the QR code using a wallet of your choice and make sure to sign the messages necessary for establishing a connection.
 
-### Connect using Direct RPC Provider
+### Connect using a private key
 
 Connect directly to an Ethereum node and use your accounts private key. This approach is **NOT RECOMMENDED** for security reasons since the private key gets stored as plain text in the browsers storage and in memory.
 
-1. Click on **Direct RPC Provider**.
+1. Click on **Private Key**.
 2. Provide an RPC endpoint.
 3. Provide the private key of an Ethereum account.
 4. Click on **Connect**.
