@@ -12,16 +12,14 @@
         class="token-overlay__connect-new"
         @click="navigateToTokenSelect()"
       >
-        <v-col cols="2">
-          <v-list-item-avatar>
-            <v-btn class="mx-2" fab dark small color="primary">
-              <v-icon dark large>mdi-plus</v-icon>
-            </v-btn>
-          </v-list-item-avatar>
-        </v-col>
-        <v-col cols="10" align-self="center" class="font-weight-bold">
+        <v-list-item-avatar>
+          <v-btn fab color="primary">
+            <v-icon>mdi-plus</v-icon>
+          </v-btn>
+        </v-list-item-avatar>
+        <v-list-item-content class="font-weight-bold">
           {{ $t('tokens.connect-new') }}
-        </v-col>
+        </v-list-item-content>
       </v-list-item>
     </v-list>
 
