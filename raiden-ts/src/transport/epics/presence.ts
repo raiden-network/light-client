@@ -65,7 +65,6 @@ function searchAddressPresence$(
             ),
           ),
         ),
-        // TODO: validate signature coming from service, once displayName is sent
         first(),
       );
     }),

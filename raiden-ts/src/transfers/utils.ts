@@ -4,6 +4,7 @@ import { HashZero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { randomBytes } from '@ethersproject/random';
 import { sha256 } from '@ethersproject/sha2';
+import isEmpty from 'lodash/isEmpty';
 import type { Observable } from 'rxjs';
 import { defer, from, of } from 'rxjs';
 import { filter, first, map, mergeMap } from 'rxjs/operators';
@@ -264,7 +265,11 @@ export async function getTransfer(
 export function metadataFromPaths(
   paths: Paths,
 ): Pick<transfer.request['payload'], 'metadata' | 'fee' | 'partner' | keyof Via> {
-  const routes = paths.map(({ path: route, fee: _, ...rest }) => ({ route, ...rest }));
+  // paths may come with undesired parameters, so map&filter here before passing to metadata
+  const routes = paths.map(({ path: route, fee: _, address_metadata }) => ({
+    route,
+    ...(address_metadata && !isEmpty(address_metadata) ? { address_metadata } : {}),
+  }));
   const metadata: Metadata = { routes };
   const viaPath = paths[0]; // assume incoming Paths is clean and best path is first
   const partner = viaPath.path[0];
