@@ -15,30 +15,13 @@
               <address-display :address="channel.partner" />
             </v-list-item-title>
             <v-list-item-subtitle>
-              <span class="channel-list__channels__content__subtitle-desktop">
+              <span>
                 {{
-                  $t('channel-list.channel.capacity-and-state', {
+                  $t('channel-list.channel.capacity', {
                     value: displayFormat(channel.capacity, token.decimals || 0),
-                    state: capitalizeFirst(channel.state),
                   })
                 }}
               </span>
-              <div class="channel-list__channels__content__subtitle-mobile">
-                <span>
-                  {{
-                    $t('channel-list.channel.capacity', {
-                      value: displayFormat(channel.capacity, token.decimals || 0),
-                    })
-                  }}
-                </span>
-                <span>
-                  {{
-                    $t('channel-list.channel.state', {
-                      state: capitalizeFirst(channel.state),
-                    })
-                  }}
-                </span>
-              </div>
             </v-list-item-subtitle>
           </v-list-item-content>
           <div class="channel-list__capacity-buttons">
@@ -146,23 +129,6 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 .channel-list {
   &__channels {
     background-color: transparent !important;
-
-    &__content {
-      &__subtitle-desktop {
-        @include respond-to(handhelds) {
-          display: none;
-        }
-      }
-
-      &__subtitle-mobile {
-        display: none;
-        @include respond-to(handhelds) {
-          display: flex;
-          flex-direction: column;
-          font-size: 12px;
-        }
-      }
-    }
   }
 
   &__capacity-buttons {
@@ -170,14 +136,18 @@ export default class ChannelList extends Mixins(BlockieMixin) {
 
     &__deposit {
       margin-right: 6px;
+
       @include respond-to(handhelds) {
+        margin-right: 3px;
         width: 26px;
       }
     }
 
     &__withdrawal {
       margin-left: 6px;
+
       @include respond-to(handhelds) {
+        margin-left: 3px;
         width: 26px;
       }
     }

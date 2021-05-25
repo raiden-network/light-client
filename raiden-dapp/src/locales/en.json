@@ -358,9 +358,7 @@
   "channel-list": {
     "channel": {
       "blockie_alt": "Partner address blockie",
-      "capacity-and-state": "Capacity: {value} | State: {state}",
       "capacity": "Capacity: {value}",
-      "state": "State: {state}",
       "close_dialog": {
         "title": "Close Channel",
         "description": "Are you sure you want to close this channel? This action cannot be undone."
