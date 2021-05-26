@@ -1,20 +1,22 @@
 <template>
   <div class="notification-description">
     <p v-for="(phrase, index) in splitDescription" :key="index">
-      <template v-if="isAddress(phrase)">
-        <address-display class="notification-description__address" :address="phrase" />
-      </template>
-      <template v-else>
-        {{ phrase }}
-      </template>
+      <address-display
+        v-if="isAddress(phrase)"
+        class="notification-description__address"
+        :address="phrase"
+      />
+      <span v-else>{{ phrase }}</span>
     </p>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
+import { Component, Prop, Vue } from 'vue-property-decorator';
 
 import AddressDisplay from '@/components/AddressDisplay.vue';
+
+const ADDRESS_REGULAR_EXPRESSION = /(0x.[a-fA-F0-9]{1,40})/g;
 
 @Component({
   components: {
@@ -22,19 +24,15 @@ import AddressDisplay from '@/components/AddressDisplay.vue';
   },
 })
 export default class NotificationDescriptionDisplay extends Vue {
-  addressRegEx = /(0x.[a-fA-F0-9]{1,40})/g;
-  splitDescription: string[] = [];
-
   @Prop({ required: true })
   description!: string;
 
-  @Watch('description', { immediate: true })
-  updateSplitDescription(newDescription: string): void {
-    this.splitDescription = newDescription.split(this.addressRegEx);
+  get splitDescription(): string[] {
+    return this.description.split(ADDRESS_REGULAR_EXPRESSION);
   }
 
   isAddress(address: string): boolean {
-    return this.addressRegEx.test(address);
+    return ADDRESS_REGULAR_EXPRESSION.test(address);
   }
 }
 </script>
@@ -45,7 +43,9 @@ export default class NotificationDescriptionDisplay extends Vue {
 .notification-description {
   color: $color-white;
   display: flex;
+  flex-wrap: wrap;
   font-size: 14px;
+  white-space: pre-wrap;
 
   > p {
     margin: 0;
@@ -54,7 +54,7 @@ export default class NotificationDescriptionDisplay extends Vue {
   &__address {
     color: $color-white;
     font-size: 14px;
-    padding: 1px 4px 0 4px;
+    padding-top: 1px;
   }
 }
 </style>
