@@ -60,6 +60,9 @@ async function createRaiden(account: number | string | Signer): Promise<Raiden> 
       confirmationBlocks: 5,
       autoSettle: false, // required to use `settleChannel` later
       autoUDCWithdraw: false, // required to use `withdrawFromUDC` later
+      caps: {
+        [Capabilities.RECEIVE]: 1,
+      },
     },
   );
 }
@@ -122,7 +125,7 @@ describe('e2e', () => {
    * - Deposit and withdrawal from the UDC, including token minting
    * - Opening of channels
    * - Deposit and withdrawal of channels with PC and LC partners
-   * - Direct and mediatied transfers using PC and LC implementations
+   * - Direct and mediated transfers using PC and LC implementations
    * - Channel closing and settlement
    *
    * The topology of the nodes is the following:
@@ -266,7 +269,7 @@ describe('e2e', () => {
     /*
      * Send mediated payment with LC as mediator
      *
-     * For this we need to enable medition in LC2
+     * For this we need to enable mediation in LC2
      */
     raiden2.updateConfig({
       caps: {
