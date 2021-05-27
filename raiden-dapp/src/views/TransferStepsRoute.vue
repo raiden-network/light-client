@@ -1,148 +1,97 @@
 <template>
-  <v-container class="transfer-steps__container">
-    <v-row>
-      <v-stepper v-model="step" alt-labels class="transfer-steps fill-height">
-        <v-stepper-header class="transfer-steps__header">
-          <v-stepper-step
-            :complete="step > 1"
-            :class="{ active: step >= 1, skipped: pfsSelectionSkipped }"
-            :complete-icon="pfsSelectionSkipped ? 'mdi-redo' : 'mdi-check'"
-            step
-            class="transfer-steps__step"
-          >
-            {{ $t('transfer.steps.request-route.title') }}
-          </v-stepper-step>
+  <div class="transfer-steps">
+    <v-stepper
+      v-model="step"
+      max-width="450px"
+      alt-labels
+      class="transfer-steps__stepper"
+      color="primary"
+    >
+      <v-stepper-header>
+        <stepper-step
+          :title="$t('transfer.steps.request-route.title')"
+          :complete="requestRouteStepComplete"
+          :active="requestRouteStepActive"
+          :skipped="requestRouteStepSkipped"
+        />
 
-          <v-divider
-            :class="{
-              active: step >= 2,
-              skipped: pfsSelectionSkipped || routeSelectionSkipped,
-            }"
-            class="transfer-steps__divider"
+        <stepper-divider :active="selectRouteStepActive" :skipped="selectRouteStepSkipped" />
+
+        <stepper-step
+          :title="$t('transfer.steps.select-route.title')"
+          :complete="selectRouteStepComplete"
+          :active="selectRouteStepActive"
+          :skipped="selectRouteStepSkipped"
+        />
+
+        <stepper-divider :active="confirmTransferStepActive" :skipped="routeSelectionSkipped" />
+
+        <stepper-step
+          :title="$t('transfer.steps.confirm-transfer.title')"
+          :complete="confirmTransferStepComplete"
+          :active="confirmTransferStepActive"
+        />
+      </v-stepper-header>
+
+      <v-stepper-items>
+        <v-stepper-content step="1">
+          <span class="udc-balance__amount" :class="{ 'low-balance': balanceIsLow }">
+            <amount-display exact-amount :amount="udcCapacity" :token="udcToken" />
+          </span>
+          <v-tooltip bottom>
+            <template #activator="{ on }">
+              <v-btn
+                text
+                icon
+                x-large
+                class="udc-balance__deposit"
+                @click="showUdcDeposit = true"
+                v-on="on"
+              >
+                <v-icon color="primary">play_for_work</v-icon>
+              </v-btn>
+            </template>
+          </v-tooltip>
+
+          <span
+            v-if="selectedPfs !== null && !udcCapacity.gte(selectedPfs.price)"
+            class="udc-balance__description low-balance"
+          >
+            {{
+              $t('transfer.steps.request-route.udc-description-low-balance', {
+                token: udcToken.symbol,
+              })
+            }}
+          </span>
+          <span v-else class="udc-balance__description">
+            {{ $t('transfer.steps.request-route.udc-description') }}
+          </span>
+
+          <pathfinding-services v-if="step === 1" @select="setPFS($event)" />
+        </v-stepper-content>
+
+        <v-stepper-content step="2">
+          <find-routes
+            v-if="step === 2"
+            :token="token"
+            :routes="routes"
+            :pfs-url="selectedPfs.url"
+            @select="setRoute($event)"
           />
+        </v-stepper-content>
 
-          <v-stepper-step
-            :complete="step > 2"
-            :class="{
-              active: step >= 2,
-              skipped: pfsSelectionSkipped || routeSelectionSkipped,
-            }"
-            :complete-icon="routeSelectionSkipped ? 'mdi-redo' : 'mdi-check'"
-            step
-            class="transfer-steps__step"
-          >
-            {{ $t('transfer.steps.select-route.title') }}
-          </v-stepper-step>
+        <v-stepper-content step="3">
+          <h1>{{ $t('transfer.steps.summary.headline') }}</h1>
+          <transfer-summary :transfer="transferSummary" />
+        </v-stepper-content>
+      </v-stepper-items>
+    </v-stepper>
 
-          <v-divider
-            :class="{ active: step >= 3, skipped: routeSelectionSkipped }"
-            class="transfer-steps__divider"
-          />
-
-          <v-stepper-step
-            :complete="step > 3"
-            :class="{ active: step >= 3 }"
-            step
-            class="transfer-steps__step"
-          >
-            {{ $t('transfer.steps.confirm-transfer.title') }}
-          </v-stepper-step>
-        </v-stepper-header>
-
-        <v-stepper-items>
-          <v-stepper-content step="1">
-            <v-row
-              justify="center"
-              align-content="center"
-              no-gutters
-              class="udc-balance__container"
-            >
-              <v-col cols="10">
-                <span class="udc-balance__amount" :class="{ 'low-balance': balanceIsLow }">
-                  <amount-display exact-amount :amount="udcCapacity" :token="udcToken" />
-                </span>
-                <v-tooltip bottom>
-                  <template #activator="{ on }">
-                    <v-btn
-                      text
-                      icon
-                      x-large
-                      class="udc-balance__deposit"
-                      @click="showUdcDeposit = true"
-                      v-on="on"
-                    >
-                      <v-icon color="primary">play_for_work</v-icon>
-                    </v-btn>
-                  </template>
-                  <span>
-                    {{
-                      $t(
-                        mainnet
-                          ? 'transfer.steps.request-route.tooltip-main'
-                          : 'transfer.steps.request-route.tooltip',
-                        {
-                          token: udcToken.symbol,
-                        },
-                      )
-                    }}
-                  </span>
-                </v-tooltip>
-                <udc-deposit-dialog
-                  :visible="showUdcDeposit"
-                  @cancel="showUdcDeposit = false"
-                  @done="mintDone()"
-                />
-              </v-col>
-            </v-row>
-            <v-row justify="center" no-gutters class="udc-balance__container">
-              <v-col cols="10">
-                <span
-                  v-if="selectedPfs !== null && !udcCapacity.gte(selectedPfs.price)"
-                  class="udc-balance__description low-balance"
-                >
-                  {{
-                    $t('transfer.steps.request-route.udc-description-low-balance', {
-                      token: udcToken.symbol,
-                    })
-                  }}
-                </span>
-                <span v-else class="udc-balance__description">
-                  {{ $t('transfer.steps.request-route.udc-description') }}
-                </span>
-              </v-col>
-            </v-row>
-            <v-row justify="center" class="transfer-steps__step__content">
-              <v-col cols="12" sm="10">
-                <pathfinding-services v-if="step === 1" @select="setPFS($event)" />
-              </v-col>
-            </v-row>
-          </v-stepper-content>
-
-          <v-stepper-content step="2">
-            <v-row justify="center" class="transfer-steps__step__content">
-              <v-col cols="12" sm="10">
-                <find-routes
-                  v-if="step === 2"
-                  :token="token"
-                  :routes="routes"
-                  :pfs-url="selectedPfs.url"
-                  @select="setRoute($event)"
-                />
-              </v-col>
-            </v-row>
-          </v-stepper-content>
-
-          <v-stepper-content step="3">
-            <v-row v-if="step === 3 && !processingTransfer" justify="center">
-              <v-col cols="12" sm="10">
-                <h1>{{ $t('transfer.steps.summary.headline') }}</h1>
-                <transfer-summary :transfer="transferSummary" />
-              </v-col>
-            </v-row>
-          </v-stepper-content>
-        </v-stepper-items>
-      </v-stepper>
-    </v-row>
+    <udc-deposit-dialog
+      :visible="showUdcDeposit"
+      @cancel="showUdcDeposit = false"
+      @done="mintDone()"
+    />
 
     <pfs-fees-dialog
       :visible="pfsFeesConfirmed && step === 1"
@@ -174,7 +123,7 @@
       arrow
       @click="handleStep()"
     />
-  </v-container>
+  </div>
 </template>
 
 <script lang="ts">
@@ -191,6 +140,8 @@ import PfsFeesDialog from '@/components/dialogs/PfsFeesDialog.vue';
 import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
 import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import Checkmark from '@/components/icons/Checkmark.vue';
+import StepperDivider from '@/components/stepper/StepperDivider.vue';
+import StepperStep from '@/components/stepper/StepperStep.vue';
 import FindRoutes from '@/components/transfer/FindRoutes.vue';
 import PathfindingServices from '@/components/transfer/PathfindingServices.vue';
 import TransferSummary from '@/components/transfer/TransferSummary.vue';
@@ -215,6 +166,8 @@ import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
     TransferSummary,
     PfsFeesDialog,
     AmountDisplay,
+    StepperStep,
+    StepperDivider,
   },
   computed: {
     ...mapState(['tokens']),
@@ -247,6 +200,38 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
 
   mainnet!: boolean;
 
+  get requestRouteStepComplete(): boolean {
+    return this.step > 1;
+  }
+
+  get requestRouteStepActive(): boolean {
+    return this.step >= 1;
+  }
+
+  get requestRouteStepSkipped(): boolean {
+    return this.pfsSelectionSkipped;
+  }
+
+  get selectRouteStepComplete(): boolean {
+    return this.step > 2;
+  }
+
+  get selectRouteStepActive(): boolean {
+    return this.step >= 2;
+  }
+
+  get selectRouteStepSkipped(): boolean {
+    return this.pfsSelectionSkipped || this.routeSelectionSkipped;
+  }
+
+  get confirmTransferStepComplete(): boolean {
+    return this.step > 3;
+  }
+
+  get confirmTransferStepActive(): boolean {
+    return this.step >= 3;
+  }
+
   get balanceIsLow(): boolean {
     return this.selectedPfs !== null && !this.udcCapacity.gte(this.selectedPfs.price);
   }
@@ -256,7 +241,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
       pfsAddress: this.selectedPfs?.url as string,
       serviceFee: this.selectedPfs?.price as BigNumber,
       serviceToken: this.udcToken,
-      mediationFee: this.selectedRoute?.fee as BigNumber,
+      mediationFee: this.selectedRouteFees,
       target: this.target,
       hops: this.selectedRoute?.hops,
       transferAmount: BalanceUtils.parse(this.amount, this.token.decimals!),
@@ -277,9 +262,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
 
     if (this.step === 2 && this.selectedRoute) {
       return this.$t(amountLocalized, {
-        amount: this.selectedRoute?.fee
-          ? Filter.displayFormat(this.selectedRoute.fee as BigNumber, this.token.decimals)
-          : '',
+        amount: Filter.displayFormat(this.selectedRouteFees, this.token.decimals),
         symbol: this.token.symbol,
       });
     }
@@ -400,7 +383,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
       const onlySingleFreeRoute =
         this.routes.length === 1 &&
         this.selectedRoute &&
-        BigNumber.from(this.selectedRoute.fee).isZero();
+        BigNumber.from(this.selectedRouteFees).isZero();
 
       if (onlySingleFreeRoute) {
         setTimeout(() => {
@@ -450,7 +433,11 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   get totalAmount(): BigNumber {
     const { decimals } = this.token;
     const transfer: BigNumber = BalanceUtils.parse(this.amount, decimals!);
-    return transfer.add(this.selectedRoute!.fee);
+    return transfer.add(this.selectedRouteFees);
+  }
+
+  get selectedRouteFees(): BigNumber {
+    return (this.selectedRoute?.fee as BigNumber) ?? constants.Zero;
   }
 
   setPFS(payload: [RaidenPFS, boolean]) {
@@ -507,93 +494,18 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
 @import '@/scss/mixins';
 
 .transfer-steps {
-  background: transparent !important;
-  box-shadow: none;
   width: 100%;
-  position: relative;
-  padding-bottom: 50px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 60px 50px;
 
-  &__container {
-    height: 100%;
-    overflow-y: auto;
+  @include respond-to(handhelds) {
+    padding: 10px 10px 50px;
   }
 
-  &__header {
-    max-width: 528px;
-    margin: 0 auto;
-    box-shadow: none;
-  }
-
-  &__step {
-    ::v-deep {
-      .v-stepper {
-        &__label {
-          display: block !important;
-          @include respond-to(handhelds) {
-            font-size: 12px;
-          }
-        }
-
-        &__step {
-          &__step {
-            background: transparent !important;
-            border: 2px solid $secondary-text-color !important;
-          }
-        }
-      }
-    }
-
-    &__content {
-      margin-top: 45px;
-    }
-
-    &.active {
-      ::v-deep {
-        .v-stepper {
-          &__step {
-            &__step {
-              border-color: $primary-color !important;
-              background: $primary-color !important;
-            }
-          }
-
-          &__label {
-            color: $primary-color;
-            font-weight: bold;
-          }
-        }
-      }
-
-      &.skipped {
-        ::v-deep {
-          .v-stepper {
-            &__step {
-              &__step {
-                border-color: $secondary-text-color !important;
-                background: $secondary-text-color !important;
-              }
-            }
-
-            &__label {
-              color: $secondary-text-color;
-              font-weight: bold;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  &__divider {
-    border: 1px solid #646464 !important;
-    margin: 35px -77px 0 !important;
-    &.active {
-      border-color: $primary-color !important;
-
-      &.skipped {
-        border-color: $secondary-text-color !important;
-      }
-    }
+  &__stepper {
+    background: transparent !important;
+    margin: auto;
   }
 
   &__processing-transfer {
