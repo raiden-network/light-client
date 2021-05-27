@@ -238,6 +238,7 @@ function filterPaths(
   const invalidatedRecipients = new Set<Address>();
 
   for (const { path, fee, ...rest } of paths) {
+    // FIXME: don't trim path; validate us as 1st and partner as 2nd addr, once PC can handle it
     const cleanPath = getCleanPath(path, address);
     const recipient = cleanPath[0];
     if (invalidatedRecipients.has(recipient)) continue;
