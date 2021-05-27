@@ -170,7 +170,6 @@ The configuration has been slightly modified over the original `RSB`
 configuration to fit the purposes of the integration image. When merging changes
 from upstream please evaluate if these changes are required or not.
 
-- `setup/room_ensurer.py` is based on [room_ensurer.py](https://github.com/raiden-network/raiden-service-bundle/blob/master/build/room_ensurer/room_ensurer.py)
 - `synapse/auth/admin_user_auth_provider.py` is based on [admin_user_auth_provider.py](https://github.com/raiden-network/raiden-service-bundle/blob/master/build/synapse/admin_user_auth_provider.py)
 - `synapse/auth/eth_auth_provider.py` is based on [eth_auth_provider.py](https://github.com/raiden-network/raiden-service-bundle/blob/master/build/synapse/eth_auth_provider.py)
 - `synapse/exec/synapse-entrypoint.sh` is based on [synapse-entrypoint.sh](https://github.com/raiden-network/raiden-service-bundle/blob/master/build/synapse/synapse-entrypoint.sh)
