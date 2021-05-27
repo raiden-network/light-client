@@ -1,7 +1,7 @@
 <template>
   <div class="pathfinding-services fill-height">
     <spinner v-if="loading" />
-    <error-message v-if="error" class="pathfinding-services__error" :error="error" />
+    <error-message v-else-if="error" class="pathfinding-services__error" :error="error" />
     <v-data-table
       v-else
       v-model="selected"
@@ -130,11 +130,6 @@ export default class PathfindingServices extends Vue {
 
 .pathfinding-services {
   padding-bottom: 50px;
-
-  > * {
-    width: 250px;
-    text-align: center;
-  }
 
   &__error {
     width: 100%;

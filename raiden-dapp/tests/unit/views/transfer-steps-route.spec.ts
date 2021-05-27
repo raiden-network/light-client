@@ -97,6 +97,7 @@ async function createWrapper(
   const wrapper = shallowMount(TransferSteps, {
     store,
     vuetify,
+    // stubs: { 'action-button': ActionButton },
     stubs: { 'action-button': ActionButton },
     mocks: { $router, $route, $t, $raiden },
     data: function () {
@@ -124,12 +125,6 @@ async function clickTransferButton(wrapper: Wrapper<TransferSteps>): Promise<voi
 describe('TransferSteps.vue', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  test('renders 3 steps', async () => {
-    const wrapper = await createWrapper();
-
-    expect(wrapper.findAll('.transfer-steps__step').length).toBe(3);
   });
 
   test('enables the continue button and allows the user to proceed', async () => {
