@@ -55,8 +55,7 @@ function findValidPartner(
       .map(({ partner }) => partner.address),
   );
   for (const { route, address_metadata } of message.metadata.routes) {
-    const ourIndex = route.findIndex((hop) => hop === address);
-    const outPartner = route[ourIndex + 1];
+    const outPartner = route[route.indexOf(address) + 1];
     if (!outPartner || !partnersWithOpenChannels.has(outPartner)) continue;
 
     const channelIn = state.channels[channelKey({ tokenNetwork, partner: inPartner })];
@@ -119,6 +118,17 @@ export function transferMediateEpic(
       const outVia = findValidPartner(action, state, config, deps);
       if (!outVia) return;
 
+      // FIXME: passthrough metadata unchanged once PC supports searching themselves in the route
+      // clean up routes (strip hops before and up to us), while PC mediators require receiving
+      // routes where they're the 1st address and their partner, 2nd
+      const metadata: typeof message.metadata = {
+        ...message.metadata,
+        routes: message.metadata.routes.map(({ route, ...rest }) => ({
+          ...rest,
+          route: route.slice(route.indexOf(deps.address) + 1),
+        })),
+      };
+
       // request an outbound transfer to target; will fail if already sent
       return transfer.request(
         {
@@ -128,7 +138,7 @@ export function transferMediateEpic(
           value: message.lock.amount,
           expiration: message.lock.expiration.toNumber(),
           initiator: message.initiator,
-          metadata: message.metadata, // passthrough unchanged metadata
+          metadata,
           ...outVia,
         },
         { secrethash, direction: Direction.SENT },
