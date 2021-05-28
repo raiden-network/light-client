@@ -192,11 +192,12 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
   display: flex;
   flex-direction: column;
   height: 100%;
-  margin: 0 26px;
   width: 100%;
   padding-bottom: 50px;
+  margin: 26px;
 
   @include respond-to(handhelds) {
+    margin: 0 10px 10px;
     overflow-y: auto;
   }
 
@@ -211,6 +212,10 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
   &__hub-list,
   &__token-balance {
     margin-top: 16px;
+
+    @include respond-to(handhelds) {
+      margin-top: 5px;
+    }
   }
 
   &__udc {
@@ -249,6 +254,7 @@ export default class SelectHubRoute extends Mixins(NavigationMixin) {
 
   &__token-balance {
     height: 48px;
+    margin-top: 16px;
   }
 }
 </style>
