@@ -35,38 +35,11 @@
 
       <v-stepper-items>
         <v-stepper-content step="1">
-          <span class="udc-balance__amount" :class="{ 'low-balance': balanceIsLow }">
-            <amount-display exact-amount :amount="udcCapacity" :token="udcToken" />
-          </span>
-          <v-tooltip bottom>
-            <template #activator="{ on }">
-              <v-btn
-                text
-                icon
-                x-large
-                class="udc-balance__deposit"
-                @click="showUdcDeposit = true"
-                v-on="on"
-              >
-                <v-icon color="primary">play_for_work</v-icon>
-              </v-btn>
-            </template>
-          </v-tooltip>
-
-          <span
-            v-if="selectedPfs !== null && !udcCapacity.gte(selectedPfs.price)"
-            class="udc-balance__description low-balance"
-          >
-            {{
-              $t('transfer.steps.request-route.udc-description-low-balance', {
-                token: udcToken.symbol,
-              })
-            }}
-          </span>
-          <span v-else class="udc-balance__description">
-            {{ $t('transfer.steps.request-route.udc-description') }}
-          </span>
-
+          <udc-status
+            class="my-6"
+            :pfs-price="selectedPfsPrice"
+            @capacityUpdate="onUdcCapacityUpdate"
+          />
           <pathfinding-services v-if="step === 1" @select="setPFS($event)" />
         </v-stepper-content>
 
@@ -133,17 +106,16 @@ import { mapGetters, mapState } from 'vuex';
 import type { RaidenError, RaidenPFS } from 'raiden-ts';
 
 import ActionButton from '@/components/ActionButton.vue';
-import AmountDisplay from '@/components/AmountDisplay.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import PfsFeesDialog from '@/components/dialogs/PfsFeesDialog.vue';
 import TransferProgressDialog from '@/components/dialogs/TransferProgressDialog.vue';
-import UdcDepositDialog from '@/components/dialogs/UdcDepositDialog.vue';
 import Checkmark from '@/components/icons/Checkmark.vue';
 import StepperDivider from '@/components/stepper/StepperDivider.vue';
 import StepperStep from '@/components/stepper/StepperStep.vue';
 import FindRoutes from '@/components/transfer/FindRoutes.vue';
 import PathfindingServices from '@/components/transfer/PathfindingServices.vue';
 import TransferSummary from '@/components/transfer/TransferSummary.vue';
+import UdcStatus from '@/components/UdcStatus.vue';
 import Filter from '@/filters';
 import BlockieMixin from '@/mixins/blockie-mixin';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -161,10 +133,9 @@ import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
     FindRoutes,
     ErrorDialog,
     Checkmark,
-    UdcDepositDialog,
     TransferSummary,
     PfsFeesDialog,
-    AmountDisplay,
+    UdcStatus,
     StepperStep,
     StepperDivider,
   },
@@ -185,7 +156,6 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   routeSelectionSkipped = false;
   paymentId: BigNumber = BigNumber.from(Date.now());
   freePfs = false;
-  showUdcDeposit = false;
   mediationFeesConfirmed = false;
   processingTransfer = false;
   transferDone = false;
@@ -276,8 +246,8 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
     return this.$t(`transfer.steps.call-to-action.${this.step}.default`);
   }
 
-  private updateUDCCapacity() {
-    this.$raiden.getUDCCapacity().then((value) => (this.udcCapacity = value));
+  onUdcCapacityUpdate(capacity: BigNumber): void {
+    this.udcCapacity = capacity;
   }
 
   async created() {
@@ -322,15 +292,6 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
       this.pfsSelectionSkipped = true;
       this.routeSelectionSkipped = true;
     }
-  }
-
-  mounted() {
-    this.updateUDCCapacity();
-  }
-
-  mintDone() {
-    this.showUdcDeposit = false;
-    this.updateUDCCapacity();
   }
 
   async findRoutes(): Promise<void> {
@@ -489,7 +450,6 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
 
 <style lang="scss" scoped>
 @import '@/scss/colors';
-@import '@/scss/fonts';
 @import '@/scss/mixins';
 
 .transfer-steps {
@@ -519,38 +479,6 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
       line-height: 21px;
       text-align: center;
       margin-top: 2rem;
-    }
-  }
-
-  .udc-balance {
-    &__container {
-      text-align: center;
-    }
-
-    &__amount {
-      font-size: 24px;
-      font-weight: bold;
-      font-family: $main-font;
-      color: $color-white;
-      vertical-align: middle;
-
-      &.low-balance {
-        color: $error-color;
-      }
-    }
-
-    &__description {
-      font-size: 16px;
-      font-family: $main-font;
-      color: $secondary-text-color;
-
-      &.low-balance {
-        color: $error-color;
-      }
-    }
-
-    &__deposit {
-      vertical-align: middle;
     }
   }
 }
