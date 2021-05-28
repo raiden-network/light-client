@@ -19,7 +19,7 @@ import { decode } from '@/utils/types';
 
 test('migrate, decode & dump', async () => {
   // iterate over past stored JSON states & ensure they can be migrated to current
-  const dir = path.join(path.dirname(await fs.realpath(__filename)), 'states');
+  const dir = path.join(__dirname, 'states');
   const states = await fs.readdir(dir);
 
   // PouchDB configs are passed as custom database constructor using PouchDB.defaults
