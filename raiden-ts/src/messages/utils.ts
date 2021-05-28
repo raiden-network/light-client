@@ -49,7 +49,7 @@ export enum MessageTypeId {
  * @param metadata - The LockedTransfer metadata
  * @returns Hash of the metadata.
  */
-export function createMetadataHash(metadata: Metadata): Hash {
+function createMetadataHash(metadata: Metadata): Hash {
   const routeHashes = metadata.routes.map((value) => keccak256(rlpEncode(value.route)) as Hash);
   return keccak256(rlpEncode(routeHashes)) as Hash;
 }
@@ -68,19 +68,20 @@ export function createBalanceHash({
   lockedAmount,
   locksroot,
 }: Pick<BalanceProof, 'transferredAmount' | 'lockedAmount' | 'locksroot'>): Hash {
-  return (
-    transferredAmount.isZero() &&
-    lockedAmount.isZero() &&
-    (locksroot === HashZero || locksroot === LocksrootZero)
-      ? HashZero
-      : keccak256(
-          concatBytes([
-            encode(transferredAmount, 32),
-            encode(lockedAmount, 32),
-            encode(locksroot, 32),
-          ]),
-        )
-  ) as Hash;
+  let hash = HashZero as Hash;
+  if (
+    !transferredAmount.isZero() ||
+    !lockedAmount.isZero() ||
+    (locksroot !== HashZero && locksroot !== LocksrootZero)
+  )
+    hash = keccak256(
+      concatBytes([
+        encode(transferredAmount, 32),
+        encode(lockedAmount, 32),
+        encode(locksroot, 32),
+      ]),
+    ) as Hash;
+  return hash;
 }
 
 /**
@@ -90,27 +91,28 @@ export function createBalanceHash({
  * @returns Hash of the message pack
  */
 export function createMessageHash(message: EnvelopeMessage): Hash {
+  let hash: Hash;
   switch (message.type) {
     case MessageType.LOCKED_TRANSFER:
       // hash of packed representation of the whole message
-      let packed = concatBytes([
-        encode(CMDIDs[message.type], 1),
-        encode(message.message_identifier, 8),
-        encode(message.payment_identifier, 8),
-        encode(message.lock.expiration, 32),
-        encode(message.token, 20),
-        encode(message.recipient, 20),
-        encode(message.target, 20),
-        encode(message.initiator, 20),
-        encode(message.lock.secrethash, 32),
-        encode(message.lock.amount, 32),
-      ]);
-
-      if (message.type === MessageType.LOCKED_TRANSFER)
-        packed = concatBytes([packed, createMetadataHash(message.metadata)]);
-      return keccak256(packed) as Hash;
+      hash = keccak256(
+        concatBytes([
+          encode(CMDIDs[message.type], 1),
+          encode(message.message_identifier, 8),
+          encode(message.payment_identifier, 8),
+          encode(message.lock.expiration, 32),
+          encode(message.token, 20),
+          encode(message.recipient, 20),
+          encode(message.target, 20),
+          encode(message.initiator, 20),
+          encode(message.lock.secrethash, 32),
+          encode(message.lock.amount, 32),
+          createMetadataHash(message.metadata),
+        ]),
+      ) as Hash;
+      break;
     case MessageType.UNLOCK:
-      return keccak256(
+      hash = keccak256(
         concatBytes([
           encode(CMDIDs[message.type], 1),
           encode(message.message_identifier, 8),
@@ -118,8 +120,9 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
           encode(message.secret, 32),
         ]),
       ) as Hash;
+      break;
     case MessageType.LOCK_EXPIRED:
-      return keccak256(
+      hash = keccak256(
         concatBytes([
           encode(CMDIDs[message.type], 1),
           encode(message.message_identifier, 8),
@@ -127,7 +130,9 @@ export function createMessageHash(message: EnvelopeMessage): Hash {
           encode(message.secrethash, 32),
         ]),
       ) as Hash;
+      break;
   }
+  return hash;
 }
 
 /**
