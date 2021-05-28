@@ -15,7 +15,7 @@
           :skipped="requestRouteStepSkipped"
         />
 
-        <stepper-divider :active="selectRouteStepActive" :skipped="selectRouteStepSkipped" />
+        <stepper-divider :active="selectRouteStepActive" />
 
         <stepper-step
           :title="$t('transfer.steps.select-route.title')"
@@ -24,7 +24,7 @@
           :skipped="selectRouteStepSkipped"
         />
 
-        <stepper-divider :active="confirmTransferStepActive" :skipped="routeSelectionSkipped" />
+        <stepper-divider :active="confirmTransferStepActive" />
 
         <stepper-step
           :title="$t('transfer.steps.confirm-transfer.title')"
@@ -33,7 +33,7 @@
         />
       </v-stepper-header>
 
-      <v-stepper-items>
+      <v-stepper-items class="transfer-steps__stepper__items">
         <v-stepper-content step="1">
           <udc-status
             class="my-6"
@@ -45,7 +45,6 @@
 
         <v-stepper-content step="2">
           <find-routes
-            v-if="step === 2"
             :token="token"
             :routes="routes"
             :pfs-url="selectedPfs.url"
@@ -58,12 +57,6 @@
         </v-stepper-content>
       </v-stepper-items>
     </v-stepper>
-
-    <udc-deposit-dialog
-      :visible="showUdcDeposit"
-      @cancel="showUdcDeposit = false"
-      @done="mintDone()"
-    />
 
     <pfs-fees-dialog
       :visible="pfsFeesConfirmed && step === 1"
@@ -99,6 +92,7 @@
 </template>
 
 <script lang="ts">
+import type { BigNumberish } from 'ethers';
 import { BigNumber, constants } from 'ethers';
 import { Component, Mixins } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
@@ -201,18 +195,18 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
     return this.step >= 3;
   }
 
-  get balanceIsLow(): boolean {
-    return this.selectedPfs !== null && !this.udcCapacity.gte(this.selectedPfs.price);
+  get selectedPfsPrice(): BigNumberish {
+    return this.selectedPfs?.price ?? constants.Zero;
   }
 
   get transferSummary(): Transfer {
     return {
-      pfsAddress: this.selectedPfs?.url as string,
-      serviceFee: this.selectedPfs?.price as BigNumber,
+      pfsAddress: this.selectedPfs?.url ?? ('' as string),
+      serviceFee: this.selectedPfs?.price ?? (constants.Zero as BigNumber),
       serviceToken: this.udcToken,
       mediationFee: this.selectedRouteFees,
       target: this.target,
-      hops: this.selectedRoute?.hops,
+      hops: this.selectedRoute?.hops ?? 0,
       transferAmount: BalanceUtils.parse(this.amount, this.token.decimals!),
       transferToken: this.token,
       transferTotal: this.totalAmount,
@@ -465,6 +459,10 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   &__stepper {
     background: transparent !important;
     margin: auto;
+
+    &__items {
+      margin-top: 20px;
+    }
   }
 
   &__processing-transfer {

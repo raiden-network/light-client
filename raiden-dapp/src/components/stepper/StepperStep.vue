@@ -2,8 +2,8 @@
   <v-stepper-step
     class="stepper-step"
     :class="{
+      'stepper-step--upcoming': upcoming,
       'stepper-step--active': active,
-      'stepper-step--skipped': skipped,
     }"
     :complete="complete"
     :complete-icon="completeIcon"
@@ -29,6 +29,10 @@ export default class StepperStep extends Vue {
 
   @Prop({ type: Boolean, required: false, default: false })
   skipped!: boolean;
+
+  get upcoming(): boolean {
+    return !this.active && !this.skipped;
+  }
 
   get completeIcon(): string {
     return this.skipped ? 'mdi-redo' : 'mdi-check';
@@ -61,6 +65,18 @@ export default class StepperStep extends Vue {
     }
   }
 
+  &--upcoming {
+    ::v-deep {
+      .v-stepper {
+        &__step {
+          &__step {
+            background-color: $secondary-text-color !important;
+          }
+        }
+      }
+    }
+  }
+
   &--active {
     ::v-deep {
       .v-stepper {
@@ -73,24 +89,6 @@ export default class StepperStep extends Vue {
 
         &__label {
           color: $primary-color;
-          font-weight: bold;
-        }
-      }
-    }
-  }
-
-  &--skipped {
-    ::v-deep {
-      .v-stepper {
-        &__step {
-          &__step {
-            border-color: $secondary-text-color !important;
-            background: $secondary-text-color !important;
-          }
-        }
-
-        &__label {
-          color: $secondary-text-color;
           font-weight: bold;
         }
       }
