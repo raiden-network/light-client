@@ -1,5 +1,7 @@
 <template>
   <div class="transfer-summary">
+    <h1>{{ $t('transfer.steps.summary.headline') }}</h1>
+
     <h2 v-if="!isDirectTransfer" class="transfer-summary__header">
       {{ $t('transfer.steps.summary.route-request') }}
     </h2>
@@ -190,7 +192,7 @@ export default class TransferSummary extends Vue {
         margin-right: 5px;
         content: counter(item);
         position: absolute;
-        left: -10px;
+        left: -5px;
         top: -4px;
         font-size: 10px;
       }
