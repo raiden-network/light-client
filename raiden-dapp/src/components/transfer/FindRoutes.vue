@@ -1,35 +1,32 @@
 <template>
-  <v-row class="find-routes" align="center" justify="center" no-gutters>
-    <v-col cols="12">
-      <h3 class="find-routes__title">{{ domain }}</h3>
-      <div class="find-routes__subtitle">
-        {{ $t('find-routes.sub-title', { subdomain }) }}
-      </div>
-      <v-row align="center" justify="center">
-        <v-col cols="12" sm="10">
-          <v-data-table
-            v-model="selected"
-            :headers="headers"
-            :items="routes"
-            dense
-            disable-pagination
-            hide-default-footer
-            show-select
-            single-select
-            sort-by="fee"
-            item-key="key"
-            class="find-routes__table"
-            @item-selected="select($event)"
-          >
-            <template #[`item.hops`]="{ item }">{{ item.hops }}</template>
-            <template #[`item.fee`]="{ item }">
-              <amount-display exact-amount :amount="item.fee" :token="token" />
-            </template>
-          </v-data-table>
-        </v-col>
-      </v-row>
-    </v-col>
-  </v-row>
+  <div class="find-routes">
+    <h3 class="find-routes__title">{{ domain }}</h3>
+
+    <div class="find-routes__subtitle">
+      {{ $t('find-routes.sub-title', { subdomain }) }}
+    </div>
+
+    <v-data-table
+      v-model="selected"
+      :headers="headers"
+      :items="routes"
+      dense
+      disable-pagination
+      hide-default-footer
+      show-select
+      single-select
+      sort-by="fee"
+      item-key="key"
+      mobile-breakpoint="0"
+      class="find-routes__table"
+      @item-selected="select($event)"
+    >
+      <template #[`item.hops`]="{ item }">{{ item.hops }}</template>
+      <template #[`item.fee`]="{ item }">
+        <amount-display exact-amount :amount="item.fee" :token="token" />
+      </template>
+    </v-data-table>
+  </div>
 </template>
 
 <script lang="ts">
@@ -103,9 +100,7 @@ export default class FindRoutes extends Vue {
 @import '@/scss/mixins';
 
 .find-routes {
-  > * {
-    text-align: center;
-  }
+  text-align: center;
 
   &__title {
     font-size: 24px;
@@ -114,27 +109,30 @@ export default class FindRoutes extends Vue {
   }
 
   &__subtitle {
-    margin-top: 5px;
+    margin-top: 10px;
     font-size: 16px;
     line-height: 19px;
     color: #646464;
   }
 
   &__table {
-    margin-bottom: 20px;
-    margin-top: 45px;
+    margin: 20px 0 50px;
 
     &.v-data-table {
       background-color: transparent !important;
     }
 
     ::v-deep {
+      table {
+        overflow: hidden !important;
+      }
+
       th {
         font-size: 16px;
         border: none !important;
 
         @include respond-to(handhelds) {
-          padding: 0;
+          padding: 0 !important;
         }
       }
 
