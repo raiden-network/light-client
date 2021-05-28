@@ -81,7 +81,6 @@
         </v-stepper-content>
 
         <v-stepper-content step="3">
-          <h1>{{ $t('transfer.steps.summary.headline') }}</h1>
           <transfer-summary :transfer="transferSummary" />
         </v-stepper-content>
       </v-stepper-items>
