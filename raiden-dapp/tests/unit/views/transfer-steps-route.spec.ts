@@ -62,7 +62,6 @@ const $raiden = {
   getAccount: jest.fn(),
   getMainAccount: jest.fn(),
   fetchAndUpdateTokenData: jest.fn(),
-  getUDCCapacity: jest.fn(async () => BigNumber.from('1000000000000000000')),
   findRoutes: jest.fn(async () => [{ path: [transferToken.address], fee: BigNumber.from(100) }]),
   transfer: jest.fn(async () => undefined),
   directRoute: jest.fn(),
@@ -72,6 +71,7 @@ async function createWrapper(
   step = 1,
   routes: Route[] = [],
   selectedRoute: Route | null = null,
+  udcCapacity = BigNumber.from('1000000000000000000'),
 ): Promise<Wrapper<TransferSteps>> {
   const vuetify = new Vuetify();
 
@@ -106,17 +106,19 @@ async function createWrapper(
         step,
         routes,
         selectedRoute,
+        udcCapacity,
       };
     },
   });
 
   await flushPromises(); // Asynchronous 'created' lifecycle hook.
+  await wrapper.vm.$nextTick();
   return wrapper;
 }
 
 async function clickTransferButton(wrapper: Wrapper<TransferSteps>): Promise<void> {
   const button = wrapper.findComponent(ActionButton);
-  expect(button.attributes()['disabled']).toBeUndefined();
+  expect(button.attributes('disabled')).toBeUndefined();
   button.trigger('click');
   await flushPromises();
   jest.runOnlyPendingTimers();
@@ -127,8 +129,15 @@ describe('TransferSteps.vue', () => {
     jest.clearAllMocks();
   });
 
-  test('enables the continue button and allows the user to proceed', async () => {
-    const wrapper = await createWrapper();
+  test('continue button is not enabled if UDC capacity is too low', async () => {
+    const wrapper = await createWrapper(undefined, undefined, undefined, constants.Zero);
+    const button = wrapper.findComponent(ActionButton);
+
+    expect(button.attributes('disabled')).toBeTruthy();
+  });
+
+  test('continue button is allows the user to proceed if UDC balanace is high enough', async () => {
+    const wrapper = await createWrapper(undefined, undefined, undefined, BigNumber.from('100000'));
 
     await clickTransferButton(wrapper);
 
