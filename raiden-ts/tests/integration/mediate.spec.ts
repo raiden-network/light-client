@@ -4,6 +4,7 @@ import {
   ensureChannelIsOpen,
   ensurePresence,
   getOrWaitTransfer,
+  metadataFromClients,
   secret,
   secrethash,
   token,
@@ -47,8 +48,8 @@ describe('mediate transfers', () => {
           target: target.address,
           value: amount,
           paymentId: makePaymentId(),
-          paths: [{ path: [partner.address, target.address], fee: flat }],
           secret,
+          ...metadataFromClients([raiden, partner, target], flat),
         },
         { secrethash, direction: Direction.SENT },
       ),
@@ -74,16 +75,25 @@ describe('mediate transfers', () => {
         { secrethash, direction: Direction.RECEIVED },
       ),
     );
-    expect(partner.output).toContainEqual(
+    expect(partner.output.find(transfer.request.is)).toEqual(
       transfer.request(
         {
           tokenNetwork,
           target: target.address,
           value: amount.add(flat) as UInt<32>,
           paymentId: transf.payment_identifier,
-          paths: [{ path: [target.address], fee: flat.mul(-1) as Int<32> }],
           expiration: transf.lock.expiration.toNumber(),
           initiator: raiden.address,
+          fee: flat.mul(-1) as Int<32>,
+          metadata: expect.objectContaining({
+            routes: expect.arrayContaining([
+              expect.objectContaining({
+                route: [target.address],
+              }),
+            ]),
+          }),
+          partner: target.address,
+          userId: (await target.deps.matrix$.toPromise()).getUserId()!,
         },
         { secrethash, direction: Direction.SENT },
       ),
@@ -114,8 +124,8 @@ describe('mediate transfers', () => {
           target: target.address,
           value: amount,
           paymentId: makePaymentId(),
-          paths: [{ path: [partner.address, target.address], fee: Zero as Int<32> }],
           secret,
+          ...metadataFromClients([raiden, partner, target], Zero as Int<32>),
         },
         { secrethash, direction: Direction.SENT },
       ),
@@ -163,8 +173,8 @@ describe('mediate transfers', () => {
           target: unknownTarget,
           value: amount,
           paymentId: makePaymentId(),
-          paths: [{ path: [partner.address, unknownTarget], fee: Zero as Int<32> }],
           secret,
+          ...metadataFromClients([raiden, partner, unknownTarget], Zero as Int<32>),
         },
         { secrethash, direction: Direction.SENT },
       ),

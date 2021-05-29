@@ -36,12 +36,9 @@ const patchVerifyMessage = () => {
     return {
       ...jest.requireActual<any>('@ethersproject/wallet'),
       __esModule: true,
-      verifyMessage: jest.fn((msg: string, sig: string): string => {
-        // TODO: remove userId special case after mockedMatrixCreateClient is used
-        const match = /^@(0x[0-9a-f]{40})[.:]/i.exec(msg);
-        if (match?.[1]) return getAddress(match[1]);
-        return getAddress('0x' + sig.substr(-44, 40));
-      }),
+      verifyMessage: jest.fn((_: string, sig: string): string =>
+        getAddress('0x' + sig.substr(-44, 40)),
+      ),
     };
   });
 };

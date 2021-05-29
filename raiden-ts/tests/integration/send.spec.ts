@@ -1,10 +1,13 @@
 import {
+  amount,
   ensureChannelIsDeposited,
   ensureTransferPending,
   ensureTransferUnlocked,
   expectChannelsAreInSync,
+  fee,
   getChannel,
   getOrWaitTransfer,
+  metadataFromClients,
   secret,
   secrethash,
   tokenNetwork,
@@ -12,7 +15,7 @@ import {
 import { makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } from './mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
-import { Two, Zero } from '@ethersproject/constants';
+import { MaxUint256, Zero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { first, pluck } from 'rxjs/operators';
 
@@ -42,9 +45,7 @@ import type { MockedRaiden } from './mocks';
 
 const direction = Direction.SENT;
 const paymentId = makePaymentId();
-const value = BigNumber.from(10) as UInt<32>;
-const fee = BigNumber.from(3) as Int<32>;
-const maxUInt256 = Two.pow(256).sub(1) as UInt<32>;
+const value = amount;
 const meta = { secrethash, direction };
 
 describe('send transfer', () => {
@@ -60,9 +61,9 @@ describe('send transfer', () => {
         tokenNetwork,
         target: partner.address,
         value,
-        paths: [{ path: [partner.address], fee }],
         paymentId,
         secret,
+        ...metadataFromClients([raiden, partner]),
       },
       meta,
     );
@@ -90,6 +91,7 @@ describe('send transfer', () => {
           message: expectedLockedTransfer,
           fee,
           partner: partner.address,
+          userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
         },
         meta,
       ),
@@ -119,10 +121,10 @@ describe('send transfer', () => {
       {
         tokenNetwork,
         target: partner.address,
-        value: maxUInt256,
-        paths: [{ path: [partner.address], fee }],
+        value: MaxUint256 as UInt<32>,
         paymentId,
         secret,
+        ...metadataFromClients([raiden, partner]),
       },
       meta,
     );
@@ -151,9 +153,9 @@ describe('send transfer', () => {
           tokenNetwork,
           target: partner.address,
           value,
-          paths: [{ path: [partner.address], fee }],
           paymentId,
           secret,
+          ...metadataFromClients([raiden, partner]),
         },
         meta,
       ),
@@ -208,6 +210,7 @@ describe('send transfer', () => {
           {
             message: expectedUnlock,
             partner: partner.address,
+            userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
           },
           meta,
         ),
@@ -466,8 +469,8 @@ describe('transferRetryMessageEpic', () => {
           tokenNetwork,
           target: partner.address,
           value,
-          paths: [{ path: [partner.address], fee: Zero as Int<32> }],
           paymentId,
+          ...metadataFromClients([raiden, partner], Zero as Int<32>),
         },
         meta,
       ),
