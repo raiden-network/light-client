@@ -1,8 +1,11 @@
 import {
+  amount,
   ensureChannelIsDeposited,
   ensureTransferPending,
   expectChannelsAreInSync,
+  fee,
   getOrWaitTransfer,
+  metadataFromClients,
   secret,
   secrethash,
   tokenNetwork,
@@ -16,7 +19,6 @@ import {
   waitBlock,
 } from './mocks';
 
-import { BigNumber } from '@ethersproject/bignumber';
 import { One, Zero } from '@ethersproject/constants';
 import { first } from 'rxjs/operators';
 
@@ -54,8 +56,7 @@ import { makeHash, sleep } from '../utils';
 
 const direction = Direction.RECEIVED;
 const paymentId = makePaymentId();
-const value = BigNumber.from(10) as UInt<32>;
-const fee = BigNumber.from(3) as Int<32>;
+const value = amount;
 const receivedMeta = { secrethash, direction };
 const sentMeta = { secrethash, direction: Direction.SENT };
 
@@ -81,8 +82,8 @@ describe('receive transfers', () => {
             tokenNetwork,
             target: raiden.address,
             value,
-            paths: [{ path: [raiden.address], fee }],
             paymentId,
+            ...metadataFromClients([partner, raiden]),
           },
           sentMeta,
         ),
@@ -149,6 +150,7 @@ describe('receive transfers', () => {
               type: MessageType.SECRET_REQUEST,
               secrethash,
             }),
+            userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
           },
           receivedMeta,
         ),
@@ -173,8 +175,8 @@ describe('receive transfers', () => {
             tokenNetwork,
             target: raiden.address,
             value,
-            paths: [{ path: [raiden.address], fee }],
             paymentId,
+            ...metadataFromClients([partner, raiden]),
           },
           sentMeta,
         ),

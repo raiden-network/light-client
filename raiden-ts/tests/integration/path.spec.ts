@@ -4,6 +4,7 @@ import {
   ensureChannelIsClosed,
   ensureChannelIsDeposited,
   ensureChannelIsOpen,
+  ensurePresence,
   fee,
   getChannel,
   openBlock,
@@ -15,6 +16,7 @@ import { fetch, makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } fro
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { AddressZero, One, Zero } from '@ethersproject/constants';
+import { first } from 'rxjs/operators';
 
 import { raidenConfigUpdate, raidenShutdown } from '@/actions';
 import { Capabilities } from '@/constants';
@@ -24,6 +26,7 @@ import { iouClear, iouPersist, pathFind, servicesValid } from '@/services/action
 import { IOU, PfsMode, Service } from '@/services/types';
 import { signIOU } from '@/services/utils';
 import { matrixPresence } from '@/transport/actions';
+import { stringifyCaps } from '@/transport/utils';
 import { jsonStringify } from '@/utils/data';
 import { ErrorCodes } from '@/utils/error';
 import type { Address, Int, Signature, UInt } from '@/utils/types';
@@ -61,6 +64,7 @@ describe('PFS: pfsRequestEpic', () => {
   const mockedPfsInfoResponse: jest.MockedFunction<typeof fetch> = jest.fn();
   const mockedIouResponse: jest.MockedFunction<typeof fetch> = jest.fn();
   const mockedPfsResponse: jest.MockedFunction<typeof fetch> = jest.fn();
+  const mockedPresenceResponse: jest.MockedFunction<typeof fetch> = jest.fn();
 
   function makePfsInfoResponse() {
     return {
@@ -109,12 +113,41 @@ describe('PFS: pfsRequestEpic', () => {
       };
     });
 
+    mockedPresenceResponse.mockImplementation(async (url) => {
+      const addr = /\/(0x[0-9a-f]{40})\/metadata/i.exec(url!)?.[1];
+      let client: MockedRaiden | undefined;
+      if (!addr || !(client = [raiden, partner, target].find(({ address }) => address === addr))) {
+        return {
+          status: 404,
+          ok: false,
+          json: jest.fn(async () => ({})),
+          text: jest.fn(async () => ''),
+        };
+      }
+      const userId = (await client!.deps.matrix$.toPromise()).getUserId()!;
+      const result = {
+        user_id: userId,
+        displayname: await client!.deps.signer.signMessage(userId),
+        capabilities: stringifyCaps(
+          (await client!.deps.latest$.pipe(first()).toPromise()).config.caps!,
+        ),
+      };
+      return {
+        status: 200,
+        ok: true,
+        json: jest.fn(async () => result),
+        text: jest.fn(async () => jsonStringify(result)),
+      };
+    });
+
     fetch.mockImplementation(async (...args) => {
       const url = args[0];
-      if (url?.includes?.('/iou')) {
+      if (url?.includes('/iou')) {
         return mockedIouResponse(...args);
-      } else if (url?.includes?.('/info')) {
+      } else if (url?.includes('/info')) {
         return mockedPfsInfoResponse(...args);
+      } else if (url?.includes('/metadata')) {
+        return mockedPresenceResponse(...args);
       } else {
         return mockedPfsResponse(...args);
       }
@@ -136,6 +169,7 @@ describe('PFS: pfsRequestEpic', () => {
     mockedPfsInfoResponse.mockRestore();
     mockedIouResponse.mockRestore();
     mockedPfsResponse.mockRestore();
+    mockedPresenceResponse.mockRestore();
   });
 
   test('fail unknown tokenNetwork', async () => {
@@ -203,11 +237,8 @@ describe('PFS: pfsRequestEpic', () => {
   test('fail on failing matrix presence request', async () => {
     expect.assertions(2);
 
-    const matrix = await raiden.deps.matrix$.toPromise();
     const matrixError = new Error('Unspecific matrix error for testing purpose');
-    (
-      matrix.searchUserDirectory as jest.MockedFunction<typeof matrix.searchUserDirectory>
-    ).mockRejectedValue(matrixError);
+    mockedPresenceResponse.mockRejectedValue(matrixError);
 
     const pathFindMeta = {
       tokenNetwork,
@@ -337,7 +368,15 @@ describe('PFS: pfsRequestEpic', () => {
     // self should be taken out of route
     expect(raiden.output).toContainEqual(
       pathFind.success(
-        { paths: [{ path: [partner.address], fee: Zero as Int<32> }] },
+        {
+          paths: [
+            {
+              path: [partner.address],
+              fee: Zero as Int<32>,
+              address_metadata: expect.objectContaining({ [raiden.address]: expect.anything() }),
+            },
+          ],
+        },
         pathFindMeta,
       ),
     );
@@ -511,6 +550,7 @@ describe('PFS: pfsRequestEpic', () => {
     expect.assertions(1);
 
     raiden.store.dispatch(raidenConfigUpdate({ pfsMode: PfsMode.auto, additionalServices: [] }));
+    await ensurePresence([raiden, target]);
 
     // invalid url
     raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('""');
@@ -519,7 +559,9 @@ describe('PFS: pfsRequestEpic', () => {
     // invalid schema (on development mode, both http & https are accepted)
     raiden.deps.serviceRegistryContract.urls.mockResolvedValueOnce('ftp://not.https.url');
 
-    raiden.store.dispatch(servicesValid(makeValidServices([pfsAddress, pfsAddress, pfsAddress])));
+    raiden.store.dispatch(
+      servicesValid(makeValidServices([makeAddress(), makeAddress(), makeAddress()])),
+    );
     await waitBlock();
 
     const pathFindMeta = {
@@ -606,7 +648,6 @@ describe('PFS: pfsRequestEpic', () => {
   });
 
   test('success with free pfs and valid route', async () => {
-    // Original test(old version) fails
     expect.assertions(1);
 
     const freePfsInfoResponse = { ...makePfsInfoResponse(), price_info: 0 };
