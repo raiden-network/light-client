@@ -17,11 +17,13 @@ import {
   getTransfer,
   makePaymentId,
   makeSecret,
+  metadataFromPaths,
   transferKey,
 } from '@/transfers/utils';
 import { matrixPresence } from '@/transport/actions';
+import { stringifyCaps } from '@/transport/utils';
+import type { Latest } from '@/types';
 import { assert } from '@/utils';
-import { isResponseOf } from '@/utils/actions';
 import type { Address, Hash, Int, Secret, UInt } from '@/utils/types';
 
 import { makeAddress, makeHash, sleep } from '../utils';
@@ -122,6 +124,7 @@ export async function ensureChannelIsOpen(
   if (getChannel(raiden, partner)) return;
   const openBlock = raiden.deps.provider.blockNumber + 1;
   const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
+  await ensurePresence([raiden, partner]);
   await providersEmit(
     {},
     makeLog({
@@ -286,8 +289,11 @@ export async function ensureTransferPending(
         tokenNetwork,
         target: partner.address,
         value,
-        paths: [{ path: [partner.address], fee: Zero as Int<32> }],
         paymentId,
+        metadata: { routes: [{ route: [partner.address] }] },
+        fee: Zero as Int<32>,
+        partner: partner.address,
+        userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
       },
       { secrethash: secrethash_, direction: Direction.SENT },
     ),
@@ -365,15 +371,31 @@ export async function ensurePresence([raiden, partner]: [
   MockedRaiden,
   MockedRaiden,
 ]): Promise<void> {
-  const raidenPromise = raiden.action$
-    .pipe(first(isResponseOf(matrixPresence, { address: partner.address })))
-    .toPromise();
-  const partnerPromise = partner.action$
-    .pipe(first(isResponseOf(matrixPresence, { address: raiden.address })))
-    .toPromise();
+  partner.store.dispatch(
+    matrixPresence.success(
+      {
+        userId: (await raiden.deps.matrix$.toPromise()).getUserId()!,
+        available: true,
+        ts: Date.now() + 120e3,
+        caps: (await raiden.deps.latest$.pipe(first()).toPromise()).config.caps!,
+      },
+      { address: raiden.address },
+    ),
+  );
+  raiden.store.dispatch(
+    matrixPresence.success(
+      {
+        userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
+        available: true,
+        ts: Date.now() + 120e3,
+        caps: (await partner.deps.latest$.pipe(first()).toPromise()).config.caps!,
+      },
+      { address: partner.address },
+    ),
+  );
+  await sleep();
   partner.store.dispatch(matrixPresence.request(undefined, { address: raiden.address }));
   raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
-  await Promise.all([raidenPromise, partnerPromise]);
 }
 
 /**
@@ -384,4 +406,39 @@ export async function ensurePresence([raiden, partner]: [
 export function expectChannelsAreInSync([raiden, partner]: [MockedRaiden, MockedRaiden]) {
   expect(getChannel(raiden, partner).own).toStrictEqual(getChannel(partner, raiden).partner);
   expect(getChannel(raiden, partner).partner).toStrictEqual(getChannel(partner, raiden).own);
+}
+
+/**
+ * @param clients - Clients list
+ * @param clients."0" - Main/our raiden instance
+ * @param clients."1" - Other clients in path
+ * @param fee_ - Estimated transfer fee
+ * @returns metadataFromPaths for a tansfer.request's payload
+ */
+export function metadataFromClients<T extends Address | MockedRaiden>(
+  [raiden, ...hops]: readonly [T, ...T[]],
+  fee_ = fee,
+) {
+  const isRaiden = (c: T): c is T & MockedRaiden => typeof c !== 'string';
+  return metadataFromPaths([
+    {
+      path: hops.map((c) => (isRaiden(c) ? c.address : (c as Address))),
+      fee: fee_,
+      address_metadata: Object.fromEntries(
+        [raiden, ...hops].filter(isRaiden).map(({ address, store, deps }) => {
+          const setup = store.getState().transport.setup!;
+          let latest!: Latest;
+          deps.latest$.pipe(first()).subscribe((l) => (latest = l));
+          return [
+            address,
+            {
+              user_id: setup.userId,
+              displayname: setup.displayName,
+              capabilities: stringifyCaps(latest.config.caps!),
+            },
+          ] as const;
+        }),
+      ),
+    },
+  ]);
 }

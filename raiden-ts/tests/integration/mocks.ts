@@ -659,6 +659,7 @@ export async function makeRaiden(
   const signer = (wallet ?? makeWallet()).connect(provider);
   const address = signer.address as Address;
   const log = logging.getLogger(`raiden:${address}`);
+  log.setLevel(logging.levels.INFO);
 
   Object.assign(provider, { _network: network });
   jest.spyOn(provider, 'on');
