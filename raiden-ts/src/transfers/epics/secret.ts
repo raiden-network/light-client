@@ -28,7 +28,7 @@ import type { RaidenState } from '../../state';
 import { getCap } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
-import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
+import { assert, commonTxErrors, ErrorCodes } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
 import { completeWith, pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
 import type { Hash, Secret, UInt } from '../../utils/types';
@@ -110,7 +110,7 @@ const secretReveal$ = (
     mergeMap(({ state }) => {
       const transferState = state.transfers[transferKey(action.meta)];
       // shouldn't happen, as we're the initiator (for now), and always know the secret
-      assert(transferState.secret, 'SecretRequest for unknown secret');
+      assert(transferState.secret, ['SecretRequest for unknown secret', request]);
 
       const locked = transferState.transfer;
       const target = locked.target;
@@ -119,13 +119,16 @@ const secretReveal$ = (
 
       assert(
         request.expiration.lte(locked.lock.expiration) && request.expiration.gt(state.blockNumber),
-        'SecretRequest for expired transfer',
+        ['SecretRequest for expired transfer', { request, lock: locked.lock }],
       );
-      assert(request.amount.gte(value), 'SecretRequest for amount too small!');
+      assert(request.amount.gte(value), [
+        'SecretRequest for amount too small!',
+        { request, value },
+      ]);
 
       if (!request.amount.eq(value)) {
         // accept request
-        log.info('Accepted SecretRequest for amount different than sent', request, locked);
+        log.info('Accepted SecretRequest for amount greater than sent', request, locked);
       }
 
       let reveal$: Observable<Signed<SecretReveal>>;
@@ -149,12 +152,7 @@ const secretReveal$ = (
         }),
       );
     }),
-    catchError((err) => {
-      log.error('Invalid SecretRequest', err);
-      return of(
-        transfer.failure(new RaidenError(ErrorCodes.XFER_INVALID_SECRETREQUEST), action.meta),
-      );
-    }),
+    catchError((err) => of(transfer.failure(err, action.meta))),
   );
 };
 
