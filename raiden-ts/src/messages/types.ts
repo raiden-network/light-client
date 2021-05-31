@@ -3,7 +3,9 @@
  * They include BigNumber strings validation, enum validation (if needed), Address checksum
  * validation, etc, and converting everything to its respective object, where needed.
  */
+import { isLeft } from 'fp-ts/lib/Either';
 import * as t from 'io-ts';
+import isEmpty from 'lodash/isEmpty';
 
 import { Lock } from '../channels/types';
 import { Address, Hash, Int, Secret, Signature, UInt } from '../utils/types';
@@ -119,7 +121,36 @@ const _RouteMetadata = t.readonly(
 );
 export interface RouteMetadata extends t.TypeOf<typeof _RouteMetadata> {}
 export interface RouteMetadataC extends t.Type<RouteMetadata, t.OutputOf<typeof _RouteMetadata>> {}
-export const RouteMetadata: RouteMetadataC = _RouteMetadata;
+// FIXME: remove all this decoding workaround when additional_hash is hash of exact canonicalized
+// metadata, without changes; it's needed while PC hashes the checksummed addresses but sends the
+// lowercased serialized version
+const routeMetadataPredicate = (u: RouteMetadata) =>
+  !u.address_metadata || t.array(Address).is(Object.keys(u.address_metadata));
+export const RouteMetadata: RouteMetadataC = new t.RefinementType(
+  'RouteMetadata',
+  (u): u is RouteMetadata => _RouteMetadata.is(u) && routeMetadataPredicate(u),
+  (i, c) => {
+    const e = _RouteMetadata.validate(i, c);
+    if (isLeft(e)) return e;
+    const a = e.right;
+    if (!a.address_metadata) return t.success(a);
+    else if (isEmpty(a.address_metadata)) {
+      const { address_metadata: _, ...rest } = a;
+      return t.success(rest);
+    }
+    const address_metadata: NonNullable<RouteMetadata['address_metadata']> = {};
+    // for each key of address_metadata's record, validate/decode it as Address
+    for (const [addr, meta] of Object.entries(a.address_metadata!)) {
+      const ev = Address.validate(addr, c);
+      if (isLeft(ev)) return ev;
+      address_metadata[ev.right] = meta;
+    }
+    return t.success({ ...a, address_metadata });
+  },
+  _RouteMetadata.encode,
+  _RouteMetadata,
+  routeMetadataPredicate,
+);
 
 const _Metadata = t.readonly(
   t.type({
