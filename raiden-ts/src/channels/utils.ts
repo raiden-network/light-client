@@ -209,7 +209,6 @@ export function groupChannel$(state$: Observable<RaidenState>) {
   );
 }
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * Approves spender to transfer up to 'deposit' from our tokens; skips if already allowed
  *
@@ -263,4 +262,3 @@ export function approveIfNeeded$(
     pluck(1),
   );
 }
-/* eslint-enable jsdoc/valid-types */
