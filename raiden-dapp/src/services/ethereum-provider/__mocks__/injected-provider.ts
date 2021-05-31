@@ -6,5 +6,6 @@ export class InjectedProvider {
     return true;
   }
 
+  public static isDisabled = jest.fn().mockResolvedValue(false);
   public static link = jest.fn(async () => new InjectedProvider());
 }

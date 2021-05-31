@@ -11,6 +11,7 @@
 
     <template v-if="showProviderButtons">
       <action-button
+        v-if="!injectedProviderDisabled"
         class="connection-manager__provider-dialog-button"
         :enabled="injectedProviderAvailable"
         :text="$t('connection-manager.dialogs.injected-provider.header')"
@@ -18,6 +19,7 @@
         @click="openInjectedProviderDialog"
       />
       <action-button
+        v-if="!walletConnectProviderDisabled"
         class="connection-manager__provider-dialog-button"
         :enabled="walletConnectProviderAvailable"
         :text="$t('connection-manager.dialogs.wallet-connect-provider.header')"
@@ -25,6 +27,7 @@
         @click="openWalletConnectProviderDialog"
       />
       <action-button
+        v-if="!directRpcProviderDisabled"
         class="connection-manager__provider-dialog-button"
         data-cy="connection-manager__provider-dialog-button"
         :enabled="directRpcProviderAvailable"
@@ -106,9 +109,14 @@ export default class ConnectionManager extends Vue {
   stateBackup!: string;
   useRaidenAccount!: boolean;
 
+  injectedProviderDisabled = true;
+  walletConnectProviderDisabled = true;
+  directRpcProviderDisabled = true;
+
   injectedProviderDialogVisible = false;
   walletConnectProviderDialogVisible = false;
   directRpcProviderDialogVisible = false;
+
   inProgress = false;
   errorCode: ErrorCode | null = null;
 
@@ -135,6 +143,18 @@ export default class ConnectionManager extends Vue {
 
   get directRpcProviderAvailable(): boolean {
     return DirectRpcProvider.isAvailable;
+  }
+
+  async created(): Promise<void> {
+    this.checkProvidersForBeingDisabled();
+  }
+
+  async checkProvidersForBeingDisabled(): Promise<void> {
+    InjectedProvider.isDisabled().then((disabled) => (this.injectedProviderDisabled = disabled));
+    WalletConnectProvider.isDisabled().then(
+      (disabled) => (this.walletConnectProviderDisabled = disabled),
+    );
+    DirectRpcProvider.isDisabled().then((disabled) => (this.directRpcProviderDisabled = disabled));
   }
 
   openInjectedProviderDialog(): void {

@@ -19,7 +19,6 @@ describe('InjectedProvider', () => {
     window.ethereum = undefined;
     window.web3 = undefined;
     jest.clearAllMocks();
-    jest.resetAllMocks();
   });
 
   test('is not available when no injected provider is available', () => {
