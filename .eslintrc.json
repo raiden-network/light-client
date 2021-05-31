@@ -43,7 +43,7 @@
     "import/export": "off",
     "import/first": "error",
     "import/newline-after-import": "error",
-    "import/no-extraneous-dependencies": "off",
+    "import/no-extraneous-dependencies": "error",
     "import/no-duplicates": "error",
     "simple-import-sort/imports": [
       "error",
