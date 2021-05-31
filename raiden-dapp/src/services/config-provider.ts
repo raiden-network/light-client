@@ -34,6 +34,7 @@ export class ConfigProvider {
 
 export interface Configuration {
   readonly per_network: { [key: string]: NetworkConfiguration };
+  readonly disabled_ethereum_providers?: string[];
 }
 
 export interface NetworkConfiguration {
