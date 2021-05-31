@@ -10,50 +10,28 @@
     </v-alert>
 
     <template v-if="showProviderButtons">
-      <action-button
-        v-if="!injectedProviderDisabled"
-        class="connection-manager__provider-dialog-button"
-        :enabled="injectedProviderAvailable"
-        :text="$t('connection-manager.dialogs.injected-provider.header')"
-        width="280px"
-        @click="openInjectedProviderDialog"
-      />
-      <action-button
-        v-if="!walletConnectProviderDisabled"
-        class="connection-manager__provider-dialog-button"
-        :enabled="walletConnectProviderAvailable"
-        :text="$t('connection-manager.dialogs.wallet-connect-provider.header')"
-        width="280px"
-        @click="openWalletConnectProviderDialog"
-      />
-      <action-button
-        v-if="!directRpcProviderDisabled"
-        class="connection-manager__provider-dialog-button"
-        data-cy="connection-manager__provider-dialog-button"
-        :enabled="directRpcProviderAvailable"
-        :text="$t('connection-manager.dialogs.direct-rpc-provider.header')"
-        width="280px"
-        @click="openDirectRpcProviderDialog"
-      />
+      <template v-for="(providerEntry, providerName) in providerList">
+        <action-button
+          v-if="!isProviderDisabled(providerName)"
+          :key="'button_' + providerName"
+          class="connection-manager__provider-dialog-button"
+          :enabled="providerEntry.factory.isAvailable"
+          :text="$t(providerEntry.buttonText)"
+          width="280px"
+          @click="openProviderDialog(providerName)"
+        />
+      </template>
     </template>
 
-    <injected-provider-dialog
-      v-if="injectedProviderDialogVisible"
-      @linkEstablished="onProviderLinkEstablished"
-      @cancel="closeInjectedProviderDialog"
-    />
-
-    <wallet-connect-provider-dialog
-      v-if="walletConnectProviderDialogVisible"
-      @linkEstablished="onProviderLinkEstablished"
-      @cancel="closeWalletConnectProviderDialog"
-    />
-
-    <direct-rpc-provider-dialog
-      v-if="directRpcProviderDialogVisible"
-      @linkEstablished="onProviderLinkEstablished"
-      @cancel="closeDirectRpcProviderDialog"
-    />
+    <template v-for="(providerEntry, providerName) in providerList">
+      <component
+        :is="providerEntry.dialogComponent"
+        v-if="isProviderDialogVisible(providerName)"
+        :key="'dialog_' + providerName"
+        @linkEstablished="onProviderLinkEstablished"
+        @cancel="closeProviderDialog(providerName)"
+      />
+    </template>
 
     <template v-if="inProgress">
       <connection-pending-dialog @reset-connection="resetConnection" />
@@ -67,12 +45,9 @@ import { createNamespacedHelpers, mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
-import DirectRpcProviderDialog from '@/components/dialogs/DirectRpcProviderDialog.vue';
-import InjectedProviderDialog from '@/components/dialogs/InjectedProviderDialog.vue';
-import WalletConnectProviderDialog from '@/components/dialogs/WalletConnectProviderDialog.vue';
 import { ErrorCode } from '@/model/types';
 import { ConfigProvider } from '@/services/config-provider';
-import type { EthereumProvider } from '@/services/ethereum-provider';
+import type { EthereumProvider, EthereumProviderFactory } from '@/services/ethereum-provider';
 import {
   DirectRpcProvider,
   InjectedProvider,
@@ -91,6 +66,32 @@ function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
 
 const { mapState: mapUserSettingsState } = createNamespacedHelpers('userSettings');
 
+interface ProviderListEntry {
+  factory: EthereumProviderFactory;
+  buttonText: string;
+  dialogComponent: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
+type ProviderList = { [providerName: string]: ProviderListEntry };
+
+const providerList: ProviderList = {
+  [InjectedProvider.providerName]: {
+    factory: InjectedProvider,
+    buttonText: 'connection-manager.dialogs.injected-provider.header',
+    dialogComponent: () => import('@/components/dialogs/InjectedProviderDialog.vue'),
+  },
+  [WalletConnectProvider.providerName]: {
+    factory: WalletConnectProvider,
+    buttonText: 'connection-manager.dialogs.wallet-connect-provider.header',
+    dialogComponent: () => import('@/components/dialogs/WalletConnectProviderDialog.vue'),
+  },
+  [DirectRpcProvider.providerName]: {
+    factory: DirectRpcProvider,
+    buttonText: 'connection-manager.dialogs.direct-rpc-provider.header',
+    dialogComponent: () => import('@/components/dialogs/DirectRpcProviderDialog.vue'),
+  },
+};
+
 @Component({
   computed: {
     ...mapState(['isConnected', 'stateBackup']),
@@ -99,9 +100,6 @@ const { mapState: mapUserSettingsState } = createNamespacedHelpers('userSettings
   components: {
     ActionButton,
     ConnectionPendingDialog,
-    DirectRpcProviderDialog,
-    InjectedProviderDialog,
-    WalletConnectProviderDialog,
   },
 })
 export default class ConnectionManager extends Vue {
@@ -109,16 +107,16 @@ export default class ConnectionManager extends Vue {
   stateBackup!: string;
   useRaidenAccount!: boolean;
 
-  injectedProviderDisabled = true;
-  walletConnectProviderDisabled = true;
-  directRpcProviderDisabled = true;
-
-  injectedProviderDialogVisible = false;
-  walletConnectProviderDialogVisible = false;
-  directRpcProviderDialogVisible = false;
-
   inProgress = false;
   errorCode: ErrorCode | null = null;
+  providerList: ProviderList = providerList;
+  providerDialogOpenState: { [providerName: string]: boolean } = Object.fromEntries(
+    Object.keys(this.providerList).map((name) => [name, false] as const),
+  );
+
+  providerDisabledState: { [providerName: string]: boolean } = Object.fromEntries(
+    Object.keys(this.providerList).map((name) => [name, true] as const),
+  );
 
   get showProviderButtons(): boolean {
     return !this.isConnected && !this.inProgress;
@@ -133,58 +131,38 @@ export default class ConnectionManager extends Vue {
     }
   }
 
-  get injectedProviderAvailable(): boolean {
-    return InjectedProvider.isAvailable;
+  isProviderDisabled(providerName: string): boolean {
+    return this.providerDisabledState[providerName] ?? true;
   }
 
-  get walletConnectProviderAvailable(): boolean {
-    return WalletConnectProvider.isAvailable;
+  isProviderDialogVisible(providerName: string): boolean {
+    return this.providerDialogOpenState[providerName] ?? false;
   }
 
-  get directRpcProviderAvailable(): boolean {
-    return DirectRpcProvider.isAvailable;
+  openProviderDialog(providerName: string): void {
+    this.providerDialogOpenState[providerName] = true;
   }
 
-  async created(): Promise<void> {
-    this.checkProvidersForBeingDisabled();
+  closeProviderDialog(providerName: string): void {
+    this.providerDialogOpenState[providerName] = false;
   }
 
-  async checkProvidersForBeingDisabled(): Promise<void> {
-    InjectedProvider.isDisabled().then((disabled) => (this.injectedProviderDisabled = disabled));
-    WalletConnectProvider.isDisabled().then(
-      (disabled) => (this.walletConnectProviderDisabled = disabled),
-    );
-    DirectRpcProvider.isDisabled().then((disabled) => (this.directRpcProviderDisabled = disabled));
+  created(): void {
+    this.checkForDisabledProviders();
   }
 
-  openInjectedProviderDialog(): void {
-    this.injectedProviderDialogVisible = true;
-  }
-
-  closeInjectedProviderDialog(): void {
-    this.injectedProviderDialogVisible = false;
-  }
-
-  openWalletConnectProviderDialog(): void {
-    this.walletConnectProviderDialogVisible = true;
-  }
-
-  closeWalletConnectProviderDialog(): void {
-    this.walletConnectProviderDialogVisible = false;
-  }
-
-  openDirectRpcProviderDialog(): void {
-    this.directRpcProviderDialogVisible = true;
-  }
-
-  closeDirectRpcProviderDialog(): void {
-    this.directRpcProviderDialogVisible = false;
+  async checkForDisabledProviders(): Promise<void> {
+    for (const [providerName, providerEntry] of Object.entries(this.providerList)) {
+      providerEntry.factory.isDisabled().then((disabled) => {
+        this.providerDisabledState[providerName] = disabled;
+      });
+    }
   }
 
   closeAllProviderDialogs(): void {
-    this.closeInjectedProviderDialog();
-    this.closeWalletConnectProviderDialog();
-    this.closeDirectRpcProviderDialog();
+    this.providerDialogOpenState = Object.fromEntries(
+      Object.keys(this.providerDialogOpenState).map((name) => [name, false] as const),
+    );
   }
 
   async onProviderLinkEstablished(linkedProvider: EthereumProvider): Promise<void> {
