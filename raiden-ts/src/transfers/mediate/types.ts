@@ -5,7 +5,7 @@ import BN from 'bignumber.js';
 import * as t from 'io-ts';
 
 import type { Channel } from '../../channels';
-import type { UInt } from '../../utils/types';
+import type { UInt, UnionToIntersection } from '../../utils/types';
 import { Address, decode, Int } from '../../utils/types';
 
 /**

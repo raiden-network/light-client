@@ -328,3 +328,13 @@ export type Decodable<T> = T extends BigNumber
   : unknown extends T
   ? unknown
   : { [K in keyof T]: Decodable<T[K]> };
+
+/**
+ * Converts a union to the respective intersection
+ * Example: type UnionToIntersection<{ a: string } | { b: number }> = { a: string } & { b: number }
+ */
+export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
