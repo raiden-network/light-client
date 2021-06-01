@@ -41,7 +41,7 @@ describe('TransferSummary.vue', () => {
     expect(wrapper.text()).toContain(paymentId.toString());
 
     // Shows direct transfer header
-    expect(wrapper.find('.transfer-summary__header').text()).toContain(
+    expect(wrapper.find('.transfer-summary__sub-header').text()).toContain(
       'transfer.steps.summary.direct-transfer',
     );
 
@@ -54,7 +54,7 @@ describe('TransferSummary.vue', () => {
   test('show mediated transfer breakdown', () => {
     wrapper = createWrapper(mediatedTransfer);
 
-    const routeRequestHeader = wrapper.findAll('.transfer-summary__header').at(1);
+    const routeRequestHeader = wrapper.findAll('.transfer-summary__sub-header').at(1);
     const explanations = wrapper.find('.transfer-summary__explanation');
 
     // Shows mediated transfer header

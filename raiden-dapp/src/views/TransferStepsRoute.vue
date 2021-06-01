@@ -198,7 +198,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   get selectedPfsPrice(): BigNumberish {
     return this.selectedPfs?.price ?? constants.Zero;
   }
-  
+
   get selectedPfsUrl(): string {
     return this.selectedPfs?.url ?? '';
   }
@@ -457,7 +457,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   padding: 20px 60px 50px;
 
   @include respond-to(handhelds) {
-    padding: 10px 10px 50px;
+    padding: 0 10px 50px;
   }
 
   &__stepper {
@@ -466,6 +466,10 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
 
     &__items {
       margin-top: 20px;
+
+      @include respond-to(handhelds) {
+        margin-top: 0px;
+      }
     }
   }
 
