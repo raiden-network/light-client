@@ -85,8 +85,8 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
 <style scoped lang="scss">
 .download-state {
   &__warning {
-    height: 110px;
-    width: 110px;
+    height: 105px;
+    width: 120px;
     margin: 0 auto;
   }
 }
