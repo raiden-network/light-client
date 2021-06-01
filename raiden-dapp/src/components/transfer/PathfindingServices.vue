@@ -14,6 +14,7 @@
       show-select
       sort-by="price"
       item-key="address"
+      mobile-breakpoint="0"
       class="pathfinding-services__table"
       @item-selected="select($event)"
     >
@@ -166,7 +167,7 @@ export default class PathfindingServices extends Vue {
         border: none !important;
 
         @include respond-to(handhelds) {
-          padding: 0;
+          padding: 0 !important;
         }
       }
 
@@ -178,7 +179,7 @@ export default class PathfindingServices extends Vue {
 
         @include respond-to(handhelds) {
           height: auto;
-          padding: 0;
+          padding: 0 !important;
         }
       }
 

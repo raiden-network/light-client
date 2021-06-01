@@ -47,7 +47,7 @@
           <find-routes
             :token="token"
             :routes="routes"
-            :pfs-url="selectedPfs.url"
+            :pfs-url="selectedPfsUrl"
             @select="setRoute($event)"
           />
         </v-stepper-content>
@@ -198,11 +198,15 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   get selectedPfsPrice(): BigNumberish {
     return this.selectedPfs?.price ?? constants.Zero;
   }
+  
+  get selectedPfsUrl(): string {
+    return this.selectedPfs?.url ?? '';
+  }
 
   get transferSummary(): Transfer {
     return {
-      pfsAddress: this.selectedPfs?.url ?? ('' as string),
-      serviceFee: this.selectedPfs?.price ?? (constants.Zero as BigNumber),
+      pfsAddress: this.selectedPfsUrl,
+      serviceFee: this.selectedPfsPrice,
       serviceToken: this.udcToken,
       mediationFee: this.selectedRouteFees,
       target: this.target,
@@ -370,15 +374,15 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
 
   get continueBtnEnabled() {
     if (this.step == 1) {
-      return this.selectedPfs !== null && this.udcCapacity.gte(this.selectedPfs.price);
+      return !!this.selectedPfs && this.udcCapacity.gte(this.selectedPfsPrice);
     }
 
     if (this.step == 2) {
-      return this.selectedRoute !== null;
+      return !!this.selectedRoute;
     }
 
     if (this.step == 3) {
-      return this.selectedRoute !== null && !this.processingTransfer;
+      return !!this.selectedRoute && !this.processingTransfer;
     }
 
     return false;
