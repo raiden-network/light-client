@@ -6,7 +6,7 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 
 @Component
-export default class StepperStep extends Vue {
+export default class StepperDivider extends Vue {
   @Prop({ type: Boolean, required: false, default: false })
   active!: boolean;
 }
