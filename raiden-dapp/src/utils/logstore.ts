@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 import type { DBSchema, IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
+import type { LoggingMethod, LogLevelNumbers } from 'loglevel';
 import logging from 'loglevel';
 
 const storeName = 'logs';
@@ -98,14 +99,19 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
 
   for (const log of [logging, ...additionalLoggers.map(logging.getLogger)]) {
     const origFactory = log.methodFactory;
-    log.methodFactory = function raidenMethodFactory(methodName, level, loggerName) {
+
+    function raidenMethodFactory(
+      methodName: string,
+      level: LogLevelNumbers,
+      loggerName: string | symbol,
+    ): LoggingMethod {
       const rawMethod = origFactory(methodName, level, loggerName);
       const name = loggerName.toString();
       setDbForLogger(name);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (...message: any[]): void => {
-        rawMethod(...message);
+        rawMethod.apply({}, [...message]);
         const filtered = filterMessage(message);
         if (!filtered) return;
         db.put(
@@ -130,7 +136,10 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
           ),
         );
       };
-    };
+    }
+
+    raidenMethodFactory.allow_overwrite = true;
+    log.methodFactory = raidenMethodFactory;
   }
 }
 

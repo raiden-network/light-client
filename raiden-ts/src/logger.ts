@@ -7,9 +7,9 @@ Object.defineProperty(logging, 'methodFactory', {
   get() {
     return curMethodFactory;
   },
-  set(func: typeof curMethodFactory) {
+  set(func: typeof curMethodFactory & { allow_overwrite?: boolean }) {
     /* prevent anyone else but us (e.g. matrix) from overwriting methodFactory  */
-    if (!func.name?.startsWith('raiden')) return;
+    if (!func.allow_overwrite) return;
     curMethodFactory = func;
   },
 });
