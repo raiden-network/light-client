@@ -50,7 +50,7 @@ export function setupLoglevel(output?: string): void {
     };
   }
 
-  raidenMethodFactory.allow_overwrite = true;
+  raidenMethodFactory.allowOverwrite = true;
   logging.methodFactory = raidenMethodFactory;
   logging.setLevel(process.env.NODE_ENV === 'production' ? 'INFO' : 'DEBUG');
 }

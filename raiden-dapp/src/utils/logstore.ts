@@ -139,7 +139,7 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
       };
     }
 
-    raidenMethodFactory.allow_overwrite = true;
+    raidenMethodFactory.allowOverwrite = true;
     log.methodFactory = raidenMethodFactory;
   }
 }
