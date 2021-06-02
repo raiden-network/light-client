@@ -97,7 +97,6 @@ async function createWrapper(
   const wrapper = shallowMount(TransferSteps, {
     store,
     vuetify,
-    // stubs: { 'action-button': ActionButton },
     stubs: { 'action-button': ActionButton },
     mocks: { $router, $route, $t, $raiden },
     data: function () {
