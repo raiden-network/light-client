@@ -1,5 +1,6 @@
 import { BigNumber } from 'ethers';
 import fs from 'fs';
+import type { LoggingMethod, LogLevelNumbers, RootLogger } from 'loglevel';
 import logging from 'loglevel';
 import util from 'util';
 
@@ -30,8 +31,14 @@ export function setupLoglevel(output?: string): void {
 
   const originalFactory = logging.methodFactory;
   let first = true;
-  logging.methodFactory = function raidenMethodFactory(methodName, level, loggerName) {
+  function raidenMethodFactory(
+    this: RootLogger,
+    methodName: string,
+    level: LogLevelNumbers,
+    loggerName: string | symbol,
+  ): LoggingMethod {
     const rawMethod = originalFactory.call(this, methodName, level, loggerName);
+
     return (...message: unknown[]): void => {
       const prefix = [new Date(Date.now()).toISOString()];
       if (first && typeof loggerName === 'string' && loggerName.startsWith('raiden')) {
@@ -39,9 +46,12 @@ export function setupLoglevel(output?: string): void {
         first = false;
       }
       prefix.push(`[${methodName}]`, '=>');
-      rawMethod(...prefix, ...message);
+      rawMethod.call(this, ...prefix, ...message);
     };
-  };
+  }
+
+  raidenMethodFactory.allow_overwrite = true;
+  logging.methodFactory = raidenMethodFactory;
   logging.setLevel(process.env.NODE_ENV === 'production' ? 'INFO' : 'DEBUG');
 }
 
