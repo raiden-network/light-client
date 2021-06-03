@@ -623,7 +623,7 @@ export default class RaidenService {
   }
 
   /* istanbul ignore next */
-  async getState() {
+  async stopAndGetDatabaseDump() {
     this._raiden!.stop();
     return this._raiden!.dumpDatabase();
   }
