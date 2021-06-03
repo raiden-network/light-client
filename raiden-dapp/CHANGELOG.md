@@ -7,6 +7,7 @@
 - [#2671] Fix preventing transfers to partners with closed channel
 - [#2675] Fix insecure behavior on navigation without connected token
 - [#2754] Fix empty logs in production mode
+- [#2774] Fix duplicated navigation error after doing a backup
 
 ### Added
 
@@ -28,6 +29,7 @@
 [#2675]: https://github.com/raiden-network/light-client/issues/2675
 [#2754]: https://github.com/raiden-network/light-client/issues/2754
 [#2604]: https://github.com/raiden-network/light-client/issues/2604
+[#2774]: https://github.com/raiden-network/light-client/issues/2774
 
 ## [0.16.0] - 2021-04-01
 

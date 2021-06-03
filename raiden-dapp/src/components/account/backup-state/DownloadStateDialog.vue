@@ -52,12 +52,11 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
 
     downloadLink.click();
     this.revokeDownloadURL(stateFileURL, downloadLink);
-    this.navigateToHome();
   }
 
   /* istanbul ignore next */
   async getStateFileURL(filename: string): Promise<string> {
-    const state = await this.$raiden.getState();
+    const state = await this.$raiden.stopAndGetDatabaseDump();
     const stateJSON = JSON.stringify(state);
     const file = new File([stateJSON], filename, { type: 'application/json' });
     return URL.createObjectURL(file);
