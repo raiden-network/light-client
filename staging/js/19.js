@@ -92,6 +92,17 @@ eval("// style-loader: Adds some css to the DOM by adding a <style> tag\n\n// lo
 
 /***/ }),
 
+/***/ "./src/assets/icon-deposit.svg":
+/*!*************************************!*\
+  !*** ./src/assets/icon-deposit.svg ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+eval("module.exports = __webpack_require__.p + \"img/icon-deposit.83f3ca48.svg\";//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIndlYnBhY2stdnVlOi8vLy4vc3JjL2Fzc2V0cy9pY29uLWRlcG9zaXQuc3ZnIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBLGlCQUFpQixxQkFBdUIiLCJmaWxlIjoiLi9zcmMvYXNzZXRzL2ljb24tZGVwb3NpdC5zdmcuanMiLCJzb3VyY2VzQ29udGVudCI6WyJtb2R1bGUuZXhwb3J0cyA9IF9fd2VicGFja19wdWJsaWNfcGF0aF9fICsgXCJpbWcvaWNvbi1kZXBvc2l0LjgzZjNjYTQ4LnN2Z1wiOyJdLCJzb3VyY2VSb290IjoiIn0=\n//# sourceURL=webpack-internal:///./src/assets/icon-deposit.svg\n");
+
+/***/ }),
+
 /***/ "./src/components/dialogs/OpenChannelDialog.vue":
 /*!******************************************************!*\
   !*** ./src/components/dialogs/OpenChannelDialog.vue ***!
