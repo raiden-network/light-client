@@ -6,5 +6,6 @@
         "0xC563388e2e2fdD422166eD5E76971D11eD37A466"
       ]
     }
-  }
+  },
+  "disabled_ethereum_providers": ["direct_rpc_provider"]
 }
