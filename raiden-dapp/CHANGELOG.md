@@ -16,6 +16,7 @@
 - [#2630] Allow user to customize WalletConnection options
 - [#2598] Allow user to customize direct RPC provider options
 - [#2689] Add new connection manager to let the user select and configure provider
+- [#2604] Improve layout to work everywhere on narrow mobile screens
 
 [#2671]: https://github.com/raiden-network/light-client/issues/2671
 [#2599]: https://github.com/raiden-network/light-client/issues/2599
@@ -26,6 +27,7 @@
 [#2589]: https://github.com/raiden-network/light-client/issues/2598
 [#2675]: https://github.com/raiden-network/light-client/issues/2675
 [#2754]: https://github.com/raiden-network/light-client/issues/2754
+[#2604]: https://github.com/raiden-network/light-client/issues/2604
 
 ## [0.16.0] - 2021-04-01
 
