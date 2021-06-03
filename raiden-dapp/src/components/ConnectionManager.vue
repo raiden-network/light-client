@@ -15,6 +15,7 @@
           v-if="!isProviderDisabled(providerName)"
           :key="'button_' + providerName"
           class="connection-manager__provider-dialog-button"
+          :data-cy="'connection-manager__provider-dialog-button__' + providerName"
           :enabled="providerEntry.factory.isAvailable"
           :text="$t(providerEntry.buttonText)"
           width="280px"

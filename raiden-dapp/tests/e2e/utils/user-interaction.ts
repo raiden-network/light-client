@@ -16,8 +16,10 @@ export function acceptDisclaimer() {
 export function connectToDApp() {
   // cypress selectors: raiden-dapp/src/views/Home.vue
   cy.get('[data-cy=home]').should('exist');
-  cy.get('[data-cy=connection-manager__provider-dialog-button]').should('exist');
-  cy.get('[data-cy=connection-manager__provider-dialog-button]').click();
+  cy.getWithCustomTimeout(
+    '[data-cy=connection-manager__provider-dialog-button__direct_rpc_provider]',
+  ).should('exist');
+  cy.get('[data-cy=connection-manager__provider-dialog-button__direct_rpc_provider]').click();
   cy.get('[data-cy=direct-rpc-provider]').should('exist');
   cy.get('[data-cy=direct-rpc-provider__options__rpc-url]')
     .find('.text-input-with-toggle__input')
