@@ -150,9 +150,8 @@ async function parseArguments() {
       },
       enableMediation: {
         type: 'boolean',
-        default: false,
-        desc: 'Enables support for mediated payments (unsupported).',
-        hidden: true, // hidden from help because not officially supported
+        default: true,
+        desc: 'Enables support for mediated payments.',
       },
       flatFee: {
         type: 'string',
