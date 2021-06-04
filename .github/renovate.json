@@ -5,13 +5,19 @@
   "commitMessagePrefix": "deps:",
   "packageRules": [
     {
-      "packagePatterns": [
-        "*"
-      ],
+      "packagePatterns": ["*"],
+      "excludePackageNames": ["typescript"],
       "updateTypes": ["minor", "patch", "pin", "digest", "lockFileMaintenance", "rollback", "bump"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch",
       "schedule": ["before 8am on thursday"]
+    },
+    {
+      "matchPackageNames": ["typescript"],
+      "updateTypes": ["minor", "patch", "pin", "digest", "lockFileMaintenance", "rollback", "bump"],
+      "groupName": "typescript",
+      "groupSlug": "typescript",
+      "schedule": ["before 8am on wednesday"]
     },
     {
       "updateTypes": ["major"],
