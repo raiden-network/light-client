@@ -11,7 +11,7 @@
           </v-list-item-subtitle>
         </v-list-item-content>
         <v-list-item-action>
-          <v-switch v-model="useRaidenAccount" @change="toggleRaidenAccountUsage" />
+          <v-switch v-model="useRaidenAccountModel" />
         </v-list-item-action>
       </v-list-item>
     </v-list>
@@ -25,18 +25,19 @@ import { createNamespacedHelpers } from 'vuex';
 const { mapState, mapMutations } = createNamespacedHelpers('userSettings');
 
 @Component({
-  computed: {
-    ...mapState(['useRaidenAccount']),
-    ...mapMutations(['enableRaidenAccount', 'disableRaidenAccount']),
-  },
+  computed: { ...mapState(['useRaidenAccount']) },
+  methods: { ...mapMutations(['enableRaidenAccount', 'disableRaidenAccount']) },
 })
 export default class RaidenSettings extends Vue {
   useRaidenAccount!: boolean;
-
   enableRaidenAccount!: () => void;
   disableRaidenAccount!: () => void;
 
-  toggleRaidenAccountUsage(value: boolean): void {
+  get useRaidenAccountModel(): boolean {
+    return this.useRaidenAccount;
+  }
+
+  set useRaidenAccountModel(value: boolean) {
     value ? this.enableRaidenAccount() : this.disableRaidenAccount();
   }
 }

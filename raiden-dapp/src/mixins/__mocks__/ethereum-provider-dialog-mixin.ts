@@ -5,6 +5,8 @@ import type { EthereumProvider, EthereumProviderFactory } from '@/services/ether
 @Component
 export default class EthereumProviderDialogMixin extends Vue {
   providerFactory!: EthereumProviderFactory;
+  linkingInProgress = false;
+  linkingFailed = false;
 
   get canLink() {
     return true;
