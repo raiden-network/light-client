@@ -46,7 +46,7 @@ describe('OpenChannelRoute.vue', () => {
     const options = {
       vuetify,
       store,
-      stubs: ['v-dialog'],
+      stubs: ['v-dialog', 'v-icon'],
       propsData: {
         current: 0,
       },

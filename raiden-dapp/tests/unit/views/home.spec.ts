@@ -3,14 +3,19 @@ import { $t } from '../utils/mocks';
 import type { Wrapper } from '@vue/test-utils';
 import { shallowMount } from '@vue/test-utils';
 import Vue from 'vue';
+import VueI18n from 'vue-i18n';
 import VueRouter from 'vue-router';
+import Vuetify from 'vuetify';
 import Vuex from 'vuex';
 
 import { RouteNames } from '@/router/route-names';
 import Home from '@/views/Home.vue';
 
 Vue.use(Vuex);
+Vue.use(Vuetify);
+Vue.use(VueI18n);
 
+const vuetify = new Vuetify();
 const $router = new VueRouter() as jest.Mocked<VueRouter>;
 $router.push = jest.fn();
 
@@ -20,6 +25,7 @@ function createWrapper(options?: { isConnected?: boolean; redirectTo?: string })
   const $route = { query: { redirectTo: options?.redirectTo } };
 
   return shallowMount(Home, {
+    vuetify,
     store,
     mocks: {
       $router,

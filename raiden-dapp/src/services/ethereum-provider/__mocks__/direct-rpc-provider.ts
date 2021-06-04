@@ -7,6 +7,7 @@ export class DirectRpcProvider {
     this.chainId = chainId;
   }
 
+  public static isAvailable = true;
   public static isDisabled = jest.fn().mockResolvedValue(false);
 
   public static link = jest.fn(async (options?: { chainId?: number }) => {
