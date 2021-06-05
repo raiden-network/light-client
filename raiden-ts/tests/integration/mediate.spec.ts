@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   amount,
   ensureChannelIsDeposited,
@@ -13,19 +12,16 @@ import {
 import { makeRaidens } from './mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
-import { AddressZero, MaxUint256, Zero } from '@ethersproject/constants';
+import { Zero } from '@ethersproject/constants';
 import { first } from 'rxjs/operators';
 
 import { raidenConfigUpdate } from '@/actions';
 import { Capabilities } from '@/constants';
 import { MessageType } from '@/messages/types';
 import { transfer, transferSigned } from '@/transfers/actions';
-import type { FeeModel } from '@/transfers/mediate/types';
-import { getStandardFeeCalculator } from '@/transfers/mediate/types';
 import { Direction } from '@/transfers/state';
 import { makePaymentId } from '@/transfers/utils';
-import { assert } from '@/utils';
-import { decode, Int, UInt } from '@/utils/types';
+import type { Int, UInt } from '@/utils/types';
 
 import { makeAddress, sleep } from '../utils';
 
@@ -196,86 +192,5 @@ describe('mediate transfers', () => {
     expect(partner.output).not.toContainEqual(
       transfer.request(expect.anything(), { secrethash, direction: Direction.SENT }),
     );
-  });
-});
-
-describe('getStandardFeeCalculator', () => {
-  const token = makeAddress();
-  const unknownToken = makeAddress();
-  // a simple toy feeModel
-  const keyModel: FeeModel<number, { key: string }> = {
-    name: 'key',
-    emptySchedule: { key: '0' },
-    decodeConfig(config) {
-      assert(typeof config === 'number');
-      return config + 1;
-    },
-    fee(config) {
-      return (amountIn) => decode(Int(32), amountIn.sub(config));
-    },
-    schedule(config) {
-      return { key: config.toString() };
-    },
-  };
-  const calculator = getStandardFeeCalculator({ key: keyModel });
-
-  test('decodeConfig', () => {
-    // per-token configs are optional
-    expect(calculator.decodeConfig({ [token]: {} })).toBeDefined();
-    // matching isn't exact, unknown properties are accepted
-    expect(calculator.decodeConfig({ [token]: { custom: 123 } })).toBeDefined();
-    // returned config is decoded by sub-model
-    expect(calculator.decodeConfig({ [token]: { key: 100 } })).toEqual({
-      [token]: { key: 101 },
-    });
-    // if it can't decode, it should throw
-    expect(() => calculator.decodeConfig({ [token]: { key: true } })).toThrow();
-  });
-
-  test('fee', () => {
-    const anotherToken = makeAddress();
-    const config = calculator.decodeConfig({
-      [token]: { key: 99 },
-      [anotherToken]: { custom: true },
-      [AddressZero]: { key: 999 },
-    });
-    // we avoid creating a whole channel state, just for testing purposes
-    const tokenChannel = { token } as any;
-
-    expect(calculator.fee(config, tokenChannel, tokenChannel)(decode(UInt(32), 1337))).toEqual(
-      BigNumber.from(1337 - 100),
-    );
-    // resulting fee out of range
-    expect(() =>
-      calculator.fee(
-        config,
-        tokenChannel,
-        tokenChannel,
-      )(decode(UInt(32), MaxUint256.mul(-1).add(50))),
-    ).toThrow();
-
-    // unknown token should fall back to [AddressZero] config
-    const unknownChannel = { token: unknownToken } as any;
-    expect(calculator.fee(config, unknownChannel, unknownChannel)(decode(UInt(32), 3000))).toEqual(
-      BigNumber.from(3000 - 1000),
-    );
-
-    // known token but unknown config should *not* pick the fallback, since there's a config
-    const anotherChannel = { token: anotherToken } as any;
-    expect(calculator.fee(config, anotherChannel, anotherChannel)(decode(UInt(32), 3000))).toEqual(
-      Zero,
-    );
-  });
-
-  test('schedule', () => {
-    const config = calculator.decodeConfig({ [token]: { key: 99 }, [AddressZero]: { key: 999 } });
-    // we avoid creating a whole channel state, just for testing purposes
-    const tokenChannel = { token } as any;
-
-    expect(calculator.schedule(config, tokenChannel)).toEqual({ key: '100' });
-
-    // unknown token should fall back to [AddressZero] config
-    const unknownChannel = { token: unknownToken } as any;
-    expect(calculator.schedule(config, unknownChannel)).toEqual({ key: '1000' });
   });
 });
