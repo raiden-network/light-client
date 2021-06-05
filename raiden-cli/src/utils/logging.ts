@@ -4,7 +4,7 @@ import type { LoggingMethod, LogLevelNumbers, RootLogger } from 'loglevel';
 import logging from 'loglevel';
 import util from 'util';
 
-util.inspect.defaultOptions.depth = 4; // +2 from default of 2
+util.inspect.defaultOptions.depth = 5; // +3 from default of 2
 
 const redactions: readonly [RegExp, string][] = [
   [/(\\?["']?access_?token\\?["']?\s*[=:]\s*\\?["']?)[\w-]+(\\?["']?)/gi, '$1<redacted>$2'],
