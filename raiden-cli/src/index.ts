@@ -165,6 +165,17 @@ async function parseArguments() {
         desc: 'Sets the proportional fee required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
         coerce: parseFeeOption,
       },
+      proportionalImbalanceFee: {
+        type: 'string',
+        nargs: 2,
+        desc: 'Sets the proportional imbalance fee penalty required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
+        coerce: parseFeeOption,
+      },
+      capMediationFees: {
+        type: 'boolean',
+        default: true,
+        desc: 'Enables capping mediation fees to not allow them to be negative (output transfers amount always less than or equal input transfers)',
+      },
     })
     .help()
     .alias('h', 'help')
@@ -325,14 +336,20 @@ function createRaidenConfig(
       },
     };
 
-  type FeeType = 'flat' | 'proportional';
-  let mediationFees: { [token: string]: { [K in FeeType]?: BigNumberish } } = {};
+  type FeeType = 'flat' | 'proportional' | 'imbalance';
+  let mediationFees: { [token: string]: { cap: boolean } & { [K in FeeType]?: BigNumberish } } =
+    {};
   for (const [addr, flat] of Object.entries(argv.flatFee ?? {})) {
     mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], flat } };
   }
   for (const [addr, proportional] of Object.entries(argv.proportionalFee ?? {})) {
     mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], proportional } };
   }
+  for (const [addr, imbalance] of Object.entries(argv.proportionalImbalanceFee ?? {})) {
+    mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], imbalance } };
+  }
+  for (const token in mediationFees) mediationFees[token].cap = argv.capMediationFees;
+
   if (Object.keys(mediationFees).length) config = { ...config, mediationFees };
 
   return config;
