@@ -123,13 +123,19 @@ export function transferMediateEpic(
       const channelIn = state.channels[channelKey({ tokenNetwork, partner: inPartner })];
       const channelOut = state.channels[channelKey({ tokenNetwork, partner: outPartner })];
 
-      let fee = mediationFeeCalculator.fee(
-        config.mediationFees,
-        channelIn,
-        channelOut,
-      )(message.lock.amount);
-      // on a transfer.request, fee is added to the value to get final sent amount, therefore
-      // here it needs to contain a negative fee, which we will "earn" instead of pay
+      let fee: Int<32>;
+      try {
+        fee = mediationFeeCalculator.fee(
+          config.mediationFees,
+          channelIn,
+          channelOut,
+        )(message.lock.amount);
+      } catch (error) {
+        log.warn('Mediation: could not calculate mediation fee, ignoring', { error });
+        return;
+      }
+      // on a transfer.request, fee is *added* to the value to get final sent amount,
+      // therefore here it needs to contain a negative fee, which we will "earn" instead of pay
       fee = fee.mul(-1) as Int<32>;
       const paths = cleanRoutes.map(({ route }) => ({ path: route, fee }));
 
