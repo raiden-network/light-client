@@ -1,5 +1,4 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { Zero } from '@ethersproject/constants';
 import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import pickBy from 'lodash/pickBy';
@@ -39,7 +38,7 @@ import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
 import { completeWith, dispatchRequestAndGetResponse, pluckDistinct } from '../../utils/rx';
-import type { Int, UInt } from '../../utils/types';
+import type { UInt } from '../../utils/types';
 import type { iouClear, iouPersist } from '../actions';
 import { pathFind, servicesValid } from '../actions';
 import { PfsMode, Service } from '../types';
@@ -184,14 +183,10 @@ export function pfsFeeUpdateEpic(
       ]).pipe(
         filter(([, caps]) => !!getCap(caps, Capabilities.MEDIATE)),
         map(([channel, , mediationFees]) => {
-          const schedule: PFSFeeUpdate['fee_schedule'] = {
-            cap_fees: true,
-            flat: Zero as Int<32>,
-            proportional: Zero as Int<32>,
-            imbalance_penalty: null,
-            ...mediationFeeCalculator.emptySchedule,
-          };
-          Object.assign(schedule, mediationFeeCalculator.schedule(mediationFees, channel));
+          const schedule: PFSFeeUpdate['fee_schedule'] = mediationFeeCalculator.schedule(
+            mediationFees,
+            channel,
+          );
           // using channel feeSchedule above, build a PFSFeeUpdate's schedule payload
           return [channel, schedule] as const;
         }),
