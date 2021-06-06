@@ -3,7 +3,7 @@ import { concat as concatBytes } from '@ethersproject/bytes';
 import { Zero } from '@ethersproject/constants';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
-import BN from 'bignumber.js';
+import { Decimal } from 'decimal.js';
 import type { Observable } from 'rxjs';
 import { defer, from, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
@@ -346,10 +346,10 @@ function addFeeSafetyMargin(
   }
   return decode(
     Int(32),
-    new BN(fee.toHexString())
-      .times(feeMultiplier)
-      .plus(new BN(amount.toHexString()).times(amountMultiplier))
-      .toFixed(0, BN.ROUND_CEIL), // fee = estimatedFee * (feeMultiplier) + amount * amountMultiplier
+    new Decimal(fee.toHexString())
+      .mul(feeMultiplier)
+      .add(new Decimal(amount.toHexString()).mul(amountMultiplier))
+      .toFixed(0, Decimal.ROUND_CEIL), // fee = estimatedFee * (feeMultiplier) + amount * amountMultiplier
   );
 }
 

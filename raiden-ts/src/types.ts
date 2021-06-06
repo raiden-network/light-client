@@ -69,8 +69,7 @@ export interface RaidenEpicDeps {
   db: RaidenDatabase;
   init$: Subject<Observable<any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  mediationFeeCalculator: FeeModel<any, Partial<PFSFeeUpdate['fee_schedule']>>;
-  // TODO: remove Partial on Schedule requirement once feeCalculator is complete
+  mediationFeeCalculator: FeeModel<any, PFSFeeUpdate['fee_schedule']>;
 }
 
 export interface ChangeEvent<T extends string, P> {
