@@ -222,16 +222,15 @@ export function makeTransaction(
 // array of cleanup functions registered on current test
 const mockedCleanups: (() => void)[] = [];
 
-export const fetch =
-  jest.fn<
-    Promise<{
-      ok: boolean;
-      status: number;
-      json: jest.MockedFunction<() => Promise<any>>;
-      text?: jest.MockedFunction<() => Promise<string>>;
-    }>,
-    [string?, any?]
-  >();
+export const fetch = jest.fn<
+  Promise<{
+    ok: boolean;
+    status: number;
+    json: jest.MockedFunction<() => Promise<any>>;
+    text?: jest.MockedFunction<() => Promise<string>>;
+  }>,
+  [string?, any?]
+>();
 Object.assign(globalThis, { fetch });
 
 beforeEach(() => {

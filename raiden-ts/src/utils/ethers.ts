@@ -34,8 +34,10 @@ declare const _filter: unique symbol;
 /**
  * Extract the union of TypedEventFilters for a given contract
  */
-export type ContractFilter<C extends Contract, E extends keyof C['filters'] = keyof C['filters']> =
-  ReturnType<C['filters'][E]>;
+export type ContractFilter<
+  C extends Contract,
+  E extends keyof C['filters'] = keyof C['filters'],
+> = ReturnType<C['filters'][E]>;
 /**
  * A simple Log, but tagged (at typecheck-time) to indicate the logs will map to a specific
  * TypedEvent/EventTuple
