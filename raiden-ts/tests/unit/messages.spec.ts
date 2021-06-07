@@ -6,7 +6,7 @@ import logging from 'loglevel';
 import path from 'path';
 
 import type { LockedTransfer } from '@/messages/types';
-import { Message, MessageType } from '@/messages/types';
+import { Message, MessageType, PFSFeeUpdate } from '@/messages/types';
 import {
   createMessageHash,
   decodeJsonMessage,
@@ -53,6 +53,51 @@ describe('sign/verify, pack & encode/decode ', () => {
       expect(jsonParse(encoded)).toEqual(originalParsed);
     }
   }, 10e3);
+
+  test('PFSFeeUpdate real life example', () => {
+    const encoded = {
+      fee_schedule: {
+        flat: '50',
+        imbalance_penalty: [
+          ['0', '40000000000000000'],
+          ['100000000000000000', '30737338856836652'],
+          ['200000000000000000', '22897336089597848'],
+          ['300000000000000000', '16398536520067884'],
+          ['400000000000000000', '11154192037077362'],
+          ['500000000000000000', '7071067811865476'],
+          ['600000000000000000', '4047715405015526'],
+          ['700000000000000000', '1971801207018598'],
+          ['800000000000000000', '715541752799933'],
+          ['900000000000000000', '126491106406735'],
+          ['1000000000000000000', '0'],
+          ['1100000000000000000', '126491106406735'],
+          ['1200000000000000000', '715541752799933'],
+          ['1300000000000000000', '1971801207018598'],
+          ['1400000000000000000', '4047715405015526'],
+          ['1500000000000000000', '7071067811865476'],
+          ['1600000000000000000', '11154192037077362'],
+          ['1700000000000000000', '16398536520067884'],
+          ['1800000000000000000', '22897336089597848'],
+          ['1900000000000000000', '30737338856836652'],
+          ['2000000000000000000', '40000000000000000'],
+        ],
+        cap_fees: false,
+        proportional: '4975',
+      },
+      updating_participant: '0xe3170eb9b60e2a9ff066e86247d82b38e0da4ea3',
+      timestamp: '2021-05-18T14:23:14.803447',
+      signature:
+        '0x477fde02aedd0d80323680813932ea572e4973689ee26079bec20ca30fd245a45192c9b64a9939c5cc1a99d5355aa0cb15473c988c3c7ee648649386991ceadd1c',
+      canonical_identifier: {
+        chain_identifier: '5',
+        channel_identifier: '6034',
+        token_network_address: '0xb9ccdeb57271e6db320f75e68e3a60d24f566f6d',
+      },
+      type: 'PFSFeeUpdate',
+    };
+    const decoded = decode(Signed(PFSFeeUpdate), encoded);
+    expect(getMessageSigner(decoded)).toBe('0xe3170EB9B60e2A9FF066E86247D82B38E0DA4Ea3');
+  });
 
   test('decodeJsonMessage invalid', () => {
     expect(() => decodeJsonMessage('{"type":"Invalid"}')).toThrowError(/\btype\b/);

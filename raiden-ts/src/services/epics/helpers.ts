@@ -36,13 +36,13 @@ interface Route {
 }
 
 /**
- * Returns a ISO string truncated at the integer second resolution
+ * Returns a ISO string with millisecond resolution (same as PC)
  *
  * @param time - Date instance
  * @returns string representing time in the format expected by PFS
  */
-export function makeTimestamp(time?: Date): string {
-  return (time ?? new Date()).toISOString().substr(0, 19);
+export function makeTimestamp(time = new Date()): string {
+  return time.toISOString().substr(0, 23) + '000';
 }
 
 function fetchLastIou$(

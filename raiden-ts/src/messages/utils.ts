@@ -3,6 +3,7 @@ import { arrayify, concat as concatBytes, hexlify } from '@ethersproject/bytes';
 import { HashZero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { encode as rlpEncode } from '@ethersproject/rlp';
+import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
 import type * as t from 'io-ts';
 import logging from 'loglevel';
@@ -262,11 +263,12 @@ export function packMessage(message: Message) {
           rlpEncode(
             message.fee_schedule.imbalance_penalty
               ? message.fee_schedule.imbalance_penalty.map((point) =>
-                  point.map((p) => p.toHexString()),
+                  // RLP integer 0 must be encoded as the empty bytestring
+                  point.map((p) => (p.isZero() ? '0x' : p.toHexString())),
                 )
               : '0x',
           ),
-          encode(message.timestamp, 19),
+          toUtf8Bytes(message.timestamp),
         ]),
       ) as HexString; // variable size of fee_schedule.imbalance_penalty rlpEncoding, when not null
     case MessageType.MONITOR_REQUEST:
