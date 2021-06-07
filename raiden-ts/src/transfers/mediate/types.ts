@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BigNumber } from '@ethersproject/bignumber';
 import { AddressZero, Zero } from '@ethersproject/constants';
-import { Decimal } from 'decimal.js';
+import { Decimal as RootDecimal } from 'decimal.js';
 import * as t from 'io-ts';
 
 import type { Channel } from '../../channels';
@@ -9,6 +9,9 @@ import { channelAmounts } from '../../channels/utils';
 import { assert } from '../../utils';
 import type { UInt, UnionToIntersection } from '../../utils/types';
 import { Address, decode, Int, isntNil } from '../../utils/types';
+
+const Decimal = RootDecimal.clone({ precision: 40, rounding: RootDecimal.ROUND_HALF_EVEN });
+type Decimal = RootDecimal;
 
 type FeeFunc<BNIn extends Decimal | BigNumber, BNOut extends Decimal | BigNumber = BNIn> = (
   amount: BNIn,
