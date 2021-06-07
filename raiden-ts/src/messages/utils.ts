@@ -259,7 +259,13 @@ export function packMessage(message: Message) {
           encode(message.fee_schedule.cap_fees, 1),
           encode(message.fee_schedule.flat, 32),
           encode(message.fee_schedule.proportional, 32),
-          rlpEncode(message.fee_schedule.imbalance_penalty ?? '0x'),
+          rlpEncode(
+            message.fee_schedule.imbalance_penalty
+              ? message.fee_schedule.imbalance_penalty.map((point) =>
+                  point.map((p) => p.toHexString()),
+                )
+              : '0x',
+          ),
           encode(message.timestamp, 19),
         ]),
       ) as HexString; // variable size of fee_schedule.imbalance_penalty rlpEncoding, when not null
