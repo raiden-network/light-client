@@ -336,20 +336,23 @@ function addFeeSafetyMargin(
   amount: UInt<32>,
   { pfsSafetyMargin }: Pick<RaidenConfig, 'pfsSafetyMargin'>,
 ): Int<32> {
-  let feeMultiplier = 1.0;
+  let feeMarginMultiplier = 0.0;
   let amountMultiplier = 0.0;
   if (typeof pfsSafetyMargin === 'number') {
-    feeMultiplier = pfsSafetyMargin; // legacy: receive feeMultiplier directly, e.g. 1.1 = +10%
+    // legacy: receive feeMultiplier directly, e.g. 1.1 = +10%
+    feeMarginMultiplier = pfsSafetyMargin - 1.0;
   } else {
-    feeMultiplier = pfsSafetyMargin[0] + 1.0; // feeMultiplier = feeMargin% + 100%
+    feeMarginMultiplier = pfsSafetyMargin[0];
     amountMultiplier = pfsSafetyMargin[1];
   }
+  const feeMargin = new Decimal(fee.toHexString())
+    .abs()
+    .mul(feeMarginMultiplier)
+    .add(new Decimal(amount.toHexString()).mul(amountMultiplier));
   return decode(
     Int(32),
-    new Decimal(fee.toHexString())
-      .mul(feeMultiplier)
-      .add(new Decimal(amount.toHexString()).mul(amountMultiplier))
-      .toFixed(0, Decimal.ROUND_CEIL), // fee = estimatedFee * (feeMultiplier) + amount * amountMultiplier
+    // fee += abs(estimatedFee) * feeMarginMultiplier + amount * amountMultiplier
+    fee.add(feeMargin.toFixed(0, Decimal.ROUND_CEIL)),
   );
 }
 
@@ -358,8 +361,8 @@ function parsePfsResponse(amount: UInt<32>, data: unknown, config: RaidenConfig)
   const results = decode(PathResults, data).result.slice(0, config.pfsMaxPaths);
   return results.map(({ path, estimated_fee }) => {
     let fee;
-    if (estimated_fee.lte(0)) fee = estimated_fee;
-    // add fee margins iff estimated_fee is greater than zero
+    if (estimated_fee.isZero()) fee = estimated_fee;
+    // add fee margins iff estimated_fee is not zero
     else {
       fee = addFeeSafetyMargin(estimated_fee, amount, config);
     }
