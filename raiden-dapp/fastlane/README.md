@@ -13,23 +13,25 @@ machines.
 
 ## Pre-requisites
 
-- Make sure _Ruby_ and its package manager `bundler` are available and executable
-  (`ruby --version` & `which bundler`). _Fastlane_ is written in _Ruby_ and can be
-  extended with plugins and other _RubyGems_.
+- Make sure _Ruby_ and its package manager `bundler` of version `2.4` [are
+  installed](https://www.ruby-lang.org/en/documentation/installation/) and
+  executable (`ruby --version` & `which bundler`). _Fastlane_ is written in
+  _Ruby_ and can be extended with plugins and other _RubyGems_.
 - For _Android_ releases, make sure that the _Java_ environment is installed like
   the _Gradle_ package manager (comes automatically if _Android Studio_ is
   installed).
 - For _iOS_ releases, make sure that the _XCode_ tool-box is installed (only
   works on Mac).
 - Make sure `yarn` is executable to build the Raiden Light Client dApp itself.
-- The first 3 steps of the dApp's [installation
+- The first few steps of the dApp's [installation
   instructions](https://github.com/raiden-network/light-client#install-and-run-the-dapp)
-  have been executed.
+  have been executed including the build of the SDK.
 
 
 ## Installation
 
-Install all _Ruby_ dependencies for _Fastlane_ and its plugins.
+Install all _Ruby_ dependencies for _Fastlane_ and its plugins. Execute this
+command inside the `raiden-dapp/` directory.
 
 ```sh
 $ bundler install
