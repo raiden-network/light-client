@@ -1,1 +1,1 @@
-{"appId":"com.brainbot.raiden.dapp","appName":"Raiden dApp","bundledWebRuntime":false,"webDir":"/home/thore/projects/brainbot-projects/repositories/raiden/light-client-prs/raiden-dapp/dist/bundled","linuxAndroidStudioPath":"/usr/bin/android-studio"}
+{"appId":"com.brainbot.raiden.dapp","appName":"Raiden dApp","bundledWebRuntime":false,"webDir":"./dist/","linuxAndroidStudioPath":"/usr/bin/android-studio"}
