@@ -66,3 +66,9 @@ From the root directory run:
 ```bash
 yarn workspace raiden-dapp lint
 ```
+
+# Bundle & Publish to Mobil App Stores
+
+The bundling and publishing to the Google Play Store or the App Store by Apple
+is handled using _Fastlane_. Please refer to the [respective
+documentation](./fastlane/README.md) to get further details on that.
