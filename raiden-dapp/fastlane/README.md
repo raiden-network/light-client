@@ -46,6 +46,13 @@ Secret environment variables (e.g. passwords) are collected inside
 `./raiden-dapp/fastlane/.env.secrets`. The latter gets sourced by _Fastlane_
 itself automatically. It should not be sourced to the regular shell manually.
 
+**NOTE**
+The following instructions are targeting a release to the app store repositories
+owned by the Raiden project creators. Anyone else who tries to publish the dApp
+to their own repository need to adopt to use their own secrets. Anyway this
+should give the user a good idea of what secrets are necessary and where does
+the setup here expect to find them.
+
 **IMPORTANT**
 Secret data must **never** be checked into the version control system**!!** The
 locations used per default (as listed above) are set to be ignored. Please
