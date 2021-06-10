@@ -7,6 +7,5 @@
       ]
     }
   },
-  "rpc_endpoint": "https://goerli.infura.io/v3/1d7828db440547969591f9ef1f81a04d",
-  "private_key": "0x853cb9f56214adecac28017ee1e9b5746def234d7f20d4eabf6f0d8c38ee2933"
+  "disabled_ethereum_providers": ["direct_rpc_provider", "injected_provider"],
 }
