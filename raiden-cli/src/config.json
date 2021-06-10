@@ -4,6 +4,27 @@
   "autoSettle": true,
   "autoUDCWithdraw": false,
   "caps": {
-    "Receive": 1
+    "Receive": 1,
+    "Mediate": 1
+  },
+  "mediationFees": {
+    "0x0000000000000000000000000000000000000000": {
+      "cap": true,
+      "flat": 0, 
+      "proportional": 4000,
+      "imbalance": 3000
+    },
+    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": {
+      "cap": true,
+      "flat": 10000000000,
+      "proportional": 4000,
+      "imbalance": 3000
+    },
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F": {
+      "cap": true,
+      "flat": 1000000000000, 
+      "proportional": 4000,
+      "imbalance": 3000
+    }
   }
 }
