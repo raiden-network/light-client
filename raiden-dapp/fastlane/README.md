@@ -13,7 +13,7 @@ machines.
 
 ## Pre-requisites
 
-- Make sure _Ruby_ and its package manager `bundler` of version `2.4` [are
+- Make sure _Ruby_ (`v2.5.0`) and its package manager _bundler_ (`v2.4.15`) [are
   installed](https://www.ruby-lang.org/en/documentation/installation/) and
   executable (`ruby --version` & `which bundler`). _Fastlane_ is written in
   _Ruby_ and can be extended with plugins and other _RubyGems_.
@@ -49,7 +49,7 @@ itself automatically. It should not be sourced to the regular shell manually.
 **NOTE**
 The following instructions are targeting a release to the app store repositories
 owned by the Raiden project creators. Anyone else who tries to publish the dApp
-to their own repository need to adopt to use their own secrets. Anyway this
+to their own repository needs to adapt it to their own secrets. Anyway this
 should give the user a good idea of what secrets are necessary and where does
 the setup here expect to find them.
 
