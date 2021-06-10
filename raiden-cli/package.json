@@ -1,7 +1,7 @@
 {
   "name": "raiden-cli",
   "version": "0.16.0",
-  "description": "Raiden Light Client standalone command-line app",
+  "description": "Raiden Light Client standalone app with a REST API via HTTP",
   "main": "build/index.js",
   "scripts": {
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
@@ -13,6 +13,16 @@
     "type": "git",
     "url": "git+https://github.com/raiden-network/light-client.git"
   },
+  "keywords": [
+    "raiden",
+    "ethereum",
+    "blockchain",
+    "2ndlayer",
+    "scaling",
+    "payments",
+    "transfers",
+    "web3"
+  ],
   "author": "brainbot labs est.",
   "license": "MIT",
   "bugs": {
