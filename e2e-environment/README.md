@@ -25,9 +25,10 @@ docker pull raidennetwork/lightclient-e2e-environment
 ```
 
 Alternatively it can be built locally as well. This requires to use the
-according script for the maintaince of the deployment information files. These
+according script for the maintenance of the deployment information files. These
 will be automatically staged to the VCS after the script has run and need to be
-commited afterwards.
+committed afterwards.
+
 ```sh
 bash ./build-e2e-environment.sh
 ```
@@ -184,3 +185,25 @@ file. Watch-out for the `SYNAPSE_VERSION` constant variable. Then update the
 ```dockerfile
 ARG SYNAPSE_VERSION=1.10.1
 ```
+
+## Upgrade image version for tests and CI
+
+To upgrade the end-to-end environment you need to build and upload a new image.
+First update any component as described above.
+
+Then build and test those versions locally. Finally you need to increment
+`DOCKER_IMAGE_TAG` in `shared-script.sh` and build the new image version:
+
+```sh
+./build-e2e-environment.sh
+```
+
+This will also tag the image. You can then upload it to docker hub:
+
+```
+docker push raidennetwork/lightclient-e2e-environment:v1.1.4
+```
+
+Once this is done, don't forget to update the image version used in CI. In
+`.circleci/config.yml` update `e2e_environment_docker_image` to the version you
+just created.
