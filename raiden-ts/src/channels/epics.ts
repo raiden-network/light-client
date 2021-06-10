@@ -79,9 +79,10 @@ import {
   retryWhile,
   takeIf,
 } from '../utils/rx';
-import type { Address, Hash, HexString, Signature, UInt } from '../utils/types';
-import { isntNil, last } from '../utils/types';
+import type { Address, Hash, HexString, Signature } from '../utils/types';
+import { decode, isntNil, last, UInt } from '../utils/types';
 import {
+  blockGasprice,
   blockStale,
   blockTime,
   channelClose,
@@ -227,7 +228,7 @@ export function blockStaleEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { latest$, config$ }: RaidenEpicDeps,
-) {
+): Observable<blockStale> {
   return state$.pipe(
     pluckDistinct('blockNumber'),
     withLatestFrom(latest$, config$),
@@ -247,6 +248,39 @@ export function blockStaleEpic(
     ),
     distinctUntilChanged(),
     map((stale) => blockStale({ stale })),
+  );
+}
+
+/**
+ * Monitors provider for current mean gasPrice, and multiply it by config.gasPriceFactor
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps members
+ * @param deps.provider - Provider instance
+ * @param deps.config$ - Config observable
+ * @returns Observable of blockGasprice actions
+ */
+export function blockGasPriceEpic(
+  {}: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { provider, config$ }: RaidenEpicDeps,
+): Observable<blockGasprice> {
+  return state$.pipe(
+    pluckDistinct('blockNumber'),
+    withLatestFrom(config$),
+    // switchMap will "reset" timer every block, restarting the timeout
+    exhaustMap(([, { gasPriceFactor }]) =>
+      defer(async () => provider.getGasPrice()).pipe(
+        map((price) => price.mul(Math.round(gasPriceFactor * 1e6)).div(1e6)),
+        map((price) => (price.gte(1e9) ? price : 1e9)), // min 1Gwei
+        map((price) => decode(UInt(32), price)),
+        catchError(constant(EMPTY)),
+      ),
+    ),
+    // debounce gasPrice changes smaller than 1%
+    distinctUntilChanged((a, b) => a.sub(b).abs().lt(a.div(100))),
+    map((gasPrice) => blockGasprice({ gasPrice })),
   );
 }
 
