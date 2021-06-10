@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#2789] Make raiden-cli package being published to NPM registry on new relases
+
+[#1576]: https://github.com/raiden-network/light-client/issues/2789
+
 
 ### Added
 - [#1576] Add functionality to deploy token networks
