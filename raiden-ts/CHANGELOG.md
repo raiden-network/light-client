@@ -4,9 +4,11 @@
 ### Added
 - [#1576] Add functionality to deploy token networks
 - [#2577] Add imbalance penalty mediation fees
+- [#2795] Add `config.gasPriceFactor` option, to increase the transactions `gasPrice` as a multiplier of provider-returned `eth_gasPrice`
 
 [#1576]: https://github.com/raiden-network/light-client/issues/1576
 [#2577]: https://github.com/raiden-network/light-client/issues/2577
+[#2795]: https://github.com/raiden-network/light-client/issues/2795
 
 ### Changed
 - [#2669] Update to Raiden contracts `v0.37.5`
