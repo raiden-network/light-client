@@ -1,3 +1,4 @@
+import { BigNumber } from '@ethersproject/bignumber';
 import { MaxUint256 } from '@ethersproject/constants';
 import { uniq } from 'lodash/fp';
 import unset from 'lodash/fp/unset';
@@ -27,7 +28,7 @@ import {
 
 import type { RaidenAction } from './actions';
 import { raidenConfigCaps, raidenShutdown } from './actions';
-import { blockStale, blockTime } from './channels/actions';
+import { blockGasprice, blockStale, blockTime } from './channels/actions';
 import * as ChannelsEpics from './channels/epics';
 import type { RaidenConfig } from './config';
 import { Capabilities } from './constants';
@@ -165,6 +166,11 @@ export function getLatest$(
     pluck('payload', 'blockTime'),
     startWith(15e3), // default initial blockTime of 15s
   );
+  const gasPrice$ = action$.pipe(
+    filter(blockGasprice.is),
+    pluck('payload', 'gasPrice'),
+    startWith(BigNumber.from(1e9) as UInt<32>),
+  );
   const stale$ = action$.pipe(
     filter(blockStale.is),
     pluck('payload', 'stale'),
@@ -234,18 +240,21 @@ export function getLatest$(
 
   return combineLatest([
     combineLatest([action$, state$, config$, whitelisted$, rtc$]),
-    combineLatest([udcDeposit$, blockTime$, stale$]),
+    combineLatest([udcDeposit$, blockTime$, stale$, gasPrice$]),
   ]).pipe(
-    map(([[action, state, config, whitelisted, rtc], [udcDeposit, blockTime, stale]]) => ({
-      action,
-      state,
-      config,
-      whitelisted,
-      rtc,
-      udcDeposit,
-      blockTime,
-      stale,
-    })),
+    map(
+      ([[action, state, config, whitelisted, rtc], [udcDeposit, blockTime, stale, gasPrice]]) => ({
+        action,
+        state,
+        config,
+        whitelisted,
+        rtc,
+        udcDeposit,
+        blockTime,
+        stale,
+        gasPrice,
+      }),
+    ),
   );
 }
 

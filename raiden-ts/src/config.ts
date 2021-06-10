@@ -61,6 +61,8 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - autoUDCWithdraw - Whether to udcWithdraw.request planned withdraws automatically
  * - mediationFees - deps.mediationFeeCalculator config. It's typed as unknown because it'll be
  *     validated and decoded by [[FeeModel.decodeConfig]].
+ * - gasPriceFactor - Multiplier to be applied over `eth_gasPrice` for initial transactions gas prices;
+ *      1.1 means gasPrice returned by ETH node is added of 10% for every transaction sent
  * - matrixServer? - Specify a matrix server to use.
  * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly
  *    set in on-chain method calls. false (default) = use main key; true = use subkey
@@ -100,6 +102,7 @@ export const RaidenConfig = t.readonly(
       autoSettle: t.boolean,
       autoUDCWithdraw: t.boolean,
       mediationFees: t.unknown,
+      gasPriceFactor: t.number,
     }),
     t.partial({
       matrixServer: t.string,
@@ -170,6 +173,7 @@ export function makeDefaultConfig(
     autoSettle: false,
     autoUDCWithdraw: true,
     mediationFees: {},
+    gasPriceFactor: 1.0,
     ...overwrites,
     caps, // merged caps overwrites 'overwrites.caps'
   };

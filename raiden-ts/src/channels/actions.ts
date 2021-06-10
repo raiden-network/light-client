@@ -23,6 +23,9 @@ export interface blockTime extends ActionType<typeof blockTime> {}
 export const blockStale = createAction('block/stale', t.type({ stale: t.boolean }));
 export interface blockStale extends ActionType<typeof blockStale> {}
 
+export const blockGasprice = createAction('block/gasPrice', t.type({ gasPrice: UInt(32) }));
+export interface blockGasprice extends ActionType<typeof blockGasprice> {}
+
 /**
  * A new token network is detected in the TokenNetworkRegistry instance
  * fromBlock is only set on the first time, to fetch and handle past events
