@@ -79,6 +79,24 @@ commands:
             -F << parameters.base_flag >>
             -F << parameters.base_flag >>.<< parameters.test_kind_flag >>
 
+  publish_workspace_on_npm_registry:
+    parameters:
+      workspace:
+        description: The yarn workspace to publish
+        type: enum
+        enum: [raiden-ts, raiden-cli]
+      tarball:
+        description: Workspace relative filepath of a tarball to publish instead
+        type: string
+        default: ''
+    steps:
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
+      - run:
+          name: Publish on NPM registry
+          command: yarn workspace << parameters.workspace >> publish --no-git-tag-version --non-interactive << parameters.tarball >>
+
 jobs:
   install:
     executor: base-executor
@@ -142,9 +160,9 @@ jobs:
           command: yarn build --mode << parameters.mode >>
       - run:
           name: Compress dapp
-          command: tar -czvf dapp.tar.gz dist
+          command: tar -czvf dapp.tgz dist
       - store_artifacts:
-          path: dapp.tar.gz
+          path: dapp.tgz
       - persist_to_workspace:
           root: << pipeline.parameters.working_directory >>
           paths:
@@ -165,9 +183,9 @@ jobs:
           name: Compress CLI bundle
           command: >
             cp -av ./raiden bundle/ ;
-            tar -czvf raiden-cli.tar.gz bundle --transform='s/^bundle/raiden-cli/'
+            tar -czvf raiden-cli.tgz bundle --transform='s/^bundle/raiden-cli/'
       - store_artifacts:
-          path: raiden-cli.tar.gz
+          path: raiden-cli.tgz
 
   lint:
     working_directory: << pipeline.parameters.working_directory >>
@@ -270,17 +288,16 @@ jobs:
             - 'ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3'
       - run: ./deploy.sh << parameters.public_path >>
 
-  publish_artifact:
+  publish_on_npm_registry:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
-      - run:
-          name: Authenticate with registry
-          command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
-      - run:
-          name: Publish on npm
-          command: yarn publish --no-git-tag-version --non-interactive
+      - publish_workspace_on_npm_registry:
+          workspace: raiden-ts
+      - publish_workspace_on_npm_registry:
+          workspace: raiden-cli
+          tarball: raiden-cli.tgz
 
 workflows:
   version: 2
@@ -387,7 +404,7 @@ workflows:
           public_path: /
           requires:
             - generate_documentation
-      - publish_artifact:
+      - publish_on_npm_registry:
           <<: *filter_release_tag
           context: 'Raiden Context'
           requires:
