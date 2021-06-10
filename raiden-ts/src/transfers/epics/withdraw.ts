@@ -166,7 +166,7 @@ export function withdrawSendTxEpic(
     concatMap((action) =>
       latest$.pipe(
         first(),
-        mergeMap(({ state, config }) => {
+        mergeMap(({ state, config, gasPrice }) => {
           const { subkey: configSubkey, revealTimeout } = config;
           // don't send on-chain tx if we're 'revealTimeout' blocks from expiration
           // this is our confidence threshold when we can get a tx inside timeout
@@ -199,6 +199,7 @@ export function withdrawSendTxEpic(
               action.meta.expiration,
               req.signature,
               action.payload.message.signature,
+              { gasPrice },
             ),
           ).pipe(
             assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, {

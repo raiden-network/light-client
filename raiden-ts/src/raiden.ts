@@ -1115,11 +1115,13 @@ export class Raiden {
       this.log.info,
     );
 
+    const gasPrice = await this.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise();
+
     const value = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_AMOUNT);
     const receipt = await callAndWaitMined(
       customTokenContract,
       'mintFor',
-      [value, beneficiary],
+      [value, beneficiary, { gasPrice }],
       ErrorCodes.RDN_MINT_FAILED,
       { log: this.log },
     );
@@ -1166,10 +1168,12 @@ export class Raiden {
       () => undefined,
     );
 
+    const gasPrice = await this.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise();
+
     const receipt = await callAndWaitMined(
       tokenNetworkRegistry,
       'createERC20TokenNetwork',
-      [token, channelParticipantDepositLimit, tokenNetworkDepositLimit],
+      [token, channelParticipantDepositLimit, tokenNetworkDepositLimit, { gasPrice }],
       ErrorCodes.RDN_REGISTER_TOKEN_FAILED,
       { log: this.log },
     );
@@ -1292,7 +1296,9 @@ export class Raiden {
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
-    const price = gasPrice ? BigNumber.from(gasPrice) : await this.deps.provider.getGasPrice();
+    const price = gasPrice
+      ? BigNumber.from(gasPrice)
+      : await this.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise();
     const gasLimit = BigNumber.from(21000);
 
     const curBalance = await this.getBalance(address);
@@ -1344,10 +1350,11 @@ export class Raiden {
     // caps value to balance, so if it's too big, transfer all
     const amount = curBalance.lte(value) ? curBalance : BigNumber.from(value);
 
+    const gasPrice = await this.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise();
     const receipt = await callAndWaitMined(
       tokenContract,
       'transfer',
-      [to, amount],
+      [to, amount, { gasPrice }],
       ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED,
       { log: this.log },
     );
