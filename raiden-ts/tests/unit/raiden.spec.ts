@@ -13,11 +13,12 @@ import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, BehaviorSubject, EMPTY, of, ReplaySubject, Subject } from 'rxjs';
-import { filter, first, ignoreElements, map, mapTo, mergeMap } from 'rxjs/operators';
+import { filter, first, ignoreElements, map, mapTo, mergeMap, mergeMapTo } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
 import { raidenConfigUpdate, raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
 import {
+  blockGasprice,
   channelClose,
   channelDeposit,
   channelOpen,
@@ -253,16 +254,17 @@ describe('Raiden', () => {
   const other_nonce = BigNumber.from(1) as UInt<8>;
   const other_capacity = BigNumber.from(10) as UInt<32>;
 
-  function initEpicMock(action$: Observable<RaidenAction>): Observable<raidenSynced> {
+  function initEpicMock(action$: Observable<RaidenAction>): Observable<RaidenAction> {
     return action$.pipe(
       filter(raidenStarted.is),
-      mapTo(
+      mergeMapTo([
+        blockGasprice({ gasPrice: BigNumber.from(5) as UInt<32> }),
         raidenSynced({
           tookMs: 9,
           initialBlock: 1,
           currentBlock: 10,
         }),
-      ),
+      ]),
     );
   }
 
@@ -939,12 +941,22 @@ describe('Raiden', () => {
     const mockedTransfer = tokenContract.functions.transfer as jest.MockedFunction<
       typeof tokenContract.functions.transfer
     >;
-    expect(mockedTransfer.mock.calls[0]).toEqual([partner, One]);
+    expect(mockedTransfer).toHaveBeenNthCalledWith(
+      1,
+      partner,
+      One,
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
+    );
 
     // Test transfering all tokens
     const tx2 = raiden.transferOnchainTokens(token, partner);
     await expect(tx2).resolves.toEqual(txHash);
-    expect(mockedTransfer.mock.calls[1]).toEqual([partner, BigNumber.from(1_000_000)]);
+    expect(mockedTransfer).toHaveBeenNthCalledWith(
+      2,
+      partner,
+      BigNumber.from(1_000_000),
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
+    );
   });
 
   test('getTokenList', async () => {
@@ -1398,7 +1410,11 @@ describe('Raiden', () => {
     const svtSpy = jest.spyOn(CustomToken__factory, 'connect').mockReturnValue(svtContract);
 
     await expect(raiden.mint(svtAddress, 10, { to: beneficiary })).resolves.toBe(txHash);
-    expect(svtContract.functions.mintFor).toHaveBeenCalledWith(BigNumber.from(10), beneficiary);
+    expect(svtContract.functions.mintFor).toHaveBeenCalledWith(
+      BigNumber.from(10),
+      beneficiary,
+      expect.anything(),
+    );
 
     svtSpy.mockRestore();
   });
@@ -1436,6 +1452,7 @@ describe('Raiden', () => {
       token,
       MaxUint256,
       MaxUint256,
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
     );
   });
 

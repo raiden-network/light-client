@@ -516,7 +516,7 @@ describe('receive transfers', () => {
     // advance to some block inside the danger zone, secret get registered
     await waitBlock(sentState.expiration - raiden.config.revealTimeout + 1);
     expect(raiden.output).toContainEqual(transferSecretRegister.request({ secret }, receivedMeta));
-    expect(secretRegistryContract.registerSecret).toHaveBeenCalledWith(secret);
+    expect(secretRegistryContract.registerSecret).toHaveBeenCalledWith(secret, expect.anything());
     // give some time to confirm register tx
     await waitBlock();
     await waitBlock(
