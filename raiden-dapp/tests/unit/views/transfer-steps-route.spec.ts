@@ -18,10 +18,10 @@ import { RouteNames } from '@/router/route-names';
 import TransferSteps from '@/views/TransferStepsRoute.vue';
 
 import { generateToken } from '../utils/data-generator';
+import Mocked = jest.Mocked;
 
 jest.useFakeTimers();
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -44,21 +44,24 @@ const raidenPFS = {
   url: 'https://pfs-goerli-with-fee.services-test.raiden.network',
 } as RaidenPFS;
 
-const transferRoute = {
+const transferRoute: Route = {
+  key: 0,
+  hops: 1,
   fee: BigNumber.from(100),
   path: [transferToken.address],
-} as Route;
+};
 
-const freeTransferRoute = {
+const freeTransferRoute: Route = {
+  key: 0,
+  hops: 1,
   fee: constants.Zero,
   path: [transferToken.address],
-} as Route;
+};
 
 const $raiden = {
   getAccount: jest.fn(),
   getMainAccount: jest.fn(),
   fetchAndUpdateTokenData: jest.fn(),
-  getUDCCapacity: jest.fn(async () => BigNumber.from('1000000000000000000')),
   findRoutes: jest.fn(async () => [{ path: [transferToken.address], fee: BigNumber.from(100) }]),
   transfer: jest.fn(async () => undefined),
   directRoute: jest.fn(),
@@ -68,6 +71,7 @@ async function createWrapper(
   step = 1,
   routes: Route[] = [],
   selectedRoute: Route | null = null,
+  udcCapacity = BigNumber.from('1000000000000000000'),
 ): Promise<Wrapper<TransferSteps>> {
   const vuetify = new Vuetify();
 
@@ -101,17 +105,19 @@ async function createWrapper(
         step,
         routes,
         selectedRoute,
+        udcCapacity,
       };
     },
   });
 
   await flushPromises(); // Asynchronous 'created' lifecycle hook.
+  await wrapper.vm.$nextTick();
   return wrapper;
 }
 
 async function clickTransferButton(wrapper: Wrapper<TransferSteps>): Promise<void> {
-  const button = wrapper.find('.transfer__button button');
-  expect(button.attributes()['disabled']).toBeUndefined();
+  const button = wrapper.findComponent(ActionButton);
+  expect(button.attributes('disabled')).toBeUndefined();
   button.trigger('click');
   await flushPromises();
   jest.runOnlyPendingTimers();
@@ -122,14 +128,15 @@ describe('TransferSteps.vue', () => {
     jest.clearAllMocks();
   });
 
-  test('renders 3 steps', async () => {
-    const wrapper = await createWrapper();
+  test('continue button is not enabled if UDC capacity is too low', async () => {
+    const wrapper = await createWrapper(undefined, undefined, undefined, constants.Zero);
+    const button = wrapper.findComponent(ActionButton);
 
-    expect(wrapper.findAll('.transfer-steps__step').length).toBe(3);
+    expect(button.attributes('disabled')).toBeTruthy();
   });
 
-  test('enables the continue button and allows the user to proceed', async () => {
-    const wrapper = await createWrapper();
+  test('continue button is allows the user to proceed if UDC balanace is high enough', async () => {
+    const wrapper = await createWrapper(undefined, undefined, undefined, BigNumber.from('100000'));
 
     await clickTransferButton(wrapper);
 

@@ -67,7 +67,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { mapState } from 'vuex';
 
 import DownloadStateDialog from '@/components/account/backup-state/DownloadStateDialog.vue';
 import UploadStateDialog from '@/components/account/backup-state/UploadStateDialog.vue';
@@ -77,7 +77,7 @@ import UploadStateDialog from '@/components/account/backup-state/UploadStateDial
     DownloadStateDialog,
     UploadStateDialog,
   },
-  computed: { ...mapGetters(['isConnected']) },
+  computed: { ...mapState(['isConnected']) },
 })
 export default class BackupState extends Vue {
   isConnected!: boolean;

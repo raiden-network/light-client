@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { hexValue } from '@ethersproject/bytes';
 import type { Contract, Event } from '@ethersproject/contracts';
 import type {
   EventType,
@@ -8,29 +9,91 @@ import type {
   Log,
   Network,
 } from '@ethersproject/providers';
+import { Formatter } from '@ethersproject/providers';
 import type { Observable } from 'rxjs';
-import { defer, from, fromEventPattern, throwError, timer } from 'rxjs';
+import { defer, from, fromEventPattern, of, throwError, timer } from 'rxjs';
 import {
   catchError,
   debounceTime,
+  distinctUntilChanged,
   exhaustMap,
   ignoreElements,
+  map,
   mergeMap,
   repeatWhen,
+  switchMap,
   takeWhile,
   tap,
 } from 'rxjs/operators';
 
+import { DEFAULT_CONFIRMATIONS } from '../constants';
+import type { TypedEventFilter, TypedListener } from '../contracts/commons';
+import { mergeWith } from './rx';
+
+declare const _filter: unique symbol;
 /**
+ * Extract the union of TypedEventFilters for a given contract
+ */
+export type ContractFilter<
+  C extends Contract,
+  E extends keyof C['filters'] = keyof C['filters'],
+> = ReturnType<C['filters'][E]>;
+/**
+ * A simple Log, but tagged (at typecheck-time) to indicate the logs will map to a specific
+ * TypedEvent/EventTuple
+ */
+export type FilteredLog<F extends TypedEventFilter<any[], any>> = Log & {
+  readonly [_filter]: F;
+};
+type FilterFromLog<L extends Log> = L extends { readonly [_filter]: infer F } ? F : never;
+// a part of a Filter which definitely has fromBlock & toBlock defined and numeric
+type BlockRange = { fromBlock: number; toBlock: number };
+// like Filter, but 'address' can be a set of contracts addresses, instead of a single one
+type MultiFilter = Omit<Filter, 'address'> & { address?: string | string[] };
+
+/**
+ * For given TypedEventFilters, return the tuple of arguments plus the TypedEvent as last element
+ */
+export type EventTuple<F extends TypedEventFilter<any[], any>> = F extends TypedEventFilter<
+  infer EventArgsArray,
+  infer EventArgsObject
+>
+  ? EventArgsArray extends any[]
+    ? Parameters<TypedListener<EventArgsArray, EventArgsObject>>
+    : never
+  : never;
+
+export function getLogsByChunk$<F extends TypedEventFilter<any[], any>>(
+  provider: JsonRpcProvider,
+  filter: F & BlockRange,
+  chunk?: number,
+  minChunk?: number,
+): Observable<FilteredLog<F>>;
+export function getLogsByChunk$(
+  provider: JsonRpcProvider,
+  filter: MultiFilter & BlockRange,
+  chunk?: number,
+  minChunk?: number,
+): Observable<Log>;
+
+/**
+ * Like JsonRpcProvider.getLogs, but split block scan range in chunks, adapting to smaller chunks
+ * in case provider times out with such big ranges, and also supporting arrays of addresses in
+ * filter.address field, to scan multiple similar contracts on a single request.
+ *
  * @param provider - Provider to getLogs from
  * @param filter - getLogs filter
+ * @param filter.address - Contract address or array of addresses
+ * @param filter.topics - Array of topics
+ * @param filter.fromBlock - Scan block start
+ * @param filter.toBlock - Scan block end
  * @param chunk - Initial chunk size
  * @param minChunk - Minimum chunk size in case of getLogs errors
  * @returns Observable of fetched logs
  */
 export function getLogsByChunk$(
   provider: JsonRpcProvider,
-  filter: Filter & { fromBlock: number; toBlock: number },
+  filter: MultiFilter & BlockRange,
   chunk = 1e5,
   minChunk = 1e3,
 ): Observable<Log> {
@@ -42,12 +105,23 @@ export function getLogsByChunk$(
     let retry = 3;
     // every time repeatWhen re-subscribes to this defer, yield (current/retried/next) range/chunk
     return defer(async () =>
-      provider.getLogs({
-        ...filter,
-        fromBlock: start,
-        toBlock: Math.min(start + curChunk - 1, toBlock),
-      }),
+      provider.send('eth_getLogs', [
+        {
+          ...filter,
+          fromBlock: hexValue(start),
+          toBlock: hexValue(Math.min(start + curChunk - 1, toBlock)),
+        },
+      ]),
     ).pipe(
+      // mimics the post-request handling on BaseProvider.getLogs
+      map((logs) => {
+        logs.forEach((log: { removed?: boolean }) => {
+          if (log.removed == null) log.removed = false;
+        });
+        return Formatter.arrayOf(provider.formatter.filterLog.bind(provider.formatter))(
+          logs,
+        ) as Log[];
+      }),
       tap({
         complete: () => (start += curChunk), // on success, increment range start
         error: () => {
@@ -75,26 +149,53 @@ export function fromEthersEvent<T>(
   target: JsonRpcProvider,
   event: string | string[],
 ): Observable<T>;
+export function fromEthersEvent<F extends TypedEventFilter<any[], any>>(
+  target: JsonRpcProvider,
+  event: F,
+  opts?: {
+    fromBlock?: number;
+    confirmations?: number | Observable<number>;
+    blockNumber$?: Observable<number>;
+    onPastCompleted?: (elapsedMs: number) => void;
+  },
+): Observable<FilteredLog<F>>;
 export function fromEthersEvent<T extends Log>(
   target: JsonRpcProvider,
   event: Filter,
-  confirmations?: number,
-  fromBlock?: number,
+  opts?: {
+    fromBlock?: number;
+    confirmations?: number | Observable<number>;
+    blockNumber$?: Observable<number>;
+    onPastCompleted?: (elapsedMs: number) => void;
+  },
 ): Observable<T>;
 /**
  * Like rxjs' fromEvent, but event can be an EventFilter
  *
  * @param target - Object to hook event listener, maybe a Provider or Contract
  * @param event - EventFilter or string representing the event to listen to
- * @param confirmations - After how many blocks a tx is considered confirmed
- * @param fromBlock - Block since when to fetch events from
+ * @param opts - Options object
+ * @param opts.fromBlock - Block since when to fetch events from
+ * @param opts.confirmations - After how many blocks a tx is considered confirmed; if observable,
+ *    it should have a value at subscription time, like a ReplaySubject(1);
+ * @param opts.blockNumber$ - New blockNumber observable
+ * @param opts.onPastCompleted - Callback when first/past blocks scan completes
  * @returns Observable of target.on(event) events
  */
 export function fromEthersEvent<T>(
   target: JsonRpcProvider,
   event: EventType,
-  confirmations = 5,
-  fromBlock?: number,
+  {
+    fromBlock,
+    confirmations,
+    blockNumber$,
+    onPastCompleted,
+  }: {
+    fromBlock?: number;
+    confirmations?: number | Observable<number>;
+    blockNumber$?: Observable<number>;
+    onPastCompleted?: (elapsedMs: number) => void;
+  } = {},
 ) {
   if (typeof event === 'string' || Array.isArray(event))
     return fromEventPattern<T>(
@@ -102,30 +203,36 @@ export function fromEthersEvent<T>(
       (handler: Listener) => target.removeListener(event, handler),
     ) as Observable<T>;
 
-  const range = confirmations * 2; // half for confirmed, half for unconfirmed logs
-  const blockQueue: number[] = []; // sorted 'fromBlock' queue, at most of [range] size
-  return defer(() => {
-    if (!fromBlock) {
-      // 'resetEventsBlock' is private, set at [[Raiden]] constructor, so we need 'any'
-      let resetBlock: number = (target as any)._lastBlockNumber;
-      const innerBlockNumber = target.blockNumber;
-      resetBlock =
-        resetBlock && resetBlock > 0
-          ? resetBlock
-          : innerBlockNumber && innerBlockNumber > 0
-          ? innerBlockNumber
-          : 1;
-      fromBlock = resetBlock - confirmations;
-    }
-    // starts 'blockQueue' with subscription-time's resetEventsBlock
-    blockQueue.splice(0, blockQueue.length, fromBlock);
+  const confirmations$ = !confirmations
+    ? of(DEFAULT_CONFIRMATIONS)
+    : typeof confirmations === 'number'
+    ? of(confirmations)
+    : confirmations;
+  const blockQueue: number[] = []; // sorted 'fromBlock' queue, at most of [confirmations * 2] size
+  let start = Date.now();
+  return confirmations$.pipe(
+    distinctUntilChanged(),
+    mergeWith((confirmations) => {
+      if (!fromBlock) {
+        let resetBlock = target._lastBlockNumber;
+        const innerBlockNumber = target.blockNumber;
+        resetBlock =
+          resetBlock && resetBlock > 0
+            ? resetBlock
+            : innerBlockNumber && innerBlockNumber > 0
+            ? innerBlockNumber
+            : confirmations + 1;
+        // starts 'blockQueue' with subscription-time's resetEventsBlock
+        fromBlock = resetBlock - confirmations;
+      }
+      blockQueue.splice(0, blockQueue.length, fromBlock);
 
-    return fromEthersEvent<number>(target, 'block');
-  }).pipe(
+      return blockNumber$ ?? fromEthersEvent<number>(target, 'block');
+    }, switchMap),
     debounceTime(Math.ceil(target.pollingInterval / 10)), // debounce bursts of blocks
     // exhaustMap will skip new events if it's still busy with a previous getLogs call,
     // but next [fromBlock] in queue always includes range for any skipped block
-    exhaustMap((blockNumber) =>
+    exhaustMap(([confirmations, blockNumber]) =>
       getLogsByChunk$(target, { ...event, fromBlock: blockQueue[0], toBlock: blockNumber }).pipe(
         tap({
           next: (log) => {
@@ -141,7 +248,13 @@ export function fromEthersEvent<T>(
           },
           complete: () => {
             // if queue is full, pop_front 'fromBlock' which was just queried
-            while (blockQueue.length >= range) blockQueue.shift();
+            // half for confirmed, half for unconfirmed logs
+            while (blockQueue.length >= confirmations * 2) blockQueue.shift();
+            if (onPastCompleted && start) {
+              start = 0;
+              // this is called only once as soon as first stretch/past scan completes
+              onPastCompleted(Date.now() - start);
+            }
             // push_back next block iff getLogs didn't throw, queue is never empty
             blockQueue.push(blockNumber + 1);
           },
@@ -151,39 +264,22 @@ export function fromEthersEvent<T>(
   );
 }
 
-export type ContractEvent =
-  | [Event]
-  | [any, Event]
-  | [any, any, Event]
-  | [any, any, any, Event]
-  | [any, any, any, any, Event]
-  | [any, any, any, any, any, Event]
-  | [any, any, any, any, any, any, Event]
-  | [any, any, any, any, any, any, any, Event]
-  | [any, any, any, any, any, any, any, any, Event]
-  | [any, any, any, any, any, any, any, any, any, Event];
-export function logToContractEvent<T extends ContractEvent>(
-  contract: Contract,
-): (log: Log) => T | undefined;
-export function logToContractEvent<T extends ContractEvent>(
-  contract: Contract,
-  log: Log,
-): T | undefined;
 /**
- * Curried(2) function to map an ethers's Provider log to a contract event tuple
+ * Function to map an ethers's Provider log to a contract event tuple
+ * It requires logs coming from getLogsByChunk$ or fromEthersEvent overloads which tag at
+ * type-check time to which set of events the logs belong, and use that information to narrow
+ * the types of the tuple events emitted
  *
- * @param contract - Contract instance
- * @param log - Log to map
- * @returns Tuple of events args plus Event object
+ * @param contract - Contract fo parse logs for
+ * @returns Function to map logs to event tuples for contract
  */
-export function logToContractEvent<T extends ContractEvent>(contract: Contract, log?: Log) {
-  const mapper = (log: Log): T | undefined => {
+export function logToContractEvent<C extends Contract>(contract: C) {
+  return function mapper<L extends FilteredLog<ContractFilter<C>>>(
+    log: L,
+  ): EventTuple<FilterFromLog<L>> {
     // parse log into [...args, event: Event] array,
     // the same that contract.on events/callbacks
     const parsed = contract.interface.parseLog(log);
-    // ignore removed (reorg'd) events (reorgs are handled by ConfirmableActions logic)
-    // and parse errors (shouldn't happen)
-    if (log.removed === true || !parsed) return;
     // not all parameters quite needed right now, but let's comply with the interface
     const event: Event = {
       ...log,
@@ -195,9 +291,8 @@ export function logToContractEvent<T extends ContractEvent>(contract: Contract, 
       getTransaction: () => contract.provider.getTransaction(log.transactionHash!),
       getTransactionReceipt: () => contract.provider.getTransactionReceipt(log.transactionHash!),
     };
-    return [...parsed.args, event] as T;
+    return [...parsed.args, event] as EventTuple<FilterFromLog<L>>;
   };
-  return log !== undefined ? mapper(log) : mapper;
 }
 
 /**

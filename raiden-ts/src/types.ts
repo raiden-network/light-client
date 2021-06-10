@@ -17,8 +17,9 @@ import type {
   UserDeposit,
 } from './contracts';
 import type { RaidenDatabase } from './db/types';
+import type { PFSFeeUpdate } from './messages/types';
 import type { RaidenState } from './state';
-import type { Presences } from './transport/types';
+import type { FeeModel } from './transfers/mediate/types';
 import type { Address, UInt } from './utils/types';
 
 interface Info {
@@ -39,10 +40,9 @@ export interface Latest {
   action: RaidenAction;
   state: RaidenState;
   config: RaidenConfig;
-  presences: Presences;
-  pfsList: readonly Address[];
+  whitelisted: readonly Address[];
   rtc: { [address: string]: RTCDataChannel };
-  udcBalance: UInt<32>;
+  udcDeposit: { balance: UInt<32>; totalDeposit: UInt<32> };
   blockTime: number;
   stale: boolean;
 }
@@ -68,6 +68,8 @@ export interface RaidenEpicDeps {
   main?: { signer: Signer; address: Address };
   db: RaidenDatabase;
   init$: Subject<Observable<any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mediationFeeCalculator: FeeModel<any, PFSFeeUpdate['fee_schedule']>;
 }
 
 export interface ChangeEvent<T extends string, P> {

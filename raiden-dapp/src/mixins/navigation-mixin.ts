@@ -130,13 +130,9 @@ export default class NavigationMixin extends Vue {
         this.navigateToTransfer(this.$route.params.token);
         break;
       case RouteNames.SELECT_TOKEN:
-        this.$router.go(-1); // Preserve current token without knowing it.
-        break;
       case RouteNames.SELECT_HUB:
-        this.navigateToTokenSelect();
-        break;
       case RouteNames.OPEN_CHANNEL:
-        this.navigateToSelectHub(this.$route.params.token);
+        this.$router.go(-1); // Preserve current token without knowing it.
         break;
       default:
         break;

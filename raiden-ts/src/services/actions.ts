@@ -4,7 +4,7 @@ import * as t from 'io-ts';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
 import { Address, Hash, Signed, UInt } from '../utils/types';
-import { IOU, Paths, PFS } from './types';
+import { IOU, Paths, PFS, ServicesValidityMap } from './types';
 
 const PathId = t.type({
   tokenNetwork: Address,
@@ -31,11 +31,8 @@ export namespace pathFind {
   export interface failure extends ActionType<typeof pathFind.failure> {}
 }
 
-export const pfsListUpdated = createAction(
-  'pfs/list/updated',
-  t.type({ pfsList: t.readonlyArray(Address) }),
-);
-export interface pfsListUpdated extends ActionType<typeof pfsListUpdated> {}
+export const servicesValid = createAction('services/valid', ServicesValidityMap);
+export interface servicesValid extends ActionType<typeof servicesValid> {}
 
 export const iouPersist = createAction('iou/persist', t.type({ iou: Signed(IOU) }), ServiceId);
 export interface iouPersist extends ActionType<typeof iouPersist> {}
@@ -69,36 +66,41 @@ const UdcWithdrawId = t.type({
   amount: UInt(32),
 });
 
-export const udcWithdraw = createAsyncAction(
+export const udcWithdrawPlan = createAsyncAction(
   UdcWithdrawId,
-  'udc/withdraw/request',
-  'udc/withdraw/success',
-  'udc/withdraw/failure',
+  'udc/withdraw/plan/request',
+  'udc/withdraw/plan/success',
+  'udc/withdraw/plan/failure',
   t.undefined,
   t.intersection([
     t.type({ block: t.number }),
     t.partial({ txHash: Hash, txBlock: t.number, confirmed: t.union([t.undefined, t.boolean]) }),
   ]),
 );
-
-export namespace udcWithdraw {
-  export interface request extends ActionType<typeof udcWithdraw.request> {}
-  export interface success extends ActionType<typeof udcWithdraw.success> {}
-  export interface failure extends ActionType<typeof udcWithdraw.failure> {}
+export namespace udcWithdrawPlan {
+  export interface request extends ActionType<typeof udcWithdrawPlan.request> {}
+  export interface success extends ActionType<typeof udcWithdrawPlan.success> {}
+  export interface failure extends ActionType<typeof udcWithdrawPlan.failure> {}
 }
 
-export const udcWithdrawn = createAction(
-  'udc/withdrawn',
+export const udcWithdraw = createAsyncAction(
+  UdcWithdrawId,
+  'udc/withdraw/request',
+  'udc/withdraw/success',
+  'udc/withdraw/failure',
+  t.undefined,
   t.type({
     withdrawal: UInt(32),
     txHash: Hash,
     txBlock: t.number,
     confirmed: t.union([t.undefined, t.boolean]),
   }),
-  UdcWithdrawId,
 );
-
-export interface udcWithdrawn extends ActionType<typeof udcWithdrawn> {}
+export namespace udcWithdraw {
+  export interface request extends ActionType<typeof udcWithdraw.request> {}
+  export interface success extends ActionType<typeof udcWithdraw.success> {}
+  export interface failure extends ActionType<typeof udcWithdraw.failure> {}
+}
 
 export const msBalanceProofSent = createAction(
   'ms/balanceProof/sent',

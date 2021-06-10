@@ -24,11 +24,10 @@ describe('AddressInput', () => {
   let ensResolve: jest.Mock<string, [string]>;
   let getAvailability: jest.Mock<{ available: boolean }, [string]>;
   const excludeAddress = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
-  const blockAddress = '0xaCdCAC1e966D1D00baBf2d0E947520cF65fD0516';
   const onlineTarget = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
   const offlineTarget = '0x39ff19161414E257AA29461dCD087F6a1AE362Fd';
 
-  function createWrapper(value = '', excluded?: string, blocked?: string, hideErrorLabel = false) {
+  function createWrapper(value = '', excluded?: string, hideErrorLabel = false) {
     vuetify = new Vuetify();
     return mount(AddressInput, {
       vuetify,
@@ -37,7 +36,6 @@ describe('AddressInput', () => {
         value,
         hideErrorLabel,
         exclude: excluded ? [excluded] : undefined,
-        block: blocked ? [blocked] : undefined,
       },
       mocks: {
         $raiden: {
@@ -59,7 +57,7 @@ describe('AddressInput', () => {
   });
 
   test('show no validation messages by default', () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress);
     const messages = wrapper.find('.v-messages__wrapper');
     expect(wrapper.props().value).toBe('');
     expect(messages.exists()).toBe(true);
@@ -67,7 +65,7 @@ describe('AddressInput', () => {
   });
 
   test('set busy flag while fetching an ens domain', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress);
     mockInput(wrapper, 'test.eth');
     const busy = jest.spyOn(wrapper.vm.$data, 'busy', 'set');
     await wrapper.vm.$nextTick();
@@ -77,7 +75,7 @@ describe('AddressInput', () => {
   });
 
   test('show an error message when the input has an invalid address', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress);
     mockInput(wrapper, '0x21b');
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
@@ -88,7 +86,7 @@ describe('AddressInput', () => {
   });
 
   test('show an error message when the input address is not in checksum format', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress);
     mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
@@ -99,7 +97,7 @@ describe('AddressInput', () => {
   });
 
   test('emits an input error when the input has an invalid address', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress);
     (wrapper.vm as any).inputError = jest.fn();
 
     mockInput(wrapper, '0x21b');
@@ -110,7 +108,7 @@ describe('AddressInput', () => {
   });
 
   test('emits an input error when the input address is not in checksum format', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress);
     (wrapper.vm as any).inputError = jest.fn();
 
     mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
@@ -121,7 +119,7 @@ describe('AddressInput', () => {
   });
 
   test('fire an input event when the input address is valid', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress);
     mockInput(wrapper, onlineTarget);
     jest.advanceTimersByTime(1000);
     await wrapper.vm.$nextTick();
@@ -132,7 +130,7 @@ describe('AddressInput', () => {
   });
 
   test('can hide error label', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress, true);
+    wrapper = createWrapper('', excludeAddress, true);
     mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
 
     jest.advanceTimersByTime(1000);
@@ -143,13 +141,13 @@ describe('AddressInput', () => {
   });
 
   test('render a blockie when the input address is valid', async () => {
-    wrapper = createWrapper(onlineTarget, excludeAddress, blockAddress);
+    wrapper = createWrapper(onlineTarget, excludeAddress);
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
   });
 
   test('click on QR code opens overlay', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress);
     expect(wrapper.vm.$data.isQrCodeOverlayVisible).toBe(false);
 
     wrapper.find('.address-input__qr-code svg').trigger('click');
@@ -159,7 +157,7 @@ describe('AddressInput', () => {
   });
 
   test('insert address if QR code got decoded', async () => {
-    wrapper = createWrapper('', excludeAddress, blockAddress);
+    wrapper = createWrapper('', excludeAddress);
     (wrapper.vm as any).onDecode(onlineTarget);
 
     jest.advanceTimersByTime(1000);
@@ -172,7 +170,7 @@ describe('AddressInput', () => {
 
   describe('resolve an ens domain', () => {
     test('with success', async () => {
-      wrapper = createWrapper('', excludeAddress, blockAddress);
+      wrapper = createWrapper('', excludeAddress);
       mockInput(wrapper, 'ens');
       jest.advanceTimersByTime(1000);
       await wrapper.vm.$nextTick();
@@ -192,7 +190,7 @@ describe('AddressInput', () => {
 
     test('without success', async () => {
       ensResolve = jest.fn().mockResolvedValue(null);
-      wrapper = createWrapper('', excludeAddress, blockAddress);
+      wrapper = createWrapper('', excludeAddress);
 
       mockInput(wrapper, 'enstest.test');
       jest.advanceTimersByTime(1000);
@@ -208,7 +206,7 @@ describe('AddressInput', () => {
 
     test('with an error', async () => {
       ensResolve = jest.fn().mockRejectedValue(new Error('something went wrong'));
-      wrapper = createWrapper('', excludeAddress, blockAddress);
+      wrapper = createWrapper('', excludeAddress);
 
       mockInput(wrapper, 'enstest.test');
       jest.advanceTimersByTime(1000);
@@ -223,9 +221,9 @@ describe('AddressInput', () => {
     });
   });
 
-  describe('exclude & block addresses', () => {
+  describe('exclude addresses', () => {
     test('should show error message when the user enters an invalid or excluded address', async () => {
-      wrapper = createWrapper('', excludeAddress, blockAddress);
+      wrapper = createWrapper('', excludeAddress);
       mockInput(wrapper, excludeAddress);
       await wrapper.vm.$nextTick();
       jest.runAllTimers();
@@ -234,27 +232,6 @@ describe('AddressInput', () => {
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
       expect(messages.text()).toBe('address-input.error.invalid-excluded-address');
-    });
-
-    test('show an error message if the input has a blocked address', async () => {
-      wrapper = createWrapper('', excludeAddress, blockAddress);
-      mockInput(wrapper, blockAddress);
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
-
-      const messages = wrapper.find('.v-messages__message');
-      expect(messages.exists()).toBe(true);
-      expect(messages.text()).toBe('address-input.error.channel-not-open');
-    });
-
-    test('show not an error message if there is no exclude or block prop', async () => {
-      wrapper = createWrapper('');
-
-      mockInput(wrapper, onlineTarget);
-      await wrapper.vm.$nextTick();
-
-      const messages = wrapper.find('.v-messages__wrapper');
-      expect(messages.text()).toEqual('');
     });
   });
 

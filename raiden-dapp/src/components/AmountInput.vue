@@ -185,11 +185,6 @@ $header-vertical-margin-mobile: 2rem;
   justify-content: center;
   flex-direction: column;
   border: 0;
-  @include respond-to(handhelds) {
-    padding-top: 30px;
-    padding-bottom: 30px;
-    border: 0;
-  }
 
   ::v-deep {
     .v-input {

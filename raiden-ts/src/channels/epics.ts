@@ -1,9 +1,7 @@
 import { defaultAbiCoder, Interface } from '@ethersproject/abi';
-import type { BigNumber } from '@ethersproject/bignumber';
 import { concat as concatBytes } from '@ethersproject/bytes';
 import { Zero } from '@ethersproject/constants';
 import type { Event } from '@ethersproject/contracts';
-import type { Filter, Log } from '@ethersproject/providers';
 import constant from 'lodash/constant';
 import findKey from 'lodash/findKey';
 import isEmpty from 'lodash/isEmpty';
@@ -26,6 +24,7 @@ import {
   concatMap,
   debounceTime,
   delayWhen,
+  distinct,
   distinctUntilChanged,
   endWith,
   exhaustMap,
@@ -41,6 +40,7 @@ import {
   pluck,
   publishReplay,
   scan,
+  startWith,
   switchMap,
   take,
   takeUntil,
@@ -69,10 +69,11 @@ import {
   networkErrors,
   RaidenError,
 } from '../utils/error';
+import type { ContractFilter, EventTuple } from '../utils/ethers';
 import { fromEthersEvent, getLogsByChunk$, logToContractEvent } from '../utils/ethers';
 import {
   completeWith,
-  distinctRecordValues,
+  lastMap,
   pluckDistinct,
   retryAsync$,
   retryWhile,
@@ -130,6 +131,7 @@ export function initEpic(
         ),
       );
     }),
+    completeWith(state$),
     finalize(() => init$.complete()),
   );
 }
@@ -141,15 +143,22 @@ export function initEpic(
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
  * @param deps.provider - Eth provider
+ * @param deps.init$ - Observable which completes when initial sync is done
  * @returns Observable of newBlock actions
  */
 export function initNewBlockEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { provider }: RaidenEpicDeps,
+  { provider, init$ }: RaidenEpicDeps,
 ): Observable<newBlock> {
   return retryAsync$(() => provider.getBlockNumber(), provider.pollingInterval).pipe(
-    mergeMap((blockNumber) => merge(of(blockNumber), fromEthersEvent<number>(provider, 'block'))),
+    // emits fetched block first, then subscribes to provider's block after synced
+    mergeMap((blockNumber) =>
+      init$.pipe(
+        lastMap(() => fromEthersEvent<number>(provider, 'block')),
+        startWith(blockNumber),
+      ),
+    ),
     map((blockNumber) => newBlock({ blockNumber })),
     completeWith(action$),
   );
@@ -241,9 +250,80 @@ export function blockStaleEpic(
   );
 }
 
+function scanRegistryTokenNetworks({
+  address,
+  provider,
+  registryContract,
+  contractsInfo,
+  getTokenNetworkContract,
+}: RaidenEpicDeps): Observable<tokenMonitored> {
+  const encodedAddress = defaultAbiCoder.encode(['address'], [address]);
+  return getLogsByChunk$(
+    provider,
+    Object.assign(registryContract.filters.TokenNetworkCreated(null, null), {
+      fromBlock: contractsInfo.TokenNetworkRegistry.block_number,
+      toBlock: provider.blockNumber,
+    }),
+  ).pipe(
+    map(logToContractEvent(registryContract)),
+    filter(([, tokenNetwork]) => !!tokenNetwork),
+    toArray(),
+    mergeMap((logs) => {
+      const alwaysMonitored$: Observable<tokenMonitored> = from(
+        logs.splice(0, 2).map(([token, tokenNetwork, event]) =>
+          tokenMonitored({
+            token: token as Address,
+            tokenNetwork: tokenNetwork as Address,
+            fromBlock: event.blockNumber,
+          }),
+        ),
+      );
+
+      let monitorsIfHasChannels$: Observable<tokenMonitored> = EMPTY;
+      if (logs.length) {
+        const firstBlock = logs[0][2].blockNumber;
+        const tokenNetworks = new Map<string, [token: Address, event: Event]>(
+          logs.map(([token, tokenNetwork, event]) => [tokenNetwork, [token as Address, event]]),
+        );
+        const allTokenNetworkAddrs = Array.from(tokenNetworks.keys());
+        const aTokenNetworkContract = getTokenNetworkContract(allTokenNetworkAddrs[0] as Address);
+        const { openTopic } = getChannelEventsTopics(aTokenNetworkContract);
+        // simultaneously query all tokenNetworks for channels from us and to us
+        monitorsIfHasChannels$ = merge(
+          getLogsByChunk$(provider, {
+            address: allTokenNetworkAddrs,
+            topics: [openTopic, null, encodedAddress], // channels from us
+            fromBlock: firstBlock,
+            toBlock: provider.blockNumber,
+          }),
+          getLogsByChunk$(provider, {
+            address: allTokenNetworkAddrs,
+            topics: [openTopic, null, null, encodedAddress], // channels to us
+            fromBlock: firstBlock,
+            toBlock: provider.blockNumber,
+          }),
+        ).pipe(
+          distinct((log) => log.address), // only act on the first log found for each tokenNetwork
+          filter((log) => tokenNetworks.has(log.address)), // shouldn't fail
+          map((log) =>
+            tokenMonitored({
+              token: tokenNetworks.get(log.address)![0],
+              tokenNetwork: log.address as Address,
+              fromBlock: log.blockNumber,
+            }),
+          ),
+        );
+      }
+
+      return merge(alwaysMonitored$, monitorsIfHasChannels$);
+    }),
+  );
+}
+
 /**
  * If state.tokens is empty (usually only on first run), scan registry and token networks for
  * registered TokenNetworks of interest (ones which has/had channels with us) and monitors them.
+ * Otherwise, just emit tokenMonitored actions for all previously monitored TokenNetworks
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
@@ -258,61 +338,27 @@ export function blockStaleEpic(
 export function initTokensRegistryEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { address, provider, registryContract, contractsInfo, init$ }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<tokenMonitored> {
   return action$.pipe(
     filter(newBlock.is),
-    withLatestFrom(state$),
     take(1),
-    filter(([, state]) => isEmpty(state.tokens)), // proceed to scan only if state.tokens isEmpty
-    mergeMap(([action]) => {
+    withLatestFrom(state$),
+    mergeMap(([, state]) => {
       const initSub = new AsyncSubject<null>();
-      init$.next(initSub);
+      deps.init$.next(initSub);
 
-      return getLogsByChunk$(provider, {
-        ...registryContract.filters.TokenNetworkCreated(null, null),
-        fromBlock: contractsInfo.TokenNetworkRegistry.block_number,
-        toBlock: action.payload.blockNumber,
-      }).pipe(
-        map((log) => ({ log, parsed: registryContract.interface.parseLog(log) })),
-        filter(({ parsed }) => !!parsed.args['token_network_address']),
-        take(2), // FIXME: limit number of automatically scanned tokenNetworks
-        // for each TokenNetwork found, scan for channels with us
-        withLatestFrom(state$),
-        mergeMap(
-          ([{ log, parsed }, { blockNumber }]) => {
-            const encodedAddress = defaultAbiCoder.encode(['address'], [address]);
-            return merge(
-              getLogsByChunk$(provider, {
-                // filter equivalent to tokenNetworkContract.filter.ChannelOpened()
-                address: parsed.args.token_network_address,
-                topics: [null, null, encodedAddress] as string[], // channels from us
-                fromBlock: log.blockNumber!,
-                toBlock: blockNumber,
-              }),
-              getLogsByChunk$(provider, {
-                address: parsed.args.token_network_address,
-                topics: [null, null, null, encodedAddress] as string[], // channels to us
-                fromBlock: log.blockNumber!,
-                toBlock: blockNumber,
-              }),
-            ).pipe(
-              // if found at least one, register this TokenNetwork as of interest and unsubscribe
-              // to the rest of the getLogsByChunk$; else, do nothing
-              take(1),
-              mapTo(
-                tokenMonitored({
-                  token: parsed.args.token_address,
-                  tokenNetwork: parsed.args.token_network_address,
-                  fromBlock: log.blockNumber!,
-                }),
-              ),
-            );
-          },
-          5, // limit concurrency, don't hammer the node with hundreds of parallel getLogs
-        ),
-        finalize(() => initSub.complete()),
-      );
+      let monitored$: Observable<tokenMonitored>;
+
+      if (isEmpty(state.tokens)) monitored$ = scanRegistryTokenNetworks(deps);
+      else
+        monitored$ = from(
+          Object.entries(state.tokens).map(([token, tokenNetwork]) =>
+            tokenMonitored({ token: token as Address, tokenNetwork }),
+          ),
+        );
+
+      return monitored$.pipe(finalize(() => initSub.complete()));
     }),
   );
 }
@@ -367,22 +413,19 @@ export function initMonitorProviderEpic(
 }
 
 // type of elements mapped from contract-emitted events/logs
-// [channelId, participant1, participant2, settleTimeout, Event]
-type ChannelOpenedEvent = [BigNumber, Address, Address, BigNumber, Event];
-// [channelId, participant, totalDeposit, Event]
-type ChannelNewDepositEvent = [BigNumber, Address, UInt<32>, Event];
-// [channelId, participant, totalWithdraw, Event]
-type ChannelWithdrawEvent = [BigNumber, Address, UInt<32>, Event];
-// [channelId, participant, nonce, balanceHash, Event]
-type ChannelClosedEvent = [BigNumber, Address, UInt<8>, Hash, Event];
-// [channelId, part1_amount, part1_locksroot, part2_amount, part2_locksroot Event]
-type ChannelSettledEvent = [BigNumber, UInt<32>, Hash, UInt<32>, Hash, Event];
-type ChannelEvents =
-  | ChannelOpenedEvent
-  | ChannelNewDepositEvent
-  | ChannelWithdrawEvent
-  | ChannelClosedEvent
-  | ChannelSettledEvent;
+type ChannelEventsNames =
+  | 'ChannelOpened'
+  | 'ChannelNewDeposit'
+  | 'ChannelWithdraw'
+  | 'ChannelClosed'
+  | 'ChannelSettled';
+type ChannelEvents<E extends keyof TokenNetwork['filters'] = ChannelEventsNames> = EventTuple<
+  ContractFilter<TokenNetwork, E>
+>;
+type ChannelOpenedEvent = ChannelEvents<'ChannelOpened'>;
+type ChannelNewDepositEvent = ChannelEvents<'ChannelNewDeposit'>;
+type ChannelWithdrawEvent = ChannelEvents<'ChannelWithdraw'>;
+type ChannelClosedEvent = ChannelEvents<'ChannelClosed'>;
 
 function getChannelEventsTopics(tokenNetworkContract: TokenNetwork) {
   return {
@@ -405,13 +448,8 @@ function mapChannelEventsToAction(
   { address, latest$, getTokenNetworkContract }: RaidenEpicDeps,
 ) {
   const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
-  const {
-    openTopic,
-    depositTopic,
-    withdrawTopic,
-    closedTopic,
-    settledTopic,
-  } = getChannelEventsTopics(tokenNetworkContract);
+  const { openTopic, depositTopic, withdrawTopic, closedTopic, settledTopic } =
+    getChannelEventsTopics(tokenNetworkContract);
   return (input$: Observable<ChannelEvents>) =>
     input$.pipe(
       withLatestFrom(latest$),
@@ -435,7 +473,7 @@ function mapChannelEventsToAction(
             const [, p1, p2, settleTimeout] = args as ChannelOpenedEvent;
             // filter out open events not with us
             if ((address === p1 || address === p2) && (!channel || id > channel.id)) {
-              const partner = address == p1 ? p2 : p1;
+              const partner = (address == p1 ? p2 : p1) as Address;
               action = channelOpen.success(
                 {
                   id,
@@ -460,7 +498,14 @@ function mapChannelEventsToAction(
               )
             )
               action = channelDeposit.success(
-                { id, participant, totalDeposit, txHash, txBlock, confirmed },
+                {
+                  id,
+                  participant: participant as Address,
+                  totalDeposit: totalDeposit as UInt<32>,
+                  txHash,
+                  txBlock,
+                  confirmed,
+                },
                 { tokenNetwork, partner: channel.partner.address },
               );
             break;
@@ -474,7 +519,14 @@ function mapChannelEventsToAction(
               )
             )
               action = channelWithdrawn(
-                { id, participant, totalWithdraw, txHash, txBlock, confirmed },
+                {
+                  id,
+                  participant: participant as Address,
+                  totalWithdraw: totalWithdraw as UInt<32>,
+                  txHash,
+                  txBlock,
+                  confirmed,
+                },
                 { tokenNetwork, partner: channel.partner.address },
               );
             break;
@@ -483,7 +535,7 @@ function mapChannelEventsToAction(
             if (channel?.id === id && !('closeBlock' in channel)) {
               const [, participant] = args as ChannelClosedEvent;
               action = channelClose.success(
-                { id, participant, txHash, txBlock, confirmed },
+                { id, participant: participant as Address, txHash, txBlock, confirmed },
                 { tokenNetwork, partner: channel.partner.address },
               );
             }
@@ -516,34 +568,36 @@ function fetchPastChannelEvents$(
 
   // start by scanning [fromBlock, toBlock] interval for ChannelOpened events limited to or from us
   return merge(
-    getLogsByChunk$(provider, {
-      ...tokenNetworkContract.filters.ChannelOpened(null, address, null, null),
-      fromBlock,
-      toBlock,
-    }),
-    getLogsByChunk$(provider, {
-      ...tokenNetworkContract.filters.ChannelOpened(null, null, address, null),
-      fromBlock,
-      toBlock,
-    }),
+    getLogsByChunk$(
+      provider,
+      Object.assign(tokenNetworkContract.filters.ChannelOpened(null, address, null, null), {
+        fromBlock,
+        toBlock,
+      }),
+    ),
+    getLogsByChunk$(
+      provider,
+      Object.assign(tokenNetworkContract.filters.ChannelOpened(null, null, address, null), {
+        fromBlock,
+        toBlock,
+      }),
+    ),
   ).pipe(
+    map(logToContractEvent(tokenNetworkContract)),
     toArray(),
     withLatestFrom(latest$),
     mergeMap(([logs, { state }]) => {
       // map Log to ContractEvent and filter out channels which we know are already gone
-      const openEvents = logs
-        .map(logToContractEvent<ChannelOpenedEvent>(tokenNetworkContract))
-        .filter(isntNil)
-        .filter(([_id, p1, p2]) => {
-          const partner = address === p1 ? p2 : p1;
-          const id = _id.toNumber();
-          const key = channelKey({ tokenNetwork, partner });
-          // filter out settled or old channels, no new event could come from it
-          return !(
-            channelUniqueKey({ id, tokenNetwork, partner }) in state.oldChannels ||
-            (key in state.channels && id < state.channels[key].id)
-          );
-        });
+      const openEvents = logs.filter(([_id, p1, p2]) => {
+        const partner = (address === p1 ? p2 : p1) as Address;
+        const id = _id.toNumber();
+        const key = channelKey({ tokenNetwork, partner });
+        // filter out settled or old channels, no new event could come from it
+        return !(
+          channelUniqueKey({ id, tokenNetwork, partner }) in state.oldChannels ||
+          (key in state.channels && id < state.channels[key].id)
+        );
+      });
       const channelIds = [
         ...openEvents, // use new past openEvents ids
         ...Object.values(state.channels)
@@ -553,7 +607,7 @@ function fetchPastChannelEvents$(
       if (channelIds.length === 0) return EMPTY;
 
       // get all events of interest in the block range for all channelIds from open events above
-      return getLogsByChunk$(provider, {
+      const allButOpenedFilter = {
         address: tokenNetwork,
         topics: [
           // events of interest as topics[0], without open events (already fetched above)
@@ -562,18 +616,16 @@ function fetchPastChannelEvents$(
           ),
           channelIds, // ORed channelIds set as topics[1]=channelId
         ],
-        fromBlock,
-        toBlock,
-      }).pipe(
+      } as ContractFilter<TokenNetwork, Exclude<ChannelEventsNames, 'ChannelOpened'>>;
+      return getLogsByChunk$(
+        provider,
+        Object.assign(allButOpenedFilter, { fromBlock, toBlock }),
+      ).pipe(
+        map(logToContractEvent(tokenNetworkContract)),
         toArray(),
         // synchronously sort/interleave open|(deposit|withdraw|close|settle) events, and unwind
         mergeMap((logs) => {
-          const otherEvents = logs
-            .map(
-              logToContractEvent<Exclude<ChannelEvents, ChannelOpenedEvent>>(tokenNetworkContract),
-            )
-            .filter(isntNil);
-          const allEvents = [...openEvents, ...otherEvents];
+          const allEvents = [...openEvents, ...logs];
           return from(
             sortBy(allEvents, [
               (args) => last(args).blockNumber,
@@ -592,23 +644,22 @@ function fetchNewChannelEvents$(
   [token, tokenNetwork]: [Address, Address],
   deps: RaidenEpicDeps,
 ) {
-  const { provider, getTokenNetworkContract, config$ } = deps;
+  const { provider, getTokenNetworkContract, config$, latest$ } = deps;
   const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
+  const blockNumber$ = latest$.pipe(pluckDistinct('state', 'blockNumber'));
 
   // this mapping is needed to handle channel events emitted before open is confirmed/stored
-  const channelFilter: Filter = {
+  const channelFilter = {
     address: tokenNetwork,
     // set only topics[0], to get also open events (new ids); filter client-side
     topics: [Object.values(getChannelEventsTopics(tokenNetworkContract))],
-  };
-
-  return config$.pipe(
-    first(),
-    mergeMap(({ confirmationBlocks }) =>
-      fromEthersEvent<Log>(provider, channelFilter, confirmationBlocks, fromBlock),
-    ),
-    map(logToContractEvent<ChannelEvents>(tokenNetworkContract)),
-    filter(isntNil),
+  } as ContractFilter<TokenNetwork, ChannelEventsNames>;
+  return fromEthersEvent(provider, channelFilter, {
+    fromBlock,
+    blockNumber$,
+    confirmations: config$.pipe(pluck('confirmationBlocks')),
+  }).pipe(
+    map(logToContractEvent(tokenNetworkContract)),
     mapChannelEventsToAction([token, tokenNetwork], deps),
   );
 }
@@ -632,7 +683,7 @@ function fetchNewChannelEvents$(
  */
 export function channelEventsEpic(
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
+  {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<
   | tokenMonitored
@@ -642,31 +693,19 @@ export function channelEventsEpic(
   | channelClose.success
   | channelSettle.success
 > {
+  const resetEventsBlock: number = deps.provider._lastBlockNumber;
   return action$.pipe(
     filter(newBlock.is),
     pluck('payload', 'blockNumber'),
     publishReplay(1, undefined, (blockNumber$) =>
-      state$.pipe(
-        pluck('tokens'),
-        distinctRecordValues(),
-        withLatestFrom(state$),
-        mergeMap(([[token, tokenNetwork], state]) => {
+      action$.pipe(
+        filter(tokenMonitored.is),
+        distinct((action) => action.payload.tokenNetwork),
+        withLatestFrom(deps.config$),
+        mergeMap(([action, { confirmationBlocks }]) => {
+          const { token, tokenNetwork } = action.payload;
           // fromBlock is latest on-chain event seen for this contract, or registry deployment block +1
-          const fromBlock = Object.values(state.channels)
-            .concat(Object.values(state.oldChannels))
-            .filter((channel) => channel.tokenNetwork === tokenNetwork)
-            .reduce(
-              (acc, channel) =>
-                Math.max(
-                  acc,
-                  'settleBlock' in channel
-                    ? channel.settleBlock
-                    : 'closeBlock' in channel
-                    ? channel.closeBlock
-                    : channel.openBlock,
-                ),
-              deps.contractsInfo.TokenNetworkRegistry.block_number,
-            );
+          const fromBlock = action.payload.fromBlock ?? resetEventsBlock - confirmationBlocks;
 
           // notifies when past events fetching completes
           const pastDone$ = new AsyncSubject<true>();
@@ -680,18 +719,13 @@ export function channelEventsEpic(
               // both subscriptions are done simultaneously, to avoid losing monitored new events
               // or that they'd come before any pastEvent
               merge(
-                of(tokenMonitored({ token: token as Address, tokenNetwork, fromBlock, toBlock })),
-                fetchPastChannelEvents$(
-                  [fromBlock, toBlock],
-                  [token as Address, tokenNetwork],
-                  deps,
-                ).pipe(
+                fetchPastChannelEvents$([fromBlock, toBlock], [token, tokenNetwork], deps).pipe(
                   finalize(() => {
                     pastDone$.next(true);
                     pastDone$.complete();
                   }),
                 ),
-                fetchNewChannelEvents$(toBlock + 1, [token as Address, tokenNetwork], deps).pipe(
+                fetchNewChannelEvents$(toBlock + 1, [token, tokenNetwork], deps).pipe(
                   delayWhen(() => pastDone$), // holds new events until pastEvents fetching ends
                 ),
               ),
@@ -1262,7 +1296,7 @@ export function channelAutoSettleEpic(
         ),
       ),
     ),
-    takeIf(config$.pipe(pluck('autoSettle'))),
+    takeIf(config$.pipe(pluck('autoSettle'), completeWith(state$))),
   );
 }
 
@@ -1305,7 +1339,8 @@ export function channelSettleEpic(
         onchainSigner,
       );
       const channel = state.channels[channelKey(action.meta)];
-      if (channel?.state !== ChannelState.settleable && channel?.state !== ChannelState.settling) {
+      const settleableStates = [ChannelState.settleable, ChannelState.settling];
+      if (!settleableStates.includes(channel?.state)) {
         const error = new RaidenError(
           ErrorCodes.CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND,
           action.meta,
@@ -1336,7 +1371,7 @@ export function channelSettleEpic(
             ).pipe(
               catchError(() =>
                 throwError(
-                  new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH, {
+                  new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
                     address,
                     ownBalanceHash: ownBH,
                   }),
@@ -1358,7 +1393,7 @@ export function channelSettleEpic(
             ).pipe(
               catchError(() =>
                 throwError(
-                  new RaidenError(ErrorCodes.CNL_SETTLECHANNEL_INVALID_BALANCEHASH, {
+                  new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
                     address,
                     partnerBalanceHash: partnerBH,
                   }),
@@ -1400,7 +1435,7 @@ export function channelSettleEpic(
                   part2[1].locksroot,
                 ),
               ).pipe(
-                assertTx('settleChannel', ErrorCodes.CNL_SETTLECHANNEL_FAILED, { log, provider }),
+                assertTx('settleChannel', ErrorCodes.CNL_SETTLE_FAILED, { log, provider }),
                 retryWhile(intervalFromConfig(config$), {
                   onErrors: commonAndFailTxErrors,
                   log: log.info,
@@ -1443,21 +1478,17 @@ export function channelSettleableEpic(
   state$: Observable<RaidenState>,
 ): Observable<channelSettleable> {
   return action$.pipe(
-    filter(isActionOf(newBlock)),
+    filter(newBlock.is),
+    pluck('payload', 'blockNumber'),
     withLatestFrom(state$),
-    mergeMap(function* ([
-      {
-        payload: { blockNumber },
-      },
-      state,
-    ]) {
+    mergeMap(function* ([currentBlock, state]) {
       for (const channel of Object.values(state.channels)) {
         if (
           channel.state === ChannelState.closed &&
-          blockNumber > channel.closeBlock + channel.settleTimeout
+          currentBlock >= channel.closeBlock + channel.settleTimeout
         ) {
           yield channelSettleable(
-            { settleableBlock: blockNumber },
+            { settleableBlock: currentBlock },
             { tokenNetwork: channel.tokenNetwork, partner: channel.partner.address },
           );
         }

@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid data-cy="home" class="home">
+  <div fluid data-cy="home" class="home">
     <v-row no-gutters>
       <v-col cols="12">
         <div class="home__logo-container">
@@ -12,6 +12,7 @@
         </div>
       </v-col>
     </v-row>
+
     <v-row no-gutters>
       <v-col cols="12">
         <div class="home__app-welcome text-center">
@@ -19,6 +20,7 @@
         </div>
       </v-col>
     </v-row>
+
     <v-row no-gutters>
       <v-col cols="12">
         <div class="home__disclaimer text-center font-weight-light">
@@ -33,74 +35,35 @@
             {{ $t('home.getting-started.link-name') }}
           </a>
         </i18n>
-        <no-access-message v-if="accessDenied" :reason="accessDenied" class="home__no-access" />
       </v-col>
     </v-row>
-    <action-button
-      data-cy="home_connect_button"
-      class="home__connect-button"
-      :text="$t('home.connect-button')"
-      :loading="connecting"
-      syncing
-      :enabled="!connecting"
-      sticky
-      @click="connect"
-    />
-    <connect-dialog
-      :connecting="connecting"
-      :visible="connectDialog"
-      :has-provider="hasProvider"
-      @connect="connect"
-      @close="connectDialog = false"
-    />
-  </v-container>
+
+    <v-row no-gutters>
+      <v-col cols="12" class="mt-10">
+        <connection-manager />
+      </v-col>
+    </v-row>
+  </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import type { Location } from 'vue-router';
-import { mapGetters, mapState } from 'vuex';
+import { mapState } from 'vuex';
 
-import ActionButton from '@/components/ActionButton.vue';
-import ConnectDialog from '@/components/dialogs/ConnectDialog.vue';
-import NoAccessMessage from '@/components/NoAccessMessage.vue';
-import type { TokenModel } from '@/model/types';
-import { DeniedReason } from '@/model/types';
+import ConnectionManager from '@/components/ConnectionManager.vue';
 import { RouteNames } from '@/router/route-names';
-import { ConfigProvider } from '@/services/config-provider';
-import { Web3Provider } from '@/services/web3-provider';
-import type { Settings } from '@/types';
 
 @Component({
   computed: {
-    ...mapState(['loading', 'accessDenied', 'stateBackup', 'settings']),
-    ...mapGetters(['isConnected', 'tokens']),
+    ...mapState(['isConnected']),
   },
   components: {
-    ActionButton,
-    ConnectDialog,
-    NoAccessMessage,
+    ConnectionManager,
   },
 })
 export default class Home extends Vue {
   isConnected!: boolean;
-  tokens!: TokenModel[];
-  connectDialog = false;
-  connecting = false;
-  loading!: boolean;
-  accessDenied!: DeniedReason;
-  stateBackup!: string;
-  settings!: Settings;
-  hasProvider = false;
-
-  async created() {
-    if (Web3Provider.injectedWeb3Available()) {
-      this.hasProvider = true;
-      return;
-    }
-    const configuration = await ConfigProvider.configuration();
-    this.hasProvider = !!configuration.rpc_endpoint;
-  }
 
   get navigationTarget(): Location {
     const redirectTo = this.$route.query.redirectTo as string;
@@ -112,26 +75,9 @@ export default class Home extends Vue {
     }
   }
 
-  async connect() {
-    // On first time connect, show the connect dialog
-    let { useRaidenAccount, isFirstTimeConnect } = this.settings;
-    if (isFirstTimeConnect && useRaidenAccount) {
-      this.connectDialog = true;
-      return;
-    }
-
-    this.connectDialog = false;
-    this.connecting = true;
-    const stateBackup = this.stateBackup;
-
-    this.$store.commit('reset');
-    // Have to reset this explicitly, for some reason
-    this.$store.commit('accessDenied', DeniedReason.UNDEFINED);
-
-    await this.$raiden.connect(stateBackup, useRaidenAccount ? true : undefined);
-    this.connecting = false;
-    if (!this.accessDenied) {
-      this.connectDialog = false;
+  @Watch('isConnected', { immediate: true })
+  onConnectionEstablished(value: boolean): void {
+    if (value) {
       this.$router.push(this.navigationTarget);
     }
   }
@@ -142,8 +88,13 @@ export default class Home extends Vue {
 @import '@/scss/mixins';
 
 .home {
-  height: 100%;
   width: 100%;
+  height: 100% !important;
+
+  @include respond-to(handhelds) {
+    padding: 0 10px;
+    overflow-y: auto !important;
+  }
 
   ::v-deep {
     a {
@@ -167,9 +118,11 @@ export default class Home extends Vue {
   }
 
   &__disclaimer,
-  &__getting-started,
-  &__no-access {
+  &__getting-started {
+    font-size: 16px;
+    line-height: 20px;
     margin: 30px 130px 0 130px;
+
     @include respond-to(handhelds) {
       margin: 30px 20px 0 20px;
     }

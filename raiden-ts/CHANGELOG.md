@@ -1,10 +1,57 @@
 # Changelog
 
 ## [Unreleased]
-### Changed
-- [#2250] **BREAKING** remove migration of legacy state at localStorage during creation
+### Added
+- [#1576] Add functionality to deploy token networks
+- [#2577] Add imbalance penalty mediation fees
 
-[#2550]: https://github.com/raiden-network/light-client/pull/2550
+[#1576]: https://github.com/raiden-network/light-client/issues/1576
+[#2577]: https://github.com/raiden-network/light-client/issues/2577
+
+### Changed
+- [#2669] Update to Raiden contracts `v0.37.5`
+- [#2677] Removed the dependency on reactive notifications of peer's presences changes and updated WebRTC signaling algorithm
+
+[#2669]: https://github.com/raiden-network/light-client/issues/2669
+[#2677]: https://github.com/raiden-network/light-client/issues/2677
+
+## [0.16.0] - 2021-04-01
+### Added
+- [#1342] Flat (fixed) mediation fees for mediator nodes
+- [#1343] Proportional (per transfer amount) mediation fees for mediator nodes
+- [#2581] `config.pfsSafetyMargin` now also accepts a `[f, a]` pair, which will add `f*fee + a*amount` on top of PFS's estimated fee, if one wants finer-grain control on safety margin which is added on the transfer to be initiated.
+- [#2629] `config.autoUDCWithdraw` (default=true) to allow disabling automatically completing a planned UDC withdraw, and new `Raiden.getUDCWithdrawPlan` and `Raiden.withdrawFromUDC` to check and perform UDC withdraw when not in auto mode.
+- [#2644] `Raiden.getUDCTotalDeposit` method to fetch UDC total_deposit, base of `depositToUDC` amounts
+
+### Changed
+- [#2536] Wait for global messages before resolving deposits and channel open request
+- [#2566] Optimize initial sync and resume previous sync filters scans
+- [#2570] Support multiple custom services in config.pfs
+- [#2635] **BREAKING** Renamed `Raiden.planUdcWithdraw` to `Raiden.planUDCWithdraw` for consistency
+- [#2645] Wait for condition to be ready on `settleChannel` and `withdrawFromUDC` in case it's called early instead of erroring
+
+### Removed
+- [#2550] **BREAKING** Remove migration of legacy state at localStorage during creation
+- [#2567] **BREAKING** Remove support for peer-to-peer communication through Matrix rooms; now supports only `toDevice` and WebRTC channels.
+- [#2600] `wrtc` auto-polyfill; now, if you're using `raiden-ts` in a NodeJS project, you're expected to polyfill `wrtc` or some WebRTC-compatible API to your global object; in exchange, the SDK doesn't require WebRTC, and therefore should work fine on environments without it (through matrix' toDevice messages).
+
+### Fixed
+- [#2596] Fix unlocking sent transfers even if receiving is disabled
+
+[#1342]: https://github.com/raiden-network/light-client/issues/1342
+[#1343]: https://github.com/raiden-network/light-client/issues/1343
+[#2536]: https://github.com/raiden-network/light-client/issues/2536
+[#2550]: https://github.com/raiden-network/light-client/issues/2550
+[#2566]: https://github.com/raiden-network/light-client/issues/2566
+[#2567]: https://github.com/raiden-network/light-client/issues/2567
+[#2570]: https://github.com/raiden-network/light-client/issues/2570
+[#2581]: https://github.com/raiden-network/light-client/pull/2581
+[#2596]: https://github.com/raiden-network/light-client/issues/2596
+[#2600]: https://github.com/raiden-network/light-client/issues/2600
+[#2629]: https://github.com/raiden-network/light-client/issues/2629
+[#2635]: https://github.com/raiden-network/light-client/pull/2635
+[#2644]: https://github.com/raiden-network/light-client/pull/2644
+[#2645]: https://github.com/raiden-network/light-client/issues/2645
 
 ## [0.15.0] - 2021-01-26
 ### Added
@@ -17,8 +64,6 @@
 ### Changed
 - [#2409] Lower default payment expiration to 1.1 × reveal timeout
 - [#2505] Properly shut down epics on stop and wait for teardown/cleanup tasks
-- [#2536] Wait for global messages before resolving deposits and channel open request
-- [#2550] **BREAKING** remove migration of legacy state at localStorage during creation
 
 ### Fixed
 - [#2352] Presence bug, transport fixes and performance improvements
@@ -31,8 +76,6 @@
 [#2444]: https://github.com/raiden-network/light-client/issues/2444
 [#2446]: https://github.com/raiden-network/light-client/issues/2446
 [#2505]: https://github.com/raiden-network/light-client/pull/2505
-[#2536]: https://github.com/raiden-network/light-client/issues/2536
-[#2550]: https://github.com/raiden-network/light-client/issues/2550
 
 ## [0.14.0] - 2020-11-25
 ### Fixed
@@ -401,7 +444,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/raiden-network/light-client/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/raiden-network/light-client/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/raiden-network/light-client/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/raiden-network/light-client/compare/v0.12.0...v0.13.0

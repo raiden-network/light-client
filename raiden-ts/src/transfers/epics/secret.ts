@@ -1,6 +1,5 @@
-import type { Event } from '@ethersproject/contracts';
 import type { Observable } from 'rxjs';
-import { defer, EMPTY, from, identity, of } from 'rxjs';
+import { AsyncSubject, defer, EMPTY, from, identity, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -13,7 +12,6 @@ import {
   map,
   mergeMap,
   pluck,
-  switchMap,
   takeUntil,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -30,7 +28,7 @@ import type { RaidenState } from '../../state';
 import { getCap } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
-import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
+import { assert, commonTxErrors, ErrorCodes } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
 import { completeWith, pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
 import type { Hash, Secret, UInt } from '../../utils/types';
@@ -112,7 +110,7 @@ const secretReveal$ = (
     mergeMap(({ state }) => {
       const transferState = state.transfers[transferKey(action.meta)];
       // shouldn't happen, as we're the initiator (for now), and always know the secret
-      assert(transferState.secret, 'SecretRequest for unknown secret');
+      assert(transferState.secret, ['SecretRequest for unknown secret', request]);
 
       const locked = transferState.transfer;
       const target = locked.target;
@@ -121,13 +119,16 @@ const secretReveal$ = (
 
       assert(
         request.expiration.lte(locked.lock.expiration) && request.expiration.gt(state.blockNumber),
-        'SecretRequest for expired transfer',
+        ['SecretRequest for expired transfer', { request, lock: locked.lock }],
       );
-      assert(request.amount.gte(value), 'SecretRequest for amount too small!');
+      assert(request.amount.gte(value), [
+        'SecretRequest for amount too small!',
+        { request, value },
+      ]);
 
       if (!request.amount.eq(value)) {
         // accept request
-        log.info('Accepted SecretRequest for amount different than sent', request, locked);
+        log.info('Accepted SecretRequest for amount greater than sent', request, locked);
       }
 
       let reveal$: Observable<Signed<SecretReveal>>;
@@ -151,12 +152,7 @@ const secretReveal$ = (
         }),
       );
     }),
-    catchError((err) => {
-      log.error('Invalid SecretRequest', err);
-      return of(
-        transfer.failure(new RaidenError(ErrorCodes.XFER_INVALID_SECRETREQUEST), action.meta),
-      );
-    }),
+    catchError((err) => of(transfer.failure(err, action.meta))),
   );
 };
 
@@ -208,8 +204,8 @@ export function transferSecretRevealedEpic(
   return action$.pipe(
     // we don't require Signed SecretReveal, nor even check sender for persisting the secret
     filter(isMessageReceivedOfType(SecretReveal)),
-    withLatestFrom(state$),
-    mergeMap(function* ([action, state]) {
+    withLatestFrom(state$, config$),
+    mergeMap(function* ([action, state, { caps }]) {
       const secrethash = getSecrethash(action.payload.message.secret);
       const results = Object.values(Direction)
         .map((direction) => state.transfers[transferKey({ secrethash, direction })])
@@ -231,6 +227,8 @@ export function transferSecretRevealedEpic(
           yield transferUnlock.request(undefined, meta);
         }
       }
+      // avoid unlocking received transfers if receiving is disabled
+      if (!getCap(caps, Capabilities.RECEIVE)) return;
 
       // we're mediator or target, and received reveal from next hop or initiator, respectively
       for (const _received of results.filter((doc) => doc.direction === Direction.RECEIVED)) {
@@ -241,9 +239,6 @@ export function transferSecretRevealedEpic(
         );
       }
     }),
-    // enable this epic only if/while/when receiving is enabled, to avoid being forced handling
-    // undesired reveals
-    takeIf(config$.pipe(map(({ caps }) => getCap(caps, Capabilities.RECEIVE)))),
   );
 }
 
@@ -304,25 +299,26 @@ export function transferRequestUnlockEpic(
  * @param deps.provider - Provider instance
  * @param deps.secretRegistryContract - SecretRegistry contract instance
  * @param deps.config$ - Config observable
+ * @param deps.init$ - Init$ tasks subject
  * @returns Observable of transferSecretRegister.success actions
  */
 export function monitorSecretRegistryEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { provider, secretRegistryContract, config$ }: RaidenEpicDeps,
+  { provider, secretRegistryContract, config$, init$ }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.success> {
-  return config$.pipe(
-    pluckDistinct('confirmationBlocks'),
-    switchMap((confirmationBlocks) =>
-      fromEthersEvent(
-        provider,
-        secretRegistryContract.filters.SecretRevealed(null, null),
-        confirmationBlocks,
-      ),
-    ),
+  const initSub = new AsyncSubject<null>();
+  init$.next(initSub);
+  return fromEthersEvent(provider, secretRegistryContract.filters.SecretRevealed(null, null), {
+    confirmations: config$.pipe(pluck('confirmationBlocks')),
+    blockNumber$: state$.pipe(pluckDistinct('blockNumber')),
+    onPastCompleted: () => {
+      initSub.next(null);
+      initSub.complete();
+    },
+  }).pipe(
     completeWith(state$),
-    map(logToContractEvent<[Hash, Secret, Event]>(secretRegistryContract)),
-    filter(isntNil),
+    map(logToContractEvent(secretRegistryContract)),
     withLatestFrom(state$, config$),
     mergeMap(function* ([
       [secrethash, secret, event],
@@ -331,11 +327,11 @@ export function monitorSecretRegistryEpic(
     ]) {
       // find sent|received transfers matching secrethash and secret registered before expiration
       for (const direction of Object.values(Direction)) {
-        const key = transferKey({ secrethash, direction });
+        const key = transferKey({ secrethash: secrethash as Hash, direction });
         if (!(key in transfers)) continue;
         yield transferSecretRegister.success(
           {
-            secret,
+            secret: secret as Secret,
             txHash: event.transactionHash! as Hash,
             txBlock: event.blockNumber!,
             confirmed:
@@ -343,7 +339,7 @@ export function monitorSecretRegistryEpic(
                 ? event.blockNumber! < transfers[key].expiration // false is like event got reorged/removed
                 : undefined,
           },
-          { secrethash, direction },
+          { secrethash: secrethash as Hash, direction },
         );
       }
     }),
@@ -438,6 +434,7 @@ export function transferAutoRegisterEpic(
       config$.pipe(
         pluck('caps'),
         map((caps) => getCap(caps, Capabilities.RECEIVE)),
+        completeWith(action$),
       ),
     ),
   );

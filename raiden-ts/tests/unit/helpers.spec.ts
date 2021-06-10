@@ -3,7 +3,7 @@ import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers';
 import { toUtf8String } from '@ethersproject/strings';
 import { Wallet } from '@ethersproject/wallet';
 
-import { getContracts, getSigner, isValidUrl } from '@/helpers';
+import { getContracts, getSigner } from '@/helpers';
 import Raiden from '@/raiden';
 import type { Address } from '@/utils/types';
 
@@ -127,13 +127,4 @@ describe('Raiden Versions', () => {
   test('Returns raiden contract version', () => {
     expect(Raiden.contractVersion).toMatch(someVersion);
   });
-});
-
-test('accept PFS http addresses on non-production environments', () => {
-  const nodeEnv = process.env.NODE_ENV;
-  const httpUrl = 'http://pfs.dev';
-  expect(isValidUrl(httpUrl)).toBe(true);
-  process.env.NODE_ENV = 'production';
-  expect(isValidUrl(httpUrl)).toBe(false);
-  process.env.NODE_ENV = nodeEnv;
 });

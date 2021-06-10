@@ -1,6 +1,6 @@
 {
   "name": "light-client",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "Raiden Light Client monorepo",
   "author": "brainbot labs est.",
   "private": true,
@@ -30,17 +30,22 @@
     "raiden-cli"
   ],
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.15.1",
-    "@typescript-eslint/parser": "^4.15.1",
-    "eslint": "^7.20.0",
-    "eslint-config-prettier": "^7.2.0",
+    "@types/anymatch": "^1.3",
+    "@typescript-eslint/eslint-plugin": "^4.26.0",
+    "@typescript-eslint/parser": "^4.26.0",
+    "eslint": "^7.27.0",
+    "eslint-config-prettier": "^8.3.0",
     "eslint-import-resolver-typescript": "^2.4.0",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-jsdoc": "^31.6.1",
-    "eslint-plugin-lodash": "^7.1.0",
-    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-jsdoc": "^35.1.2",
+    "eslint-plugin-lodash": "^7.2.0",
+    "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
-    "prettier": "^2.2.1",
+    "prettier": "^2.3.0",
     "rimraf": "^3.0.2"
+  },
+  "resolutions": {
+    "typescript": "4.2.4",
+    "jest-environment-jsdom": "^26.0.1"
   }
 }

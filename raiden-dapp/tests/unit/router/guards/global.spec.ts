@@ -1,7 +1,13 @@
+import { createLocalVue } from '@vue/test-utils';
 import type { NavigationGuardNext, Route } from 'vue-router';
+import Vuex, { Store } from 'vuex';
 
 import type { GuardArguments } from '@/router/guards';
 import { globalNavigationGuard } from '@/router/guards';
+import type { CombinedStoreState } from '@/store';
+
+const localVue = createLocalVue();
+localVue.use(Vuex);
 
 const anyRoute = {
   path: '/',
@@ -12,6 +18,7 @@ const anyRoute = {
   matched: [],
 } as Route;
 
+const store = new Store({}) as jest.Mocked<Store<CombinedStoreState>>;
 const next: NavigationGuardNext = jest.fn();
 const staticGuardArguments: GuardArguments = [anyRoute, anyRoute, next];
 const emptyChildGuard = (_to: Route) => undefined;
@@ -25,28 +32,31 @@ describe('globalNavigationGuard()', () => {
   });
 
   test('do not redirect if there are no child guards', () => {
-    globalNavigationGuard.apply({ children: [] }, staticGuardArguments);
+    globalNavigationGuard.apply({ store, children: [] }, staticGuardArguments);
     expect(next).toHaveBeenCalledWith({});
   });
 
   test('do not redirect if child guard returns nothing', () => {
-    globalNavigationGuard.apply({ children: [emptyChildGuard] }, staticGuardArguments);
+    globalNavigationGuard.apply({ store, children: [emptyChildGuard] }, staticGuardArguments);
     expect(next).toHaveBeenCalledWith({});
   });
 
   test('directly navigate to current location if guard returns null', async () => {
-    globalNavigationGuard.apply({ children: [fastForwardChildGuard] }, staticGuardArguments);
+    globalNavigationGuard.apply(
+      { store, children: [fastForwardChildGuard] },
+      staticGuardArguments,
+    );
     expect(next).toHaveBeenCalledWith();
   });
 
   test('redirect to location child guard returns', async () => {
-    globalNavigationGuard.apply({ children: [firstChildGuard] }, staticGuardArguments);
+    globalNavigationGuard.apply({ store, children: [firstChildGuard] }, staticGuardArguments);
     expect(next).toHaveBeenCalledWith({ name: 'first-route' });
   });
 
   test('ignore second child guard if first returns location', async () => {
     globalNavigationGuard.apply(
-      { children: [firstChildGuard, secondChildGuard] },
+      { store, children: [firstChildGuard, secondChildGuard] },
       staticGuardArguments,
     );
     expect(next).toHaveBeenCalledWith({ name: 'first-route' });
@@ -54,7 +64,7 @@ describe('globalNavigationGuard()', () => {
 
   test('redirect to second child guards location if first returns nothing', async () => {
     globalNavigationGuard.apply(
-      { children: [emptyChildGuard, secondChildGuard] },
+      { store, children: [emptyChildGuard, secondChildGuard] },
       staticGuardArguments,
     );
     expect(next).toHaveBeenCalledWith({ name: 'second-route' });

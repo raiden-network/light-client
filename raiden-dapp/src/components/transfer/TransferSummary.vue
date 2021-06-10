@@ -1,6 +1,8 @@
 <template>
-  <div class="transfer-summary">
-    <h2 v-if="!isDirectTransfer" class="transfer-summary__header">
+  <div class="transfer-summary__header">
+    <h1>{{ $t('transfer.steps.summary.headline') }}</h1>
+
+    <h2 v-if="!isDirectTransfer" class="transfer-summary__sub-header">
       {{ $t('transfer.steps.summary.route-request') }}
     </h2>
 
@@ -30,7 +32,7 @@
       </span>
     </div>
 
-    <h2 class="transfer-summary__header">
+    <h2 class="transfer-summary__sub-header">
       {{
         isDirectTransfer
           ? $t('transfer.steps.summary.direct-transfer')
@@ -130,12 +132,24 @@ export default class TransferSummary extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '@/scss/mixins';
+
 .transfer-summary {
   width: 100%;
 
   &__header {
+    @include respond-to(handhelds) {
+      margin-top: -12px;
+    }
+  }
+
+  &__sub-header {
     margin-top: 25px;
     text-align: left;
+
+    @include respond-to(handhelds) {
+      margin-top: 0;
+    }
   }
 
   &__row {
@@ -175,10 +189,14 @@ export default class TransferSummary extends Vue {
 
   &__explanation {
     text-align: left;
-    margin-top: 30px;
     list-style: none;
     counter-reset: item;
     padding-left: 7px;
+    margin-top: 30px;
+
+    @include respond-to(handhelds) {
+      margin-top: 10px;
+    }
 
     li {
       counter-increment: item;
@@ -190,7 +208,7 @@ export default class TransferSummary extends Vue {
         margin-right: 5px;
         content: counter(item);
         position: absolute;
-        left: -10px;
+        left: -5px;
         top: -4px;
         font-size: 10px;
       }

@@ -1,12 +1,13 @@
 /* eslint-disable no-console */
+import type { BigNumberish } from 'ethers';
 import { ethers, Wallet } from 'ethers';
 import fs from 'fs';
 import inquirer from 'inquirer';
 import * as path from 'path';
 import yargs from 'yargs/yargs';
 
-import type { RaidenConfig, UInt } from 'raiden-ts';
-import { Address, assert, Capabilities, Raiden } from 'raiden-ts';
+import type { Decodable, RaidenConfig } from 'raiden-ts';
+import { Address, assert, Capabilities, decode, PfsMode, Raiden, UInt } from 'raiden-ts';
 
 import { makeCli } from './cli';
 import DEFAULT_RAIDEN_CONFIG from './config.json';
@@ -14,9 +15,26 @@ import DISCLAIMER from './disclaimer.json';
 import type { Cli } from './types';
 import { setupLoglevel } from './utils/logging';
 
-function parseArguments() {
+if (!('RTCPeerConnection' in globalThis)) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Object.assign(globalThis, require('wrtc'));
+}
+
+function parseFeeOption(args?: readonly string[]) {
+  const res: { [addr: string]: string } = {};
+  if (!args?.length) return res;
+  assert(args.length % 2 === 0, 'fees must have the format [address, number]');
+  for (let i = 0; i < args.length; i += 2) {
+    assert(Address.is(args[i]), 'Invalid address');
+    assert(args[i + 1].match(/^\d+$/), 'Invalid numeric value');
+    res[args[i]] = args[i + 1];
+  }
+  return res;
+}
+
+async function parseArguments() {
   const argv = yargs(process.argv.slice(2));
-  return argv
+  return await argv
     .env('RAIDEN')
     .usage('Usage: $0 [options]')
     .options({
@@ -53,8 +71,7 @@ function parseArguments() {
       },
       acceptDisclaimer: {
         type: 'boolean',
-        desc:
-          'By setting this parameter you confirm that you have read, understood and accepted the disclaimer, privacy warning and terms of use.',
+        desc: 'By setting this parameter you confirm that you have read, understood and accepted the disclaimer, privacy warning and terms of use.',
       },
       blockchainQueryInterval: {
         type: 'number',
@@ -101,17 +118,14 @@ function parseArguments() {
         default: '127.0.0.1:5001',
         desc: 'host:port to bind to and listen for API requests',
       },
-    })
-    .options({
       routingMode: {
         choices: ['pfs', 'local', 'private'] as const,
         default: 'pfs',
         desc: 'Anything else than "pfs" disables mediated transfers',
       },
       pathfindingServiceAddress: {
-        type: 'string',
-        default: 'auto',
-        desc: 'Force a given PFS to be used; "auto" selects cheapest registered on-chain',
+        type: 'array',
+        desc: 'Force given PFS URL list to be used, automatically chosing the first responding provider for transfers, instead of auto-selecting valid from "ServiceRegistry" contract',
       },
       pathfindingMaxPaths: {
         type: 'number',
@@ -120,8 +134,8 @@ function parseArguments() {
       },
       pathfindingMaxFee: {
         type: 'string',
-        // cast to fool TypeScript on type of argv.pathfindingMaxFee, decoded by Raiden.create
-        default: ('50000000000000000' as unknown) as UInt<32>,
+        default: '50000000000000000',
+        coerce: (value) => decode(UInt(32), value),
         desc: 'Set max fee per request paid to the path finding service.',
       },
       pathfindingIouTimeout: {
@@ -136,9 +150,31 @@ function parseArguments() {
       },
       enableMediation: {
         type: 'boolean',
-        default: false,
-        desc: 'Enables support for mediated payments (unsupported).',
-        hidden: true, // hidden from help because not officially supported
+        default: true,
+        desc: 'Enables support for mediated payments.',
+      },
+      flatFee: {
+        type: 'string',
+        nargs: 2,
+        desc: 'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
+        coerce: parseFeeOption,
+      },
+      proportionalFee: {
+        type: 'string',
+        nargs: 2,
+        desc: 'Sets the proportional fee required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
+        coerce: parseFeeOption,
+      },
+      proportionalImbalanceFee: {
+        type: 'string',
+        nargs: 2,
+        desc: 'Sets the proportional imbalance fee penalty required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
+        coerce: parseFeeOption,
+      },
+      capMediationFees: {
+        type: 'boolean',
+        default: true,
+        desc: 'Enables capping mediation fees to not allow them to be negative (output transfers amount always less than or equal input transfers)',
       },
     })
     .help()
@@ -256,8 +292,13 @@ function registerShutdownHooks(this: Cli): void {
   });
 }
 
-function createRaidenConfig(argv: ReturnType<typeof parseArguments>): Partial<RaidenConfig> {
-  let config: Partial<RaidenConfig> = DEFAULT_RAIDEN_CONFIG;
+type Await<T> = T extends Promise<infer U> ? U : T;
+
+function createRaidenConfig(
+  argv: Await<ReturnType<typeof parseArguments>>,
+): Partial<Decodable<RaidenConfig>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let config: Partial<Decodable<RaidenConfig>> = DEFAULT_RAIDEN_CONFIG as any;
 
   if (argv.configFile)
     config = { ...config, ...JSON.parse(fs.readFileSync(argv.configFile, 'utf-8')) };
@@ -274,9 +315,14 @@ function createRaidenConfig(argv: ReturnType<typeof parseArguments>): Partial<Ra
 
   if (argv.matrixServer !== 'auto') config = { ...config, matrixServer: argv.matrixServer };
 
-  if (argv.routingMode !== 'pfs') config = { ...config, pfs: null };
-  else if (argv.pathfindingServiceAddress !== 'auto')
-    config = { ...config, pfs: argv.pathfindingServiceAddress };
+  if (argv.routingMode !== 'pfs') config = { ...config, pfsMode: PfsMode.disabled };
+  else if (!argv.pathfindingServiceAddress) config = { ...config, pfsMode: PfsMode.auto };
+  else
+    config = {
+      ...config,
+      pfsMode: PfsMode.onlyAdditional,
+      additionalServices: argv.pathfindingServiceAddress as string[],
+    };
 
   if (!argv.enableMonitoring) config = { ...config, monitoringReward: null };
 
@@ -289,6 +335,22 @@ function createRaidenConfig(argv: ReturnType<typeof parseArguments>): Partial<Ra
         [Capabilities.MEDIATE]: 1,
       },
     };
+
+  type FeeType = 'flat' | 'proportional' | 'imbalance';
+  let mediationFees: { [token: string]: { cap: boolean } & { [K in FeeType]?: BigNumberish } } =
+    {};
+  for (const [addr, flat] of Object.entries(argv.flatFee ?? {})) {
+    mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], flat } };
+  }
+  for (const [addr, proportional] of Object.entries(argv.proportionalFee ?? {})) {
+    mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], proportional } };
+  }
+  for (const [addr, imbalance] of Object.entries(argv.proportionalImbalanceFee ?? {})) {
+    mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], imbalance } };
+  }
+  for (const token in mediationFees) mediationFees[token].cap = argv.capMediationFees;
+
+  if (Object.keys(mediationFees).length) config = { ...config, mediationFees };
 
   return config;
 }
@@ -320,7 +382,7 @@ async function checkDisclaimer(accepted?: boolean): Promise<void> {
 }
 
 async function main() {
-  const argv = parseArguments();
+  const argv = await parseArguments();
   await checkDisclaimer(argv.acceptDisclaimer);
   const wallet = await getWallet(argv.keystorePath, argv.address, argv.passwordFile);
   setupLoglevel(argv.logFile);

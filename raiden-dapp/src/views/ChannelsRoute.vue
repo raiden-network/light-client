@@ -1,30 +1,29 @@
 <template>
   <div class="channels">
-    <v-row class="ml-5 mr-5" no-gutters>
-      <v-col>
-        <span class="font-weight-light mr-1">
-          {{ $t('channels.title') }}
+    <span class="font-weight-light ml-3">
+      {{ $t('channels.title') }}
+    </span>
+
+    <v-tooltip top>
+      <template #activator="{ on }">
+        <span class="font-weight-medium" v-on="on">
+          {{
+            $t('channels.token-info', {
+              name: truncate(token.name, 22),
+              symbol: truncate(token.symbol, 8),
+            })
+          }}
         </span>
-        <v-tooltip top>
-          <template #activator="{ on }">
-            <span class="font-weight-medium" v-on="on">
-              {{
-                $t('channels.token-info', {
-                  name: truncate(token.name, 22),
-                  symbol: truncate(token.symbol, 8),
-                })
-              }}
-            </span>
-          </template>
-          <span> {{ token.address }} </span>
-        </v-tooltip>
-      </v-col>
-    </v-row>
+      </template>
+      <span> {{ token.address }} </span>
+    </v-tooltip>
+
     <list-header
       v-if="open.length > 0"
       :header="$t('channels.open.header')"
       class="channels__header"
     />
+
     <div class="channels__wrapper">
       <channel-list
         v-if="open.length > 0"
@@ -170,7 +169,6 @@ export default class ChannelsRoute extends Mixins(NavigationMixin) {
 
 <style lang="scss" scoped>
 @import '@/scss/dimensions';
-@import '@/scss/scroll';
 
 .channels {
   width: 100%;
@@ -194,7 +192,6 @@ export default class ChannelsRoute extends Mixins(NavigationMixin) {
     height: calc(100% - 60px);
     width: 100%;
     overflow-y: auto;
-    @extend .themed-scrollbar;
   }
 
   &__header {

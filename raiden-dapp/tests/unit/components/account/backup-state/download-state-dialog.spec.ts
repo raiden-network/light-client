@@ -5,6 +5,7 @@ import Vue from 'vue';
 import Vuetify from 'vuetify';
 
 import DownloadStateDialog from '@/components/account/backup-state/DownloadStateDialog.vue';
+import ActionButton from '@/components/ActionButton.vue';
 
 Vue.use(Vuetify);
 
@@ -41,7 +42,7 @@ describe('DownloadStateDialog.vue', () => {
 
   test('calls method for getting and downloading state', async () => {
     (wrapper.vm as any).getAndDownloadState = jest.fn();
-    wrapper.find('.action-button__button').trigger('click');
+    wrapper.findComponent(ActionButton).trigger('click');
     await wrapper.vm.$nextTick();
 
     expect((wrapper.vm as any).getAndDownloadState).toBeCalled();

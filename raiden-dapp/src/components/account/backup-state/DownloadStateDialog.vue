@@ -5,14 +5,8 @@
     </v-card-title>
 
     <v-card-text>
-      <v-row align="center" justify="center" no-gutters>
-        <v-col cols="6">
-          <v-img class="download-state__warning" :src="require('@/assets/warning.svg')" />
-        </v-col>
-        <v-col cols="12">
-          {{ $t('backup-state.download-warning') }}
-        </v-col>
-      </v-row>
+      <v-img class="download-state__warning my-4" :src="require('@/assets/warning.svg')" />
+      <span>{{ $t('backup-state.download-warning') }}</span>
     </v-card-text>
 
     <v-card-actions>
@@ -58,12 +52,11 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
 
     downloadLink.click();
     this.revokeDownloadURL(stateFileURL, downloadLink);
-    this.navigateToHome();
   }
 
   /* istanbul ignore next */
   async getStateFileURL(filename: string): Promise<string> {
-    const state = await this.$raiden.getState();
+    const state = await this.$raiden.stopAndGetDatabaseDump();
     const stateJSON = JSON.stringify(state);
     const file = new File([stateJSON], filename, { type: 'application/json' });
     return URL.createObjectURL(file);
@@ -91,8 +84,9 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
 <style scoped lang="scss">
 .download-state {
   &__warning {
-    height: 110px;
-    margin-bottom: 20px;
+    height: 105px;
+    width: 120px;
+    margin: 0 auto;
   }
 }
 </style>

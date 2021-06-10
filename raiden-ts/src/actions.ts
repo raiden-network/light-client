@@ -2,8 +2,8 @@
 /**
  * Aggregate types and exported properties from actions from all modules
  */
-import type { Either } from 'fp-ts/lib/Either';
-import { either } from 'fp-ts/lib/Either';
+import { chain } from 'fp-ts/lib/Either';
+import { pipe } from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import mapKeys from 'lodash/mapKeys';
 import property from 'lodash/property';
@@ -73,9 +73,10 @@ export const RaidenEvents = [
   RaidenActions.newBlock,
   RaidenActions.matrixPresence.success,
   RaidenActions.tokenMonitored,
+  RaidenActions.udcWithdrawPlan.success,
+  RaidenActions.udcWithdrawPlan.failure,
   RaidenActions.udcWithdraw.success,
   RaidenActions.udcWithdraw.failure,
-  RaidenActions.udcWithdrawn,
   RaidenActions.msBalanceProofSent,
   RaidenActions.channelSettle.success,
   RaidenActions.channelSettle.failure,
@@ -151,11 +152,14 @@ export const ConfirmableAction = new t.Type<
   'ConfirmableAction',
   _ConfirmableAction.is,
   (u, c) =>
-    either.chain(_ConfirmableAction.validate(u, c), (v) => {
-      const type = v.type as keyof RaidenActionsMap;
-      if (!(type in RaidenActionsMap)) return t.failure(v, c);
-      return RaidenActionsMap[type].codec.validate(v, c) as Either<t.Errors, ConfirmableAction>;
-    }),
+    pipe(
+      _ConfirmableAction.validate(u, c),
+      chain((v) => {
+        const type = v.type as keyof RaidenActionsMap;
+        if (!(type in RaidenActionsMap)) return t.failure(v, c);
+        return RaidenActionsMap[type].codec.validate(v, c) as t.Validation<ConfirmableAction>;
+      }),
+    ),
   (a) =>
     RaidenActionsMap[a.type as keyof RaidenActionsMap].codec.encode(a as any) as ConfirmableAction,
 );

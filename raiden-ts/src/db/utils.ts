@@ -20,7 +20,6 @@ import type {
   RaidenDatabaseConstructor,
   RaidenDatabaseMeta,
   RaidenDatabaseOptions,
-  TransferStateish,
 } from './types';
 
 PouchDB.plugin(PouchDBFind);
@@ -192,11 +191,11 @@ export async function putRaidenState(db: RaidenDatabase, state: RaidenState): Pr
   const docs = [];
   for (const [key, value] of Object.entries(state)) {
     if (key === 'channels' || key === 'oldChannels') {
-      for (const channel of Object.values<Channel>(value)) {
+      for (const channel of Object.values(value as RaidenState['channels'])) {
         docs.push({ ...channel, _id: channelsPrefix + channel._id });
       }
     } else if (key === 'transfers') {
-      for (const transfer of Object.values<TransferStateish>(value)) {
+      for (const transfer of Object.values(value as RaidenState['transfers'])) {
         docs.push(transfer);
       }
     } else {
@@ -303,8 +302,8 @@ export async function migrateDatabase(
             defer(() => migrations[newVersion](change.doc!, db!)).pipe(
               mergeMap((results) => from(results)),
               concatMap(async (result) => {
-                if ('_rev' in result) delete result['_rev'];
-                return newStorage.put(result);
+                const { _rev: _, ...doc } = result;
+                return newStorage.put(doc);
               }),
             ),
           ),

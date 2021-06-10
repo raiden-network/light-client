@@ -9,6 +9,7 @@ import Vuetify from 'vuetify';
 
 import { ErrorCodes, RaidenError } from 'raiden-ts';
 
+import ActionButton from '@/components/ActionButton.vue';
 import Filters from '@/filters';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import type { Token } from '@/model/types';
@@ -20,11 +21,11 @@ import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
 
 import { TestData } from '../data/mock-data';
 import { mockInput } from '../utils/interaction-utils';
+import Mocked = jest.Mocked;
 
 jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
 jest.useFakeTimers();
-import Mocked = jest.Mocked;
 
 jest.mock('@/i18n', () => jest.fn());
 
@@ -45,7 +46,7 @@ describe('OpenChannelRoute.vue', () => {
     const options = {
       vuetify,
       store,
-      stubs: ['v-dialog'],
+      stubs: ['v-dialog', 'v-icon'],
       propsData: {
         current: 0,
       },
@@ -93,7 +94,7 @@ describe('OpenChannelRoute.vue', () => {
         partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
       });
 
-      button = wrapper.find('button.action-button__button');
+      button = wrapper.findComponent(ActionButton);
       await wrapper.vm.$nextTick();
       service.openChannel = jest.fn();
     });
@@ -150,8 +151,9 @@ describe('OpenChannelRoute.vue', () => {
     });
 
     test('navigate to the "Transfer" view when the channel opens', async () => {
-      const loading = jest.spyOn(wrapper.vm.$data, 'loading', 'set');
       service.openChannel.mockResolvedValue(undefined);
+      mockInput(wrapper, '0.1');
+      const loading = jest.spyOn(wrapper.vm.$data, 'loading', 'set');
       wrapper.find('form').trigger('submit');
       await wrapper.vm.$nextTick();
       await flushPromises();

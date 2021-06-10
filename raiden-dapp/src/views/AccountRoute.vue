@@ -56,7 +56,6 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
 <style lang="scss" scoped>
 @import '@/scss/mixins';
 @import '@/scss/colors';
-@import '@/scss/scroll';
 
 #account-route-wrapper {
   align-items: center;
@@ -80,7 +79,6 @@ export default class AccountRoute extends Mixins(NavigationMixin) {
   margin-top: 25px;
   width: 620px;
   overflow-y: auto;
-  @extend .themed-scrollbar;
 
   @include respond-to(handhelds) {
     border-radius: 0;

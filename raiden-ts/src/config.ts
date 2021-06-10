@@ -5,7 +5,8 @@ import * as t from 'io-ts';
 import type { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 
-import { Capabilities } from './constants';
+import { Capabilities, DEFAULT_CONFIRMATIONS } from './constants';
+import { PfsMode, PfsModeC } from './services/types';
 import { exponentialBackoff } from './transfers/epics/utils';
 import { Caps } from './transport/types';
 import { getNetworkName } from './utils/ethers';
@@ -30,18 +31,21 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *    transfer expiration block should be
  * - httpTimeout - Used in http fetch requests
  * - discoveryRoom - Discovery Room to auto-join, use null to disable
+ * - additionalServices - Array of extra services URLs (or addresses, if URL set on SecretRegistry)
+ * - pfsMode - One of 'disabled' (disables PFS usage and notifications), 'auto' (notifies all of
+ *    registered and additionalServices, picks cheapest for transfers without explicit pfs),
+ *    or 'onlyAdditional' (notifies all, but pick first responding from additionalServices only).
  * - pfsRoom - PFS Room to auto-join and send PFSCapacityUpdate to, use null to disable
  * - monitoringRoom - MS global room to auto-join and send RequestMonitoring messages;
  *    use null to disable
- * - pfs - Path Finding Service URL or Address. Set to null to disable, or empty string to enable
- *    automatic fetching from ServiceRegistry.
- * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Use `1.1` to add a 10%
- *    safety margin.
+ * - pfs - Array of Path Finding Service Addresses (require PFS to be registered) or URLs.
+ *    Set to false to disable, or true to enable automatic fetching from ServiceRegistry.
+ * - pfsSafetyMargin - Safety margin to be added to fees received from PFS. Either a fee
+ *    multiplier, or a [fee, amount] pair ofmultipliers. Use `1.1` to add a 10% over estimated fee
+ *    margin, or `[0.03, 0.0005]` to add a 3% over fee plus 0.05% over amount.
  * - pfsMaxPaths - Limit number of paths requested from PFS for a route.
  * - pfsMaxFee - Maximum fee we're willing to pay a PFS for a route (in SVT/RDN wei)
  * - pfsIouTimeout - Number of blocks to timeout an IOU to a PFS.
- * - matrixExcessRooms - Keep this much rooms for a single user of interest (partner, target).
- *    Leave LRU beyond this threshold.
  * - confirmationBlocks - How many blocks to wait before considering a transaction as confirmed
  * - monitoringReward - Reward to be paid to MS, in SVT/RDN; use Zero or null to disable
  * - logger - String specifying the console log level of redux-logger. Use '' to silence.
@@ -54,6 +58,9 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *    approving tokens should be needed only once, trusting TokenNetwork's & UDC contracts;
  *    Set to Zero to fallback to approving the strictly needed deposit amounts
  * - autoSettle - Whether to channelSettle.request settleable channels automatically
+ * - autoUDCWithdraw - Whether to udcWithdraw.request planned withdraws automatically
+ * - mediationFees - deps.mediationFeeCalculator config. It's typed as unknown because it'll be
+ *     validated and decoded by [[FeeModel.decodeConfig]].
  * - matrixServer? - Specify a matrix server to use.
  * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly
  *    set in on-chain method calls. false (default) = use main key; true = use subkey
@@ -67,14 +74,14 @@ export const RaidenConfig = t.readonly(
       expiryFactor: t.number, // must be > 1.0
       httpTimeout: t.number,
       discoveryRoom: t.union([t.string, t.null]),
+      additionalServices: t.readonlyArray(t.union([Address, t.string])),
+      pfsMode: PfsModeC,
       pfsRoom: t.union([t.string, t.null]),
       monitoringRoom: t.union([t.string, t.null]),
-      pfs: t.union([Address, t.string, t.null]),
-      pfsSafetyMargin: t.number,
+      pfsSafetyMargin: t.union([t.number, t.tuple([t.number, t.number])]),
       pfsMaxPaths: t.number,
       pfsMaxFee: UInt(32),
       pfsIouTimeout: t.number,
-      matrixExcessRooms: t.number,
       confirmationBlocks: t.number,
       monitoringReward: t.union([t.null, UInt(32)]),
       logger: t.keyof({
@@ -91,6 +98,8 @@ export const RaidenConfig = t.readonly(
       pollingInterval: t.number,
       minimumAllowance: UInt(32),
       autoSettle: t.boolean,
+      autoUDCWithdraw: t.boolean,
+      mediationFees: t.unknown,
     }),
     t.partial({
       matrixServer: t.string,
@@ -132,7 +141,6 @@ export function makeDefaultConfig(
       : {
           [Capabilities.DELIVERY]: 0,
           [Capabilities.MEDIATE]: 0,
-          [Capabilities.WEBRTC]: 1,
           [Capabilities.TO_DEVICE]: 1,
           ...overwrites?.caps,
         };
@@ -143,15 +151,15 @@ export function makeDefaultConfig(
     expiryFactor: 1.1, // must be > 1.0
     httpTimeout: 30e3,
     discoveryRoom: `raiden_${networkName}_discovery`,
+    additionalServices: [],
+    pfsMode: PfsMode.auto,
     pfsRoom: `raiden_${networkName}_path_finding`,
     monitoringRoom: `raiden_${networkName}_monitoring`,
-    pfs: '', // empty string = auto mode
-    matrixExcessRooms: 3,
     pfsSafetyMargin: 1.0, // multiplier
     pfsMaxPaths: 3,
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
     pfsIouTimeout: 200000, // in blocks
-    confirmationBlocks: 5,
+    confirmationBlocks: DEFAULT_CONFIRMATIONS,
     // SVT also uses 18 decimals, like Ether, so parseEther works
     monitoringReward: parseEther('5') as UInt<32>,
     logger: 'info',
@@ -160,6 +168,8 @@ export function makeDefaultConfig(
     pollingInterval: 5000,
     minimumAllowance: MaxUint256 as UInt<32>,
     autoSettle: false,
+    autoUDCWithdraw: true,
+    mediationFees: {},
     ...overwrites,
     caps, // merged caps overwrites 'overwrites.caps'
   };

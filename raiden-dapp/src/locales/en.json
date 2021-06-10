@@ -84,19 +84,10 @@
   },
   "home": {
     "welcome": "Welcome to the Raiden dApp",
-    "connect-button": "Connect",
-    "connect-button-syncing": "Syncing",
     "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and can only be used on Ethereum testnets.",
     "getting-started": {
       "description": "Read the {0} for detailed information on how to use the Raiden dApp.",
       "link-name": "getting started guide"
-    },
-    "connect-dialog": {
-      "title": "Connect",
-      "raiden-account": "Generate Account & Key",
-      "description-raiden-account": "A Raiden Account will be generated.",
-      "description-web3-account": "You can use your Web3 account directly by enabling it in the settings menu.",
-      "no-provider": "No Web3 provider detected, please install e.g. MetaMask."
     }
   },
   "notifications": {
@@ -178,6 +169,7 @@
   "account-content": {
     "account-details": "Account Details",
     "address": "Address:",
+    "disconnect-button": "Disconnect",
     "account": {
       "main": "Main ETH:",
       "raiden": "Raiden ETH:"
@@ -271,7 +263,6 @@
       "empty": "Enter an address or ENS name",
       "ens-resolve-failed": "Please enter a resolvable ENS name",
       "invalid-excluded-address": "Please enter a different address or ENS name. You can't use your own address or the address of the token network.",
-      "channel-not-open": "Please enter a hub address you have an open channel with.",
       "target-offline": "Target is offline."
     }
   },
@@ -367,7 +358,7 @@
   "channel-list": {
     "channel": {
       "blockie_alt": "Partner address blockie",
-      "state": "Capacity: {value} | State: {state}",
+      "capacity": "Capacity: {value}",
       "close_dialog": {
         "title": "Close Channel",
         "description": "Are you sure you want to close this channel? This action cannot be undone."
@@ -412,16 +403,13 @@
   "error-screen": {
     "title": "Error"
   },
-  "no-access": {
+  "error-codes": {
     "unsupported-network": "The current network is unsupported. Please choose a different network.",
-    "sdk-initialization-failure": "SDK initialization failed. Please check the console for more information.",
-    "rdn-state-migration": "Cannot replace state with older uploaded state.",
-    "generic-error": "A valid account could not be detected. Please make sure that your provider is unlocked and accessible."
+    "sdk-initialization-failed": "SDK initialization failed. Please check the console for more information.",
+    "state-migration-failed": "Cannot replace state with older uploaded state."
   },
   "tokens": {
-    "connected": {
-      "header": "Connected Tokens"
-    },
+    "connected-tokens": "Connected Tokens",
     "connect-new": "Connect new token",
     "disconnect-dialog": {
       "header": "Disconnect token",
@@ -478,7 +466,7 @@
       "title": "Transfer"
     },
     "no-channels-dialog": {
-      "title": "No connected tokens and open channels",
+      "title": "No open channels for the selected token",
       "button": "Connect new token"
     },
     "steps": {
@@ -551,10 +539,6 @@
   },
   "transfer-history": {
     "title": "History",
-    "sent-title": "Sent to",
-    "sent-symbol": "-",
-    "received-title": "Received from",
-    "received-symbol": "+",
     "pending-transfer": "PENDING",
     "successful-transfer": "CONFIRMED",
     "failed-transfer": "FAILED"
@@ -776,5 +760,61 @@
     "dismiss": "Dismiss",
     "message-mobile": "Add the Raiden dApp to your Home screen",
     "message-desktop": "Install the Raiden dApp on your desktop"
+  },
+  "connection-manager": {
+    "dialogs": {
+      "base": {
+        "link-button": "Connect"
+      },
+      "direct-rpc-provider": {
+        "header": "Private Key",
+        "description": "Connect directly to an Ethereum node and use your accounts private key. This approach is NOT RECOMMENDED for security concerns.",
+        "error-message": "Failed to link to configured provider. Please make sure the given paramaters and the service is available.",
+        "options": {
+          "rpc-url": {
+            "name": "RPC",
+            "details": "Provide the URL for an RPC endpoint",
+            "placeholder": "https://"
+          },
+          "private-key": {
+            "name": "Private Key",
+            "details": "Hex encoded private key of your Ethereum account.",
+            "placeholder": "f0a78..."
+          }
+        }
+      },
+      "injected-provider": {
+        "header": "Browser Extension",
+        "description": "Connect with a provider in your web browser.",
+        "error-message": "Failed to link to provider. Please make sure to grant the requested permissions."
+      },
+      "wallet-connect-provider": {
+        "header": "WalletConnect",
+        "description": "Connect with any mobile wallet app that supports WalletConnect.",
+        "error-message": "Failed to link via WalletConnect. Please make sure the given parmaters are correct and confirm the connection in the wallet.",
+        "options": {
+          "bridge-url": {
+            "name": "Bridge Server",
+            "details": "Provide the URL for an alternative bridge server",
+            "placeholder": "https://"
+          },
+          "infura-id": {
+            "name": "Infura",
+            "details": "Provide the ID for an Infura project",
+            "placeholder": "Project ID"
+          },
+          "rpc-url": {
+            "name": "RPC",
+            "details": "Provide the URL for an RPC endpoint",
+            "placeholder": "https://"
+          }
+        }
+      },
+      "connection-pending": {
+        "title": "Connecting",
+        "text": "Please check if any actions are required in your wallet.",
+        "button": "Cancel"
+      }
+    }
   }
 }

@@ -104,7 +104,7 @@ export interface HexStringC<S extends number>
  * @returns branded codec for hex-encoded bytestrings
  */
 export const HexString: <S extends number = number>(size?: S) => HexStringC<S> = memoize(function <
-  S extends number = number
+  S extends number = number,
 >(size?: S) {
   return t.brand(
     t.string,
@@ -132,7 +132,7 @@ export interface IntC<S extends number>
  * @returns branded codec for hex-encoded bytestrings
  */
 export const Int: <S extends number = number>(size?: S) => IntC<S> = memoize(function <
-  S extends number = number
+  S extends number = number,
 >(size?: S) {
   const min = size ? Zero.sub(Two.pow(size * 8 - 1)) : undefined,
     max = size ? Two.pow(size * 8 - 1) : undefined;
@@ -161,7 +161,7 @@ export interface UIntC<S extends number = number>
  * @returns branded codec for hex-encoded bytestrings
  */
 export const UInt: <S extends number = number>(size?: S) => UIntC<S> = memoize(function <
-  S extends number = number
+  S extends number = number,
 >(size?: S) {
   const min = size ? Zero : undefined,
     max = size ? Two.pow(size * 8) : undefined;
@@ -232,10 +232,8 @@ export interface TimedC<T extends t.Mixed>
  * @param codec - Codec to compose with a ts timestamp property
  * @returns Codec validating such subtype
  */
-export const Timed: <T extends t.Mixed>(
-  codec: T,
-) => TimedC<T> = memoize(<T extends t.Mixed>(codec: T) =>
-  t.intersection([codec, t.readonly(t.type({ ts: t.number }))]),
+export const Timed: <T extends t.Mixed>(codec: T) => TimedC<T> = memoize(
+  <T extends t.Mixed>(codec: T) => t.intersection([codec, t.readonly(t.type({ ts: t.number }))]),
 );
 
 /**
@@ -265,15 +263,10 @@ export function untime<T extends { readonly ts: number }>(v: T): Omit<T, 'ts'> {
 export type Signed<M> = M & { readonly signature: Signature };
 export interface SignedC<C extends t.Mixed>
   extends t.IntersectionC<[C, t.ReadonlyC<t.TypeC<{ signature: typeof Signature }>>]> {}
-export const Signed: <C extends t.Mixed>(
-  codec: C,
-) => SignedC<C> = memoize(<C extends t.Mixed>(codec: C) =>
-  t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),
+export const Signed: <C extends t.Mixed>(codec: C) => SignedC<C> = memoize(
+  <C extends t.Mixed>(codec: C) =>
+    t.intersection([codec, t.readonly(t.type({ signature: Signature }))]),
 );
-
-export interface Newable {
-  new (...args: any[]): any;
-}
 
 /**
  * Memoized factory to create codecs validating an arbitrary class C
@@ -281,12 +274,12 @@ export interface Newable {
  * @param C - Class to create a codec for
  * @returns Codec validating class C
  */
-export const instanceOf: <C extends Newable>(C: C) => t.Type<InstanceType<C>> = memoize(
-  <C extends Newable>(C: C): t.Type<InstanceType<C>> =>
-    new t.Type<InstanceType<C>>(
-      `instanceOf(${C.name})`,
-      (v): v is InstanceType<C> => (v as any)?.constructor?.name === C.name,
-      (i, c) => (i instanceof C ? t.success<InstanceType<C>>(i) : t.failure(i, c)),
+export const instanceOf: <C>(name: string) => t.Type<C> = memoize(
+  <C>(name: string): t.Type<C> =>
+    new t.Type<C>(
+      `instanceOf(${name})`,
+      (v): v is C => (v as any)?.constructor?.name === name,
+      (i, c) => ((i as any)?.constructor?.name === name ? t.success(i as C) : t.failure(i, c)),
       t.identity,
     ),
 );
@@ -294,28 +287,8 @@ export const instanceOf: <C extends Newable>(C: C) => t.Type<InstanceType<C>> = 
 /**
  * Infer type of last element of a tuple or array
  * Currently supports tuples of up to 9 elements before falling back to array's inference
- *
- * FIXME: may be simplified with variadic tuple types from TypeScript 4.0
  */
-export type Last<T extends any[]> = T extends [any, any, any, any, any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, any, infer L]
-  ? L
-  : T extends [any, any, any, infer L]
-  ? L
-  : T extends [any, any, infer L]
-  ? L
-  : T extends [any, infer L]
-  ? L
-  : T extends [infer L]
-  ? L
-  : T[number] | undefined;
+export type Last<T extends any[]> = T extends [...any[], infer L] ? L : T[number] | undefined;
 
 /**
  * Like lodash's last, but properly infer return type when argument is a tuple
@@ -352,4 +325,16 @@ export type Decodable<T> = T extends BigNumber
   ? number
   : T extends null | symbol
   ? T
+  : unknown extends T
+  ? unknown
   : { [K in keyof T]: Decodable<T[K]> };
+
+/**
+ * Converts a union to the respective intersection
+ * Example: type UnionToIntersection<{ a: string } | { b: number }> = { a: string } & { b: number }
+ */
+export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;

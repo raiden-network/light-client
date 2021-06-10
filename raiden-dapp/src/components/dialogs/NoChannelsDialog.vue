@@ -1,19 +1,22 @@
 <template>
   <raiden-dialog class="no-channels-dialog" :visible="visible" hide-close>
     <v-card-title>{{ $t('transfer.no-channels-dialog.title') }}</v-card-title>
-    <div>
+    <v-card-text>
       <v-img
         class="no-channels-dialog__warning"
         :src="require('@/assets/warning.svg')"
         height="132px"
         width="150px"
       />
+    </v-card-text>
+
+    <v-card-actions>
       <action-button
         :text="$t('transfer.no-channels-dialog.button')"
         enabled
         @click="navigateToTokenSelect()"
       />
-    </div>
+    </v-card-actions>
   </raiden-dialog>
 </template>
 

@@ -7,7 +7,7 @@ import { ConfirmableAction } from './actions';
 import { Channel } from './channels/state';
 import { ChannelKey } from './channels/types';
 import { PartialRaidenConfig } from './config';
-import { IOU } from './services/types';
+import { IOU, ServicesValidityMap } from './services/types';
 import { TransferState } from './transfers/state';
 import { RaidenMatrixSetup } from './transport/state';
 import type { ContractsInfo } from './types';
@@ -24,13 +24,7 @@ const _RaidenState = t.readonly(
     channels: t.readonly(t.record(ChannelKey, Channel)),
     oldChannels: t.readonly(t.record(t.string, Channel)),
     tokens: t.readonly(t.record(t.string /* token: Address */, Address)),
-    transport: t.readonly(
-      t.partial({
-        server: t.string,
-        setup: RaidenMatrixSetup,
-        rooms: t.readonly(t.record(t.string /* partner: Address */, t.array(t.string))),
-      }),
-    ),
+    transport: t.readonly(t.partial({ server: t.string, setup: RaidenMatrixSetup })),
     transfers: t.readonly(t.record(t.string /*: key: TransferKey */, TransferState)),
     iou: t.readonly(
       t.record(
@@ -39,6 +33,7 @@ const _RaidenState = t.readonly(
       ),
     ),
     pendingTxs: t.readonlyArray(ConfirmableAction),
+    services: ServicesValidityMap,
   }),
   'RaidenState',
 );
@@ -83,6 +78,7 @@ export function makeInitialState(
     transfers: {},
     iou: {},
     pendingTxs: [],
+    services: {},
     config: {},
     ...overrides,
   };

@@ -13,10 +13,10 @@ import UdcWithdrawalDialog from '@/components/dialogs/UdcWithdrawalDialog.vue';
 import Filters from '@/filters';
 import RaidenService from '@/services/raiden-service';
 import store from '@/store';
+import Mocked = jest.Mocked;
 
 jest.mock('@/services/raiden-service');
 jest.mock('@/i18n', () => jest.fn());
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 Vue.filter('upperCase', Filters.upperCase);
@@ -64,7 +64,7 @@ describe('UdcWithdrawalDialog.vue', function () {
     expect.assertions(1);
     await (wrapper.vm as any).planWithdraw();
     await flushPromises();
-    expect($raiden.planUdcWithdraw).toBeCalledTimes(1);
+    expect($raiden.planUDCWithdraw).toBeCalledTimes(1);
   });
 
   test('invalid withdraw amount is zero', async () => {

@@ -48,7 +48,7 @@ import { globalRoomNames } from './helpers';
 /**
  * Joins the global broadcast rooms and returns the room ids.
  *
- * @param config - The {@link RaidenConfig} provides the broadcast room aliases for pfs and discovery.
+ * @param config - The {@link RaidenConfig} provides the global room aliases.
  * @param matrix - The {@link MatrixClient} instance used to create the filter.
  * @returns Observable of the list of room ids for the the broadcast rooms.
  */
@@ -60,16 +60,18 @@ function joinGlobalRooms(config: RaidenConfig, matrix: MatrixClient): Observable
       matrix.joinRoom(alias).then((room) => {
         // set alias in room state directly
         // this trick is needed because global rooms aren't synced
+        const event = {
+          type: 'm.room.aliases' as const,
+          state_key: serverName,
+          origin_server_ts: Date.now(),
+          content: { aliases: [alias] },
+          event_id: `$local_${Date.now()}`,
+          room_id: room.roomId,
+          sender: matrix.getUserId()!,
+        };
         room.currentState.setStateEvents([
-          new MatrixEvent({
-            type: 'm.room.aliases',
-            state_key: serverName,
-            content: { aliases: [alias] },
-            event_id: `$local_${Date.now()}`,
-            room_id: room.roomId,
-            sender: matrix.getUserId()!,
-          }),
-        ]);
+          new MatrixEvent<typeof event['content'], typeof event['type']>(event),
+        ] as MatrixEvent<any, any>[]); // eslint-disable-line @typescript-eslint/no-explicit-any
         matrix.store.storeRoom(room);
         matrix.emit('Room', room);
         return room;

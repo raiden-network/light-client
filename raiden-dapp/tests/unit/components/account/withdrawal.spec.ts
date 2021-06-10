@@ -62,7 +62,7 @@ function createWrapper(
   return mount(Withdrawal, {
     vuetify,
     store,
-    stubs: ['v-dialog', 'i18n'],
+    stubs: ['v-dialog', 'i18n', 'v-icon'],
     mocks: {
       $identicon: $identicon(),
       $t: (msg: string) => msg,

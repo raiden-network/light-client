@@ -1,34 +1,23 @@
-import type { Route } from 'vue-router';
-
-import store from '@/store';
-
 import { RouteNames } from '../route-names';
-import type { NavigationGuardNextArgument } from './types';
+import type { NavigationGuardChild } from './types';
 
-const accountRoutes = [
+const unprotectedAccountRoutes = [
   RouteNames.ACCOUNT_ROOT,
   RouteNames.ACCOUNT_BACKUP,
-  RouteNames.ACCOUNT_RAIDEN,
   RouteNames.ACCOUNT_SETTINGS,
-  RouteNames.ACCOUNT_WITHDRAWAL,
-  RouteNames.ACCOUNT_UDC,
 ] as string[];
 
-/**
- * @param to - navigation target
- * @returns eventual navigation instruction for middleware of global guard
- */
-export function redirectIfNotConnected(to: Route): NavigationGuardNextArgument | undefined {
-  const { isConnected } = store.getters;
-  const routingToAccount = accountRoutes.includes(to.name ?? '');
-  const routingToHome = to.name === RouteNames.HOME;
+export const redirectIfNotConnected: NavigationGuardChild = (to, store) => {
+  const { isConnected } = store.state;
+  const routingToFreeAccountRoute = unprotectedAccountRoutes.includes(to.name ?? '');
+  const routingToHomeRoute = to.name === RouteNames.HOME;
 
-  if (routingToAccount) return undefined;
+  if (routingToFreeAccountRoute) return undefined;
 
-  if (!isConnected && !routingToHome)
+  if (!isConnected && !routingToHomeRoute)
     return { name: RouteNames.HOME, query: { redirectTo: to.fullPath } };
 
-  if (!isConnected && routingToHome) return null;
+  if (!isConnected && routingToHomeRoute) return null;
 
-  if (isConnected && routingToHome) return { name: RouteNames.TRANSFER };
-}
+  if (isConnected && routingToHomeRoute) return { name: RouteNames.TRANSFER };
+};

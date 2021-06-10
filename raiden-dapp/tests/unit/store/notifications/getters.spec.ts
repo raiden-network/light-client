@@ -1,4 +1,5 @@
 import { getters } from '@/store/notifications/getters';
+import { NotificationImportance } from '@/store/notifications/notification-importance';
 import type { NotificationsState } from '@/store/notifications/types';
 
 import { TestData } from '../../data/mock-data';
@@ -7,9 +8,10 @@ describe('notifications store getters', () => {
   const notification = TestData.notifications;
   const notificationState: NotificationsState = {
     notifications: {
-      1: { ...notification, id: 29 },
-      2: { ...notification, id: 10 },
-      3: { ...notification, id: 22 },
+      29: { ...notification, id: 29, display: true, importance: NotificationImportance.HIGH },
+      10: { ...notification, id: 10, display: false },
+      22: { ...notification, id: 22, display: true, importance: NotificationImportance.HIGH },
+      23: { ...notification, id: 23, display: true, importance: NotificationImportance.LOW },
     },
     newNotifications: false,
   };
@@ -18,16 +20,29 @@ describe('notifications store getters', () => {
     const allNotifications = getters.notifications(notificationState);
     const notificationIds = allNotifications.map((notification) => notification.id);
 
-    expect(notificationIds).toEqual(expect.arrayContaining([29, 22, 10]));
+    expect(notificationIds).toEqual(expect.arrayContaining([29, 22, 23, 10]));
   });
 
-  test('next notification id increments current highest id', () => {
-    const currentHighestId = Math.max(
-      ...Object.values(notificationState.notifications).map((notification) => notification.id),
-    );
-    expect(currentHighestId).toBe(29);
+  test('notification queue only includes notifications with the display tag', () => {
+    const notificationQueue = getters.notificationQueue(notificationState);
 
-    const newNotificationId = getters.nextNotificationId(notificationState);
-    expect(newNotificationId).toBe(30);
+    for (const notification of notificationQueue) {
+      expect(notification.display).toBeTruthy();
+    }
+  });
+
+  test('notification queue only includes important notifications', () => {
+    const notificationQueue = getters.notificationQueue(notificationState);
+
+    for (const notification of notificationQueue) {
+      expect(notification.importance).toBe(NotificationImportance.HIGH);
+    }
+  });
+
+  test('notification queue is sorted by newest first', () => {
+    const notificationQueue = getters.notificationQueue(notificationState);
+    const notificationIds = notificationQueue.map((notification) => notification.id);
+
+    expect(notificationIds).toEqual(expect.arrayContaining([22, 29]));
   });
 });

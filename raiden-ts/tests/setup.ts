@@ -1,14 +1,28 @@
 import '@/polyfills';
 
-// import util from 'util';
-import logging from 'loglevel';
+import { BigNumber } from '@ethersproject/bignumber';
+import { Decimal } from 'decimal.js';
 import PouchDB from 'pouchdb';
 import MemAdapter from 'pouchdb-adapter-memory';
 import PouchDebug from 'pouchdb-debug';
+import util from 'util';
 
-// util.inspect.defaultOptions.depth = null;
 // PouchDB.debug.enable('*');
 PouchDB.plugin(MemAdapter);
 PouchDB.plugin(PouchDebug);
 
-logging.setLevel(logging.levels.DEBUG);
+// better BigNumber inspect representation for logs
+Object.defineProperty(BigNumber.prototype, util.inspect.custom, {
+  enumerable: false,
+  value(this: BigNumber, _: number, opts: util.InspectOptionsStylized) {
+    return `${opts.stylize('BN', 'special')}(${opts.stylize(this.toString(), 'number')})`;
+  },
+});
+
+// better BigNumber inspect representation for logs
+Object.defineProperty(Decimal.prototype, util.inspect.custom, {
+  enumerable: false,
+  value(this: Decimal, _: number, opts: util.InspectOptionsStylized) {
+    return `${opts.stylize('Dec', 'special')}(${opts.stylize(this.toString(), 'number')})`;
+  },
+});

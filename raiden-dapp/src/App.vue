@@ -107,24 +107,33 @@ export default class App extends Mixins(NavigationMixin) {
   height: 844px;
   margin-top: 25px;
   width: 620px;
+
   @include respond-to(handhelds) {
     border-radius: 0;
     height: 100vh;
     margin-top: 0;
     width: 100%;
+    scrollbar-width: none !important;
+
+    &::-webkit-scrollbar {
+      display: none !important;
+    }
   }
 }
 
 .v-main {
-  height: calc(100% - 80px);
+  height: calc(100% - 70px);
   margin-bottom: auto;
 }
 
 .container {
-  height: calc(100% - 8px);
   overflow-x: hidden;
   overflow-y: hidden;
   padding: 0 !important;
+
+  @include respond-to(handhelds) {
+    overflow-y: auto;
+  }
 }
 
 .imprint {

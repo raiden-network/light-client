@@ -1,51 +1,30 @@
-import memoize from 'lodash/memoize';
-import type { Observable } from 'rxjs';
-import { filter, scan, share, startWith } from 'rxjs/operators';
+import { getAddress } from '@ethersproject/address';
+import type { OperatorFunction } from 'rxjs';
+import { pipe } from 'rxjs';
+import { filter, scan, startWith } from 'rxjs/operators';
 
 import type { RaidenAction } from '../actions';
-import type { Capabilities } from '../constants';
-import { CapsFallback } from '../constants';
+import { Capabilities, CapsFallback } from '../constants';
 import { jsonParse } from '../utils/data';
 import type { Address } from '../utils/types';
 import { matrixPresence } from './actions';
-import type { Caps, CapsPrimitive, Presences } from './types';
+import type { Caps, CapsPrimitive } from './types';
+
+const userRe = /^@(0x[0-9a-f]{40})[.:]/i;
 
 /**
- * Helper to map/get an aggregated Presences observable from action$ bus
- * Known presences as { address: <last seen MatrixPresenceUpdateAction> } mapping
- * It's memoized and shared, so all subscriptions share the same mapped/output object, but the type
- * is explicitly set to avoid requiring the exported MemoizedFunction type
+ * Extract the address in a matrix userId and returns it, or undefined it none
  *
- * @param action$ - Observable
- * @returns Observable of aggregated Presences from subscription to now
+ * @param userId - matrix user identifier
+ * @returns address contained in userId
  */
-export const getPresences$: (action$: Observable<RaidenAction>) => Observable<Presences> = memoize(
-  (action$: Observable<RaidenAction>): Observable<Presences> =>
-    action$.pipe(
-      filter(matrixPresence.success.is),
-      scan(
-        // scan all presence update actions and populate/output a per-address mapping
-        (presences, update) => ({
-          ...presences,
-          [update.meta.address]: update,
-        }),
-        {} as Presences,
-      ),
-      share(),
-      startWith({}),
-    ),
-);
-
-/**
- * @param presences - Presences mapping
- * @param userId - Peer userId
- * @returns Presence of peer with userId
- */
-export function getPresenceByUserId(
-  presences: Presences,
-  userId: string,
-): matrixPresence.success | undefined {
-  return Object.values(presences).find((presence) => presence.payload.userId === userId);
+export function getAddressFromUserId(userId: string): Address | undefined {
+  let address: Address | undefined;
+  try {
+    const match = userRe.exec(userId);
+    if (match) address = getAddress(match[1]) as Address;
+  } catch (e) {}
+  return address;
 }
 
 /**
@@ -118,4 +97,22 @@ export function getCap<C extends Capabilities>(caps: Caps | undefined | null, ca
  */
 export function getSortedAddresses<A extends Address[]>(...addresses: A) {
   return addresses.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())) as A;
+}
+
+/**
+ * Extracts peer's addresses which don't need Delivered messages as a set
+ *
+ * @returns custom operator mapping from stream of RaidenActions to address set
+ */
+export function getNoDeliveryPeers(): OperatorFunction<RaidenAction, Set<Address>> {
+  const noDelivery = new Set<Address>();
+  return pipe(
+    filter(matrixPresence.success.is),
+    scan((acc, presence) => {
+      if (!getCap(presence.payload.caps, Capabilities.DELIVERY)) acc.add(presence.meta.address);
+      else acc.delete(presence.meta.address);
+      return acc;
+    }, noDelivery),
+    startWith(noDelivery),
+  );
 }

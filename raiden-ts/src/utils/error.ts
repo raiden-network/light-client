@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { map } from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/pipeable';
+import { pipe } from 'fp-ts/lib/function';
 import * as t from 'io-ts';
 import findKey from 'lodash/findKey';
 
@@ -9,11 +9,11 @@ import errorCodes from '../errors.json';
 export const ErrorCodes = errorCodes;
 export type ErrorCodes = keyof typeof ErrorCodes;
 
-export const ErrorDetails = t.record(t.string, t.union([t.string, t.number, t.boolean, t.null]));
-export interface ErrorDetails extends t.TypeOf<typeof ErrorDetails> {}
-
 export type ErrorMatch = string | number | { [k: string]: string | number };
 export type ErrorMatches = readonly ErrorMatch[];
+
+type PredicateFunc = (err: any, count: number) => boolean | undefined;
+type LogFunc = (...args: any[]) => void;
 
 // overloads
 export function matchError(match: ErrorMatch | ErrorMatches): (error: any) => boolean;
@@ -46,6 +46,42 @@ export function matchError(match: ErrorMatch | ErrorMatches, error?: any) {
     : (error: any): boolean => _errorMatcher(match as ErrorMatch, error);
   if (arguments.length < 2) return errorMatcher;
   else return errorMatcher(error);
+}
+
+/**
+ * Creates a function to decide if a given error should be retried or not
+ *
+ * @param opts - Options object
+ * @param opts.maxRetries - maximum number of retries before rejecting
+ * @param opts.onErrors - retry only on these errors
+ * @param opts.neverOnErrors - Never retry on these errors
+ * @param opts.predicate - Retry if this predicate matches
+ * @param opts.stopPredicate - Don't retry if this predicate match
+ * @param opts.log - Log using this function
+ * @returns Function to test if errors should be retried or not
+ */
+export function shouldRetryError(opts: {
+  readonly maxRetries?: number;
+  readonly onErrors?: ErrorMatches;
+  readonly neverOnErrors?: ErrorMatches;
+  readonly predicate?: PredicateFunc;
+  readonly stopPredicate?: PredicateFunc;
+  readonly log?: LogFunc;
+}) {
+  let count = -1;
+  const maxRetries = opts.maxRetries ?? 10;
+  return (error: any) => {
+    count++;
+    let retry = true;
+    if (maxRetries >= 0) retry &&= count < maxRetries;
+    if (opts.onErrors) retry &&= matchError(opts.onErrors, error);
+    if (opts.neverOnErrors) retry &&= !matchError(opts.neverOnErrors, error);
+    if (opts.predicate) retry &&= !!opts.predicate(error, count);
+    if (opts.stopPredicate) retry &&= !opts.stopPredicate(error, count);
+
+    opts.log?.(retry ? `retrying` : 'giving up', { count, maxRetries }, error);
+    return retry;
+  };
 }
 
 export const networkErrors: ErrorMatches = [
@@ -88,7 +124,7 @@ export const commonAndFailTxErrors: ErrorMatches = [...commonTxErrors, ...txFail
 export class RaidenError extends Error {
   public name = 'RaidenError';
 
-  public constructor(message?: string, public details: ErrorDetails = {}) {
+  public constructor(message?: string, public details?: unknown) {
     super(message);
     Object.setPrototypeOf(this, RaidenError.prototype);
   }
@@ -130,7 +166,7 @@ export function assert<E extends Error = RaidenError>(
 
 const serializedErr = t.intersection([
   t.type({ name: t.string }),
-  t.partial({ message: t.string, stack: t.string, details: ErrorDetails }),
+  t.partial({ message: t.string, stack: t.string, details: t.unknown }),
 ]);
 
 /**
@@ -142,7 +178,7 @@ const serializedErr = t.intersection([
  */
 export const ErrorCodec = new t.Type<
   Error,
-  { name: string; message?: string; stack?: string; details?: ErrorDetails }
+  { name: string; message?: string; stack?: string; details?: unknown }
 >(
   'Error',
   // if it quacks like a duck... without relying on instanceof

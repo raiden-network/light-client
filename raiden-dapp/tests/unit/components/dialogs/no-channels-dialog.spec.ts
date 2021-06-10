@@ -7,9 +7,9 @@ import Vuetify from 'vuetify';
 import ActionButton from '@/components/ActionButton.vue';
 import NoChannelsDialog from '@/components/dialogs/NoChannelsDialog.vue';
 import { RouteNames } from '@/router/route-names';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 

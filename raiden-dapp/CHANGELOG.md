@@ -4,13 +4,59 @@
 
 ### Fixed
 
+- [#2671] Fix preventing transfers to partners with closed channel
+- [#2675] Fix insecure behavior on navigation without connected token
+- [#2754] Fix empty logs in production mode
+- [#2774] Fix duplicated navigation error after doing a backup
+
+### Added
+
+- [#2599] Add WalletConnect as another wallet/provider
+- [#2685] Add a hint dialog when the connection process takes very long
+- [#2690] Allow user to reset connections while in progress
+- [#2630] Allow user to customize WalletConnection options
+- [#2598] Allow user to customize direct RPC provider options
+- [#2689] Add new connection manager to let the user select and configure provider
+- [#2604] Improve layout to work everywhere on narrow mobile screens
+
+[#2671]: https://github.com/raiden-network/light-client/issues/2671
+[#2599]: https://github.com/raiden-network/light-client/issues/2599
+[#2685]: https://github.com/raiden-network/light-client/issues/2685
+[#2690]: https://github.com/raiden-network/light-client/issues/2690
+[#2630]: https://github.com/raiden-network/light-client/issues/2630
+[#2598]: https://github.com/raiden-network/light-client/issues/2598
+[#2589]: https://github.com/raiden-network/light-client/issues/2598
+[#2675]: https://github.com/raiden-network/light-client/issues/2675
+[#2754]: https://github.com/raiden-network/light-client/issues/2754
+[#2604]: https://github.com/raiden-network/light-client/issues/2604
+[#2774]: https://github.com/raiden-network/light-client/issues/2774
+
+## [0.16.0] - 2021-04-01
+
+### Fixed
+
+- [#2590] Fix back arrow not visible on account screen when disconnected
+- [#2606] Fix NoTokens screen not being displayed
 - [#2420] Fix withdraw and deposit button for channels on mobile
 - [#2421] Fix account menu on mobile devices by making it scrollable
 - [#2422] Fix broken layout on RaidenAccount screen for mobile virtual keyboard
+- [#2383] Fix broken handling of path/query parameters of transfer route
+- [#2607] Fix endless navigation loop when canceling open channel route
+- [#2617] Fix automatic token selection on external open channel event for new accounts
 
+### Added
+
+- [#1515] Button for disconnecting the dApp
+
+[#2590]: https://github.com/raiden-network/light-client/issues/2590
+[#2606]: https://github.com/raiden-network/light-client/issues/2606
+[#1515]: https://github.com/raiden-network/light-client/issues/1515
 [#2420]: https://github.com/raiden-network/light-client/issues/2420
 [#2421]: https://github.com/raiden-network/light-client/issues/2421
 [#2422]: https://github.com/raiden-network/light-client/issues/2422
+[#2383]: https://github.com/raiden-network/light-client/issues/2383
+[#2607]: https://github.com/raiden-network/light-client/issues/2607
+[#2617]: https://github.com/raiden-network/light-client/issues/2617
 
 ## [0.15.0] - 2021-01-26
 
@@ -553,7 +599,8 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/raiden-network/light-client/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/raiden-network/light-client/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/raiden-network/light-client/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/raiden-network/light-client/compare/v0.12.0...v0.13.0

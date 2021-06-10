@@ -5,6 +5,8 @@ import type { Address, RaidenChannel, RaidenTransfer } from 'raiden-ts';
 import { ChannelState } from 'raiden-ts';
 
 import type { Token } from '@/model/types';
+import { NotificationContext } from '@/store/notifications/notification-context';
+import { NotificationImportance } from '@/store/notifications/notification-importance';
 import type { NotificationPayload } from '@/store/notifications/types';
 import type { SuggestedPartner } from '@/types';
 
@@ -142,4 +144,24 @@ export function generateSuggestedPartner(
     uptime: 788,
     ...partialSuggestedPartner,
   } as SuggestedPartner;
+}
+
+/**
+ * @param partialNotification - NotificationPayload overrides
+ * @returns NotificationPyalod mocked object
+ */
+export function generateNotification(
+  partialNotification: Partial<NotificationPayload> = {},
+): NotificationPayload {
+  return {
+    id: 1,
+    title: 'Channel Settlement',
+    description: 'Channel with 0x09123456789 was settled.',
+    display: true,
+    duration: 5000,
+    importance: NotificationImportance.HIGH,
+    context: NotificationContext.NONE,
+    received: new Date('June 5, 1986'),
+    ...partialNotification,
+  } as NotificationPayload;
 }

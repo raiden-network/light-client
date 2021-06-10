@@ -44,7 +44,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { createNamespacedHelpers, mapGetters } from 'vuex';
+import { createNamespacedHelpers, mapState } from 'vuex';
 
 import HeaderContent from '@/components/HeaderContent.vue';
 import HeaderIdenticon from '@/components/HeaderIdenticon.vue';
@@ -61,7 +61,7 @@ const { mapState: mapNotificationsState, mapMutations } = createNamespacedHelper
     HeaderIdenticon,
   },
   computed: {
-    ...mapGetters(['isConnected']),
+    ...mapState(['isConnected']),
     ...mapNotificationsState(['newNotifications']),
   },
   methods: {
@@ -103,7 +103,7 @@ export default class AppHeader extends Mixins(NavigationMixin) {
 
 .app-header {
   display: flex;
-  height: 80px;
+  height: 70px;
   position: relative;
 
   &__content {
@@ -111,6 +111,12 @@ export default class AppHeader extends Mixins(NavigationMixin) {
       align-items: center;
       display: flex;
       justify-content: flex-end;
+
+      &__notifications-button {
+        @include respond-to(handhelds) {
+          margin-right: -10px;
+        }
+      }
 
       &__identicon {
         cursor: pointer;

@@ -42,7 +42,6 @@
           <input ref="stateInput" type="file" hidden @change="onFileSelect" />
           <action-button
             :enabled="!activeDropzone"
-            ghost
             :text="$t('backup-state.upload-button')"
             @click="$refs.stateInput.click()"
           />
@@ -54,13 +53,11 @@
 
 <script lang="ts">
 import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
-import { mapState } from 'vuex';
 
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
-import type { Settings } from '@/types';
 
 @Component({
   components: {
@@ -68,16 +65,12 @@ import type { Settings } from '@/types';
     ActionButton,
     Spinner,
   },
-  computed: {
-    ...mapState(['settings']),
-  },
 })
 export default class UploadStateDialog extends Mixins(NavigationMixin) {
   dragCount = 0;
   activeDropzone = false;
   dropzoneErrorMessage = false;
   uploadingStateProgress = false;
-  settings!: Settings;
 
   @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
@@ -152,23 +145,13 @@ export default class UploadStateDialog extends Mixins(NavigationMixin) {
         this.$store.commit('backupState', retrievedState);
         setTimeout(async () => {
           this.uploadingStateProgress = false;
-          this.cancel();
-          this.connectAndRedirect(retrievedState);
+          this.navigateToHome();
         }, 1000);
       } catch (err) {
         this.dropzoneError();
       }
     };
     reader.readAsText(uploadedFile[0]);
-  }
-
-  async connectAndRedirect(retrievedState: string) {
-    let { useRaidenAccount } = this.settings;
-
-    /* istanbul ignore next */
-    await this.$raiden.connect(retrievedState, useRaidenAccount ? true : undefined);
-
-    this.navigateToHome();
   }
 }
 </script>

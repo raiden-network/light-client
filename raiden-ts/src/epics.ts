@@ -1,8 +1,9 @@
 import { MaxUint256 } from '@ethersproject/constants';
+import { uniq } from 'lodash/fp';
 import unset from 'lodash/fp/unset';
 import isEqual from 'lodash/isEqual';
 import negate from 'lodash/negate';
-import type { Observable } from 'rxjs';
+import type { Observable, ObservableInput } from 'rxjs';
 import { combineLatest, concat, from, merge, of, timer, using } from 'rxjs';
 import {
   catchError,
@@ -31,29 +32,29 @@ import * as ChannelsEpics from './channels/epics';
 import type { RaidenConfig } from './config';
 import { Capabilities } from './constants';
 import * as DatabaseEpics from './db/epics';
-import { pfsListUpdated, udcDeposit } from './services/actions';
+import { udcDeposit } from './services/actions';
 import * as ServicesEpics from './services/epics';
 import type { RaidenState } from './state';
 import * as TransfersEpics from './transfers/epics';
-import { rtcChannel } from './transport/actions';
+import { matrixPresence, rtcChannel } from './transport/actions';
 import * as TransportEpics from './transport/epics';
 import type { Caps } from './transport/types';
-import { getPresences$ } from './transport/utils';
 import type { Latest, RaidenEpicDeps } from './types';
 import { completeWith, pluckDistinct } from './utils/rx';
-import type { Address, UInt } from './utils/types';
+import type { UInt } from './utils/types';
 
 // default values for dynamic capabilities not specified on defaultConfig nor userConfig
 function dynamicCaps({
   stale,
-  udcBalance,
+  udcDeposit,
   config: { monitoringReward },
-}: Pick<Latest, 'stale' | 'udcBalance'> & {
+}: Pick<Latest, 'stale' | 'udcDeposit'> & {
   config: Pick<RaidenConfig, 'monitoringReward'>;
 }): Caps {
   return {
     [Capabilities.RECEIVE]:
-      !stale && monitoringReward?.gt(0) && monitoringReward.lte(udcBalance) ? 1 : 0,
+      !stale && monitoringReward?.gt(0) && monitoringReward.lte(udcDeposit.balance) ? 1 : 0,
+    [Capabilities.WEBRTC]: 'RTCPeerConnection' in globalThis ? 1 : 0,
   };
 }
 
@@ -135,22 +136,29 @@ const ConfigEpics = { configCapsEpic, configReactEpic };
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies, minus 'latest$' & 'config$' (outputs)
  * @param deps.defaultConfig - defaultConfig mapping
+ * @param deps.mediationFeeCalculator - Calculator used to decode/validate config.mediationFees
  * @returns latest$ observable
  */
 export function getLatest$(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   // do not use latest$ or dependents (e.g. config$), as they're defined here
-  { defaultConfig }: Pick<RaidenEpicDeps, 'defaultConfig'>,
+  {
+    defaultConfig,
+    mediationFeeCalculator,
+  }: Pick<RaidenEpicDeps, 'defaultConfig' | 'mediationFeeCalculator'>,
 ): Observable<Latest> {
-  const initialUdcBalance = MaxUint256 as UInt<32>;
+  const initialUdcDeposit = {
+    balance: MaxUint256 as UInt<32>,
+    totalDeposit: MaxUint256 as UInt<32>,
+  };
   const initialStale = false;
-  const udcBalance$ = action$.pipe(
+  const udcDeposit$ = action$.pipe(
     filter(udcDeposit.success.is),
-    pluck('payload', 'balance'),
+    map((action) => ({ balance: action.payload.balance, totalDeposit: action.meta.totalDeposit })),
     // starts with max, to prevent receiving starting as disabled before actual balance is fetched
-    startWith(initialUdcBalance),
-    distinctUntilChanged((a, b) => a.eq(b)),
+    startWith(initialUdcDeposit),
+    distinctUntilChanged(({ balance: a }, { balance: b }) => a.eq(b)),
   );
   const blockTime$ = action$.pipe(
     filter(blockTime.is),
@@ -169,7 +177,7 @@ export function getLatest$(
       map(({ caps: userCaps, monitoringReward }) =>
         mergeCaps(
           dynamicCaps({
-            udcBalance: initialUdcBalance,
+            udcDeposit: initialUdcDeposit,
             stale: initialStale,
             config: { monitoringReward: monitoringReward ?? defaultConfig.monitoringReward },
           }),
@@ -182,14 +190,37 @@ export function getLatest$(
     action$.pipe(filter(raidenConfigCaps.is), pluck('payload', 'caps')),
   );
   const config$ = combineLatest([state$.pipe(pluckDistinct('config')), caps$]).pipe(
-    map(([userConfig, caps]) => ({ ...defaultConfig, ...userConfig, caps })),
+    map(([userConfig, caps]) => ({
+      ...defaultConfig,
+      ...userConfig,
+      caps,
+      mediationFees: mediationFeeCalculator.decodeConfig(
+        userConfig.mediationFees,
+        defaultConfig.mediationFees,
+      ),
+    })),
   );
-  const presences$ = getPresences$(action$);
-  const pfsList$ = action$.pipe(
-    filter(pfsListUpdated.is),
-    pluck('payload', 'pfsList'),
-    startWith([] as readonly Address[]),
+  const whitelisted$ = state$.pipe(
+    take(1),
+    mergeMap((initialState) => {
+      const initialPartners: Latest['whitelisted'] = uniq(
+        Object.values(initialState.channels).map(({ partner }) => partner.address),
+      );
+      return action$.pipe(
+        filter(matrixPresence.request.is),
+        scan(
+          (whitelist, request) =>
+            whitelist.includes(request.meta.address)
+              ? whitelist
+              : [...whitelist, request.meta.address],
+          initialPartners,
+        ),
+        startWith(initialPartners),
+        distinctUntilChanged(),
+      );
+    }),
   );
+
   const rtc$ = action$.pipe(
     filter(rtcChannel.is),
     // scan: if v.payload is defined, set it; else, unset
@@ -202,24 +233,23 @@ export function getLatest$(
   );
 
   return combineLatest([
-    combineLatest([action$, state$, config$, presences$, pfsList$, rtc$]),
-    combineLatest([udcBalance$, blockTime$, stale$]),
+    combineLatest([action$, state$, config$, whitelisted$, rtc$]),
+    combineLatest([udcDeposit$, blockTime$, stale$]),
   ]).pipe(
-    map(([[action, state, config, presences, pfsList, rtc], [udcBalance, blockTime, stale]]) => ({
+    map(([[action, state, config, whitelisted, rtc], [udcDeposit, blockTime, stale]]) => ({
       action,
       state,
       config,
-      presences,
-      pfsList,
+      whitelisted,
       rtc,
-      udcBalance,
+      udcDeposit,
       blockTime,
       stale,
     })),
   );
 }
 
-const RaidenEpics = {
+const raidenEpics = {
   ...ConfigEpics,
   ...DatabaseEpics,
   ...ChannelsEpics,
@@ -228,71 +258,88 @@ const RaidenEpics = {
   ...ServicesEpics,
 };
 
-/**
- * @param action$ - Observable of RaidenActions
- * @param state$ - Observable of RaidenStates
- * @param deps - Epics dependencies
- * @returns Raiden root epic observable
- */
-export function raidenRootEpic(
+type RaidenEpic = (
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   deps: RaidenEpicDeps,
-): Observable<RaidenAction> {
-  // observable which emits once when a raidenShutdown action goes through actions pipeline
-  const shutdownNotification = action$.pipe(filter(raidenShutdown.is), take(1)),
-    // actions pipeline, but ends with (including) a raidenShutdown action
-    limitedAction$ = action$.pipe(takeWhile<RaidenAction>(negate(raidenShutdown.is), true)),
-    // states pipeline, but ends when shutdownNotification emits
-    limitedState$ = state$.pipe(takeUntil(shutdownNotification));
+) => Observable<RaidenAction>;
 
-  // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through;
-  return using(
-    // wire deps.latest$ when observableFactory below gets subscribed, and tears down on complete
-    () => {
-      const sub = getLatest$(action$, state$, deps).subscribe(deps.latest$);
-      // ensure deps.latest$ is completed if teardown happens before getLatest$ completion
-      sub.add(() => deps.latest$.complete());
-      return sub;
-    },
-    () => {
-      const subscribedEpics = new Set<string>();
-      // main epics output
-      const output$ = from(Object.values(RaidenEpics)).pipe(
-        mergeMap((epic) => {
-          subscribedEpics.add(epic.name);
-          return epic(limitedAction$, limitedState$, deps).pipe(
-            catchError((err) => {
-              deps.log.error('Epic error', epic.name, epic, err);
-              return of(raidenShutdown({ reason: err }));
-            }),
-            finalize(() => subscribedEpics.delete(epic.name)),
-          );
-        }),
-        takeUntil(
-          shutdownNotification.pipe(
-            withLatestFrom(deps.config$),
-            // give up to httpTimeout for the epics to complete on their own
-            delayWhen(([_, { httpTimeout }]) => timer(httpTimeout)),
-            tap(() => deps.log.warn('Pending Epics :', subscribedEpics)),
+/**
+ * Consumes epics from epics$ and returns a root epic which properly wraps deps.latest$ and
+ * limits action$ and state$ when raidenShutdown request goes through
+ *
+ * @param epics - Observable of raiden epics to compose the root epic
+ * @returns The rootEpic which properly wires latest$ and limits action$ & state$
+ */
+export function combineRaidenEpics(
+  epics: ObservableInput<RaidenEpic> = Object.values(raidenEpics),
+): RaidenEpic {
+  /**
+   * @param action$ - Observable of RaidenActions
+   * @param state$ - Observable of RaidenStates
+   * @param deps - Epics dependencies
+   * @returns Raiden root epic observable
+   */
+  return function raidenRootEpic(
+    action$: Observable<RaidenAction>,
+    state$: Observable<RaidenState>,
+    deps: RaidenEpicDeps,
+  ): Observable<RaidenAction> {
+    // observable which emits once when a raidenShutdown action goes through actions pipeline
+    const shutdownNotification = action$.pipe(filter(raidenShutdown.is), take(1)),
+      // actions pipeline, but ends with (including) a raidenShutdown action
+      limitedAction$ = action$.pipe(takeWhile<RaidenAction>(negate(raidenShutdown.is), true)),
+      // states pipeline, but ends when shutdownNotification emits
+      limitedState$ = state$.pipe(takeUntil(shutdownNotification));
+
+    // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through;
+    return using(
+      // wire deps.latest$ when observableFactory below gets subscribed, and tears down on complete
+      () => {
+        const sub = getLatest$(action$, state$, deps).subscribe(deps.latest$);
+        // ensure deps.latest$ is completed if teardown happens before getLatest$ completion
+        sub.add(() => deps.latest$.complete());
+        return sub;
+      },
+      () => {
+        const subscribedEpics = new Set<string>();
+        // main epics output
+        const output$ = from(epics).pipe(
+          mergeMap((epic) => {
+            subscribedEpics.add(epic.name);
+            return epic(limitedAction$, limitedState$, deps).pipe(
+              catchError((err) => {
+                deps.log.error('Epic error', epic.name, epic, err);
+                return of(raidenShutdown({ reason: err }));
+              }),
+              finalize(() => subscribedEpics.delete(epic.name)),
+            );
+          }),
+          takeUntil(
+            shutdownNotification.pipe(
+              withLatestFrom(deps.config$),
+              // give up to httpTimeout for the epics to complete on their own
+              delayWhen(([_, { httpTimeout }]) => timer(httpTimeout)),
+              tap(() => deps.log.warn('Pending Epics :', subscribedEpics)),
+            ),
           ),
-        ),
-      );
-      // also concat db teardown tasks, to be done after main epic completes
-      const teardown$ = deps.db.busy$.pipe(
-        first((busy) => !busy),
-        tap(() => deps.db.busy$.next(true)),
-        // ignore db.busy$ errors, they're merged in the output by dbErrorsEpic
-        catchError(() => of(null)),
-        mergeMap(async () => deps.db.close()),
-        ignoreElements(),
-        finalize(() => {
-          deps.db.busy$.next(false);
-          deps.db.busy$.complete();
-        }),
-      );
-      // subscribe to teardown$ only after output$ completes
-      return concat(output$, teardown$);
-    },
-  );
+        );
+        // also concat db teardown tasks, to be done after main epic completes
+        const teardown$ = deps.db.busy$.pipe(
+          first((busy) => !busy),
+          tap(() => deps.db.busy$.next(true)),
+          // ignore db.busy$ errors, they're merged in the output by dbErrorsEpic
+          catchError(() => of(null)),
+          mergeMap(async () => deps.db.close()),
+          ignoreElements(),
+          finalize(() => {
+            deps.db.busy$.next(false);
+            deps.db.busy$.complete();
+          }),
+        );
+        // subscribe to teardown$ only after output$ completes
+        return concat(output$, teardown$);
+      },
+    );
+  };
 }

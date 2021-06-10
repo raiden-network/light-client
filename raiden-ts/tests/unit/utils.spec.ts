@@ -1,13 +1,13 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { hexDataLength } from '@ethersproject/bytes';
+import { hexDataLength, hexlify } from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
 import type { JsonRpcProvider } from '@ethersproject/providers';
 import { Web3Provider } from '@ethersproject/providers';
 import { fold, isRight } from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/pipeable';
+import { pipe } from 'fp-ts/lib/function';
 import * as t from 'io-ts';
-import { of, timer } from 'rxjs';
-import { delay, first, ignoreElements, mapTo, tap, toArray } from 'rxjs/operators';
+import { concat, defer, from, of, timer } from 'rxjs';
+import { delay, first, ignoreElements, map, mapTo, take, tap, toArray } from 'rxjs/operators';
 
 import type { Lock } from '@/channels';
 import { LocksrootZero } from '@/constants';
@@ -17,7 +17,7 @@ import { encode } from '@/utils/data';
 import { ErrorCodec, ErrorCodes, RaidenError } from '@/utils/error';
 import { fromEthersEvent, getLogsByChunk$, getNetworkName } from '@/utils/ethers';
 import { LruCache } from '@/utils/lru';
-import { completeWith, concatBuffer, lastMap } from '@/utils/rx';
+import { completeWith, concatBuffer, lastMap, mergeWith, takeIf } from '@/utils/rx';
 import { Address, BigNumberC, decode, HexString, Secret, Timed, timed, UInt } from '@/utils/types';
 
 describe('getLogsByChunk$', () => {
@@ -25,43 +25,69 @@ describe('getLogsByChunk$', () => {
   const error = new Error('getLogs error');
 
   beforeEach(() => {
-    provider = ({
+    provider = {
       pollingInterval: 10,
-      getLogs: jest.fn(async () => []),
-    } as unknown) as jest.Mocked<JsonRpcProvider>;
+      send: jest.fn(async () => []),
+      formatter: { filterLog: jest.fn(() => true) },
+    } as unknown as jest.Mocked<JsonRpcProvider>;
   });
 
   test('success: fail to minChunk', async () => {
     expect.assertions(7);
 
     // errors twice before succeeding
-    provider.getLogs.mockRejectedValueOnce(error);
-    provider.getLogs.mockRejectedValueOnce(error);
+    provider.send.mockRejectedValueOnce(error);
+    provider.send.mockRejectedValueOnce(error);
 
     await expect(
       getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 5).toPromise(),
     ).resolves.toBeUndefined();
-    expect(provider.getLogs).toHaveBeenCalledTimes(5);
-    expect(provider.getLogs).toHaveBeenNthCalledWith(1, { fromBlock: 20, toBlock: 29 });
-    expect(provider.getLogs).toHaveBeenNthCalledWith(2, { fromBlock: 20, toBlock: 24 });
+    expect(provider.send).toHaveBeenCalledTimes(5);
+    expect(provider.send).toHaveBeenNthCalledWith(1, 'eth_getLogs', [
+      { fromBlock: hexlify(20), toBlock: hexlify(29) },
+    ]);
+    expect(provider.send).toHaveBeenNthCalledWith(2, 'eth_getLogs', [
+      { fromBlock: hexlify(20), toBlock: hexlify(24) },
+    ]);
 
-    expect(provider.getLogs).toHaveBeenNthCalledWith(3, { fromBlock: 20, toBlock: 24 });
-    expect(provider.getLogs).toHaveBeenNthCalledWith(4, { fromBlock: 25, toBlock: 29 });
-    expect(provider.getLogs).toHaveBeenNthCalledWith(5, { fromBlock: 30, toBlock: 30 });
+    expect(provider.send).toHaveBeenNthCalledWith(3, 'eth_getLogs', [
+      { fromBlock: hexlify(20), toBlock: hexlify(24) },
+    ]);
+    expect(provider.send).toHaveBeenNthCalledWith(4, 'eth_getLogs', [
+      { fromBlock: hexlify(25), toBlock: hexlify(29) },
+    ]);
+    expect(provider.send).toHaveBeenNthCalledWith(5, 'eth_getLogs', [
+      { fromBlock: hexlify(30), toBlock: hexlify(30) },
+    ]);
   });
 
   test('fail: max retries', async () => {
     expect.assertions(5);
 
-    provider.getLogs.mockRejectedValue(error);
+    provider.send.mockRejectedValue(error);
 
     await expect(
       getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 4).toPromise(),
     ).rejects.toBe(error);
-    expect(provider.getLogs).toHaveBeenCalledTimes(5);
-    expect(provider.getLogs).toHaveBeenCalledWith({ fromBlock: 20, toBlock: 29 });
-    expect(provider.getLogs).toHaveBeenCalledWith({ fromBlock: 20, toBlock: 24 });
-    expect(provider.getLogs).toHaveBeenCalledWith({ fromBlock: 20, toBlock: 23 });
+    expect(provider.send).toHaveBeenCalledTimes(5);
+    expect(provider.send).toHaveBeenCalledWith('eth_getLogs', [
+      {
+        fromBlock: hexlify(20),
+        toBlock: hexlify(29),
+      },
+    ]);
+    expect(provider.send).toHaveBeenCalledWith('eth_getLogs', [
+      {
+        fromBlock: hexlify(20),
+        toBlock: hexlify(24),
+      },
+    ]);
+    expect(provider.send).toHaveBeenCalledWith('eth_getLogs', [
+      {
+        fromBlock: hexlify(20),
+        toBlock: hexlify(23),
+      },
+    ]);
   });
 });
 
@@ -193,11 +219,10 @@ describe('types', () => {
     }
     expect(ErrorCodec.is(err)).toBe(true);
     const encoded = ErrorCodec.encode(err);
-    expect(encoded).toStrictEqual({
+    expect(encoded).toEqual({
       name: 'RaidenError',
       message: ErrorCodes.RDN_GENERAL_ERROR,
       stack: expect.any(String),
-      details: expect.anything(),
     });
     expect(decode(ErrorCodec, encoded)).toStrictEqual(err);
     const decoded = decode(ErrorCodec, encoded);
@@ -209,24 +234,27 @@ describe('types', () => {
 
 test('LruCache', () => {
   const cache = new LruCache<string, { v: number }>(2);
-  expect(cache.values.size).toBe(0);
+  expect(cache.size).toBe(0);
   expect(cache.max).toBe(2);
 
   const v1 = { v: 1 },
     v2 = { v: 2 },
     v3 = { v: 3 };
-  cache.put('1', v1);
-  cache.put('2', v2);
+  cache.set('1', v1);
+  cache.set('2', v2);
 
   expect(cache.get('1')).toBe(v1);
   expect(cache.get('2')).toBe(v2);
   expect(cache.get('3')).toBeUndefined();
 
-  cache.put('3', v3);
+  cache.set('3', v3);
   expect(cache.get('3')).toBe(v3);
   expect(cache.get('2')).toBe(v2);
   expect(cache.get('1')).toBeUndefined();
-  expect(cache.values.size).toBe(2);
+  expect(cache.size).toBe(2);
+
+  cache.clear();
+  expect(cache.size).toBe(0);
 });
 
 describe('data', () => {
@@ -433,4 +461,77 @@ test('lastMap', async () => {
   expect(project2).toHaveBeenCalledTimes(1); // only last emition passed
   // ignoreElements calls project with null
   expect(project2).toHaveBeenCalledWith(null, expect.anything());
+});
+
+test('mergeWith', async () => {
+  const obs1 = of(1, 2);
+  const obs2 = jest.fn(
+    (v1: number, count: number) => from(Array.from({ length: v1 }, () => count)), // [0], [1, 1]
+  );
+  const obs3 = jest.fn(async (v1: number, v2: number, sub: boolean) =>
+    Promise.resolve({ v: sub ? v2 - v1 : v1 + v2 }),
+  );
+
+  expect(
+    obs1
+      .pipe(
+        mergeWith((v1, count) => obs2(v1, count)),
+        mergeWith(([v1, v2]) => obs3(v1, v2, true)),
+        map(([[v1, v2], { v: v3 }]) => ({ v1, v2, v3 })),
+        toArray(),
+      )
+      .toPromise(),
+  ).resolves.toEqual([
+    { v1: 1, v2: 0, v3: -1 },
+    { v1: 2, v2: 1, v3: -1 },
+    { v1: 2, v2: 1, v3: -1 },
+  ]);
+  expect(obs2).toHaveBeenCalledTimes(2);
+  expect(obs3).toHaveBeenCalledTimes(3);
+});
+
+test('takeIf', async () => {
+  expect.assertions(7);
+
+  // sync emit passes if condition is truthy
+  await expect(
+    of(0)
+      .pipe(takeIf(of(true)))
+      .toPromise(),
+  ).resolves.toBe(0);
+
+  // falsy cond on sync emit emits nothing
+  await expect(
+    of(0)
+      .pipe(takeIf(of(false)))
+      .toPromise(),
+  ).resolves.toBeUndefined();
+
+  // async emit passes if condition is truthy
+  let source$ = jest.fn(() => timer(20));
+  await expect(
+    defer(source$)
+      .pipe(takeIf(of(true)))
+      .toPromise(),
+  ).resolves.toBe(0);
+  // source$ should be subscribed only once
+  expect(source$).toHaveBeenCalledTimes(1);
+
+  // falsy cond on async emit emits nothing
+  await expect(
+    timer(10)
+      .pipe(takeIf(of(false)))
+      .toPromise(),
+  ).resolves.toBe(undefined);
+
+  source$ = jest.fn(() => timer(20, 20));
+  // truthy - falsy - truthy..
+  const cond$ = jest.fn(() => concat(of(true), timer(30, 10)));
+  await expect(
+    defer(source$)
+      .pipe(takeIf(defer(cond$)), take(4), toArray())
+      .toPromise(),
+  ).resolves.toEqual([0, 0, 1, 2]);
+  // source$ should be subscribed twice: once for true, once for 1..
+  expect(source$).toHaveBeenCalledTimes(2);
 });

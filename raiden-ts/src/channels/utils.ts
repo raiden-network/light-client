@@ -26,7 +26,7 @@ import type { ChannelKey, ChannelUniqueKey } from './types';
  * @returns A string, for now
  */
 export function channelKey<
-  C extends { tokenNetwork: Address } & ({ partner: { address: Address } } | { partner: Address })
+  C extends { tokenNetwork: Address } & ({ partner: { address: Address } } | { partner: Address }),
 >({ tokenNetwork, partner }: C): ChannelKey {
   const partnerAddr =
     typeof partner === 'string' ? partner : (partner as { address: Address }).address;
@@ -43,7 +43,7 @@ export function channelUniqueKey<
   C extends { _id?: string; id: number; tokenNetwork: Address } & (
     | { partner: { address: Address } }
     | { partner: Address }
-  )
+  ),
 >(channel: C): ChannelUniqueKey {
   if ('_id' in channel && channel._id) return channel._id;
   return `${channelKey(channel)}#${channel.id.toString().padStart(9, '0')}`;
@@ -101,7 +101,11 @@ export function channelAmounts(channel: Channel): ChannelBalances {
     partnerTotalWithdrawable = channel.partner.deposit
       .add(partnerBalance)
       .sub(partnerLocked) as UInt<32>,
-    partnerWithdrawable = partnerTotalWithdrawable.sub(partnerWithdraw) as UInt<32>;
+    partnerWithdrawable = partnerTotalWithdrawable.sub(partnerWithdraw) as UInt<32>,
+    totalCapacity = channel.own.deposit
+      .sub(channel.own.withdraw)
+      .add(channel.partner.deposit)
+      .sub(channel.partner.withdraw) as UInt<32>;
 
   return {
     ownDeposit: channel.own.deposit,
@@ -124,6 +128,7 @@ export function channelAmounts(channel: Channel): ChannelBalances {
     ownWithdrawable,
     partnerTotalWithdrawable,
     partnerWithdrawable,
+    totalCapacity,
   };
 }
 
@@ -143,7 +148,10 @@ export function assertTx(
   { log, provider }: Pick<RaidenEpicDeps, 'log' | 'provider'>,
 ): OperatorFunction<
   ContractTransaction,
-  [ContractTransaction, ContractReceipt & { transactionHash: Hash; blockNumber: number }]
+  [
+    ContractTransaction & { hash: Hash },
+    ContractReceipt & { transactionHash: Hash; blockNumber: number },
+  ]
 > {
   return (tx$) =>
     tx$.pipe(
@@ -162,7 +170,7 @@ export function assertTx(
           });
         log.debug(`${method} tx "${receipt.transactionHash}" successfuly mined!`);
         return [tx, receipt] as [
-          ContractTransaction,
+          ContractTransaction & { hash: Hash },
           ContractReceipt & { transactionHash: Hash; blockNumber: number },
         ];
       }),
@@ -201,7 +209,6 @@ export function groupChannel$(state$: Observable<RaidenState>) {
   );
 }
 
-/* eslint-disable jsdoc/valid-types */
 /**
  * Approves spender to transfer up to 'deposit' from our tokens; skips if already allowed
  *
@@ -255,4 +262,3 @@ export function approveIfNeeded$(
     pluck(1),
   );
 }
-/* eslint-enable jsdoc/valid-types */

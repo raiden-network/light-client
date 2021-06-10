@@ -271,7 +271,10 @@ const _PFSFeeUpdate = t.readonly(
     fee_schedule: t.type({
       cap_fees: t.boolean,
       // if not null, it should be an array of [tokenAmount, fee] tuples
-      imbalance_penalty: t.union([t.null, t.array(t.tuple([UInt(32), Int(32)]))]),
+      imbalance_penalty: t.union([
+        t.null,
+        t.readonlyArray(t.readonly(t.tuple([UInt(32), UInt(32)]))),
+      ]),
       proportional: Int(32),
       flat: Int(32),
     }),

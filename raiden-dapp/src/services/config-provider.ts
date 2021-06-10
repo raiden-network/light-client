@@ -17,10 +17,10 @@ export class ConfigProvider {
         deploymentServicesInfoFile.json(),
       ]);
 
-      return ({
+      return {
         ...deployment.contracts,
         ...serviceDeployment.contracts,
-      } as unknown) as ContractsInfo;
+      } as unknown as ContractsInfo;
     }
     return undefined;
   }
@@ -33,9 +33,8 @@ export class ConfigProvider {
 }
 
 export interface Configuration {
-  readonly rpc_endpoint?: string;
-  readonly private_key?: string;
   readonly per_network: { [key: string]: NetworkConfiguration };
+  readonly disabled_ethereum_providers?: string[];
 }
 
 export interface NetworkConfiguration {

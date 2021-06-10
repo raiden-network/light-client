@@ -1,55 +1,43 @@
 <template>
   <div class="pathfinding-services fill-height">
-    <v-row no-gutters class="pathfinding-services__wrapper" align="center" justify="center">
-      <v-col cols="12">
-        <v-row v-if="loading">
-          <spinner />
-        </v-row>
-        <v-row
-          v-else-if="error"
-          align="center"
-          justify="center"
-          class="pathfinding-services__error"
-        >
-          <error-message :error="error" />
-        </v-row>
-        <v-data-table
-          v-else
-          v-model="selected"
-          :headers="headers"
-          :items="services"
-          dense
-          disable-pagination
-          hide-default-footer
-          single-select
-          show-select
-          sort-by="price"
-          item-key="address"
-          class="pathfinding-services__table"
-          @item-selected="select($event)"
-        >
-          <template #[`item.host`]="{ item }">
-            <v-tooltip bottom>
-              <template #activator="{ on }">
-                <div class="pathfinding-services__table__pfs">
-                  <span v-on="on">
-                    {{ item.url.replace('https://', '') | truncate(28) }}
-                  </span>
-                  <span>
-                    {{ $t('pathfinding-services.rtt', { time: item.rtt }) }}
-                  </span>
-                </div>
-              </template>
-              <span>{{ item.url }}</span>
-            </v-tooltip>
+    <spinner v-if="loading" />
+    <error-message v-else-if="error" class="pathfinding-services__error" :error="error" />
+    <v-data-table
+      v-else
+      v-model="selected"
+      :headers="headers"
+      :items="services"
+      dense
+      disable-pagination
+      hide-default-footer
+      single-select
+      show-select
+      sort-by="price"
+      item-key="address"
+      mobile-breakpoint="0"
+      class="pathfinding-services__table"
+      @item-selected="select($event)"
+    >
+      <template #[`item.host`]="{ item }">
+        <v-tooltip bottom>
+          <template #activator="{ on }">
+            <div class="pathfinding-services__table__pfs">
+              <span v-on="on">
+                {{ item.url.replace('https://', '') | truncate(28) }}
+              </span>
+              <span>
+                {{ $t('pathfinding-services.rtt', { time: item.rtt }) }}
+              </span>
+            </div>
           </template>
+          <span>{{ item.url }}</span>
+        </v-tooltip>
+      </template>
 
-          <template #[`item.price`]="{ item }">
-            <amount-display exact-amount :amount="item.price" :token="getToken(item.tokem)" />
-          </template>
-        </v-data-table>
-      </v-col>
-    </v-row>
+      <template #[`item.price`]="{ item }">
+        <amount-display exact-amount :amount="item.price" :token="getToken(item.tokem)" />
+      </template>
+    </v-data-table>
   </div>
 </template>
 
@@ -142,11 +130,11 @@ export default class PathfindingServices extends Vue {
 @import '@/scss/mixins';
 
 .pathfinding-services {
-  &__wrapper {
-    > * {
-      width: 250px;
-      text-align: center;
-    }
+  padding-bottom: 50px;
+
+  &__error {
+    width: 100%;
+    text-align: left;
   }
 
   &__table {
@@ -179,7 +167,7 @@ export default class PathfindingServices extends Vue {
         border: none !important;
 
         @include respond-to(handhelds) {
-          padding: 0;
+          padding: 0 !important;
         }
       }
 
@@ -191,7 +179,7 @@ export default class PathfindingServices extends Vue {
 
         @include respond-to(handhelds) {
           height: auto;
-          padding: 0;
+          padding: 0 !important;
         }
       }
 

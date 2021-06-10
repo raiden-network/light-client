@@ -69,7 +69,7 @@ describe('dApp e2e tests', () => {
     enterChannelDepositAmount(uiTimeout);
     openChannel();
     navigateToNotificationPanel();
-    deleteTopNotification();
+    deleteTopNotification(); // This must be the sticky backup notification.
     closeNotificationPanel();
     enterTransferAddress(uiTimeout, partnerAddress);
     enterTransferAmount(uiTimeout);
@@ -80,7 +80,7 @@ describe('dApp e2e tests', () => {
     navigateToAccountMenu();
     navigateToBackupState();
     downloadState();
-    connectToDApp(false);
+    connectToDApp();
     navigateToTokenSelect();
     navigateToConnectNewTokenFromTokenOverlay();
     navigateBackToTransferScreenFromOverlay();

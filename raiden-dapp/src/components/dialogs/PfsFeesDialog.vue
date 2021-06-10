@@ -1,26 +1,15 @@
 <template>
-  <raiden-dialog :visible="visible" hide-close>
-    <v-card-actions>
-      <v-row v-if="!pfsFeesPaid">
-        <spinner />
-      </v-row>
-      <v-row v-else align="center" justify="center">
-        <v-col cols="6">
-          <v-img :src="require('@/assets/done.svg')" />
-        </v-col>
-      </v-row>
-    </v-card-actions>
-
+  <raiden-dialog class="pfs-fees-dialog" :visible="visible" hide-close>
     <v-card-text>
-      <span v-if="!pfsFeesPaid && !freePfs">
-        {{ $t('transfer.steps.request-route.in-progress') }}
-      </span>
-      <span v-else-if="freePfs">
-        {{ $t('transfer.steps.request-route.searching-for-route') }}
-      </span>
-      <span v-else>
-        {{ $t('transfer.steps.request-route.done') }}
-      </span>
+      <spinner v-if="!pfsFeesPaid" />
+
+      <v-img
+        v-if="pfsFeesPaid"
+        class="pfs-fees-dialog__done my-4"
+        :src="require('@/assets/done.svg')"
+      />
+
+      <span>{{ statusText }}</span>
     </v-card-text>
   </raiden-dialog>
 </template>
@@ -41,5 +30,25 @@ export default class PfsFeesDialog extends Vue {
   pfsFeesPaid!: boolean;
   @Prop({ required: true })
   freePfs!: boolean;
+
+  get statusText(): string {
+    if (this.freePfs) {
+      return this.$t('transfer.steps.request-route.searching-for-route') as string;
+    } else if (!this.pfsFeesPaid) {
+      return this.$t('transfer.steps.request-route.in-progress') as string;
+    } else {
+      return this.$t('transfer.steps.request-route.done') as string;
+    }
+  }
 }
 </script>
+
+<style lang="scss">
+.pfs-fees-dialog {
+  &__done {
+    height: 110px;
+    width: 110px;
+    margin: 0 auto;
+  }
+}
+</style>

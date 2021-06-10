@@ -746,27 +746,22 @@ function receiveTransferExpired(
  * @param deps.signer - Signer instance
  * @param deps.network - Current Network
  * @param deps.config$ - Config observable
- * @param deps.latest$ - Latest observable
  * @returns Observable of withdrawMessage.request|withdraw.failure actions
  */
 function sendWithdrawRequest(
   state$: Observable<RaidenState>,
   action: withdraw.request,
-  { log, address, signer, network, config$, latest$ }: RaidenEpicDeps,
+  { log, address, signer, network, config$ }: RaidenEpicDeps,
 ): Observable<withdrawMessage.request | withdraw.failure> {
   if (action.meta.direction !== Direction.SENT) return EMPTY;
-  return combineLatest([state$, config$, latest$]).pipe(
+  return combineLatest([state$, config$]).pipe(
     first(),
-    mergeMap(([state, { revealTimeout }, { presences }]) => {
+    mergeMap(([state, { revealTimeout }]) => {
       const channel = getOpenChannel(state, action.meta);
       if (
         channel.own.pendingWithdraws.some(matchWithdraw(MessageType.WITHDRAW_REQUEST, action.meta))
       )
         return EMPTY; // already requested, skip without failing
-      assert(
-        presences[action.meta.partner]?.payload.available,
-        ErrorCodes.CNL_WITHDRAW_PARTNER_OFFLINE,
-      );
       assert(
         action.meta.expiration >= state.blockNumber + revealTimeout,
         ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
@@ -1048,7 +1043,7 @@ function receiveWithdrawExpired(
           message_identifier: expired.message_identifier,
         };
         processed$ = from(signMessage(signer, processed, { log })).pipe(
-          tap((signed) => cache.put(cacheKey, signed)),
+          tap((signed) => cache.set(cacheKey, signed)),
         );
       }
 

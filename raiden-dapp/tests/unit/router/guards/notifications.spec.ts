@@ -5,10 +5,8 @@ import { RouteNames } from '@/router/route-names';
 
 import { transformRouteConfigsToRoutes } from '../../utils/router-utils';
 
-const {
-  [RouteNames.NOTIFICATIONS]: notificationsRoute,
-  ...routesWithoutNotifications
-} = transformRouteConfigsToRoutes();
+const { [RouteNames.NOTIFICATIONS]: notificationsRoute, ...routesWithoutNotifications } =
+  transformRouteConfigsToRoutes();
 
 const next: NavigationGuardNext = jest.fn();
 

@@ -1,45 +1,41 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090
 
 # Notes:
 #   - runs end-to-end test suite based on current working directory
 #   - all arguments passed to this script get forwarded to the test command.
 
-DOCKER_CONTAINER_NAME=lc-e2e
+SHARED_SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")/shared-script.sh"
+source "$SHARED_SCRIPT_PATH"
 
-DEPLOYMENT_INFO_DIR=$(mktemp -d) # Use short argument syntax to support MacOS
+verify_deployment_information
 
-function finish() {
-  echo "Tearing down Docker container..."
-  docker stop $DOCKER_CONTAINER_NAME >/dev/null 2>&1
-}
+if running_inside_circleci; then
+  echo -e "\nAssume for the following to run in CircleCI with end-to-end environment already in place!"
+else
+  echo -e "\nStart the Docker container with the end-to-end environment"
+  docker run --detach --rm \
+    --name "$DOCKER_CONTAINER_NAME" \
+    --publish 127.0.0.1:80:80 \
+    --publish 127.0.0.1:5555:5555 \
+    --publish 127.0.0.1:5001:5001 \
+    --publish 127.0.0.1:5002:5002 \
+    --publish 127.0.0.1:8545:8545 \
+    "$DOCKER_IMAGE_NAME" \
+    >/dev/null
+fi
 
-set -e
-trap finish EXIT
+echo -e "\nWait to make sure all services are up and running"
+sleep 5s
 
-echo "Starting the Docker container..."
-docker run --detach --rm \
-  --name $DOCKER_CONTAINER_NAME \
-  --publish 127.0.0.1:80:80 \
-  --publish 127.0.0.1:5555:5555 \
-  --publish 127.0.0.1:5001:5001 \
-  --publish 127.0.0.1:5002:5002 \
-  --publish 127.0.0.1:8545:8545 \
-  raidennetwork/lightclient-e2e-environment \
-  >/dev/null
+export DEPLOYMENT_INFO="${DEPLOYMENT_INFORMATION_DIRECTORY}/deployment_private_net.json"
+export DEPLOYMENT_SERVICES_INFO="${DEPLOYMENT_INFORMATION_DIRECTORY}/deployment_services_private_net.json"
+source "${DEPLOYMENT_INFORMATION_DIRECTORY}/smartcontracts.sh"
 
-sleep 5
-
-echo "Getting DEPLOYMENT_INFO from docker image '$DOCKER_CONTAINER_NAME' ..."
-docker cp "$DOCKER_CONTAINER_NAME":/opt/deployment/deployment_private_net.json "$DEPLOYMENT_INFO_DIR/"
-docker cp "$DOCKER_CONTAINER_NAME":/opt/deployment/deployment_services_private_net.json "$DEPLOYMENT_INFO_DIR/"
-docker cp "$DOCKER_CONTAINER_NAME":/etc/profile.d/smartcontracts.sh "$DEPLOYMENT_INFO_DIR/"
-
-export DEPLOYMENT_INFO="${DEPLOYMENT_INFO_DIR}/deployment_private_net.json"
-export DEPLOYMENT_SERVICES_INFO="${DEPLOYMENT_INFO_DIR}/deployment_services_private_net.json"
-source "${DEPLOYMENT_INFO_DIR}/smartcontracts.sh"
-
-echo "Run end-to-end tests for $( basename $( realpath . ) )..."
+echo -e "\nRun the end-to-end tests for $( basename "$(pwd)")"
 yarn run test:e2e "$@"
 
-echo "Getting the service logs..."
-docker cp "$DOCKER_CONTAINER_NAME":/var/log/supervisor/. ./logs/
+if ! running_inside_circleci; then
+  echo -e "\nGet the log files of the run services"
+  docker cp "$DOCKER_CONTAINER_NAME":/var/log/supervisor/. ./logs/
+fi

@@ -12,9 +12,9 @@ import store from '@/store';
 import { TestData } from '../../data/mock-data';
 import { generateToken } from '../../utils/data-generator';
 import { mockInput } from '../../utils/interaction-utils';
+import Mocked = jest.Mocked;
 
 jest.mock('vue-router');
-import Mocked = jest.Mocked;
 
 Vue.use(Vuetify);
 

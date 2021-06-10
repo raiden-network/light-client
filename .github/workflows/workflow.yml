@@ -21,3 +21,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PROJECT_ROOTS: '["raiden-ts", "raiden-dapp"]'
           CHANGELOG_FILE: 'CHANGELOG.md'
+
+  block-fixup:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2.3.4
+        - name: 'Block Fixup Commit Merge'
+          uses: 13rac1/block-fixup-merge-action@v2.0.0

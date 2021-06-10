@@ -1,0 +1,16 @@
+@import "./mixins.scss";
+
+$list-item-padding: 10px;
+
+$dialog-margin: 10px;
+$dialog-card-title-padding: 10px 10px 10px;
+$dialog-card-subtitle-padding: 0 10px 10px;
+$dialog-card-text-padding: 0 10px 10px;
+$dialog-card-actions-padding: 10px;
+
+$stepper-elevation: 0;
+$stepper-header-elevation: 0;
+$stepper-alt-labels-flex-basis: 0;
+$stepper-alt-labels-header-divider: 35px -18px 0;
+$stepper-content-padding: 0;
+$stepper-step-padding: 24px 0;

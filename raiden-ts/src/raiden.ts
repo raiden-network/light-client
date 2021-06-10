@@ -7,12 +7,10 @@ import { AddressZero, MaxUint256, Zero } from '@ethersproject/constants';
 import type { Network } from '@ethersproject/networks';
 import type { ExternalProvider } from '@ethersproject/providers';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
-import constant from 'lodash/constant';
 import isUndefined from 'lodash/isUndefined';
 import memoize from 'lodash/memoize';
 import omitBy from 'lodash/omitBy';
 import logging from 'loglevel';
-import type { MatrixClient } from 'matrix-js-sdk';
 import type { Store } from 'redux';
 import { applyMiddleware, createStore } from 'redux';
 import { composeWithDevTools } from 'redux-devtools-extension/developmentOnly';
@@ -20,7 +18,7 @@ import { createLogger } from 'redux-logger';
 import type { EpicMiddleware } from 'redux-observable';
 import { createEpicMiddleware } from 'redux-observable';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, defer, EMPTY, from, merge, of, ReplaySubject, throwError } from 'rxjs';
+import { defer, EMPTY, from, merge, of, throwError } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
 import {
   catchError,
@@ -35,14 +33,8 @@ import {
   toArray,
 } from 'rxjs/operators';
 
-import type { RaidenAction, RaidenEvent } from './actions';
-import {
-  raidenConfigUpdate,
-  RaidenEvents,
-  raidenShutdown,
-  raidenStarted,
-  raidenSynced,
-} from './actions';
+import type { RaidenAction, RaidenEvent, raidenSynced } from './actions';
+import { raidenConfigUpdate, RaidenEvents, raidenShutdown, raidenStarted } from './actions';
 import {
   channelClose,
   channelDeposit,
@@ -54,21 +46,11 @@ import type { RaidenChannels } from './channels/state';
 import { ChannelState } from './channels/state';
 import { channelAmounts, channelKey } from './channels/utils';
 import type { RaidenConfig } from './config';
-import { makeDefaultConfig, PartialRaidenConfig } from './config';
+import { PartialRaidenConfig } from './config';
 import { ShutdownReason } from './constants';
-import {
-  CustomToken__factory,
-  HumanStandardToken__factory,
-  MonitoringService__factory,
-  SecretRegistry__factory,
-  ServiceRegistry__factory,
-  TokenNetwork__factory,
-  TokenNetworkRegistry__factory,
-  UserDeposit__factory,
-} from './contracts';
-import type { RaidenDatabase } from './db/types';
+import { CustomToken__factory } from './contracts';
 import { dumpDatabaseToArray } from './db/utils';
-import { getLatest$, raidenRootEpic } from './epics';
+import { combineRaidenEpics, getLatest$ } from './epics';
 import {
   callAndWaitMined,
   chooseOnchainAccount,
@@ -79,15 +61,19 @@ import {
   getState,
   getUdcBalance,
   initTransfers$,
+  makeDependencies,
+  makeSyncedPromise,
+  makeTokenInfoGetter,
   mapRaidenChannels,
+  waitChannelSettleable$,
   waitConfirmation,
   waitForPFSCapacityUpdate,
 } from './helpers';
 import { createPersisterMiddleware } from './persister';
 import { raidenReducer } from './reducer';
-import { pathFind, udcDeposit, udcWithdraw } from './services/actions';
+import { pathFind, udcDeposit, udcWithdraw, udcWithdrawPlan } from './services/actions';
 import type { IOU, RaidenPaths, RaidenPFS, SuggestedPartner } from './services/types';
-import { Paths, PFS, SuggestedPartners } from './services/types';
+import { Paths, PFS, PfsMode, SuggestedPartners } from './services/types';
 import { pfsListInfo } from './services/utils';
 import type { RaidenState } from './state';
 import { transfer, transferSigned, withdraw } from './transfers/actions';
@@ -102,7 +88,7 @@ import {
   transferKeyToMeta,
 } from './transfers/utils';
 import { matrixPresence } from './transport/actions';
-import type { ContractsInfo, Latest, OnChange, RaidenEpicDeps } from './types';
+import type { ContractsInfo, OnChange, RaidenEpicDeps } from './types';
 import { EventTypes } from './types';
 import { assert } from './utils';
 import { asyncActionToPromise, isActionOf, isResponseOf } from './utils/actions';
@@ -115,61 +101,55 @@ import { Address, decode, Hash, Secret, UInt } from './utils/types';
 import versions from './versions.json';
 
 export class Raiden {
-  private readonly store: Store<RaidenState, RaidenAction>;
-  private readonly deps: RaidenEpicDeps;
-
   /**
    * action$ exposes the internal events pipeline. It's intended for debugging, and its interface
    * must not be relied on, as its actions interfaces and structures can change without warning.
    */
-  public readonly action$: Observable<RaidenAction>;
+  public readonly action$: Observable<RaidenAction> = this.deps.latest$.pipe(
+    pluckDistinct('action'),
+    skip(1),
+  );
   /**
    * state$ is exposed only so user can listen to state changes and persist them somewhere else.
    * Format/content of the emitted objects are subject to changes and not part of the public API
    */
-  public readonly state$: Observable<RaidenState>;
+  public readonly state$: Observable<RaidenState> = this.deps.latest$.pipe(pluckDistinct('state'));
   /**
    * channels$ is public interface, exposing a view of the currently known channels
    * Its format is expected to be kept backwards-compatible, and may be relied on
    */
-  public readonly channels$: Observable<RaidenChannels>;
+  public readonly channels$: Observable<RaidenChannels> = this.state$.pipe(
+    pluckDistinct('channels'),
+    map(mapRaidenChannels),
+  );
   /**
    * A subset ot RaidenActions exposed as public events.
    * The interface of the objects emitted by this Observable are expected not to change internally,
    * but more/new events may be added over time.
    */
-  public readonly events$: Observable<RaidenEvent>;
+  public readonly events$: Observable<RaidenEvent> = this.action$.pipe(
+    filter(isActionOf(RaidenEvents)),
+  );
 
   /**
    * Observable of completed and pending transfers
    * Every time a transfer state is updated, it's emitted here. 'key' property is unique and
    * may be used as identifier to know which transfer got updated.
    */
-  public readonly transfers$: Observable<RaidenTransfer>;
+  public readonly transfers$: Observable<RaidenTransfer> = initTransfers$(
+    this.state$,
+    this.deps.db,
+  );
 
   /** RaidenConfig object */
   public config!: RaidenConfig;
-  /** RaidenConfig observable (for reactive use)  */
-  public config$: Observable<RaidenConfig>;
-  /**
-   * Observable of latest average (10) block times
-   */
-  public blockTime$: Observable<number>;
+  /** RaidenConfig observable (for reactive use) */
+  public config$: Observable<RaidenConfig> = this.deps.config$;
+  /** Observable of latest average (10) block times */
+  public blockTime$: Observable<number> = this.deps.latest$.pipe(pluckDistinct('blockTime'));
 
-  /**
-   * Expose ether's Provider.resolveName for ENS support
-   */
-  public readonly resolveName: (name: string) => Promise<Address>;
-
-  /**
-   * When started, is set to a promise which resolves when node finishes syncing
-   */
-  public synced: Promise<raidenSynced['payload'] | undefined>;
-
-  /**
-   * The address of the token that is used to pay the services.
-   */
-  public userDepositTokenAddress: () => Promise<Address>;
+  /** When started, is set to a promise which resolves when node finishes syncing */
+  public synced: Promise<raidenSynced['payload'] | undefined> = makeSyncedPromise(this.action$);
 
   /**
    * Get constant token details from token contract, caches it.
@@ -180,15 +160,19 @@ export class Raiden {
    * @param token - address to fetch info from
    * @returns token info
    */
-  public getTokenInfo: (
-    this: Raiden,
-    token: string,
-  ) => Promise<{
-    totalSupply: BigNumber;
-    decimals: number;
-    name?: string;
-    symbol?: string;
-  }>;
+  public getTokenInfo = makeTokenInfoGetter(this.deps);
+
+  private readonly store: Store<RaidenState, RaidenAction>;
+
+  /** Expose ether's Provider.resolveName for ENS support */
+  public readonly resolveName = this.deps.provider.resolveName.bind(this.deps.provider) as (
+    name: string,
+  ) => Promise<Address>;
+
+  /** The address of the token that is used to pay the services (SVT/RDN).  */
+  public userDepositTokenAddress: () => Promise<Address> = memoize(
+    async () => this.deps.userDepositContract.callStatic.token() as Promise<Address>,
+  );
 
   private epicMiddleware?: EpicMiddleware<
     RaidenAction,
@@ -197,101 +181,31 @@ export class Raiden {
     RaidenEpicDeps
   > | null;
 
-  /** Instance's Logger, compatible with console's API */
-  private readonly log: logging.Logger;
-
+  /**
+   * Constructs a Raiden instance from state machine parameters
+   *
+   * It expects ready Redux and Epics params, with some async members already resolved and set in
+   * place, therefore this constructor is expected to be used only for tests and advancecd usage
+   * where finer control is needed to tweak how some of these members are initialized;
+   * Most users should usually prefer the [[create]] async factory, which already takes care of
+   * these async initialization steps and accepts more common parameters.
+   *
+   * @param state - Validated and decoded initial/rehydrated RaidenState
+   * @param deps - Constructed epics dependencies object, including signer, provider, fetched
+   *    network and contracts information.
+   * @param epic - State machine root epic
+   * @param reducer - State machine root reducer
+   */
   public constructor(
-    provider: JsonRpcProvider,
-    network: Network,
-    signer: Signer,
-    contractsInfo: ContractsInfo,
-    {
-      db,
-      state,
-      config,
-    }: { state: RaidenState; db: RaidenDatabase; config?: PartialRaidenConfig },
-    main?: { address: Address; signer: Signer },
+    state: RaidenState,
+    private readonly deps: RaidenEpicDeps,
+    private readonly epic = combineRaidenEpics(),
+    reducer = raidenReducer,
   ) {
-    const address = state.address;
-    this.resolveName = provider.resolveName.bind(provider) as (name: string) => Promise<Address>;
-    this.log = logging.getLogger(`raiden:${address}`);
-
-    const defaultConfig = makeDefaultConfig({ network }, config);
-
     // use next from latest known blockNumber as start block when polling
-    provider.resetEventsBlock(state.blockNumber + 1);
+    deps.provider.resetEventsBlock(state.blockNumber + 1);
 
-    const latest$ = new ReplaySubject<Latest>(1);
-
-    // pipe cached state
-    this.state$ = latest$.pipe(pluckDistinct('state'));
-    // pipe action, skipping cached
-    this.action$ = latest$.pipe(pluckDistinct('action'), skip(1));
-    this.blockTime$ = latest$.pipe(pluckDistinct('blockTime'));
-    this.channels$ = this.state$.pipe(pluckDistinct('channels'), map(mapRaidenChannels));
-    this.transfers$ = initTransfers$(this.state$, db);
-    this.events$ = this.action$.pipe(filter(isActionOf(RaidenEvents)));
-
-    this.getTokenInfo = memoize(async function (this: Raiden, token: string) {
-      assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
-      const tokenContract = this.deps.getTokenContract(token);
-      const [totalSupply, decimals, name, symbol] = await Promise.all([
-        tokenContract.callStatic.totalSupply(),
-        tokenContract.callStatic.decimals(),
-        tokenContract.callStatic.name().catch(constant(undefined)),
-        tokenContract.callStatic.symbol().catch(constant(undefined)),
-      ]);
-      // workaround for https://github.com/microsoft/TypeScript/issues/33752
-      assert(totalSupply && decimals != null, ErrorCodes.RDN_NOT_A_TOKEN, this.log.info);
-      return { totalSupply, decimals, name, symbol };
-    });
-
-    this.deps = {
-      latest$,
-      config$: latest$.pipe(pluckDistinct('config')),
-      matrix$: new AsyncSubject<MatrixClient>(),
-      provider,
-      network,
-      signer,
-      address,
-      log: this.log,
-      defaultConfig,
-      contractsInfo,
-      registryContract: TokenNetworkRegistry__factory.connect(
-        contractsInfo.TokenNetworkRegistry.address,
-        main?.signer ?? signer,
-      ),
-      getTokenNetworkContract: memoize((address: Address) =>
-        TokenNetwork__factory.connect(address, main?.signer ?? signer),
-      ),
-      getTokenContract: memoize((address: Address) =>
-        HumanStandardToken__factory.connect(address, main?.signer ?? signer),
-      ),
-      serviceRegistryContract: ServiceRegistry__factory.connect(
-        contractsInfo.ServiceRegistry.address,
-        main?.signer ?? signer,
-      ),
-      userDepositContract: UserDeposit__factory.connect(
-        contractsInfo.UserDeposit.address,
-        main?.signer ?? signer,
-      ),
-      secretRegistryContract: SecretRegistry__factory.connect(
-        contractsInfo.SecretRegistry.address,
-        main?.signer ?? signer,
-      ),
-      monitoringServiceContract: MonitoringService__factory.connect(
-        contractsInfo.MonitoringService.address,
-        main?.signer ?? signer,
-      ),
-      main,
-      db,
-      init$: new ReplaySubject(),
-    };
-
-    this.userDepositTokenAddress = memoize(
-      async () => (await this.deps.userDepositContract.callStatic.token()) as Address,
-    );
-
+    const isBrowser = !!globalThis?.location;
     const loggerMiddleware = createLogger({
       predicate: () => this.log.getLevel() <= logging.levels.INFO,
       logger: this.log,
@@ -301,10 +215,8 @@ export class Raiden {
         error: 'error',
         nextState: 'debug',
       },
+      ...(isBrowser ? {} : { colors: false }),
     });
-
-    this.config$ = this.deps.config$;
-    this.config$.subscribe((config) => (this.config = config));
 
     // minimum blockNumber of contracts deployment as start scan block
     this.epicMiddleware = createEpicMiddleware<
@@ -312,11 +224,11 @@ export class Raiden {
       RaidenAction,
       RaidenState,
       RaidenEpicDeps
-    >({ dependencies: this.deps });
-    const persisterMiddleware = createPersisterMiddleware(db);
+    >({ dependencies: deps });
+    const persisterMiddleware = createPersisterMiddleware(deps.db);
 
     this.store = createStore(
-      raidenReducer,
+      reducer,
       // workaround for redux's PreloadedState issues with branded values
       state as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       composeWithDevTools(
@@ -324,27 +236,12 @@ export class Raiden {
       ),
     );
 
-    this.synced = this.action$
-      .pipe(
-        first(isActionOf([raidenSynced, raidenShutdown])),
-        map((action) => {
-          if (raidenShutdown.is(action)) {
-            // don't reject if not stopped by an error
-            if (Object.values(ShutdownReason).some((reason) => reason === action.payload.reason))
-              return;
-            throw action.payload;
-          }
-          return action.payload;
-        }),
-      )
-      .toPromise();
+    deps.config$.subscribe((config) => (this.config = config));
 
     // populate deps.latest$, to ensure config, logger && pollingInterval are setup before start
-    getLatest$(
-      of(raidenConfigUpdate({})),
-      of(this.store.getState()),
-      this.deps,
-    ).subscribe((latest) => this.deps.latest$.next(latest));
+    getLatest$(of(raidenConfigUpdate({})), of(this.store.getState()), deps).subscribe((latest) =>
+      deps.latest$.next(latest),
+    );
   }
 
   /**
@@ -362,7 +259,7 @@ export class Raiden {
    *     </ul>
    * @param account - An account to use as main account, one of:
    *     <ul>
-   *       <li>Signer instance (e.g. Wallet) loadded with account/private key or</li>
+   *       <li>Signer instance (e.g. Wallet) loaded with account/private key or</li>
    *       <li>hex-encoded string address of a remote account in provider or</li>
    *       <li>hex-encoded string local private key or</li>
    *       <li>number index of a remote account loaded in provider
@@ -449,14 +346,8 @@ export class Raiden {
     );
     const cleanConfig = config && decode(PartialRaidenConfig, omitBy(config, isUndefined));
 
-    return new this(
-      provider,
-      network,
-      signer,
-      contractsInfo,
-      { db, state, config: cleanConfig },
-      main,
-    ) as InstanceType<R>;
+    const deps = makeDependencies(signer, contractsInfo, { db, state, config: cleanConfig, main });
+    return new this(state, deps) as InstanceType<R>;
   }
 
   /**
@@ -482,7 +373,7 @@ export class Raiden {
       complete: () => (this.epicMiddleware = null),
     });
 
-    this.epicMiddleware.run(raidenRootEpic);
+    this.epicMiddleware.run(this.epic);
     // prevent start from being called again, turns this.started to true
     this.epicMiddleware = undefined;
     // dispatch a first, noop action, to next first state$ as current/initial state
@@ -509,6 +400,15 @@ export class Raiden {
     // this.epicMiddleware is set to null by latest$'s complete callback
     if (this.started) this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
     if (this.started !== undefined) await this.deps.db.busy$.toPromise();
+  }
+
+  /**
+   * Instance's Logger, compatible with console's API
+   *
+   * @returns Logger object
+   */
+  public get log() {
+    return this.deps.log;
   }
 
   /**
@@ -595,6 +495,12 @@ export class Raiden {
    * @param config - Partial object containing keys and values to update in config
    */
   public updateConfig(config: PartialRaidenConfig) {
+    if ('mediationFees' in config)
+      // just validate, it's set in getLatest$
+      this.deps.mediationFeeCalculator.decodeConfig(
+        config.mediationFees,
+        this.deps.defaultConfig.mediationFees,
+      );
     this.store.dispatch(raidenConfigUpdate(decode(PartialRaidenConfig, config)));
   }
 
@@ -868,9 +774,13 @@ export class Raiden {
     const tokenNetwork = state.tokens[token];
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
     assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
+    assert(!this.config.autoSettle, ErrorCodes.CNL_SETTLE_AUTO_ENABLED, this.log.info);
+
+    const meta = { tokenNetwork, partner };
+    // wait for channel to become settleable
+    await waitChannelSettleable$(this.state$, meta).toPromise();
 
     // wait for the corresponding success or error action
-    const meta = { tokenNetwork, partner };
     const promise = asyncActionToPromise(channelSettle, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
@@ -1156,16 +1066,11 @@ export class Raiden {
    * @returns Promise to array of PFS, which is the interface which describes a PFS
    */
   public async findPFS(): Promise<PFS[]> {
-    assert(this.config.pfs !== null, ErrorCodes.PFS_DISABLED, this.log.info);
-    return (this.config.pfs
-      ? of<readonly (string | Address)[]>([this.config.pfs])
-      : this.deps.latest$.pipe(
-          pluckDistinct('pfsList'),
-          first((v) => v.length > 0),
-        )
-    )
-      .pipe(mergeMap((pfsList) => pfsListInfo(pfsList, this.deps)))
-      .toPromise();
+    assert(this.config.pfsMode !== PfsMode.disabled, ErrorCodes.PFS_DISABLED, this.log.info);
+    await this.synced;
+    const services = [...this.config.additionalServices];
+    if (this.config.pfsMode === PfsMode.auto) services.push(...Object.keys(this.state.services));
+    return pfsListInfo(services, this.deps).toPromise();
   }
 
   /**
@@ -1225,6 +1130,55 @@ export class Raiden {
   }
 
   /**
+   * Registers and creates a new token network for the provided token address.
+   * Throws an error, if
+   * <ol>
+   *  <li>Executed on main net</li>
+   *  <li>`token` is not a valid address</li>
+   *  <li>Token is already registered</li>
+   *  <li>Token could not be registered</li>
+   * </ol>
+   *
+   * @param token - Address of the token to be registered
+   * @param channelParticipantDepositLimit - The deposit limit per channel participant
+   * @param tokenNetworkDepositLimit - The deposit limit of the whole token network
+   * @returns Address of new token network
+   */
+  public async registerToken(
+    token: string,
+    channelParticipantDepositLimit: BigNumberish = MaxUint256,
+    tokenNetworkDepositLimit: BigNumberish = MaxUint256,
+  ): Promise<Address> {
+    // Check whether address is valid
+    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
+
+    // Check whether we are on a test network
+    assert(this.deps.network.chainId !== 1, ErrorCodes.RDN_REGISTER_TOKEN_MAINNET, this.log.info);
+
+    const { signer } = chooseOnchainAccount(this.deps, this.config.subkey);
+    const tokenNetworkRegistry = getContractWithSigner(this.deps.registryContract, signer);
+
+    // Check whether token is already registered
+    await this.monitorToken(token).then(
+      (tokenNetwork) => {
+        throw new RaidenError(ErrorCodes.RDN_REGISTER_TOKEN_REGISTERED, { tokenNetwork });
+      },
+      () => undefined,
+    );
+
+    const receipt = await callAndWaitMined(
+      tokenNetworkRegistry,
+      'createERC20TokenNetwork',
+      [token, channelParticipantDepositLimit, tokenNetworkDepositLimit],
+      ErrorCodes.RDN_REGISTER_TOKEN_FAILED,
+      { log: this.log },
+    );
+    await waitConfirmation(receipt, this.deps);
+
+    return await this.monitorToken(token);
+  }
+
+  /**
    * Fetches balance of UserDeposit Contract for SDK's account minus cached spent IOUs
    *
    * @returns Promise to UDC remaining capacity
@@ -1242,6 +1196,23 @@ export class Raiden {
       )
       .reduce((acc, iou) => acc.add(iou.amount), Zero);
     return balance.sub(owedAmount);
+  }
+
+  /**
+   * Fetches total_deposit of UserDeposit Contract for SDK's account
+   *
+   * The usable part of the deposit should be fetched with [[getUDCCapacity]], but this function
+   * is useful when trying to deposit based on the absolute value of totalDeposit.
+   *
+   * @returns Promise to UDC total deposit
+   */
+  public async getUDCTotalDeposit(): Promise<BigNumber> {
+    return this.deps.latest$
+      .pipe(
+        pluck('udcDeposit', 'totalDeposit'),
+        first((deposit) => !!deposit && deposit.lt(MaxUint256)),
+      )
+      .toPromise();
   }
 
   /**
@@ -1383,12 +1354,78 @@ export class Raiden {
     return receipt.transactionHash as Hash;
   }
 
-  public async planUdcWithdraw(value: BigNumberish): Promise<Hash> {
+  /**
+   * Fetches our current UDC withdraw plan
+   *
+   * @returns Promise to object containing maximum 'amount' planned for withdraw and 'block' at
+   *    which withdraw will become available, and 'ready' after it can be withdrawn with
+   *    [[withdrawFromUDC]]; resolves to undefined if there's no current plan
+   */
+  public async getUDCWithdrawPlan(): Promise<
+    { amount: UInt<32>; block: number; ready: boolean } | undefined
+  > {
+    const plan = await this.deps.userDepositContract.withdraw_plans(this.address);
+    if (plan.withdraw_block.isZero()) return;
+    return {
+      amount: plan.amount as UInt<32>,
+      block: plan.withdraw_block.toNumber(),
+      ready: plan.withdraw_block.lte(this.state.blockNumber),
+    };
+  }
+
+  /**
+   * Records a UDC withdraw plan for our UDC deposit
+   *
+   * Maximum 'value' which can be planned is current [[getUDCCapacity]] plus current
+   * [[getUDCWithdrawPlan]].amount, since new plan overwrites previous.
+   *
+   * @param value - Maximum value which we may try to withdraw. An error will be thrown if this
+   *    value is larger than [[getUDCCapacity]]+[[getUDCWithdrawPlan]].amount
+   * @returns Promise to hash of plan transaction, if it succeeds.
+   */
+  public async planUDCWithdraw(value: BigNumberish): Promise<Hash> {
     const meta = {
       amount: decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error),
     };
-    const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
+    const promise = asyncActionToPromise(udcWithdrawPlan, meta, this.action$, true).then(
       ({ txHash }) => txHash!,
+    );
+    this.store.dispatch(udcWithdrawPlan.request(undefined, meta));
+    return promise;
+  }
+
+  /**
+   * Complete a planned UDC withdraw and get the deposit to account.
+   *
+   * Maximum 'value' is the one from current plan, attempting to withdraw a larger value will throw
+   * an error, but a smaller value is valid. This method may only be called after plan is 'ready'
+   *
+   * @param value - Maximum value which we may try to withdraw. An error will be thrown if this
+   *    value is larger than [[getUDCCapacity]]+[[getUDCWithdrawPlan]].amount
+   * @returns Promise to hash of plan transaction, if it succeeds.
+   */
+  public async withdrawFromUDC(value?: BigNumberish): Promise<Hash> {
+    assert(!this.config.autoUDCWithdraw, ErrorCodes.UDC_WITHDRAW_AUTO_ENABLED, this.log.warn);
+    const plan = await this.getUDCWithdrawPlan();
+    assert(plan, ErrorCodes.UDC_WITHDRAW_NO_PLAN, this.log.warn);
+    if (!value) {
+      value = plan.amount;
+    } else {
+      assert(plan.amount.gte(value), ErrorCodes.UDC_WITHDRAW_TOO_LARGE, this.log.warn);
+    }
+    const meta = {
+      amount: decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error),
+    };
+    // wait for plan to be ready if needed
+    if (!plan.ready)
+      await this.state$
+        .pipe(
+          pluckDistinct('blockNumber'),
+          first((blockNumber) => blockNumber >= plan.block),
+        )
+        .toPromise();
+    const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
+      ({ txHash }) => txHash,
     );
     this.store.dispatch(udcWithdraw.request(undefined, meta));
     return promise;

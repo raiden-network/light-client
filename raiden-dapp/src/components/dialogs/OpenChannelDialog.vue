@@ -7,39 +7,21 @@
     @close="cancel"
   >
     <v-card-title>
-      <v-row align="center" justify="center">
-        <v-col>
-          <span v-if="done">
-            {{ doneStep.title }}
-          </span>
-          <span v-else-if="steps.length > current">
-            {{ steps[current].title }}
-          </span>
-        </v-col>
-      </v-row>
+      {{ title }}
     </v-card-title>
 
-    <v-card-actions>
-      <v-row v-if="done" align="center" justify="center">
-        <v-col cols="6">
-          <v-img class="open-channel-dialog__done" :src="require('@/assets/done.svg')" />
-        </v-col>
-      </v-row>
-
-      <v-row v-else>
-        <spinner />
-      </v-row>
-    </v-card-actions>
-
     <v-card-text>
-      <v-row align="center" justify="center">
-        <span v-if="done">
-          {{ doneStep.description }}
-        </span>
-        <span v-else-if="steps.length > current">
+      <template v-if="done">
+        <v-img class="open-channel-dialog__done my-4" :src="require('@/assets/done.svg')" />
+        <span>{{ doneStep.description }}</span>
+      </template>
+
+      <template v-else>
+        <spinner />
+        <span v-if="steps.length > current">
           {{ steps[current].description }}
         </span>
-      </v-row>
+      </template>
     </v-card-text>
   </raiden-dialog>
 </template>
@@ -66,9 +48,29 @@ export default class OpenChannelDialog extends Vue {
   @Prop({ required: true })
   doneStep!: StepDescription;
 
+  get title(): string {
+    if (this.done) {
+      return this.doneStep.title;
+    } else if (this.steps.length > this.current) {
+      return this.steps[this.current].title;
+    } else {
+      return '';
+    }
+  }
+
   @Emit()
   cancel(): boolean {
     return true;
   }
 }
 </script>
+
+<style lang="scss">
+.open-channel-dialog {
+  &__done {
+    height: 110px;
+    width: 110px;
+    margin: 0 auto;
+  }
+}
+</style>

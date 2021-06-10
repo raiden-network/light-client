@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 import type { DBSchema, IDBPDatabase } from 'idb';
 import { openDB } from 'idb';
+import type { LoggingMethod, LogLevelNumbers, RootLogger } from 'loglevel';
 import logging from 'loglevel';
 
 const storeName = 'logs';
@@ -91,7 +92,6 @@ async function setDbForLogger(loggerName: string) {
 
 /**
  * @param additionalLoggers - logger names to add as well
- *
  */
 export async function setupLogStore(additionalLoggers: string[] = ['matrix']): Promise<void> {
   if (typeof db !== 'undefined') return;
@@ -99,14 +99,20 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
 
   for (const log of [logging, ...additionalLoggers.map(logging.getLogger)]) {
     const origFactory = log.methodFactory;
-    log.methodFactory = (methodName, level, loggerName) => {
-      const rawMethod = origFactory(methodName, level, loggerName);
+
+    function raidenMethodFactory(
+      this: RootLogger,
+      methodName: string,
+      level: LogLevelNumbers,
+      loggerName: string | symbol,
+    ): LoggingMethod {
+      const rawMethod = origFactory.call(this, methodName, level, loggerName);
       const name = loggerName.toString();
       setDbForLogger(name);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (...message: any[]): void => {
-        rawMethod(...message);
+        rawMethod.call(this, ...message);
         const filtered = filterMessage(message);
         if (!filtered) return;
         db.put(
@@ -131,14 +137,17 @@ export async function setupLogStore(additionalLoggers: string[] = ['matrix']): P
           ),
         );
       };
-    };
+    }
+
+    raidenMethodFactory.allowOverwrite = true;
+    log.methodFactory = raidenMethodFactory;
   }
 }
 
 const redactions: readonly [RegExp, string][] = [
-  [/("?access_?token"?\s*[=:]\s*)("?)\w+("?)/gi, '$1$2<redacted>$3'],
-  [/("?secret"?\s*[=:]\s*)\[[^\]]+\]/gi, '$1["<redacted>"]'],
-  [/("?secret"?\s*[=:]\s*)("?)\w+("?)/gi, '$1$2<redacted>$3'],
+  [/(\\?["']?access_?token\\?["']?\s*[=:]\s*\\?["']?)[\w-]+(\\?["']?)/gi, '$1<redacted>$2'],
+  [/(\\?["']?secret\\?["']?\s*[=:]\s*)\[[^\]]+\]/gi, '$1["<redacted>"]'],
+  [/(\\?["']?secret\\?["']?\s*[=:]\s*\\?["']?)\w+(\\?["']?)/gi, '$1<redacted>$2'],
 ];
 function redactLogs(text: string): string {
   for (const [re, repl] of redactions) text = text.replace(re, repl);

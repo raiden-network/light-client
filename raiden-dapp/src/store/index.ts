@@ -16,34 +16,29 @@ import type { RaidenChannel, RaidenChannels, RaidenConfig, RaidenTransfer } from
 import { ChannelState, getNetworkName } from 'raiden-ts';
 
 import type { AccTokenModel, Presences, Token, TokenModel } from '@/model/types';
-import { DeniedReason, emptyTokenModel, PlaceHolderNetwork } from '@/model/types';
+import { emptyTokenModel, PlaceHolderNetwork } from '@/model/types';
 import { notifications } from '@/store/notifications';
 import type { UserDepositContractState } from '@/store/user-deposit-contract';
 import { userDepositContract } from '@/store/user-deposit-contract';
-import type { RootState, Settings, Tokens, Transfers } from '@/types';
+import { userSettings, userSettingsLocalStorage } from '@/store/user-settings';
+import type { RootState, Tokens, Transfers } from '@/types';
 
 import type { NotificationsState } from './notifications/types';
 
 Vue.use(Vuex);
 
 const _defaultState: RootState = {
-  loading: true,
+  isConnected: false,
   blockNumber: 0,
   defaultAccount: '',
   accountBalance: '0.0',
   raidenAccountBalance: '',
-  providerDetected: true,
-  accessDenied: DeniedReason.UNDEFINED,
   channels: {},
   tokens: {},
   transfers: {},
   presences: {},
   network: PlaceHolderNetwork,
   stateBackup: '',
-  settings: {
-    isFirstTimeConnect: true,
-    useRaidenAccount: true,
-  },
   config: {},
   disclaimerAccepted: false,
   stateBackupReminderDateMs: 0,
@@ -71,12 +66,6 @@ const hasNonZeroBalance = (a: Token, b: Token) =>
   b.balance &&
   (!(a.balance as BigNumber).isZero() || !(b.balance as BigNumber).isZero());
 
-const settingsLocalStorage = new VuexPersistence<RootState>({
-  reducer: (state) => ({ settings: state.settings }),
-  filter: (mutation) => mutation.type == 'updateSettings',
-  key: 'raiden_dapp_settings',
-});
-
 const disclaimerLocalStorage = new VuexPersistence<RootState>({
   reducer: (state) => ({
     disclaimerAccepted: state.persistDisclaimerAcceptance ? state.disclaimerAccepted : false,
@@ -100,17 +89,14 @@ const store: StoreOptions<CombinedStoreState> = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   state: defaultState() as any, // 'notifications' member filled in by module
   mutations: {
-    noProvider(state: RootState) {
-      state.providerDetected = false;
+    setConnected(state: RootState) {
+      state.isConnected = true;
     },
-    accessDenied(state: RootState, reason: DeniedReason) {
-      state.accessDenied = reason;
+    setDisconnected(state: RootState) {
+      state.isConnected = false;
     },
     account(state: RootState, account: string) {
       state.defaultAccount = account;
-    },
-    loadComplete(state: RootState) {
-      state.loading = false;
     },
     updateBlock(state: RootState, block: number) {
       state.blockNumber = block;
@@ -139,11 +125,10 @@ const store: StoreOptions<CombinedStoreState> = {
     },
     reset(state: RootState) {
       // Preserve settings and backup when resetting state
-      const { settings, disclaimerAccepted, stateBackup, stateBackupReminderDateMs } = state;
+      const { disclaimerAccepted, stateBackup, stateBackupReminderDateMs } = state;
 
       Object.assign(state, {
         ...defaultState(),
-        settings,
         disclaimerAccepted,
         stateBackup,
         stateBackupReminderDateMs,
@@ -155,8 +140,8 @@ const store: StoreOptions<CombinedStoreState> = {
     backupState(state: RootState, uploadedState: string) {
       state.stateBackup = uploadedState;
     },
-    updateSettings(state: RootState, settings: Settings) {
-      state.settings = settings;
+    clearBackupState(state: RootState) {
+      state.stateBackup = '';
     },
     updateConfig(state: RootState, config: Partial<RaidenConfig>) {
       state.config = config;
@@ -179,6 +164,15 @@ const store: StoreOptions<CombinedStoreState> = {
   },
   actions: {},
   getters: {
+    tokensWithChannels: function (state: RootState): Tokens {
+      const tokensWithChannels: Tokens = {};
+
+      for (const [address, token] of Object.entries(state.tokens)) {
+        if (!!state.channels[address]) tokensWithChannels[address] = token;
+      }
+
+      return tokensWithChannels;
+    },
     tokens: function (state: RootState): TokenModel[] {
       const reducer = (acc: AccTokenModel, channel: RaidenChannel): AccTokenModel => {
         acc.address = channel.token;
@@ -259,12 +253,6 @@ const store: StoreOptions<CombinedStoreState> = {
     transfer: (state: RootState) => (paymentId: BigNumber) => {
       return Object.values(state.transfers).find((transfer) => transfer.paymentId.eq(paymentId));
     },
-    isConnected: (state: RootState): boolean => {
-      return !state.loading && !!(state.defaultAccount && state.defaultAccount !== '');
-    },
-    usingRaidenAccount: (state: RootState): boolean => {
-      return !!state.settings.useRaidenAccount;
-    },
     versionUpdateAvailable: (state: RootState): boolean => {
       const { activeVersion, availableVersion } = state.versionInfo;
       return (
@@ -275,13 +263,14 @@ const store: StoreOptions<CombinedStoreState> = {
     },
   },
   plugins: [
-    settingsLocalStorage.plugin,
+    userSettingsLocalStorage.plugin,
     disclaimerLocalStorage.plugin,
     backupReminderLocalStorage.plugin,
   ],
   modules: {
     notifications,
     userDepositContract,
+    userSettings,
   },
 };
 

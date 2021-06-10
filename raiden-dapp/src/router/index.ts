@@ -1,9 +1,12 @@
 import Vue from 'vue';
 import Router from 'vue-router';
 
+import store from '@/store';
+
 import {
   globalNavigationGuard,
   redirectIfDisclaimerIsNotAccepted,
+  redirectIfNoConnectedToken,
   redirectIfNotConnected,
 } from './guards';
 import { routes } from './routes';
@@ -18,7 +21,12 @@ const router = new Router({
 
 router.beforeEach(
   globalNavigationGuard.bind({
-    children: [redirectIfDisclaimerIsNotAccepted, redirectIfNotConnected],
+    store,
+    children: [
+      redirectIfDisclaimerIsNotAccepted,
+      redirectIfNotConnected,
+      redirectIfNoConnectedToken,
+    ],
   }),
 );
 

@@ -4,6 +4,7 @@ import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 
+import ActionButton from '@/components/ActionButton.vue';
 import store from '@/store';
 import RaidenAccount from '@/views/account/RaidenAccount.vue';
 
@@ -21,6 +22,9 @@ describe('RaidenAccount.vue', () => {
     getAccount: jest.fn().mockResolvedValue('0x2'),
   };
   beforeEach(async () => {
+    store.commit('balance', '3.0');
+    store.commit('raidenAccountBalance', '2.0');
+
     vuetify = new Vuetify();
 
     wrapper = mount(RaidenAccount, {
@@ -32,9 +36,6 @@ describe('RaidenAccount.vue', () => {
       },
       store,
     });
-
-    store.commit('balance', '3.0');
-    store.commit('raidenAccountBalance', '2.0');
 
     wrapper.vm.$nextTick();
     await flushPromises();
@@ -49,7 +50,7 @@ describe('RaidenAccount.vue', () => {
   });
 
   test('sends from main to raiden account', async () => {
-    const btn = wrapper.find('.action-button__button');
+    const btn = wrapper.findComponent(ActionButton);
     expect(wrapper.vm.$data.amount).toEqual('3.0');
     expect(btn.attributes()['disabled']).toBeUndefined();
 
@@ -77,8 +78,8 @@ describe('RaidenAccount.vue', () => {
     wrapper.find('button').trigger('click');
     await wrapper.vm.$nextTick();
 
-    const btn = wrapper.find('.action-button__button');
-    expect(btn.attributes()['disabled']).toBeUndefined();
+    const btn = wrapper.findComponent(ActionButton);
+    expect(btn.attributes('disabled')).toBeUndefined();
 
     wrapper.find('form').trigger('submit');
     await wrapper.vm.$nextTick();

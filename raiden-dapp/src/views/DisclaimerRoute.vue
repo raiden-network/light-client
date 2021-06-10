@@ -76,6 +76,7 @@
       data-cy="disclaimer_accept_button"
       class="disclaimer__accept-button"
       :enabled="checkedAccept"
+      full-width
       sticky
       @click="accept"
     />

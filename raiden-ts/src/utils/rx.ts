@@ -1,16 +1,32 @@
+import type * as t from 'io-ts';
 import type {
   MonoTypeOperatorFunction,
   Observable,
   ObservableInput,
   OperatorFunction,
 } from 'rxjs';
-import { defer, EMPTY, pairs, race, throwError, timer } from 'rxjs';
 import {
+  defer,
+  EMPTY,
+  from,
+  merge,
+  pairs,
+  partition,
+  pipe,
+  race,
+  ReplaySubject,
+  Subject,
+  throwError,
+  timer,
+} from 'rxjs';
+import {
+  catchError,
   concatMap,
   delay,
   distinctUntilChanged,
   endWith,
   filter,
+  finalize,
   ignoreElements,
   last,
   map,
@@ -20,14 +36,16 @@ import {
   repeatWhen,
   retryWhen,
   scan,
+  share,
   switchMap,
   takeUntil,
   takeWhile,
   tap,
 } from 'rxjs/operators';
 
-import type { ErrorMatches } from './error';
-import { matchError } from './error';
+import type { ActionType, AsyncActionCreator } from './actions';
+import { isResponseOf } from './actions';
+import { shouldRetryError } from './error';
 import { isntNil } from './types';
 
 /**
@@ -39,9 +57,8 @@ import { isntNil } from './types';
  * @param properties - The nested properties to pluck from each source value (an object).
  * @returns A new Observable of property values from the source values.
  */
-export const pluckDistinct: typeof pluck = <T, R>(...properties: string[]) => (
-  source: Observable<T>,
-) => source.pipe(pluck<T, R>(...properties), distinctUntilChanged());
+export const pluckDistinct: typeof pluck = <T, R>(...properties: string[]) =>
+  pipe(pluck<T, R>(...properties), distinctUntilChanged());
 
 /**
  * Creates an operator to output changed values unique by key ([key, value] tuples)
@@ -53,24 +70,23 @@ export const pluckDistinct: typeof pluck = <T, R>(...properties: string[]) => (
 export function distinctRecordValues<R>(
   compareFn: (x: R, y: R) => boolean = (x, y) => x === y,
 ): OperatorFunction<{ [k: string]: R }, [string, R]> {
-  return (input: Observable<Record<string, R>>): Observable<[string, R]> =>
-    input.pipe(
-      distinctUntilChanged(),
-      mergeMap((map) => pairs<R>(map)),
-      /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
-       * changes from last time seen. It relies on value references changing only if needed */
-      scan<[string, R], { acc: { [k: string]: R }; changed?: [string, R] }>(
-        ({ acc }, [key, value]) =>
-          // if ref didn't change, emit previous accumulator, without 'changed' value
-          compareFn(acc[key], value)
-            ? { acc }
-            : // else, update ref in 'acc' and emit value in 'changed' prop
-              { acc: { ...acc, [key]: value }, changed: [key, value] },
-        { acc: {} as { [k: string]: R } },
-      ),
-      pluck('changed'),
-      filter(isntNil), // filter out if reference didn't change from last emit
-    );
+  return pipe(
+    distinctUntilChanged(),
+    mergeMap((map) => pairs<R>(map)),
+    /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
+     * changes from last time seen. It relies on value references changing only if needed */
+    scan<[string, R], { acc: { [k: string]: R }; changed?: [string, R] }>(
+      ({ acc }, [key, value]) =>
+        // if ref didn't change, emit previous accumulator, without 'changed' value
+        compareFn(acc[key], value)
+          ? { acc }
+          : // else, update ref in 'acc' and emit value in 'changed' prop
+            { acc: { ...acc, [key]: value }, changed: [key, value] },
+      { acc: {} as { [k: string]: R } },
+    ),
+    pluck('changed'),
+    filter(isntNil), // filter out if reference didn't change from last emit
+  );
 }
 
 /**
@@ -89,21 +105,20 @@ export function repeatUntil<T>(
   // waits for address's user in transport to be online and joined room before actually
   // sending the message. That's why repeatWhen emits/resubscribe only some time after
   // sendOnceAndWaitSent$ completes, instead of a plain 'interval'
-  return (input$) =>
-    input$.pipe(
-      repeatWhen((completed$) =>
-        completed$.pipe(
-          map(() => {
-            if (typeof delayMs === 'number') return delayMs;
-            const next = delayMs.next();
-            return !next.done ? next.value : -1;
-          }),
-          takeWhile((value) => value >= 0), // stop repeatWhen when done
-          switchMap((value) => timer(value)),
-        ),
+  return pipe(
+    repeatWhen((completed$) =>
+      completed$.pipe(
+        map(() => {
+          if (typeof delayMs === 'number') return delayMs;
+          const next = delayMs.next();
+          return !next.done ? next.value : -1;
+        }),
+        takeWhile((value) => value >= 0), // stop repeatWhen when done
+        switchMap((value) => timer(value)),
       ),
-      takeUntil(notifier),
-    );
+    ),
+    takeUntil(notifier),
+  );
 }
 
 // guard an Iterable between an iterable and iterator union
@@ -111,8 +126,6 @@ function isIterable<T>(interval: Iterable<T> | Iterator<T>): interval is Iterabl
   return Symbol.iterator in interval;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PredicateFunc = (err: any, count: number) => boolean | undefined;
 /**
  * Operator to retry/re-subscribe input$ until a stopPredicate returns truthy or delayMs iterator
  * completes, waiting delayMs milliseconds between retries.
@@ -120,65 +133,46 @@ type PredicateFunc = (err: any, count: number) => boolean | undefined;
  *
  * @param interval - Interval, iterable or iterator of intervals to wait between retries;
  *    if it's an iterable, it resets (iterator recreated) if input$ emits
- * @param options - Retry options, conditions are ANDed
- * @param options.maxRetries - Throw (give up) after this many retries (defaults to 10,
- *    pass 0 to retry indefinitely or as long as iterator yields positive intervals)
- * @param options.onErrors - Retry if error.message or error.httpStatus matches any of these
- * @param options.neverOnErrors - Throw if error.message or error.httpStatus matches any of these
- * @param options.predicate - Retry if this function, receiving error+count returns truthy
- * @param options.stopPredicate - Throw if this function, receiving error+count returns truthy
- * @param options.log - Log with this function on every retry or when throwing, e.g. log.info
+ * @param options - shouldRetryError options, conditions are ANDed
  * @returns Operator function to retry if stopPredicate not truthy waiting between retries
  */
 export function retryWhile<T>(
   interval: number | Iterator<number> | Iterable<number>,
-  options: {
-    maxRetries?: number;
-    onErrors?: ErrorMatches;
-    neverOnErrors?: ErrorMatches;
-    predicate?: PredicateFunc;
-    stopPredicate?: PredicateFunc;
-    log?: (...args: any[]) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
-  } = {},
+  options: Parameters<typeof shouldRetryError>[0] = {},
 ): MonoTypeOperatorFunction<T> {
   let iter: Iterator<number> | undefined;
+  if (options.log) options = { ...options, log: options.log.bind(null, 'retryWhile') };
+  let shouldRetry: ReturnType<typeof shouldRetryError>;
   return (input$) =>
-    input$.pipe(
-      // if input$ emits, reset iter (only useful if delayMs is an Iterable)
-      tap(() => (iter = undefined)),
-      retryWhen((error$) =>
-        error$.pipe(
-          mergeMap((error, count) => {
-            let delayMs;
-            if (typeof interval === 'number') delayMs = interval;
-            else {
-              if (!iter) {
-                if (isIterable(interval)) iter = interval[Symbol.iterator]();
-                else iter = interval;
+    defer(() => {
+      iter = undefined;
+      shouldRetry = shouldRetryError(options);
+      return from(input$).pipe(
+        // if input$ emits, reset iter (only useful if delayMs is an Iterable) and shouldRetry func
+        tap(() => {
+          iter = undefined;
+          shouldRetry = shouldRetryError(options);
+        }),
+        retryWhen((error$) =>
+          error$.pipe(
+            mergeMap((error) => {
+              let delayMs;
+              if (typeof interval === 'number') delayMs = interval;
+              else {
+                if (!iter) {
+                  if (isIterable(interval)) iter = interval[Symbol.iterator]();
+                  else iter = interval;
+                }
+                const next = iter.next();
+                delayMs = !next.done ? next.value : -1;
               }
-              const next = iter.next();
-              delayMs = !next.done ? next.value : -1;
-            }
 
-            let retry = delayMs >= 0;
-
-            if (options.maxRetries !== 0) retry &&= count < (options.maxRetries ?? 10);
-            if (options.onErrors) retry &&= matchError(options.onErrors, error);
-            if (options.neverOnErrors) retry &&= !matchError(options.neverOnErrors, error);
-            if (options.predicate) retry &&= !!options.predicate(error, count);
-            if (options.stopPredicate) retry &&= !options.stopPredicate(error, count);
-
-            options.log?.(`retryWhile: ${retry ? 'retrying' : 'giving up'}`, {
-              count,
-              interval: delayMs,
-              error,
-            });
-
-            return retry ? timer(delayMs) : throwError(error);
-          }),
+              return delayMs >= 0 && shouldRetry(error) ? timer(delayMs) : throwError(error);
+            }),
+          ),
         ),
-      ),
-    );
+      );
+    });
 }
 
 /**
@@ -201,8 +195,10 @@ export function retryAsync$<T>(
 
 /**
  * RxJS operator to keep subscribed to input$ if condition is truty (or falsy, if negated),
- * unsubscribe if it becomes falsy, and re-subscribes if it becomes truty again (input$ must be
- * re-subscribable).
+ * unsubscribes from source if cond$ becomes falsy, and re-subscribes if it becomes truty again
+ * (input$ must be re-subscribable). While subscribed to source$, completes when source$ completes,
+ * otherwise, when cond$ completes (since source$ isn't subscribed then), so make sure cond$
+ * completes too when desired, or the output observable may hang until unsubscribed.
  *
  * @param cond$ - Condition observable
  * @param negate - Whether to negate condition
@@ -213,18 +209,18 @@ export function takeIf<T>(
   cond$: Observable<unknown>,
   negate = false,
 ): MonoTypeOperatorFunction<T> {
-  const distinctCond$ = cond$.pipe(
-    map((cond) => (negate ? !cond : !!cond)),
-    distinctUntilChanged(),
-  );
-  return (input$) =>
-    input$.pipe(
-      // unsubscribe input$ when cond becomes falsy
-      takeUntil(distinctCond$.pipe(filter((cond): cond is false => !cond))),
-      // re-subscribe input$ when cond becomes truty
-      repeatWhen(() => distinctCond$.pipe(filter((cond): cond is true => cond))),
-      completeWith(input$),
+  return (source$) => {
+    const completed$ = new Subject<true>();
+    return cond$.pipe(
+      map((cond) => (negate ? !cond : !!cond)),
+      distinctUntilChanged(),
+      takeUntil(completed$),
+      switchMap((cond) => {
+        if (!cond) return EMPTY;
+        return source$.pipe(tap({ complete: () => completed$.next(true) }));
+      }),
     );
+  };
 }
 
 /**
@@ -239,9 +235,9 @@ export function completeWith<T>(
   delayMs?: number,
 ): MonoTypeOperatorFunction<T> {
   return (input$) => {
-    let output$ = input$.pipe(takeUntil(complete$.pipe(ignoreElements(), endWith(null))));
-    if (delayMs !== undefined) output$ = output$.pipe(delay(delayMs));
-    return output$;
+    complete$ = complete$.pipe(ignoreElements(), endWith(null));
+    if (delayMs !== undefined) complete$ = complete$.pipe(delay(delayMs));
+    return input$.pipe(takeUntil(complete$));
   };
 }
 
@@ -256,9 +252,7 @@ export function completeWith<T>(
 export function lastMap<T, R>(
   project: (lastValue: T | null) => ObservableInput<R>,
 ): OperatorFunction<T, R> {
-  return (input$) => {
-    return input$.pipe(last(undefined, null), mergeMap(project));
-  };
+  return pipe(last(undefined, null), mergeMap(project));
 }
 
 /**
@@ -300,5 +294,179 @@ export function concatBuffer<T, R>(
         ),
       ),
     );
+  };
+}
+
+/**
+ * Flatten the merging of higher-order observables but preserving previous value
+ *
+ * It's like [[withLatestFrom]], but don't lose outter values and merges all inner emitted ones.
+ * Instead of the callback-hell of:
+ *   obs1.pipe(
+ *     mergeMap((v1) =>
+ *       obs2(v1).pipe( // obs2 uses v1
+ *         mergeMap((v2) =>
+ *           obs3(v1, v2).pipe( // obs3 uses v1, v2
+ *             map(({ v3_a, v3_b }) => { v1, v2, v3: v3_a + v3_b }), // map uses v1, v2, v3
+ *           ),
+ *         ),
+ *       ),
+ *     ),
+ *   );
+ *
+ * You can now:
+ *   obs1.pipe(
+ *     mergeWith((v1) => obs2(v1, 123)),
+ *     mergeWith(([v1, v2]) => obs3(v1, v2, true)),
+ *     // you can use tuple-destructuring on values, and obj-destructuring on objects
+ *     map(([[v1, v2], { v3_a, v3_b }]) => ({ v1, v2, v3: v3_a + v3_b })),
+ *   );
+ *
+ * @param project - Project function passed to mergeMap
+ * @param mapFunc - Funtion to merge result with, like mergeMap or switchMap
+ * @returns Observable mirroring project's return, but prepending emitted values from this inner
+ *    observable in a tuple with the value from the outter observable which generated the inner.
+ */
+export function mergeWith<T, R>(
+  project: (value: T, index: number) => ObservableInput<R>,
+  mapFunc = mergeMap,
+): OperatorFunction<T, [T, R]> {
+  return pipe(
+    mapFunc((value, index) =>
+      from(project(value, index)).pipe(map((res) => [value, res] as [T, R])),
+    ),
+  );
+}
+
+/**
+ * Operator to catch, log and suppress observable errors
+ *
+ * @param opts - shouldRetryError parameters
+ * @param logParams - Additional log parameters, message and details to bind to opts.log
+ * @returns Operator to catch errors, log and suppress if it matches the opts conditions,
+ *    Re-throws otherwise
+ */
+export function catchAndLog<T>(
+  opts: Parameters<typeof shouldRetryError>[0],
+  ...logParams: unknown[]
+): MonoTypeOperatorFunction<T> {
+  if (opts.log && logParams.length) opts = { ...opts, log: opts.log.bind(null, ...logParams) };
+  const shouldSuppress = shouldRetryError(opts);
+  return pipe(
+    catchError((err) => {
+      if (!shouldSuppress(err)) return throwError(err);
+      else return EMPTY;
+    }),
+  );
+}
+
+/**
+ * Custom operator providing a project function which is mirrored in the output, but provides a
+ * parameter function which allows submitting requests directly to the output as well, and returns
+ * with an observable which filters input$ for success|failures, errors on failures and completes
+ * on successes. In case 'confirmed' is true, this observable also emits intermediate unconfirmed
+ * successes and only completes upon the confirmed one is seen.
+ * Example:
+ * output$: Observable<anotherAction.success | messageSend.request> = action$.pipe(
+ *   dispatchRequestAndGetResponse(messageSend, (dispatchRequest) =>
+ *     // this observable will be mirrored to output, plus requests sent to dispatchRequest
+ *     action$.pipe(
+ *       filter(anotherAction.request.is),
+ *       mergeMap((action) =>
+ *         dispatchRequest(messageSend.request('test')).pipe(
+ *           map((sentAction) => anotherAction.success({ sent: msgSendSucAction })),
+ *         ),
+ *       ),
+ *     ),
+ *   ),
+ * )
+ *
+ * @param aac - AsyncActionCreator type to wait for response
+ * @param project - Function to be merged to output; called with a function which allows to
+ *      dispatch requests directly to output and returns an observable which will emit the success
+ *      coming in input and complete, or error if a failure goes through
+ * @param confirmed - Keep emitting success to dispatchRequest's returned observable while it isn't
+ *      confirmed yet
+ * @param dedupKey - Function to calculate keys to deduplicate requests (returns the same
+        observable as result if a request with similar key is performed while one is still pending)
+ * @returns Custom operator which mirrors projected observable plus requests called in the
+ *      project's function parameter
+ */
+export function dispatchRequestAndGetResponse<
+  T,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
+  R,
+>(
+  aac: AAC,
+  project: (
+    dispatchRequest: (
+      request: ActionType<AAC['request']>,
+    ) => Observable<ActionType<AAC['success']>>,
+  ) => ObservableInput<R>,
+  confirmed = false,
+  dedupKey = (value: ActionType<AAC['request']>): unknown => value,
+): OperatorFunction<T, R | ActionType<AAC['request']>> {
+  return (input$) =>
+    defer(() => {
+      const requestOutput$ = new Subject<ActionType<AAC['request']>>();
+      const pending = new Map<unknown, Observable<ActionType<AAC['success']>>>();
+      const projectOutput$ = defer(() =>
+        project((request) => {
+          const key = dedupKey(request);
+          const pending$ = pending.get(key);
+          if (pending$) return pending$;
+          const result$ = new ReplaySubject<ActionType<AAC['success']>>(1);
+          const sub = input$
+            .pipe(
+              filter(isResponseOf<AAC>(aac, request.meta)),
+              map((response) => {
+                if (aac.failure.is(response)) throw response.payload;
+                return response;
+              }),
+              takeWhile(
+                (response) =>
+                  confirmed &&
+                  'confirmed' in response.payload &&
+                  response.payload.confirmed === undefined,
+                true,
+              ),
+            )
+            .subscribe(result$);
+          requestOutput$.next(request);
+          const res = result$.pipe(
+            finalize(() => {
+              sub.unsubscribe();
+              pending.delete(key);
+            }),
+          );
+          pending.set(key, res);
+          return res;
+        }),
+      ).pipe(finalize(() => requestOutput$.complete()));
+      return merge(requestOutput$, projectOutput$);
+    });
+}
+
+/**
+ * A custom operator to apply an inner operator only to a partitioned (filtered) view of the input,
+ * matching a given predicate, and merging the output with the values which doesn't match it
+ *
+ * @param predicate - Test input values if they should be projected
+ * @param operator - Receives observable of input values which matches predicate and return an
+ *      observable input to be merged in the output together with values which don't
+ * @returns Observable of values which doesn't pass the predicate merged with the projected
+ *      observables returned on the values which pass
+ */
+export function partitionMap<T, U, R>(
+  predicate: (value: unknown) => value is T,
+  operator: (input$: Observable<T>) => ObservableInput<R>,
+): OperatorFunction<T | U, Exclude<T | U, T> | R> {
+  return (source$) => {
+    const [true$, false$] = partition(source$.pipe(share<T | U>()), predicate) as [
+      Observable<T>,
+      Observable<Exclude<T | U, T>>,
+    ];
+    return merge(operator(true$), false$);
   };
 }

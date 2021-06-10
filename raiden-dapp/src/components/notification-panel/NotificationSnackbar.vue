@@ -1,27 +1,32 @@
 <template>
   <v-snackbar
-    v-if="notification.display"
-    v-model="notification.display"
+    v-if="isVisible"
+    v-model="notificationToShow.display"
+    :value="isVisible"
     class="notification-snackbar"
-    :timeout="notification.duration"
+    :timeout="notificationToShow.duration"
     app
     rounded
     max-width="550px"
     color="primary"
-    @input="setNotificationShown(notification.id)"
+    @input="dismiss"
   >
-    <v-row no-gutters class="notification-snackbar__area" @click="open">
-      <v-col cols="2">
-        <img :src="require('@/assets/notifications/notification_block.svg')" />
-      </v-col>
-      <v-col class="notification-snackbar__area__title">
-        <span>
-          {{ notification.title }}
-        </span>
-      </v-col>
-    </v-row>
+    <div class="notification-snackbar__area" @click="open">
+      <img :src="require('@/assets/notifications/notification_block.svg')" />
+
+      <span class="notification-snackbar__area__title">
+        {{ notificationToShow.title }}
+      </span>
+    </div>
+
     <template #action="{ attrs }">
-      <v-btn icon left v-bind="attrs" @click="dismiss()">
+      <v-btn
+        data-cy="notification-snackbar__dismiss-button"
+        icon
+        left
+        v-bind="attrs"
+        @click="dismiss()"
+      >
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </template>
@@ -29,77 +34,61 @@
 </template>
 
 <script lang="ts">
-import { Component, Mixins, Watch } from 'vue-property-decorator';
-import { mapGetters, mapMutations } from 'vuex';
+import { Component, Mixins } from 'vue-property-decorator';
+import { createNamespacedHelpers } from 'vuex';
 
 import NavigationMixin from '@/mixins/navigation-mixin';
-import { NotificationContext } from '@/store/notifications/notification-context';
-import { NotificationImportance } from '@/store/notifications/notification-importance';
 import type { NotificationPayload } from '@/store/notifications/types';
 
-const emptyNotification: NotificationPayload = {
-  id: -1,
-  title: '',
-  description: '',
-  icon: '',
-  display: false,
-  duration: 5000,
-  importance: NotificationImportance.LOW,
-  context: NotificationContext.NONE,
-  received: new Date(),
-};
+const { mapGetters, mapMutations } = createNamespacedHelpers('notifications');
 
 @Component({
   computed: {
-    ...mapGetters('notifications', ['notificationQueue']),
+    ...mapGetters(['notificationQueue']),
   },
   methods: {
-    ...mapMutations('notifications', ['setNotificationShown']),
+    ...mapMutations(['setNotificationShown']),
   },
 })
 export default class NotificationSnackbar extends Mixins(NavigationMixin) {
-  notification: NotificationPayload = emptyNotification;
   notificationQueue!: NotificationPayload[];
   setNotificationShown!: (notificationId: number) => void;
 
-  @Watch('notificationQueue', { immediate: true, deep: true })
-  onQueueChange(): void {
-    if (!this.notification.display && this.notificationQueue.length > 0) {
-      const nextNotification = this.notificationQueue.shift();
-      if (!nextNotification) {
-        return;
-      }
-      this.$nextTick(() => (this.notification = nextNotification));
+  get notificationToShow(): NotificationPayload | undefined {
+    return this.notificationQueue[0];
+  }
+
+  get isVisible(): boolean {
+    return this.notificationToShow !== undefined;
+  }
+
+  // This will trigger a change of the notification queue which then result
+  // into the next notification in the queue to display via the reactive
+  // getter.
+  dismiss(): void {
+    if (this.notificationToShow) {
+      this.setNotificationShown(this.notificationToShow.id);
     }
   }
 
-  created(): void {
-    this.notification = emptyNotification;
-  }
-
-  dismiss(): void {
-    this.setNotificationShown(this.notification.id);
-    this.notification = { ...this.notification, display: false };
-  }
-
   open(): void {
-    this.navigateToNotifications();
     this.dismiss();
+    this.navigateToNotifications();
   }
 }
 </script>
 
 <style scoped lang="scss">
-@import '@/scss/scroll';
-
 .notification-snackbar {
   &__area {
+    display: flex;
     cursor: pointer;
 
     &__title {
+      margin-left: 10px;
       font-size: 16px;
       font-weight: 500;
-      padding-top: 3px;
+      padding-top: 2px;
     }
   }
 }
