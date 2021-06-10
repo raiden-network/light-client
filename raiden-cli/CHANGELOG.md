@@ -6,10 +6,12 @@
 - [#1576] Add functionality to deploy token networks
 - [#2577] Add `--proportional-imbalance-fee` and `--cap-mediation-fees` options for imbalance fees
 - [#2795] Add `--gas-price` option to control gasPrice strategy as a multiplier of provider-returned `eth_gasPrice`
+- [#2590] Add default configuration for mediation fees
 
 [#1576]: https://github.com/raiden-network/light-client/issues/1576
 [#2577]: https://github.com/raiden-network/light-client/issues/2577
 [#2795]: https://github.com/raiden-network/light-client/issues/2795
+[#2790]: https://github.com/raiden-network/light-client/issues/2790
 
 ## [0.16.0] - 2021-04-01
 ### Changed
