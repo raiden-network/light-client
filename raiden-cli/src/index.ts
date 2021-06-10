@@ -176,6 +176,24 @@ async function parseArguments() {
         default: true,
         desc: 'Enables capping mediation fees to not allow them to be negative (output transfers amount always less than or equal input transfers)',
       },
+      gasPrice: {
+        desc: 'Set gasPrice strategy for transactions, as a multiplier of ETH node returned "eth_gasPrice"; some aliases: medium=1.05, fast=1.2, rapid=1.5',
+        coerce(val): number | undefined {
+          if (!val) return;
+          switch (val) {
+            case 'medium':
+              return 1.05;
+            case 'fast':
+              return 1.2;
+            case 'rapid':
+              return 1.5;
+            default:
+              val = +val;
+              assert(val && 0.1 <= val && val <= 10, 'invalid gasPrice');
+              return val;
+          }
+        },
+      },
     })
     .help()
     .alias('h', 'help')
@@ -311,6 +329,7 @@ function createRaidenConfig(
     pfsMaxPaths: argv.pathfindingMaxPaths,
     pfsMaxFee: argv.pathfindingMaxFee,
     pfsIouTimeout: argv.pathfindingIouTimeout,
+    ...(argv.gasPrice ? { gasPriceFactor: argv.gasPrice } : undefined),
   };
 
   if (argv.matrixServer !== 'auto') config = { ...config, matrixServer: argv.matrixServer };
