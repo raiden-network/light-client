@@ -6,16 +6,19 @@
 - [#2577] Add imbalance penalty mediation fees
 - [#2795] Add `config.gasPriceFactor` option, to increase the transactions `gasPrice` as a multiplier of provider-returned `eth_gasPrice`
 
-[#1576]: https://github.com/raiden-network/light-client/issues/1576
-[#2577]: https://github.com/raiden-network/light-client/issues/2577
-[#2795]: https://github.com/raiden-network/light-client/issues/2795
-
 ### Changed
 - [#2669] Update to Raiden contracts `v0.37.5`
 - [#2677] Removed the dependency on reactive notifications of peer's presences changes and updated WebRTC signaling algorithm
 
+### Fixed
+- [#2797] Fixed a non-critical bug where withdraw expiration messages would not stop being retried
+
+[#1576]: https://github.com/raiden-network/light-client/issues/1576
+[#2577]: https://github.com/raiden-network/light-client/issues/2577
 [#2669]: https://github.com/raiden-network/light-client/issues/2669
 [#2677]: https://github.com/raiden-network/light-client/issues/2677
+[#2795]: https://github.com/raiden-network/light-client/issues/2795
+[#2797]: https://github.com/raiden-network/light-client/issues/2797
 
 ## [0.16.0] - 2021-04-01
 ### Added
