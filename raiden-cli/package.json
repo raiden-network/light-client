@@ -3,6 +3,7 @@
   "version": "0.16.0",
   "description": "Raiden Light Client standalone app with a REST API via HTTP",
   "main": "build/index.js",
+  "bin": "./raiden",
   "scripts": {
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "build": "tsc",
