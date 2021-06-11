@@ -810,12 +810,18 @@ function receiveWithdrawConfirmation(
   const confirmation = action.payload.message;
   const tokenNetwork = confirmation.token_network_address;
   const partner = action.meta.address;
+  let expiration: number;
+  try {
+    expiration = confirmation.expiration.toNumber(); // expiration could be too big
+  } catch (e) {
+    return EMPTY;
+  }
   const withdrawMeta = {
     direction: Direction.SENT, // received confirmation is for sent withdraw request
     tokenNetwork,
     partner,
     totalWithdraw: confirmation.total_withdraw,
-    expiration: confirmation.expiration.toNumber(),
+    expiration,
   };
   return state$.pipe(
     first(),
@@ -913,12 +919,18 @@ function receiveWithdrawRequest(
   const request = action.payload.message;
   const tokenNetwork = request.token_network_address;
   const partner = request.participant;
+  let expiration: number;
+  try {
+    expiration = request.expiration.toNumber(); // expiration could be too big
+  } catch (e) {
+    return EMPTY;
+  }
   const withdrawMeta = {
     direction: Direction.RECEIVED,
     tokenNetwork,
     partner,
     totalWithdraw: request.total_withdraw,
-    expiration: request.expiration.toNumber(),
+    expiration,
   };
 
   return state$.pipe(
@@ -1008,12 +1020,18 @@ function receiveWithdrawExpired(
   const expired = action.payload.message;
   const tokenNetwork = expired.token_network_address;
   const partner = expired.participant;
+  let expiration: number;
+  try {
+    expiration = expired.expiration.toNumber(); // expiration could be too big
+  } catch (e) {
+    return EMPTY;
+  }
   const withdrawMeta = {
     direction: Direction.RECEIVED,
     tokenNetwork,
     partner,
     totalWithdraw: expired.total_withdraw,
-    expiration: expired.expiration.toNumber(),
+    expiration,
   };
 
   return combineLatest([state$, config$]).pipe(
@@ -1027,7 +1045,7 @@ function receiveWithdrawExpired(
       const cached = cache.get(cacheKey);
       if (cached) processed$ = of(cached);
       else {
-        assert(expired.nonce.eq(channel.partner.nextNonce), [
+        assert(expired.nonce.lte(channel.partner.nextNonce), [
           'nonce mismatch',
           { expected: channel.partner.nextNonce.toNumber(), received: expired.nonce.toNumber() },
         ]);
@@ -1049,11 +1067,11 @@ function receiveWithdrawExpired(
           // as we've received and validated this message, emit failure to increment nextNonce
           yield withdrawExpire.success({ message: expired }, withdrawMeta);
           // emits withdrawCompleted to clear messages from partner's pendingWithdraws array
-          yield withdrawCompleted(undefined, withdrawMeta);
           yield messageSend.request(
             { message: processed },
             { address: partner, msgId: processed.message_identifier.toString() },
           );
+          yield withdrawCompleted(undefined, withdrawMeta);
         }),
       );
     }),
