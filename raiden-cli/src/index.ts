@@ -148,11 +148,6 @@ async function parseArguments() {
         default: false,
         desc: "Enables monitoring if there's a UDC deposit",
       },
-      enableMediation: {
-        type: 'boolean',
-        default: true,
-        desc: 'Enables support for mediated payments.',
-      },
       flatFee: {
         type: 'string',
         nargs: 2,
@@ -211,7 +206,7 @@ function getKeystoreAccounts(keystorePath: string): { [addr: string]: string[] }
       const address = ethers.utils.getAddress(JSON.parse(json)['address']);
       if (!(address in keys)) keys[address] = [];
       keys[address].push(json);
-    } catch (e) {}
+    } catch (e) { }
   }
   return keys;
 }
@@ -346,16 +341,6 @@ function createRaidenConfig(
     };
 
   if (!argv.enableMonitoring) config = { ...config, monitoringReward: null };
-
-  if (argv.enableMediation)
-    config = {
-      ...config,
-      caps: {
-        ...config.caps,
-        [Capabilities.RECEIVE]: 1,
-        [Capabilities.MEDIATE]: 1,
-      },
-    };
 
   type FeeType = 'flat' | 'proportional' | 'imbalance';
   let mediationFees: { [token: string]: { cap: boolean } & { [K in FeeType]?: BigNumberish } } =
