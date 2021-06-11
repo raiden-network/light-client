@@ -878,10 +878,7 @@ function sendWithdrawExpired(
         expiration: req.expiration,
       };
       return from(signMessage(signer, expired, { log })).pipe(
-        mergeMap(function* (message) {
-          yield withdrawExpire.success({ message }, action.meta);
-          yield withdraw.failure(new RaidenError(ErrorCodes.CNL_WITHDRAW_EXPIRED), action.meta);
-        }),
+        map((message) => withdrawExpire.success({ message }, action.meta)),
       );
     }),
     catchError((err) => of(withdrawExpire.failure(err, action.meta))),
