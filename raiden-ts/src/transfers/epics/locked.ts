@@ -734,7 +734,11 @@ function receiveTransferExpired(
     }),
   );
 }
-
+function isWithdrawConfirmation<M extends ChannelEnd['pendingWithdraws'][number]>(
+  m: M,
+): m is M & { type: MessageType.WITHDRAW_CONFIRMATION } {
+  return m.type === MessageType.WITHDRAW_CONFIRMATION;
+}
 /**
  * Handles a withdraw.request and send a WithdrawRequest to partner
  *
@@ -752,7 +756,7 @@ function sendWithdrawRequest(
   state$: Observable<RaidenState>,
   action: withdraw.request,
   { log, address, signer, network, config$ }: RaidenEpicDeps,
-): Observable<withdrawMessage.request | withdraw.failure> {
+): Observable<withdrawMessage.request | withdrawMessage.success | withdraw.failure> {
   if (action.meta.direction !== Direction.SENT) return EMPTY;
   return combineLatest([state$, config$]).pipe(
     first(),
@@ -762,6 +766,36 @@ function sendWithdrawRequest(
         channel.own.pendingWithdraws.some(matchWithdraw(MessageType.WITHDRAW_REQUEST, action.meta))
       )
         return EMPTY; // already requested, skip without failing
+
+      // next assert prevents parallel requests from being performed, but we special case here:
+      // in case there's an still valid confirmation which failed for any reason, we emit it again
+      // in order to retry sending the respective transaction
+      const oldConfirmation = channel.own.pendingWithdraws.find(isWithdrawConfirmation);
+      if (oldConfirmation) {
+        return [
+          withdrawMessage.success(
+            { message: oldConfirmation },
+            {
+              direction: action.meta.direction,
+              tokenNetwork: channel.tokenNetwork,
+              partner: channel.partner.address,
+              totalWithdraw: oldConfirmation.total_withdraw,
+              expiration: oldConfirmation.expiration.toNumber(),
+            },
+          ),
+          withdraw.failure(
+            new RaidenError(ErrorCodes.CNL_WITHDRAW_RETRY_CONFIRMATION),
+            action.meta,
+          ),
+        ];
+      }
+      // although it'd be possible parallel withdraw requests per protocol, PC doesn't like it and
+      // will get out of sync if we try, so we must prevent it
+      assert(!channel.own.pendingWithdraws.length, [
+        ErrorCodes.CNL_WITHDRAW_PENDING,
+        { pendingWithdraws: channel.own.pendingWithdraws },
+      ]);
+
       assert(
         action.meta.expiration >= state.blockNumber + revealTimeout,
         ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
