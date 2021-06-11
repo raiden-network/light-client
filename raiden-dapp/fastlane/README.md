@@ -114,3 +114,27 @@ Then you need to set this environment variable in you shell. For example you can
 set it temporally via `export ANDROID_SDK_ROOT="<your-path-here>"`.
 Alternatively you can make it somehow persistent in your personal shell setup or
 use a `.env` file that gets sourced.
+
+---
+
+```
+Could not determine the dependencies of task ':app:compileReleaseJavaWithJavac'.
+> Failed to install the following Android SDK packages as some licences have not
+> been accepted.
+     build-tools;30.0.2 Android SDK Build-Tools 30.0.2
+```
+
+In case _AndroidStudio_ is used, this can be simply done using the [SDK
+Manager](https://developer.android.com/studio/intro/update#sdk-manager) in the
+IDE.
+
+---
+
+```
+Execution failed for task ':app:processReleaseMainManifest'.
+> Unable to make field private final java.lang.String java.io.File.path
+> accessible: module java.base does not "opens java.io" to unnamed module
+> @43c003c7
+```
+
+Make sure that _Java Development Kit (JDK)_ version is older or equal to `15.x`.
