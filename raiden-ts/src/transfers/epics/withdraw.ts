@@ -163,7 +163,7 @@ export function withdrawSendTxEpic(
   return action$.pipe(
     filter(withdrawMessage.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
-    concatMap((action) =>
+    mergeMap((action) =>
       latest$.pipe(
         first(),
         mergeMap(({ state, config, gasPrice }) => {
@@ -206,7 +206,11 @@ export function withdrawSendTxEpic(
               log,
               provider,
             }),
-            retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
+            retryWhile(intervalFromConfig(config$), {
+              maxRetries: 3,
+              onErrors: commonTxErrors,
+              log: log.debug,
+            }),
           );
         }),
         map(([, receipt]) =>
