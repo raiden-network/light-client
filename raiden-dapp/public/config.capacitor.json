@@ -7,5 +7,5 @@
       ]
     }
   },
-  "disabled_ethereum_providers": ["direct_rpc_provider", "injected_provider"],
+  "disabled_ethereum_providers": ["direct_rpc_provider", "injected_provider"]
 }
