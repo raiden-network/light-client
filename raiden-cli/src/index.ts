@@ -178,8 +178,10 @@ async function parseArguments() {
       },
       gasPrice: {
         desc: 'Set gasPrice strategy for transactions, as a multiplier of ETH node returned "eth_gasPrice"; some aliases: medium=1.05, fast=1.2, rapid=1.5',
-        coerce(val): number | undefined {
+        coerce(val?: string | string[]): number | undefined {
           if (!val) return;
+          if (Array.isArray(val)) val = val[val.length - 1];
+          let value;
           switch (val) {
             case 'medium':
               return 1.05;
@@ -188,9 +190,9 @@ async function parseArguments() {
             case 'rapid':
               return 1.5;
             default:
-              val = +val;
-              assert(val && 0.1 <= val && val <= 10, 'invalid gasPrice');
-              return val;
+              value = +val;
+              assert(value && 0.1 <= value && value <= 10, 'invalid gasPrice');
+              return value;
           }
         },
       },
