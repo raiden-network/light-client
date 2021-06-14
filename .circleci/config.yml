@@ -177,13 +177,10 @@ jobs:
           name: Build CLI
           command: yarn build
       - run:
-          name: Bundle CLI
-          command: yarn build:bundle
-      - run:
           name: Compress CLI bundle
           command: |
-            cp --verbose ./raiden ./package.json ./bundle/
-            tar --create --gzip --verbose --file raiden-cli.tgz ./bundle --transform='s/^bundle/raiden-cli/'
+            cp --verbose ./raiden ./package.json ./build/
+            tar --create --gzip --verbose --file raiden-cli.tgz ./build --transform='s/^build/raiden-cli/'
       - store_artifacts:
           path: raiden-cli.tgz
 
