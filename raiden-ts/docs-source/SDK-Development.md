@@ -52,13 +52,13 @@ In this section we will dive into the the internal machinery of the SDK and outl
 
 Instead of using classes as in object-oriented programming the SDK is written in a functional way and uses functions and type schemas like interfaces to separate logic and data.
 
-The main entrypoint in the SDK is the [Raiden](classes/_src_raiden_.raiden.html), which provides access to all functionality. It is instantiated through the [`async Raiden.create`](classes/_src_raiden_.raiden.html#create) static method. This method returns a ready-to-use `Raiden` client object which instantiates and starts a central Redux `store`.
+The main entrypoint in the SDK is the [Raiden](classes/raiden.html), which provides access to all functionality. It is instantiated through the [`async Raiden.create`](classes/raiden.html#create) static method. This method returns a ready-to-use `Raiden` client object which instantiates and starts a central Redux `store`.
 
 The Redux `store` is responsible for handling the **actions** that change the **state** of the **reducers**. The **reducers** are in turn calling the functions which change the state of your application.
 
 All **actions** go to the **Epics** middleware where synchronous and asynchronous tasks can be performed with the help of **observables**. Any new action that is output gets fed back to the Redux store and continues down this _actions pipeline_.
 
-The `Raiden` client dispatches **request** actions to the `store` and waits for a respective **success** or **failure** to flow through the actions pipeline. These actions are created using [createAction](globals.html#createaction) and [createAsyncAction](globals.html#createasyncaction) with the [Flux Standard Action](https://github.com/redux-utilities/flux-standard-action) schema/pattern.
+The `Raiden` client dispatches **request** actions to the `store` and waits for a respective **success** or **failure** to flow through the actions pipeline. These actions are created using [createAction](https://github.com/raiden-network/light-client/blob/9d3c6f68d6a65bc16f8a3efe186ae4a16faf7473/raiden-ts/src/utils/actions.ts#L208) and [createAsyncAction](https://github.com/raiden-network/light-client/blob/9d3c6f68d6a65bc16f8a3efe186ae4a16faf7473/raiden-ts/src/utils/actions.ts#L294) with the [Flux Standard Action](https://github.com/redux-utilities/flux-standard-action) schema/pattern.
 
 All the business logic is contained in `Epics`. They accept a dependencies object as third parameter, which acts as a dependency injector (DI) and contains everything from configuration variables to the Ethers `Provider` instance. The `Epics` are factories that receive the `actions$` and `state$` observables and dependencies and output observables of new actions. They can listen and react to any kind of event or observable.
 
@@ -105,7 +105,7 @@ A visual representation of the inner architecture:
 
 The project is structured in a domain-driven logic, each folder under `src` represents a semantic domain and should depend on the things inside of it as much as possible. Especially for _actions_\*_, \_reducers_, _epics_, _state_ and specific \*functions\*.
 
-- [`abi`](https://github.com/raiden-network/light-client/tree/master/raiden-ts/src/abi) and [`deployment`](https://github.com/raiden-network/light-client/tree/master/raiden-ts/src/deployment) are data directories and don't contain any logic.
+- `abi` and `deployment` are data directories and don't contain any logic.
   - `abi` is the output of the [TypeChain](https://github.com/ethereum-ts/TypeChain) contracts interfaces used for type safety.
   - `deployment` contains information about the deployed Raiden contracts for the Ethereum test networks.
 - [`utils`](https://github.com/raiden-network/light-client/tree/master/raiden-ts/src/utils) are common functions and types for the whole Light Client. The code here should not depend on any other SDK modules but can depend on external libraries.
