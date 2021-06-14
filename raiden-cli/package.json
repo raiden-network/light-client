@@ -1,5 +1,5 @@
 {
-  "name": "raiden-cli",
+  "name": "@raiden_network/raiden-cli",
   "version": "0.16.0",
   "description": "Raiden Light Client standalone app with a REST API via HTTP",
   "main": "build/index.js",

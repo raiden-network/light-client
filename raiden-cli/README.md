@@ -46,10 +46,10 @@ It requires the latest [Node.js LTS (14.x - Fermium)](https://github.com/nodejs/
 You can install the package from the [NPM registry](https://www.npmjs.com/):
 
 ```sh
-$ yarn global add raiden-cli
+$ yarn global add @raiden_network/raiden-cli
 $ raiden-cli --help
 $ # or
-$ npm install --global raiden-cli
+$ npm install --global @raiden_network/raiden-cli
 $ raiden-cli --help
 ```
 

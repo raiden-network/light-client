@@ -84,7 +84,7 @@ commands:
       workspace:
         description: The yarn workspace to publish
         type: enum
-        enum: [raiden-ts, raiden-cli]
+        enum: ['raiden-ts', '@raiden_network/raiden-cli']
       tarball:
         description: Workspace relative filepath of a tarball to publish instead
         type: string
@@ -294,10 +294,10 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - publish_workspace_on_npm_registry:
-          workspace: raiden-ts
+          workspace: 'raiden-ts'
       - publish_workspace_on_npm_registry:
-          workspace: raiden-cli
-          tarball: raiden-cli.tgz
+          workspace: '@raiden_network/raiden-cli'
+          tarball: 'raiden-cli.tgz'
 
 workflows:
   version: 2
