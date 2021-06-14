@@ -5,6 +5,7 @@
 - [#1576] Add functionality to deploy token networks
 - [#2577] Add imbalance penalty mediation fees
 - [#2795] Add `config.gasPriceFactor` option, to increase the transactions `gasPrice` as a multiplier of provider-returned `eth_gasPrice`
+- [#2813] `open`/`depositChannel` have a new option (`confirmConfirmation`, `true` by default) to wait `+confirmationBlocks` (default=5) after last transaction to give more time for it to be synced on partners and services
 
 ### Changed
 - [#2669] Update to Raiden contracts `v0.37.5`
@@ -19,6 +20,7 @@
 [#2677]: https://github.com/raiden-network/light-client/issues/2677
 [#2795]: https://github.com/raiden-network/light-client/issues/2795
 [#2797]: https://github.com/raiden-network/light-client/issues/2797
+[#2813]: https://github.com/raiden-network/light-client/issues/2813
 
 ## [0.16.0] - 2021-04-01
 ### Added

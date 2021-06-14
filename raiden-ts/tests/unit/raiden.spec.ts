@@ -139,7 +139,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
     getGasPrice: jest.fn(async () => BigNumber.from(5)),
     getTransactionReceipt: jest.fn(async (txHash) => ({
       blockNumber: 118,
-      confirmations: 6,
+      confirmations: 11,
       transactionHash: txHash,
     })),
   });
@@ -772,7 +772,7 @@ describe('Raiden', () => {
               settleTimeout,
               isFirstParticipant,
               txHash: channelOpenHash,
-              txBlock: 9,
+              txBlock: 118,
               confirmed: true,
             },
             { tokenNetwork, partner },
@@ -783,7 +783,7 @@ describe('Raiden', () => {
               participant: address as Address,
               totalDeposit: deposit as UInt<32>,
               txHash: channelDepositHash,
-              txBlock: 11,
+              txBlock: 118,
               confirmed: true,
             },
             { tokenNetwork, partner },
@@ -799,7 +799,7 @@ describe('Raiden', () => {
       token_to_token_networks: jest.fn(async () => tokenNetwork),
     } as any;
     const raiden = new Raiden(
-      dummyState,
+      { ...dummyState, blockNumber: 129 },
       deps,
       combineRaidenEpics([initEpicMock, channelOpenEpicMock]),
       channelOpenSuccessReducer,
@@ -1054,7 +1054,7 @@ describe('Raiden', () => {
                 participant: address as Address,
                 totalDeposit: deposit as UInt<32>,
                 txHash,
-                txBlock: 11,
+                txBlock: 118,
                 confirmed: true,
               },
               { tokenNetwork, partner },
@@ -1073,7 +1073,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       makeInitialState(
         { address, network, contractsInfo },
-        { tokens: { [token]: tokenNetwork }, channels: { [key]: getChannel() } },
+        { blockNumber: 129, tokens: { [token]: tokenNetwork }, channels: { [key]: getChannel() } },
       ),
       deps,
       combineRaidenEpics([initEpicMock, channelDepositEpicMock]),
