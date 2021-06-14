@@ -734,7 +734,11 @@ function receiveTransferExpired(
     }),
   );
 }
-
+function isWithdrawConfirmation<M extends ChannelEnd['pendingWithdraws'][number]>(
+  m: M,
+): m is M & { type: MessageType.WITHDRAW_CONFIRMATION } {
+  return m.type === MessageType.WITHDRAW_CONFIRMATION;
+}
 /**
  * Handles a withdraw.request and send a WithdrawRequest to partner
  *
@@ -752,7 +756,7 @@ function sendWithdrawRequest(
   state$: Observable<RaidenState>,
   action: withdraw.request,
   { log, address, signer, network, config$ }: RaidenEpicDeps,
-): Observable<withdrawMessage.request | withdraw.failure> {
+): Observable<withdrawMessage.request | withdrawMessage.success | withdraw.failure> {
   if (action.meta.direction !== Direction.SENT) return EMPTY;
   return combineLatest([state$, config$]).pipe(
     first(),
@@ -762,6 +766,36 @@ function sendWithdrawRequest(
         channel.own.pendingWithdraws.some(matchWithdraw(MessageType.WITHDRAW_REQUEST, action.meta))
       )
         return EMPTY; // already requested, skip without failing
+
+      // next assert prevents parallel requests from being performed, but we special case here:
+      // in case there's an still valid confirmation which failed for any reason, we emit it again
+      // in order to retry sending the respective transaction
+      const oldConfirmation = channel.own.pendingWithdraws.find(isWithdrawConfirmation);
+      if (oldConfirmation) {
+        return [
+          withdrawMessage.success(
+            { message: oldConfirmation },
+            {
+              direction: action.meta.direction,
+              tokenNetwork: channel.tokenNetwork,
+              partner: channel.partner.address,
+              totalWithdraw: oldConfirmation.total_withdraw,
+              expiration: oldConfirmation.expiration.toNumber(),
+            },
+          ),
+          withdraw.failure(
+            new RaidenError(ErrorCodes.CNL_WITHDRAW_RETRY_CONFIRMATION),
+            action.meta,
+          ),
+        ];
+      }
+      // although it'd be possible parallel withdraw requests per protocol, PC doesn't like it and
+      // will get out of sync if we try, so we must prevent it
+      assert(!channel.own.pendingWithdraws.length, [
+        ErrorCodes.CNL_WITHDRAW_PENDING,
+        { pendingWithdraws: channel.own.pendingWithdraws },
+      ]);
+
       assert(
         action.meta.expiration >= state.blockNumber + revealTimeout,
         ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
@@ -810,12 +844,18 @@ function receiveWithdrawConfirmation(
   const confirmation = action.payload.message;
   const tokenNetwork = confirmation.token_network_address;
   const partner = action.meta.address;
+  let expiration: number;
+  try {
+    expiration = confirmation.expiration.toNumber(); // expiration could be too big
+  } catch (e) {
+    return EMPTY;
+  }
   const withdrawMeta = {
     direction: Direction.SENT, // received confirmation is for sent withdraw request
     tokenNetwork,
     partner,
     totalWithdraw: confirmation.total_withdraw,
-    expiration: confirmation.expiration.toNumber(),
+    expiration,
   };
   return state$.pipe(
     first(),
@@ -878,10 +918,7 @@ function sendWithdrawExpired(
         expiration: req.expiration,
       };
       return from(signMessage(signer, expired, { log })).pipe(
-        mergeMap(function* (message) {
-          yield withdrawExpire.success({ message }, action.meta);
-          yield withdraw.failure(new RaidenError(ErrorCodes.CNL_WITHDRAW_EXPIRED), action.meta);
-        }),
+        map((message) => withdrawExpire.success({ message }, action.meta)),
       );
     }),
     catchError((err) => of(withdrawExpire.failure(err, action.meta))),
@@ -916,12 +953,18 @@ function receiveWithdrawRequest(
   const request = action.payload.message;
   const tokenNetwork = request.token_network_address;
   const partner = request.participant;
+  let expiration: number;
+  try {
+    expiration = request.expiration.toNumber(); // expiration could be too big
+  } catch (e) {
+    return EMPTY;
+  }
   const withdrawMeta = {
     direction: Direction.RECEIVED,
     tokenNetwork,
     partner,
     totalWithdraw: request.total_withdraw,
-    expiration: request.expiration.toNumber(),
+    expiration,
   };
 
   return state$.pipe(
@@ -1011,12 +1054,18 @@ function receiveWithdrawExpired(
   const expired = action.payload.message;
   const tokenNetwork = expired.token_network_address;
   const partner = expired.participant;
+  let expiration: number;
+  try {
+    expiration = expired.expiration.toNumber(); // expiration could be too big
+  } catch (e) {
+    return EMPTY;
+  }
   const withdrawMeta = {
     direction: Direction.RECEIVED,
     tokenNetwork,
     partner,
     totalWithdraw: expired.total_withdraw,
-    expiration: expired.expiration.toNumber(),
+    expiration,
   };
 
   return combineLatest([state$, config$]).pipe(
@@ -1030,7 +1079,7 @@ function receiveWithdrawExpired(
       const cached = cache.get(cacheKey);
       if (cached) processed$ = of(cached);
       else {
-        assert(expired.nonce.eq(channel.partner.nextNonce), [
+        assert(expired.nonce.lte(channel.partner.nextNonce), [
           'nonce mismatch',
           { expected: channel.partner.nextNonce.toNumber(), received: expired.nonce.toNumber() },
         ]);
@@ -1052,11 +1101,11 @@ function receiveWithdrawExpired(
           // as we've received and validated this message, emit failure to increment nextNonce
           yield withdrawExpire.success({ message: expired }, withdrawMeta);
           // emits withdrawCompleted to clear messages from partner's pendingWithdraws array
-          yield withdrawCompleted(undefined, withdrawMeta);
           yield messageSend.request(
             { message: processed },
             { address: partner, msgId: processed.message_identifier.toString() },
           );
+          yield withdrawCompleted(undefined, withdrawMeta);
         }),
       );
     }),

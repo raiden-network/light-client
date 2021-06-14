@@ -473,10 +473,15 @@ describe('channelDepositEpic', () => {
       channelDeposit.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
     );
     expect(tokenContract.approve).toHaveBeenCalledTimes(2);
-    expect(tokenContract.approve).toHaveBeenCalledWith(tokenNetwork, 0);
+    expect(tokenContract.approve).toHaveBeenCalledWith(
+      tokenNetwork,
+      0,
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
+    );
     expect(tokenContract.approve).toHaveBeenCalledWith(
       tokenNetwork,
       raiden.config.minimumAllowance,
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
     );
   });
 
@@ -555,6 +560,7 @@ describe('channelDepositEpic', () => {
       raiden.address,
       deposit.add(prevDeposit),
       partner.address,
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
     );
     expect(setTotalDepositTx.wait).toHaveBeenCalledTimes(1);
   });
@@ -638,6 +644,7 @@ describe('channelCloseEpic', () => {
       expect.any(String), // additional_hash
       expect.any(String), // non_closing_signature
       expect.any(String), // closing_signature
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
     );
     expect(closeTx.wait).toHaveBeenCalledTimes(1);
   });
@@ -750,6 +757,7 @@ describe('channelSettleEpic', () => {
       Zero, // partner transfered amount
       Zero, // partner locked amount
       LocksrootZero, // partner locksroot
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
     );
     expect(settleTx.wait).toHaveBeenCalledTimes(1);
   });
@@ -824,6 +832,7 @@ describe('channelSettleEpic', () => {
       Zero, // self transfered amount
       amount, // self locked amount
       getLocksroot([locked.lock]), // self locksroot
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
     );
     expect(settleTx.wait).toHaveBeenCalledTimes(1);
     expect(tokenNetworkContract.getChannelParticipantInfo).toHaveBeenCalledTimes(2);
@@ -899,6 +908,7 @@ describe('channelSettleEpic', () => {
       Zero, // partner transfered amount
       amount, // partner locked amount
       getLocksroot([locked.lock]), // partner locksroot
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
     );
     expect(settleTx.wait).toHaveBeenCalledTimes(1);
     expect(tokenNetworkContract.getChannelParticipantInfo).toHaveBeenCalledTimes(2);
@@ -937,6 +947,7 @@ describe('channelUnlockEpic', () => {
       raiden.address,
       partner.address,
       expect.any(Uint8Array),
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
     );
   });
 
@@ -967,6 +978,7 @@ describe('channelUnlockEpic', () => {
       raiden.address,
       partner.address,
       expect.any(Uint8Array),
+      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
     );
   });
 });
@@ -1008,4 +1020,23 @@ test('stale provider disables receiving', async () => {
   await waitBlock();
   await sleep();
   expect(raiden.config.caps?.[Capabilities.RECEIVE]).toBeTruthy();
+});
+
+test('blockGasPriceEpic updates latest.gasPrice on new block', async () => {
+  expect.assertions(3);
+
+  const raiden = await makeRaiden(undefined, false);
+  raiden.deps.provider.getGasPrice.mockResolvedValue(BigNumber.from(2e9));
+  await raiden.start();
+  await sleep();
+  await expect(raiden.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise()).resolves.toEqual(
+    BigNumber.from(2e9),
+  );
+
+  raiden.deps.provider.getGasPrice.mockResolvedValue(BigNumber.from(3e9));
+  await waitBlock();
+  await expect(raiden.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise()).resolves.toEqual(
+    BigNumber.from(3e9),
+  );
+  expect(raiden.deps.provider.getGasPrice).toHaveBeenCalledTimes(2);
 });

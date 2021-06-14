@@ -6,8 +6,8 @@ import {
   filter,
   first,
   map,
-  mapTo,
   mergeMap,
+  mergeMapTo,
   pluck,
   share,
   take,
@@ -27,7 +27,7 @@ import type { RaidenState } from '../../state';
 import { getNoDeliveryPeers } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
-import { assert, commonTxErrors, ErrorCodes } from '../../utils/error';
+import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { retryWhile } from '../../utils/rx';
 import { Signed } from '../../utils/types';
@@ -163,10 +163,10 @@ export function withdrawSendTxEpic(
   return action$.pipe(
     filter(withdrawMessage.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
-    concatMap((action) =>
+    mergeMap((action) =>
       latest$.pipe(
         first(),
-        mergeMap(({ state, config }) => {
+        mergeMap(({ state, config, gasPrice }) => {
           const { subkey: configSubkey, revealTimeout } = config;
           // don't send on-chain tx if we're 'revealTimeout' blocks from expiration
           // this is our confidence threshold when we can get a tx inside timeout
@@ -199,13 +199,18 @@ export function withdrawSendTxEpic(
               action.meta.expiration,
               req.signature,
               action.payload.message.signature,
+              { gasPrice },
             ),
           ).pipe(
             assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, {
               log,
               provider,
             }),
-            retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
+            retryWhile(intervalFromConfig(config$), {
+              maxRetries: 3,
+              onErrors: commonTxErrors,
+              log: log.debug,
+            }),
           );
         }),
         map(([, receipt]) =>
@@ -342,7 +347,7 @@ export function withdrawSendExpireMessageEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<messageSend.request | withdrawCompleted> {
+): Observable<messageSend.request | withdraw.failure | withdrawCompleted> {
   return action$.pipe(
     filter(withdrawExpire.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
@@ -360,8 +365,11 @@ export function withdrawSendExpireMessageEpic(
             a.meta.address === action.meta.partner &&
             a.payload.message.message_identifier.eq(message.message_identifier),
         ),
-        mapTo(withdrawCompleted(undefined, action.meta)),
         take(1),
+        mergeMapTo([
+          withdraw.failure(new RaidenError(ErrorCodes.CNL_WITHDRAW_EXPIRED), action.meta),
+          withdrawCompleted(undefined, action.meta),
+        ]),
         share(),
       );
       // besides using notifier to stop retry, also merge the withdrawCompleted output action

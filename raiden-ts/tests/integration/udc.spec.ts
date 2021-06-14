@@ -101,10 +101,15 @@ describe('udcDepositEpic', () => {
       ),
     );
     expect(tokenContract.approve).toHaveBeenCalledTimes(2);
-    expect(tokenContract.approve).toHaveBeenCalledWith(userDepositContract.address, 0);
+    expect(tokenContract.approve).toHaveBeenCalledWith(
+      userDepositContract.address,
+      0,
+      expect.anything(),
+    );
     expect(tokenContract.approve).toHaveBeenCalledWith(
       userDepositContract.address,
       raiden.config.minimumAllowance,
+      expect.anything(),
     );
   });
 
@@ -186,11 +191,16 @@ describe('udcDepositEpic', () => {
     );
     expect(tokenContract.approve).toHaveBeenCalledTimes(3);
     expect(approveTx.wait).toHaveBeenCalledTimes(2);
-    expect(tokenContract.approve).toHaveBeenCalledWith(userDepositContract.address, MaxUint256);
+    expect(tokenContract.approve).toHaveBeenCalledWith(
+      userDepositContract.address,
+      MaxUint256,
+      expect.anything(),
+    );
     expect(userDepositContract.deposit).toHaveBeenCalledTimes(1);
     expect(userDepositContract.deposit).toHaveBeenCalledWith(
       raiden.address,
       deposit.add(prevDeposit),
+      expect.anything(),
     );
     expect(depositTx.wait).toHaveBeenCalledTimes(1);
   });

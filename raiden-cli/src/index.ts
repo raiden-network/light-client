@@ -7,7 +7,7 @@ import * as path from 'path';
 import yargs from 'yargs/yargs';
 
 import type { Decodable, RaidenConfig } from 'raiden-ts';
-import { Address, assert, Capabilities, decode, PfsMode, Raiden, UInt } from 'raiden-ts';
+import { Address, assert, decode, PfsMode, Raiden, UInt } from 'raiden-ts';
 
 import { makeCli } from './cli';
 import DEFAULT_RAIDEN_CONFIG from './config.json';
@@ -15,21 +15,30 @@ import DISCLAIMER from './disclaimer.json';
 import type { Cli } from './types';
 import { setupLoglevel } from './utils/logging';
 
+type AddressToFeeValue = { [tokenAddress: string]: string };
+type FeeType = 'flat' | 'proportional' | 'imbalance';
+type MediationFeeConfigurationOfToken = { cap: boolean } & { [K in FeeType]?: BigNumberish };
+type MediationFeeConfiguration = { [tokenAddress: string]: MediationFeeConfigurationOfToken };
+
 if (!('RTCPeerConnection' in globalThis)) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   Object.assign(globalThis, require('wrtc'));
 }
 
-function parseFeeOption(args?: readonly string[]) {
-  const res: { [addr: string]: string } = {};
-  if (!args?.length) return res;
+function parseFeeOption(args?: readonly string[]): AddressToFeeValue {
+  const parsedOption: AddressToFeeValue = {};
+
+  if (!args?.length) return parsedOption;
+
   assert(args.length % 2 === 0, 'fees must have the format [address, number]');
+
   for (let i = 0; i < args.length; i += 2) {
     assert(Address.is(args[i]), 'Invalid address');
     assert(args[i + 1].match(/^\d+$/), 'Invalid numeric value');
-    res[args[i]] = args[i + 1];
+    parsedOption[args[i]] = args[i + 1];
   }
-  return res;
+
+  return parsedOption;
 }
 
 async function parseArguments() {
@@ -148,11 +157,6 @@ async function parseArguments() {
         default: false,
         desc: "Enables monitoring if there's a UDC deposit",
       },
-      enableMediation: {
-        type: 'boolean',
-        default: true,
-        desc: 'Enables support for mediated payments.',
-      },
       flatFee: {
         type: 'string',
         nargs: 2,
@@ -175,6 +179,26 @@ async function parseArguments() {
         type: 'boolean',
         default: true,
         desc: 'Enables capping mediation fees to not allow them to be negative (output transfers amount always less than or equal input transfers)',
+      },
+      gasPrice: {
+        desc: 'Set gasPrice strategy for transactions, as a multiplier of ETH node returned "eth_gasPrice"; some aliases: medium=1.05, fast=1.2, rapid=1.5',
+        coerce(val?: string | string[]): number | undefined {
+          if (!val) return;
+          if (Array.isArray(val)) val = val[val.length - 1];
+          let value;
+          switch (val) {
+            case 'medium':
+              return 1.05;
+            case 'fast':
+              return 1.2;
+            case 'rapid':
+              return 1.5;
+            default:
+              value = +val;
+              assert(value && 0.1 <= value && value <= 10, 'invalid gasPrice');
+              return value;
+          }
+        },
       },
     })
     .help()
@@ -294,6 +318,48 @@ function registerShutdownHooks(this: Cli): void {
 
 type Await<T> = T extends Promise<infer U> ? U : T;
 
+function constructMediationFeeConfiguration(
+  cap: boolean,
+  flatFees?: AddressToFeeValue,
+  proportionalFees?: AddressToFeeValue,
+  imbalanceFees?: AddressToFeeValue,
+): MediationFeeConfiguration {
+  let mediationFeeConfiguration = {} as MediationFeeConfiguration;
+
+  for (const [address, value] of Object.entries(flatFees ?? {})) {
+    mediationFeeConfiguration = {
+      ...mediationFeeConfiguration,
+      [address]: { ...mediationFeeConfiguration[address], flat: value },
+    };
+  }
+
+  for (const [address, value] of Object.entries(proportionalFees ?? {})) {
+    mediationFeeConfiguration = {
+      ...mediationFeeConfiguration,
+      [address]: { ...mediationFeeConfiguration[address], proportional: value },
+    };
+  }
+
+  for (const [address, value] of Object.entries(imbalanceFees ?? {})) {
+    mediationFeeConfiguration = {
+      ...mediationFeeConfiguration,
+      [address]: { ...mediationFeeConfiguration[address], imbalance: value },
+    };
+  }
+
+  for (const [address, configurationOfToken] of Object.entries(mediationFeeConfiguration)) {
+    mediationFeeConfiguration[address] = {
+      flat: 0,
+      proportional: 4000,
+      imbalance: 3000,
+      ...configurationOfToken,
+      cap,
+    };
+  }
+
+  return mediationFeeConfiguration;
+}
+
 function createRaidenConfig(
   argv: Await<ReturnType<typeof parseArguments>>,
 ): Partial<Decodable<RaidenConfig>> {
@@ -311,6 +377,7 @@ function createRaidenConfig(
     pfsMaxPaths: argv.pathfindingMaxPaths,
     pfsMaxFee: argv.pathfindingMaxFee,
     pfsIouTimeout: argv.pathfindingIouTimeout,
+    ...(argv.gasPrice ? { gasPriceFactor: argv.gasPrice } : undefined),
   };
 
   if (argv.matrixServer !== 'auto') config = { ...config, matrixServer: argv.matrixServer };
@@ -326,31 +393,14 @@ function createRaidenConfig(
 
   if (!argv.enableMonitoring) config = { ...config, monitoringReward: null };
 
-  if (argv.enableMediation)
-    config = {
-      ...config,
-      caps: {
-        ...config.caps,
-        [Capabilities.RECEIVE]: 1,
-        [Capabilities.MEDIATE]: 1,
-      },
-    };
+  const mediationFees = constructMediationFeeConfiguration(
+    argv.capMediationFees,
+    argv.flatFee as unknown as AddressToFeeValue,
+    argv.proportionalFee as unknown as AddressToFeeValue,
+    argv.proportionalImbalanceFee as unknown as AddressToFeeValue,
+  );
 
-  type FeeType = 'flat' | 'proportional' | 'imbalance';
-  let mediationFees: { [token: string]: { cap: boolean } & { [K in FeeType]?: BigNumberish } } =
-    {};
-  for (const [addr, flat] of Object.entries(argv.flatFee ?? {})) {
-    mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], flat } };
-  }
-  for (const [addr, proportional] of Object.entries(argv.proportionalFee ?? {})) {
-    mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], proportional } };
-  }
-  for (const [addr, imbalance] of Object.entries(argv.proportionalImbalanceFee ?? {})) {
-    mediationFees = { ...mediationFees, [addr]: { ...mediationFees[addr], imbalance } };
-  }
-  for (const token in mediationFees) mediationFees[token].cap = argv.capMediationFees;
-
-  if (Object.keys(mediationFees).length) config = { ...config, mediationFees };
+  config = { ...config, mediationFees };
 
   return config;
 }

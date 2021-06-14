@@ -1,7 +1,5 @@
 import { Zero } from '@ethersproject/constants';
 import type { ContractReceipt, ContractTransaction } from '@ethersproject/contracts';
-import type { Logger } from 'loglevel';
-import logging from 'loglevel';
 import type { Observable, OperatorFunction } from 'rxjs';
 import { defer, of, ReplaySubject } from 'rxjs';
 import { filter, groupBy, map, mapTo, mergeMap, pluck, takeUntil, tap } from 'rxjs/operators';
@@ -221,9 +219,10 @@ export function groupChannel$(state$: Observable<RaidenState>) {
  * @param approveError - ErrorCode of approve transaction errors
  * @param deps - Partial epics dependencies-like object
  * @param deps.provider - Eth provider
+ * @param deps.log - Logger instance
  * @param opts - Options object
- * @param opts.log - Logger instance for asserTx
  * @param opts.minimumAllowance - Minimum allowance to approve
+ * @param opts.gasPrice - Gas price for txs
  * @returns Cold observable to perform approve transactions
  */
 export function approveIfNeeded$(
@@ -231,9 +230,8 @@ export function approveIfNeeded$(
   tokenContract: HumanStandardToken,
   spender: Address,
   approveError: string = ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
-  { provider }: Pick<RaidenEpicDeps, 'provider'>,
-  { log, minimumAllowance }: { log: Logger; minimumAllowance: UInt<32> } = {
-    log: logging,
+  { provider, log }: Pick<RaidenEpicDeps, 'provider' | 'log'>,
+  { minimumAllowance, gasPrice }: { minimumAllowance: UInt<32>; gasPrice?: UInt<32> } = {
     minimumAllowance: Zero as UInt<32>,
   },
 ): Observable<true | ContractReceipt> {
@@ -248,7 +246,7 @@ export function approveIfNeeded$(
   // see https://github.com/raiden-network/light-client/issues/2010
   let resetAllowance$: Observable<true> = of(true);
   if (!allowance.isZero())
-    resetAllowance$ = defer(async () => tokenContract.approve(spender, 0)).pipe(
+    resetAllowance$ = defer(async () => tokenContract.approve(spender, 0, { gasPrice })).pipe(
       assertTx('approve', approveError, { log, provider }),
       mapTo(true),
     );
@@ -257,7 +255,9 @@ export function approveIfNeeded$(
   // but we send 'prevAllowance + deposit' in case there's a pending deposit
   // default minimumAllowance=MaxUint256 allows to approve once and for all
   return resetAllowance$.pipe(
-    mergeMap(async () => tokenContract.approve(spender, bnMax(minimumAllowance, deposit))),
+    mergeMap(async () =>
+      tokenContract.approve(spender, bnMax(minimumAllowance, deposit), { gasPrice }),
+    ),
     assertTx('approve', approveError, { log, provider }),
     pluck(1),
   );

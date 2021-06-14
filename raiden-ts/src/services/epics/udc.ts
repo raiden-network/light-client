@@ -87,8 +87,9 @@ function makeUdcDeposit$(
   [tokenContract, userDepositContract]: [HumanStandardToken, UserDeposit],
   [sender, address]: [Address, Address],
   [deposit, totalDeposit]: [UInt<32>, UInt<32>],
-  { log, provider, config$ }: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$'>,
+  deps: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$' | 'latest$'>,
 ) {
+  const { log, provider, config$, latest$ } = deps;
   return defer(async () =>
     Promise.all([
       tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
@@ -96,18 +97,18 @@ function makeUdcDeposit$(
     ]),
   ).pipe(
     retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
-    withLatestFrom(config$),
-    mergeMap(([[balance, allowance], { minimumAllowance }]) =>
+    withLatestFrom(config$, latest$),
+    mergeWith(([[balance, allowance], { minimumAllowance }, { gasPrice }]) =>
       approveIfNeeded$(
         [balance, allowance, deposit],
         tokenContract,
         userDepositContract.address as Address,
         ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
-        { provider },
-        { log, minimumAllowance },
+        deps,
+        { minimumAllowance, gasPrice },
       ),
     ),
-    mergeMap(() =>
+    mergeMap(([[, , { gasPrice }]]) =>
       defer(async () => userDepositContract.callStatic.total_deposit(address)).pipe(
         retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
         mergeMap(async (deposited) => {
@@ -116,7 +117,7 @@ function makeUdcDeposit$(
             { requested: totalDeposit.toString(), current: deposited.toString() },
           ]);
           // send setTotalDeposit transaction
-          return userDepositContract.deposit(address, totalDeposit);
+          return userDepositContract.deposit(address, totalDeposit, { gasPrice });
         }),
       ),
     ),
@@ -133,30 +134,14 @@ function makeUdcDeposit$(
  * @param action$ - Observable of udcDeposit.request actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
- * @param deps.userDepositContract - UserDeposit contract instance
- * @param deps.getTokenContract - Factory for Token contracts
- * @param deps.address - Our address
- * @param deps.log - Logger instance
- * @param deps.signer - Signer
- * @param deps.main - Main Signer/Address
- * @param deps.config$ - Config observable
- * @param deps.provider - Eth provider
  * @returns - Observable of udcDeposit.failure|udcDeposit.success actions
  */
 export function udcDepositEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  {
-    userDepositContract,
-    getTokenContract,
-    address,
-    log,
-    signer,
-    main,
-    config$,
-    provider,
-  }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<udcDeposit.failure | udcDeposit.success> {
+  const { userDepositContract, getTokenContract, address, signer, main, config$, provider } = deps;
   return action$.pipe(
     filter(udcDeposit.request.is),
     concatMap((action) =>
@@ -178,7 +163,7 @@ export function udcDepositEpic(
             [tokenContract, udcContract],
             [onchainAddress, address],
             [action.payload.deposit, action.meta.totalDeposit],
-            { log, provider, config$ },
+            deps,
           );
         }),
         mergeMap(([, receipt]) =>
@@ -218,12 +203,13 @@ export function udcDepositEpic(
  * @param deps.signer - Signer instance
  * @param deps.provider - Provider instance
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of udcWithdrawPlan.success|udcWithdrawPlan.failure actions
  */
 export function udcWithdrawPlanRequestEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { userDepositContract, address, log, signer, provider, config$ }: RaidenEpicDeps,
+  { userDepositContract, address, log, signer, provider, config$, latest$ }: RaidenEpicDeps,
 ): Observable<udcWithdrawPlan.success | udcWithdrawPlan.failure> {
   return action$.pipe(
     filter(udcWithdrawPlan.request.is),
@@ -231,7 +217,8 @@ export function udcWithdrawPlanRequestEpic(
       const contract = getContractWithSigner(userDepositContract, signer);
       const amount = action.meta.amount;
       return defer(async () => userDepositContract.callStatic.balances(address)).pipe(
-        mergeMap(async (balance) => {
+        withLatestFrom(latest$),
+        mergeMap(async ([balance, { gasPrice }]) => {
           assert(amount.gt(Zero), [
             ErrorCodes.UDC_PLAN_WITHDRAW_GT_ZERO,
             { amount: amount.toString() },
@@ -242,7 +229,7 @@ export function udcWithdrawPlanRequestEpic(
             { balance: balance.toString(), amount: amount.toString() },
           ]);
 
-          return contract.planWithdraw(amount);
+          return contract.planWithdraw(amount, { gasPrice });
         }),
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.info }),
@@ -342,12 +329,13 @@ export function udcAutoWithdrawEpic(
  * @param deps.signer - Signer instance
  * @param deps.provider - Provider instance
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of udcWithdraw.success|udcWithdraw.failure actions
  */
 export function udcWithdrawEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, userDepositContract, address, signer, provider, config$ }: RaidenEpicDeps,
+  { log, userDepositContract, address, signer, provider, config$, latest$ }: RaidenEpicDeps,
 ): Observable<udcWithdraw.success | udcWithdraw.failure> {
   return action$.pipe(
     filter(udcWithdraw.request.is),
@@ -355,13 +343,14 @@ export function udcWithdrawEpic(
       const contract = getContractWithSigner(userDepositContract, signer);
       let balance: UInt<32>;
       return defer(async () => userDepositContract.callStatic.balances(address)).pipe(
-        mergeMap(async (balance_) => {
+        withLatestFrom(latest$),
+        mergeMap(async ([balance_, { gasPrice }]) => {
           assert(balance_.gt(Zero), [
             ErrorCodes.UDC_WITHDRAW_NO_BALANCE,
             { balance: balance_.toString() },
           ]);
           balance = balance_ as UInt<32>;
-          return contract.withdraw(action.meta.amount);
+          return contract.withdraw(action.meta.amount, { gasPrice });
         }),
         assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.info }),

@@ -681,6 +681,7 @@ export async function makeRaiden(
       } as any),
   );
   jest.spyOn(provider, 'getTransaction');
+  jest.spyOn(provider, 'getGasPrice').mockResolvedValue(BigNumber.from(1e9));
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([address]);
   // See: https://github.com/cartant/rxjs-marbles/issues/11
   jest.spyOn(provider, 'getBlockNumber').mockImplementation(async () => provider.blockNumber);
@@ -883,10 +884,7 @@ export async function makeRaiden(
       initialState = decode(RaidenState, await getRaidenState(db));
     } catch (e) {}
   if (!initialState) {
-    initialState = makeInitialState(
-      { network, address, contractsInfo },
-      { blockNumber: provider.blockNumber },
-    );
+    initialState = makeInitialState({ network, address, contractsInfo }, { blockNumber: 1 });
     await putRaidenState(db, initialState);
   }
 

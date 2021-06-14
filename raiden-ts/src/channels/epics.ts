@@ -79,9 +79,10 @@ import {
   retryWhile,
   takeIf,
 } from '../utils/rx';
-import type { Address, Hash, HexString, Signature, UInt } from '../utils/types';
-import { isntNil, last } from '../utils/types';
+import type { Address, Hash, HexString, Signature } from '../utils/types';
+import { decode, isntNil, last, UInt } from '../utils/types';
 import {
+  blockGasprice,
   blockStale,
   blockTime,
   channelClose,
@@ -227,7 +228,7 @@ export function blockStaleEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { latest$, config$ }: RaidenEpicDeps,
-) {
+): Observable<blockStale> {
   return state$.pipe(
     pluckDistinct('blockNumber'),
     withLatestFrom(latest$, config$),
@@ -247,6 +248,39 @@ export function blockStaleEpic(
     ),
     distinctUntilChanged(),
     map((stale) => blockStale({ stale })),
+  );
+}
+
+/**
+ * Monitors provider for current mean gasPrice, and multiply it by config.gasPriceFactor
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps members
+ * @param deps.provider - Provider instance
+ * @param deps.config$ - Config observable
+ * @returns Observable of blockGasprice actions
+ */
+export function blockGasPriceEpic(
+  {}: Observable<RaidenAction>,
+  state$: Observable<RaidenState>,
+  { provider, config$ }: RaidenEpicDeps,
+): Observable<blockGasprice> {
+  return state$.pipe(
+    pluckDistinct('blockNumber'),
+    withLatestFrom(config$),
+    // switchMap will "reset" timer every block, restarting the timeout
+    exhaustMap(([, { gasPriceFactor }]) =>
+      defer(async () => provider.getGasPrice()).pipe(
+        map((price) => price.mul(Math.round(gasPriceFactor * 1e6)).div(1e6)),
+        map((price) => (price.gte(1e9) ? price : 1e9)), // min 1Gwei
+        map((price) => decode(UInt(32), price)),
+        catchError(constant(EMPTY)),
+      ),
+    ),
+    // debounce gasPrice changes smaller than 1%
+    distinctUntilChanged((a, b) => a.sub(b).abs().lt(a.div(100))),
+    map((gasPrice) => blockGasprice({ gasPrice })),
   );
 }
 
@@ -781,17 +815,27 @@ export function channelMonitoredEpic(
  * @param deps.provider - Provider instance
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of channelOpen.failure actions
  */
 export function channelOpenEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, signer, address, main, provider, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  {
+    log,
+    signer,
+    address,
+    main,
+    provider,
+    getTokenNetworkContract,
+    config$,
+    latest$,
+  }: RaidenEpicDeps,
 ): Observable<channelOpen.failure | channelDeposit.request> {
   return action$.pipe(
     filter(isActionOf(channelOpen.request)),
-    withLatestFrom(state$, config$),
-    mergeMap(([action, state, { settleTimeout, subkey: configSubkey }]) => {
+    withLatestFrom(state$, config$, latest$),
+    mergeMap(([action, state, { settleTimeout, subkey: configSubkey }, { gasPrice }]) => {
       const { tokenNetwork, partner } = action.meta;
       const channelState = state.channels[channelKey(action.meta)]?.state;
       // fails if channel already exist
@@ -824,11 +868,12 @@ export function channelOpenEpic(
 
       return concat(
         deposit$,
-        defer(() =>
+        defer(async () =>
           tokenNetworkContract.openChannel(
             address,
             partner,
             action.payload.settleTimeout ?? settleTimeout,
+            { gasPrice },
           ),
         ).pipe(
           assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log, provider }),
@@ -861,8 +906,9 @@ function makeDeposit$(
   [sender, address, partner]: [Address, Address, Address],
   deposit: UInt<32>,
   channelId$: Observable<number>,
-  { log, provider, config$ }: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$'>,
+  deps: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$' | 'latest$'>,
 ) {
+  const { log, provider, config$, latest$ } = deps;
   // retryWhile from here
   return defer(() =>
     Promise.all([
@@ -872,15 +918,15 @@ function makeDeposit$(
       >,
     ]),
   ).pipe(
-    withLatestFrom(config$),
-    mergeMap(([[balance, allowance], { minimumAllowance }]) =>
+    withLatestFrom(config$, latest$),
+    mergeMap(([[balance, allowance], { minimumAllowance }, { gasPrice }]) =>
       approveIfNeeded$(
         [balance, allowance, deposit],
         tokenContract,
         tokenNetworkContract.address as Address,
         ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED,
-        { provider },
-        { log, minimumAllowance },
+        deps,
+        { minimumAllowance, gasPrice },
       ),
     ),
     mergeMapTo(channelId$),
@@ -891,9 +937,12 @@ function makeDeposit$(
         .getChannelParticipantInfo(id, address, partner)
         .then(({ 0: totalDeposit }) => [id, totalDeposit] as const),
     ),
+    withLatestFrom(latest$),
     // send setTotalDeposit transaction
-    mergeMap(async ([id, totalDeposit]) =>
-      tokenNetworkContract.setTotalDeposit(id, address, totalDeposit.add(deposit), partner),
+    mergeMap(async ([[id, totalDeposit], { gasPrice }]) =>
+      tokenNetworkContract.setTotalDeposit(id, address, totalDeposit.add(deposit), partner, {
+        gasPrice,
+      }),
     ),
     assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
@@ -928,18 +977,10 @@ function makeDeposit$(
 export function channelDepositEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  {
-    log,
-    signer,
-    address,
-    main,
-    getTokenContract,
-    getTokenNetworkContract,
-    provider,
-    config$,
-    latest$,
-  }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<channelDeposit.failure> {
+  const { signer, address, main, getTokenContract, getTokenNetworkContract, config$, latest$ } =
+    deps;
   return action$.pipe(
     filter(isActionOf(channelDeposit.request)),
     groupBy((action) => action.meta.tokenNetwork),
@@ -1002,7 +1043,7 @@ export function channelDepositEpic(
                     [onchainAddress, address, partner],
                     action.payload.deposit,
                     channelId$,
-                    { log, provider, config$ },
+                    deps,
                   ),
                 ),
                 // ignore success tx so it's picked by channelEventsEpic
@@ -1035,6 +1076,7 @@ export function channelDepositEpic(
  * @param deps.network - Current network
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of channelClose.failure actions
  */
 export function channelCloseEpic(
@@ -1049,12 +1091,13 @@ export function channelCloseEpic(
     network,
     getTokenNetworkContract,
     config$,
+    latest$,
   }: RaidenEpicDeps,
 ): Observable<channelClose.failure> {
   return action$.pipe(
     filter(isActionOf(channelClose.request)),
-    withLatestFrom(state$, config$),
-    mergeMap(([action, state, { subkey: configSubkey }]) => {
+    withLatestFrom(state$, config$, latest$),
+    mergeMap(([action, state, { subkey: configSubkey }, { gasPrice }]) => {
       const { tokenNetwork, partner } = action.meta;
       const { signer: onchainSigner } = chooseOnchainAccount(
         { signer, address, main },
@@ -1103,6 +1146,7 @@ export function channelCloseEpic(
               additionalHash,
               nonClosingSignature,
               closingSignature,
+              { gasPrice },
             ),
           ).pipe(
             assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log, provider }),
@@ -1149,6 +1193,7 @@ export function channelCloseEpic(
  * @param deps.network - Current network
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Empty observable
  */
 export function channelUpdateEpic(
@@ -1163,6 +1208,7 @@ export function channelUpdateEpic(
     network,
     getTokenNetworkContract,
     config$,
+    latest$,
   }: RaidenEpicDeps,
 ): Observable<never> {
   return action$.pipe(
@@ -1171,7 +1217,7 @@ export function channelUpdateEpic(
     // wait a newBlock go through after channelClose confirmation, to ensure any pending
     // channelSettle could have been processed
     delayWhen(() => action$.pipe(filter(newBlock.is))),
-    withLatestFrom(state$, config$),
+    withLatestFrom(state$, config$, latest$),
     filter(([action, state]) => {
       const channel = state.channels[channelKey(action.meta)];
       return (
@@ -1183,7 +1229,7 @@ export function channelUpdateEpic(
         channel.closeParticipant !== address // we're not the closing end
       );
     }),
-    mergeMap(([action, state, { subkey }]) => {
+    mergeMap(([action, state, { subkey }, { gasPrice }]) => {
       const { tokenNetwork, partner } = action.meta;
       const { signer: onchainSigner } = chooseOnchainAccount({ signer, address, main }, subkey);
       const tokenNetworkContract = getContractWithSigner(
@@ -1221,6 +1267,7 @@ export function channelUpdateEpic(
               additionalHash,
               closingSignature,
               nonClosingSignature,
+              { gasPrice },
             ),
           ).pipe(
             assertTx('updateNonClosingBalanceProof', ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED, {
@@ -1317,13 +1364,24 @@ export function channelAutoSettleEpic(
  * @param deps.provider - Provider instance
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @param deps.db - Database instance
  * @returns Observable of channelSettle.failure actions
  */
 export function channelSettleEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, signer, address, main, provider, getTokenNetworkContract, config$, db }: RaidenEpicDeps,
+  {
+    log,
+    signer,
+    address,
+    main,
+    provider,
+    getTokenNetworkContract,
+    config$,
+    latest$,
+    db,
+  }: RaidenEpicDeps,
 ): Observable<channelSettle.failure> {
   return action$.pipe(
     filter(isActionOf(channelSettle.request)),
@@ -1421,7 +1479,8 @@ export function channelSettleEpic(
                   [partner, partnerBP],
                 ] as const;
             }),
-            mergeMap(([part1, part2]) =>
+            withLatestFrom(latest$),
+            mergeMap(([[part1, part2], { gasPrice }]) =>
               defer(() =>
                 tokenNetworkContract.settleChannel(
                   channel.id,
@@ -1433,6 +1492,7 @@ export function channelSettleEpic(
                   part2[1].transferredAmount,
                   part2[1].lockedAmount,
                   part2[1].locksroot,
+                  { gasPrice },
                 ),
               ).pipe(
                 assertTx('settleChannel', ErrorCodes.CNL_SETTLE_FAILED, { log, provider }),
@@ -1512,20 +1572,30 @@ export function channelSettleableEpic(
  * @param deps.provider - Provider instance
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Empty observable
  */
 export function channelUnlockEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log, signer, address, main, provider, getTokenNetworkContract, config$ }: RaidenEpicDeps,
+  {
+    log,
+    signer,
+    address,
+    main,
+    provider,
+    getTokenNetworkContract,
+    config$,
+    latest$,
+  }: RaidenEpicDeps,
 ): Observable<channelSettle.failure> {
   return action$.pipe(
     filter(isActionOf(channelSettle.success)),
     filter((action) => !!(action.payload.confirmed && action.payload.locks?.length)),
-    withLatestFrom(state$, config$),
+    withLatestFrom(state$, config$, latest$),
     // ensure there's no channel, or if yes, it's a different (by channelId)
     filter(([action, state]) => state.channels[channelKey(action.meta)]?.id !== action.payload.id),
-    mergeMap(([action, , { subkey }]) => {
+    mergeMap(([action, , { subkey }, { gasPrice }]) => {
       const { tokenNetwork, partner } = action.meta;
       const tokenNetworkContract = getContractWithSigner(
         getTokenNetworkContract(tokenNetwork),
@@ -1545,7 +1615,7 @@ export function channelUnlockEpic(
 
       // send unlock transaction
       return defer(() =>
-        tokenNetworkContract.unlock(action.payload.id, address, partner, locks),
+        tokenNetworkContract.unlock(action.payload.id, address, partner, locks, { gasPrice }),
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), {

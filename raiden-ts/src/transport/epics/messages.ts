@@ -167,13 +167,17 @@ function sendBatchedToDevice(
 
 function sendNowToRtc(
   toRtc$: Observable<readonly [messageSend.request, RTCDataChannel]>,
-): Observable<messageSend.success> {
+): Observable<messageSend.success | messageSend.failure> {
   return toRtc$.pipe(
     map(([action, rtcChannel]) => {
-      const start = Date.now();
-      rtcChannel.send(getMessageBody(action.payload.message));
-      const payload = { via: rtcChannel.label, tookMs: Date.now() - start, retries: 0 };
-      return messageSend.success(payload, action.meta);
+      try {
+        const start = Date.now();
+        rtcChannel.send(getMessageBody(action.payload.message));
+        const payload = { via: rtcChannel.label, tookMs: Date.now() - start, retries: 0 };
+        return messageSend.success(payload, action.meta);
+      } catch (err) {
+        return messageSend.failure(err, action.meta);
+      }
     }),
   );
 }
@@ -204,7 +208,11 @@ export function matrixMessageSendEpic(
             const rtc$ =
               getMsgType(action) !== textMsgType
                 ? EMPTY // don't send through rtc if msgtype is text
-                : deps.latest$.pipe(pluck('rtc', address), filter(isntNil));
+                : deps.latest$.pipe(
+                    pluck('rtc', address),
+                    filter(isntNil),
+                    filter(({ readyState }) => readyState === 'open'),
+                  );
             const userId$ = action.payload.userId
               ? of(action.payload.userId)
               : dispatch(matrixPresence.request(undefined, { address })).pipe(

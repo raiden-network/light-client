@@ -453,24 +453,34 @@ export function transferAutoRegisterEpic(
  * @param deps.provider - Provider instance
  * @param deps.secretRegistryContract - SecretRegistry contract instance
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of transferSecretRegister.failure actions
  */
 export function transferSecretRegisterEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, signer, address, main, provider, secretRegistryContract, config$ }: RaidenEpicDeps,
+  {
+    log,
+    signer,
+    address,
+    main,
+    provider,
+    secretRegistryContract,
+    config$,
+    latest$,
+  }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.failure> {
   return action$.pipe(
     filter(transferSecretRegister.request.is),
-    withLatestFrom(config$),
-    mergeMap(([action, { subkey: configSubkey }]) => {
+    withLatestFrom(config$, latest$),
+    mergeMap(([action, { subkey: configSubkey }, { gasPrice }]) => {
       const { signer: onchainSigner } = chooseOnchainAccount(
         { signer, address, main },
         action.payload.subkey ?? configSubkey,
       );
       const contract = getContractWithSigner(secretRegistryContract, onchainSigner);
 
-      return defer(() => contract.registerSecret(action.payload.secret)).pipe(
+      return defer(() => contract.registerSecret(action.payload.secret, { gasPrice })).pipe(
         assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
         // transferSecretRegister.success handled by monitorSecretRegistryEpic
