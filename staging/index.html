@@ -7,7 +7,7 @@
     <link rel="manifest" href="/staging/manifest.json">
     <link rel="icon" href="/staging/favicon.ico">
     <title>Raiden dApp</title>
-  <link href="/staging/js/0.js" rel="prefetch"><link href="/staging/js/1.js" rel="prefetch"><link href="/staging/js/10.js" rel="prefetch"><link href="/staging/js/11.js" rel="prefetch"><link href="/staging/js/12.js" rel="prefetch"><link href="/staging/js/13.js" rel="prefetch"><link href="/staging/js/14.js" rel="prefetch"><link href="/staging/js/15.js" rel="prefetch"><link href="/staging/js/16.js" rel="prefetch"><link href="/staging/js/17.js" rel="prefetch"><link href="/staging/js/18.js" rel="prefetch"><link href="/staging/js/19.js" rel="prefetch"><link href="/staging/js/2.js" rel="prefetch"><link href="/staging/js/20.js" rel="prefetch"><link href="/staging/js/21.js" rel="prefetch"><link href="/staging/js/22.js" rel="prefetch"><link href="/staging/js/23.js" rel="prefetch"><link href="/staging/js/24.js" rel="prefetch"><link href="/staging/js/25.js" rel="prefetch"><link href="/staging/js/26.js" rel="prefetch"><link href="/staging/js/27.js" rel="prefetch"><link href="/staging/js/28.js" rel="prefetch"><link href="/staging/js/29.js" rel="prefetch"><link href="/staging/js/3.js" rel="prefetch"><link href="/staging/js/30.js" rel="prefetch"><link href="/staging/js/31.js" rel="prefetch"><link href="/staging/js/4.js" rel="prefetch"><link href="/staging/js/5.js" rel="prefetch"><link href="/staging/js/6.js" rel="prefetch"><link href="/staging/js/7.js" rel="prefetch"><link href="/staging/js/8.js" rel="prefetch"><link href="/staging/js/9.js" rel="prefetch"><link href="/staging/js/app.js" rel="preload" as="script"><link href="/staging/js/chunk-vendors.js" rel="preload" as="script"></head>
+  <link href="/staging/js/0.js" rel="prefetch"><link href="/staging/js/1.js" rel="prefetch"><link href="/staging/js/10.js" rel="prefetch"><link href="/staging/js/11.js" rel="prefetch"><link href="/staging/js/12.js" rel="prefetch"><link href="/staging/js/13.js" rel="prefetch"><link href="/staging/js/14.js" rel="prefetch"><link href="/staging/js/15.js" rel="prefetch"><link href="/staging/js/16.js" rel="prefetch"><link href="/staging/js/17.js" rel="prefetch"><link href="/staging/js/18.js" rel="prefetch"><link href="/staging/js/19.js" rel="prefetch"><link href="/staging/js/2.js" rel="prefetch"><link href="/staging/js/20.js" rel="prefetch"><link href="/staging/js/21.js" rel="prefetch"><link href="/staging/js/22.js" rel="prefetch"><link href="/staging/js/23.js" rel="prefetch"><link href="/staging/js/24.js" rel="prefetch"><link href="/staging/js/25.js" rel="prefetch"><link href="/staging/js/26.js" rel="prefetch"><link href="/staging/js/27.js" rel="prefetch"><link href="/staging/js/28.js" rel="prefetch"><link href="/staging/js/29.js" rel="prefetch"><link href="/staging/js/3.js" rel="prefetch"><link href="/staging/js/30.js" rel="prefetch"><link href="/staging/js/31.js" rel="prefetch"><link href="/staging/js/32.js" rel="prefetch"><link href="/staging/js/4.js" rel="prefetch"><link href="/staging/js/5.js" rel="prefetch"><link href="/staging/js/6.js" rel="prefetch"><link href="/staging/js/7.js" rel="prefetch"><link href="/staging/js/8.js" rel="prefetch"><link href="/staging/js/9.js" rel="prefetch"><link href="/staging/js/app.js" rel="preload" as="script"><link href="/staging/js/chunk-vendors.js" rel="preload" as="script"></head>
   <body>
     <noscript>
       <strong>We're sorry, but Raiden dApp doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
@@ -22,12 +22,15 @@
     <script type="text/javascript">
       function areAllNecessaryFeaturesAvailable() {
         return (
-          'serviceWorker' in navigator &&
           'IntersectionObserver' in window &&
           'indexedDB' in window &&
           'localStorage' in window &&
           'RTCPeerConnection' in window
         );
+      }
+
+      function areServiceWorkerAvailableIfNecessary() {
+        return 'serviceWorker' in navigator || false === true;
       }
 
       function removeApp() {
@@ -40,7 +43,7 @@
         messageElement.style.display = 'block';
       }
 
-      if (!areAllNecessaryFeaturesAvailable()) {
+      if (!areAllNecessaryFeaturesAvailable() || !areServiceWorkerAvailableIfNecessary()) {
         removeApp();
         showMessage();
       }
