@@ -1,0 +1,2 @@
+json_key_file("./keyfiles/google_play_store_access_key.json")
+package_name("com.brainbot.raiden.dapp")

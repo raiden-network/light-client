@@ -18,6 +18,8 @@
 - [#2598] Allow user to customize direct RPC provider options
 - [#2689] Add new connection manager to let the user select and configure provider
 - [#2604] Improve layout to work everywhere on narrow mobile screens
+- Full setup to build dApp for Android and iOS
+- Full setup to automate publishing of Android app to the Google Play Store
 
 [#2671]: https://github.com/raiden-network/light-client/issues/2671
 [#2599]: https://github.com/raiden-network/light-client/issues/2599

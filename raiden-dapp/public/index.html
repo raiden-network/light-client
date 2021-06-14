@@ -22,12 +22,15 @@
     <script type="text/javascript">
       function areAllNecessaryFeaturesAvailable() {
         return (
-          'serviceWorker' in navigator &&
           'IntersectionObserver' in window &&
           'indexedDB' in window &&
           'localStorage' in window &&
           'RTCPeerConnection' in window
         );
+      }
+
+      function areServiceWorkerAvailableIfNecessary() {
+        return 'serviceWorker' in navigator || <%= VUE_APP_SERVICE_WORKER_DISABLED %> === true;
       }
 
       function removeApp() {
@@ -40,7 +43,7 @@
         messageElement.style.display = 'block';
       }
 
-      if (!areAllNecessaryFeaturesAvailable()) {
+      if (!areAllNecessaryFeaturesAvailable() || !areServiceWorkerAvailableIfNecessary()) {
         removeApp();
         showMessage();
       }

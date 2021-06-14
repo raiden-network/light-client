@@ -1,5 +1,7 @@
+import { Capacitor } from '@capacitor/core';
 import type { BigNumber, BigNumberish, providers } from 'ethers';
 import { constants, utils } from 'ethers';
+import PouchDB from 'pouchdb';
 import type { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
 import asyncPool from 'tiny-async-pool';
@@ -46,14 +48,45 @@ export default class RaidenService {
     stateBackup?: string,
     subkey?: true,
   ): Promise<Raiden> {
+    let storageOpts:
+      | { state: string | undefined }
+      | {
+          state: string | undefined;
+          adapter: string;
+          location?: string;
+          iosDatabaseLocation?: string;
+        } = {
+      state: stateBackup,
+    };
+    // When running in capacitor, enable native sqlite plugin
+    if (process.env.VUE_APP_DB_ADAPTER === 'cordova-sqlite') {
+      const { default: adapterPlugin } = await import('pouchdb-adapter-cordova-sqlite');
+      PouchDB.plugin(adapterPlugin);
+
+      const platform = Capacitor.getPlatform();
+
+      if (platform === 'android') {
+        storageOpts = {
+          ...storageOpts,
+          adapter: 'cordova-sqlite',
+          location: 'default',
+        };
+      } else if (platform === 'ios') {
+        storageOpts = {
+          ...storageOpts,
+          adapter: 'cordova-sqlite',
+          iosDatabaseLocation: 'Library',
+        };
+      }
+    }
+
     try {
       const contracts = await ConfigProvider.contracts();
+
       return await Raiden.create(
         provider,
         privateKeyOrProviderAccountIndex,
-        {
-          state: stateBackup,
-        },
+        storageOpts,
         process.env.VUE_APP_UDC_ADDRESS ?? contracts,
         {
           pfsSafetyMargin: 1.1,
