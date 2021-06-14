@@ -602,13 +602,20 @@ export class Raiden {
    * @param options.settleTimeout - Custom, one-time settle timeout
    * @param options.subkey - Whether to use the subkey for on-chain tx or main account (default)
    * @param options.deposit - Deposit to perform in parallel with channel opening
+   * @param options.confirmConfirmation - Whether to wait `confirmationBlocks` after last
+   *    transaction confirmation; default=true
    * @param onChange - Optional callback for status change notification
    * @returns txHash of channelOpen call, iff it succeeded
    */
   public async openChannel(
     token: string,
     partner: string,
-    options: { settleTimeout?: number; subkey?: boolean; deposit?: BigNumberish } = {},
+    options: {
+      settleTimeout?: number;
+      subkey?: boolean;
+      deposit?: BigNumberish;
+      confirmConfirmation?: boolean;
+    } = {},
     onChange?: OnChange<EventTypes, { txHash: string }>,
   ): Promise<Hash> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
@@ -630,14 +637,17 @@ export class Raiden {
     const deposit = !options.deposit
       ? undefined
       : decode(UInt(32), options.deposit, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
+    const confirmConfirmation = options.confirmConfirmation ?? true;
 
     const meta = { tokenNetwork, partner };
     // wait for confirmation
-    const openPromise = asyncActionToPromise(channelOpen, meta, this.action$, true).then(
+    const openPromise = asyncActionToPromise(channelOpen, meta, this.action$).then(
       ({ txHash }) => txHash, // pluck txHash
     );
-    let depositPromise;
-    let postPromise;
+    const openConfirmedPromise = asyncActionToPromise(channelOpen, meta, this.action$, true);
+
+    let depositPromise: Promise<Hash> | undefined;
+    let postPromise: Promise<unknown> | undefined;
     if (deposit?.gt(0)) {
       depositPromise = asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
         ({ txHash }) => txHash, // pluck txHash
@@ -652,19 +662,23 @@ export class Raiden {
 
     const openTxHash = await openPromise;
     onChange?.({ type: EventTypes.OPENED, payload: { txHash: openTxHash } });
-
-    await this.state$
-      .pipe(
-        pluckDistinct('channels', channelKey(meta), 'state'),
-        first((state) => state === ChannelState.open),
-      )
-      .toPromise();
+    await openConfirmedPromise;
     onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash: openTxHash } });
 
+    let depositTxHash: Hash | undefined;
     if (depositPromise) {
-      const depositTx = await depositPromise;
-      onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: depositTx } });
+      depositTxHash = await depositPromise;
+      onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: depositTxHash } });
       await postPromise;
+    }
+
+    if (confirmConfirmation) {
+      // wait twice confirmationBlocks for deposit or open tx
+      await waitConfirmation(
+        await this.deps.provider.getTransactionReceipt(depositTxHash ?? openTxHash),
+        this.deps,
+        this.config.confirmationBlocks * 2,
+      );
     }
 
     return openTxHash;
@@ -681,13 +695,15 @@ export class Raiden {
    *    (and is also the account used as source of the deposit tokens).
    *    Set this to true if one wants to force sending the transaction with the subkey, and using
    *    tokens held in the subkey.
+   * @param options.confirmConfirmation - Whether to wait `confirmationBlocks` after last
+   *    transaction confirmation; default=true
    * @returns txHash of setTotalDeposit call, iff it succeeded
    */
   public async depositChannel(
     token: string,
     partner: string,
     amount: BigNumberish,
-    { subkey }: { subkey?: boolean } = {},
+    { subkey, confirmConfirmation }: { subkey?: boolean; confirmConfirmation?: true } = {},
   ): Promise<Hash> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
@@ -707,9 +723,19 @@ export class Raiden {
       ({ txHash }) => txHash,
     );
     this.store.dispatch(channelDeposit.request({ deposit, subkey }, meta));
-    await promise;
+    const depositTxHash = await promise;
     await postPromise; // if undefined, noop
-    return promise;
+
+    if (confirmConfirmation ?? true) {
+      // wait twice confirmationBlocks for deposit or open tx
+      await waitConfirmation(
+        await this.deps.provider.getTransactionReceipt(depositTxHash),
+        this.deps,
+        this.config.confirmationBlocks * 2,
+      );
+    }
+
+    return depositTxHash;
   }
 
   /**
