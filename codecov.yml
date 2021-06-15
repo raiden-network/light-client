@@ -16,7 +16,8 @@ coverage:
     project:
       default: off
       dapp:
-        flags: dapp
+        flags:
+          - dapp
         target: 80%
         threshold: 1.00%
       sdk:
