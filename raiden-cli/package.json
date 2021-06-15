@@ -1,14 +1,12 @@
 {
   "name": "@raiden_network/raiden-cli",
   "version": "0.16.0",
+  "author": "brainbot labs est.",
+  "license": "MIT",
   "description": "Raiden Light Client standalone app with a REST API via HTTP",
-  "main": "build/index.js",
-  "bin": "./raiden",
-  "scripts": {
-    "lint": "eslint --max-warnings 0 --ext '.ts' .",
-    "build": "tsc",
-    "build:bundle": "TS_NODE_PROJECT=./ignored ncc build -C ./src/index.ts -o ./bundle",
-    "preinstall": "npx only-allow yarn"
+  "homepage": "https://github.com/raiden-network/light-client#readme",
+  "bugs": {
+    "url": "https://github.com/raiden-network/light-client/issues"
   },
   "repository": {
     "type": "git",
@@ -24,12 +22,19 @@
     "transfers",
     "web3"
   ],
-  "author": "brainbot labs est.",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/raiden-network/light-client/issues"
+  "scripts": {
+    "lint": "eslint --max-warnings 0 --ext '.ts' .",
+    "build": "tsc",
+    "build:bundle": "TS_NODE_PROJECT=./ignored ncc build -C ./src/index.ts -o ./bundle",
+    "preinstall": "npx only-allow yarn"
   },
-  "homepage": "https://github.com/raiden-network/light-client#readme",
+  "files": [
+    "raiden",
+    "build/**"
+  ],
+  "bin": {
+    "raiden-cli": "./raiden"
+  },
   "devDependencies": {
     "@types/express": "^4.17.12",
     "@types/http-errors": "^1.8.0",

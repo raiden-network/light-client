@@ -85,17 +85,13 @@ commands:
         description: The yarn workspace to publish
         type: enum
         enum: ['raiden-ts', '@raiden_network/raiden-cli']
-      tarball:
-        description: Workspace relative filepath of a tarball to publish instead
-        type: string
-        default: ''
     steps:
       - run:
           name: Authenticate with registry
           command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
       - run:
           name: Publish on NPM registry
-          command: yarn workspace << parameters.workspace >> publish --no-git-tag-version --non-interactive << parameters.tarball >>
+          command: yarn workspace << parameters.workspace >> publish --no-git-tag-version --non-interactive
 
 jobs:
   install:
@@ -294,7 +290,6 @@ jobs:
           workspace: 'raiden-ts'
       - publish_workspace_on_npm_registry:
           workspace: '@raiden_network/raiden-cli'
-          tarball: 'raiden-cli.tgz'
 
 workflows:
   version: 2
