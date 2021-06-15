@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>raiden-ts - v0.16.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.16.0">
+	<title>raiden-ts - v0.17.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.17.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="assets/css/main.css">
 	<link rel="stylesheet" href="assets/css/pages.css">
@@ -24,7 +24,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="index.html" class="title">raiden-ts - v0.16.0</a>
+					<a href="index.html" class="title">raiden-ts - v0.17.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -49,7 +49,7 @@
 	</div>
 	<div class="tsd-page-title">
 		<div class="container">
-			<h1>Project raiden-ts - v0.16.0</h1>
+			<h1>Project raiden-ts - v0.17.0</h1>
 		</div>
 	</div>
 </header>
@@ -120,10 +120,10 @@
 					<h3>Vertical (Stack)</h3>
 				</a>
 				<p>Instead of using classes as in object-oriented programming the SDK is written in a functional way and uses functions and type schemas like interfaces to separate logic and data.</p>
-				<p>The main entrypoint in the SDK is the <a href="classes/_src_raiden_.raiden.html">Raiden</a>, which provides access to all functionality. It is instantiated through the <a href="classes/_src_raiden_.raiden.html#create"><code>async Raiden.create</code></a> static method. This method returns a ready-to-use <code>Raiden</code> client object which instantiates and starts a central Redux <code>store</code>.</p>
+				<p>The main entrypoint in the SDK is the <a href="classes/raiden.html">Raiden</a>, which provides access to all functionality. It is instantiated through the <a href="classes/raiden.html#create"><code>async Raiden.create</code></a> static method. This method returns a ready-to-use <code>Raiden</code> client object which instantiates and starts a central Redux <code>store</code>.</p>
 				<p>The Redux <code>store</code> is responsible for handling the <strong>actions</strong> that change the <strong>state</strong> of the <strong>reducers</strong>. The <strong>reducers</strong> are in turn calling the functions which change the state of your application.</p>
 				<p>All <strong>actions</strong> go to the <strong>Epics</strong> middleware where synchronous and asynchronous tasks can be performed with the help of <strong>observables</strong>. Any new action that is output gets fed back to the Redux store and continues down this <em>actions pipeline</em>.</p>
-				<p>The <code>Raiden</code> client dispatches <strong>request</strong> actions to the <code>store</code> and waits for a respective <strong>success</strong> or <strong>failure</strong> to flow through the actions pipeline. These actions are created using <a href="globals.html#createaction">createAction</a> and <a href="globals.html#createasyncaction">createAsyncAction</a> with the <a href="https://github.com/redux-utilities/flux-standard-action">Flux Standard Action</a> schema/pattern.</p>
+				<p>The <code>Raiden</code> client dispatches <strong>request</strong> actions to the <code>store</code> and waits for a respective <strong>success</strong> or <strong>failure</strong> to flow through the actions pipeline. These actions are created using <a href="https://github.com/raiden-network/light-client/blob/9d3c6f68d6a65bc16f8a3efe186ae4a16faf7473/raiden-ts/src/utils/actions.ts#L208">createAction</a> and <a href="https://github.com/raiden-network/light-client/blob/9d3c6f68d6a65bc16f8a3efe186ae4a16faf7473/raiden-ts/src/utils/actions.ts#L294">createAsyncAction</a> with the <a href="https://github.com/redux-utilities/flux-standard-action">Flux Standard Action</a> schema/pattern.</p>
 				<p>All the business logic is contained in <code>Epics</code>. They accept a dependencies object as third parameter, which acts as a dependency injector (DI) and contains everything from configuration variables to the Ethers <code>Provider</code> instance. The <code>Epics</code> are factories that receive the <code>actions$</code> and <code>state$</code> observables and dependencies and output observables of new actions. They can listen and react to any kind of event or observable.</p>
 				<p>The Blockchain interaction happens through <a href="https://github.com/ethers-io/ethers.js">ethers</a>. <a href="https://github.com/ethereum-ts/TypeChain">TypeChain</a> is run at build time and generates type declarations for the contracts. Both <code>Ethers</code> and <code>TypeChain</code> are available as dependencies at construction time.</p>
 				<p>Matrix interaction is done through <code>matrix-js-sdk</code>, but as it needs more complex async initialization (password signing, syncing, etc), it uses a initialization time epic which is made available through a <code>matrix$: AsyncSubject</code> dependency.</p>
@@ -164,7 +164,7 @@
 				</a>
 				<p>The project is structured in a domain-driven logic, each folder under <code>src</code> represents a semantic domain and should depend on the things inside of it as much as possible. Especially for <em>actions</em>*<em>, _reducers</em>, <em>epics</em>, <em>state</em> and specific *functions*.</p>
 				<ul>
-					<li><a href="https://github.com/raiden-network/light-client/tree/master/raiden-ts/src/abi"><code>abi</code></a> and <a href="https://github.com/raiden-network/light-client/tree/master/raiden-ts/src/deployment"><code>deployment</code></a> are data directories and don&#39;t contain any logic.<ul>
+					<li><code>abi</code> and <code>deployment</code> are data directories and don&#39;t contain any logic.<ul>
 							<li><code>abi</code> is the output of the <a href="https://github.com/ethereum-ts/TypeChain">TypeChain</a> contracts interfaces used for type safety.</li>
 							<li><code>deployment</code> contains information about the deployed Raiden contracts for the Ethereum test networks.</li>
 						</ul>
@@ -478,9 +478,6 @@
 					<li class=" tsd-kind-interface">
 						<a href="interfaces/contractsinfo.html" class="tsd-kind-icon">Contracts<wbr>Info</a>
 					</li>
-					<li class=" tsd-kind-interface">
-						<a href="interfaces/errordetails.html" class="tsd-kind-icon">Error<wbr>Details</a>
-					</li>
 					<li class=" tsd-kind-interface tsd-has-type-parameter">
 						<a href="interfaces/hexstringb.html" class="tsd-kind-icon">Hex<wbr>StringB</a>
 					</li>
@@ -592,6 +589,9 @@
 					<li class=" tsd-kind-type-alias tsd-has-type-parameter">
 						<a href="modules.html#uint" class="tsd-kind-icon">UInt</a>
 					</li>
+					<li class=" tsd-kind-type-alias tsd-has-type-parameter">
+						<a href="modules.html#uniontointersection" class="tsd-kind-icon">Union<wbr>ToIntersection</a>
+					</li>
 					<li class=" tsd-kind-variable">
 						<a href="modules.html#address" class="tsd-kind-icon">Address</a>
 					</li>
@@ -609,9 +609,6 @@
 					</li>
 					<li class=" tsd-kind-variable">
 						<a href="modules.html#errorcodes" class="tsd-kind-icon">Error<wbr>Codes</a>
-					</li>
-					<li class=" tsd-kind-variable">
-						<a href="modules.html#errordetails" class="tsd-kind-icon">Error<wbr>Details</a>
 					</li>
 					<li class=" tsd-kind-variable">
 						<a href="modules.html#hash" class="tsd-kind-icon">Hash</a>

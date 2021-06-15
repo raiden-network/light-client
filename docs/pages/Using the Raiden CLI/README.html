@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Overview | raiden-ts - v0.16.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.16.0">
+	<title>Overview | raiden-ts - v0.17.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.17.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../../assets/css/main.css">
 	<link rel="stylesheet" href="../../assets/css/pages.css">
@@ -24,7 +24,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../../index.html" class="title">raiden-ts - v0.16.0</a>
+					<a href="../../index.html" class="title">raiden-ts - v0.17.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -51,7 +51,7 @@
 		<div class="container">
 			<ul class="tsd-breadcrumb">
 				<li>
-					<a href="../../modules.html">raiden-ts - v0.16.0</a>
+					<a href="../../modules.html">raiden-ts - v0.17.0</a>
 				</li>
 				<li>
 					<a href="README.html">Using the Raiden CLI</a>
@@ -112,21 +112,27 @@
 				<a href="#try-it-out" id="try-it-out" style="color: inherit; text-decoration: none;">
 					<h2>Try it out</h2>
 				</a>
-				<a href="#build-the-sdk" id="build-the-sdk" style="color: inherit; text-decoration: none;">
-					<h3>Build the SDK</h3>
-				</a>
-				<pre><code class="language-sh"><span style="color: #000000">yarn install  </span><span style="color: #008000"># install/update SDK&#039;s dependencies, if needed; it&#039;ll also build the SDK</span>
+				<p>You can install the package from the <a href="https://www.npmjs.com/">NPM registry</a>:</p>
+				<pre><code class="language-sh"><span style="color: #000000">$ yarn global add @raiden_network/raiden-cli</span>
+<span style="color: #000000">$ raiden-cli --help</span>
+<span style="color: #000000">$ </span><span style="color: #008000"># or</span>
+<span style="color: #000000">$ npm install --global @raiden_network/raiden-cli</span>
+<span style="color: #000000">$ raiden-cli --help</span>
 </code></pre>
-				<p>The SDK transpilation can be quite heavy on memory. If you are building on low-end devices and get out-of-memory errors on the build step, try increasing memory or swap size. Optionally, you can build the SDK on a more capable machine (even of different architecture) and copy/rsync <code>dist</code> and <code>dist:cjs</code> output folders to <code>../raiden-ts</code>.</p>
+				<a href="#development" id="development" style="color: inherit; text-decoration: none;">
+					<h2>Development</h2>
+				</a>
 				<a href="#build-the-cli" id="build-the-cli" style="color: inherit; text-decoration: none;">
 					<h3>Build the CLI</h3>
 				</a>
-				<pre><code class="language-sh"><span style="color: #000000">yarn workspace raiden-cli build </span><span style="color: #008000"># build the dependent output</span>
+				<pre><code class="language-sh"><span style="color: #000000">yarn install</span>
+<span style="color: #000000">yarn workspace raiden-ts build </span><span style="color: #008000"># build local dependency</span>
+<span style="color: #000000">yarn workspace raiden-cli build </span><span style="color: #008000"># build the dependent output</span>
 <span style="color: #000000">yarn workspace raiden-cli build:bundle </span><span style="color: #008000"># build the bundled output</span>
 </code></pre>
 				<p>The <code>build</code> script will output <code>./build/index.js</code>, which requires that the dependencies are in place in the <code>../raiden-ts/node_modules</code>, <code>../raiden-ts/dist*/</code> and <code>./node_modules/</code> folders.
 				The <code>build:bundle</code> script will output <code>./build/bundle.js</code>, which depends only on <code>*.node</code> native libraries copied to the same output folder, therefore is a portable bundle which can be moved around (as long as the native libraries are in the same folder).</p>
-				<p>Again, if getting out-of-memory errors, you can build these files on a more capable machine, just be careful to copy the correct native libraries to the output folder if on a different architecture (e.g. copy <code>./node_modules/wrtc/build/Release/wrtc.node</code> to <code>./build</code>)</p>
+				<p>If getting out-of-memory errors, you can build these files on a more capable machine, just be careful to copy the correct native libraries to the output folder if on a different architecture (e.g. copy <code>./node_modules/wrtc/build/Release/wrtc.node</code> to <code>./build</code>)</p>
 				<a href="#run-the-cli" id="run-the-cli" style="color: inherit; text-decoration: none;">
 					<h3>Run the CLI</h3>
 				</a>

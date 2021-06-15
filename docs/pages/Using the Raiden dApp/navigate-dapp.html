@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Navigate the Raiden dApp | raiden-ts - v0.16.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v0.16.0">
+	<title>Navigate the Raiden dApp | raiden-ts - v0.17.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v0.17.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../../assets/css/main.css">
 	<link rel="stylesheet" href="../../assets/css/pages.css">
@@ -24,7 +24,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../../index.html" class="title">raiden-ts - v0.16.0</a>
+					<a href="../../index.html" class="title">raiden-ts - v0.17.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -51,7 +51,7 @@
 		<div class="container">
 			<ul class="tsd-breadcrumb">
 				<li>
-					<a href="../../modules.html">raiden-ts - v0.16.0</a>
+					<a href="../../modules.html">raiden-ts - v0.17.0</a>
 				</li>
 				<li>
 					<a href="using-dapp.html">Using the Raiden dApp</a>
@@ -69,9 +69,42 @@
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
 				<p> s2o# Navigate the dApp</p>
-				<p>To get familiarised with the dApp, a brief introduction to some of the screens are given in the following sections to describe common interactions with the dApp.</p>
-				<p>Clicking on connect will generate a Raiden Account (Subkey account). If a Main Account is preferred, this can also be used by enabling it in the settings menu.
-				<img src="https://user-images.githubusercontent.com/15123108/102077692-b66e5080-3e2f-11eb-9533-dd7f3e76e30a.png" alt="connect" title="Connect"></p>
+				<p>To get familiarized with the dApp, a brief introduction to some of the screens are given in the following sections to describe common interactions with the dApp.</p>
+				<p>There are three ways to connect to the dApp:</p>
+				<ul>
+					<li>Using a browser extension</li>
+					<li>Using WalletConnect</li>
+					<li>Using a private key</li>
+				</ul>
+				<a href="#connect-using-a-browser-extension" id="connect-using-a-browser-extension" style="color: inherit; text-decoration: none;">
+					<h3>Connect using a browser extension</h3>
+				</a>
+				<ol>
+					<li>Make sure a Web3 provider is available in the browser, e.g. MetaMask.</li>
+					<li>Click on <strong>Browser Extension</strong>.</li>
+					<li>Click on <strong>Connect</strong> and sign the messages necessary for establishing a connection.</li>
+				</ol>
+				<a href="#connect-using-walletconnect" id="connect-using-walletconnect" style="color: inherit; text-decoration: none;">
+					<h3>Connect using WalletConnect</h3>
+				</a>
+				<p>WalletConnect can be used for connecting with <a href="https://registry.walletconnect.org/wallets">supported wallets</a>, note that this is an experimental feature which is limited to how well any of the external wallets integrate with WalletConnect.</p>
+				<ol>
+					<li>Click on <strong>WalletConnect</strong>.</li>
+					<li>By default a bridge server provided by WalletConnect is used. It is however possible to use an alternative bridge server.</li>
+					<li>Choose to provide either a Infura ID or an RPC endpoint.</li>
+					<li>Click on <strong>Connect</strong>.</li>
+					<li>Scan the QR code using a wallet of your choice and make sure to sign the messages necessary for establishing a connection.</li>
+				</ol>
+				<a href="#connect-using-a-private-key" id="connect-using-a-private-key" style="color: inherit; text-decoration: none;">
+					<h3>Connect using a private key</h3>
+				</a>
+				<p>Connect directly to an Ethereum node and use your accounts private key. This approach is <strong>NOT RECOMMENDED</strong> for security reasons since the private key gets stored as plain text in the browsers storage and in memory.</p>
+				<ol>
+					<li>Click on <strong>Private Key</strong>.</li>
+					<li>Provide an RPC endpoint.</li>
+					<li>Provide the private key of an Ethereum account.</li>
+					<li>Click on <strong>Connect</strong>.</li>
+				</ol>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
