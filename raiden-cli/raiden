@@ -1,11 +1,40 @@
 #!/bin/sh
 
-set -a
-ENV="$( dirname $0 )/.env"
-[ -e "$ENV" ] && . "${ENV}"
+set -e
 
-RAIDEN="$( dirname $0 )/index.js"
-[ ! -e "$RAIDEN" ] && RAIDEN="$( dirname $0 )/build/index.js"
-[ ! -e "$RAIDEN" ] && RAIDEN="$( dirname $0 )/bundle/index.js"
+POSSIBLE_INDEX_JS_RELATIVE_PATHS=("index.js" "build/index.js" "bundle/index.js" "../@raiden_network/raiden-cli/index.js")
+SCRIPT_DIRECTORY="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
+INDEX_JS_PATH=""
 
-exec node "$RAIDEN" "$@"
+function source_possible_environment_file() {
+  local environment_file="${SCRIPT_DIRECTORY}/.env"
+
+  if [[ -f "$environment_file" ]]; then
+    set -a
+    source "$environment_file"
+    set +a
+  fi
+}
+
+
+function set_index_js_file_path() {
+  local possible_index_js_path
+
+  for relative_path in "${POSSIBLE_INDEX_JS_RELATIVE_PATHS[@]}"; do
+    possible_index_js_path="${SCRIPT_DIRECTORY}/${relative_path}"
+
+    if [[ -f "$possible_index_js_path" ]]; then
+      INDEX_JS_PATH=$possible_index_js_path
+      return
+    fi
+  done
+
+  echo "Could not find executable path for raiden-cli!"
+  exit 1
+}
+
+source_possible_environment_file
+set_index_js_file_path
+exec node "$INDEX_JS_PATH" "$@"
+
+# vim: filetype=sh

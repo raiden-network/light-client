@@ -1,24 +1,40 @@
 {
-  "name": "raiden-cli",
+  "name": "@raiden_network/raiden-cli",
   "version": "0.16.0",
-  "description": "Raiden Light Client standalone command-line app",
-  "main": "build/index.js",
+  "author": "brainbot labs est.",
+  "license": "MIT",
+  "description": "Raiden Light Client standalone app with a REST API via HTTP",
+  "homepage": "https://github.com/raiden-network/light-client#readme",
+  "bugs": {
+    "url": "https://github.com/raiden-network/light-client/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raiden-network/light-client.git"
+  },
+  "keywords": [
+    "raiden",
+    "ethereum",
+    "blockchain",
+    "2ndlayer",
+    "scaling",
+    "payments",
+    "transfers",
+    "web3"
+  ],
   "scripts": {
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "build": "tsc",
     "build:bundle": "TS_NODE_PROJECT=./ignored ncc build -C ./src/index.ts -o ./bundle",
     "preinstall": "npx only-allow yarn"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/raiden-network/light-client.git"
+  "files": [
+    "raiden",
+    "build/**"
+  ],
+  "bin": {
+    "raiden-cli": "./raiden"
   },
-  "author": "brainbot labs est.",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/raiden-network/light-client/issues"
-  },
-  "homepage": "https://github.com/raiden-network/light-client#readme",
   "devDependencies": {
     "@types/express": "^4.17.12",
     "@types/http-errors": "^1.8.0",

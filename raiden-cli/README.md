@@ -43,16 +43,23 @@ It requires the latest [Node.js LTS (14.x - Fermium)](https://github.com/nodejs/
 
 ## Try it out
 
-### Build the SDK
+You can install the package from the [NPM registry](https://www.npmjs.com/):
+
 ```sh
-yarn install  # install/update SDK's dependencies, if needed; it'll also build the SDK
+$ yarn global add @raiden_network/raiden-cli
+$ raiden-cli --help
+$ # or
+$ npm install --global @raiden_network/raiden-cli
+$ raiden-cli --help
 ```
 
-The SDK transpilation can be quite heavy on memory. If you are building on low-end devices and get out-of-memory errors on the build step, try increasing memory or swap size. Optionally, you can build the SDK on a more capable machine (even of different architecture) and copy/rsync `dist` and `dist:cjs` output folders to `../raiden-ts`.
-
+## Development
 
 ### Build the CLI
+
 ```sh
+yarn install
+yarn workspace raiden-ts build # build local dependency
 yarn workspace raiden-cli build # build the dependent output
 yarn workspace raiden-cli build:bundle # build the bundled output
 ```
@@ -60,7 +67,7 @@ yarn workspace raiden-cli build:bundle # build the bundled output
 The `build` script will output `./build/index.js`, which requires that the dependencies are in place in the `../raiden-ts/node_modules`, `../raiden-ts/dist*/` and `./node_modules/` folders.
 The `build:bundle` script will output `./build/bundle.js`, which depends only on `*.node` native libraries copied to the same output folder, therefore is a portable bundle which can be moved around (as long as the native libraries are in the same folder).
 
-Again, if getting out-of-memory errors, you can build these files on a more capable machine, just be careful to copy the correct native libraries to the output folder if on a different architecture (e.g. copy `./node_modules/wrtc/build/Release/wrtc.node` to `./build`)
+If getting out-of-memory errors, you can build these files on a more capable machine, just be careful to copy the correct native libraries to the output folder if on a different architecture (e.g. copy `./node_modules/wrtc/build/Release/wrtc.node` to `./build`)
 
 ### Run the CLI
 
