@@ -1,7 +1,8 @@
 import { hexZeroPad } from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
+import { parseEther } from '@ethersproject/units';
 
-import type { Hash, Signature } from './utils/types';
+import type { Hash, Signature, UInt } from './utils/types';
 
 export const SignatureZero = hexZeroPad([], 65) as Signature;
 
@@ -32,5 +33,6 @@ export const CapsFallback = {
 } as const;
 
 export const RAIDEN_DEVICE_ID = 'RAIDEN';
-export const DEFAULT_CONFIRMATIONS = 5;
 export const UDC_WITHDRAW_TIMEOUT = 100;
+export const DEFAULT_CONFIRMATIONS = 5;
+export const DEFAULT_MS_REWARD = parseEther('80') as UInt<32>;

@@ -33,7 +33,7 @@ import type { RaidenAction } from '@/actions';
 import { raidenShutdown, raidenStarted } from '@/actions';
 import type { RaidenConfig } from '@/config';
 import { makeDefaultConfig } from '@/config';
-import { Capabilities, ShutdownReason } from '@/constants';
+import { Capabilities, DEFAULT_MS_REWARD, ShutdownReason } from '@/constants';
 import type {
   HumanStandardToken,
   MonitoringService,
@@ -786,9 +786,9 @@ export async function makeRaiden(
   spyContract(userDepositContract, 'UserDeposit');
   userDepositContract.token.mockResolvedValue(svtAddress);
   userDepositContract.one_to_n_address.mockResolvedValue(oneToNAddress);
-  userDepositContract.balances.mockResolvedValue(parseEther('5'));
-  userDepositContract.total_deposit.mockResolvedValue(parseEther('5'));
-  userDepositContract.effectiveBalance.mockResolvedValue(parseEther('5'));
+  userDepositContract.balances.mockResolvedValue(DEFAULT_MS_REWARD);
+  userDepositContract.total_deposit.mockResolvedValue(DEFAULT_MS_REWARD);
+  userDepositContract.effectiveBalance.mockResolvedValue(DEFAULT_MS_REWARD);
   userDepositContract.withdraw_plans.mockResolvedValue(
     makeStruct(['amount', 'withdraw_block'] as const, [Zero, Zero]),
   );

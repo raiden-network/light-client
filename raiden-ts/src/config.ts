@@ -5,7 +5,7 @@ import * as t from 'io-ts';
 import type { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 
-import { Capabilities, DEFAULT_CONFIRMATIONS } from './constants';
+import { Capabilities, DEFAULT_CONFIRMATIONS, DEFAULT_MS_REWARD } from './constants';
 import { PfsMode, PfsModeC } from './services/types';
 import { exponentialBackoff } from './transfers/epics/utils';
 import { Caps } from './transport/types';
@@ -149,8 +149,7 @@ export function makeDefaultConfig(
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
     pfsIouTimeout: 200000, // in blocks
     confirmationBlocks: DEFAULT_CONFIRMATIONS,
-    // SVT also uses 18 decimals, like Ether, so parseEther works
-    monitoringReward: parseEther('5') as UInt<32>,
+    monitoringReward: DEFAULT_MS_REWARD,
     logger: 'info',
     fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     rateToSvt: {},
