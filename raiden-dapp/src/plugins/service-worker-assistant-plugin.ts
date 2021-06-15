@@ -27,7 +27,8 @@ export async function ServiceWorkerAssistantPlugin(
 
   const serviceWorkerIsSupported = 'serviceWorker' in navigator;
   const serviceWorkerShouldBeRegistered =
-    process.env.NODE_ENV === 'production' && !process.env.VUE_APP_SERVICE_WORKER_DISABLED;
+    process.env.NODE_ENV === 'production' &&
+    process.env.VUE_APP_SERVICE_WORKER_DISABLED !== 'true';
 
   if (serviceWorkerIsSupported && serviceWorkerShouldBeRegistered) {
     window.onload = registerServiceWorker;
