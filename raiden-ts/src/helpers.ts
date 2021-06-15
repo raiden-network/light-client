@@ -349,15 +349,16 @@ export async function callAndWaitMined<
 }
 
 /**
- * Waits for a given receipt to be confirmed; throws if it gets removed by a reorg instead
+ * Waits for receipt to have at least `confBlocks` confirmations; resolves immediately if already;
+ * throws if it gets removed by a reorg.
  *
  * @param receipt - Receipt to wait for confirmation
  * @param deps - RaidenEpicDeps
  * @param deps.latest$ - Latest observable
  * @param deps.config$ - Config observable
  * @param deps.provider - Eth provider
- * @param confBlocks - Overwrites config
- * @returns Promise final block of transaction
+ * @param confBlocks - Confirmation blocks, defaults to `config.confirmationBlocks`
+ * @returns Promise to final blockNumber of transaction
  */
 export async function waitConfirmation(
   receipt: ContractReceipt,
