@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.17.0] - 2021-06-15
 ### Added
 - [#1576] Add functionality to deploy token networks
 - [#2577] Add imbalance penalty mediation fees
@@ -451,7 +451,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/raiden-network/light-client/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/raiden-network/light-client/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/raiden-network/light-client/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/raiden-network/light-client/compare/v0.13.0...v0.14.0

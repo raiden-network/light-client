@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.17.0] - 2021-06-15
 ### Added
 - [#2789] Make raiden-cli package being published to NPM registry on new relases
 
@@ -70,7 +70,8 @@
 [#2054]: https://github.com/raiden-network/light-client/pulls/2054
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/raiden-network/light-client/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/raiden-network/light-client/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/raiden-network/light-client/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/raiden-network/light-client/compare/v0.13.0...v0.14.0
