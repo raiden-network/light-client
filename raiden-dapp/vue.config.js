@@ -37,6 +37,7 @@ function setupServiceWorkerRelatedPlugins(config) {
   const injectServiceWorkerPlugin = new InjectManifest({
     swSrc: path.join(sourceDirectoryPath, 'service-worker', 'worker'),
     swDest: 'service-worker.js',
+    maximumFileSizeToCacheInBytes: 20e6,
   });
 
   config.plugins.push(
