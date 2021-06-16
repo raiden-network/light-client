@@ -8,7 +8,6 @@
     "Mediate": 1
   },
   "mediationFees": {
-    "cap": true,
     "0x0000000000000000000000000000000000000000": {
       "cap": true,
       "flat": 0, 

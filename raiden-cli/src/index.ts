@@ -319,13 +319,12 @@ function registerShutdownHooks(this: Cli): void {
 type Await<T> = T extends Promise<infer U> ? U : T;
 
 function constructMediationFeeConfiguration(
+  mediationFeeConfiguration: MediationFeeConfiguration = {},
   cap: boolean,
   flatFees?: AddressToFeeValue,
   proportionalFees?: AddressToFeeValue,
   imbalanceFees?: AddressToFeeValue,
 ): MediationFeeConfiguration {
-  let mediationFeeConfiguration = {} as MediationFeeConfiguration;
-
   for (const [address, value] of Object.entries(flatFees ?? {})) {
     mediationFeeConfiguration = {
       ...mediationFeeConfiguration,
@@ -349,9 +348,7 @@ function constructMediationFeeConfiguration(
 
   for (const [address, configurationOfToken] of Object.entries(mediationFeeConfiguration)) {
     mediationFeeConfiguration[address] = {
-      flat: 0,
-      proportional: 4000,
-      imbalance: 3000,
+      ...mediationFeeConfiguration[ethers.constants.AddressZero],
       ...configurationOfToken,
       cap,
     };
@@ -394,6 +391,7 @@ function createRaidenConfig(
   if (!argv.enableMonitoring) config = { ...config, monitoringReward: null };
 
   const mediationFees = constructMediationFeeConfiguration(
+    config.mediationFees as MediationFeeConfiguration | undefined,
     argv.capMediationFees,
     argv.flatFee as unknown as AddressToFeeValue,
     argv.proportionalFee as unknown as AddressToFeeValue,
