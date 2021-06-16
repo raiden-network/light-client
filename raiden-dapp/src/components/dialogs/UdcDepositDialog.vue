@@ -61,6 +61,7 @@ import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
 
 import type { RaidenError } from 'raiden-ts';
+import { DEFAULT_MS_REWARD } from 'raiden-ts';
 
 import ActionButton from '@/components/ActionButton.vue';
 import AmountInput from '@/components/AmountInput.vue';
@@ -145,12 +146,11 @@ export default class UdcDepositDialog extends Vue {
 
   mounted() {
     const mainAccountAddress = this.$raiden.getMainAccount() ?? this.$raiden.getAccount();
+    const defaultAmount = utils.formatEther(DEFAULT_MS_REWARD.mul(2));
 
-    this.uniswapURL = `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=${this.udcToken.address}&exactAmount=10&exactField=outPUT&recipient=${mainAccountAddress}`;
+    this.uniswapURL = `https://app.uniswap.org/#/swap?inputCurrency=ETH&outputCurrency=${this.udcToken.address}&exactAmount=${defaultAmount}&exactField=outPUT&recipient=${mainAccountAddress}`;
 
-    this.mainnet
-      ? (this.defaultUtilityTokenAmount = this.utilityTokenBalance)
-      : (this.defaultUtilityTokenAmount = '10');
+    this.defaultUtilityTokenAmount = this.mainnet ? this.utilityTokenBalance : defaultAmount;
   }
 
   async udcDeposit() {

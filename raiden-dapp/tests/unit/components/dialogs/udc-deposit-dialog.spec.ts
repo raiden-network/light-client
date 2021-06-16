@@ -98,7 +98,7 @@ describe('UdcDepositDialog.vue', () => {
 
     test('do not mint when the user has already enough tokens', async () => {
       expect.assertions(3);
-      const wrapper = createWrapper(undefined, BigNumber.from('10000000000000000000'));
+      const wrapper = createWrapper(undefined, BigNumber.from('10000000000000000000000'));
 
       await clickActionButton(wrapper);
 
