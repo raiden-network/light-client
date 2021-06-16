@@ -8,6 +8,7 @@
 ### Changed
 - [#2572] **BREAKING** Send services messages through `toDevice` instead of global rooms
 - [#2822] **BREAKING** Presence now gets fetched from PFS and requires a Bespin-compatible (Raiden 2.0) service and transport network
+- [#2824] Default Monitoring Service reward increased to 80 SVT
 
 ### Added
 - [#2822] Added ability to use peer's presence from `LockedTransfer`'s `metadata.routes.address_metadata`
@@ -15,6 +16,7 @@
 [#2571]: https://github.com/raiden-network/light-client/issues/2571
 [#2572]: https://github.com/raiden-network/light-client/issues/2572
 [#2822]: https://github.com/raiden-network/light-client/pull/2822
+[#2824]: https://github.com/raiden-network/light-client/pull/2824
 
 ## [0.17.0] - 2021-06-15
 ### Added
