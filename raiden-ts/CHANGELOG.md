@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [1.0.0] - 2021-06-16
 ### Removed
 - [#2571] **BREAKING** Remove ability to join and send messages to global service rooms
 - [#2822] **BREAKING** Do not join global rooms anymore, so Matrix-based presence won't work
@@ -469,7 +469,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/raiden-network/light-client/compare/v0.17.0...v1.0.0
 [0.17.0]: https://github.com/raiden-network/light-client/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/raiden-network/light-client/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/raiden-network/light-client/compare/v0.14.0...v0.15.0
