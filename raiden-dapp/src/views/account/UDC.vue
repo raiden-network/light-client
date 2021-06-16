@@ -10,7 +10,7 @@
       <div v-if="!hasEnoughServiceTokens" class="udc__content-box udc__content-box--nested">
         <v-icon color="#84878A" size="16px">mdi-alert-outline</v-icon>
         <span>
-          {{ $t('udc.balance-too-low', { minAmount: 5, tokenSymbol: serviceTokenSymbol }) }}
+          {{ $t('udc.balance-too-low', { minAmount, tokenSymbol: serviceTokenSymbol }) }}
         </span>
       </div>
     </div>
@@ -62,9 +62,11 @@
 </template>
 
 <script lang="ts">
-import { constants } from 'ethers';
+import { constants, utils } from 'ethers';
 import { Component, Vue } from 'vue-property-decorator';
 import { createNamespacedHelpers, mapGetters, mapState } from 'vuex';
+
+import { DEFAULT_MS_REWARD } from 'raiden-ts';
 
 import ActionButton from '@/components/ActionButton.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
@@ -100,7 +102,8 @@ const { mapState: mapStateUserDepositContract } = createNamespacedHelpers('userD
   },
 })
 export default class UDC extends Vue {
-  amount = '10';
+  amount = utils.formatEther(DEFAULT_MS_REWARD.mul(2));
+  minAmount = +utils.formatEther(DEFAULT_MS_REWARD);
   udcCapacity = constants.Zero;
   hasEnoughServiceTokens = false;
   blockNumber!: number;
