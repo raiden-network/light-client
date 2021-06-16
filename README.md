@@ -49,7 +49,7 @@ The Raiden CLI is a reference implementation that provides a HTTP REST server wh
 
 The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Light Client SDK, which can be used with web3 wallets like [Metamask](https://metamask.io/) (Desktop) or [imToken](https://token.im/download) (mobile).
 
-> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects and only released for testnet.
+> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects. All three projects have been released for mainnet and all code is available in the [Light Client repository](https://github.com/raiden-network/light-client). As this release still has its limitations and is a beta release, it is crucial to read this readme including the security notes carefully before using the software.
 
 ## Table of Contents
 
@@ -58,8 +58,9 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
   - [Raiden Light Client SDK](#raiden-light-client-sdk)
   - [Architecture diagram](#architecture-diagram)
 - [Learn about Raiden](#learn-about-raiden)
-- [Try Out the Raiden dApp](#try-out-the-raiden-demo-dapp)
+- [Try Out the Raiden dApp](#try-out-the-raiden-dapp)
   - [Prerequisites](#prerequisites)
+  - [Making a First Transfer on Mainnet](#making-a-first-transfer-on-mainnet)
   - [Making a First Transfer on Testnet](#making-a-first-transfer-on-testnet)
   - [Receiving Transfers](#receiving-transfers)
   - [Backup the State to Keep Your Tokens](#backup-the-state-to-keep-your-tokens)
@@ -71,6 +72,7 @@ The [Raiden dApp](#raiden-dapp) is a reference implementation of the Raiden Ligh
 - [Requirements for Safe Usage](#requirements-for-safe-usage)
 - [Roadmap and Timeline](#roadmap-and-timeline)
 - [Contributing](#contributing)
+- [Bug Bounty](#bug-bounty)
 - [License](#license)
 - [Contact](#contact)
 
@@ -147,7 +149,6 @@ If you are new to Raiden, we recommend:
 - Reading our blog posts on [Medium](https://medium.com/@raiden_network).
 
 ## Try Out the Raiden dApp
-
 > Before trying out the dApp, make sure that you've read and understood the [requirements for safe usage](#requirements-for-safe-usage)
 
 The Raiden dApp is a demo and the first dApp to be built on the SDK. It's a single page application (SPA) built on top of [Vue.js](https://vuejs.org/), [vuex](https://vuex.vuejs.org) and uses [vuetify](https://vuetifyjs.com) Material Design as UI framework.
@@ -156,15 +157,51 @@ These step-by-step instructions will guide you through the process for trying ou
 
 The dApp is hosted on [https://lightclient.raiden.network](https://lightclient.raiden.network/) and in this quick start guide we will be making a transfer using the Light Client on both mainnet and the Goerli testnet with the [MetaMask](https://metamask.io) wallet.
 
-Fot a more in depth user guide, see the [Light Client documentation](https://lightclient.raiden.network/docs/).
+For a more in depth user guide, see the [Light Client documentation](https://lightclient.raiden.network/docs/).
 
 ### Prerequisites
 
-- MetaMask needs to be installed in your browser and can be [downloaded from their website](https://metamask.io/).
-- An ETH balance. for mainnet you'll have to purchase ETH, for the Goerli testnet you can acquire some test ETH by:
+For these step-by-step instructions the MetaMask browser extension will be used. Make sure MetaMask is installed on your browser. the plugin can be [downloaded from their website](https://metamask.io/). Alternatively WalletConnect can be used for connecting with [supported wallets](https://registry.walletconnect.org/wallets), note that this is an experimental feature limited to how well any of the external wallets integrate with WalletConnect.
 
-  1. By visiting a Goerli faucet either at [https://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/).
+An ETH balance is also needed. For mainnet you'll have to purchase ETH, for the Goerli testnet you can acquire some test ETH by:  
+
+  1. visiting a Goerli faucet either at [https://faucet.goerli.mudit.blog](https://faucet.goerli.mudit.blog) or [https://goerli-faucet.slock.it/](https://goerli-faucet.slock.it/).
   2. Follow the instructions on respective faucet on how to acquire the ETH.
+
+### Making a First Transfer on Mainnet
+
+1. **Connect to the dApp**  
+   
+   - **Connect using the _*Browser Extension*_**  
+
+     1. Visit the [Light Client](https://lightclient.raiden.network).
+     2. Make sure **Ethereum Mainnet** is selected in MetaMask.
+     3. Click on **Browser Extension**.
+     4. Click on **Connect** and sign the messages on MetaMask to establish a connection.
+
+   - **Connect using _*WalletConnect*_**  
+
+     1. Visit the [Light Client](https://lightclient.raiden.network).
+     2. Click on **WalletConnect**.
+     3. By default a bridge server provided by WalletConnect is used. It is however possible to use an alternative bridge server.
+     4. Choose to provide either an Infura ID or a RPC endpoint.
+     5. Click on **Connect**.
+     6. Scan the QR code using a wallet of your choice. Make sure **mainnet** is used and sign all necessary signatures.
+
+2. **Select a Hub and Open a Channel**  
+
+   1. Click the **+** icon and select a mainnet token to use. You need to have a balance of the token.
+   2. If you don't have any **RDN** (utility tokens), you can click the icon to open a dialog with a link for exchanging RDN and a button for depositing.
+   3. Enter an address of your choice to connect to or select a suggested hub if any are available.
+   4. Click the **Select Hub** button
+   5. Enter the amount of tokens you want to deposit when opening the channel.
+   6. Click the **Open Channel** button and sign with MetaMask.
+
+3. **Make a Transfer**  
+
+   1. Enter the address of the node receiving your transfer.
+   2. Enter the amount you want to transfer.
+   3. Click the **Transfer** button.
 
 ### Making a First Transfer on Testnet
 
@@ -172,7 +209,22 @@ Fot a more in depth user guide, see the [Light Client documentation](https://lig
 
    1. Visit the [Raiden Hub page](https://hub.raiden.network).
    2. Click on the **Open Channel with Hub** button.
-   3. When redirected to the Light Client make sure **Goerli Test Network** is selected in MetaMask and click connect.
+
+   When redirected to the Light Client choose to connect by using either:
+
+   - **Browser Extension**  
+
+     1. Make sure **Goerli Test Network** is selected in MetaMask.
+     2. Click on **Browser Extension**.
+     3. Click on **Connect** and sign the messages on MetaMask to establish a connection.
+
+   - **WalletConnect**  
+
+     1. Click on **WalletConnect**.
+     2. By default the bridge server provided by WalletConnect is used. It is however possible to use an alternative bridge server.
+     3. Choose to provide either an Infura ID or a RPC endpoint.
+     4. Click on **Connect**.
+     6. Scan the QR code using a wallet of your choice. Make sure **Goerli Test Network** is used and sign all necessary signatures.
 
 2. **Select a Hub and Open a Channel**
 
@@ -190,9 +242,9 @@ Fot a more in depth user guide, see the [Light Client documentation](https://lig
 
 ### Receiving Transfers
 
-Receiving of transfers will be disabled if the utility token (SVT) balance is too low.
+Receiving of transfers will be disabled if the utility token (RND on mainnet and SVT on testnet) balance is too low.
 
-To enable receiving again, make sure to add a utility token balance by minting and depositing if using the Light Client.
+To enable receiving again, make sure to add a utility token balance by either making an exchange and deposit if using the Light Client on mainnet or by minting and depositing if using the Light Client on testnet.
 
 ### **Backup the State to Keep Your Tokens**
 
@@ -293,6 +345,10 @@ We are working in [2 weekly iterations](https://github.com/raiden-network/light-
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
 Also have a look at the [Raiden Light Client Development Guide](./CONTRIBUTING.md) for more info.
+
+## Bug Bounty
+
+The Raiden team has undertaken several risk mitigation measures to limit any potential damage caused by bugs or misuse of the software. In addition, a bug bounty is run in order to make sure the software lives up to the highest standards possible. For more information and to participate visit the [Raiden Bug Bounty website](https://raiden.network/bug-bounty.html).
 
 ## License
 

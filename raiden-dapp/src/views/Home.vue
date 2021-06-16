@@ -31,7 +31,10 @@
           tag="div"
           class="home__getting-started text-center font-weight-light"
         >
-          <a href="https://github.com/raiden-network/light-client#getting-started" target="_blank">
+          <a
+            href="https://github.com/raiden-network/light-client#try-out-the-raiden-dapp"
+            target="_blank"
+          >
             {{ $t('home.getting-started.link-name') }}
           </a>
         </i18n>

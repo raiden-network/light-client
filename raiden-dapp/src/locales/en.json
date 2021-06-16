@@ -84,7 +84,7 @@
   },
   "home": {
     "welcome": "Welcome to the Raiden dApp",
-    "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. It is work in progress and can only be used on Ethereum testnets.",
+    "disclaimer": "The Raiden dApp is a reference implementation of the Raiden Light Client SDK. As this release still has its limitations and is a beta release, it is crucial to read the documentation with the security notes before using the software.",
     "getting-started": {
       "description": "Read the {0} for detailed information on how to use the Raiden dApp.",
       "link-name": "getting started guide"
