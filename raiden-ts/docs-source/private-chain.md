@@ -144,11 +144,11 @@ To finalize the setup, you also need to change MetaMask's RPC provider. Simply g
 
 [instructions]: ../installing-dapp/README.md
 [`createRaiden`]: https://github.com/raiden-network/light-client/blob/3c2df8e496f329fac6f8b0ceafd4edaf40c1b736/raiden-dapp/src/services/raiden-service.ts#L18
-[cloning]: https://raiden-network.readthedocs.io/en/latest/private_net_tutorial.html#install-raiden-and-dependencies
-[tutorial]: https://raiden-network.readthedocs.io/en/latest/private_net_tutorial.html
+[cloning]: https://raiden-network.readthedocs.io/en/latest/custom-setups/private_net_tutorial.html#install-raiden-and-dependencies
+[tutorial]: https://raiden-network.readthedocs.io/en/latest/custom-setups/private_net_tutorial.html
 [`Blame`]: https://github.com/raiden-network/raiden/blame/81e535808f6f4d047495b76a555f623d3a6838f0/requirements/requirements.txt#L66
 [requirements.txt]: https://github.com/raiden-network/raiden/blob/develop/requirements/requirements.txt#L66
 [Raiden]: https://github.com/raiden-network/raiden
 [GitHub]: https://github.com/raiden-network/light-client
-[Raiden on Private Network Tutorial]: https://raiden-network.readthedocs.io/en/latest/private_net_tutorial.html
+[Raiden on Private Network Tutorial]: https://raiden-network.readthedocs.io/en/latest/custom-setups/private_net_tutorial.html
 [SDK installation]: ../installing-sdk/README.md
