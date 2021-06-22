@@ -44,21 +44,6 @@ executors:
       - image: << pipeline.parameters.e2e_environment_docker_image >>
 
 commands:
-  check-license:
-    parameters:
-      directory:
-        description: The sub-directory at the working directory where to check for licenses
-        type: string
-    steps:
-      - run:
-          name: Check License for << parameters.directory >>
-          working_directory: << pipeline.parameters.working_directory>>/<< parameters.directory >>
-          command: >
-            npx license-checker@25.0.1
-            --production
-            --onlyAllow 'MIT;BSD;Apache;MPL;LGPL;ZPL;ISC;WTFPL;Unlicense'
-            --excludePrivatePackages # uuid@2.0.1 has an issue with the license information but it is licensed under MIT
-
   upload_test_results_and_coverage:
     parameters:
       base_flag:
@@ -117,18 +102,6 @@ jobs:
           root: << pipeline.parameters.working_directory >>
           paths:
             - ./*
-
-  check_licenses:
-    executor: base-executor
-    working_directory: ~/
-    steps:
-      - attach_workspace: *attach_options
-      - check-license:
-          directory: raiden-ts
-      - check-license:
-          directory: raiden-dapp
-      - check-license:
-          directory: raiden-cli
 
   build_sdk:
     executor: base-executor
@@ -300,9 +273,6 @@ workflows:
 
     jobs:
       - install
-      - check_licenses:
-          requires:
-            - install
       - build_sdk:
           requires:
             - install
