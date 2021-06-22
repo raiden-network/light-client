@@ -1,0 +1,20 @@
+{
+  "name": "license-checker",
+  "version": "0.0.1",
+  "description": "Check that the licenses of all production dependencies are allowed",
+  "main": "index.js",
+  "author": "brainbot labs est.",
+  "license": "MIT",
+  "scripts": {
+    "package": "ncc build ./src/ --out ./dist/",
+    "lint": "eslint ./src/index.js"
+  },
+  "dependencies": {
+    "@actions/core": "^1.4.0",
+    "query-registry": "^2.0.0"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.28.6",
+    "eslint": "^7.29.0"
+  }
+}

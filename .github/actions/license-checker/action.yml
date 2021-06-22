@@ -1,0 +1,12 @@
+name: License Checker
+description: Check that the licenses of all production dependencies are allowed
+inputs:
+  YARN_WORKSPACE:
+    description: The Yarn workspace to check the production dependencies for
+    required: true
+  ALLOWED_LICENSE_NAMES:
+    description: List of license names that are allowed (must be JSON encoded string array)
+    required: true
+runs:
+  using: node12
+  main: dist/index.js
