@@ -42,4 +42,4 @@ jobs:
         uses: ./.github/actions/license-checker
         with:
           YARN_WORKSPACE: ${{ matrix.workspace }}
-          ALLOWED_LICENSE_NAMES: '["MIT", "BSD"]'
+          ALLOWED_LICENSE_NAMES: '["MIT", "ISC", "BSD", "BSD-2-Clause", "Apache-2.0", "LGPL-3.0"]'
