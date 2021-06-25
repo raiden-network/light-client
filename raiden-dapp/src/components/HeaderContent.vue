@@ -73,11 +73,11 @@ export default class HeaderContent extends Vue {
   }
 
   get availableInfoOverlay(): boolean {
-    return !!this.$route.meta.infoOverlay;
+    return !!this.$route.meta?.infoOverlay;
   }
 
   get canNavigateBack(): boolean {
-    return !this.disableBackButton && !this.$route.meta.cannotNavigateBack;
+    return !this.disableBackButton && !this.$route.meta?.cannotNavigateBack;
   }
 }
 </script>
