@@ -108,7 +108,7 @@ describe('initMatrixEpic', () => {
   afterEach(() => jest.restoreAllMocks());
 
   test('matrix stored setup', async () => {
-    expect.assertions(4);
+    expect.assertions(3);
 
     const userId = `@${raiden.address.toLowerCase()}:${matrixServer}`;
     const displayName = await raiden.deps.signer.signMessage(userId);
@@ -138,14 +138,6 @@ describe('initMatrixEpic', () => {
     );
     // ensure if stored setup works, servers list don't need to be fetched
     expect(fetch).not.toHaveBeenCalled();
-
-    // test presence got set again after some time, to overcome presence bug
-    await sleep(2 * raiden.config.httpTimeout);
-    // test presence got set again after some time, to overcome presence bug
-    expect(matrix.setPresence).toHaveBeenCalledWith({
-      presence: 'online',
-      status_msg: expect.any(String),
-    });
   });
 
   test('matrix server config set without stored setup', async () => {

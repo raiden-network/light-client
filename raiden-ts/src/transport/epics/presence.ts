@@ -15,7 +15,6 @@ import {
   map,
   mergeMap,
   pluck,
-  skip,
   switchMap,
   tap,
   timeout,
@@ -156,7 +155,7 @@ export function matrixMonitorChannelPresenceEpic(
 }
 
 /**
- * Update our matrix's avatarUrl on config.caps changes
+ * Update our matrix's avatarUrl on config.caps on startup and changes
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
@@ -174,7 +173,6 @@ export function matrixUpdateCapsEpic(
     completeWith(action$),
     pluck('caps'),
     distinctUntilChanged(isEqual),
-    skip(1), // skip replay(1) and act only on changes
     switchMap((caps) =>
       matrix$.pipe(
         mergeMap((matrix) =>
