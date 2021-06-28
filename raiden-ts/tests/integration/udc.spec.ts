@@ -170,7 +170,6 @@ describe('udcDepositEpic', () => {
 
     const depositTx = makeTransaction(undefined, { to: userDepositContract.address });
     userDepositContract.deposit.mockResolvedValue(depositTx);
-    userDepositContract.effectiveBalance.mockResolvedValue(balance);
 
     await raiden.start();
     raiden.store.dispatch(udcDeposit.request({ deposit }, { totalDeposit: balance }));

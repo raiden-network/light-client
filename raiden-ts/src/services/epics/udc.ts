@@ -90,13 +90,13 @@ function makeUdcDeposit$(
   deps: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$' | 'latest$'>,
 ) {
   const { log, provider, config$, latest$ } = deps;
+  let finalBalance: UInt<32>;
   return defer(async () =>
     Promise.all([
       tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
       tokenContract.callStatic.allowance(sender, userDepositContract.address) as Promise<UInt<32>>,
     ]),
   ).pipe(
-    retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
     withLatestFrom(config$, latest$),
     mergeWith(([[balance, allowance], { minimumAllowance }, { gasPrice }]) =>
       approveIfNeeded$(
@@ -108,23 +108,30 @@ function makeUdcDeposit$(
         { minimumAllowance, gasPrice },
       ),
     ),
-    mergeMap(([[, , { gasPrice }]]) =>
-      defer(async () => userDepositContract.callStatic.total_deposit(address)).pipe(
-        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
-        mergeMap(async (deposited) => {
-          assert(deposited.add(deposit).eq(totalDeposit), [
-            ErrorCodes.UDC_DEPOSIT_OUTDATED,
-            { requested: totalDeposit.toString(), current: deposited.toString() },
-          ]);
-          // send setTotalDeposit transaction
-          return userDepositContract.deposit(address, totalDeposit, { gasPrice });
-        }),
-      ),
-    ),
+    mergeMap(([[, , { gasPrice, udcDeposit: prev }]]) => {
+      assert(prev.totalDeposit.add(deposit).eq(totalDeposit), [
+        ErrorCodes.UDC_DEPOSIT_OUTDATED,
+        { requested: totalDeposit, current: prev.totalDeposit },
+      ]);
+      finalBalance = prev.balance.add(deposit) as UInt<32>;
+      // send setTotalDeposit transaction
+      return userDepositContract.deposit(address, totalDeposit, { gasPrice });
+    }),
     assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
     retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
+    map(([, receipt]) =>
+      udcDeposit.success(
+        {
+          balance: finalBalance,
+          txHash: receipt.transactionHash,
+          txBlock: receipt.blockNumber,
+          confirmed: undefined, // let confirmationEpic confirm this action
+        },
+        { totalDeposit },
+      ),
+    ),
   );
 }
 
@@ -141,15 +148,12 @@ export function udcDepositEpic(
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<udcDeposit.failure | udcDeposit.success> {
-  const { userDepositContract, getTokenContract, address, signer, main, config$, provider } = deps;
+  const { userDepositContract, getTokenContract, address, signer, main, config$, log } = deps;
   return action$.pipe(
     filter(udcDeposit.request.is),
     concatMap((action) =>
-      retryAsync$(
-        () => userDepositContract.callStatic.token() as Promise<Address>,
-        provider.pollingInterval,
-        { onErrors: networkErrors },
-      ).pipe(
+      defer(async () => userDepositContract.callStatic.token() as Promise<Address>).pipe(
+        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors, log: log.debug }),
         withLatestFrom(config$),
         mergeMap(([token, config]) => {
           const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
@@ -166,25 +170,6 @@ export function udcDepositEpic(
             deps,
           );
         }),
-        mergeMap(([, receipt]) =>
-          retryAsync$(
-            () => userDepositContract.callStatic.effectiveBalance(address) as Promise<UInt<32>>,
-            provider.pollingInterval,
-            { onErrors: networkErrors },
-          ).pipe(
-            map((balance) =>
-              udcDeposit.success(
-                {
-                  balance,
-                  txHash: receipt.transactionHash,
-                  txBlock: receipt.blockNumber,
-                  confirmed: undefined, // let confirmationEpic confirm this action
-                },
-                action.meta,
-              ),
-            ),
-          ),
-        ),
         catchError((error) => of(udcDeposit.failure(error, action.meta))),
       ),
     ),
