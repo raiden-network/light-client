@@ -1,17 +1,17 @@
 import * as t from 'io-ts';
 import constant from 'lodash/constant';
-import isEmpty from 'lodash/isEmpty';
 import sortBy from 'lodash/sortBy';
 import type { Filter, LoginPayload, MatrixClient } from 'matrix-js-sdk';
 import { createClient } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
-import type { AsyncSubject, Observable } from 'rxjs';
-import { combineLatest, defer, EMPTY, from, merge, of, throwError, timer } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { combineLatest, defer, EMPTY, from, merge, of, throwError } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
 import {
   catchError,
   concatMap,
   delayWhen,
+  endWith,
   filter,
   first,
   ignoreElements,
@@ -28,7 +28,6 @@ import {
 } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
-import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
 import { RAIDEN_DEVICE_ID } from '../../constants';
 import type { RaidenState } from '../../state';
@@ -40,8 +39,6 @@ import { completeWith, lastMap, pluckDistinct, retryWhile } from '../../utils/rx
 import { decode } from '../../utils/types';
 import { matrixSetup } from '../actions';
 import type { RaidenMatrixSetup } from '../state';
-import type { Caps } from '../types';
-import { stringifyCaps } from '../utils';
 
 /**
  * Creates and returns a matrix filter. The filter reduces the size of the initial sync by
@@ -71,8 +68,7 @@ async function createMatrixFilter(matrix: MatrixClient, notRooms: string[] = [])
 function startMatrixSync(
   action$: Observable<RaidenAction>,
   matrix: MatrixClient,
-  matrix$: AsyncSubject<MatrixClient>,
-  config$: Observable<RaidenConfig>,
+  { matrix$, config$, init$ }: Pick<RaidenEpicDeps, 'matrix$' | 'config$' | 'init$'>,
 ) {
   return action$.pipe(
     filter(matrixSetup.is),
@@ -81,25 +77,17 @@ function startMatrixSync(
       matrix$.next(matrix);
       matrix$.complete();
     }),
-    withLatestFrom(config$),
-    // wait 1s before starting matrix, so event listeners can be registered
-    delayWhen(([, { pollingInterval }]) => timer(Math.ceil(pollingInterval / 5))),
-    mergeMap(([, config]) =>
-      defer(async () => createMatrixFilter(matrix)).pipe(
-        mergeMap(async (filter) => {
-          await matrix.setPushRuleEnabled('global', 'override', '.m.rule.master', true);
-          return filter;
-        }),
-        mergeMap(async (filter) => matrix.startClient({ filter })),
-        mergeMap(() => {
-          // after [15-45]s (default) random delay after starting, update/reload presence
-          return timer(Math.round((Math.random() + 0.5) * config.httpTimeout)).pipe(
-            mergeMap(async () =>
-              matrix.setPresence({ presence: 'online', status_msg: Date.now().toString() }),
-            ),
-          );
-        }),
-        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
+    mergeMap(() =>
+      defer(async () =>
+        Promise.all([
+          createMatrixFilter(matrix),
+          matrix.setPushRuleEnabled('global', 'override', '.m.rule.master', true),
+        ]),
+      ).pipe(
+        // delay startClient (going online) to after raiden is synced
+        delayWhen(() => init$.pipe(ignoreElements(), endWith(true))),
+        mergeMap(async ([filter]) => matrix.startClient({ filter })),
+        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors, maxRetries: 3 }),
       ),
     ),
     ignoreElements(),
@@ -171,14 +159,12 @@ function fetchSortedMatrixServers$(matrixServerLookup: string, httpTimeout: numb
  * @param deps.address - Our address (to compose matrix user)
  * @param deps.signer - Signer to be used to sign password and displayName
  * @param deps.config$ - Config observable
- * @param caps - Transport capabilities to set in user's avatar_url
  * @returns Observable of one { matrix, server, setup } object
  */
 function setupMatrixClient$(
   server: string,
   setup: RaidenMatrixSetup | undefined,
   { address, signer, config$ }: Pick<RaidenEpicDeps, 'address' | 'signer' | 'config$'>,
-  caps: Caps | null,
 ) {
   const homeserver = getServerName(server);
   assert(homeserver, [ErrorCodes.TRNS_NO_SERVERNAME, { server }]);
@@ -253,12 +239,7 @@ function setupMatrixClient$(
     // the APIs below are authenticated, and therefore also act as validator
     mergeMap(({ matrix, server, setup }) =>
       // set these properties before starting sync
-      defer(() =>
-        Promise.all([
-          matrix.setDisplayName(setup.displayName),
-          matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
-        ]),
-      ).pipe(
+      defer(async () => matrix.setDisplayName(setup.displayName)).pipe(
         retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
         mapTo({ matrix, server, setup }), // return triplet again
       ),
@@ -285,11 +266,12 @@ function setupMatrixClient$(
 export function initMatrixEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { address, signer, matrix$, latest$, config$, init$ }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<matrixSetup> {
+  const { matrix$, latest$, config$, init$ } = deps;
   return combineLatest([latest$, config$]).pipe(
     first(), // at startup
-    mergeMap(([{ state }, { matrixServer, matrixServerLookup, httpTimeout, caps }]) => {
+    mergeMap(([{ state }, { matrixServer, matrixServerLookup, httpTimeout }]) => {
       const server = state.transport.server,
         setup = state.transport.setup;
       // when matrix$ async subject completes, transport init task is completed
@@ -321,7 +303,7 @@ export function initMatrixEpic(
         catchError(andSuppress), // servers$ may error, so store lastError
         concatMap(({ server, setup }) =>
           // serially, try setting up client and validate its credential
-          setupMatrixClient$(server, setup, { address, signer, config$ }, caps).pipe(
+          setupMatrixClient$(server, setup, deps).pipe(
             // store and suppress any 'setupMatrixClient$' error
             catchError(andSuppress),
           ),
@@ -341,7 +323,7 @@ export function initMatrixEpic(
     mergeMap(({ matrix, server, setup }) =>
       merge(
         // wait for matrixSetup through reducer, then resolves matrix$ with client and starts it
-        startMatrixSync(action$, matrix, matrix$, config$),
+        startMatrixSync(action$, matrix, deps),
         // emit matrixSetup in parallel to be persisted in state
         of(matrixSetup({ server, setup })),
         // monitor config.logger & disable or re-enable matrix's logger accordingly
