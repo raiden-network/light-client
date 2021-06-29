@@ -1,7 +1,6 @@
 import * as t from 'io-ts';
-import constant from 'lodash/constant';
 import sortBy from 'lodash/sortBy';
-import type { Filter, LoginPayload, MatrixClient } from 'matrix-js-sdk';
+import type { Filter, MatrixClient } from 'matrix-js-sdk';
 import { createClient } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 import type { Observable } from 'rxjs';
@@ -197,16 +196,18 @@ function setupMatrixClient$(
               }),
             ).pipe(
               catchError(async (err) => {
-                return matrix
-                  .registerRequest({
+                try {
+                  return await matrix.registerRequest({
                     username,
                     password,
                     device_id: RAIDEN_DEVICE_ID,
-                  })
-                  .catch(constant(err)) as Promise<LoginPayload>;
-                // if register fails, throws login error as it's more informative
+                  });
+                } catch (e) {
+                  // if register fails, throws login error as it's more informative
+                  throw err;
+                }
               }),
-              retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
+              retryWhile(intervalFromConfig(config$), { onErrors: networkErrors, maxRetries: 3 }),
             ),
           ),
           mergeMap(({ access_token, device_id, user_id }) => {
