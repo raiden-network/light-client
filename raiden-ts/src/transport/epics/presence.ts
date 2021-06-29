@@ -2,11 +2,12 @@ import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import uniq from 'lodash/uniq';
 import type { Observable } from 'rxjs';
-import { combineLatest, defer, from, merge, of } from 'rxjs';
+import { combineLatest, from, merge, of } from 'rxjs';
 import {
   catchError,
   concatMap,
   distinctUntilChanged,
+  endWith,
   exhaustMap,
   filter,
   first,
@@ -15,6 +16,7 @@ import {
   map,
   mergeMap,
   pluck,
+  startWith,
   switchMap,
   tap,
   timeout,
@@ -30,7 +32,7 @@ import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { networkErrors } from '../../utils/error';
-import { catchAndLog, completeWith, retryWhile } from '../../utils/rx';
+import { catchAndLog, completeWith, mergeWith, retryWhile } from '../../utils/rx';
 import type { Address } from '../../utils/types';
 import { matrixPresence } from '../actions';
 import { stringifyCaps } from '../utils';
@@ -162,32 +164,32 @@ export function matrixMonitorChannelPresenceEpic(
  * @param deps - Epics dependencies
  * @param deps.matrix$ - MatrixClient async subject
  * @param deps.config$ - Config object
+ * @param deps.init$ - Init$ subject
  * @returns Observable which never emits
  */
 export function matrixUpdateCapsEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { matrix$, config$ }: RaidenEpicDeps,
+  { matrix$, config$, init$ }: RaidenEpicDeps,
 ): Observable<never> {
   return config$.pipe(
     completeWith(action$),
     pluck('caps'),
     distinctUntilChanged(isEqual),
-    switchMap((caps) =>
+    withLatestFrom(init$.pipe(ignoreElements(), startWith(false), endWith(true))),
+    switchMap(([caps, synced]) =>
       matrix$.pipe(
-        mergeMap((matrix) =>
-          defer(async () =>
-            matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
-          ).pipe(
-            // trigger immediate presence updates on peers
-            mergeMap(async () =>
-              matrix.setPresence({ presence: 'online', status_msg: Date.now().toString() }),
-            ),
-          ),
+        mergeWith(async (matrix) =>
+          matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
+        ),
+        filter(() => synced),
+        mergeWith(async ([matrix]) => matrix.setPresence({ presence: 'offline', status_msg: '' })),
+        mergeWith(async ([[matrix]]) =>
+          matrix.setPresence({ presence: 'online', status_msg: Date.now().toString() }),
         ),
         retryWhile(intervalFromConfig(config$)),
-        ignoreElements(),
       ),
     ),
+    ignoreElements(),
   );
 }
