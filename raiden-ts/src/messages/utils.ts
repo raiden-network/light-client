@@ -16,7 +16,7 @@ import { encode, jsonParse, jsonStringify } from '../utils/data';
 import type { Address, Hash, HexString } from '../utils/types';
 import { decode, Signature, Signed } from '../utils/types';
 import { messageReceived } from './actions';
-import type { AddressMetadata, EnvelopeMessage, Metadata } from './types';
+import type { AddressMetadata, EnvelopeMessage } from './types';
 import { Message, MessageType } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
@@ -51,7 +51,7 @@ export enum MessageTypeId {
  * @param metadata - The LockedTransfer metadata
  * @returns Hash of the metadata.
  */
-function createMetadataHash(metadata: Metadata): Hash {
+function createMetadataHash(metadata: unknown): Hash {
   return keccak256(toUtf8Bytes(canonicalize(metadata))) as Hash;
 }
 

@@ -121,9 +121,6 @@ const _RouteMetadata = t.readonly(
 );
 export interface RouteMetadata extends t.TypeOf<typeof _RouteMetadata> {}
 export interface RouteMetadataC extends t.Type<RouteMetadata, t.OutputOf<typeof _RouteMetadata>> {}
-// FIXME: remove all this decoding workaround when additional_hash is hash of exact canonicalized
-// metadata, without changes; it's needed while PC hashes the checksummed addresses but sends the
-// lowercased serialized version
 const routeMetadataPredicate = (u: RouteMetadata) =>
   !u.address_metadata || t.array(Address).is(Object.keys(u.address_metadata));
 export const RouteMetadata: RouteMetadataC = new t.RefinementType(
@@ -171,7 +168,10 @@ const LockedTransferBase = t.readonly(
       lock: Lock,
       target: Address,
       initiator: Address,
-      metadata: Metadata,
+      // unknown metadata ensures decoder may not change it, and just passthrough; this allows us
+      // to properly verify its signature; therefore, anything is accepted, and you must decode
+      // wherever you need to access its properties (e.g. to inspect routes)
+      metadata: t.unknown,
     }),
     EnvelopeMessage,
   ]),

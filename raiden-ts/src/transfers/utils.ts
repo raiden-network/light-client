@@ -4,6 +4,7 @@ import { HashZero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { randomBytes } from '@ethersproject/random';
 import { sha256 } from '@ethersproject/sha2';
+import * as t from 'io-ts';
 import isEmpty from 'lodash/isEmpty';
 import type { Observable } from 'rxjs';
 import { defer, from, of } from 'rxjs';
@@ -13,16 +14,19 @@ import type { Channel } from '../channels';
 import type { Lock } from '../channels/types';
 import { BalanceProofZero } from '../channels/types';
 import { channelUniqueKey } from '../channels/utils';
+import { Capabilities } from '../constants';
 import type { RaidenDatabase, TransferStateish } from '../db/types';
-import type { Metadata } from '../messages';
+import type { RouteMetadata } from '../messages/types';
+import { Metadata } from '../messages/types';
 import {
   createBalanceHash,
   getBalanceProofFromEnvelopeMessage,
   validateAddressMetadata,
-} from '../messages';
+} from '../messages/utils';
 import type { Paths } from '../services/types';
 import type { RaidenState } from '../state';
 import type { Via } from '../transport/types';
+import { getCap, parseCaps } from '../transport/utils';
 import { assert } from '../utils';
 import { encode } from '../utils/data';
 import type { Address, Hash, HexString, Secret, UInt } from '../utils/types';
@@ -256,27 +260,86 @@ export async function getTransfer(
   return decode(TransferState, await db.get<TransferStateish>(key));
 }
 
+// a very simple/small subset of Metadata, to be used only to ensure metadata.routes[*].route array
+// the t.exact wrapper ensure unlisted properties are removed after decoding
+const RawMetadataCodec = t.exact(
+  t.type({
+    routes: t.array(t.exact(t.type({ route: t.array(t.string), address_metadata: t.unknown }))),
+  }),
+);
+
+/**
+ * Prune metadata route without changing any of the original encoding
+ * A clear metadata route have partner (address after ours) as first hop in routes[*].route array.
+ * To be used only if partner requires !Capabilities.IMMUTABLE_METADATA
+ *
+ * @param address - Our address
+ * @param metadata - Metadata object
+ * @returns A copy of metadata with routes cleared (i.e. partner as first/next address)
+ */
+export function clearMetadataRoute<M extends unknown | Metadata>(
+  address: Address,
+  metadata: M,
+): M {
+  let decoded;
+  try {
+    decoded = decode(RawMetadataCodec, metadata);
+  } catch (e) {
+    return metadata; // if metadata isn't even RawMetadataCodec, just return it
+  }
+  const lowercaseAddr = address.toLowerCase();
+  return {
+    ...decoded, // just for consistency, t.exact above will remove any property but 'routes'
+    routes: decoded.routes.map(({ route, ...rest }) => ({
+      ...rest,
+      route: route.slice(route.findIndex((a) => a.toLowerCase() === lowercaseAddr) + 1),
+    })),
+  } as M;
+}
+
 /**
  * Contructs transfer.request's payload paramaters from received PFS's Paths
  *
  * @param paths - Paths array coming from PFS
- * @returns Respective members of transfer.request's payload
+ * @returns Respective members of transfer.request's payload, with stricter 'metadata'
  */
 export function metadataFromPaths(
   paths: Paths,
-): Pick<transfer.request['payload'], 'metadata' | 'fee' | 'partner' | keyof Via> {
+): Pick<transfer.request['payload'], 'fee' | 'partner' | keyof Via> & { metadata: Metadata } {
   // paths may come with undesired parameters, so map&filter here before passing to metadata
   const routes = paths.map(({ path: route, fee: _, address_metadata }) => ({
     route,
     ...(address_metadata && !isEmpty(address_metadata) ? { address_metadata } : {}),
   }));
-  const metadata: Metadata = { routes };
-  const viaPath = paths[0]; // assume incoming Paths is clean and best path is first
-  const partner = viaPath.path[0];
+  const viaPath = paths[0];
+  const partner = viaPath.path[1]; // we're first address in route, partner is 2nd
   const fee = viaPath.fee;
-  const partnerMetadata = validateAddressMetadata(viaPath.address_metadata?.[partner], partner);
+  const partnerMetadata = searchValidMetadata(viaPath.address_metadata, partner);
   const via: Via = { userId: partnerMetadata?.user_id };
+
+  let metadata: Metadata = { routes };
+  // iff partner requires a clear route (to be first address), clear it;
+  // in routes received from PFS, we're always first address and partner second
+  if (!getCap(parseCaps(partnerMetadata?.capabilities), Capabilities.IMMUTABLE_METADATA))
+    metadata = clearMetadataRoute(viaPath.path[0], metadata);
+
   return { metadata, fee, partner, ...via };
+}
+
+/**
+ * @param addressMetadata - metadata's address_metadata mapping
+ * @param address - Address to search and validate
+ * @returns AddressMetadata of given address
+ */
+export function searchValidMetadata(
+  addressMetadata: RouteMetadata['address_metadata'],
+  address: Address,
+) {
+  return validateAddressMetadata(
+    // support address_metadata keys being both lowercase and checksummed addresses
+    addressMetadata?.[address] ?? addressMetadata?.[address.toLowerCase()],
+    address,
+  );
 }
 
 /**
@@ -285,13 +348,16 @@ export function metadataFromPaths(
  * @returns Via object or undefined
  */
 export function searchValidViaAddress(
-  metadata: Metadata | undefined,
+  metadata: unknown | undefined,
   address: Address | undefined,
 ): Via | undefined {
   let userId;
-  if (!metadata || !address) return;
-  for (const { address_metadata } of metadata.routes) {
-    if ((userId = validateAddressMetadata(address_metadata?.[address], address)?.user_id))
-      return { userId };
+  let decoded;
+  try {
+    decoded = decode(Metadata, metadata);
+  } catch (e) {}
+  if (!decoded || !address) return;
+  for (const { address_metadata } of decoded.routes) {
+    if ((userId = searchValidMetadata(address_metadata, address)?.user_id)) return { userId };
   }
 }

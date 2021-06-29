@@ -238,9 +238,11 @@ function filterPaths(
   const invalidatedRecipients = new Set<Address>();
 
   for (const { path, fee, ...rest } of paths) {
-    // FIXME: don't trim path; validate us as 1st and partner as 2nd addr, once PC can handle it
-    const cleanPath = getCleanPath(path, address);
-    const recipient = cleanPath[0];
+    if (path.length < 2 || path[0] !== address) {
+      log.warn('Invalidated received route: we are not the first address in path:', path);
+      continue;
+    }
+    const recipient = path[1];
     if (invalidatedRecipients.has(recipient)) continue;
 
     let shouldSelectPath = false;
@@ -260,9 +262,9 @@ function filterPaths(
     } else shouldSelectPath = true;
 
     if (shouldSelectPath) {
-      filteredPaths.push({ path: cleanPath, fee, ...rest });
+      filteredPaths.push({ path, fee, ...rest });
     } else {
-      log.warn('Invalidated received route. Reason:', reasonToNotSelect, 'Route:', cleanPath);
+      log.warn('Invalidated received route. Reason:', reasonToNotSelect, 'Route:', path);
       invalidatedRecipients.add(recipient);
     }
   }
@@ -386,10 +388,6 @@ function parsePfsResponse(amount: UInt<32>, data: unknown, config: RaidenConfig)
 
 function shouldPersistIou(route: Route): boolean {
   return 'paths' in route || isNoRouteFoundError(route.error);
-}
-
-function getCleanPath(path: readonly Address[], address: Address) {
-  return path.slice(path.indexOf(address) + 1);
 }
 
 function isNoRouteFoundError(error: ServiceError | undefined): boolean {
