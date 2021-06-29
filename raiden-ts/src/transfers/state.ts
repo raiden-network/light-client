@@ -2,7 +2,6 @@ import type { BigNumber } from '@ethersproject/bignumber';
 import * as t from 'io-ts';
 import invert from 'lodash/invert';
 
-import type { Metadata } from '../messages/types';
 import {
   LockedTransfer,
   LockExpired,
@@ -125,7 +124,7 @@ export interface RaidenTransfer {
   initiator: Address; // us
   partner: Address; // receiver/partner/hub
   target: Address; // final receiver of the transfer
-  metadata: Metadata; // chosen routes
+  metadata: unknown; // chosen routes
   paymentId: BigNumber;
   chainId: number;
   token: Address; // token address

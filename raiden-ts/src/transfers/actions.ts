@@ -5,7 +5,6 @@ import { BalanceProof } from '../channels/types';
 import {
   LockedTransfer,
   LockExpired,
-  Metadata,
   Processed,
   SecretRequest,
   SecretReveal,
@@ -53,7 +52,7 @@ export const transfer = createAsyncAction(
       target: Address,
       value: UInt(32),
       paymentId: UInt(8),
-      metadata: Metadata,
+      metadata: t.unknown,
       fee: Int(32),
       partner: Address,
     }),

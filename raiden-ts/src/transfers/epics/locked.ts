@@ -169,7 +169,7 @@ function makeAndSignTransfer$(
     ', to',
     action.payload.target,
     ', through routes',
-    action.payload.metadata.routes,
+    action.payload.metadata,
     ', paying',
     fee.toString(),
     'in fees.',

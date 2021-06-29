@@ -6,15 +6,16 @@ import { ChannelState } from '../../channels/state';
 import { channelKey } from '../../channels/utils';
 import type { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
-import { validateAddressMetadata } from '../../messages/utils';
+import { Metadata } from '../../messages/types';
 import type { RaidenState } from '../../state';
 import type { Via } from '../../transport/types';
-import { getCap } from '../../transport/utils';
+import { getCap, parseCaps } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import type { Address, Int } from '../../utils/types';
-import { isntNil } from '../../utils/types';
+import { decode, isntNil } from '../../utils/types';
 import { transfer, transferSigned } from '../actions';
 import { Direction } from '../state';
+import { clearMetadataRoute, searchValidMetadata } from '../utils';
 
 function shouldMediate(action: transferSigned, address: Address, { caps }: RaidenConfig): boolean {
   const isMediationEnabled = getCap(caps, Capabilities.MEDIATE);
@@ -44,7 +45,7 @@ function findValidPartner(
   state: RaidenState,
   config: RaidenConfig,
   { address, log, mediationFeeCalculator }: RaidenEpicDeps,
-): Pick<transfer.request['payload'], 'partner' | 'fee' | keyof Via> | undefined {
+): Pick<transfer.request['payload'], 'partner' | 'fee' | 'metadata' | keyof Via> | undefined {
   const message = received.payload.message;
   const inPartner = received.payload.partner;
   const tokenNetwork = message.token_network_address;
@@ -54,7 +55,12 @@ function findValidPartner(
       .filter((channel) => channel.state === ChannelState.open)
       .map(({ partner }) => partner.address),
   );
-  for (const { route, address_metadata } of message.metadata.routes) {
+  let decodedMetadata: Metadata = { routes: [] };
+  try {
+    decodedMetadata = decode(Metadata, message.metadata);
+  } catch (e) {}
+  for (const { route, address_metadata } of decodedMetadata.routes) {
+    // support not being first address in route
     const outPartner = route[route.indexOf(address) + 1];
     if (!outPartner || !partnersWithOpenChannels.has(outPartner)) continue;
 
@@ -70,21 +76,22 @@ function findValidPartner(
       )(message.lock.amount);
     } catch (error) {
       log.warn('Mediation: could not calculate mediation fee, ignoring', { error });
-      return;
+      continue;
     }
     // on a transfer.request, fee is *added* to the value to get final sent amount,
     // therefore here it needs to contain a negative fee, which we will "earn" instead of pay
     fee = fee.mul(-1) as Int<32>;
 
-    const outPartnerMetadata = validateAddressMetadata(
-      address_metadata?.[outPartner],
-      outPartner,
-      { log },
-    );
-    return { partner: outPartner, fee, userId: outPartnerMetadata?.user_id };
+    const outPartnerMetadata = searchValidMetadata(address_metadata, outPartner);
+    let metadata = message.metadata; // pass through metadata
+    // iff partner requires a clear route (to be first address), clear original metadata
+    if (!getCap(parseCaps(outPartnerMetadata?.capabilities), Capabilities.IMMUTABLE_METADATA))
+      metadata = clearMetadataRoute(address, metadata);
+
+    return { partner: outPartner, fee, userId: outPartnerMetadata?.user_id, metadata };
   }
   log.warn('Mediation: could not find a suitable route, ignoring', {
-    inputRoutes: message.metadata.routes,
+    inputRoutes: decodedMetadata.routes,
     openPartners: partnersWithOpenChannels,
   });
 }
@@ -124,17 +131,6 @@ export function transferMediateEpic(
       const outVia = findValidPartner(action, state, config, deps);
       if (!outVia) return;
 
-      // FIXME: passthrough metadata unchanged once PC supports searching themselves in the route
-      // clean up routes (strip hops before and up to us), while PC mediators require receiving
-      // routes where they're the 1st address and their partner, 2nd
-      const metadata: typeof message.metadata = {
-        ...message.metadata,
-        routes: message.metadata.routes.map(({ route, ...rest }) => ({
-          ...rest,
-          route: route.slice(route.indexOf(deps.address) + 1),
-        })),
-      };
-
       // request an outbound transfer to target; will fail if already sent
       return transfer.request(
         {
@@ -144,7 +140,6 @@ export function transferMediateEpic(
           value: message.lock.amount,
           expiration: message.lock.expiration.toNumber(),
           initiator: message.initiator,
-          metadata,
           ...outVia,
         },
         { secrethash, direction: Direction.SENT },
