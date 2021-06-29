@@ -22,6 +22,7 @@ export enum Capabilities {
   MEDIATE = 'Mediate', // whether to mediate transfers; requires receiving
   WEBRTC = 'webRTC', // use WebRTC channels for p2p messaging
   TO_DEVICE = 'toDevice', // use ToDevice messages instead of rooms
+  IMMUTABLE_METADATA = 'immutableMetadata', // passthrough metadata unchanged
 }
 
 export const CapsFallback = {
@@ -30,6 +31,7 @@ export const CapsFallback = {
   [Capabilities.MEDIATE]: 1,
   [Capabilities.WEBRTC]: 0,
   [Capabilities.TO_DEVICE]: 1,
+  [Capabilities.IMMUTABLE_METADATA]: 0,
 } as const;
 
 export const RAIDEN_DEVICE_ID = 'RAIDEN';

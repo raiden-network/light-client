@@ -134,6 +134,7 @@ export function makeDefaultConfig(
           [Capabilities.DELIVERY]: 0,
           [Capabilities.MEDIATE]: 0,
           [Capabilities.TO_DEVICE]: 1,
+          [Capabilities.IMMUTABLE_METADATA]: 1,
           ...overwrites?.caps,
         };
   return {
