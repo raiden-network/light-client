@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+### Fixed
+- [#2831] Force PFS to acknowledge our capabilities updates
+
+[#2831]: https://github.com/raiden-network/light-client/issues/2831
+
 ## [1.0.0] - 2021-06-16
 ### Removed
 - [#2571] **BREAKING** Remove ability to join and send messages to global service rooms
