@@ -103,7 +103,12 @@ describe('PFS: pfsRequestEpic', () => {
 
     mockedPfsResponse.mockImplementation(async () => {
       const result = {
-        result: [{ path: [partner.address, target.address], estimated_fee: fee.toNumber() }],
+        result: [
+          {
+            path: [raiden.address, partner.address, target.address],
+            estimated_fee: fee.toNumber(),
+          },
+        ],
       };
       return {
         status: 200,
@@ -308,7 +313,10 @@ describe('PFS: pfsRequestEpic', () => {
       pathFind.success(
         {
           paths: [
-            { path: [partner.address, target.address], fee: fee.mul(pfsSafetyMargin) as Int<32> },
+            {
+              path: [raiden.address, partner.address, target.address],
+              fee: fee.mul(pfsSafetyMargin) as Int<32>,
+            },
           ],
         },
         pathFindMeta,
@@ -345,7 +353,10 @@ describe('PFS: pfsRequestEpic', () => {
       pathFind.success(
         {
           paths: [
-            { path: [partner.address, target.address], fee: fee.mul(pfsSafetyMargin) as Int<32> },
+            {
+              path: [raiden.address, partner.address, target.address],
+              fee: fee.mul(pfsSafetyMargin) as Int<32>,
+            },
           ],
         },
         pathFindMeta,
@@ -371,7 +382,7 @@ describe('PFS: pfsRequestEpic', () => {
         {
           paths: [
             {
-              path: [partner.address],
+              path: [raiden.address, partner.address],
               fee: Zero as Int<32>,
               address_metadata: expect.objectContaining({ [raiden.address]: expect.anything() }),
             },
@@ -415,7 +426,7 @@ describe('PFS: pfsRequestEpic', () => {
         {
           paths: [
             {
-              path: [partner.address, target.address],
+              path: [raiden.address, partner.address, target.address],
               fee: fee.mul(pfsSafetyMargin) as Int<32>,
             },
           ],
@@ -442,7 +453,7 @@ describe('PFS: pfsRequestEpic', () => {
         {
           paths: [
             {
-              path: [partner.address, target.address],
+              path: [raiden.address, partner.address, target.address],
               fee: fee.mul(pfsSafetyMargin) as Int<32>,
             },
           ],
@@ -528,7 +539,7 @@ describe('PFS: pfsRequestEpic', () => {
         {
           paths: [
             {
-              path: [partner.address, target.address],
+              path: [raiden.address, partner.address, target.address],
               fee: fee.mul(pfsSafetyMargin) as Int<32>,
             },
           ],
@@ -672,7 +683,10 @@ describe('PFS: pfsRequestEpic', () => {
       pathFind.success(
         {
           paths: [
-            { path: [partner.address, target.address], fee: fee.mul(pfsSafetyMargin) as Int<32> },
+            {
+              path: [raiden.address, partner.address, target.address],
+              fee: fee.mul(pfsSafetyMargin) as Int<32>,
+            },
           ],
         },
         pathFindMeta,
@@ -705,7 +719,10 @@ describe('PFS: pfsRequestEpic', () => {
       pathFind.success(
         {
           paths: [
-            { path: [partner.address, target.address], fee: fee.mul(pfsSafetyMargin) as Int<32> },
+            {
+              path: [raiden.address, partner.address, target.address],
+              fee: fee.mul(pfsSafetyMargin) as Int<32>,
+            },
           ],
         },
         pathFindMeta,
@@ -724,21 +741,23 @@ describe('PFS: pfsRequestEpic', () => {
   });
 
   test('success from config but filter out invalid pfs result routes', async () => {
-    // Original test(old version) fails
     expect.assertions(1);
 
+    raiden.store.dispatch(raidenConfigUpdate({ pfsMaxPaths: 7 }));
     const result = {
       result: [
         // token isn't a valid channel, should be removed from output
-        { path: [token, target.address], estimated_fee: 0 },
+        { path: [raiden.address, token, target.address], estimated_fee: 0 },
         // another route going through token, also should be removed
-        { path: [token, partner.address, target.address], estimated_fee: 0 },
+        { path: [raiden.address, token, partner.address, target.address], estimated_fee: 0 },
+        // we're not first address
+        { path: [tokenNetwork, target.address], estimated_fee: 0 },
         // valid route
-        { path: [partner.address, target.address], estimated_fee: 1 },
+        { path: [raiden.address, partner.address, target.address], estimated_fee: 1 },
         // another "valid" route through partner, filtered out because different fee
-        { path: [partner.address, token, target.address], estimated_fee: 5 },
+        { path: [raiden.address, partner.address, token, target.address], estimated_fee: 5 },
         // another invalid route, but we already selected partner first
-        { path: [tokenNetwork, target.address], estimated_fee: 10 },
+        { path: [raiden.address, tokenNetwork, target.address], estimated_fee: 10 },
       ],
     };
     mockedPfsResponse.mockResolvedValueOnce({
@@ -761,7 +780,10 @@ describe('PFS: pfsRequestEpic', () => {
       pathFind.success(
         {
           paths: [
-            { path: [partner.address, target.address], fee: One.mul(pfsSafetyMargin) as Int<32> },
+            {
+              path: [raiden.address, partner.address, target.address],
+              fee: One.mul(pfsSafetyMargin) as Int<32>,
+            },
           ],
         },
         pathFindMeta,

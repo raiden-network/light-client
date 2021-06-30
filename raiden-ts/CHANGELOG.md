@@ -1,9 +1,13 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#2766] Add `Capabilities.IMMUTABLE_METADATA` (true on LC, fallback to falsy for backwards compatibility) to allow opting in of not prunning metadata.route and allowing to pass it through mediators unchanged
+
 ### Fixed
 - [#2831] Force PFS to acknowledge our capabilities updates
 
+[#2766]: https://github.com/raiden-network/light-client/pull/2766
 [#2831]: https://github.com/raiden-network/light-client/issues/2831
 
 ## [1.0.0] - 2021-06-16

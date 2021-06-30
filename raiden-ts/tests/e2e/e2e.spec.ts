@@ -230,7 +230,9 @@ describe('e2e', () => {
     );
 
     const routes: RaidenPaths = await raiden.findRoutes(getToken(), partner2, amount2);
-    expect(routes).toMatchObject([{ fee: BigNumber.from(0), path: [partner1, partner2] }]);
+    expect(routes).toMatchObject([
+      { fee: BigNumber.from(0), path: [raiden.address, partner1, partner2] },
+    ]);
 
     key = await raiden.transfer(getToken(), partner2, amount2, { paths: routes });
     await raiden.waitTransfer(key);
@@ -292,7 +294,9 @@ describe('e2e', () => {
     const sendAmount = 35;
 
     const routes2: RaidenPaths = await raiden.findRoutes(getToken(), partner2, sendAmount);
-    expect(routes2).toMatchObject([{ fee: BigNumber.from(0), path: [raiden2.address, partner2] }]);
+    expect(routes2).toMatchObject([
+      { fee: BigNumber.from(0), path: [raiden.address, raiden2.address, partner2] },
+    ]);
 
     key = await raiden.transfer(getToken(), partner2, sendAmount, { paths: routes2 });
     await raiden.waitTransfer(key);
