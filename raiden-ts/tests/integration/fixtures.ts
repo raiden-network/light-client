@@ -416,16 +416,16 @@ export function expectChannelsAreInSync([raiden, partner]: [MockedRaiden, Mocked
  * @returns metadataFromPaths for a tansfer.request's payload
  */
 export function metadataFromClients<T extends Address | MockedRaiden>(
-  [raiden, ...hops]: readonly [T, ...T[]],
+  clients: readonly [T, ...T[]],
   fee_ = fee,
 ) {
   const isRaiden = (c: T): c is T & MockedRaiden => typeof c !== 'string';
   return metadataFromPaths([
     {
-      path: hops.map((c) => (isRaiden(c) ? c.address : (c as Address))),
+      path: clients.map((c) => (isRaiden(c) ? c.address : (c as Address))),
       fee: fee_,
       address_metadata: Object.fromEntries(
-        [raiden, ...hops].filter(isRaiden).map(({ address, store, deps }) => {
+        clients.filter(isRaiden).map(({ address, store, deps }) => {
           const setup = store.getState().transport.setup!;
           let latest!: Latest;
           deps.latest$.pipe(first()).subscribe((l) => (latest = l));

@@ -68,6 +68,13 @@ describe('mediate transfers', () => {
             initiator: raiden.address,
             target: target.address,
             payment_identifier: transf.payment_identifier,
+            metadata: {
+              routes: [
+                expect.objectContaining({
+                  route: [raiden.address, partner.address, target.address],
+                }),
+              ],
+            },
           }),
           fee: Zero as Int<32>,
           partner: raiden.address,
@@ -85,13 +92,100 @@ describe('mediate transfers', () => {
           expiration: transf.lock.expiration.toNumber(),
           initiator: raiden.address,
           fee: flat.mul(-1) as Int<32>,
-          metadata: expect.objectContaining({
-            routes: expect.arrayContaining([
+          metadata: {
+            routes: [
               expect.objectContaining({
-                route: [target.address],
+                route: [raiden.address, partner.address, target.address],
               }),
-            ]),
+            ],
+          },
+          partner: target.address,
+          userId: (await target.deps.matrix$.toPromise()).getUserId()!,
+        },
+        { secrethash, direction: Direction.SENT },
+      ),
+    );
+  });
+
+  test('success with !IMMUTABLE_METADATA partner', async () => {
+    expect.assertions(3);
+    const flat = BigNumber.from(4) as Int<32>;
+
+    const [raiden, partner, target] = await makeRaidens(3);
+    // set !IMMUTABLE_METADATA capability in partner
+    partner.store.dispatch(
+      raidenConfigUpdate({
+        caps: { ...partner.config.caps, [Capabilities.IMMUTABLE_METADATA]: 0 },
+      }),
+    );
+    await ensureChannelIsDeposited([raiden, partner]);
+    await ensureChannelIsOpen([partner, target], { channelId: 18 });
+    await ensureChannelIsDeposited([partner, target]);
+
+    // enable flat fee in mediator
+    partner.store.dispatch(raidenConfigUpdate({ mediationFees: { [token]: { flat } } }));
+    await ensurePresence([raiden, target]);
+
+    const promise = target.action$.pipe(first(transfer.success.is)).toPromise();
+    raiden.store.dispatch(
+      transfer.request(
+        {
+          tokenNetwork,
+          target: target.address,
+          value: amount,
+          paymentId: makePaymentId(),
+          secret,
+          ...metadataFromClients([raiden, partner, target], flat),
+        },
+        { secrethash, direction: Direction.SENT },
+      ),
+    );
+    await expect(promise).resolves.toEqual(
+      transfer.success(expect.anything(), { secrethash, direction: Direction.RECEIVED }),
+    );
+    const transf = (await getOrWaitTransfer(raiden, { secrethash, direction: Direction.SENT }))
+      .transfer;
+
+    expect(partner.output).toContainEqual(
+      transferSigned(
+        {
+          message: expect.objectContaining({
+            type: MessageType.LOCKED_TRANSFER,
+            initiator: raiden.address,
+            target: target.address,
+            payment_identifier: transf.payment_identifier,
+            metadata: {
+              routes: [
+                expect.objectContaining({
+                  route: [partner.address, target.address],
+                }),
+              ],
+            },
           }),
+          fee: Zero as Int<32>,
+          partner: raiden.address,
+        },
+        { secrethash, direction: Direction.RECEIVED },
+      ),
+    );
+    expect(partner.output.find(transfer.request.is)).toEqual(
+      transfer.request(
+        {
+          tokenNetwork,
+          target: target.address,
+          value: amount.add(flat) as UInt<32>,
+          paymentId: transf.payment_identifier,
+          expiration: transf.lock.expiration.toNumber(),
+          initiator: raiden.address,
+          fee: flat.mul(-1) as Int<32>,
+          metadata: {
+            routes: [
+              expect.objectContaining({
+                // partner doesn't clear route because target doesn't require it
+                route: [partner.address, target.address],
+              }),
+            ],
+          },
           partner: target.address,
           userId: (await target.deps.matrix$.toPromise()).getUserId()!,
         },
