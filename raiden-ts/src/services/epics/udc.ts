@@ -29,14 +29,7 @@ import { dispatchAndWait$ } from '../../transfers/epics/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, networkErrors } from '../../utils/error';
-import {
-  catchAndLog,
-  completeWith,
-  mergeWith,
-  retryAsync$,
-  retryWhile,
-  takeIf,
-} from '../../utils/rx';
+import { catchAndLog, completeWith, mergeWith, retryWhile, takeIf } from '../../utils/rx';
 import type { Address, UInt } from '../../utils/types';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '../actions';
 
@@ -49,32 +42,34 @@ import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '../actions';
  * @param deps.address - Our address
  * @param deps.latest$ - Latest observable
  * @param deps.userDepositContract - UserDeposit contract instance
- * @param deps.provider - Eth provider
+ * @param deps.config$ - Config observable
  * @returns Observable of udcDeposited actions
  */
 export function monitorUdcBalanceEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { address, latest$, provider, userDepositContract }: RaidenEpicDeps,
+  { address, latest$, config$, userDepositContract }: RaidenEpicDeps,
 ): Observable<udcDeposit.success> {
   return action$.pipe(
     filter(newBlock.is),
-    startWith(null),
+    pluck('payload', 'blockNumber'),
+    withLatestFrom(config$),
     // it's seems ugly to call on each block, but UserDepositContract doesn't expose deposits as
     // events, and ethers actually do that to monitor token balances, so it's equivalent
-    exhaustMap(() =>
+    exhaustMap(([blockNumber, { confirmationBlocks }]) =>
       /* This contract's function is pure (doesn't depend on user's confirmation, gas availability,
        * etc), but merged on the top-level observable, therefore connectivity issues can cause
        * exceptions which would shutdown the SDK. Let's swallow the error here, since this will be
        * retried on next block, which should only be emitted after connectivity is reestablished */
-      retryAsync$(
-        () =>
-          Promise.all([
-            userDepositContract.callStatic.effectiveBalance(address) as Promise<UInt<32>>,
-            userDepositContract.callStatic.total_deposit(address) as Promise<UInt<32>>,
-          ]),
-        provider.pollingInterval,
-        { onErrors: networkErrors },
+      defer(async () =>
+        Promise.all([
+          userDepositContract.callStatic.effectiveBalance(address, {
+            blockTag: blockNumber - confirmationBlocks,
+          }) as Promise<UInt<32>>,
+          userDepositContract.callStatic.total_deposit(address, {
+            blockTag: blockNumber - confirmationBlocks,
+          }) as Promise<UInt<32>>,
+        ]),
       ).pipe(catchError(constant(EMPTY))),
     ),
     withLatestFrom(latest$),

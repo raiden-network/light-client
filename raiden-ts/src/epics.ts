@@ -156,6 +156,7 @@ export function getLatest$(
   const initialStale = false;
   const udcDeposit$ = action$.pipe(
     filter(udcDeposit.success.is),
+    filter((action) => !('confirmed' in action.payload) || !!action.payload.confirmed),
     map((action) => ({ balance: action.payload.balance, totalDeposit: action.meta.totalDeposit })),
     // starts with max, to prevent receiving starting as disabled before actual balance is fetched
     startWith(initialUdcDeposit),
