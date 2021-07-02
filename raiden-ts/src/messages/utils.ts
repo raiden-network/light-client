@@ -10,14 +10,19 @@ import { canonicalize } from 'json-canonicalize';
 import logging from 'loglevel';
 
 import type { BalanceProof } from '../channels/types';
-import { LocksrootZero } from '../constants';
+import { Capabilities, LocksrootZero } from '../constants';
+import type { matrixPresence } from '../transport/actions';
+import type { Caps } from '../transport/types';
+import { getCap } from '../transport/utils';
+import type { RaidenEpicDeps } from '../types';
 import { assert } from '../utils';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
+import { ErrorCodes } from '../utils/error';
 import type { Address, Hash, HexString } from '../utils/types';
 import { decode, Signature, Signed } from '../utils/types';
 import { messageReceived } from './actions';
 import type { AddressMetadata, EnvelopeMessage } from './types';
-import { Message, MessageType } from './types';
+import { Message, MessageType, Metadata } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
   [MessageType.DELIVERED]: 12,
@@ -302,9 +307,14 @@ export function isSigned<M extends Message & { signature?: Signature }>(
  * Requires a signed message and returns its signer address
  *
  * @param message - Signed message to retrieve signer address
+ * @param caps - Sender's capabilities which may change how signature is verified
  * @returns Address which signed message
  */
-export function getMessageSigner(message: Signed<Message>): Address {
+export function getMessageSigner(message: Signed<Message>, caps?: Caps): Address {
+  // if !caps.immutableMetadata, partner doesn't sign the same thing they send, but the decoded
+  // version of it (checksummed addresses)
+  if (!getCap(caps, Capabilities.IMMUTABLE_METADATA) && 'metadata' in message)
+    message = { ...message, metadata: decode(Metadata, message.metadata) };
   return verifyMessage(arrayify(packMessage(message)), message.signature) as Address;
 }
 
@@ -426,4 +436,37 @@ export function validateAddressMetadata(
   if (metadata && verifyMessage(metadata.user_id, metadata.displayname) === address)
     return metadata;
   else if (metadata) log?.warn('Invalid address metadata', { address, metadata });
+}
+
+/**
+ * Parse a received message into either a Message or Signed<Message>
+ * If Signed, the signer must match the sender's address.
+ * Errors are logged and undefined returned
+ *
+ * @param line - String to be parsed as a single message
+ * @param sender - Sender's presence
+ * @param deps - Dependencies
+ * @param deps.log - Logger instance
+ * @returns Validated Signed or unsigned Message, or undefined
+ */
+export function parseMessage(
+  line: unknown,
+  sender: matrixPresence.success,
+  { log }: Pick<RaidenEpicDeps, 'log'>,
+): Message | Signed<Message> | undefined {
+  if (typeof line !== 'string') return;
+  try {
+    const message = decodeJsonMessage(line);
+    // if Signed, accept only if signature matches sender address
+    if ('signature' in message) {
+      const signer = getMessageSigner(message, sender.payload.caps);
+      assert(signer === sender.meta.address, [
+        ErrorCodes.TRNS_MESSAGE_SIGNATURE_MISMATCH,
+        { sender: sender.meta.address, signer },
+      ]);
+    }
+    return message;
+  } catch (err) {
+    log.warn(`Could not decode message: ${line}: ${err}`);
+  }
 }

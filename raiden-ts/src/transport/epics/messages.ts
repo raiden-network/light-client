@@ -37,7 +37,12 @@ import { intervalFromConfig } from '../../config';
 import { messageReceived, messageSend, messageServiceSend } from '../../messages/actions';
 import type { Delivered, Message } from '../../messages/types';
 import { MessageType, Processed, SecretRequest, SecretReveal } from '../../messages/types';
-import { encodeJsonMessage, isMessageReceivedOfType, signMessage } from '../../messages/utils';
+import {
+  encodeJsonMessage,
+  isMessageReceivedOfType,
+  parseMessage,
+  signMessage,
+} from '../../messages/utils';
 import { ServiceDeviceId } from '../../services/types';
 import { pfsInfoAddress } from '../../services/utils';
 import type { RaidenState } from '../../state';
@@ -55,7 +60,7 @@ import {
 } from '../../utils/rx';
 import { Address, isntNil, Signed } from '../../utils/types';
 import { matrixPresence } from '../actions';
-import { getAddressFromUserId, getNoDeliveryPeers, parseMessage } from '../utils';
+import { getAddressFromUserId, getNoDeliveryPeers, getSeenPresences } from '../utils';
 
 function getMessageBody(message: string | Signed<Message>): string {
   return typeof message === 'string' ? message : encodeJsonMessage(message);
@@ -338,58 +343,65 @@ export function matrixMessageServiceSendEpic(
  * @param deps.matrix$ - MatrixClient async subject
  * @param deps.config$ - Config observable
  * @param deps.latest$ - Latest values
- * @returns Observable of messageReceived actions
+ * @returns Observable of messageReceived|matrixPresence.request actions
  */
 export function matrixMessageReceivedEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { log, matrix$, config$, latest$ }: RaidenEpicDeps,
-): Observable<messageReceived> {
-  return matrix$.pipe(
-    // when matrix finishes initialization, register to matrix timeline events
-    mergeWith((matrix) => fromEvent<MatrixEvent>(matrix, 'toDeviceEvent')),
-    filter(
-      ([matrix, event]) =>
-        event.getType() === 'm.room.message' && event.getSender() !== matrix.getUserId(),
-    ),
-    pluck(1),
-    withLatestFrom(config$),
-    mergeWith(([event, { httpTimeout }]) =>
-      latest$.pipe(
-        pluckDistinct('whitelisted'),
-        map((whitelisted) => {
-          const address = getAddressFromUserId(event.getSender());
-          // TODO: check if it's possible again to enforce message came from a client-side
-          // validated userId presence, even though the messages signatures are already validated
-          if (!!address && whitelisted.includes(address)) return address;
-        }),
-        filter(isntNil),
-        take(1),
-        // take up to an arbitrary timeout for sender to be whitelisted
-        takeUntil(timer(httpTimeout)),
-      ),
-    ),
-    completeWith(action$),
-    mergeMap(([[event], senderAddress]) => {
-      const lines: string[] = (event.getContent().body ?? '').split('\n');
-      return scheduled(lines, asapScheduler).pipe(
-        map((line) => {
-          let message;
-          if (event.getContent().msgtype === textMsgType)
-            message = parseMessage(line, senderAddress, { log });
-          return messageReceived(
-            {
-              text: line,
-              ...(message ? { message } : {}),
-              ts: Date.now(),
-              userId: event.getSender(),
-              ...(event.getContent().msgtype ? { msgtype: event.getContent().msgtype } : {}),
-            },
-            { address: senderAddress },
+): Observable<messageReceived | matrixPresence.request> {
+  return action$.pipe(
+    dispatchRequestAndGetResponse(matrixPresence, (requestPresence) =>
+      matrix$.pipe(
+        // when matrix finishes initialization, register to matrix timeline events
+        mergeWith((matrix) => fromEvent<MatrixEvent>(matrix, 'toDeviceEvent')),
+        filter(
+          ([matrix, event]) =>
+            event.getType() === 'm.room.message' && event.getSender() !== matrix.getUserId(),
+        ),
+        pluck(1),
+        withLatestFrom(config$, action$.pipe(getSeenPresences())),
+        mergeWith(([event, { httpTimeout }, seenPresences]) => {
+          const senderId = event.getSender();
+          if (senderId in seenPresences) return of(seenPresences[senderId]);
+          return latest$.pipe(
+            pluckDistinct('whitelisted'),
+            map((whitelisted) => {
+              const address = getAddressFromUserId(senderId);
+              if (!!address && whitelisted.includes(address)) return address;
+            }),
+            filter(isntNil),
+            take(1),
+            // take up to an arbitrary timeout for sender to be whitelisted
+            takeUntil(timer(httpTimeout)),
+            // only request presence if node was whitelisted, to avoid whitelisting unknown senders
+            mergeMap((address) => requestPresence(matrixPresence.request(undefined, { address }))),
+            catchError(constant(EMPTY)),
           );
         }),
-      );
-    }),
+        completeWith(action$),
+        mergeMap(([[event], presence]) => {
+          const lines: string[] = (event.getContent().body ?? '').split('\n');
+          return scheduled(lines, asapScheduler).pipe(
+            map((line) => {
+              let message;
+              if (event.getContent().msgtype === textMsgType)
+                message = parseMessage(line, presence, { log });
+              return messageReceived(
+                {
+                  text: line,
+                  ...(message ? { message } : {}),
+                  ts: Date.now(),
+                  userId: event.getSender(),
+                  ...(event.getContent().msgtype ? { msgtype: event.getContent().msgtype } : {}),
+                },
+                presence.meta,
+              );
+            }),
+          );
+        }),
+      ),
+    ),
   );
 }
 

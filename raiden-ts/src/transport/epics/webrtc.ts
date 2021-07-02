@@ -46,6 +46,7 @@ import type { RaidenAction } from '../../actions';
 import { channelMonitored } from '../../channels/actions';
 import { Capabilities } from '../../constants';
 import { messageReceived, messageSend } from '../../messages/actions';
+import { parseMessage } from '../../messages/utils';
 import type { RaidenState } from '../../state';
 import { transferSigned } from '../../transfers/actions';
 import { dispatchAndWait$ } from '../../transfers/epics/utils';
@@ -66,12 +67,11 @@ import {
 import type { Address } from '../../utils/types';
 import { decode, isntNil, last } from '../../utils/types';
 import { matrixPresence, rtcChannel } from '../actions';
-import { getCap, parseMessage } from '../utils';
+import { getCap, getSeenPresences } from '../utils';
 
 interface CallInfo {
   callId: string;
-  readonly peerId: string;
-  readonly peerAddress: Address;
+  readonly peer: matrixPresence.success;
 }
 const rtcMatrixMsgType = 'm.notice';
 
@@ -138,10 +138,6 @@ type ChannelRequest = readonly [
 ];
 type ChannelUpdate = readonly [put: boolean, channel: RTCDataChannel, error?: Error];
 
-type RtcMessage = messageReceived & {
-  payload: { userId: string; msgtype: typeof rtcMatrixMsgType };
-};
-
 // fetches and caches matrix set turnServer
 const _matrixIceServersCache = new WeakMap<MatrixClient, [number, RTCIceServer[]]>();
 async function getMatrixIceServers(matrix: MatrixClient): Promise<RTCIceServer[]> {
@@ -175,14 +171,14 @@ async function getMatrixIceServers(matrix: MatrixClient): Promise<RTCIceServer[]
 function matrixWebrtcEvents$<T extends RtcEventType>(
   action$: Observable<RaidenAction>,
   type: T,
-  info: Pick<CallInfo, 'peerAddress'> & Partial<Pick<CallInfo, 'callId'>>,
+  { peer, callId }: Readonly<Omit<CallInfo, 'callId'> & Partial<Pick<CallInfo, 'callId'>>>,
   { log }: Partial<Pick<RaidenEpicDeps, 'log'>> = {},
 ) {
   return action$.pipe(
     filter(messageReceived.is),
     filter(
       ({ meta, payload }) =>
-        meta.address === info.peerAddress && payload.msgtype === rtcMatrixMsgType,
+        meta.address === peer.meta.address && payload.msgtype === rtcMatrixMsgType,
     ),
     mergeMap(function* (action) {
       try {
@@ -197,7 +193,7 @@ function matrixWebrtcEvents$<T extends RtcEventType>(
         });
       }
     }),
-    filter((e) => !info.callId || e.call_id === info.callId),
+    filter((e) => !callId || e.call_id === callId),
   );
 }
 
@@ -242,8 +238,12 @@ function handleCandidates$(
           call_id: info.callId,
         };
         return messageSend.request(
-          { message: jsonStringify(body), msgtype: rtcMatrixMsgType, userId: info.peerId },
-          { address: info.peerAddress, msgId: makeMessageId().toString() },
+          {
+            message: jsonStringify(body),
+            msgtype: rtcMatrixMsgType,
+            userId: info.peer.payload.userId,
+          },
+          { address: info.peer.meta.address, msgId: makeMessageId().toString() },
         );
       }),
     ),
@@ -281,7 +281,7 @@ function makeDataChannelObservable(
         dataChannel.send(pingMsg);
         open$.next(true);
         open$.complete();
-        return rtcChannel(dataChannel, { address: info.peerAddress });
+        return rtcChannel(dataChannel, info.peer.meta);
       }),
     ),
     fromEvent<MessageEvent>(dataChannel, 'message').pipe(
@@ -296,11 +296,11 @@ function makeDataChannelObservable(
         messageReceived(
           {
             text: line,
-            message: parseMessage(line, info.peerAddress, deps),
+            message: parseMessage(line, info.peer, deps),
             ts: Date.now(),
-            userId: info.peerId,
+            userId: info.peer.payload.userId,
           },
-          { address: info.peerAddress },
+          info.peer.meta,
         ),
       ),
     ),
@@ -336,14 +336,13 @@ function listenDataChannel<T>(
 // make an observable which answers an incoming call when subscribed
 function makeCalleeAnswer$(
   action$: Observable<RaidenAction>,
-  [received, offer]: [RtcMessage, t.TypeOf<typeof RtcOffer>],
+  [peer, offer]: [matrixPresence.success, t.TypeOf<typeof RtcOffer>],
   deps: RaidenEpicDeps,
 ): Observable<rtcChannel | messageReceived | messageSend.request> {
   const { matrix$, config$, log } = deps;
   const info: CallInfo = {
     callId: offer.call_id!,
-    peerId: received.payload.userId,
-    peerAddress: received.meta.address,
+    peer,
   };
   log.info('RTC: callee answering', info);
   const start$ = new AsyncSubject<true>();
@@ -371,9 +370,9 @@ function makeCalleeAnswer$(
               {
                 message: jsonStringify(body),
                 msgtype: rtcMatrixMsgType,
-                userId: received.payload.userId,
+                userId: peer.payload.userId,
               },
-              { address: info.peerAddress, msgId: makeMessageId().toString() },
+              { ...peer.meta, msgId: makeMessageId().toString() },
             );
             // send answer, complete when response goes through
             return dispatchAndWait$(action$, request, isResponseOf(messageSend, request.meta));
@@ -421,7 +420,7 @@ function makeOfferWaitAnswer(
 
 // extracted helper of [makeCallerCall$]
 function makeCallerObservable(
-  [peer, peerId]: readonly [Address, string],
+  peer: matrixPresence.success,
   action$: Observable<RaidenAction>,
   deps: RaidenEpicDeps,
 ) {
@@ -431,9 +430,8 @@ function makeCallerObservable(
     withLatestFrom(config$),
     mergeMap(([matrixIce, { fallbackIceServers: fallback }]) => {
       const info: CallInfo = {
-        callId: `${address}|${peer}|${Date.now()}`,
-        peerId,
-        peerAddress: peer,
+        callId: `${address}|${peer.meta.address}|${Date.now()}`,
+        peer,
       };
       log.info('RTC: caller calling', info);
       const connection = new RTCPeerConnection({ iceServers: matrixIce.concat(fallback) });
@@ -453,8 +451,12 @@ function makeCallerObservable(
               call_id: info.callId,
             };
             const request = messageSend.request(
-              { message: jsonStringify(body), msgtype: rtcMatrixMsgType, userId: info.peerId },
-              { address: peer, msgId: makeMessageId().toString() },
+              {
+                message: jsonStringify(body),
+                msgtype: rtcMatrixMsgType,
+                userId: info.peer.payload.userId,
+              },
+              { address: info.peer.meta.address, msgId: makeMessageId().toString() },
             );
             return makeOfferWaitAnswer(
               request,
@@ -476,16 +478,15 @@ function makeCallerObservable(
 // make an observable which calls peer when subscribed
 function makeCallerCall$(
   action$: Observable<RaidenAction>,
-  [peer, peerId]: readonly [peer: Address, peerId?: string],
+  peer: Address,
   deps: RaidenEpicDeps,
 ): Observable<rtcChannel | messageReceived | messageSend.request | matrixPresence.request> {
-  if (peerId) return makeCallerObservable([peer, peerId], action$, deps);
   return action$.pipe(
     dispatchRequestAndGetResponse(matrixPresence, (dispatch) =>
       dispatch(matrixPresence.request(undefined, { address: peer })).pipe(
         mergeMap((presence) => {
           assert(getCap(presence.payload.caps, Capabilities.WEBRTC), "peer doesn't support RTC");
-          return makeCallerObservable([peer, presence.payload.userId], action$, deps);
+          return makeCallerObservable(presence, action$, deps);
         }),
       ),
     ),
@@ -555,8 +556,8 @@ function manageCallerChannel(
           }),
         );
       }).pipe(
-        retryWhen((err$) =>
-          err$.pipe(
+        retryWhen(
+          pipe(
             withLatestFrom(config$),
             mergeMap(([, { pollingInterval, httpTimeout }], retryCount) => {
               if (retryCount >= 5) return of(true);
@@ -578,21 +579,31 @@ function manageCallerChannel(
 // operator to map stream of RaidenActions to incoming calls (received message and decoded offer)
 function mapRtcMessage(): OperatorFunction<
   RaidenAction,
-  readonly [RtcMessage, t.TypeOf<typeof RtcOffer>]
+  readonly [matrixPresence.success, t.TypeOf<typeof RtcOffer>]
 > {
-  return pipe(
-    filter(messageReceived.is),
-    filter(
-      (action): action is RtcMessage =>
-        action.payload.msgtype === rtcMatrixMsgType && !!action.payload.userId,
-    ),
-    mergeWith(function* (action) {
-      try {
-        const json = jsonParse(action.payload.text);
-        if (json['type'] === RtcEventType.offer) yield decode(rtcCodecs[RtcEventType.offer], json);
-      } catch (error) {}
-    }),
-  );
+  return (action$) =>
+    action$.pipe(
+      filter(messageReceived.is),
+      withLatestFrom(action$.pipe(getSeenPresences())),
+      filter(
+        ([action, seenPresences]) =>
+          action.payload.msgtype === rtcMatrixMsgType &&
+          !!action.payload.userId &&
+          // messageReceived is emitted iff we've seen & validated peer's presence, but we add
+          // a check that it's present here just to be sure
+          action.payload.userId in seenPresences,
+      ),
+      mergeMap(function* ([action, seenPresences]) {
+        try {
+          const json = jsonParse(action.payload.text);
+          if (json['type'] === RtcEventType.offer)
+            yield [
+              seenPresences[action.payload.userId!],
+              decode(rtcCodecs[RtcEventType.offer], json),
+            ] as const;
+        } catch (error) {}
+      }),
+    );
 }
 
 // from actions, choose peers which whom we should attempt to [re]establish RTC channels
@@ -682,11 +693,11 @@ export function rtcConnectionManagerEpic(
   // observable of observables, created upon certain events which triggers us to try to call peer
   const asCaller$: Observable<ChannelRequest> = action$.pipe(
     // allow RTC connect to neighbors, initiators for received and targets for sent transfers
-    mergeMap(function* (action): Iterable<readonly [peerAddress: Address, peerId?: string]> {
+    mergeMap(function* (action): Iterable<Address> {
       const peerAddress = getAddressOfInterest(action, deps);
-      if (peerAddress) yield [peerAddress];
+      if (peerAddress) yield peerAddress;
     }),
-    map((peer) => [peer[0], Role.caller, makeCallerCall$(action$, peer, deps)]),
+    map((peer) => [peer, Role.caller, makeCallerCall$(action$, peer, deps)]),
   );
 
   return merge(asCallee$, asCaller$).pipe(

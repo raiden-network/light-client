@@ -5,12 +5,8 @@ import { filter, scan, startWith } from 'rxjs/operators';
 
 import type { RaidenAction } from '../actions';
 import { Capabilities, CapsFallback } from '../constants';
-import type { Message } from '../messages/types';
-import { decodeJsonMessage, getMessageSigner } from '../messages/utils';
-import type { RaidenEpicDeps } from '../types';
 import { jsonParse } from '../utils/data';
-import { assert, ErrorCodes } from '../utils/error';
-import type { Address, Signed } from '../utils/types';
+import type { Address } from '../utils/types';
 import { matrixPresence } from './actions';
 import type { Caps, CapsPrimitive } from './types';
 
@@ -122,37 +118,18 @@ export function getNoDeliveryPeers(): OperatorFunction<RaidenAction, Set<Address
 }
 
 /**
- * Parse a received message into either a Message or Signed<Message>
- * If Signed, the signer must match the sender's address.
- * Errors are logged and undefined returned
+ * Extracts peer's addresses which don't need Delivered messages as a set
  *
- * @param line - String to be parsed as a single message
- * @param address - Sender's address
- * @param deps - Dependencies
- * @param deps.log - Logger instance
- * @returns Validated Signed or unsigned Message, or undefined
+ * @returns custom operator mapping from stream of RaidenActions to address set
  */
-export function parseMessage(
-  line: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-  address: Address,
-  { log }: Pick<RaidenEpicDeps, 'log'>,
-): Message | Signed<Message> | undefined {
-  if (typeof line !== 'string') return;
-  try {
-    const message = decodeJsonMessage(line);
-    // if Signed, accept only if signature matches sender address
-    if ('signature' in message) {
-      const signer = getMessageSigner(message);
-      assert(signer === address, [
-        ErrorCodes.TRNS_MESSAGE_SIGNATURE_MISMATCH,
-        {
-          sender: address,
-          signer,
-        },
-      ]);
-    }
-    return message;
-  } catch (err) {
-    log.warn(`Could not decode message: ${line}: ${err}`);
-  }
+export function getSeenPresences(): OperatorFunction<
+  RaidenAction,
+  { [userId: string]: matrixPresence.success }
+> {
+  const emptyDict: { [userId: string]: matrixPresence.success } = {};
+  return pipe(
+    filter(matrixPresence.success.is),
+    scan((acc, action) => ({ ...acc, [action.payload.userId]: action }), emptyDict),
+    startWith(emptyDict),
+  );
 }
