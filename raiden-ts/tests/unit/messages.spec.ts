@@ -5,6 +5,7 @@ import { promises as fs } from 'fs';
 import logging from 'loglevel';
 import path from 'path';
 
+import { Capabilities, CapsFallback } from '@/constants';
 import type { LockedTransfer } from '@/messages/types';
 import { Message, MessageType, PFSFeeUpdate } from '@/messages/types';
 import {
@@ -13,8 +14,10 @@ import {
   encodeJsonMessage,
   getBalanceProofFromEnvelopeMessage,
   getMessageSigner,
+  parseMessage,
   signMessage,
 } from '@/messages/utils';
+import { matrixPresence } from '@/transport/actions';
 import { jsonParse } from '@/utils/data';
 import type { Address, Hash, UInt } from '@/utils/types';
 import { decode, Signed } from '@/utils/types';
@@ -24,15 +27,15 @@ describe('sign/verify, pack & encode/decode ', () => {
   const signer = new Wallet(Uint8Array.from(Array(32).keys()));
   const address = signer.address as Address; // 0xedE35562d3555e61120a151B3c8e8e91d83a378a
 
+  const log = logging.getLogger('messages');
+  log.setLevel(logging.levels.INFO);
+
   test('Messages serialization & signature', async () => {
     // 13 = number of messages in Messages codec, 4 = number of expects in for-loop
     expect.assertions(4 * 13);
 
     const dir = path.join(__dirname, 'messages');
     const files = await fs.readdir(dir);
-
-    const log = logging.getLogger('messages');
-    log.setLevel(logging.levels.INFO);
 
     for (const file of files) {
       const filepath = path.join(dir, file);
@@ -53,6 +56,45 @@ describe('sign/verify, pack & encode/decode ', () => {
       expect(jsonParse(encoded)).toEqual(originalParsed);
     }
   }, 10e3);
+
+  test('LockedTransfer with lowercase "metadata" and !Capabilities.IMMUTABLE_METADATA', async () => {
+    const original = await fs.readFile(path.join(__dirname, 'messages', 'LockedTransfer.json'), {
+      encoding: 'utf-8',
+    });
+    const lowercased = original
+      .toLowerCase()
+      .replace(/\blockedtransfer\b/gi, MessageType.LOCKED_TRANSFER); // type needs proper case
+
+    const presence = matrixPresence.success(
+      {
+        userId: `@${address.toLowerCase()}:server`,
+        ts: Date.now(),
+        available: true,
+        // explicitly set IMMUTABLE_METADATA=0
+        caps: { ...CapsFallback, [Capabilities.IMMUTABLE_METADATA]: 0 },
+      },
+      { address },
+    );
+    const immutablePresence = {
+      ...presence,
+      payload: {
+        ...presence.payload,
+        caps: { ...presence.payload.caps, [Capabilities.IMMUTABLE_METADATA]: 1 },
+      },
+    };
+
+    // parseMessage can properly verify signature even if metadata is lowercased
+    expect(parseMessage(lowercased, presence, { log })).toMatchObject({
+      type: MessageType.LOCKED_TRANSFER,
+    });
+    // parseMessage can properly verify signature from immutable partner
+    expect(parseMessage(original, immutablePresence, { log })).toMatchObject({
+      type: MessageType.LOCKED_TRANSFER,
+    });
+    // parseMessage fails to validate as `clearRoute=0` requires strictly verifying the received
+    // string message
+    expect(parseMessage(lowercased, immutablePresence, { log })).toBeUndefined();
+  });
 
   test('PFSFeeUpdate real life example', () => {
     const encoded = {
