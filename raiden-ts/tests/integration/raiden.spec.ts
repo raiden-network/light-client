@@ -233,6 +233,7 @@ describe('confirmationEpic', () => {
       transactionIndex: 1,
       gasUsed: One,
       cumulativeGasUsed: One,
+      effectiveGasPrice: One,
       logsBloom: '',
       blockHash: HashZero,
       logs: [],
@@ -240,6 +241,7 @@ describe('confirmationEpic', () => {
       transactionHash: txHash,
       byzantium: true,
       blockNumber: openBlock,
+      type: 0,
     });
     raiden.deps.provider.getTransactionReceipt.mockResolvedValueOnce(null as any);
 
