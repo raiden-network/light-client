@@ -1,13 +1,18 @@
 import { cacheNames } from 'workbox-core';
 
 /**
- * Checks if the cache was already created.
- * This does not check its content nor if there is any content.
+ * Checks if the cache was already created and is not empty.
  *
- * @returns cache does exist
+ * @returns cache does exist and is not empty
  */
 export async function doesCacheExist() {
-  return await caches.has(cacheNames.precache);
+  if (await caches.has(cacheNames.precache)) {
+    const cache = await caches.open(cacheNames.precache);
+    const keys = await cache.keys();
+    return keys.length > 0;
+  } else {
+    return false;
+  }
 }
 
 /**
@@ -21,7 +26,7 @@ export async function doesCacheExist() {
  * @returns boolean if the cache is evaluated as valid
  */
 export async function isCacheInvalid() {
-  if (!(await doesCacheExist())) {
+  if (!(await caches.has(cacheNames.precache))) {
     return true;
   }
 
