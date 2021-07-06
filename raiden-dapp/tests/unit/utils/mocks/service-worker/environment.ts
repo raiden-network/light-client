@@ -74,7 +74,7 @@ type ServiceWorkerEnvironment = CacheStorageEnvironment &
     client: MockedClient;
     clients: MockedClients;
     registration: MockedRegistration;
-    manifest: { url: string; revision?: string }[];
+    precacheEntries: { url: string; revision?: string }[];
   };
 
 /**
@@ -94,8 +94,8 @@ export function mockEnvironmentForServiceWorker(
 ): EventTarget {
   const client = environment?.client ?? new MockedClient();
   const clients = environment?.clients ?? new MockedClients([client]);
-  const manifest = environment?.manifest ?? [];
   const registration = environment?.registration ?? new MockedRegistration();
+  const precacheEntries = environment?.precacheEntries ?? [];
   const context = new EventTarget();
   const { caches } = mockCacheStorageInEnvironment({ ...environment });
   mockIndexedDatabaseInEnvironment({ ...environment });
@@ -112,7 +112,7 @@ export function mockEnvironmentForServiceWorker(
     caches,
     clients,
     registration,
-    __WB_MANIFEST: manifest,
+    __WB_PRECACHE_ENTRIES: precacheEntries,
     __WB_DISABLE_DEV_LOGS: true, // Can be temporally enabled for debugging purposes.
   });
 
