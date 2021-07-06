@@ -1,9 +1,17 @@
 import {
   MockedCache,
   MockedCacheStorage,
+  MockedClient,
+  MockedClients,
+  MockedExtendableEvent,
+  mockedFetch,
+  MockedFetchEvent,
   MockedIDBDatabase,
   MockedIDBFactory,
   MockedIDBObjectStore,
+  MockedRegistration,
+  MockedRequest,
+  MockedResponse,
 } from './';
 
 type CacheStorageEnvironment = {
@@ -59,4 +67,58 @@ export function mockIndexedDatabaseInEnvironment(
   Object.assign(global, { indexedDB, IDBObjectStore: MockedIDBObjectStore });
 
   return { objectStore, database, indexedDB };
+}
+
+type ServiceWorkerEnvironment = CacheStorageEnvironment &
+  IndexedDatabaseEnvironment & {
+    client: MockedClient;
+    clients: MockedClients;
+    registration: MockedRegistration;
+    manifest: { url: string; revision?: string }[];
+  };
+
+/**
+ * Adds all necessary APIs, classes and more to the environment as it would look
+ * like for a service worker thread in the browser. Allows to provide particular
+ * instances of the implementations for testing control.
+ *
+ * Please make sure to call `jest.restoreAllMocks()` to "tear down" the
+ * environment again.
+ *
+ * @param environment - set of particular instances to use for environment
+ * @returns context - the service worker will get bound to (can be used to dispatch
+ * events)
+ */
+export function mockEnvironmentForServiceWorker(
+  environment?: Partial<ServiceWorkerEnvironment>,
+): EventTarget {
+  const client = environment?.client ?? new MockedClient();
+  const clients = environment?.clients ?? new MockedClients([client]);
+  const manifest = environment?.manifest ?? [];
+  const registration = environment?.registration ?? new MockedRegistration();
+  const context = new EventTarget();
+  const { caches } = mockCacheStorageInEnvironment({ ...environment });
+  mockIndexedDatabaseInEnvironment({ ...environment });
+
+  Object.assign(global, {
+    fetch: mockedFetch,
+    Request: MockedRequest,
+    FetchEvent: MockedFetchEvent,
+    ExtendableEvent: MockedExtendableEvent,
+    Response: MockedResponse,
+  });
+
+  Object.assign(context, {
+    caches,
+    clients,
+    registration,
+    __WB_MANIFEST: manifest,
+    __WB_DISABLE_DEV_LOGS: true, // Can be temporally enabled for debugging purposes.
+  });
+
+  const contextGetSpy = jest.spyOn(global, 'self', 'get');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contextGetSpy.mockReturnValue(context as any);
+
+  return context;
 }
