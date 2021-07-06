@@ -35,7 +35,7 @@ async function onInstall(event) {
 
   if (!cacheExists) {
     this.shouldUpdate = true;
-    this.precacheEntries = self.__WB_MANIFEST;
+    this.precacheEntries = self.__WB_MANIFEST; // Note that `self` is used due to the functionality of the workbox plugin.
     this.controller.addToCacheList(this.precacheEntries);
     this.controller.install(event);
   } else if (cacheExists && preservedPrecacheEntries) {
@@ -97,9 +97,9 @@ async function onRouteError() {
   return Response.error();
 }
 
-self.oninstall = (event) => event.waitUntil(onInstall.call(self, event));
-self.onactivate = (event) => event.waitUntil(onActivate.call(self, event));
-self.onmessage = (event) => event.waitUntil(onMessage.call(self, event));
+self.addEventListener('install', (event) => event.waitUntil(onInstall.call(self, event)));
+self.addEventListener('activate', (event) => event.waitUntil(onActivate.call(self, event)));
+self.addEventListener('message', (event) => event.waitUntil(onMessage.call(self, event)));
 
 registerRoute(self.route.match, self.route.handler); // TODO: Why can't we pass the route directly?
 setCatchHandler(onRouteError.bind(self));
