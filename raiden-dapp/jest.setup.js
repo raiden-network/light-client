@@ -1,3 +1,5 @@
+import { MockedIDBObjectStore } from './tests/unit/utils/mocks/service-worker/indexeddb.ts';
+
 if (!('IntersectionObserver' in global)) {
   class IntersectionObserver {
     constructor() {}
@@ -44,3 +46,5 @@ class EventTarget {
 }
 
 Object.assign(global, { EventTarget });
+
+Object.assign(global, { IDBObjectStore: MockedIDBObjectStore });
