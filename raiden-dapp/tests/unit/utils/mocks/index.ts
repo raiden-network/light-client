@@ -1,5 +1,7 @@
 import type VueI18n from 'vue-i18n';
 
+export * from './service-worker';
+
 export const $identicon = () => ({
   getIdenticon: jest.fn().mockReturnValue(''),
 });
