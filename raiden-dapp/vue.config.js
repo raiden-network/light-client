@@ -16,7 +16,7 @@ function getPackageVersion() {
 /*
  * Note that it is not necessary to exclude the version file from the to
  * cache assets. The version file gets generated during the build and is
- * thereby not included in the pre-cache manifest. The same goes for the
+ * thereby not included in the precache entries. The same goes for the
  * worker script itself.
  */
 function setupServiceWorkerRelatedPlugins(config) {
@@ -37,6 +37,7 @@ function setupServiceWorkerRelatedPlugins(config) {
   const injectServiceWorkerPlugin = new InjectManifest({
     swSrc: path.join(sourceDirectoryPath, 'service-worker', 'worker'),
     swDest: 'service-worker.js',
+    injectionPoint: 'self.__WB_PRECACHE_ENTRIES',
     maximumFileSizeToCacheInBytes: 20e6,
   });
 

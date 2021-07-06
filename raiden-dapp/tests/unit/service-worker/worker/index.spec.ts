@@ -71,11 +71,11 @@ describe('service worker index', () => {
   });
 
   describe('installation and activation phases', () => {
-    test('saves manifest entries to cache if cache and database are empty', async () => {
+    test('saves the precache entries to cache if cache and database are empty', async () => {
       const cache = new MockedCache([]);
       const indexedDB = new MockedIDBFactory();
-      const manifest = [{ url: 'https://test.tld/asset', revision: '1' }];
-      const context = mockEnvironmentForServiceWorker({ cache, indexedDB, manifest });
+      const precacheEntries = [{ url: 'https://test.tld/asset', revision: '1' }];
+      const context = mockEnvironmentForServiceWorker({ cache, indexedDB, precacheEntries });
 
       await installServiceWorker(context);
 
@@ -85,11 +85,11 @@ describe('service worker index', () => {
       ]);
     });
 
-    test('saves manifest to database if cache and database are empty', async () => {
+    test('saves the precache entries to database if cache and database are empty', async () => {
       const cache = new MockedCache([]);
       const objectStore = new MockedIDBObjectStore();
-      const manifest = [{ url: 'https://test.tld/asset', revision: '1' }];
-      const context = mockEnvironmentForServiceWorker({ cache, objectStore, manifest });
+      const precacheEntries = [{ url: 'https://test.tld/asset', revision: '1' }];
+      const context = mockEnvironmentForServiceWorker({ cache, objectStore, precacheEntries });
 
       await installAndActivateServiceWorker(context);
 
@@ -100,7 +100,7 @@ describe('service worker index', () => {
       );
     });
 
-    test('takes over previous cache if finding manifest in database', async () => {
+    test('takes over previous cache if finding the precache entries in database', async () => {
       const cache = new MockedCache(['https://test.tld/old-asset']);
       const objectStore = new MockedIDBObjectStore('precacheEntries', [
         { url: 'https://test.tld/old-asset' },
@@ -153,9 +153,9 @@ describe('service worker index', () => {
   });
 
   describe('acts on fetch requests of client', () => {
-    test('replies with cached responses for requests in manifest', async () => {
-      const manifest = [{ url: 'https://test.tld/asset', revision: '1' }];
-      const context = mockEnvironmentForServiceWorker({ manifest });
+    test('replies with cached responses for requests in pre-cache entries', async () => {
+      const precacheEntries = [{ url: 'https://test.tld/asset', revision: '1' }];
+      const context = mockEnvironmentForServiceWorker({ precacheEntries });
 
       const fetchEvent = await fetchUrlViaServiceWorker(context, 'https://test.tld/asset');
 
@@ -163,9 +163,9 @@ describe('service worker index', () => {
       expect(fetchEvent.respondWith).toHaveBeenLastCalledWith(expect.any(Object));
     });
 
-    test('ignores requests not in manifest', async () => {
-      const manifest = [{ url: 'https://test.tld/asset', revision: '1' }];
-      const context = mockEnvironmentForServiceWorker({ manifest });
+    test('ignores requests not in pre-cache entries', async () => {
+      const precacheEntries = [{ url: 'https://test.tld/asset', revision: '1' }];
+      const context = mockEnvironmentForServiceWorker({ precacheEntries });
 
       const fetchEvent = await fetchUrlViaServiceWorker(context, 'https://something-else.tld');
 
@@ -177,8 +177,8 @@ describe('service worker index', () => {
       const objectStore = new MockedIDBObjectStore('precacheEntries', [
         { url: 'https://test.tld/old-asset' },
       ]);
-      const manifest = [{ url: 'https://test.tld/new-asset', revision: '1' }];
-      const context = mockEnvironmentForServiceWorker({ cache, objectStore, manifest });
+      const precacheEntries = [{ url: 'https://test.tld/new-asset', revision: '1' }];
+      const context = mockEnvironmentForServiceWorker({ cache, objectStore, precacheEntries });
 
       let fetchEvent = await fetchUrlViaServiceWorker(context, 'https://test.tld/old-asset');
       expect(fetchEvent.respondWith).toHaveBeenCalledTimes(1);
@@ -260,11 +260,11 @@ describe('service worker index', () => {
     test('sends cache is invalid message if cache is missing an entry', async () => {
       const cache = new MockedCache();
       const client = new MockedClient();
-      const manifest = [
+      const precacheEntries = [
         { url: 'https://test.tld/asset-one', revision: '1' },
         { url: 'https://test.tld/asset-two', revision: '1' },
       ];
-      const context = mockEnvironmentForServiceWorker({ cache, client, manifest });
+      const context = mockEnvironmentForServiceWorker({ cache, client, precacheEntries });
       await installAndActivateServiceWorker(context);
 
       await cache.delete(new MockedRequest('https://test.tld/asset-one?__WB_REVISION__=1'));
@@ -279,8 +279,8 @@ describe('service worker index', () => {
     test('sends cache is invalid message if detecting invalid cache and a client is available', async () => {
       const client = new MockedClient();
       const cache = new MockedCache();
-      const manifest = [{ url: 'https://test.tld/asset', revision: '1' }];
-      const context = mockEnvironmentForServiceWorker({ client, cache, manifest });
+      const precacheEntries = [{ url: 'https://test.tld/asset', revision: '1' }];
+      const context = mockEnvironmentForServiceWorker({ client, cache, precacheEntries });
       await installAndActivateServiceWorker(context);
 
       await cache.delete(new MockedRequest('https://test.tld/asset?__WB_REVISION__=1'));
@@ -296,13 +296,13 @@ describe('service worker index', () => {
       const clients = new MockedClients([]);
       const objectStore = new MockedIDBObjectStore('precacheEntries', []);
       const registration = new MockedRegistration();
-      const manifest = [{ url: 'https://test.tld/asset', revision: '1' }];
+      const precacheEntries = [{ url: 'https://test.tld/asset', revision: '1' }];
       const context = mockEnvironmentForServiceWorker({
         caches,
         clients,
         objectStore,
         registration,
-        manifest,
+        precacheEntries,
       });
       await installAndActivateServiceWorker(context);
 

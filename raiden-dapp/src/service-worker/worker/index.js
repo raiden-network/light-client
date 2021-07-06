@@ -35,7 +35,7 @@ async function onInstall(event) {
 
   if (!cacheExists) {
     this.shouldUpdate = true;
-    this.precacheEntries = self.__WB_MANIFEST; // Note that `self` is used due to the functionality of the workbox plugin.
+    this.precacheEntries = self.__WB_PRECACHE_ENTRIES;
     this.controller.addToCacheList(this.precacheEntries);
     this.controller.install(event);
   } else if (cacheExists && preservedPrecacheEntries) {
