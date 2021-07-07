@@ -20,16 +20,17 @@
 
       <spinner v-else-if="inProgress" />
 
-      <template v-else>
-        <v-img class="transfer-progress-dialog__done my-4" :src="require('@/assets/done.svg')" />
+      <template v-else class="d-flex flex-column">
         <span>{{ $t('transfer.steps.done.description') }}</span>
+        <br>
+        <v-icon :color="eventPrizeColor" size="90px">{{ eventPrizeIcon }}</v-icon>
       </template>
     </v-card-text>
   </raiden-dialog>
 </template>
 
 <script lang="ts">
-import type { BigNumber } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 import { Component, Emit, Prop, Vue, Watch } from 'vue-property-decorator';
 import { mapGetters, mapState } from 'vuex';
 
@@ -38,6 +39,11 @@ import type { RaidenTransfer, RaidenTransferStatus } from 'raiden-ts';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import type { Transfers } from '@/types';
+
+enum EthCCEventPrize {
+  TSHIRT = 'tshirt',
+  BEER = 'beer',
+}
 
 @Component({
   components: { RaidenDialog, Spinner },
@@ -67,6 +73,26 @@ export default class TransferProgressDialog extends Vue {
       return this.$t('transfer.steps.transfer.title') as string;
     } else {
       return this.$t('transfer.steps.done.title') as string;
+    }
+  }
+
+  get eventPrize(): EthCCEventPrize {
+    return (this.identifier ?? constants.Zero).mod(2).isZero()
+      ? EthCCEventPrize.TSHIRT
+      : EthCCEventPrize.BEER;
+  }
+
+  get eventPrizeIcon(): string {
+    switch (this.eventPrize) {
+      case EthCCEventPrize.TSHIRT: return 'mdi-tshirt-crew';
+      case EthCCEventPrize.BEER: return 'mdi-glass-mug-variant';
+    }
+  }
+
+  get eventPrizeColor(): string {
+    switch (this.eventPrize) {
+      case EthCCEventPrize.TSHIRT: return 'blue';
+      case EthCCEventPrize.BEER: return 'yellow';
     }
   }
 
