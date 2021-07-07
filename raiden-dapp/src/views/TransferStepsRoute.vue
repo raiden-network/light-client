@@ -435,7 +435,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
     }
   }
 
-  private dismissProgress(delay = 6000) {
+  private dismissProgress(delay = 12000) {
     setTimeout(() => {
       this.error = null;
       this.processingTransfer = false;
