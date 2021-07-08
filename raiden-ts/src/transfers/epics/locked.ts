@@ -102,6 +102,11 @@ function getOpenChannel(
   return channel;
 }
 
+type transferRequestResolved = transfer.request & { payload: { resolved: true } };
+function transferRequestIsResolved(action: transfer.request): action is transferRequestResolved {
+  return action.payload.resolved;
+}
+
 /**
  * The core logic of {@link makeAndSignTransfer}.
  *
@@ -120,7 +125,7 @@ function getOpenChannel(
  */
 function makeAndSignTransfer$(
   state: RaidenState,
-  action: transfer.request,
+  action: transferRequestResolved,
   { revealTimeout, confirmationBlocks, expiryFactor }: RaidenConfig,
   { log, address, network, signer }: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned> {
@@ -128,16 +133,22 @@ function makeAndSignTransfer$(
   const channel = getOpenChannel(state, { tokenNetwork, partner });
 
   assert(
-    !action.payload.expiration || action.payload.expiration > state.blockNumber + revealTimeout,
+    !('expiration' in action.payload) ||
+      !action.payload.expiration ||
+      action.payload.expiration > state.blockNumber + revealTimeout,
     'expiration too soon',
   );
-  const expiration = BigNumber.from(
-    action.payload.expiration ||
-      Math.min(
-        state.blockNumber + Math.round(revealTimeout * expiryFactor),
-        state.blockNumber + channel.settleTimeout - confirmationBlocks,
-      ),
-  ) as UInt<32>;
+  const expiration = decode(
+    UInt(32),
+    'expiration' in action.payload && action.payload.expiration
+      ? action.payload.expiration
+      : 'lockTimeout' in action.payload && action.payload.lockTimeout
+      ? state.blockNumber + action.payload.lockTimeout
+      : Math.min(
+          state.blockNumber + Math.round(revealTimeout * expiryFactor),
+          state.blockNumber + channel.settleTimeout - confirmationBlocks,
+        ),
+  );
   assert(expiration.lte(state.blockNumber + channel.settleTimeout), [
     'expiration too far in the future',
     {
@@ -218,7 +229,7 @@ function makeAndSignTransfer$(
  */
 function sendTransferSigned(
   state$: Observable<RaidenState>,
-  action: transfer.request,
+  action: transferRequestResolved,
   deps: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned | transfer.failure> {
   return combineLatest([state$, deps.config$]).pipe(
