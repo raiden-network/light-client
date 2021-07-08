@@ -611,11 +611,10 @@ function getAddressOfInterest(action: RaidenAction, { address }: Pick<RaidenEpic
   let peer: Address | undefined;
   if (channelMonitored.is(action)) peer = action.meta.partner;
   else if (transferSigned.is(action)) {
-    if (action.meta.direction === Direction.SENT && action.payload.message.initiator === address)
-      peer = action.payload.message.target;
-    else if (
+    if (
       action.meta.direction === Direction.RECEIVED &&
-      action.payload.message.target === address
+      action.payload.message.target === address &&
+      !('secret' in (action.payload.message.metadata as Record<string, unknown>))
     )
       peer = action.payload.message.initiator;
   } else if (messageSend.request.is(action) && action.payload.msgtype !== rtcMatrixMsgType) {
