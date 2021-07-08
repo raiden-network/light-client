@@ -381,7 +381,9 @@ export function catchAndLog<T>(
  *   ),
  * )
  *
- * @param aac - AsyncActionCreator type to wait for response
+ * @param aac - AsyncActionCreator type to wait for response; can be an array of action creators,
+ *      in which case, dispatchRequest function will accept one request and return an observable
+ *      for the corresponding response
  * @param project - Function to be merged to output; called with a function which allows to
  *      dispatch requests directly to output and returns an observable which will emit the success
  *      coming in input and complete, or error if a failure goes through
@@ -398,21 +400,23 @@ export function dispatchRequestAndGetResponse<
   AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
   R,
 >(
-  aac: AAC,
+  aac: AAC | AAC[],
   project: (
-    dispatchRequest: (
-      request: ActionType<AAC['request']>,
-    ) => Observable<ActionType<AAC['success']>>,
+    dispatchRequest: <A extends AAC>(
+      request: ActionType<A['request']>,
+    ) => Observable<ActionType<A['success']>>,
   ) => ObservableInput<R>,
   confirmed = false,
   dedupKey = (value: ActionType<AAC['request']>): unknown => value,
 ): OperatorFunction<T, R | ActionType<AAC['request']>> {
+  const arr = Array.isArray(aac) ? aac : [aac];
   return (input$) =>
     defer(() => {
       const requestOutput$ = new Subject<ActionType<AAC['request']>>();
       const pending = new Map<unknown, Observable<ActionType<AAC['success']>>>();
       const projectOutput$ = defer(() =>
         project((request) => {
+          const aac = arr.find(({ request: areq }) => areq.type === request.type)!;
           const key = dedupKey(request);
           const pending$ = pending.get(key);
           if (pending$) return pending$;

@@ -190,6 +190,10 @@ export type Secret = HexString<32>;
 export const PrivateKey = HexString(32);
 export type PrivateKey = HexString<32>;
 
+// uncompressed secp256k1 public key
+export const PublicKey = HexString(65);
+export type PublicKey = HexString<65>;
+
 // checksummed address brand interface
 export interface AddressB {
   readonly Address: unique symbol;
