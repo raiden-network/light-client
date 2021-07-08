@@ -25,12 +25,7 @@ export async function ServiceWorkerAssistantPlugin(
   // Always register the assistant to make components work reliable.
   Vue.prototype.$serviceWorkerAssistant = new ServiceWorkerAssistant(store);
 
-  const serviceWorkerIsSupported = 'serviceWorker' in navigator;
-  const serviceWorkerShouldBeRegistered =
-    process.env.NODE_ENV === 'production' &&
-    process.env.VUE_APP_SERVICE_WORKER_DISABLED !== 'true';
-
-  if (serviceWorkerIsSupported && serviceWorkerShouldBeRegistered) {
+  if ('serviceWorker' in navigator && process.env.VUE_APP_SERVICE_WORKER_DISABLED !== 'true') {
     window.onload = registerServiceWorker;
   }
 }

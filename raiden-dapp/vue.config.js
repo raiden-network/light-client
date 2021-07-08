@@ -21,7 +21,7 @@ function getPackageVersion() {
  * worker script itself.
  */
 function setupServiceWorkerRelatedPlugins(config) {
-  if (process.env.NODE_ENV !== 'production') return;
+  if (process.env.VUE_APP_SERVICE_WORKER_DISABLED === 'true') return;
 
   const versionFilePlugin = new VersionFile({
     packageFile: path.join(__dirname, 'package.json'),
