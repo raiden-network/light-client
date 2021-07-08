@@ -3,7 +3,7 @@ import * as t from 'io-ts';
 
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
-import { Address, instanceOf } from '../utils/types';
+import { Address, instanceOf, PublicKey } from '../utils/types';
 import { RaidenMatrixSetup } from './state';
 
 const NodeId = t.type({ address: Address });
@@ -25,7 +25,7 @@ export const matrixPresence = createAsyncAction(
   'matrix/presence/failure',
   undefined,
   t.intersection([
-    t.type({ userId: t.string, available: t.boolean, ts: t.number }),
+    t.type({ userId: t.string, available: t.boolean, ts: t.number, pubkey: PublicKey }),
     t.partial({ caps: t.record(t.string, t.any) }),
   ]),
 );

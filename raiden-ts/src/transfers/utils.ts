@@ -339,7 +339,7 @@ export function searchValidMetadata(
     // support address_metadata keys being both lowercase and checksummed addresses
     addressMetadata?.[address] ?? addressMetadata?.[address.toLowerCase()],
     address,
-  );
+  )?.[0];
 }
 
 /**

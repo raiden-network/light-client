@@ -1,9 +1,12 @@
 import type { Signer } from '@ethersproject/abstract-signer';
 import { arrayify, concat as concatBytes, hexlify } from '@ethersproject/bytes';
 import { HashZero } from '@ethersproject/constants';
+import { hashMessage } from '@ethersproject/hash';
 import { keccak256 } from '@ethersproject/keccak256';
 import { encode as rlpEncode } from '@ethersproject/rlp';
+import { recoverPublicKey } from '@ethersproject/signing-key';
 import { toUtf8Bytes } from '@ethersproject/strings';
+import { computeAddress } from '@ethersproject/transactions';
 import { verifyMessage } from '@ethersproject/wallet';
 import type * as t from 'io-ts';
 import { canonicalize } from 'json-canonicalize';
@@ -18,7 +21,7 @@ import type { RaidenEpicDeps } from '../types';
 import { assert } from '../utils';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { ErrorCodes } from '../utils/error';
-import type { Address, Hash, HexString } from '../utils/types';
+import type { Address, Hash, HexString, PublicKey } from '../utils/types';
 import { decode, Signature, Signed } from '../utils/types';
 import { messageReceived } from './actions';
 import type { AddressMetadata, EnvelopeMessage } from './types';
@@ -432,10 +435,22 @@ export function validateAddressMetadata(
   metadata: AddressMetadata | undefined,
   address: Address,
   { log }: { log: logging.Logger } = { log: logging },
-): AddressMetadata | undefined {
-  if (metadata && verifyMessage(metadata.user_id, metadata.displayname) === address)
-    return metadata;
-  else if (metadata) log?.warn('Invalid address metadata', { address, metadata });
+): [metadata: AddressMetadata, pubkey: PublicKey] | undefined {
+  if (!metadata) return;
+  try {
+    const pubkey = recoverPublicKey(
+      arrayify(hashMessage(metadata.user_id)),
+      metadata.displayname,
+    ) as PublicKey;
+    const recoveredAddress = computeAddress(pubkey) as Address;
+    assert(recoveredAddress === address, [
+      'Wrong signature',
+      { expected: address, received: recoveredAddress },
+    ]);
+    return [metadata, pubkey];
+  } catch (error) {
+    log?.warn('Invalid address metadata', { address, metadata, error });
+  }
 }
 
 /**

@@ -18,7 +18,7 @@ import { encode, jsonParse } from '../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { LruCache } from '../utils/lru';
 import { retryAsync$ } from '../utils/rx';
-import type { Signature, Signed } from '../utils/types';
+import type { PublicKey, Signature, Signed } from '../utils/types';
 import { Address, decode, UInt } from '../utils/types';
 import type { IOU, PFS } from './types';
 
@@ -223,20 +223,19 @@ export function getPresenceFromService$(
   peer: Address,
   pfsAddrOrUrl: string,
   { serviceRegistryContract }: Pick<RaidenEpicDeps, 'serviceRegistryContract'>,
-): Observable<{ readonly user_id: string; readonly capabilities: Caps }> {
+): Observable<{ user_id: string; capabilities: Caps; pubkey: PublicKey }> {
   return defer(async () => pfsAddressUrl(pfsAddrOrUrl, { serviceRegistryContract })).pipe(
     mergeMap((url) => fromFetch(`${url}/api/v1/address/${peer}/metadata`)),
     mergeMap(async (res) => res.json()),
     map((json) => {
       try {
         const presence = decode(AddressMetadata, json);
-        assert(validateAddressMetadata(presence, peer), [
-          'Invalid metadata signature',
-          { peer, presence },
-        ]);
+        const meta = validateAddressMetadata(presence, peer);
+        assert(meta, ['Invalid metadata signature', { peer, presence }]);
+        const [, pubkey] = meta;
         const capabilities = parseCaps(presence.capabilities);
         assert(capabilities, ['Invalid capabilities format', presence.capabilities]);
-        return { ...presence, capabilities };
+        return { ...presence, capabilities, pubkey };
       } catch (err) {
         try {
           const { errors: msg, ...details } = decode(ServiceError, json);
