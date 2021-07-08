@@ -7,6 +7,7 @@ const { InjectManifest } = require('workbox-webpack-plugin');
 
 const sourceDirectoryPath = path.resolve(__dirname, 'src');
 const distributionDirectoryPath = path.resolve(__dirname, 'dist');
+const maxAssetSize = 20e6;
 
 function getPackageVersion() {
   const packageInfo = require('./package.json');
@@ -88,6 +89,11 @@ module.exports = {
 
   // check -> https://github.com/vuejs/vue-cli/issues/2978
   configureWebpack: (config) => {
+    config.performance = {
+      maxAssetSize,
+      maxEntrypointSize: maxAssetSize,
+    };
+
     if (process.env.NODE_ENV === 'development') {
       config.devtool = 'eval-source-map';
       config.output.devtoolFallbackModuleFilenameTemplate = 'webpack:///[resource-path]?[hash]';
