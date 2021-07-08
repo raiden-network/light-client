@@ -1,7 +1,9 @@
-import pick from 'lodash/fp/pick';
+import omit from 'lodash/omit';
+import pick from 'lodash/pick';
 import type { Observable } from 'rxjs';
 import { EMPTY, from, identity, merge, of } from 'rxjs';
 import {
+  catchError,
   debounceTime,
   filter,
   first,
@@ -18,14 +20,21 @@ import {
 
 import type { RaidenAction } from '../../actions';
 import { Capabilities } from '../../constants';
+import { pathFind } from '../../services/actions';
 import type { RaidenState } from '../../state';
 import { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
-import { completeWith, distinctRecordValues, pluckDistinct } from '../../utils/rx';
+import {
+  completeWith,
+  dispatchRequestAndGetResponse,
+  distinctRecordValues,
+  pluckDistinct,
+} from '../../utils/rx';
 import type { Hash } from '../../utils/types';
 import { untime } from '../../utils/types';
 import {
+  transfer,
   transferClear,
   transferExpire,
   transferSecret,
@@ -35,7 +44,7 @@ import {
   transferUnlock,
 } from '../actions';
 import { Direction } from '../state';
-import { transferKey } from '../utils';
+import { metadataFromPaths, transferKey } from '../utils';
 
 /**
  * Re-queue pending transfer's BalanceProof/Envelope messages for retry on init
@@ -168,6 +177,65 @@ export function initQueuePendingReceivedEpic(
   );
 }
 
+/**
+ * @param action$ - Observable of unresolved transfer.request actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependenceis
+ * @param deps.config$ - Config observable
+ * @returns Observable of pathFind.request and resolved transfer.request actions
+ */
+export function transferRequestResolveEpic(
+  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { config$ }: RaidenEpicDeps,
+) {
+  return action$.pipe(
+    dispatchRequestAndGetResponse(pathFind, (dispatch) =>
+      action$.pipe(
+        filter(transfer.request.is),
+        filter(
+          (action): action is transfer.request & { payload: { resolved: false } } =>
+            !action.payload.resolved,
+        ),
+        mergeMap((action) =>
+          dispatch(
+            pathFind.request(
+              pick(action.payload, ['paths', 'pfs'] as const),
+              pick(action.payload, ['tokenNetwork', 'target', 'value'] as const),
+            ),
+          ).pipe(
+            withLatestFrom(
+              action$.pipe(
+                filter(matrixPresence.success.is),
+                filter((a) => a.meta.address === action.payload.target),
+              ),
+              config$,
+            ),
+            map(([route, targetPresence, { encryptSecret }]) => {
+              const resolved =
+                (action.payload.encryptSecret ?? encryptSecret) && action.payload.secret
+                  ? metadataFromPaths(route.payload.paths, targetPresence, {
+                      secret: action.payload.secret,
+                      amount: action.payload.value,
+                      payment_identifier: action.payload.paymentId,
+                    })
+                  : metadataFromPaths(route.payload.paths, targetPresence);
+              return transfer.request(
+                {
+                  ...omit(action.payload, ['paths', 'pfs', 'encryptSecret'] as const),
+                  ...resolved,
+                },
+                action.meta,
+              );
+            }),
+            catchError((err) => of(transfer.failure(err, action.meta))),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 function hasTransferMeta(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   action: any,
@@ -212,7 +280,7 @@ export function transferClearCompletedEpic(
           action$.pipe(
             filter(hasTransferMeta),
             filter((action) => transferKey(action.meta) === grouped$.key),
-            startWith({ meta: pick(['secrethash', 'direction'], transfer) }),
+            startWith({ meta: pick(transfer, ['secrethash', 'direction'] as const) }),
           ),
         ),
         completeWith(action$),
