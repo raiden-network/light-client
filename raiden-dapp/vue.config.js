@@ -79,6 +79,13 @@ module.exports = {
       enableInSFC: true,
     },
   },
+
+  css: {
+    extract: {
+      ignoreOrder: true,
+    },
+  },
+
   // check -> https://github.com/vuejs/vue-cli/issues/2978
   configureWebpack: (config) => {
     if (process.env.NODE_ENV === 'development') {
