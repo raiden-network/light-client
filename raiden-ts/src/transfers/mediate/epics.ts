@@ -8,13 +8,13 @@ import type { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { Metadata } from '../../messages/types';
 import type { RaidenState } from '../../state';
-import type { Via } from '../../transport/types';
 import { getCap, parseCaps } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import type { Address, Int } from '../../utils/types';
 import { decode, isntNil } from '../../utils/types';
 import { transfer, transferSigned } from '../actions';
 import { Direction } from '../state';
+import type { metadataFromPaths } from '../utils';
 import { clearMetadataRoute, searchValidMetadata } from '../utils';
 
 function shouldMediate(action: transferSigned, address: Address, { caps }: RaidenConfig): boolean {
@@ -44,8 +44,12 @@ function findValidPartner(
   received: transferSigned,
   state: RaidenState,
   config: RaidenConfig,
-  { address, log, mediationFeeCalculator }: RaidenEpicDeps,
-): Pick<transfer.request['payload'], 'partner' | 'fee' | 'metadata' | keyof Via> | undefined {
+  {
+    address,
+    log,
+    mediationFeeCalculator,
+  }: Pick<RaidenEpicDeps, 'address' | 'log' | 'mediationFeeCalculator'>,
+): ReturnType<typeof metadataFromPaths> | undefined {
   const message = received.payload.message;
   const inPartner = received.payload.partner;
   const tokenNetwork = message.token_network_address;
@@ -78,9 +82,6 @@ function findValidPartner(
       log.warn('Mediation: could not calculate mediation fee, ignoring', { error });
       continue;
     }
-    // on a transfer.request, fee is *added* to the value to get final sent amount,
-    // therefore here it needs to contain a negative fee, which we will "earn" instead of pay
-    fee = fee.mul(-1) as Int<32>;
 
     const outPartnerMetadata = searchValidMetadata(address_metadata, outPartner);
     let metadata = message.metadata; // pass through metadata
@@ -88,7 +89,15 @@ function findValidPartner(
     if (!getCap(parseCaps(outPartnerMetadata?.capabilities), Capabilities.IMMUTABLE_METADATA))
       metadata = clearMetadataRoute(address, metadata);
 
-    return { partner: outPartner, fee, userId: outPartnerMetadata?.user_id, metadata };
+    return {
+      resolved: true,
+      partner: outPartner,
+      // on a transfer.request, fee is *added* to the value to get final sent amount,
+      // therefore here it needs to contain a negative fee, which we will "earn" instead of pay
+      fee: fee.mul(-1) as Int<32>,
+      userId: outPartnerMetadata?.user_id,
+      metadata,
+    };
   }
   log.warn('Mediation: could not find a suitable route, ignoring', {
     inputRoutes: decodedMetadata.routes,
