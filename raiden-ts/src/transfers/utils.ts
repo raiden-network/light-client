@@ -1,9 +1,12 @@
+import type { Signer } from '@ethersproject/abstract-signer';
 import { BigNumber } from '@ethersproject/bignumber';
-import { concat as concatBytes, hexlify } from '@ethersproject/bytes';
+import { arrayify, concat as concatBytes, hexlify } from '@ethersproject/bytes';
 import { HashZero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
 import { randomBytes } from '@ethersproject/random';
 import { sha256 } from '@ethersproject/sha2';
+import type { Wallet } from '@ethersproject/wallet';
+import { decrypt, encrypt } from 'eciesjs';
 import * as t from 'io-ts';
 import isEmpty from 'lodash/isEmpty';
 import type { Observable } from 'rxjs';
@@ -25,15 +28,15 @@ import {
 } from '../messages/utils';
 import type { Paths } from '../services/types';
 import type { RaidenState } from '../state';
-import type { Via } from '../transport/types';
+import type { matrixPresence } from '../transport/actions';
+import type { Caps, Via } from '../transport/types';
 import { getCap, parseCaps } from '../transport/utils';
 import { assert } from '../utils';
-import { encode } from '../utils/data';
-import type { Address, Hash, HexString, Secret, UInt } from '../utils/types';
-import { decode, isntNil } from '../utils/types';
-import type { transfer } from './actions';
+import { encode, jsonParse, jsonStringify } from '../utils/data';
+import type { Address, Hash, Int, PrivateKey, Secret, UInt } from '../utils/types';
+import { decode, HexString, isntNil } from '../utils/types';
 import type { RaidenTransfer } from './state';
-import { Direction, RaidenTransferStatus, TransferState } from './state';
+import { Direction, RaidenTransferStatus, RevealedSecret, TransferState } from './state';
 
 /**
  * Get the locksroot of a given array of pending locks
@@ -301,29 +304,79 @@ export function clearMetadataRoute<M extends unknown | Metadata>(
  * Contructs transfer.request's payload paramaters from received PFS's Paths
  *
  * @param paths - Paths array coming from PFS
- * @returns Respective members of transfer.request's payload, with stricter 'metadata'
+ * @param target - presence of target address
+ * @param encryptSecret - Try to encrypt this secret object to target
+ * @returns Respective members of transfer.request's payload
  */
 export function metadataFromPaths(
   paths: Paths,
-): Pick<transfer.request['payload'], 'fee' | 'partner' | keyof Via> & { metadata: Metadata } {
+  target: matrixPresence.success,
+  encryptSecret?: RevealedSecret,
+): Readonly<{ resolved: true; fee: Int<32>; partner: Address; metadata: unknown } & Via> {
   // paths may come with undesired parameters, so map&filter here before passing to metadata
   const routes = paths.map(({ path: route, fee: _, address_metadata }) => ({
     route,
     ...(address_metadata && !isEmpty(address_metadata) ? { address_metadata } : {}),
   }));
   const viaPath = paths[0];
-  const partner = viaPath.path[1]; // we're first address in route, partner is 2nd
   const fee = viaPath.fee;
-  const partnerMetadata = searchValidMetadata(viaPath.address_metadata, partner);
-  const via: Via = { userId: partnerMetadata?.user_id };
+  const partner = viaPath.path[1]; // we're first address in route, partner is 2nd
+  let partnerUserId: string | undefined, partnerCaps: Caps | null | undefined;
+  if (partner === target.meta.address) {
+    partnerUserId = target.payload.userId;
+    partnerCaps = target.payload.caps;
+  } else {
+    const partnerMetadata = searchValidMetadata(viaPath.address_metadata, partner);
+    partnerUserId = partnerMetadata?.user_id;
+    partnerCaps = parseCaps(partnerMetadata?.capabilities);
+  }
+  const via: Via = { userId: partnerUserId };
 
-  let metadata: Metadata = { routes };
+  let metadata: Metadata & { secret?: HexString } = { routes };
   // iff partner requires a clear route (to be first address), clear it;
   // in routes received from PFS, we're always first address and partner second
-  if (!getCap(parseCaps(partnerMetadata?.capabilities), Capabilities.IMMUTABLE_METADATA))
+  if (!getCap(partnerCaps, Capabilities.IMMUTABLE_METADATA))
     metadata = clearMetadataRoute(viaPath.path[0], metadata);
+  else if (encryptSecret) {
+    const encrypted = hexlify(
+      encrypt(
+        target.payload.pubkey,
+        Buffer.from(jsonStringify(RevealedSecret.encode(encryptSecret))),
+      ),
+    ) as HexString;
+    metadata = { ...metadata, secret: encrypted };
+  }
 
-  return { metadata, fee, partner, ...via };
+  return { resolved: true, metadata, fee, partner, ...via };
+}
+
+const EncryptedSecretMetadata = t.type({ secret: HexString() });
+type EncryptedSecretMetadata = t.TypeOf<typeof EncryptedSecretMetadata>;
+
+/**
+ * @param metadata - Undecoded metadata
+ * @param transfer - Transfer info
+ * @param transfer."0" - Transfer's secrethash
+ * @param transfer."1" - Transfer's effective received amount
+ * @param transfer."2" - Transfer's paymendId
+ * @param signer - Our effective signer (with `privateKey`)
+ * @returns Secret, if decryption and all validations pass
+ */
+export function decryptSecretFromMetadata(
+  metadata: unknown,
+  [secrethash, amount, paymentId]: readonly [Hash, UInt<32>, UInt<8>?],
+  signer: Signer,
+): Secret | undefined {
+  const privkey = (signer as Wallet).privateKey as PrivateKey;
+  if (!privkey) return;
+  try {
+    const encrypted = decode(EncryptedSecretMetadata, metadata).secret;
+    const decrypted = decrypt(privkey, Buffer.from(arrayify(encrypted))).toString();
+    const parsed = decode(RevealedSecret, jsonParse(decrypted));
+    assert(amount.gte(parsed.amount) && getSecrethash(parsed.secret) === secrethash);
+    assert(!paymentId || !parsed.payment_identifier || paymentId.eq(parsed.payment_identifier));
+    return parsed.secret;
+  } catch (e) {}
 }
 
 /**
