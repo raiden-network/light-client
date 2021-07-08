@@ -347,7 +347,7 @@ export class Raiden {
     );
     const cleanConfig = config && decode(PartialRaidenConfig, omitBy(config, isUndefined));
 
-    const deps = makeDependencies(signer, contractsInfo, { db, state, config: cleanConfig, main });
+    const deps = makeDependencies(state, cleanConfig, { signer, contractsInfo, db, main });
     return new this(state, deps) as InstanceType<R>;
   }
 

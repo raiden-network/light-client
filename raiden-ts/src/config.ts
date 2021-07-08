@@ -56,6 +56,7 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *     validated and decoded by [[FeeModel.decodeConfig]].
  * - gasPriceFactor - Multiplier to be applied over `eth_gasPrice` for initial transactions gas prices;
  *      1.1 means gasPrice returned by ETH node is added of 10% for every transaction sent
+ * - encryptSecret - Whether to send secret encrypted to target by default on transfers
  * - matrixServer? - Specify a matrix server to use.
  * - subkey? - When using subkey, this sets the behavior when { subkey } option isn't explicitly
  *    set in on-chain method calls. false (default) = use main key; true = use subkey
@@ -93,6 +94,7 @@ export const RaidenConfig = t.readonly(
       autoUDCWithdraw: t.boolean,
       mediationFees: t.unknown,
       gasPriceFactor: t.number,
+      encryptSecret: t.boolean,
     }),
     t.partial({
       matrixServer: t.string,
@@ -125,7 +127,6 @@ export function makeDefaultConfig(
     network.chainId === 1
       ? 'https://raw.githubusercontent.com/raiden-network/raiden-service-bundle/master/known_servers/known_servers-production-v1.2.0.json'
       : 'https://raw.githubusercontent.com/raiden-network/raiden-service-bundle/master/known_servers/known_servers-development-v1.2.0.json';
-
   // merge caps independently
   const caps =
     overwrites?.caps === null
@@ -160,6 +161,7 @@ export function makeDefaultConfig(
     autoUDCWithdraw: true,
     mediationFees: {},
     gasPriceFactor: 1.0,
+    encryptSecret: true,
     ...overwrites,
     caps, // merged caps overwrites 'overwrites.caps'
   };
