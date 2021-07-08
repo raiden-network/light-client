@@ -56,7 +56,7 @@ export default class TextInputWithToggle extends Vue {
   position: relative; // Required for absolute toggle position.
   display: flex;
   flex-direction: column;
-  align-items: start;
+  align-items: flex-start;
   color: $color-gray;
   background-color: $input-background;
   border-radius: 8px !important;
