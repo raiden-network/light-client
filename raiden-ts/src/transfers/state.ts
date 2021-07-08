@@ -10,7 +10,7 @@ import {
   SecretReveal,
   Unlock,
 } from '../messages/types';
-import { Address, Hash, Int, Secret, Signed, Timed } from '../utils/types';
+import { Address, Hash, Int, Secret, Signed, Timed, UInt } from '../utils/types';
 
 // it's like an enum, but with literals
 export const Direction = {
@@ -148,3 +148,9 @@ export interface RaidenTransfer {
   completed: boolean;
   secret?: Secret;
 }
+
+export const RevealedSecret = t.intersection([
+  t.type({ secret: Secret, amount: UInt(32) }),
+  t.partial({ payment_identifier: UInt(8) }),
+]);
+export type RevealedSecret = t.TypeOf<typeof RevealedSecret>;
