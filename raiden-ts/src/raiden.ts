@@ -881,12 +881,9 @@ export class Raiden {
       options.paymentId !== undefined
         ? decode(UInt(8), options.paymentId, ErrorCodes.DTA_INVALID_PAYMENT_ID, this.log.info)
         : makePaymentId();
-    const paths = !options.paths
-      ? undefined
-      : decode(Paths, options.paths, ErrorCodes.DTA_INVALID_PATH, this.log.info);
-    const pfs = !options.pfs
-      ? undefined
-      : decode(PFS, options.pfs, ErrorCodes.DTA_INVALID_PFS, this.log.info);
+    const paths =
+      options.paths && decode(Paths, options.paths, ErrorCodes.DTA_INVALID_PATH, this.log.info);
+    const pfs = options.pfs && decode(PFS, options.pfs, ErrorCodes.DTA_INVALID_PFS, this.log.info);
 
     assert(
       options.secret === undefined || Secret.is(options.secret),
@@ -900,11 +897,7 @@ export class Raiden {
     );
 
     // use provided secret or create one if no secrethash was provided
-    const secret = options.secret
-      ? options.secret
-      : !options.secrethash
-      ? makeSecret()
-      : undefined;
+    const secret = options.secret || (options.secrethash ? undefined : makeSecret());
     const secrethash = options.secrethash || getSecrethash(secret!);
     assert(
       !secret || getSecrethash(secret) === secrethash,

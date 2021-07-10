@@ -222,15 +222,16 @@ export function pfsListInfo(
 export function getPresenceFromService$(
   peer: Address,
   pfsAddrOrUrl: string,
-  { serviceRegistryContract }: Pick<RaidenEpicDeps, 'serviceRegistryContract'>,
+  deps: Pick<RaidenEpicDeps, 'serviceRegistryContract' | 'log'>,
 ): Observable<{ user_id: string; capabilities: Caps; pubkey: PublicKey }> {
+  const { serviceRegistryContract } = deps;
   return defer(async () => pfsAddressUrl(pfsAddrOrUrl, { serviceRegistryContract })).pipe(
     mergeMap((url) => fromFetch(`${url}/api/v1/address/${peer}/metadata`)),
     mergeMap(async (res) => res.json()),
     map((json) => {
       try {
         const presence = decode(AddressMetadata, json);
-        const meta = validateAddressMetadata(presence, peer);
+        const meta = validateAddressMetadata(presence, peer, deps);
         assert(meta, ['Invalid metadata signature', { peer, presence }]);
         const [, pubkey] = meta;
         const capabilities = parseCaps(presence.capabilities);
