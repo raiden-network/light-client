@@ -1,7 +1,8 @@
 import { ensureChannelIsOpen, ensurePresence, matrixServer } from './fixtures';
 import { fetch, makeRaiden, makeRaidens, makeSignature } from './mocks';
 
-import { verifyMessage } from '@ethersproject/wallet';
+import { hexlify } from '@ethersproject/bytes';
+import { randomBytes } from '@ethersproject/random';
 import { EventEmitter } from 'events';
 import type { MatrixClient } from 'matrix-js-sdk';
 import { first, pluck } from 'rxjs/operators';
@@ -20,11 +21,19 @@ import { getSortedAddresses } from '@/transport/utils';
 import { jsonStringify } from '@/utils/data';
 import { ErrorCodes } from '@/utils/error';
 import { getServerName } from '@/utils/matrix';
-import type { Address, Signed } from '@/utils/types';
+import type { Address, PublicKey, Signed } from '@/utils/types';
 import { isntNil } from '@/utils/types';
 
 import { makeAddress, sleep } from '../utils';
 import type { MockedRaiden } from './mocks';
+
+const mockedRecoverPublicKey = jest.fn(
+  jest.requireActual('@ethersproject/signing-key').recoverPublicKey,
+);
+jest.mock('@ethersproject/signing-key', () => ({
+  ...jest.requireActual('@ethersproject/signing-key'),
+  recoverPublicKey: mockedRecoverPublicKey,
+}));
 
 const accessToken = 'access_token';
 const deviceId = 'device_id';
@@ -314,34 +323,17 @@ describe('matrixMonitorPresenceEpic', () => {
     );
   });
 
-  test('fails when users does not have valid addresses', async () => {
-    expect.assertions(1);
-    const [raiden, partner] = await makeRaidens(2);
-    json.mockImplementationOnce(async () => ({
-      user_id: `@invalidUser:${matrixServer}`,
-      displayname: '0x1234',
-      capabilities,
-    }));
-
-    raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
-
-    await sleep(2 * raiden.config.pollingInterval);
-    expect(raiden.output).toContainEqual(
-      matrixPresence.failure(expect.any(Error), { address: partner.address }),
-    );
-  });
-
-  test('fails when verifyMessage throws', async () => {
+  test('fails when validation throws', async () => {
     expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
     const partnerUserId = (await partner.deps.matrix$.toPromise()).getUserId()!;
     json.mockImplementationOnce(async () => ({
       user_id: partnerUserId,
-      displayname: '0x1234',
+      displayname: hexlify(randomBytes(65)),
       capabilities,
     }));
-    (verifyMessage as jest.Mock).mockImplementationOnce(() => {
+    mockedRecoverPublicKey.mockImplementationOnce(() => {
       throw new Error('invalid signature');
     });
 
@@ -374,6 +366,7 @@ describe('matrixMonitorPresenceEpic', () => {
           available: true,
           ts: expect.any(Number),
           caps: { [Capabilities.DELIVERY]: 0, randomCap: 'test' },
+          pubkey: expect.any(String),
         },
         { address: partner.address },
       ),
@@ -686,7 +679,12 @@ describe('deliveredEpic', () => {
     // set status as available in latest$.presences
     raiden.store.dispatch(
       matrixPresence.success(
-        { userId: partnerMatrix.getUserId()!, available: true, ts: Date.now() },
+        {
+          userId: partnerMatrix.getUserId()!,
+          available: true,
+          ts: Date.now(),
+          pubkey: partner.deps.signer.publicKey as PublicKey,
+        },
         { address: partner.address },
       ),
     );
@@ -741,6 +739,7 @@ describe('deliveredEpic', () => {
           available: true,
           ts: Date.now(),
           caps: { [Capabilities.DELIVERY]: 0 },
+          pubkey: partner.deps.signer.publicKey as PublicKey,
         },
         { address: partner.address },
       ),

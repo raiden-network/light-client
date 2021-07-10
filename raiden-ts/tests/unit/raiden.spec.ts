@@ -13,7 +13,16 @@ import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, BehaviorSubject, EMPTY, of, ReplaySubject, Subject } from 'rxjs';
-import { filter, first, ignoreElements, map, mapTo, mergeMap, mergeMapTo } from 'rxjs/operators';
+import {
+  filter,
+  first,
+  ignoreElements,
+  map,
+  mapTo,
+  mergeMap,
+  mergeMapTo,
+  pluck,
+} from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
 import { raidenConfigUpdate, raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
@@ -71,7 +80,7 @@ import { completeWith, pluckDistinct } from '@/utils/rx';
 import type { Int, Secret, UInt } from '@/utils/types';
 import { Address, timed } from '@/utils/types';
 
-import { makeAddress, makeHash, sleep } from '../utils';
+import { makeAddress, makeHash, makePublicKey, sleep } from '../utils';
 
 jest.mock('@ethersproject/providers');
 jest.mock('@/db/utils');
@@ -460,10 +469,9 @@ describe('Raiden', () => {
               userId: 'John Doe',
               available: true,
               ts: 12345,
+              pubkey: makePublicKey(),
             },
-            {
-              address: partner,
-            },
+            { address: partner },
           ),
         ),
       );
@@ -478,10 +486,7 @@ describe('Raiden', () => {
     await expect(raiden.start()).resolves.toBeUndefined();
 
     const payload = raiden.action$
-      .pipe(
-        first(matrixPresence.success.is),
-        map((e) => e.payload),
-      )
+      .pipe(first(matrixPresence.success.is), pluck('payload'))
       .toPromise();
 
     raiden.getAvailability(partner);
@@ -1205,34 +1210,6 @@ describe('Raiden', () => {
   });
 
   test('transfer', async () => {
-    const deps = makeDummyDependencies();
-    const raiden: Raiden = new Raiden(
-      makeInitialState(
-        { address, network, contractsInfo },
-        { tokens: { [token]: tokenNetwork }, channels: { [key]: getChannel() } },
-      ),
-      deps,
-      combineRaidenEpics([initEpicMock, pfsRequestEpicMock, transferEpicMock]),
-      dummyReducer,
-    );
-
-    const [lockedTransferMessage, fee, secret] = getTransfer(raiden.address);
-    const signedMessage = await signMessage(deps.signer, lockedTransferMessage);
-
-    function pfsRequestEpicMock(action$: Observable<RaidenAction>) {
-      return action$.pipe(
-        filter(pathFind.request.is),
-        map((action) =>
-          pathFind.success(
-            {
-              paths: [{ path: [raiden.address, partner], fee }],
-            },
-            action.meta,
-          ),
-        ),
-      );
-    }
-
     function transferEpicMock(action$: Observable<RaidenAction>) {
       return action$.pipe(
         filter(transfer.request.is),
@@ -1248,8 +1225,21 @@ describe('Raiden', () => {
         ),
       );
     }
+
+    const deps = makeDummyDependencies();
+    const raiden: Raiden = new Raiden(
+      makeInitialState(
+        { address, network, contractsInfo },
+        { tokens: { [token]: tokenNetwork }, channels: { [key]: getChannel() } },
+      ),
+      deps,
+      combineRaidenEpics([initEpicMock, transferEpicMock]),
+      dummyReducer,
+    );
+
+    const [lockedTransferMessage, fee, secret] = getTransfer(raiden.address);
+    const signedMessage = await signMessage(deps.signer, lockedTransferMessage);
     await raiden.start();
-    const pathFindRequestPromise = raiden.action$.pipe(first(pathFind.request.is)).toPromise();
     const transferRequestPromise = raiden.action$.pipe(first(transfer.request.is)).toPromise();
 
     const transferResult = raiden.transfer(token, partner, 1, {
@@ -1259,16 +1249,6 @@ describe('Raiden', () => {
     });
 
     await expect(transferResult).resolves.toEqual(`sent:${lockedTransferMessage.lock.secrethash}`);
-    await expect(pathFindRequestPromise).resolves.toEqual(
-      pathFind.request(
-        expect.anything(),
-        expect.objectContaining({
-          target: partner,
-          tokenNetwork: tokenNetwork,
-          value: One,
-        }),
-      ),
-    );
     await expect(transferRequestPromise).resolves.toEqual(
       transfer.request(
         expect.objectContaining({
@@ -1276,7 +1256,6 @@ describe('Raiden', () => {
           target: partner,
           value: One as UInt<32>,
           paymentId: lockedTransferMessage.payment_identifier,
-          metadata: expect.anything(),
         }),
         {
           secrethash: lockedTransferMessage.lock.secrethash,

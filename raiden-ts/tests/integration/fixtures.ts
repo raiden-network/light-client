@@ -22,9 +22,9 @@ import {
 } from '@/transfers/utils';
 import { matrixPresence } from '@/transport/actions';
 import { stringifyCaps } from '@/transport/utils';
-import type { Latest } from '@/types';
 import { assert } from '@/utils';
-import type { Address, Hash, Int, Secret, UInt } from '@/utils/types';
+import type { Address, Hash, Int, PublicKey, Secret, UInt } from '@/utils/types';
+import { last } from '@/utils/types';
 
 import { makeAddress, makeHash, sleep } from '../utils';
 import type { MockedRaiden } from './mocks';
@@ -290,6 +290,7 @@ export async function ensureTransferPending(
         target: partner.address,
         value,
         paymentId,
+        resolved: true,
         metadata: { routes: [{ route: [partner.address] }] },
         fee: Zero as Int<32>,
         partner: partner.address,
@@ -378,6 +379,7 @@ export async function ensurePresence([raiden, partner]: [
         available: true,
         ts: Date.now() + 120e3,
         caps: (await raiden.deps.latest$.pipe(first()).toPromise()).config.caps!,
+        pubkey: raiden.deps.signer.publicKey as PublicKey,
       },
       { address: raiden.address },
     ),
@@ -389,6 +391,7 @@ export async function ensurePresence([raiden, partner]: [
         available: true,
         ts: Date.now() + 120e3,
         caps: (await partner.deps.latest$.pipe(first()).toPromise()).config.caps!,
+        pubkey: partner.deps.signer.publicKey as PublicKey,
       },
       { address: partner.address },
     ),
@@ -409,36 +412,56 @@ export function expectChannelsAreInSync([raiden, partner]: [MockedRaiden, Mocked
 }
 
 /**
+ * @param client - mocked client
+ * @param available - override client.started on returned availability
+ * @returns client's presence
+ */
+export function presenceFromClient(client: MockedRaiden, available = !!client.started) {
+  return matrixPresence.success(
+    {
+      userId: client.store.getState().transport.setup!.userId,
+      available,
+      ts: Date.now(),
+      pubkey: client.deps.signer.publicKey as PublicKey,
+      caps: client.config.caps!,
+    },
+    { address: client.address },
+  );
+}
+
+/**
  * @param clients - Clients list
  * @param clients."0" - Main/our raiden instance
  * @param clients."1" - Other clients in path
  * @param fee_ - Estimated transfer fee
  * @returns metadataFromPaths for a tansfer.request's payload
  */
-export function metadataFromClients<T extends Address | MockedRaiden>(
-  clients: readonly [T, ...T[]],
+export function metadataFromClients(
+  clients: readonly [...(Address | MockedRaiden)[], MockedRaiden],
   fee_ = fee,
 ) {
-  const isRaiden = (c: T): c is T & MockedRaiden => typeof c !== 'string';
-  return metadataFromPaths([
-    {
-      path: clients.map((c) => (isRaiden(c) ? c.address : (c as Address))),
-      fee: fee_,
-      address_metadata: Object.fromEntries(
-        clients.filter(isRaiden).map(({ address, store, deps }) => {
-          const setup = store.getState().transport.setup!;
-          let latest!: Latest;
-          deps.latest$.pipe(first()).subscribe((l) => (latest = l));
-          return [
-            address,
-            {
-              user_id: setup.userId,
-              displayname: setup.displayName,
-              capabilities: stringifyCaps(latest.config.caps!),
-            },
-          ] as const;
-        }),
-      ),
-    },
-  ]);
+  const isRaiden = (c: Address | MockedRaiden): c is MockedRaiden => typeof c !== 'string';
+  const targetPresence = presenceFromClient(last(clients));
+  return metadataFromPaths(
+    [
+      {
+        path: clients.map((c) => (isRaiden(c) ? c.address : (c as Address))),
+        fee: fee_,
+        address_metadata: Object.fromEntries(
+          clients.filter(isRaiden).map(({ address, store, config }) => {
+            const setup = store.getState().transport.setup!;
+            return [
+              address,
+              {
+                user_id: setup.userId,
+                displayname: setup.displayName,
+                capabilities: stringifyCaps(config.caps!),
+              },
+            ] as const;
+          }),
+        ),
+      },
+    ],
+    targetPresence,
+  );
 }
