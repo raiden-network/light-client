@@ -8,6 +8,7 @@ import {
   getChannel,
   getOrWaitTransfer,
   metadataFromClients,
+  presenceFromClient,
   secret,
   secrethash,
   tokenNetwork,
@@ -27,6 +28,7 @@ import { messageReceived, messageSend } from '@/messages/actions';
 import type { Processed } from '@/messages/types';
 import { LockedTransfer, LockExpired, MessageType, Unlock } from '@/messages/types';
 import { signMessage } from '@/messages/utils';
+import { pathFind } from '@/services/actions';
 import {
   transfer,
   transferExpire,
@@ -47,6 +49,81 @@ const direction = Direction.SENT;
 const paymentId = makePaymentId();
 const value = amount;
 const meta = { secrethash, direction };
+
+describe('resolve transfer', () => {
+  test('success with encryptSecret', async () => {
+    const [raiden, partner] = await makeRaidens(2);
+    await ensureChannelIsDeposited([raiden, partner]);
+
+    raiden.store.dispatch(
+      transfer.request(
+        {
+          tokenNetwork,
+          target: partner.address,
+          value,
+          paymentId,
+          secret,
+          resolved: false,
+        },
+        meta,
+      ),
+    );
+    await sleep();
+    expect(raiden.output).toContainEqual(
+      transfer.request(
+        {
+          tokenNetwork,
+          target: partner.address,
+          value,
+          paymentId,
+          secret,
+          resolved: true,
+          metadata: {
+            routes: [
+              expect.objectContaining({
+                route: [raiden.address, partner.address],
+              }),
+            ],
+            secret: expect.any(String),
+          },
+          partner: partner.address,
+          userId: partner.store.getState().transport.setup!.userId,
+          fee: Zero as Int<32>,
+        },
+        meta,
+      ),
+    );
+  });
+
+  test('failure target presence offline passes through', async () => {
+    const [raiden, partner] = await makeRaidens(2);
+    await ensureChannelIsDeposited([raiden, partner]);
+    raiden.store.dispatch(presenceFromClient(partner, false));
+
+    raiden.store.dispatch(
+      transfer.request(
+        {
+          tokenNetwork,
+          target: partner.address,
+          value,
+          paymentId,
+          secret,
+          resolved: false,
+          paths: [{ path: [raiden.address, partner.address], fee: Zero as Int<32> }],
+        },
+        meta,
+      ),
+    );
+    await sleep();
+    expect(raiden.output).toContainEqual(pathFind.failure(expect.any(Error), expect.anything()));
+    expect(raiden.output).toContainEqual(
+      transfer.failure(
+        expect.objectContaining({ message: expect.stringContaining('offline') }),
+        meta,
+      ),
+    );
+  });
+});
 
 describe('send transfer', () => {
   test('transferSigned success and cached', async () => {

@@ -22,6 +22,8 @@ import { jsonParse } from '@/utils/data';
 import type { Address, Hash, UInt } from '@/utils/types';
 import { decode, Signed } from '@/utils/types';
 
+import { makePublicKey } from '../utils';
+
 // sign/verify & en/decode to avoid having to duplicate all examples
 describe('sign/verify, pack & encode/decode ', () => {
   const signer = new Wallet(Uint8Array.from(Array(32).keys()));
@@ -72,6 +74,7 @@ describe('sign/verify, pack & encode/decode ', () => {
         available: true,
         // explicitly set IMMUTABLE_METADATA=0
         caps: { ...CapsFallback, [Capabilities.IMMUTABLE_METADATA]: 0 },
+        pubkey: makePublicKey(),
       },
       { address },
     );

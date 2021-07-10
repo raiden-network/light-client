@@ -24,7 +24,7 @@ import { Direction } from '@/transfers/state';
 import { makePaymentId } from '@/transfers/utils';
 import type { Int, UInt } from '@/utils/types';
 
-import { makeAddress, sleep } from '../utils';
+import { sleep } from '../utils';
 
 describe('mediate transfers', () => {
   test('success with flat fees', async () => {
@@ -91,6 +91,7 @@ describe('mediate transfers', () => {
           paymentId: transf.payment_identifier,
           expiration: transf.lock.expiration.toNumber(),
           initiator: raiden.address,
+          resolved: true,
           fee: flat.mul(-1) as Int<32>,
           metadata: {
             routes: [
@@ -177,6 +178,7 @@ describe('mediate transfers', () => {
           paymentId: transf.payment_identifier,
           expiration: transf.lock.expiration.toNumber(),
           initiator: raiden.address,
+          resolved: true,
           fee: flat.mul(-1) as Int<32>,
           metadata: {
             routes: [
@@ -252,8 +254,7 @@ describe('mediate transfers', () => {
   test('skip if no suitable route', async () => {
     expect.assertions(3);
 
-    const [raiden, partner, target] = await makeRaidens(3);
-    const unknownTarget = makeAddress();
+    const [raiden, partner, target, unknownTarget] = await makeRaidens(4);
 
     await ensureChannelIsDeposited([raiden, partner]);
     await ensureChannelIsOpen([partner, target], { channelId: 18 });
@@ -264,7 +265,7 @@ describe('mediate transfers', () => {
       transfer.request(
         {
           tokenNetwork,
-          target: unknownTarget,
+          target: unknownTarget.address,
           value: amount,
           paymentId: makePaymentId(),
           secret,
@@ -284,7 +285,7 @@ describe('mediate transfers', () => {
           message: expect.objectContaining({
             type: MessageType.LOCKED_TRANSFER,
             initiator: raiden.address,
-            target: unknownTarget,
+            target: unknownTarget.address,
           }),
           fee: Zero as Int<32>,
           partner: raiden.address,
