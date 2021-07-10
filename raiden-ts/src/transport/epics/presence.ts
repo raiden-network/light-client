@@ -46,7 +46,7 @@ import { stringifyCaps } from '../utils';
  */
 function searchAddressPresence$(
   address: Address,
-  deps: Pick<RaidenEpicDeps, 'latest$' | 'config$' | 'serviceRegistryContract'>,
+  deps: Pick<RaidenEpicDeps, 'latest$' | 'config$' | 'serviceRegistryContract' | 'log'>,
 ) {
   const { config$, latest$ } = deps;
   return combineLatest([latest$, config$]).pipe(
