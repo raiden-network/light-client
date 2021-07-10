@@ -434,7 +434,7 @@ export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | C[
 export function validateAddressMetadata(
   metadata: AddressMetadata | undefined,
   address: Address,
-  { log }: { log: logging.Logger } = { log: logging },
+  { log }: Partial<Pick<RaidenEpicDeps, 'log'>> = {},
 ): [metadata: AddressMetadata, pubkey: PublicKey] | undefined {
   if (!metadata) return;
   try {

@@ -292,7 +292,9 @@ export const instanceOf: <C>(name: string) => t.Type<C> = memoize(
  * Infer type of last element of a tuple or array
  * Currently supports tuples of up to 9 elements before falling back to array's inference
  */
-export type Last<T extends any[]> = T extends [...any[], infer L] ? L : T[number] | undefined;
+export type Last<T extends readonly unknown[]> = T extends readonly [...unknown[], infer L]
+  ? L
+  : T[number] | undefined;
 
 /**
  * Like lodash's last, but properly infer return type when argument is a tuple
@@ -300,8 +302,8 @@ export type Last<T extends any[]> = T extends [...any[], infer L] ? L : T[number
  * @param arr - Tuple or array to get last element from
  * @returns Last element from arr
  */
-export function last<T extends any[]>(arr: T): Last<T> {
-  return arr[arr.length - 1];
+export function last<T extends readonly unknown[]>(arr: T): Last<T> {
+  return arr[arr.length - 1] as Last<T>;
 }
 
 /**
