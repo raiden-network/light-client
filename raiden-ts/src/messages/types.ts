@@ -236,9 +236,8 @@ const WithdrawBase = t.readonly(
 
 const _WithdrawRequest = t.readonly(
   t.intersection([
-    t.type({
-      type: t.literal(MessageType.WITHDRAW_REQUEST),
-    }),
+    t.type({ type: t.literal(MessageType.WITHDRAW_REQUEST) }),
+    t.partial({ coop_settle: t.boolean }),
     WithdrawBase,
     RetrieableMessage,
   ]),
