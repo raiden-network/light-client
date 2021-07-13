@@ -852,6 +852,17 @@ function sendWithdrawRequest(
         action.meta.totalWithdraw.lte(channelAmounts(channel).ownTotalWithdrawable),
         ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_HIGH,
       );
+      if (action.payload?.coopSettle !== undefined) {
+        const { ownLocked, partnerLocked, ownTotalWithdrawable, partnerCapacity } =
+          channelAmounts(channel);
+        assert(
+          ownLocked.isZero() &&
+            partnerLocked.isZero() &&
+            action.meta.totalWithdraw.eq(ownTotalWithdrawable) &&
+            (action.payload.coopSettle || partnerCapacity.isZero()),
+          [ErrorCodes.CNL_COOP_SETTLE_NOT_POSSIBLE, { ownLocked, partnerLocked, partnerCapacity }],
+        );
+      }
       const request: WithdrawRequest = {
         type: MessageType.WITHDRAW_REQUEST,
         message_identifier: makeMessageId(),
@@ -862,6 +873,9 @@ function sendWithdrawRequest(
         total_withdraw: action.meta.totalWithdraw,
         nonce: channel.own.nextNonce,
         expiration: BigNumber.from(action.meta.expiration) as UInt<32>,
+        ...(action.payload?.coopSettle !== undefined
+          ? { coop_settle: action.payload.coopSettle }
+          : null),
       };
       return from(signMessage(signer, request, { log })).pipe(
         map((message) => withdrawMessage.request({ message }, action.meta)),
