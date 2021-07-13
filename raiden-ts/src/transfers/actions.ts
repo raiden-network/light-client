@@ -216,7 +216,7 @@ export const withdraw = createAsyncAction(
   'withdraw/request',
   'withdraw/success',
   'withdraw/failure',
-  t.undefined,
+  t.union([t.undefined, t.type({ coopSettle: t.boolean })]),
   t.type({ txHash: Hash, txBlock: t.number, confirmed: t.union([t.undefined, t.boolean]) }),
 );
 export namespace withdraw {

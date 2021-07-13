@@ -34,6 +34,7 @@
   "CNL_WITHDRAW_EXPIRED": "Withdraw request expired.",
   "CNL_WITHDRAW_AMOUNT_TOO_LOW": "Withdraw request contains an amount smaller than already withdrawn.",
   "CNL_WITHDRAW_AMOUNT_TOO_HIGH": "Withdraw request contains an amount bigger than channel's liquidity.",
+  "CNL_COOP_SETTLE_NOT_POSSIBLE": "Can not create or answer channel cooperative settle request",
 
   "XFER_EXPIRED": "Transfer expired.",
   "XFER_CHANNEL_CLOSED_PREMATURELY": "Channel was closed before secret got reveiled or transfer unlocked.",
