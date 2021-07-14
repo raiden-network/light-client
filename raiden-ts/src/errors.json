@@ -23,6 +23,7 @@
   "CNL_CLOSECHANNEL_FAILED": "TokenNetwork.closeChannel transaction reverted.",
   "CNL_SETTLE_INVALID_BALANCEHASH": "Could not find BalanceProof matching on-chain closing data. This client may have had its state cleared and can't settle.",
   "CNL_SETTLE_FAILED": "TokenNetwork.settleChannel transaction reverted.",
+  "CNL_COOP_SETTLE_FAILED": "TokenNetwork.cooperativeSettle transaction reverted.",
   "CNL_SETTLE_AUTO_ENABLED": "Interactive channel settlement disabled when config.autoSettle is enabled; request will be made automatically",
   "CNL_UPDATE_NONCLOSING_BP_FAILED": "updateNonClosingBalanceProof transaction reverted.",
   "CNL_ONCHAIN_UNLOCK_FAILED": "on-chain unlock transaction reverted.",

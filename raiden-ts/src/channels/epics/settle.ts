@@ -5,6 +5,7 @@ import {
   catchError,
   delayWhen,
   filter,
+  first,
   ignoreElements,
   map,
   mergeMap,
@@ -119,6 +120,198 @@ export function channelAutoSettleEpic(
   );
 }
 
+function settleSettleableChannel(
+  [action$, action]: readonly [Observable<RaidenAction>, channelSettle.request],
+  channel: Channel & {
+    state: ChannelState.closed | ChannelState.settleable | ChannelState.settling;
+  },
+  tokenNetworkContract: ReturnType<RaidenEpicDeps['getTokenNetworkContract']>,
+  {
+    address,
+    db,
+    config$,
+    latest$,
+    log,
+    provider,
+  }: Pick<RaidenEpicDeps, 'address' | 'db' | 'config$' | 'latest$' | 'log' | 'provider'>,
+) {
+  const { tokenNetwork, partner } = action.meta;
+
+  // fetch closing/updated balanceHash for each end
+  return defer(() =>
+    Promise.all([
+      tokenNetworkContract.callStatic.getChannelParticipantInfo(channel.id, address, partner),
+      tokenNetworkContract.callStatic.getChannelParticipantInfo(channel.id, partner, address),
+    ]),
+  ).pipe(
+    retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
+    mergeMap(([{ 3: ownBH }, { 3: partnerBH }]) => {
+      let ownBP$;
+      if (ownBH === createBalanceHash(channel.own.balanceProof)) {
+        ownBP$ = of(channel.own.balanceProof);
+      } else {
+        // partner closed/updated the channel with a non-latest BP from us
+        // they would lose our later transfers, but to settle we must search transfer history
+        ownBP$ = findBalanceProofMatchingBalanceHash$(
+          db,
+          channel,
+          Direction.SENT,
+          ownBH as Hash,
+        ).pipe(
+          catchError(() => {
+            throw new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
+              address,
+              ownBalanceHash: ownBH,
+            });
+          }),
+        );
+      }
+
+      let partnerBP$;
+      if (partnerBH === createBalanceHash(channel.partner.balanceProof)) {
+        partnerBP$ = of(channel.partner.balanceProof);
+      } else {
+        // shouldn't happen, since it's expected we were the closing part
+        partnerBP$ = findBalanceProofMatchingBalanceHash$(
+          db,
+          channel,
+          Direction.RECEIVED,
+          partnerBH as Hash,
+        ).pipe(
+          catchError(() => {
+            throw new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
+              address,
+              partnerBalanceHash: partnerBH,
+            });
+          }),
+        );
+      }
+
+      // send settleChannel transaction
+      return combineLatest([ownBP$, partnerBP$]).pipe(
+        map(([ownBP, partnerBP]) => {
+          // part1 total amounts must be <= part2 total amounts on settleChannel call
+          if (
+            partnerBP.transferredAmount
+              .add(partnerBP.lockedAmount)
+              .lt(ownBP.transferredAmount.add(ownBP.lockedAmount))
+          )
+            return [
+              [partner, partnerBP],
+              [address, ownBP],
+            ] as const;
+          else
+            return [
+              [address, ownBP],
+              [partner, partnerBP],
+            ] as const;
+        }),
+        withLatestFrom(latest$),
+        mergeMap(([[part1, part2], { gasPrice }]) =>
+          defer(() =>
+            tokenNetworkContract.settleChannel(
+              channel.id,
+              part1[0],
+              part1[1].transferredAmount,
+              part1[1].lockedAmount,
+              part1[1].locksroot,
+              part2[0],
+              part2[1].transferredAmount,
+              part2[1].lockedAmount,
+              part2[1].locksroot,
+              { gasPrice },
+            ),
+          ).pipe(
+            assertTx('settleChannel', ErrorCodes.CNL_SETTLE_FAILED, { log, provider }),
+            retryWhile(intervalFromConfig(config$), {
+              maxRetries: 3,
+              onErrors: commonAndFailTxErrors,
+              log: log.info,
+            }),
+            // if channel gets settled while retrying (e.g. by partner), give up
+            takeUntil(
+              action$.pipe(
+                filter(channelSettle.success.is),
+                filter(
+                  (action) =>
+                    action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }),
+    // if succeeded, return a empty/completed observable
+    // actual ChannelSettledAction will be detected and handled by channelEventsEpic
+    // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
+    // will then emit the channelSettle.failure action instead
+    ignoreElements(),
+    catchError((error) => of(channelSettle.failure(error, action.meta))),
+  );
+}
+
+function withdrawPairToCoopSettleParams([req, conf]: NonNullable<
+  NonNullable<channelSettle.request['payload']>['coopSettle']
+>[number]) {
+  return {
+    participant: req.participant,
+    total_withdraw: req.total_withdraw,
+    expiration_block: req.expiration,
+    participant_signature: req.signature,
+    partner_signature: conf.signature,
+  };
+}
+
+function coopSettleChannel(
+  [action$, action]: readonly [Observable<RaidenAction>, channelSettle.request],
+  channel: Channel & { state: ChannelState.open | ChannelState.closing },
+  tokenNetworkContract: ReturnType<RaidenEpicDeps['getTokenNetworkContract']>,
+  {
+    config$,
+    latest$,
+    log,
+    provider,
+  }: Pick<RaidenEpicDeps, 'config$' | 'latest$' | 'log' | 'provider'>,
+) {
+  const { tokenNetwork, partner } = action.meta;
+  const [part1, part2] = action.payload!.coopSettle!;
+
+  // fetch closing/updated balanceHash for each end
+  return latest$.pipe(
+    first(),
+    mergeMap(async ({ gasPrice }) =>
+      tokenNetworkContract.cooperativeSettle(
+        channel.id,
+        withdrawPairToCoopSettleParams(part1),
+        withdrawPairToCoopSettleParams(part2),
+        { gasPrice },
+      ),
+    ),
+    assertTx('cooperativeSettle', ErrorCodes.CNL_COOP_SETTLE_FAILED, { log, provider }),
+    retryWhile(intervalFromConfig(config$), {
+      maxRetries: 3,
+      onErrors: commonAndFailTxErrors,
+      log: log.info,
+    }),
+    // if channel gets settled while retrying (e.g. by partner), give up
+    takeUntil(
+      action$.pipe(
+        filter(channelSettle.success.is),
+        filter(
+          (action) => action.meta.tokenNetwork === tokenNetwork && action.meta.partner === partner,
+        ),
+      ),
+    ),
+    // if succeeded, return a empty/completed observable
+    // actual ChannelSettledAction will be detected and handled by channelEventsEpic
+    // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
+    // will then emit the channelSettle.failure action instead
+    ignoreElements(),
+    catchError((error) => of(channelSettle.failure(error, action.meta))),
+  );
+}
+
 /**
  * A ChannelSettle action requested by user
  * Needs to be called on an settleable or settling (for retries) channel.
@@ -143,23 +336,14 @@ export function channelAutoSettleEpic(
 export function channelSettleEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  {
-    log,
-    signer,
-    address,
-    main,
-    provider,
-    getTokenNetworkContract,
-    config$,
-    latest$,
-    db,
-  }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<channelSettle.failure> {
+  const { signer, address, main, getTokenNetworkContract, config$ } = deps;
   return action$.pipe(
-    filter(isActionOf(channelSettle.request)),
+    filter(channelSettle.request.is),
     withLatestFrom(state$, config$),
     mergeMap(([action, state, { subkey: configSubkey }]) => {
-      const { tokenNetwork, partner } = action.meta;
+      const { tokenNetwork } = action.meta;
       const { signer: onchainSigner } = chooseOnchainAccount(
         { signer, address, main },
         action.payload?.subkey ?? configSubkey,
@@ -169,127 +353,21 @@ export function channelSettleEpic(
         onchainSigner,
       );
       const channel = state.channels[channelKey(action.meta)];
-      const settleableStates = [ChannelState.settleable, ChannelState.settling];
-      if (!settleableStates.includes(channel?.state)) {
-        const error = new RaidenError(
-          ErrorCodes.CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND,
-          action.meta,
+      if (channel?.state === ChannelState.settleable || channel?.state === ChannelState.settling) {
+        return settleSettleableChannel([action$, action], channel, tokenNetworkContract, deps);
+      } else if (
+        action.payload?.coopSettle &&
+        (channel?.state === ChannelState.open || channel?.state === ChannelState.closing)
+      ) {
+        return coopSettleChannel([action$, action], channel, tokenNetworkContract, deps);
+      } else {
+        return of(
+          channelSettle.failure(
+            new RaidenError(ErrorCodes.CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND, action.meta),
+            action.meta,
+          ),
         );
-        return of(channelSettle.failure(error, action.meta));
       }
-
-      // fetch closing/updated balanceHash for each end
-      return defer(() =>
-        Promise.all([
-          tokenNetworkContract.callStatic.getChannelParticipantInfo(channel.id, address, partner),
-          tokenNetworkContract.callStatic.getChannelParticipantInfo(channel.id, partner, address),
-        ]),
-      ).pipe(
-        retryWhile(intervalFromConfig(config$), { onErrors: networkErrors }),
-        mergeMap(([{ 3: ownBH }, { 3: partnerBH }]) => {
-          let ownBP$;
-          if (ownBH === createBalanceHash(channel.own.balanceProof)) {
-            ownBP$ = of(channel.own.balanceProof);
-          } else {
-            // partner closed/updated the channel with a non-latest BP from us
-            // they would lose our later transfers, but to settle we must search transfer history
-            ownBP$ = findBalanceProofMatchingBalanceHash$(
-              db,
-              channel,
-              Direction.SENT,
-              ownBH as Hash,
-            ).pipe(
-              catchError(() => {
-                throw new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
-                  address,
-                  ownBalanceHash: ownBH,
-                });
-              }),
-            );
-          }
-
-          let partnerBP$;
-          if (partnerBH === createBalanceHash(channel.partner.balanceProof)) {
-            partnerBP$ = of(channel.partner.balanceProof);
-          } else {
-            // shouldn't happen, since it's expected we were the closing part
-            partnerBP$ = findBalanceProofMatchingBalanceHash$(
-              db,
-              channel,
-              Direction.RECEIVED,
-              partnerBH as Hash,
-            ).pipe(
-              catchError(() => {
-                throw new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
-                  address,
-                  partnerBalanceHash: partnerBH,
-                });
-              }),
-            );
-          }
-
-          // send settleChannel transaction
-          return combineLatest([ownBP$, partnerBP$]).pipe(
-            map(([ownBP, partnerBP]) => {
-              // part1 total amounts must be <= part2 total amounts on settleChannel call
-              if (
-                partnerBP.transferredAmount
-                  .add(partnerBP.lockedAmount)
-                  .lt(ownBP.transferredAmount.add(ownBP.lockedAmount))
-              )
-                return [
-                  [partner, partnerBP],
-                  [address, ownBP],
-                ] as const;
-              else
-                return [
-                  [address, ownBP],
-                  [partner, partnerBP],
-                ] as const;
-            }),
-            withLatestFrom(latest$),
-            mergeMap(([[part1, part2], { gasPrice }]) =>
-              defer(() =>
-                tokenNetworkContract.settleChannel(
-                  channel.id,
-                  part1[0],
-                  part1[1].transferredAmount,
-                  part1[1].lockedAmount,
-                  part1[1].locksroot,
-                  part2[0],
-                  part2[1].transferredAmount,
-                  part2[1].lockedAmount,
-                  part2[1].locksroot,
-                  { gasPrice },
-                ),
-              ).pipe(
-                assertTx('settleChannel', ErrorCodes.CNL_SETTLE_FAILED, { log, provider }),
-                retryWhile(intervalFromConfig(config$), {
-                  onErrors: commonAndFailTxErrors,
-                  log: log.info,
-                }),
-                // if channel gets settled while retrying (e.g. by partner), give up
-                takeUntil(
-                  action$.pipe(
-                    filter(channelSettle.success.is),
-                    filter(
-                      (action) =>
-                        action.meta.tokenNetwork === tokenNetwork &&
-                        action.meta.partner === partner,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
-        // if succeeded, return a empty/completed observable
-        // actual ChannelSettledAction will be detected and handled by channelEventsEpic
-        // if any error happened on tx call/pipeline, mergeMap below won't be hit, and catchError
-        // will then emit the channelSettle.failure action instead
-        ignoreElements(),
-        catchError((error) => of(channelSettle.failure(error, action.meta))),
-      );
     }),
   );
 }
@@ -356,6 +434,7 @@ export function channelUnlockEpic(
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), {
+          maxRetries: 3,
           onErrors: commonAndFailTxErrors,
           log: log.info,
         }),
