@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import * as t from 'io-ts';
 
+import { WithdrawConfirmation, WithdrawRequest } from '../messages';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
-import { Address, Hash, UInt } from '../utils/types';
+import { Address, Hash, Signed, UInt } from '../utils/types';
 import { Lock } from './types';
 
 // interfaces need to be exported, and we need/want to support `import * as RaidenActions`
@@ -142,10 +143,18 @@ export const channelSettleable = createAction(
 );
 export interface channelSettleable extends ActionType<typeof channelSettleable> {}
 
+const WithdrawPair = t.tuple([Signed(WithdrawRequest), Signed(WithdrawConfirmation)]);
+
 export const channelSettle = createAsyncAction(
   ChannelId,
   'channel/settle',
-  t.union([t.partial({ subkey: t.boolean }), t.undefined]),
+  t.union([
+    t.partial({
+      subkey: t.boolean,
+      coopSettle: t.tuple([WithdrawPair, WithdrawPair]),
+    }),
+    t.undefined,
+  ]),
   t.intersection([
     t.type({
       id: t.number,
