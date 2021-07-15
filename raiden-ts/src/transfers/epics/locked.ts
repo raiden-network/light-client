@@ -47,7 +47,7 @@ import { ErrorCodes, RaidenError } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { completeWith, pluckDistinct } from '../../utils/rx';
 import type { Address, Hash, Int } from '../../utils/types';
-import { decode, Signed, UInt, untime } from '../../utils/types';
+import { decode, Secret, Signed, UInt, untime } from '../../utils/types';
 import {
   transfer,
   transferExpire,
@@ -66,6 +66,7 @@ import {
 import type { TransferState } from '../state';
 import { Direction } from '../state';
 import {
+  decryptSecretFromMetadata,
   getLocksroot,
   getSecrethash,
   getTransfer,
@@ -102,6 +103,11 @@ function getOpenChannel(
   return channel;
 }
 
+type transferRequestResolved = transfer.request & { payload: { resolved: true } };
+function transferRequestIsResolved(action: transfer.request): action is transferRequestResolved {
+  return action.payload.resolved;
+}
+
 /**
  * The core logic of {@link makeAndSignTransfer}.
  *
@@ -120,7 +126,7 @@ function getOpenChannel(
  */
 function makeAndSignTransfer$(
   state: RaidenState,
-  action: transfer.request,
+  action: transferRequestResolved,
   { revealTimeout, confirmationBlocks, expiryFactor }: RaidenConfig,
   { log, address, network, signer }: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned> {
@@ -128,16 +134,22 @@ function makeAndSignTransfer$(
   const channel = getOpenChannel(state, { tokenNetwork, partner });
 
   assert(
-    !action.payload.expiration || action.payload.expiration > state.blockNumber + revealTimeout,
+    !('expiration' in action.payload) ||
+      !action.payload.expiration ||
+      action.payload.expiration > state.blockNumber + revealTimeout,
     'expiration too soon',
   );
-  const expiration = BigNumber.from(
-    action.payload.expiration ||
-      Math.min(
-        state.blockNumber + Math.round(revealTimeout * expiryFactor),
-        state.blockNumber + channel.settleTimeout - confirmationBlocks,
-      ),
-  ) as UInt<32>;
+  const expiration = decode(
+    UInt(32),
+    'expiration' in action.payload && action.payload.expiration
+      ? action.payload.expiration
+      : 'lockTimeout' in action.payload && action.payload.lockTimeout
+      ? state.blockNumber + action.payload.lockTimeout
+      : Math.min(
+          state.blockNumber + Math.round(revealTimeout * expiryFactor),
+          state.blockNumber + channel.settleTimeout - confirmationBlocks,
+        ),
+  );
   assert(expiration.lte(state.blockNumber + channel.settleTimeout), [
     'expiration too far in the future',
     {
@@ -218,7 +230,7 @@ function makeAndSignTransfer$(
  */
 function sendTransferSigned(
   state$: Observable<RaidenState>,
-  action: transfer.request,
+  action: transferRequestResolved,
   deps: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned | transfer.failure> {
   return combineLatest([state$, deps.config$]).pipe(
@@ -446,6 +458,7 @@ function receiveTransferSigned(
   | transferProcessed
   | transferSecretRequest
   | matrixPresence.request
+  | transferSecret
 > {
   const secrethash = action.payload.message.lock.secrethash;
   const meta = { secrethash, direction: Direction.RECEIVED };
@@ -527,7 +540,7 @@ function receiveTransferSigned(
         partner,
       );
 
-      let request$: Observable<Signed<SecretRequest> | undefined> = of(undefined);
+      let request$: Observable<Secret | Signed<SecretRequest> | undefined> = of(undefined);
       if (locked.target === address) {
         let ignoredDetails;
         if (!getCap(caps, Capabilities.RECEIVE)) ignoredDetails = { reason: 'receiving disabled' };
@@ -537,8 +550,16 @@ function receiveTransferSigned(
             lockExpiration: locked.lock.expiration.toString(),
             dangerZoneStart: locked.lock.expiration.sub(revealTimeout).toString(),
           };
-        if (!ignoredDetails) {
+        if (ignoredDetails) {
+          log.warn('Ignoring received transfer', ignoredDetails);
+        } else {
           request$ = defer(async () => {
+            const decryptedSecret = decryptSecretFromMetadata(
+              locked.metadata,
+              [secrethash, locked.lock.amount, locked.payment_identifier],
+              signer,
+            );
+            if (decryptedSecret) return decryptedSecret;
             const request: SecretRequest = {
               type: MessageType.SECRET_REQUEST,
               payment_identifier: locked.payment_identifier,
@@ -549,8 +570,6 @@ function receiveTransferSigned(
             };
             return signMessage(signer, request, { log });
           });
-        } else {
-          log.warn('Ignoring received transfer', ignoredDetails);
         }
       }
 
@@ -564,17 +583,19 @@ function receiveTransferSigned(
 
       // if any of these signature prompts fail, none of these actions will be emitted
       return combineLatest([processed$, request$]).pipe(
-        mergeMap(function* ([processed, request]) {
+        mergeMap(function* ([processed, requestOrSecret]) {
           yield transferSigned({ message: locked, fee: Zero as Int<32>, partner }, meta);
           // sets TransferState.transferProcessed
           yield transferProcessed({ message: processed, userId: action.payload.userId }, meta);
-          if (request) {
+          if (Secret.is(requestOrSecret)) {
+            yield transferSecret({ secret: requestOrSecret }, meta);
+          } else if (requestOrSecret) {
             // request initiator's presence, to be able to request secret
             yield matrixPresence.request(undefined, { address: locked.initiator });
             // request secret iff we're the target and receiving is enabled
             yield transferSecretRequest(
               {
-                message: request,
+                message: requestOrSecret,
                 ...searchValidViaAddress(locked.metadata, locked.initiator),
               },
               meta,
@@ -1184,7 +1205,9 @@ export function transferGenerateAndSignEnvelopeMessageEpic(
       let output$;
       switch (action.type) {
         case transfer.request.type:
-          output$ = sendTransferSigned(state$, action, deps);
+          if (transferRequestIsResolved(action))
+            output$ = sendTransferSigned(state$, action, deps);
+          else output$ = EMPTY;
           break;
         case transferUnlock.request.type:
           output$ = sendTransferUnlocked(state$, action, deps);

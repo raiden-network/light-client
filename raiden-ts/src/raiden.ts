@@ -18,7 +18,7 @@ import { createLogger } from 'redux-logger';
 import type { EpicMiddleware } from 'redux-observable';
 import { createEpicMiddleware } from 'redux-observable';
 import type { Observable } from 'rxjs';
-import { defer, EMPTY, from, merge, of, throwError } from 'rxjs';
+import { EMPTY, from, of, throwError } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
 import {
   catchError,
@@ -83,7 +83,6 @@ import {
   getSecrethash,
   makePaymentId,
   makeSecret,
-  metadataFromPaths,
   raidenTransfer,
   transferKey,
   transferKeyToMeta,
@@ -92,7 +91,7 @@ import { matrixPresence } from './transport/actions';
 import type { ContractsInfo, OnChange, RaidenEpicDeps } from './types';
 import { EventTypes } from './types';
 import { assert } from './utils';
-import { asyncActionToPromise, isActionOf, isResponseOf } from './utils/actions';
+import { asyncActionToPromise, isActionOf } from './utils/actions';
 import { jsonParse } from './utils/data';
 import { ErrorCodes, RaidenError } from './utils/error';
 import { getLogsByChunk$ } from './utils/ethers';
@@ -347,7 +346,7 @@ export class Raiden {
     );
     const cleanConfig = config && decode(PartialRaidenConfig, omitBy(config, isUndefined));
 
-    const deps = makeDependencies(signer, contractsInfo, { db, state, config: cleanConfig, main });
+    const deps = makeDependencies(state, cleanConfig, { signer, contractsInfo, db, main });
     return new this(state, deps) as InstanceType<R>;
   }
 
@@ -854,6 +853,8 @@ export class Raiden {
    *     disabled (null), use it if set or if undefined (auto mode), fetches the best
    *     PFS from ServiceRegistry and automatically fetch routes from it.
    * @param options.lockTimeout - Specify a lock timeout for transfer; default is 2 * revealTimeout
+   * @param options.encryptSecret - Whether to force encrypting the secret or not,
+   *     if target supports it
    * @returns A promise to transfer's unique key (id) when it's accepted
    */
   public async transfer(
@@ -867,6 +868,7 @@ export class Raiden {
       paths?: RaidenPaths;
       pfs?: RaidenPFS;
       lockTimeout?: number;
+      encryptSecret?: boolean;
     } = {},
   ): Promise<string> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
@@ -879,16 +881,9 @@ export class Raiden {
       options.paymentId !== undefined
         ? decode(UInt(8), options.paymentId, ErrorCodes.DTA_INVALID_PAYMENT_ID, this.log.info)
         : makePaymentId();
-    const paths = !options.paths
-      ? undefined
-      : decode(Paths, options.paths, ErrorCodes.DTA_INVALID_PATH, this.log.info);
-    const pfs = !options.pfs
-      ? undefined
-      : decode(PFS, options.pfs, ErrorCodes.DTA_INVALID_PFS, this.log.info);
-    // if undefined, default expiration is calculated at locked's [[makeAndSignTransfer$]]
-    const expiration = !options.lockTimeout
-      ? undefined
-      : this.state.blockNumber + options.lockTimeout;
+    const paths =
+      options.paths && decode(Paths, options.paths, ErrorCodes.DTA_INVALID_PATH, this.log.info);
+    const pfs = options.pfs && decode(PFS, options.pfs, ErrorCodes.DTA_INVALID_PFS, this.log.info);
 
     assert(
       options.secret === undefined || Secret.is(options.secret),
@@ -902,11 +897,7 @@ export class Raiden {
     );
 
     // use provided secret or create one if no secrethash was provided
-    const secret = options.secret
-      ? options.secret
-      : !options.secrethash
-      ? makeSecret()
-      : undefined;
+    const secret = options.secret || (options.secrethash ? undefined : makeSecret());
     const secrethash = options.secrethash || getSecrethash(secret!);
     assert(
       !secret || getSecrethash(secret) === secrethash,
@@ -914,61 +905,34 @@ export class Raiden {
       this.log.info,
     );
 
-    const pathFindMeta = { tokenNetwork, target, value: decodedValue };
-    return merge(
-      // wait for pathFind response
-      this.action$.pipe(
-        first(isResponseOf(pathFind, pathFindMeta)),
-        map((action) => {
-          if (pathFind.failure.is(action)) throw action.payload;
-          return action.payload.paths;
-        }),
-      ),
-      // request pathFind; even if paths were provided, send it again for validation
-      // this is done at 'merge' subscription time (i.e. when above action filter is subscribed)
-      defer(() => {
-        this.store.dispatch(pathFind.request({ paths, pfs }, pathFindMeta));
-        return EMPTY;
-      }),
-    )
+    const promise = this.action$
       .pipe(
-        mergeMap((paths) =>
-          merge(
-            // wait for transfer response
-            this.action$.pipe(
-              filter(isActionOf([transferSigned, transfer.failure])),
-              first(
-                (action) =>
-                  action.meta.direction === Direction.SENT &&
-                  action.meta.secrethash === secrethash,
-              ),
-              map((action) => {
-                if (transfer.failure.is(action)) throw action.payload;
-                return transferKey(action.meta);
-              }),
-            ),
-            // request transfer with returned/validated paths at 'merge' subscription time
-            defer(() => {
-              this.store.dispatch(
-                transfer.request(
-                  {
-                    tokenNetwork,
-                    target,
-                    value: decodedValue,
-                    paymentId,
-                    secret,
-                    expiration,
-                    ...metadataFromPaths(paths),
-                  },
-                  { secrethash, direction: Direction.SENT },
-                ),
-              );
-              return EMPTY;
-            }),
-          ),
-        ),
+        filter(isActionOf([transferSigned, transfer.failure])),
+        first(({ meta }) => meta.direction === Direction.SENT && meta.secrethash === secrethash),
+        map((action) => {
+          if (transfer.failure.is(action)) throw action.payload;
+          return transferKey(action.meta);
+        }),
       )
       .toPromise();
+    this.store.dispatch(
+      transfer.request(
+        {
+          tokenNetwork,
+          target,
+          value: decodedValue,
+          paymentId,
+          secret,
+          resolved: false,
+          paths,
+          pfs,
+          lockTimeout: options.lockTimeout,
+          encryptSecret: options.encryptSecret,
+        },
+        { secrethash, direction: Direction.SENT },
+      ),
+    );
+    return promise;
   }
 
   /**

@@ -46,7 +46,7 @@ import { stringifyCaps } from '../utils';
  */
 function searchAddressPresence$(
   address: Address,
-  deps: Pick<RaidenEpicDeps, 'latest$' | 'config$' | 'serviceRegistryContract'>,
+  deps: Pick<RaidenEpicDeps, 'latest$' | 'config$' | 'serviceRegistryContract' | 'log'>,
 ) {
   const { config$, latest$ } = deps;
   return combineLatest([latest$, config$]).pipe(
@@ -69,13 +69,14 @@ function searchAddressPresence$(
         first(),
       );
     }),
-    map(({ user_id: userId, capabilities }) =>
+    map(({ user_id: userId, capabilities, pubkey }) =>
       matrixPresence.success(
         {
           userId,
           available: true,
           ts: Date.now(),
           caps: capabilities,
+          pubkey,
         },
         { address },
       ),

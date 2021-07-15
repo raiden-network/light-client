@@ -8,6 +8,7 @@ import {
   fee,
   getChannel,
   openBlock,
+  presenceFromClient,
   token,
   tokenNetwork,
 } from './fixtures';
@@ -206,16 +207,7 @@ describe('PFS: pfsRequestEpic', () => {
   test('fail target not available', async () => {
     expect.assertions(1);
 
-    raiden.store.dispatch(
-      matrixPresence.success(
-        {
-          userId: target.store.getState().transport.setup!.userId,
-          available: false,
-          ts: Date.now(),
-        },
-        { address: target.address },
-      ),
-    );
+    raiden.store.dispatch(presenceFromClient(target, false));
 
     await waitBlock();
     const pathFindMeta = {
@@ -269,16 +261,7 @@ describe('PFS: pfsRequestEpic', () => {
       target: target.address,
       value: amount,
     };
-    raiden.store.dispatch(
-      matrixPresence.success(
-        {
-          userId: `@${target.address.toLowerCase()}:matrix.raiden.test`,
-          available: false,
-          ts: Date.now(),
-        },
-        { address: target.address },
-      ),
-    );
+    raiden.store.dispatch(presenceFromClient(target, false));
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
     await waitBlock();

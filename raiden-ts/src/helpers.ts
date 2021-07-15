@@ -695,56 +695,42 @@ export function waitChannelSettleable$(
 /**
  * Helper function to create the RaidenEpicDeps dependencies object for Raiden Epics
  *
- * @param signer - Signer holding raiden account connected to a JsonRpcProvider
- * @param contractsInfo - Object holding deployment information from Raiden contracts on current network
+ * @param state - Initial/previous RaidenState
+ * @param config - defaultConfig overwrites
  * @param opts - Options
- * @param opts.state - Initial/previous RaidenState
+ * @param opts.signer - Signer holding raiden account connected to a JsonRpcProvider
+ * @param opts.contractsInfo - Object holding deployment information from Raiden contracts on
+ *      current network
  * @param opts.db - Database instance
- * @param opts.config - defaultConfig overwrites
  * @param opts.main - Main account object, set when using a subkey as raiden signer
- * @param opts.main.address - Address of main signer
- * @param opts.main.signer - Signer instance from which the subkey used raiden account was derived
  * @returns Constructed epics dependencies object
  */
 export function makeDependencies(
-  signer: Signer,
-  contractsInfo: ContractsInfo,
+  state: RaidenState,
+  config: PartialRaidenConfig | undefined,
   {
+    signer,
+    contractsInfo,
     db,
-    state,
-    config,
     main,
-  }: {
-    state: RaidenState;
-    db: RaidenDatabase;
-    config?: PartialRaidenConfig;
-    main?: { address: Address; signer: Signer };
-  },
+  }: Pick<RaidenEpicDeps, 'signer' | 'contractsInfo' | 'db' | 'main'>,
 ): RaidenEpicDeps {
-  const provider = signer.provider;
   assert(
-    provider && provider instanceof JsonRpcProvider && provider.network,
+    signer.provider && signer.provider instanceof JsonRpcProvider && signer.provider.network,
     'Signer must be connected to a JsonRpcProvider',
   );
-  const network = provider.network;
   const latest$ = new ReplaySubject<Latest>(1);
-  const config$ = latest$.pipe(pluckDistinct('config'));
-  const matrix$ = new AsyncSubject<MatrixClient>();
-
-  const address = state.address;
-  const defaultConfig = makeDefaultConfig({ network }, config);
-  const log = logging.getLogger(`raiden:${address}`);
 
   return {
     latest$,
-    config$,
-    matrix$,
-    provider,
-    network,
+    config$: latest$.pipe(pluckDistinct('config')),
+    matrix$: new AsyncSubject<MatrixClient>(),
     signer,
+    provider: signer.provider,
+    network: signer.provider.network,
     address: state.address,
-    log,
-    defaultConfig,
+    log: logging.getLogger(`raiden:${state.address}`),
+    defaultConfig: makeDefaultConfig({ network: signer.provider.network }, config),
     contractsInfo,
     registryContract: TokenNetworkRegistry__factory.connect(
       contractsInfo.TokenNetworkRegistry.address,

@@ -3,10 +3,12 @@
 ## [Unreleased]
 ### Added
 - [#2766] Add `Capabilities.IMMUTABLE_METADATA` (true on LC, fallback to falsy for backwards compatibility) to allow opting in of not prunning metadata.route and allowing to pass it through mediators unchanged
+- [#2730] Add `config.encryptSecret` and `Raiden.transfer`'s `encryptSecret` boolean option, to allow sending secret to target on LockedTransfer's metadata, encrypted with ECIES over their publicKey, skipping SecretRequest/Reveal and speeding up transfers.
 
 ### Fixed
 - [#2831] Force PFS to acknowledge our capabilities updates
 
+[#2730]: https://github.com/raiden-network/light-client/issues/2730
 [#2766]: https://github.com/raiden-network/light-client/pull/2766
 [#2831]: https://github.com/raiden-network/light-client/issues/2831
 

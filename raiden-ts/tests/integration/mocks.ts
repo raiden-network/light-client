@@ -368,7 +368,10 @@ function mockedMatrixCreateClient({
         device_id?: string;
       }) => {
         address = getAddress(username);
-        assert(verifyMessage(server, password) === address, 'wrong password');
+        assert(verifyMessage(server, password) === address, [
+          'wrong password',
+          { recovered: verifyMessage(server, password), server, password, address },
+        ]);
         userId = `@${username}:${server}`;
         mockedMatrixUsers[userId] = {
           userId,

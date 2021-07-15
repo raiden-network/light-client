@@ -13,6 +13,7 @@ import {
   WithdrawExpired,
   WithdrawRequest,
 } from '../messages/types';
+import { Paths, PFS } from '../services/types';
 import { Via } from '../transport/types';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
@@ -52,16 +53,25 @@ export const transfer = createAsyncAction(
       target: Address,
       value: UInt(32),
       paymentId: UInt(8),
-      metadata: t.unknown,
-      fee: Int(32),
-      partner: Address,
     }),
-    Via,
-    t.partial({
-      secret: Secret,
-      expiration: t.number,
-      initiator: Address,
-    }),
+    t.union([
+      t.intersection([
+        t.type({ resolved: t.literal(false) }),
+        t.partial({ paths: Paths, pfs: t.union([PFS, t.null]), encryptSecret: t.boolean }),
+      ]),
+      t.intersection([
+        t.type({
+          resolved: t.literal(true),
+          metadata: t.unknown,
+          fee: Int(32),
+          partner: Address,
+        }),
+        Via,
+      ]),
+    ]),
+
+    t.partial({ secret: Secret, initiator: Address }),
+    t.union([t.partial({ expiration: t.number }), t.partial({ lockTimeout: t.number })]),
   ]),
   t.partial({ balanceProof: Signed(BalanceProof) }),
 );
