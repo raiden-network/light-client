@@ -457,7 +457,7 @@
       "deposit-title": "Deposit failed, please try again."
     },
     "transfer-menus": {
-      "change-token-title": "Change Token",
+      "select-token-title": "Select Token",
       "deposit-button": "Deposit",
       "channel-button": "Channels",
       "no-channels": "No open channels"

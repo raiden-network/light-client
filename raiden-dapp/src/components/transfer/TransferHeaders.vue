@@ -2,7 +2,7 @@
   <v-row no-gutters class="transfer-menus">
     <div data-cy="transfer_menus_token_select" class="transfer-menus__token-select">
       <span @click="showTokenOverlay = true">
-        {{ $t('transfer.transfer-menus.change-token-title') }}
+        {{ $t('transfer.transfer-menus.select-token-title') }}
         <v-icon>mdi-chevron-down</v-icon>
       </span>
     </div>
