@@ -20,7 +20,7 @@
 
     <div class="open-channel__hub">
       <span class="open-channel__hub__label">
-        {{ $t('open-channel.hub') }}
+        {{ $t('open-channel.partner') }}
       </span>
       <div class="open-channel__hub__address">
         <address-display :address="partner" />
