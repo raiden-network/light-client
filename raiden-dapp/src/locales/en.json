@@ -566,7 +566,7 @@
       "open-failed": "Channel open failed."
     },
     "open-button": "Open Channel",
-    "hub": "Hub",
+    "partner": "Channel Partner",
     "steps": {
       "open": {
         "label": "Open",
