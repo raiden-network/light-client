@@ -11,14 +11,13 @@ import { catchError, first, map, mergeMap, toArray } from 'rxjs/operators';
 import type { ServiceRegistry } from '../contracts';
 import { AddressMetadata } from '../messages/types';
 import { MessageTypeId, validateAddressMetadata } from '../messages/utils';
-import type { Caps } from '../transport/types';
-import { parseCaps } from '../transport/utils';
+import type { matrixPresence } from '../transport/actions';
 import type { RaidenEpicDeps } from '../types';
 import { encode, jsonParse } from '../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { LruCache } from '../utils/lru';
 import { retryAsync$ } from '../utils/rx';
-import type { PublicKey, Signature, Signed } from '../utils/types';
+import type { Signature, Signed } from '../utils/types';
 import { Address, decode, UInt } from '../utils/types';
 import type { IOU, PFS } from './types';
 
@@ -213,30 +212,28 @@ export function pfsListInfo(
 }
 
 /**
- * @param peer - Peer address to fetch presence for
+ * @param address - Peer address to fetch presence for
  * @param pfsAddrOrUrl - PFS/service address to fetch presence from
  * @param deps - Epics dependencies subset
  * @param deps.serviceRegistryContract - Contract instance
  * @returns Observable to peer's presence or error
  */
 export function getPresenceFromService$(
-  peer: Address,
+  address: Address,
   pfsAddrOrUrl: string,
   deps: Pick<RaidenEpicDeps, 'serviceRegistryContract' | 'log'>,
-): Observable<{ user_id: string; capabilities: Caps; pubkey: PublicKey }> {
+): Observable<matrixPresence.success> {
   const { serviceRegistryContract } = deps;
   return defer(async () => pfsAddressUrl(pfsAddrOrUrl, { serviceRegistryContract })).pipe(
-    mergeMap((url) => fromFetch(`${url}/api/v1/address/${peer}/metadata`)),
+    mergeMap((url) => fromFetch(`${url}/api/v1/address/${address}/metadata`)),
     mergeMap(async (res) => res.json()),
     map((json) => {
       try {
-        const presence = decode(AddressMetadata, json);
-        const meta = validateAddressMetadata(presence, peer, deps);
-        assert(meta, ['Invalid metadata signature', { peer, presence }]);
-        const [, pubkey] = meta;
-        const capabilities = parseCaps(presence.capabilities);
-        assert(capabilities, ['Invalid capabilities format', presence.capabilities]);
-        return { ...presence, capabilities, pubkey };
+        const metadata = decode(AddressMetadata, json);
+        const presence = validateAddressMetadata(metadata, address, deps);
+        assert(presence, ['Invalid metadata signature', { peer: address, presence: metadata }]);
+        assert(presence.payload.caps, ['Invalid capabilities format', metadata.capabilities]);
+        return presence;
       } catch (err) {
         try {
           const { errors: msg, ...details } = decode(ServiceError, json);
