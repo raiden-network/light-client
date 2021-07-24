@@ -7,9 +7,20 @@ import { Decimal } from 'decimal.js';
 import * as t from 'io-ts';
 import isEmpty from 'lodash/isEmpty';
 import type { Observable } from 'rxjs';
-import { defer, from, of } from 'rxjs';
+import { concat, defer, EMPTY, from, of, throwError } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
-import { first, map, mergeMap, pluck, timeout, withLatestFrom } from 'rxjs/operators';
+import {
+  catchError,
+  concatMap,
+  first,
+  map,
+  mergeMap,
+  pluck,
+  tap,
+  timeout,
+  toArray,
+  withLatestFrom,
+} from 'rxjs/operators';
 
 import type { Channel } from '../../channels/state';
 import { ChannelState } from '../../channels/state';
@@ -19,6 +30,7 @@ import { intervalFromConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { AddressMetadata } from '../../messages/types';
 import type { RaidenState } from '../../state';
+import { searchValidMetadata } from '../../transfers/utils';
 import type { matrixPresence } from '../../transport/actions';
 import { getCap, stringifyCaps } from '../../transport/utils';
 import type { Latest, RaidenEpicDeps } from '../../types';
@@ -168,11 +180,11 @@ function partnerCanRoute(
   direct: boolean,
   value: UInt<32>,
 ): true | string {
-  if (!partnerPresence?.payload.available) return `path: partner not available in transport`;
-  const partner = partnerPresence.meta.address;
-  if (!direct && !getCap(partnerPresence.payload.caps, Capabilities.MEDIATE))
-    return `path: partner "${partner}" doesn't mediate transfers`;
-  if (!channel) return `path: there's no direct channel with partner "${partner}"`;
+  if (!channel) return `path: there's no direct channel with partner`;
+  if (partnerPresence?.payload.available === false)
+    return `path: partner not available in transport`;
+  if (!direct && !getCap(partnerPresence?.payload.caps, Capabilities.MEDIATE))
+    return `path: partner doesn't mediate transfers`;
   return channelCanRoute(channel, value);
 }
 
@@ -228,48 +240,66 @@ function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Obser
   );
 }
 
-function filterPaths(
+function filterPaths$(
+  [action, paths]: readonly [action: pathFind.request, paths: Paths],
   state: RaidenState,
-  action: pathFind.request,
   { address, log }: Pick<RaidenEpicDeps, 'address' | 'log'>,
-  paths: Paths,
-): Paths {
-  const filteredPaths: Mutable<Paths> = [];
+): Observable<Paths> {
+  let firstPath: Paths[number] | undefined;
+  let firstError: Error | undefined;
   const invalidatedRecipients = new Set<Address>();
+  const { tokenNetwork, value, target } = action.meta;
 
-  for (const { path, fee, ...rest } of paths) {
-    if (path.length < 2 || path[0] !== address) {
-      log.warn('Invalidated received route: we are not the first address in path:', path);
-      continue;
-    }
-    const recipient = path[1];
-    if (invalidatedRecipients.has(recipient)) continue;
-
-    let shouldSelectPath = false;
-    let reasonToNotSelect = '';
-    if (!filteredPaths.length) {
-      const channel =
-        state.channels[channelKey({ tokenNetwork: action.meta.tokenNetwork, partner: recipient })];
-      const partnerCanRoutePossible = channel
-        ? channelCanRoute(channel, action.meta.value)
-        : `path: there's no direct channel with partner "${recipient}"`;
-      if (partnerCanRoutePossible === true) shouldSelectPath = true;
-      else reasonToNotSelect = partnerCanRoutePossible;
-    } else if (recipient !== filteredPaths[0].path[0]) {
-      reasonToNotSelect = 'path: already selected another recipient';
-    } else if (fee.gt(filteredPaths[0].fee)) {
-      reasonToNotSelect = 'path: already selected a smaller fee';
-    } else shouldSelectPath = true;
-
-    if (shouldSelectPath) {
-      filteredPaths.push({ path, fee, ...rest });
-    } else {
-      log.warn('Invalidated received route. Reason:', reasonToNotSelect, 'Route:', path);
-      invalidatedRecipients.add(recipient);
-    }
-  }
-
-  return filteredPaths;
+  return from(paths).pipe(
+    concatMap((path) => {
+      let recipient: Address;
+      return defer(() => {
+        assert(
+          path.path.length >= 2 && path.path[0] === address,
+          'we are not the first address in path',
+        );
+        recipient = path.path[1];
+        assert(!invalidatedRecipients.has(recipient), 'already invalidated recipient');
+        if (firstPath) {
+          assert(firstPath.path[1] === recipient, 'already selected another recipient');
+          assert(firstPath.fee.gte(path.fee), 'already selected a smaller fee');
+        } else {
+          const channel = state.channels[channelKey({ tokenNetwork, partner: recipient })];
+          const partnerPresence = searchValidMetadata(path.address_metadata, recipient);
+          const partnerCanRoutePossible = partnerCanRoute(
+            channel,
+            partnerPresence,
+            target === recipient,
+            value,
+          );
+          if (partnerCanRoutePossible !== true)
+            throw new RaidenError(partnerCanRoutePossible, { partnerPresence, channel });
+          for (let idx = 2; idx < path.path.length - 1; ++idx) {
+            const hop = path.path[idx];
+            const presence = searchValidMetadata(path.address_metadata, hop);
+            assert(getCap(presence?.payload.caps, Capabilities.MEDIATE), [
+              "path: hop doesn't mediate transfers",
+              { hopIndex: idx, hop, hopPresence: presence },
+            ]);
+          }
+        }
+        return of(path);
+      }).pipe(
+        tap((path) => (firstPath ??= path)),
+        catchError((error) => {
+          firstError ??= error;
+          log.warn('Invalidated received route', { error, path });
+          if (recipient) invalidatedRecipients.add(recipient);
+          return EMPTY;
+        }),
+      );
+    }),
+    toArray(),
+    map((paths) => {
+      if (!paths.length) throw firstError ?? new RaidenError(ErrorCodes.PFS_NO_ROUTES_FOUND);
+      return paths;
+    }),
+  );
 }
 
 function getPfsInfo$(
@@ -449,56 +479,47 @@ export function getRoute$(
 }
 
 /**
+ * @param opts - validation options
+ * @param opts."0" - pfs request action
+ * @param opts."1" - Received route to validate
  * @param state - Latest RaidenState
- * @param action - pfs request action
  * @param deps - Epics dependencies
- * @param route - Received route to validate
  * @returns Observable of results actions after route is validated
  */
 export function validateRoute$(
+  [action, route]: readonly [action: pathFind.request, route: Route],
   state: RaidenState,
-  action: pathFind.request,
   deps: RaidenEpicDeps,
-  route: Route,
-): Observable<pathFind.success | pathFind.failure | iouPersist | iouClear> {
+): Observable<pathFind.success | iouPersist | iouClear> {
   const { tokenNetwork } = action.meta;
   const { iou } = route;
 
-  return from(
-    // looks like mergeMap with generator doesn't handle exceptions correctly
-    // use from+iterator from iife generator instead
-    (function* () {
-      if (iou) {
-        if (shouldPersistIou(route)) {
-          yield iouPersist({ iou }, { tokenNetwork: tokenNetwork, serviceAddress: iou.receiver });
-        } else {
-          yield iouClear(undefined, {
+  let iou$: Observable<iouPersist | iouClear> = EMPTY;
+  if (iou) {
+    iou$ = of(
+      shouldPersistIou(route)
+        ? iouPersist({ iou }, { tokenNetwork: tokenNetwork, serviceAddress: iou.receiver })
+        : iouClear(undefined, {
             tokenNetwork: tokenNetwork,
             serviceAddress: iou.receiver,
-          });
-        }
-      }
-
-      if ('error' in route) {
-        const { error } = route;
-        if (isNoRouteFoundError(error)) {
-          throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES);
-        } else {
-          throw new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, {
+          }),
+    );
+  }
+  let result$: Observable<pathFind.success>;
+  if ('error' in route) {
+    const { error } = route;
+    result$ = throwError(
+      isNoRouteFoundError(error)
+        ? new RaidenError(ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES)
+        : new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, {
             errorCode: error.error_code,
             errors: error.errors,
-          });
-        }
-      }
-
-      const { paths } = route;
-      const filteredPaths = filterPaths(state, action, deps, paths);
-
-      if (filteredPaths.length) {
-        yield pathFind.success({ paths: filteredPaths }, action.meta);
-      } else {
-        throw new RaidenError(ErrorCodes.PFS_NO_ROUTES_FOUND);
-      }
-    })(),
-  );
+          }),
+    );
+  } else {
+    result$ = filterPaths$([action, route.paths], state, deps).pipe(
+      map((paths) => pathFind.success({ paths }, action.meta)),
+    );
+  }
+  return concat(iou$, result$);
 }

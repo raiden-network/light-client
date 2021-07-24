@@ -7,10 +7,12 @@
 
 ### Fixed
 - [#2831] Force PFS to acknowledge our capabilities updates
+- [#2868] Invalidate routes where some mediator have `capabilities.Mediate=0` and error if this is the only route received from PFS.
 
 [#2730]: https://github.com/raiden-network/light-client/issues/2730
 [#2766]: https://github.com/raiden-network/light-client/pull/2766
 [#2831]: https://github.com/raiden-network/light-client/issues/2831
+[#2868]: https://github.com/raiden-network/light-client/pull/2868
 
 ## [1.0.0] - 2021-06-16
 ### Removed
