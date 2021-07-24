@@ -70,7 +70,7 @@ export function pfsRequestEpic(
               getRoute$(action, deps, latest, targetPresence),
             ),
             withLatestFrom(deps.latest$),
-            mergeMap(([route, { state }]) => validateRoute$(state, action, deps, route)),
+            mergeMap(([route, { state }]) => validateRoute$([action, route], state, deps)),
             catchError((err) => of(pathFind.failure(err, action.meta))),
           ),
         ),
