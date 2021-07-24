@@ -69,18 +69,6 @@ function searchAddressPresence$(
         first(),
       );
     }),
-    map(({ user_id: userId, capabilities, pubkey }) =>
-      matrixPresence.success(
-        {
-          userId,
-          available: true,
-          ts: Date.now(),
-          caps: capabilities,
-          pubkey,
-        },
-        { address },
-      ),
-    ),
     catchError((err) => of(matrixPresence.failure(err, { address }))),
   );
 }

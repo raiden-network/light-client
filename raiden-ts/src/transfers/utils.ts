@@ -30,7 +30,7 @@ import type { Paths } from '../services/types';
 import type { RaidenState } from '../state';
 import type { matrixPresence } from '../transport/actions';
 import type { Caps, Via } from '../transport/types';
-import { getCap, parseCaps } from '../transport/utils';
+import { getCap } from '../transport/utils';
 import { assert } from '../utils';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import type { Address, Hash, Int, PrivateKey, Secret, UInt } from '../utils/types';
@@ -326,9 +326,9 @@ export function metadataFromPaths(
     partnerUserId = target.payload.userId;
     partnerCaps = target.payload.caps;
   } else {
-    const partnerMetadata = searchValidMetadata(viaPath.address_metadata, partner);
-    partnerUserId = partnerMetadata?.user_id;
-    partnerCaps = parseCaps(partnerMetadata?.capabilities);
+    const partnerPresence = searchValidMetadata(viaPath.address_metadata, partner);
+    partnerUserId = partnerPresence?.payload.userId;
+    partnerCaps = partnerPresence?.payload.caps;
   }
   const via: Via = { userId: partnerUserId };
 
@@ -387,12 +387,13 @@ export function decryptSecretFromMetadata(
 export function searchValidMetadata(
   addressMetadata: RouteMetadata['address_metadata'],
   address: Address,
-) {
-  return validateAddressMetadata(
-    // support address_metadata keys being both lowercase and checksummed addresses
-    addressMetadata?.[address] ?? addressMetadata?.[address.toLowerCase()],
-    address,
-  )?.[0];
+): matrixPresence.success | undefined {
+  // support address_metadata keys being both lowercase and checksummed addresses
+  const metadata = addressMetadata?.[address] ?? addressMetadata?.[address.toLowerCase()];
+  if (metadata) {
+    const presence = validateAddressMetadata(metadata, address);
+    if (presence) return presence;
+  }
 }
 
 /**
@@ -411,6 +412,7 @@ export function searchValidViaAddress(
   } catch (e) {}
   if (!decoded || !address) return;
   for (const { address_metadata } of decoded.routes) {
-    if ((userId = searchValidMetadata(address_metadata, address)?.user_id)) return { userId };
+    if ((userId = searchValidMetadata(address_metadata, address)?.payload.userId))
+      return { userId };
   }
 }

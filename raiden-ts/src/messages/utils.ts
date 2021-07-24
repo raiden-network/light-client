@@ -14,9 +14,9 @@ import logging from 'loglevel';
 
 import type { BalanceProof } from '../channels/types';
 import { Capabilities, LocksrootZero } from '../constants';
-import type { matrixPresence } from '../transport/actions';
+import { matrixPresence } from '../transport/actions';
 import type { Caps } from '../transport/types';
-import { getCap } from '../transport/utils';
+import { getCap, parseCaps } from '../transport/utils';
 import type { RaidenEpicDeps } from '../types';
 import { assert } from '../utils';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
@@ -423,31 +423,49 @@ export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | C[
 }
 
 /**
+ * @param metadata - to convert to presence
+ * @returns presence for metadata, assuming node is available
+ */
+export function metadataToPresence(metadata: AddressMetadata): matrixPresence.success {
+  const pubkey = recoverPublicKey(
+    arrayify(hashMessage(metadata.user_id)),
+    metadata.displayname,
+  ) as PublicKey;
+  const address = computeAddress(pubkey) as Address;
+  return matrixPresence.success(
+    {
+      userId: metadata.user_id,
+      available: true,
+      ts: Date.now(),
+      caps: parseCaps(metadata.capabilities),
+      pubkey,
+    },
+    { address },
+  );
+}
+
+/**
  * Validates metadata was signed by address
  *
  * @param metadata - Peer's metadata
  * @param address - Peer's address
  * @param opts - Options
  * @param opts.log - Logger instance
- * @returns Metadata iff it's valid and was signed by address
+ * @returns presence iff metadata is valid and was signed by address
  */
 export function validateAddressMetadata(
   metadata: AddressMetadata | undefined,
   address: Address,
   { log }: Partial<Pick<RaidenEpicDeps, 'log'>> = {},
-): [metadata: AddressMetadata, pubkey: PublicKey] | undefined {
+): matrixPresence.success | undefined {
   if (!metadata) return;
   try {
-    const pubkey = recoverPublicKey(
-      arrayify(hashMessage(metadata.user_id)),
-      metadata.displayname,
-    ) as PublicKey;
-    const recoveredAddress = computeAddress(pubkey) as Address;
-    assert(recoveredAddress === address, [
+    const presence = metadataToPresence(metadata);
+    assert(presence.meta.address === address, [
       'Wrong signature',
-      { expected: address, received: recoveredAddress },
+      { expected: address, recovered: presence.meta.address },
     ]);
-    return [metadata, pubkey];
+    return presence;
   } catch (error) {
     log?.warn('Invalid address metadata', { address, metadata, error });
   }

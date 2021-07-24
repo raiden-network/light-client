@@ -8,7 +8,7 @@ import type { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { Metadata } from '../../messages/types';
 import type { RaidenState } from '../../state';
-import { getCap, parseCaps } from '../../transport/utils';
+import { getCap } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import type { Address, Int } from '../../utils/types';
 import { decode, isntNil } from '../../utils/types';
@@ -83,10 +83,10 @@ function findValidPartner(
       continue;
     }
 
-    const outPartnerMetadata = searchValidMetadata(address_metadata, outPartner);
+    const outPartnerPresence = searchValidMetadata(address_metadata, outPartner);
     let metadata = message.metadata; // pass through metadata
     // iff partner requires a clear route (to be first address), clear original metadata
-    if (!getCap(parseCaps(outPartnerMetadata?.capabilities), Capabilities.IMMUTABLE_METADATA))
+    if (!getCap(outPartnerPresence?.payload.caps, Capabilities.IMMUTABLE_METADATA))
       metadata = clearMetadataRoute(address, metadata);
 
     return {
@@ -95,7 +95,7 @@ function findValidPartner(
       // on a transfer.request, fee is *added* to the value to get final sent amount,
       // therefore here it needs to contain a negative fee, which we will "earn" instead of pay
       fee: fee.mul(-1) as Int<32>,
-      userId: outPartnerMetadata?.user_id,
+      userId: outPartnerPresence?.payload.userId,
       metadata,
     };
   }
