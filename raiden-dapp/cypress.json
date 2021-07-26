@@ -1,6 +1,5 @@
 {
   "reporter": "junit",
-  "reporterOptions": "mochaFile=tests/e2e/results/report.xml",
   "reporterOptions": {
     "mochaFile": "tests/e2e/results/reports/summary.xml"
   },
