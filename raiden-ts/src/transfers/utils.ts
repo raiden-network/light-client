@@ -321,7 +321,8 @@ export function metadataFromPaths(
   const viaPath = paths[0];
   const fee = viaPath.fee;
   const partner = viaPath.path[1]; // we're first address in route, partner is 2nd
-  let partnerUserId: string | undefined, partnerCaps: Caps | null | undefined;
+  let partnerUserId: string | undefined;
+  let partnerCaps: Caps | null | undefined;
   if (partner === target.meta.address) {
     partnerUserId = target.payload.userId;
     partnerCaps = target.payload.caps;
