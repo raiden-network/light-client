@@ -113,9 +113,13 @@ describe('service worker index', () => {
       expect(objectStore.put).not.toHaveBeenCalled();
     });
 
-    test('sends window reload message after activation', async () => {
+    test('sends window reload message after activation if taking over old version', async () => {
+      const cache = new MockedCache(['https://test.tld/old-asset']);
       const client = new MockedClient();
-      const context = mockEnvironmentForServiceWorker({ client });
+      const objectStore = new MockedIDBObjectStore('precacheEntries', [
+        { url: 'https://test.tld/old-asset' },
+      ]);
+      const context = mockEnvironmentForServiceWorker({ cache, client, objectStore });
 
       await installServiceWorker(context);
       expect(client.postMessage).not.toHaveBeenCalled();
