@@ -8,5 +8,7 @@
   "fixturesFolder": "tests/e2e/fixtures",
   "integrationFolder": "tests/e2e/specs",
   "pluginsFile": "tests/e2e/plugins/index.js",
-  "supportFile": "tests/e2e/support/index.ts"
+  "supportFile": "tests/e2e/support/index.ts",
+  "modifyObstructiveCode": false,
+  "videoUploadOnPasses": false
 }
