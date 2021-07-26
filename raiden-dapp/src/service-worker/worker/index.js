@@ -55,11 +55,9 @@ async function onActivate(event) {
 
   await this.clients.claim();
 
-  if (this.installError) {
+  if (this.installError !== undefined) {
     sendMessageToClients.call(this, ServiceWorkerMessages.INSTALLATION_ERROR, this.installError);
-  }
-
-  if (!this.installError) {
+  } else if (!this.shouldUpdate) {
     // For unknown reason this is necessary to prevent bugs when an old version
     // gets taken over. We were not able find the root cause, just that it works.
     await sendMessageToClients.call(this, ServiceWorkerMessages.RELOAD_WINDOW);
