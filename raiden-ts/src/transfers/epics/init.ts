@@ -212,21 +212,21 @@ export function transferRequestResolveEpic(
               config$,
             ),
             map(([route, targetPresence, { encryptSecret }]) => {
-              const resolved =
-                (action.payload.encryptSecret ?? encryptSecret) && action.payload.secret
-                  ? metadataFromPaths(route.payload.paths, targetPresence, {
-                      secret: action.payload.secret,
-                      amount: action.payload.value,
-                      payment_identifier: action.payload.paymentId,
-                    })
-                  : metadataFromPaths(route.payload.paths, targetPresence);
-              return transfer.request(
-                {
-                  ...omit(action.payload, ['paths', 'pfs', 'encryptSecret'] as const),
-                  ...resolved,
-                },
-                action.meta,
+              let encryptSecretOptions;
+              if ((action.payload.encryptSecret ?? encryptSecret) && action.payload.secret)
+                encryptSecretOptions = {
+                  secret: action.payload.secret,
+                  amount: action.payload.value,
+                  payment_identifier: action.payload.paymentId,
+                };
+              const resolvedPayload = metadataFromPaths(
+                route.payload.paths,
+                targetPresence,
+                encryptSecretOptions,
               );
+              const restPayload = omit(action.payload, ['paths', 'pfs', 'encryptSecret'] as const);
+              const requestOptions = { ...restPayload, ...resolvedPayload };
+              return transfer.request(requestOptions, action.meta);
             }),
             catchError((err) => of(transfer.failure(err, action.meta))),
           ),
