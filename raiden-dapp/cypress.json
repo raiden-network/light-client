@@ -5,6 +5,7 @@
   },
   "screenshotsFolder": "tests/e2e/results/screenshots",
   "videosFolder": "tests/e2e/results/videos",
+  "downloadsFolder": "tests/e2e/results/downloads",
   "fixturesFolder": "tests/e2e/fixtures",
   "integrationFolder": "tests/e2e/specs",
   "pluginsFile": "tests/e2e/plugins/index.js",
