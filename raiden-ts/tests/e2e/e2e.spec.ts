@@ -89,14 +89,14 @@ async function depositToUDC(raiden: Raiden) {
   );
   await expect(
     raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
-  ).resolves.toStrictEqual(BigNumber.from(svtBalance));
+  ).resolves.toBeBigNumber(svtBalance);
 
   await expect(raiden.depositToUDC(svtBalance)).resolves.toMatch('0x');
-  await expect(raiden.getUDCCapacity()).resolves.toStrictEqual(BigNumber.from(svtBalance));
+  await expect(raiden.getUDCCapacity()).resolves.toBeBigNumber(svtBalance);
 
   await expect(
     raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
-  ).resolves.toStrictEqual(BigNumber.from(0));
+  ).resolves.toBeBigNumber(0);
 
   // Give PFS some time
   await wait(3_000);
@@ -145,75 +145,57 @@ describe('e2e', () => {
      */
     const amount = 100;
     await expect(raiden.mint(getToken(), amount)).resolves.toMatch('0x');
-    await expect(raiden.getTokenBalance(getToken())).resolves.toStrictEqual(
-      BigNumber.from(amount),
-    );
+    await expect(raiden.getTokenBalance(getToken())).resolves.toBeBigNumber(amount);
     await expect(raiden.openChannel(getToken(), partner1, { deposit: amount })).resolves.toMatch(
       '0x',
     );
 
     await wait(3_000);
 
-    await expect(getChannelCapacity(raiden, partner1)).resolves.toStrictEqual(
-      BigNumber.from(amount),
-    );
+    await expect(getChannelCapacity(raiden, partner1)).resolves.toBeBigNumber(amount);
     // check error for impossible transfer
     await expect(raiden.transfer(getToken(), partner1, amount + 1)).toReject();
     // exhaust our side of the channel
     let key = await raiden.transfer(getToken(), partner1, amount);
     await raiden.waitTransfer(key);
 
-    await expect(getChannelCapacity(raiden, partner1)).resolves.toStrictEqual(BigNumber.from(0));
+    await expect(getChannelCapacity(raiden, partner1)).resolves.toBeBigNumber(0);
 
     /*
      * Direct transfer from LC1 to LC2
      */
     await depositToUDC(raiden2);
     await expect(raiden.mint(getToken(), amount)).resolves.toMatch('0x');
-    await expect(raiden.getTokenBalance(getToken())).resolves.toStrictEqual(
-      BigNumber.from(amount),
-    );
+    await expect(raiden.getTokenBalance(getToken())).resolves.toBeBigNumber(amount);
     await expect(
       raiden.openChannel(getToken(), raiden2.address, { deposit: amount }),
     ).resolves.toMatch('0x');
 
-    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toStrictEqual(
-      BigNumber.from(amount),
-    );
-    await expect(getChannelCapacity(raiden2, raiden.address)).resolves.toStrictEqual(
-      BigNumber.from(0),
-    );
+    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toBeBigNumber(amount);
+    await expect(getChannelCapacity(raiden2, raiden.address)).resolves.toBeBigNumber(0);
     // check error for impossible transfer
     await expect(raiden.transfer(getToken(), raiden2.address, amount + 1)).toReject();
     // exhaust our side of the channel
     key = await raiden.transfer(getToken(), raiden2.address, amount);
     await raiden.waitTransfer(key);
 
-    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toStrictEqual(
-      BigNumber.from(0),
-    );
-    await expect(getChannelCapacity(raiden2, raiden.address)).resolves.toStrictEqual(
-      BigNumber.from(amount),
-    );
+    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toBeBigNumber(0);
+    await expect(getChannelCapacity(raiden2, raiden.address)).resolves.toBeBigNumber(amount);
 
     /*
      * Deposit and partly withdraw from LC1
      */
     const withdraw_amount = 50;
     await expect(raiden.mint(getToken(), amount)).resolves.toMatch('0x');
-    await expect(raiden.getTokenBalance(getToken())).resolves.toStrictEqual(
-      BigNumber.from(amount),
-    );
+    await expect(raiden.getTokenBalance(getToken())).resolves.toBeBigNumber(amount);
     await expect(raiden.depositChannel(getToken(), partner1, amount)).resolves.toMatch('0x');
-    await expect(getChannelCapacity(raiden, partner1)).resolves.toStrictEqual(
-      BigNumber.from(amount),
-    );
+    await expect(getChannelCapacity(raiden, partner1)).resolves.toBeBigNumber(amount);
 
     await expect(raiden.withdrawChannel(getToken(), partner1, withdraw_amount)).resolves.toMatch(
       '0x',
     );
-    await expect(getChannelCapacity(raiden, partner1)).resolves.toStrictEqual(
-      BigNumber.from(amount - withdraw_amount),
+    await expect(getChannelCapacity(raiden, partner1)).resolves.toBeBigNumber(
+      amount - withdraw_amount,
     );
 
     /*
@@ -225,9 +207,7 @@ describe('e2e', () => {
     await expect(raiden.getAvailability(partner1)).resolves.toMatchObject({ available: true });
     await expect(raiden.getAvailability(partner2)).resolves.toMatchObject({ available: true });
 
-    expect(getChannelCapacity(raiden, partner1)).resolves.toStrictEqual(
-      BigNumber.from(amount - withdraw_amount),
-    );
+    expect(getChannelCapacity(raiden, partner1)).resolves.toBeBigNumber(amount - withdraw_amount);
 
     const routes: RaidenPaths = await raiden.findRoutes(getToken(), partner2, amount2);
     expect(routes).toMatchObject([
@@ -237,8 +217,8 @@ describe('e2e', () => {
     key = await raiden.transfer(getToken(), partner2, amount2, { paths: routes });
     await raiden.waitTransfer(key);
 
-    expect(getChannelCapacity(raiden, partner1)).resolves.toStrictEqual(
-      BigNumber.from(amount - withdraw_amount - amount2),
+    expect(getChannelCapacity(raiden, partner1)).resolves.toBeBigNumber(
+      amount - withdraw_amount - amount2,
     );
 
     /*
@@ -257,15 +237,15 @@ describe('e2e', () => {
     await expect(
       raiden.depositChannel(getToken(), raiden2.address, withdraw_amount),
     ).resolves.toMatch('0x');
-    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toStrictEqual(
-      BigNumber.from(withdraw_amount),
+    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toBeBigNumber(
+      withdraw_amount,
     );
 
     await expect(
       raiden.withdrawChannel(getToken(), raiden2.address, withdrawAmount2),
     ).resolves.toMatch('0x');
-    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toStrictEqual(
-      BigNumber.from(withdraw_amount - withdrawAmount2),
+    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toBeBigNumber(
+      withdraw_amount - withdrawAmount2,
     );
 
     /*
@@ -279,15 +259,11 @@ describe('e2e', () => {
       },
     });
     await expect(raiden2.mint(getToken(), amount)).resolves.toMatch('0x');
-    await expect(raiden2.getTokenBalance(getToken())).resolves.toStrictEqual(
-      BigNumber.from(amount),
-    );
+    await expect(raiden2.getTokenBalance(getToken())).resolves.toBeBigNumber(amount);
     await expect(raiden2.openChannel(getToken(), partner2, { deposit: amount })).resolves.toMatch(
       '0x',
     );
-    await expect(getChannelCapacity(raiden2, partner2)).resolves.toStrictEqual(
-      BigNumber.from(amount),
-    );
+    await expect(getChannelCapacity(raiden2, partner2)).resolves.toBeBigNumber(amount);
 
     // PC nodes need a long time to send capacity updates
     await wait(10_000);
@@ -301,11 +277,11 @@ describe('e2e', () => {
     key = await raiden.transfer(getToken(), partner2, sendAmount, { paths: routes2 });
     await raiden.waitTransfer(key);
 
-    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toStrictEqual(
-      BigNumber.from(withdraw_amount - withdrawAmount2 - sendAmount),
+    await expect(getChannelCapacity(raiden, raiden2.address)).resolves.toBeBigNumber(
+      withdraw_amount - withdrawAmount2 - sendAmount,
     );
-    await expect(getChannelCapacity(raiden2, partner2)).resolves.toStrictEqual(
-      BigNumber.from(amount - sendAmount),
+    await expect(getChannelCapacity(raiden2, partner2)).resolves.toBeBigNumber(
+      amount - sendAmount,
     );
 
     await expect(settlePromise).resolves.toMatch('0x');
@@ -316,13 +292,13 @@ describe('e2e', () => {
     const udcWithdrawAmount = 10;
     await expect(
       raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
-    ).resolves.toStrictEqual(BigNumber.from(0));
+    ).resolves.toBeBigNumber(0);
 
     await expect(raiden.planUDCWithdraw(udcWithdrawAmount)).resolves.toMatch('0x');
     await expect(raiden.withdrawFromUDC(udcWithdrawAmount)).resolves.toMatch('0x');
 
     await expect(
       raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
-    ).resolves.toStrictEqual(BigNumber.from(udcWithdrawAmount));
+    ).resolves.toBeBigNumber(udcWithdrawAmount);
   });
 });

@@ -278,7 +278,7 @@ describe('send transfer', () => {
         transferred_amount: sentState.transfer.lock.amount,
         locked_amount: Zero,
         secret,
-        message_identifier: expect.any(BigNumber),
+        message_identifier: expect.toBeBigNumber(),
         signature: expect.any(String),
       });
       await expect(unlock).resolves.toEqual(expectedUnlock);
@@ -418,7 +418,7 @@ describe('send transfer', () => {
         locksroot: keccak256([]),
         transferred_amount: Zero,
         locked_amount: Zero,
-        message_identifier: expect.any(BigNumber),
+        message_identifier: expect.toBeBigNumber(),
         signature: expect.any(String),
       });
       expect(raiden.output).toContainEqual(

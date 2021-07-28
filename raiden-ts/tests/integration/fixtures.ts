@@ -407,8 +407,8 @@ export async function ensurePresence([raiden, partner]: [
  * @param clients.1 - Partner
  */
 export function expectChannelsAreInSync([raiden, partner]: [MockedRaiden, MockedRaiden]) {
-  expect(getChannel(raiden, partner).own).toStrictEqual(getChannel(partner, raiden).partner);
-  expect(getChannel(raiden, partner).partner).toStrictEqual(getChannel(partner, raiden).own);
+  expect(getChannel(raiden, partner).own).toEqual(getChannel(partner, raiden).partner);
+  expect(getChannel(raiden, partner).partner).toEqual(getChannel(partner, raiden).own);
 }
 
 /**

@@ -950,7 +950,7 @@ describe('Raiden', () => {
       1,
       partner,
       One,
-      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
+      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
     );
 
     // Test transfering all tokens
@@ -960,7 +960,7 @@ describe('Raiden', () => {
       2,
       partner,
       BigNumber.from(1_000_000),
-      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
+      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
     );
   });
 
@@ -1431,7 +1431,7 @@ describe('Raiden', () => {
       token,
       MaxUint256,
       MaxUint256,
-      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
+      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
     );
   });
 

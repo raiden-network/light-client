@@ -215,7 +215,7 @@ describe('withdraw send request', () => {
       expiration,
       request.signature,
       confirmation.signature,
-      expect.objectContaining({ gasPrice: expect.any(BigNumber) }),
+      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
     );
     // this only works because Capabilities.DELIVERY is enabled
     // LC-to-LC confirms with WithdrawConfirmation instead
