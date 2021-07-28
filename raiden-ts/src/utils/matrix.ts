@@ -29,5 +29,6 @@ export function getUserPresence(
   currently_active?: boolean;
 }> {
   const path = encodeUri('/presence/$userId/status', { $userId: userId });
-  return matrix._http.authedRequest(undefined, 'GET', path);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (matrix as any).http.authedRequest(undefined, 'GET', path);
 }

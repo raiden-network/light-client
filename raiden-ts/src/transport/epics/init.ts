@@ -217,7 +217,8 @@ function setupMatrixClient$(
             // set it here, and login doesn't set deviceId, so we set all credential
             // parameters again here after successful login or register
             matrix.deviceId = device_id;
-            matrix._http.opts.accessToken = access_token;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (matrix as any).http.opts.accessToken = access_token;
             matrix.credentials = { userId };
 
             // displayName must be signature of full userId for our messages to be accepted
