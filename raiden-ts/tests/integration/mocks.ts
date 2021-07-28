@@ -533,7 +533,7 @@ function mockedMatrixCreateClient({
         }
       },
     ),
-    _http: {
+    http: {
       opts: {},
       // mock request done by raiden/utils::getUserPresence
       authedRequest: jest.fn(async (_1: any, _method: string, url: string) => {
