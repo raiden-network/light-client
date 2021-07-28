@@ -76,7 +76,7 @@ describe('TokenList.vue', () => {
     const wrapper = createWrapper({ tokens: [tokenOne] });
     const tokenListItem = wrapper.findComponent(TokenListItem);
 
-    tokenListItem.element.click();
+    (tokenListItem.element as HTMLElement).click();
 
     const selectEvents = wrapper.emitted().select ?? [];
     expect(selectEvents.length).toBe(1);

@@ -33,7 +33,7 @@ const wrapper = mount(TokenListItem, {
 
 describe('TokenListItem.vue', () => {
   test('emit select event when clicking on item', () => {
-    wrapper.element.click();
+    (wrapper.element as HTMLElement).click();
 
     const selectEvents = wrapper.emitted().select ?? [];
     expect(selectEvents.length).toBe(1);
