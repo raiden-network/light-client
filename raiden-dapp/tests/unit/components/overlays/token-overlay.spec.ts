@@ -78,7 +78,7 @@ describe('TokenOverlay.vue', () => {
     const wrapper = createWrapper();
     const tokenListItem = wrapper.findComponent(TokenListItem);
 
-    tokenListItem.element.click();
+    (tokenListItem.element as HTMLElement).click();
 
     expect((wrapper.vm as any).navigateToSelectTransferTarget).toHaveBeenCalledTimes(1);
     expect((wrapper.vm as any).navigateToSelectTransferTarget).toHaveBeenCalledWith(token.address);
@@ -88,7 +88,7 @@ describe('TokenOverlay.vue', () => {
     const wrapper = createWrapper(token.address);
     const tokenListItem = wrapper.findComponent(TokenListItem);
 
-    tokenListItem.element.click();
+    (tokenListItem.element as HTMLElement).click();
 
     const cancelEvents = wrapper.emitted().cancel ?? [];
     expect(cancelEvents.length).toBe(1);
