@@ -404,6 +404,7 @@
     "title": "Error"
   },
   "error-codes": {
+    "deployment-info-parsing-failed": "Failed to read the contract or service deployment information file!",
     "unsupported-network": "The current network is unsupported. Please choose a different network.",
     "sdk-initialization-failed": "SDK initialization failed. Please check the console for more information.",
     "state-migration-failed": "Cannot replace state with older uploaded state."

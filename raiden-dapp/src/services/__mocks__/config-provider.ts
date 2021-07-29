@@ -5,3 +5,5 @@ export class ConfigProvider {
     per_network: {},
   });
 }
+
+export class DeploymentInfoParsingFailed extends Error {}

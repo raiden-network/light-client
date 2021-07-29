@@ -94,6 +94,7 @@ export const PlaceHolderNetwork: providers.Network = {
 };
 
 export enum ErrorCode {
+  DEPLOYMENT_INFO_PARSING_FAILED = 'deployment-info-parsing-failed',
   UNSUPPORTED_NETWORK = 'unsupported-network',
   SDK_INITIALIZATION_FAILED = 'sdk-initialization-failed',
   STATE_MIGRATION_FAILED = 'state-migration-failed',

@@ -47,7 +47,7 @@ import { createNamespacedHelpers, mapState } from 'vuex';
 import ActionButton from '@/components/ActionButton.vue';
 import ConnectionPendingDialog from '@/components/dialogs/ConnectionPendingDialog.vue';
 import { ErrorCode } from '@/model/types';
-import { ConfigProvider } from '@/services/config-provider';
+import { ConfigProvider, DeploymentInfoParsingFailed } from '@/services/config-provider';
 import type { EthereumProvider, EthereumProviderFactory } from '@/services/ethereum-provider';
 import {
   DirectRpcProvider,
@@ -56,7 +56,9 @@ import {
 } from '@/services/ethereum-provider';
 
 function mapRaidenServiceErrorToErrorCode(error: Error): ErrorCode {
-  if (error.message && error.message.includes('No deploy info provided')) {
+  if (error instanceof DeploymentInfoParsingFailed) {
+    return ErrorCode.DEPLOYMENT_INFO_PARSING_FAILED;
+  } else if (error.message && error.message.includes('No deploy info provided')) {
     return ErrorCode.UNSUPPORTED_NETWORK;
   } else if (error.message && error.message.includes('Could not replace stored state')) {
     return ErrorCode.STATE_MIGRATION_FAILED;
