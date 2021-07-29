@@ -15,6 +15,7 @@ export function acceptDisclaimer() {
  */
 export function connectToDApp() {
   // cypress selectors: raiden-dapp/src/views/Home.vue
+  cy.wait(1000);
   cy.get('[data-cy=home]').should('exist');
   cy.getWithCustomTimeout(
     '[data-cy=connection-manager__provider-dialog-button__direct_rpc_provider]',
