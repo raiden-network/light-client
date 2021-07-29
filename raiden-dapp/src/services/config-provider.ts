@@ -2,27 +2,32 @@ import type { ContractsInfo } from 'raiden-ts';
 
 export class ConfigProvider {
   static async contracts(): Promise<ContractsInfo | undefined> {
-    const {
-      VUE_APP_DEPLOYMENT_INFO: deploymentInfoFilePath,
-      VUE_APP_DEPLOYMENT_SERVICES_INFO: deploymentServicesInfoFilePath,
-    } = process.env;
+    try {
+      const {
+        VUE_APP_DEPLOYMENT_INFO: deploymentInfoFilePath,
+        VUE_APP_DEPLOYMENT_SERVICES_INFO: deploymentServicesInfoFilePath,
+      } = process.env;
 
-    if (deploymentInfoFilePath && deploymentServicesInfoFilePath) {
-      const [deploymentInfoFile, deploymentServicesInfoFile] = await Promise.all([
-        fetch(deploymentInfoFilePath),
-        fetch(deploymentServicesInfoFilePath),
-      ]);
-      const [deployment, serviceDeployment] = await Promise.all([
-        deploymentInfoFile.json(),
-        deploymentServicesInfoFile.json(),
-      ]);
+      if (deploymentInfoFilePath && deploymentServicesInfoFilePath) {
+        const [deploymentInfoFile, deploymentServicesInfoFile] = await Promise.all([
+          fetch(deploymentInfoFilePath),
+          fetch(deploymentServicesInfoFilePath),
+        ]);
 
-      return {
-        ...deployment.contracts,
-        ...serviceDeployment.contracts,
-      } as unknown as ContractsInfo;
+        const [deployment, serviceDeployment] = await Promise.all([
+          deploymentInfoFile.json(),
+          deploymentServicesInfoFile.json(),
+        ]);
+
+        return {
+          ...deployment.contracts,
+          ...serviceDeployment.contracts,
+        } as unknown as ContractsInfo;
+      }
+      return undefined;
+    } catch (error) {
+      throw new DeploymentInfoParsingFailed(error);
     }
-    return undefined;
   }
 
   static async configuration(): Promise<Configuration> {
@@ -40,3 +45,5 @@ export interface Configuration {
 export interface NetworkConfiguration {
   readonly monitored: string[];
 }
+
+export class DeploymentInfoParsingFailed extends Error {}

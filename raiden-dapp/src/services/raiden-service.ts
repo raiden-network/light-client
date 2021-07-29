@@ -80,9 +80,9 @@ export default class RaidenService {
       }
     }
 
-    try {
-      const contracts = await ConfigProvider.contracts();
+    const contracts = await ConfigProvider.contracts();
 
+    try {
       return await Raiden.create(
         provider,
         privateKeyOrProviderAccountIndex,
