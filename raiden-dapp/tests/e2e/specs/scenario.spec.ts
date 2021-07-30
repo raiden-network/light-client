@@ -26,6 +26,7 @@ import {
   navigateToTokenSelect,
   navigateToUDC,
   navigateToWithdrawal,
+  reloadWholeApplication,
 } from '../utils/navigation';
 import {
   acceptDisclaimer,
@@ -96,7 +97,8 @@ describe('dApp e2e tests', () => {
     navigateToUDC();
     enterUDCWithdrawalAmount(uiTimeout);
     withdrawUDCTokens();
-    navigateBackToAccountMenu();
+    reloadWholeApplication();
+    navigateToAccountMenu();
     navigateToDownloadLogs();
   });
 });

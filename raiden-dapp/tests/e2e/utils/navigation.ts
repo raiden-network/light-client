@@ -166,5 +166,18 @@ export function navigateToDownloadLogs() {
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
-  cy.get('[data-cy=account_content_menu_list_items]').eq(4).click();
+  cy.get('[data-cy=account_content_menu_list_items]').eq(2).click();
+}
+
+/*
+ *
+ */
+/**
+ *
+ */
+export function reloadWholeApplication() {
+  cy.reload(true);
+  // Ensure page was actually correctly reloaded with accepted disclaimer in
+  // offline mode.
+  cy.get('[data-cy=home]').should('exist');
 }

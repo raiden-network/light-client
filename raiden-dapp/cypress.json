@@ -12,5 +12,6 @@
   "supportFile": "tests/e2e/support/index.ts",
   "baseUrl": "http://localhost:5000",
   "modifyObstructiveCode": false,
-  "videoUploadOnPasses": false
+  "videoUploadOnPasses": false,
+  "chromeWebSecurity": false
 }
