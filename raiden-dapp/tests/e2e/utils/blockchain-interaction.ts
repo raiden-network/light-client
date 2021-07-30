@@ -2,6 +2,7 @@
  *
  */
 export function mintAndDepositUtilityTokenFromSelectHubScreen() {
+  cy.log('mint and deposit utility token from selected hub screen');
   // cypress selectors: raiden-dapp/src/views/SelectHubRoute.vue
   cy.get('[data-cy=select_hub]').should('exist');
   cy.get('[data-cy=select_hub_udc_balance_deposit]').click();
@@ -15,6 +16,7 @@ export function mintAndDepositUtilityTokenFromSelectHubScreen() {
  *
  */
 export function mintConnectedTokenFromSelectHubScreen() {
+  cy.log('mint connected token from select hub screen');
   // cypress selectors: raiden-dapp/src/views/SelectHubRoute.vue
   cy.get('[data-cy=select_hub]').should('exist');
   // cypress selectors: raiden-dapp/src/components/TokenInformation.vue
@@ -29,6 +31,7 @@ export function mintConnectedTokenFromSelectHubScreen() {
  *
  */
 export function openChannel() {
+  cy.log('open channel');
   // cypress selectors: raiden-dapp/src/views/OpenChannelRoute.vue
   cy.get('[data-cy=open_channel]').should('exist');
   cy.get('[data-cy=open_channel_button]').click();
@@ -41,6 +44,7 @@ export function openChannel() {
  *
  */
 export function depositTokensToOpenedChannel() {
+  cy.log('deposit tokens to opened channel');
   // cypress selectors: raiden-dapp/src/components/dialogs/ChannelDepositDialog.vue
   cy.get('[data-cy=channel_deposit]').should('exist');
   cy.get('[data-cy=channel_deposit_button]').click();
@@ -51,6 +55,7 @@ export function depositTokensToOpenedChannel() {
  *
  */
 export function withdrawTokens() {
+  cy.log('withdraw tokens');
   // cypress selectors: raiden-dapp/src/components/dialogs/ChannelWithdrawDialog.vue
   cy.get('[data-cy=channel_withdraw]').should('exist');
   cy.get('[data-cy=channel_withdraw_button]').click();
@@ -61,6 +66,7 @@ export function withdrawTokens() {
  *
  */
 export function transferETHToRaidenAccount() {
+  cy.log('transfer ETH to Raiden account');
   // cypress selectors: raiden-dapp/src/views/account/RaidenAccount.vue
   cy.get('[data-cy=raiden_account_transfer_button_button]').click();
   cy.getWithCustomTimeout('[data-cy=raiden_account_progress_wrappers]').should('not.exist');
@@ -70,6 +76,7 @@ export function transferETHToRaidenAccount() {
  *
  */
 export function withdrawTokensBackToMainAccount() {
+  cy.log('withdraw tokens back to main account');
   // cypress selectors: raiden-dapp/src/components/account/Withdrawal.vue
   cy.get('[data-cy=withdrawal_tokens]').should('exist');
   cy.get('[data-cy=withdrawal_tokens_button]').eq(0).click();
@@ -82,6 +89,7 @@ export function withdrawTokensBackToMainAccount() {
  *
  */
 export function withdrawUDCTokens() {
+  cy.log('withraw UDC tokens');
   // cypress selectors: raiden-dapp/src/components/dialogs/UdcWithdrawalDialog.vue
   cy.get('[data-cy=udc-withdrawal-dialog]').should('exist');
   cy.get('[data-cy=udc-withdrawal-dialog__button]').click();
@@ -92,6 +100,7 @@ export function withdrawUDCTokens() {
  *
  */
 export function closeChannel() {
+  cy.log('close channel');
   // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
   cy.get('[data-cy=channel_action]').should('exist');
   cy.contains('Close');
@@ -110,6 +119,7 @@ export function closeChannel() {
  *
  */
 export function settleChannel() {
+  cy.log('settle channel');
   // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
   cy.getWithCustomTimeout('[data-cy=channel_action]').should('exist').and('contain', 'Settle');
   cy.get('[data-cy=channel_action]').click();

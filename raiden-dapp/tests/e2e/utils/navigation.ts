@@ -2,6 +2,7 @@
  *
  */
 export function navigateToDisclaimer() {
+  cy.log('navigate to disclaimer');
   cy.visit('/');
   cy.getWithCustomTimeout('.disclaimer').should('exist');
   cy.contains('Disclaimer');
@@ -11,6 +12,7 @@ export function navigateToDisclaimer() {
  *
  */
 export function navigateToSelectHub() {
+  cy.log('navigate to select hub');
   // cypress selectors: raiden-dapp/src/components/NoTokens.vue
   cy.getWithCustomTimeout('[data-cy=no-connected-token__connect-button]').should('exist');
   cy.get('[data-cy=no-connected-token__connect-button]').click();
@@ -26,6 +28,7 @@ export function navigateToSelectHub() {
  *
  */
 export function navigateToNotificationPanel() {
+  cy.log('navigate to notification panel');
   // cypress selectors: raiden-dapp/src/components/AppHeader.vue
   cy.get('[data-cy=app-header_content_icons_notifications-button]').click();
   // cypress selectors: raiden-dapp/src/views/NotificationPanel.vue
@@ -36,6 +39,7 @@ export function navigateToNotificationPanel() {
  *
  */
 export function navigateToAccountMenu() {
+  cy.log('navigate to account menu');
   // cypress selectors: raiden-dapp/src/components/AppHeader.vue
   cy.get('[data-cy=app-header_content_icons_identicon]').click();
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
@@ -46,6 +50,7 @@ export function navigateToAccountMenu() {
  *
  */
 export function navigateToBackupState() {
+  cy.log('navigate to backup state');
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   cy.get('[data-cy=account_content_menu_list_items]').eq(3).click();
@@ -57,6 +62,7 @@ export function navigateToBackupState() {
  *
  */
 export function navigateToTokenSelect() {
+  cy.log('navigate to token select');
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
   cy.get('[data-cy=transfer_inputs]').should('exist');
   // cypress selectors: raiden-dapp/src/components/transfer/TransferHeaders.vue
@@ -67,6 +73,7 @@ export function navigateToTokenSelect() {
  *
  */
 export function navigateToConnectNewTokenFromTokenOverlay() {
+  cy.log('navigate to connect new token from token overlay');
   // cypress selectors: raiden-dapp/src/components/overlays/TokenOverlay.vue
   cy.getWithCustomTimeout('[data-cy=token_overlay_connect_new]').should('exist');
   cy.get('[data-cy=token_overlay_connect_new]').click();
@@ -79,6 +86,7 @@ export function navigateToConnectNewTokenFromTokenOverlay() {
  *
  */
 export function navigateBackToTransferScreenFromOverlay() {
+  cy.log('navigate back to transfer screen from overlay');
   // cypress selectors: raiden-dapp/src/components/AppHeader.vue
   cy.get('[data-cy=header-content_back-button]').click();
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
@@ -89,6 +97,7 @@ export function navigateBackToTransferScreenFromOverlay() {
  *
  */
 export function navigateToTokenDepositFromTransferScreen() {
+  cy.log('navigate to token deposit from transfer screen');
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
   cy.get('[data-cy=transfer_inputs]').should('exist');
   // cypress selectors: raiden-dapp/src/components/transfer/TransferHeaders.vue
@@ -103,6 +112,7 @@ export function navigateToTokenDepositFromTransferScreen() {
  *
  */
 export function navigateToChannelsList() {
+  cy.log('navigate to channel list');
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
   cy.get('[data-cy=transfer_inputs]').should('exist');
   // cypress selectors: raiden-dapp/src/components/transfer/TransferHeaders.vue
@@ -117,6 +127,7 @@ export function navigateToChannelsList() {
  *
  */
 export function navigateToRaidenAccount() {
+  cy.log('navigate to raiden account');
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
@@ -129,6 +140,7 @@ export function navigateToRaidenAccount() {
  *
  */
 export function navigateBackToAccountMenu() {
+  cy.log('navigate back to account menu');
   // cypress selectors: raiden-dapp/src/views/AccountRoute.vue
   cy.get('[data-cy=header-content_back-button]').first().click();
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
@@ -139,6 +151,7 @@ export function navigateBackToAccountMenu() {
  *
  */
 export function navigateToWithdrawal() {
+  cy.log('navigate to withdrawal');
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
@@ -151,6 +164,7 @@ export function navigateToWithdrawal() {
  *
  */
 export function navigateToUDC() {
+  cy.log('navigate to UDC');
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
@@ -163,19 +177,18 @@ export function navigateToUDC() {
  *
  */
 export function navigateToDownloadLogs() {
+  cy.log('navigate to download logs');
   // cypress selectors: raiden-dapp/src/views/account/AccountRoot.vue
   cy.get('[data-cy=account_root]').should('exist');
   // cypress selectors: raiden-dapp/src/components/account/AccountContent.vue
   cy.get('[data-cy=account_content_menu_list_items]').eq(2).click();
 }
 
-/*
- *
- */
 /**
  *
  */
 export function reloadWholeApplication() {
+  cy.log('reload whole application');
   cy.reload(true);
   // Ensure page was actually correctly reloaded with accepted disclaimer in
   // offline mode.
