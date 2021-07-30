@@ -15,10 +15,12 @@ Cypress.Commands.add(
     prevSubject: 'optional',
   },
   (subject, selector) => {
+    const timeout = 3 * 60 * 1000;
+
     if (subject) {
-      cy.get(subject).get(selector, { timeout: 1800000 });
+      cy.get(subject).get(selector, { timeout });
     } else {
-      cy.get(selector, { timeout: 1800000 });
+      cy.get(selector, { timeout });
     }
   },
 );
