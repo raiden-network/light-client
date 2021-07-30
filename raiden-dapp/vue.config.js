@@ -7,7 +7,7 @@ const { InjectManifest } = require('workbox-webpack-plugin');
 
 const sourceDirectoryPath = path.resolve(__dirname, 'src');
 const distributionDirectoryPath = path.resolve(__dirname, 'dist');
-const maxAssetSize = 20e6;
+const maxAssetSize = 30e6;
 
 function getPackageVersion() {
   const packageInfo = require('./package.json');
@@ -39,7 +39,7 @@ function setupServiceWorkerRelatedPlugins(config) {
     swSrc: path.join(sourceDirectoryPath, 'service-worker', 'worker'),
     swDest: 'service-worker.js',
     injectionPoint: 'self.__WB_PRECACHE_ENTRIES',
-    maximumFileSizeToCacheInBytes: 20e6,
+    maximumFileSizeToCacheInBytes: maxAssetSize,
   });
 
   config.plugins.push(
