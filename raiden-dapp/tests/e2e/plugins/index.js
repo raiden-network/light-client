@@ -29,21 +29,23 @@ const preprocessingOptions = {
   },
 };
 
+function setBrowserOptionsForCleanEnvironment(browser = {}, launchOptions) {
+  if (browser.family === 'chromium') {
+    launchOptions.args.push('--incognito');
+    launchOptions.args.push('--auto-open-devtools-for-tabs');
+    launchOptions.args.push(`--user-data-dir=/tmp/${Date.now()}`);
+  }
+
+  return launchOptions;
+}
+
 module.exports = (on, config) => {
   require('@cypress/code-coverage/task')(on, config);
 
   on('file:preprocessor', webpackPreprocessor(preprocessingOptions));
+  on('before:browser:launch', setBrowserOptionsForCleanEnvironment);
 
-  on('before:browser:launch', (browser = {}, launchOptions) => {
-    if (browser.family === 'chromium') {
-      launchOptions.args.push('--incognito');
-    }
-
-    return launchOptions;
-  });
-
-  // Only allow Chromium based browser to make sure the necessary incognito mode
-  // works to get a clean environment.
+  // Only allow Chromium based browser to make sure the set launch options work.
   config.browsers = config.browsers.filter((browser) => browser.family === 'chromium');
 
   return Object.assign({}, config);
