@@ -23,9 +23,13 @@ import type { ChannelKey, ChannelUniqueKey } from './types';
  * @param channel.partner - Partner address
  * @returns A string, for now
  */
-export function channelKey<
-  C extends { tokenNetwork: Address } & ({ partner: { address: Address } } | { partner: Address }),
->({ tokenNetwork, partner }: C): ChannelKey {
+export function channelKey({
+  tokenNetwork,
+  partner,
+}: { tokenNetwork: Address } & (
+  | { partner: { address: Address } }
+  | { partner: Address }
+)): ChannelKey {
   const partnerAddr =
     typeof partner === 'string' ? partner : (partner as { address: Address }).address;
   return `${tokenNetwork}@${partnerAddr}`;

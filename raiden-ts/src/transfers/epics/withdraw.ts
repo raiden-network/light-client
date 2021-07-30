@@ -1,15 +1,18 @@
 import type { Observable } from 'rxjs';
-import { defer, EMPTY, from, merge, of } from 'rxjs';
+import { combineLatest, defer, EMPTY, from, merge, of } from 'rxjs';
 import {
   catchError,
   concatMap,
   filter,
   first,
+  groupBy,
+  ignoreElements,
   map,
   mergeMap,
   mergeMapTo,
   pluck,
   share,
+  startWith,
   take,
   tap,
   withLatestFrom,
@@ -26,7 +29,7 @@ import { messageSend } from '../../messages/actions';
 import type { RaidenState } from '../../state';
 import { getNoDeliveryPeers } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
-import { isActionOf } from '../../utils/actions';
+import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { retryWhile } from '../../utils/rx';
@@ -163,68 +166,84 @@ export function withdrawSendTxEpic(
   return action$.pipe(
     filter(withdrawMessage.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
-    mergeMap((action) =>
-      latest$.pipe(
-        first(),
-        mergeMap(({ state, config, gasPrice }) => {
-          const { subkey: configSubkey, revealTimeout } = config;
-          // don't send on-chain tx if we're 'revealTimeout' blocks from expiration
-          // this is our confidence threshold when we can get a tx inside timeout
-          assert(
-            action.meta.expiration >= state.blockNumber + revealTimeout,
-            ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
-          );
-          const channel = state.channels[channelKey(action.meta)];
-          assert(channel?.state === ChannelState.open, 'channel not open');
-          assert(action.meta.totalWithdraw.gt(channel.own.withdraw), 'withdraw already performed');
-          const req = channel.own.pendingWithdraws.find(
-            matchWithdraw(MessageType.WITHDRAW_REQUEST, action.payload.message),
-          );
-          assert(req, 'no matching WithdrawRequest found');
-          const { tokenNetwork } = action.meta;
-          const { signer: onchainSigner } = chooseOnchainAccount(
-            { signer, address, main },
-            configSubkey,
-          );
-          const tokenNetworkContract = getContractWithSigner(
-            getTokenNetworkContract(tokenNetwork),
-            onchainSigner,
-          );
+    groupBy((action) => channelKey(action.meta)),
+    mergeMap((grouped$) =>
+      grouped$.pipe(
+        // concatMap handles only one withdraw tx per channel at a time
+        concatMap((action) =>
+          combineLatest([latest$, config$]).pipe(
+            first(),
+            mergeMap(([{ state, gasPrice }, { subkey: configSubkey, revealTimeout }]) => {
+              // don't send on-chain tx if we're 'revealTimeout' blocks from expiration
+              // this is our confidence threshold when we can get a tx inside timeout
+              assert(
+                action.meta.expiration >= state.blockNumber + revealTimeout,
+                ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
+              );
+              const channel = state.channels[grouped$.key];
+              assert(channel?.state === ChannelState.open, 'channel not open');
+              assert(
+                action.meta.totalWithdraw.gt(channel.own.withdraw),
+                'withdraw already performed',
+              );
+              const req = channel.own.pendingWithdraws.find(
+                matchWithdraw(MessageType.WITHDRAW_REQUEST, action.payload.message),
+              );
+              assert(req, 'no matching WithdrawRequest found');
+              const { tokenNetwork } = action.meta;
+              const { signer: onchainSigner } = chooseOnchainAccount(
+                { signer, address, main },
+                configSubkey,
+              );
+              const tokenNetworkContract = getContractWithSigner(
+                getTokenNetworkContract(tokenNetwork),
+                onchainSigner,
+              );
 
-          return defer(() =>
-            tokenNetworkContract.setTotalWithdraw(
-              channel.id,
-              address,
-              action.meta.totalWithdraw,
-              action.meta.expiration,
-              req.signature,
-              action.payload.message.signature,
-              { gasPrice },
-            ),
-          ).pipe(
-            assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, {
-              log,
-              provider,
+              return defer(async () =>
+                tokenNetworkContract.setTotalWithdraw(
+                  channel.id,
+                  address,
+                  action.meta.totalWithdraw,
+                  action.meta.expiration,
+                  req.signature,
+                  action.payload.message.signature,
+                  { gasPrice },
+                ),
+              ).pipe(
+                assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, {
+                  log,
+                  provider,
+                }),
+                retryWhile(intervalFromConfig(config$), {
+                  maxRetries: 3,
+                  onErrors: commonTxErrors,
+                  log: log.debug,
+                }),
+                mergeMap(([, receipt]) =>
+                  action$.pipe(
+                    filter(isConfirmationResponseOf(withdraw, action.meta)),
+                    take(1),
+                    ignoreElements(),
+                    // startWith unconfirmed success, but complete only on confirmation/failure
+                    startWith(
+                      withdraw.success(
+                        {
+                          txHash: receipt.transactionHash,
+                          txBlock: receipt.blockNumber,
+                          // no sensitive value in payload, let confirmationEpic confirm it
+                          confirmed: undefined,
+                        },
+                        action.meta,
+                      ),
+                    ),
+                  ),
+                ),
+              );
             }),
-            retryWhile(intervalFromConfig(config$), {
-              maxRetries: 3,
-              onErrors: commonTxErrors,
-              log: log.debug,
-            }),
-          );
-        }),
-        map(([, receipt]) =>
-          withdraw.success(
-            {
-              txHash: receipt.transactionHash,
-              txBlock: receipt.blockNumber,
-              // no sensitive value in payload, let confirmationEpic confirm it
-              confirmed: undefined,
-            },
-            action.meta,
+            catchError((err) => of(withdraw.failure(err, action.meta))),
           ),
         ),
-        catchError((err) => of(withdraw.failure(err, action.meta))),
       ),
     ),
   );
