@@ -136,7 +136,7 @@ describe('ServiceWorkerAssistant', () => {
   test('update available version once per set interval', async () => {
     await createAssistant(true, undefined, 300);
 
-    await sleep(650); // Add a small padding to let all triggered interval handler finish
+    await sleep(800); // Add a padding to let all triggered interval handler finish
 
     expect(store.commit).toHaveBeenCalledTimes(3); // Remind the inial update.
   });
@@ -144,7 +144,7 @@ describe('ServiceWorkerAssistant', () => {
   test('send verify cache message once per set interval', async () => {
     await createAssistant(true, undefined, undefined, 200);
 
-    await sleep(450); // Add a small padding to let all triggered interval handler finish
+    await sleep(500); // Add a padding to let all triggered interval handler finish
 
     expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledTimes(2);
     expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledWith(
