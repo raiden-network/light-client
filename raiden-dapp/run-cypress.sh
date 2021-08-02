@@ -38,6 +38,7 @@ function serve_dapp_and_delete_assets_after_a_while() {
   cp -r $BUILD_FOLDER/* "$temporary_serve_folder/"
   cp $DEPLOYMENT_INFO "$temporary_serve_folder/"
   cp $DEPLOYMENT_SERVICES_INFO "$temporary_serve_folder/"
+  npx serve --version # Force perhaps necessary installation to complete here
   npx serve "$temporary_serve_folder" -p 5000 &
   SERVE_PID=$!
   (sleep 180s; rm -rf "$temporary_serve_folder") &
