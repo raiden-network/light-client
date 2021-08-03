@@ -19,9 +19,7 @@ const ServiceId = t.type({
 
 export const pathFind = createAsyncAction(
   PathId,
-  'path/find/request',
-  'path/find/success',
-  'path/find/failure',
+  'path/find',
   t.partial({ paths: Paths, pfs: t.union([PFS, t.null]) }),
   t.type({ paths: Paths }),
 );
@@ -42,9 +40,7 @@ export interface iouClear extends ActionType<typeof iouClear> {}
 
 export const udcDeposit = createAsyncAction(
   t.type({ totalDeposit: UInt(32) }),
-  'udc/deposit/request',
-  'udc/deposit/success',
-  'udc/deposit/failure',
+  'udc/deposit',
   t.intersection([t.type({ deposit: UInt(32) }), t.partial({ subkey: t.boolean })]),
   t.union([
     t.type({ balance: UInt(32) }),
@@ -68,9 +64,7 @@ const UdcWithdrawId = t.type({
 
 export const udcWithdrawPlan = createAsyncAction(
   UdcWithdrawId,
-  'udc/withdraw/plan/request',
-  'udc/withdraw/plan/success',
-  'udc/withdraw/plan/failure',
+  'udc/withdraw/plan',
   t.undefined,
   t.intersection([
     t.type({ block: t.number }),
@@ -85,9 +79,7 @@ export namespace udcWithdrawPlan {
 
 export const udcWithdraw = createAsyncAction(
   UdcWithdrawId,
-  'udc/withdraw/request',
-  'udc/withdraw/success',
-  'udc/withdraw/failure',
+  'udc/withdraw',
   t.undefined,
   t.type({
     withdrawal: UInt(32),

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Aggregate types and exported properties from actions from all modules
  */
@@ -17,7 +16,7 @@ import * as ServicesActions from './services/actions';
 import * as TransfersActions from './transfers/actions';
 import * as TransportActions from './transport/actions';
 import { Caps } from './transport/types';
-import type { Action, ActionCreator, ActionType, AnyAC, TTypeOf } from './utils/actions';
+import type { Action, ActionType, ActionTypeOf, AnyAC } from './utils/actions';
 import { createAction } from './utils/actions';
 import { ErrorCodec } from './utils/error';
 import { Hash } from './utils/types';
@@ -56,6 +55,9 @@ export interface raidenSynced extends ActionType<typeof raidenSynced> {}
 const RaidenActions = {
   raidenShutdown,
   raidenConfigUpdate,
+  raidenConfigCaps,
+  raidenStarted,
+  raidenSynced,
   ...ChannelsActions,
   ...TransportActions,
   ...MessagesActions,
@@ -64,7 +66,7 @@ const RaidenActions = {
 };
 
 /* Tagged union of all action types from the action creators */
-// export type RaidenAction = ActionType<typeof RaidenActions>;
+// export type RaidenAction = ActionType<typeof RaidenActions[keyof typeof RaidenActions]>;
 export type RaidenAction = Action;
 
 /* Mapping { [type: string]: Action } of a subset of RaidenActions exposed as events */
@@ -88,7 +90,7 @@ export type RaidenEvent = ActionType<typeof RaidenEvents>;
 
 type ValueOf<T> = T[keyof T];
 type UnionToActionsMap<T extends AnyAC> = {
-  [K in TTypeOf<T>]: Extract<T, ActionCreator<K, any, any, any>>;
+  [K in ActionTypeOf<T>]: Extract<T, { readonly type: K }>;
 };
 // receives an actions module/mapping, where values can be either ACs or AACs, and return a mapping
 // type where ACs are flattened from AACs and keys are their type tag literals
@@ -125,13 +127,11 @@ const RaidenActionsMap = reduce(
 const _ConfirmableAction = t.readonly(
   t.type({
     type: t.string,
-    payload: t.readonly(
-      t.type({
-        txHash: Hash,
-        txBlock: t.number,
-        confirmed: t.union([t.undefined, t.boolean]),
-      }),
-    ),
+    payload: t.type({
+      txHash: Hash,
+      txBlock: t.number,
+      confirmed: t.union([t.undefined, t.boolean]),
+    }),
   }),
 );
 /** The type of a confirmable action object. */
@@ -160,6 +160,5 @@ export const ConfirmableAction = new t.Type<
         return RaidenActionsMap[type].codec.validate(v, c) as t.Validation<ConfirmableAction>;
       }),
     ),
-  (a) =>
-    RaidenActionsMap[a.type as keyof RaidenActionsMap].codec.encode(a as any) as ConfirmableAction,
+  (a) => RaidenActionsMap[a.type as keyof RaidenActionsMap].codec.encode(a) as ConfirmableAction,
 );

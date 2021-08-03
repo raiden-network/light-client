@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as t from 'io-ts';
 import isMatchWith from 'lodash/isMatchWith';
@@ -13,148 +12,114 @@ import { BigNumberC } from './types';
 /**
  * The type of a generic action
  */
-export type Action<TType extends string = string> = { type: TType };
+export type Action<TType extends string = string> = { readonly type: TType };
 export type Reducer<S = any, A extends Action = Action> = (state: S | undefined, action: A) => S;
 
-/**
- * The ActionCreator's ReturnType, equivalent but more efficient than t.TypeOf<ActionCodec>
- */
-type _Action<
-  TType extends string,
-  TPayload extends t.Mixed | undefined = undefined,
-  TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined,
-> = TError extends boolean
-  ? TMeta extends t.Mixed
-    ? TPayload extends t.Mixed
-      ? {
-          type: TType;
-          payload: TPayload['_A'];
-          meta: TMeta['_A'];
-          error: TError;
-        }
-      : { type: TType; meta: TMeta['_A']; error: TError }
-    : TPayload extends t.Mixed
-    ? { type: TType; payload: TPayload['_A']; error: TError }
-    : { type: TType; error: TError }
-  : TMeta extends t.Mixed
-  ? TPayload extends t.Mixed
-    ? { type: TType; payload: TPayload['_A']; meta: TMeta['_A'] }
-    : { type: TType; meta: TMeta['_A'] }
-  : TPayload extends t.Mixed
-  ? { type: TType; payload: TPayload['_A'] }
-  : { type: TType };
+interface ActionConstraint {
+  readonly type: string;
+  readonly payload?: unknown;
+  readonly meta?: unknown;
+  readonly error?: true;
+}
+type ActionFactory<A extends ActionConstraint> = A extends { readonly meta?: unknown }
+  ? A extends { readonly payload?: unknown }
+    ? (payload: A['payload'], meta: A['meta']) => A
+    : (_: undefined, meta: A['meta']) => A
+  : A extends { readonly payload?: unknown }
+  ? (payload: A['payload']) => A
+  : () => A;
+type ActionCreatorMembers<A extends ActionConstraint> = {
+  type: A['type'];
+  codec: t.Mixed;
+  is: (a: unknown) => a is A;
+  error: A extends { readonly error: true } ? true : undefined;
+};
+export type ActionCreator<A extends ActionConstraint> = ActionFactory<A> & ActionCreatorMembers<A>;
 
+type ActionCreatorFromTuple<
+  P extends readonly [type: string, payload?: t.Mixed, meta?: t.Mixed, error?: true],
+> = ActionCreator<
+  P extends { readonly 3: true }
+    ? P extends { readonly 2: t.Mixed }
+      ? P extends { readonly 1: t.Mixed }
+        ? {
+            readonly type: P[0];
+            readonly payload: t.TypeOf<P[1]>;
+            readonly meta: t.TypeOf<P[2]>;
+            readonly error: true;
+          }
+        : { readonly type: P[0]; readonly meta: t.TypeOf<P[2]>; readonly error: true }
+      : P extends { readonly 1: t.Mixed }
+      ? { readonly type: P[0]; readonly payload: t.TypeOf<P[1]>; readonly error: true }
+      : { readonly type: P[0]; readonly error: true }
+    : P extends { readonly 2: t.Mixed }
+    ? P extends { readonly 1: t.Mixed }
+      ? { readonly type: P[0]; readonly payload: t.TypeOf<P[1]>; readonly meta: t.TypeOf<P[2]> }
+      : { readonly type: P[0]; readonly meta: t.TypeOf<P[2]> }
+    : P extends { readonly 1: t.Mixed }
+    ? { readonly type: P[0]; readonly payload: t.TypeOf<P[1]> }
+    : { readonly type: P[0] }
+>;
 /**
- * The codec of an ActionCreator, from type tag, payloadCodec, metaCodec & error boolean
+ * @param args - Args params
+ * @returns action creator
  */
-type ActionCodec<
-  TType extends string,
-  TPayload extends t.Mixed | undefined = undefined,
-  TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined,
-> = TError extends boolean
-  ? TMeta extends t.Mixed
-    ? TPayload extends t.Mixed
-      ? t.TypeC<{
-          type: t.LiteralC<TType>;
-          payload: TPayload;
-          meta: TMeta;
-          error: t.LiteralC<TError>;
-        }>
-      : t.TypeC<{ type: t.LiteralC<TType>; meta: TMeta; error: t.LiteralC<TError> }>
-    : TPayload extends t.Mixed
-    ? t.TypeC<{ type: t.LiteralC<TType>; payload: TPayload; error: t.LiteralC<TError> }>
-    : t.TypeC<{ type: t.LiteralC<TType>; error: t.LiteralC<TError> }>
-  : TMeta extends t.Mixed
-  ? TPayload extends t.Mixed
-    ? t.TypeC<{ type: t.LiteralC<TType>; payload: TPayload; meta: TMeta }>
-    : t.TypeC<{ type: t.LiteralC<TType>; meta: TMeta }>
-  : TPayload extends t.Mixed
-  ? t.TypeC<{ type: t.LiteralC<TType>; payload: TPayload }>
-  : t.TypeC<{ type: t.LiteralC<TType> }>;
+export function createAction<
+  P extends readonly [type: string, payload?: t.Mixed, meta?: t.Mixed, error?: true],
+>(...args: P): ActionCreatorFromTuple<P> {
+  const [type, payloadCodec, metaCodec, error] = args;
+  const codec = t.readonly(
+    t.type({
+      type: t.literal(type),
+      ...(payloadCodec ? { payload: payloadCodec } : null),
+      ...(metaCodec ? { meta: metaCodec } : null),
+      ...(error ? { error: t.literal(true) } : null),
+    }),
+  );
+  type A = t.TypeOf<typeof codec>;
 
-/**
- * The factory function part of an ActionCreator
- */
-type ActionFactory<
-  TType extends string,
-  TPayload extends t.Mixed | undefined = undefined,
-  TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined,
-> = TPayload extends t.Mixed
-  ? TMeta extends t.Mixed
-    ? (
-        payload: t.TypeOf<TPayload>,
-        meta: t.TypeOf<TMeta>,
-      ) => _Action<TType, TPayload, TMeta, TError>
-    : (payload: t.TypeOf<TPayload>) => _Action<TType, TPayload, TMeta, TError>
-  : TMeta extends t.Mixed
-  ? (_: undefined, meta: t.TypeOf<TMeta>) => _Action<TType, TPayload, TMeta, TError>
-  : () => _Action<TType, TPayload, TMeta, TError>;
+  const is =
+    process.env.NODE_ENV === 'development'
+      ? (action: unknown): action is A => codec.is(action)
+      : (action: unknown): action is A =>
+          (action as { type: string } | undefined)?.['type'] === type;
 
-/**
- * The ActionCreator member properties part which can be introspected
- * - type: tag string literal
- * - codec: the 'io-ts' codec/validator of the action
- * - is: member typeguard function. Notice at production, for performance reasons, it checks only
- *      the 'type' tag. If one needs explicit full validation, use codec.is/codec.decode directly
- * - error: boolean literal, present only if it's an error action (false or true)
- */
-type ActionCreatorMembers<
-  TType extends string,
-  TPayload extends t.Mixed | undefined = undefined,
-  TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined,
-> = {
-  codec: ActionCodec<TType, TPayload, TMeta, TError>;
-  type: TType;
-  is: (action: unknown) => action is _Action<TType, TPayload, TMeta, TError>;
-} & (TError extends boolean ? { error: TError } : {});
+  return Object.assign(
+    function actionFactory(payload: A['payload'], meta: A['meta']) {
+      return {
+        type,
+        ...(payloadCodec ? { payload } : {}),
+        ...(metaCodec ? { meta } : {}),
+        ...(error ? { error } : {}),
+      };
+    },
+    { type, is, codec, error },
+  ) as unknown as ActionCreatorFromTuple<P>;
+}
 
-/**
- * ActionCreator type, factory function extended (intersection) with members
- */
-export type ActionCreator<
-  TType extends string,
-  TPayload extends t.Mixed | undefined = undefined,
-  TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined,
-> = ActionFactory<TType, TPayload, TMeta, TError> &
-  ActionCreatorMembers<TType, TPayload, TMeta, TError>;
-
-export type AnyAC = ActionCreator<any, any, any, any>;
-export type TTypeOf<T> = T extends ActionCreator<infer TType, any, any, any> ? TType : never;
+export type AnyAC = ActionCreator<any>;
 
 /**
  * Type helper to extract the type of an action or a mapping of actions
  * Usage: const action: ActionType<typeof actionCreator>;
  */
-export type ActionType<Creators> = Creators extends ActionCreator<
-  infer TType,
-  infer TPayload,
-  infer TMeta,
-  infer TError
->
-  ? _Action<TType, TPayload, TMeta, TError>
-  : Creators extends any[]
-  ? {
-      [K in keyof Creators]: ActionType<Creators[K]>;
-    }[number]
-  : Creators extends Record<any, any>
-  ? {
-      [K in keyof Creators]: ActionType<Creators[K]>;
-    }[keyof Creators]
-  : never;
+export type ActionType<
+  AC extends { readonly [K: string]: AnyAC } | { readonly [K: number]: AnyAC } | AnyAC,
+> = ReturnType<
+  AC extends { readonly [K: string]: AnyAC } | { readonly [K: number]: AnyAC } ? AC[keyof AC] : AC
+>;
+export type ActionTypeOf<
+  AC extends { readonly [K: string]: AnyAC } | { readonly [K: number]: AnyAC } | AnyAC,
+> = ActionType<AC>['type'];
 
 // isActionOf curry overloads
-export function isActionOf<AC extends ActionCreator<any, any, any, any>>(
-  ac: AC | AC[],
+export function isActionOf<AC extends AnyAC>(
+  ac: AC | readonly AC[],
   action: unknown,
-): action is ReturnType<AC>;
-export function isActionOf<AC extends ActionCreator<any, any, any, any>>(
-  ac: AC | AC[],
-): (action: unknown) => action is ReturnType<AC>;
+): action is ActionType<AC>;
+export function isActionOf<AC extends AnyAC>(
+  ac: AC | readonly AC[],
+): (action: unknown) => action is ActionType<AC>;
 
 /**
  * Curried typeguard function (arity=2) which validates 2nd param is of type of some ActionCreators
@@ -164,10 +129,7 @@ export function isActionOf<AC extends ActionCreator<any, any, any, any>>(
  * @returns boolean indicating object is of type of action, if passing 2nd argument,
  *      or typeguard function
  */
-export function isActionOf<AC extends ActionCreator<any, any, any, any>>(
-  ac: AC | AC[],
-  ...args: any[]
-) {
+export function isActionOf<AC extends AnyAC>(ac: AC | readonly AC[], ...args: any[]) {
   const arr = Array.isArray(ac) ? ac : [ac];
   /**
    * @param action - action to check
@@ -180,219 +142,83 @@ export function isActionOf<AC extends ActionCreator<any, any, any, any>>(
   return _isActionOf;
 }
 
-/**
- * Tuples for typesafe params/arguments for createAction function
- */
-type ActionParams<
-  TType extends string,
-  TPayload extends t.Mixed | undefined = undefined,
-  TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined,
-> = TError extends boolean
-  ? TMeta extends t.Mixed
-    ? TPayload extends t.Mixed
-      ? [TType, TPayload, TMeta, TError]
-      : [TType, undefined, TMeta, TError]
-    : TPayload extends t.Mixed
-    ? [TType, TPayload, undefined, TError]
-    : [TType, undefined, undefined, TError]
-  : TMeta extends t.Mixed
-  ? TPayload extends t.Mixed
-    ? [TType, TPayload, TMeta]
-    : [TType, undefined, TMeta]
-  : TPayload extends t.Mixed
-  ? [TType, TPayload]
-  : [TType];
-
-// overloads with correct number of parameters
-export function createAction<TType extends string>(type: TType): ActionCreator<TType>;
-export function createAction<TType extends string, TPayload extends t.Mixed | undefined>(
-  type: TType,
-  payload: TPayload,
-): ActionCreator<TType, TPayload>;
-export function createAction<
-  TType extends string,
-  TPayload extends t.Mixed | undefined,
-  TMeta extends t.Mixed | undefined,
->(type: TType, payload: TPayload, meta: TMeta): ActionCreator<TType, TPayload, TMeta>;
-export function createAction<
-  TType extends string,
-  TPayload extends t.Mixed | undefined,
-  TMeta extends t.Mixed | undefined,
-  TError extends boolean | undefined,
->(
-  type: TType,
-  payload: TPayload,
-  meta: TMeta,
-  error: TError,
-): ActionCreator<TType, TPayload, TMeta, TError>;
-
-/**
- * Create a typesafe, serializable ActionCreator from type, payload codec, meta codec & error flag
- *
- * Pass undefined for indermediary arguments if they aren't needed
- * e.g. action with meta and without payload:
- *   const addTodo = createAction('ADD_TODO', undefined, t.type({ folder: t.string }));
- *
- * @param args - typesafe args tuple
- * @returns ActionCreator factory function with useful properties. See [[ActionCreatorMembers]]
- */
-export function createAction<
-  TType extends string,
-  TPayload extends t.Mixed | undefined = undefined,
-  TMeta extends t.Mixed | undefined = undefined,
-  TError extends boolean | undefined = undefined,
->(
-  ...args: ActionParams<TType, TPayload, TMeta, TError>
-): ActionCreator<TType, TPayload, TMeta, TError> {
-  const [type, payloadC, metaC, error] = args;
-  // action codec
-  const codec = t.type({
-    type: t.literal(type),
-    ...(payloadC ? { payload: payloadC } : null),
-    ...(metaC ? { meta: metaC } : null),
-    ...(error ? { error: t.literal(error) } : null),
-  });
-  // member typeguard
-  // like codec.is, but on production, switches to more performant check of 'type' tag only
-  const is =
-    process.env.NODE_ENV === 'development'
-      ? (action: unknown) => codec.is(action)
-      : (action: unknown) => (action as any)?.['type'] === type;
-  const members = { codec, type, is, ...(error !== undefined ? { error } : null) };
-  const factory = (
-    payload?: t.TypeOf<NonNullable<TPayload>>,
-    meta?: t.TypeOf<NonNullable<TMeta>>,
-  ) => ({
-    type,
-    ...(payloadC ? { payload } : null),
-    ...(metaC ? { meta } : null),
-    ...(error !== undefined ? { error } : null),
-  });
-  return Object.assign(factory, members) as ActionCreator<TType, TPayload, TMeta, TError>;
-}
-
 /*** Async Actions ***/
 
-export type AsyncActionCreator<
-  TMeta extends t.Mixed,
-  TRequestType extends string,
-  TSuccessType extends string,
-  TFailureType extends string,
-  TRequestPayload extends t.Mixed | undefined,
-  TSuccessPayload extends t.Mixed | undefined,
-  TFailurePayload extends t.Mixed | undefined = typeof t.any,
+/**
+ * Maps parameters for createAsyncAction to respective async ActionCreators (request, success and
+ * failure)
+ */
+type AsyncActionCreator<
+  P extends readonly [
+    meta: t.Mixed,
+    type: string,
+    request?: t.Mixed,
+    success?: t.Mixed,
+    failure?: t.Mixed,
+  ],
 > = {
-  request: ActionCreator<TRequestType, TRequestPayload, TMeta>;
-  success: ActionCreator<TSuccessType, TSuccessPayload, TMeta>;
-  failure: ActionCreator<TFailureType, TFailurePayload, TMeta, true>;
+  readonly request: ActionCreatorFromTuple<[`${P[1]}/request`, P[2], P[0]]>;
+  readonly success: ActionCreatorFromTuple<[`${P[1]}/success`, P[3], P[0]]>;
+  readonly failure: ActionCreatorFromTuple<
+    [`${P[1]}/failure`, P[4] extends t.Mixed ? P[4] : t.UnknownC, P[0], true]
+  >;
 };
 
-export type AnyAAC = AsyncActionCreator<any, any, any, any, any, any, any>;
-
-// overloads to account for the optional failure payload (defaults to t.any)
-export function createAsyncAction<
-  TMeta extends t.Mixed,
-  TRequestType extends string,
-  TSuccessType extends string,
-  TFailureType extends string,
-  TRequestPayload extends t.Mixed | undefined,
-  TSuccessPayload extends t.Mixed | undefined,
->(
-  meta: TMeta,
-  rtype: TRequestType,
-  stype: TSuccessType,
-  ftype: TFailureType,
-  rpayload: TRequestPayload,
-  spayload: TSuccessPayload,
-): AsyncActionCreator<
-  TMeta,
-  TRequestType,
-  TSuccessType,
-  TFailureType,
-  TRequestPayload,
-  TSuccessPayload,
-  typeof t.any
->;
-export function createAsyncAction<
-  TMeta extends t.Mixed,
-  TRequestType extends string,
-  TSuccessType extends string,
-  TFailureType extends string,
-  TRequestPayload extends t.Mixed | undefined,
-  TSuccessPayload extends t.Mixed | undefined,
-  TFailurePayload extends t.Mixed | undefined,
->(
-  meta: TMeta,
-  rtype: TRequestType,
-  stype: TSuccessType,
-  ftype: TFailureType,
-  rpayload: TRequestPayload,
-  spayload: TSuccessPayload,
-  fpayload: TFailurePayload,
-): AsyncActionCreator<
-  TMeta,
-  TRequestType,
-  TSuccessType,
-  TFailureType,
-  TRequestPayload,
-  TSuccessPayload,
-  TFailurePayload
->;
+/**
+ * A type which constrains any async ActionCreator tuple
+ */
+export type AnyAAC = {
+  readonly request: ActionCreator<{
+    readonly type: `${string}/request`;
+    readonly payload?: any;
+    readonly meta: any;
+  }>;
+  readonly success: ActionCreator<{
+    readonly type: `${string}/success`;
+    readonly payload?: any;
+    readonly meta: any;
+  }>;
+  readonly failure: ActionCreator<{
+    readonly type: `${string}/failure`;
+    readonly payload: unknown;
+    readonly meta: any;
+    readonly error: true;
+  }>;
+};
 
 /**
  * Create a set of async actions
  *
  * Here, meta is first class citizen, as it's required and what links a request with its responses
  * (success or failure).
- * An 'isResponseOf' member function is provided which accepts 'meta' (e.g. from request) and
- * returns a type guard function/filter which returns true only if passed a respective deep-equal
- * 'meta' success|failure action.
  *
- * @param meta - Meta object common to these async actions
- * @param rtype - Request literal string tag
- * @param stype - Success literal string tag
- * @param ftype - Failure literal string tag
- * @param rpayload - Request payload codec
- * @param spayload - Success payload codec
- * @param args - Optional fpayload - Failure payload codec, defaults to t.any
+ * @param args - Arguments tuple; [meta, type] are required, while [request, success an failure]
+ *      are codecs to be used as payloads for the respective ActionCreators
  * @returns Async actions
  */
 export function createAsyncAction<
-  TMeta extends t.Mixed,
-  TRequestType extends string,
-  TSuccessType extends string,
-  TFailureType extends string,
-  TRequestPayload extends t.Mixed | undefined,
-  TSuccessPayload extends t.Mixed | undefined,
-  TFailurePayload extends t.Mixed | undefined = typeof t.any,
->(
-  meta: TMeta,
-  rtype: TRequestType,
-  stype: TSuccessType,
-  ftype: TFailureType,
-  rpayload: TRequestPayload,
-  spayload: TSuccessPayload,
-  ...args: TFailurePayload extends typeof t.any ? [TFailurePayload] | [] : [TFailurePayload]
-): AsyncActionCreator<
-  TMeta,
-  TRequestType,
-  TSuccessType,
-  TFailureType,
-  TRequestPayload,
-  TSuccessPayload,
-  TFailurePayload
-> {
-  const fpayload = args.length ? (args[0] as TFailurePayload) : t.any;
-  const request = createAction(rtype, rpayload, meta);
-  const success = createAction(stype, spayload, meta);
-  const failure = createAction(ftype, fpayload, meta, true) as ActionCreator<
-    TFailureType,
-    TFailurePayload,
-    TMeta,
-    true
-  >;
-  return { request, success, failure };
+  P extends readonly [
+    meta: t.Mixed,
+    type: string,
+    request?: t.Mixed,
+    success?: t.Mixed,
+    failure?: t.Mixed,
+  ],
+>(...args: P): AsyncActionCreator<P> {
+  return {
+    request: createAction(`${args[1]}/request`, args[2] as P[2], args[0] as P[0]),
+    success: createAction(
+      `${args[1]}/success` as `${P[1]}/success`,
+      args[3] as P[3],
+      args[0] as P[0],
+    ),
+    failure: createAction(
+      `${args[1]}/failure` as `${P[1]}/failure`,
+      (args[4] ?? t.unknown) as P[4] extends t.Mixed ? P[4] : t.UnknownC,
+      args[0] as P[0],
+      true,
+    ),
+  } as AsyncActionCreator<P>;
 }
 
 // curried overloads
@@ -420,19 +246,15 @@ function matchMeta(meta: any, ...args: [{ meta: any }] | []) {
 }
 
 // curried overloads
-export function isResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
->(
+export function isResponseOf<AAC extends AnyAAC>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+): (action: unknown) => action is ActionType<AAC['success'] | AAC['failure']>;
+export function isResponseOf<AAC extends AnyAAC>(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
   action: unknown,
 ): action is ActionType<AAC['success'] | AAC['failure']>;
-export function isResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
->(
-  asyncAction: AAC,
-  meta: ActionType<AAC['request']>['meta'],
-): (action: unknown) => action is ActionType<AAC['success'] | AAC['failure']>;
 
 /**
  * Given an AsyncActionCreator and a respective 'meta' object, returns a type guard function for
@@ -446,9 +268,11 @@ export function isResponseOf<
  * @param args - curried last param
  * @returns type guard function to filter deep-equal meta success|failure actions
  */
-export function isResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
->(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], ...args: [unknown] | []) {
+export function isResponseOf<AAC extends AnyAAC>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+  ...args: [unknown] | []
+) {
   const _isResponseOf = (action: unknown): action is ActionType<AAC['success'] | AAC['failure']> =>
     isActionOf([asyncAction.success, asyncAction.failure], action) && matchMeta(meta, action);
 
@@ -457,18 +281,14 @@ export function isResponseOf<
 }
 
 // curried overloads
-export function isConfirmationResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
->(
+export function isConfirmationResponseOf<AAC extends AnyAAC>(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
   action: unknown,
 ): action is
   | (ActionType<AAC['success']> & { payload: { confirmed: boolean } })
   | ActionType<AAC['failure']>;
-export function isConfirmationResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
->(
+export function isConfirmationResponseOf<AAC extends AnyAAC>(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
 ): (
@@ -490,9 +310,11 @@ export function isConfirmationResponseOf<
  * @param args - curried last param
  * @returns type guard function to filter deep-equal meta success|failure actions
  */
-export function isConfirmationResponseOf<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, any, any>,
->(asyncAction: AAC, meta: ActionType<AAC['request']>['meta'], ...args: [unknown] | []) {
+export function isConfirmationResponseOf<AAC extends AnyAAC>(
+  asyncAction: AAC,
+  meta: ActionType<AAC['request']>['meta'],
+  ...args: [unknown] | []
+) {
   /**
    * @param action - action to check
    * @returns boolean indicating whether object is confirmation
@@ -512,16 +334,12 @@ export function isConfirmationResponseOf<
   return _isResponseOf;
 }
 
-export function asyncActionToPromise<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
->(
+export function asyncActionToPromise<AAC extends AnyAAC>(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
   action$: Observable<Action>,
 ): Promise<ActionType<AAC['success']>['payload']>;
-export function asyncActionToPromise<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
->(
+export function asyncActionToPromise<AAC extends AnyAAC>(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
   action$: Observable<Action>,
@@ -533,9 +351,7 @@ export function asyncActionToPromise<
     confirmed: undefined | boolean;
   }
 >;
-export function asyncActionToPromise<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
->(
+export function asyncActionToPromise<AAC extends AnyAAC>(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
   action$: Observable<Action>,
@@ -555,7 +371,7 @@ export function asyncActionToPromise<
  * @returns Promise which rejects with payload in case of failure, or resolves payload otherwise
  */
 export async function asyncActionToPromise<
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
+  AAC extends AsyncActionCreator<[t.Mixed, any, any, t.Mixed, t.Mixed]>,
 >(
   asyncAction: AAC,
   meta: ActionType<AAC['request']>['meta'],
@@ -604,14 +420,6 @@ export async function asyncActionToPromise<
  * @returns A reducer function, extended with a handle method to extend it
  */
 export function createReducer<S, A extends Action = Action>(initialState: S) {
-  /**
-   * A simplified schema for ActionCreator<any, any, any, any>, to optimize createReducer
-   */
-  type AnyAC = ((payload: any, meta: any) => Action) & {
-    type: string;
-    is: (action: unknown) => action is Action;
-  };
-  // generic handlers as a indexed type for `makeReducer`
   type Handlers = {
     [type: string]: [AnyAC, (state: S, action: A) => S];
   };
@@ -624,7 +432,7 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
     H extends Handler<AC>,
     AD extends AnyAC = AC,
   >(
-    ac: AC | AC[],
+    ac: AC | readonly AC[],
     handler: H,
   ) => ExtReducer<ACs | AC>;
   type ExtReducer<ACs> = Reducer<S, A> & { handle: HandleNew<ACs> };
@@ -653,7 +461,7 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
       AC extends AnyAC & NotHandled<ACs, AD>,
       H extends Handler<AC>,
       AD extends AnyAC = AC,
-    >(ac: AC | AC[], handler: H) {
+    >(ac: AC | readonly AC[], handler: H) {
       const arr = Array.isArray(ac) ? ac : [ac];
       assert(!arr.some((a) => a.type in handlers), 'Already handled');
       return makeReducer<ACs | AC>(

@@ -56,14 +56,14 @@ describe('utils/actions', () => {
     const actionTPM = createAction('TEST3', t.type({ a: t.number }), t.type({ m: t.string }));
     const actionTM = createAction('TEST4', undefined, t.type({ m: t.string }));
     const actionTE = createAction('TEST5', undefined, undefined, true);
-    const actionTPE = createAction('TEST6', t.type({ a: t.number }), undefined, false);
+    const actionTPE = createAction('TEST6', t.type({ a: t.number }), undefined, true);
     const actionTPME = createAction(
       'TEST7',
       t.type({ a: t.number }),
       t.type({ m: t.string }),
       true,
     );
-    const actionTME = createAction('TEST8', undefined, t.type({ m: t.string }), false);
+    const actionTME = createAction('TEST8', undefined, t.type({ m: t.string }), true);
     const actionUnd = createAction('TEST_U', t.union([t.type({ a: t.number }), t.undefined]));
 
     const actionFailed = createAction(
@@ -86,7 +86,7 @@ describe('utils/actions', () => {
     });
     expect(actionTM(undefined, { m: 'abc' })).toStrictEqual({ type: 'TEST4', meta: { m: 'abc' } });
     expect(actionTE()).toStrictEqual({ type: 'TEST5', error: true });
-    expect(actionTPE({ a: 1 })).toStrictEqual({ type: 'TEST6', payload: { a: 1 }, error: false });
+    expect(actionTPE({ a: 1 })).toStrictEqual({ type: 'TEST6', payload: { a: 1 }, error: true });
     expect(actionTPME({ a: 1 }, { m: 'abc' })).toStrictEqual({
       type: 'TEST7',
       payload: { a: 1 },
@@ -96,7 +96,7 @@ describe('utils/actions', () => {
     expect(actionTME(undefined, { m: 'abc' })).toStrictEqual({
       type: 'TEST8',
       meta: { m: 'abc' },
-      error: false,
+      error: true,
     });
 
     // test action with payload unioned with undefined
@@ -145,9 +145,7 @@ describe('utils/actions', () => {
   test('createAsyncAction', async () => {
     const asyncAction = createAsyncAction(
       t.type({ id: t.number }),
-      'test/request',
-      'test/success',
-      'test/failure',
+      'test',
       t.partial({ query: t.string }),
       t.boolean,
     );

@@ -44,9 +44,7 @@ const TransferId = t.type({
  */
 export const transfer = createAsyncAction(
   TransferId,
-  'transfer/request',
-  'transfer/success',
-  'transfer/failure',
+  'transfer',
   t.intersection([
     t.type({
       tokenNetwork: Address,
@@ -111,9 +109,7 @@ export interface transferSecret extends ActionType<typeof transferSecret> {}
 
 export const transferSecretRegister = createAsyncAction(
   TransferId,
-  'transfer/secret/register/request',
-  'transfer/secret/register/success',
-  'transfer/secret/register/failure',
+  'transfer/secret/register',
   t.intersection([t.type({ secret: Secret }), t.partial({ subkey: t.boolean })]),
   t.type({
     secret: Secret,
@@ -148,9 +144,7 @@ export interface transferSecretReveal extends ActionType<typeof transferSecretRe
 
 export const transferUnlock = createAsyncAction(
   TransferId,
-  'transfer/unlock/request',
-  'transfer/unlock/success',
-  'transfer/unlock/failure',
+  'transfer/unlock',
   t.union([t.undefined, Via]),
   t.intersection([t.type({ message: Signed(Unlock), partner: Address }), Via]),
 );
@@ -178,9 +172,7 @@ export interface transferUnlockProcessed extends ActionType<typeof transferUnloc
  */
 export const transferExpire = createAsyncAction(
   TransferId,
-  'transfer/expire/request',
-  'transfer/expire/success',
-  'transfer/expire/failure',
+  'transfer/expire',
   undefined,
   t.type({ message: Signed(LockExpired), partner: Address }),
 );
@@ -223,9 +215,7 @@ const WithdrawId = t.type({
  */
 export const withdraw = createAsyncAction(
   WithdrawId,
-  'withdraw/request',
-  'withdraw/success',
-  'withdraw/failure',
+  'withdraw',
   t.undefined,
   t.type({ txHash: Hash, txBlock: t.number, confirmed: t.union([t.undefined, t.boolean]) }),
 );
@@ -243,9 +233,7 @@ export namespace withdraw {
  */
 export const withdrawMessage = createAsyncAction(
   WithdrawId,
-  'withdraw/message/request',
-  'withdraw/message/success',
-  'withdraw/message/failure',
+  'withdraw/message',
   t.type({ message: Signed(WithdrawRequest) }),
   t.type({ message: Signed(WithdrawConfirmation) }),
 );
@@ -263,9 +251,7 @@ export namespace withdrawMessage {
  */
 export const withdrawExpire = createAsyncAction(
   WithdrawId,
-  'withdraw/expire/request',
-  'withdraw/expire/success',
-  'withdraw/expire/failure',
+  'withdraw/expire',
   t.undefined,
   t.type({ message: Signed(WithdrawExpired) }),
   // ,

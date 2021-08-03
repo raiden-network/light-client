@@ -5,6 +5,7 @@ import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
 import { Address, instanceOf, PublicKey } from '../utils/types';
 import { RaidenMatrixSetup } from './state';
+import { Caps } from './types';
 
 const NodeId = t.type({ address: Address });
 
@@ -20,16 +21,13 @@ export interface matrixSetup extends ActionType<typeof matrixSetup> {}
 
 export const matrixPresence = createAsyncAction(
   NodeId,
-  'matrix/presence/request',
-  'matrix/presence/success',
-  'matrix/presence/failure',
+  'matrix/presence',
   undefined,
   t.intersection([
     t.type({ userId: t.string, available: t.boolean, ts: t.number, pubkey: PublicKey }),
-    t.partial({ caps: t.record(t.string, t.any) }),
+    t.partial({ caps: Caps }),
   ]),
 );
-
 export namespace matrixPresence {
   export interface request extends ActionType<typeof matrixPresence.request> {}
   export interface success extends ActionType<typeof matrixPresence.success> {}
