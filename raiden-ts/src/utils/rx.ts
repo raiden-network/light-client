@@ -1,4 +1,3 @@
-import type * as t from 'io-ts';
 import type {
   MonoTypeOperatorFunction,
   Observable,
@@ -43,7 +42,7 @@ import {
   tap,
 } from 'rxjs/operators';
 
-import type { ActionType, AsyncActionCreator } from './actions';
+import type { ActionType, AnyAAC } from './actions';
 import { isResponseOf } from './actions';
 import { shouldRetryError } from './error';
 import { isntNil } from './types';
@@ -394,13 +393,8 @@ export function catchAndLog<T>(
  * @returns Custom operator which mirrors projected observable plus requests called in the
  *      project's function parameter
  */
-export function dispatchRequestAndGetResponse<
-  T,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  AAC extends AsyncActionCreator<t.Mixed, any, any, any, any, t.Mixed, t.Mixed>,
-  R,
->(
-  aac: AAC | AAC[],
+export function dispatchRequestAndGetResponse<T, AAC extends AnyAAC, R>(
+  aac: AAC,
   project: (
     dispatchRequest: <A extends AAC>(
       request: ActionType<A['request']>,
@@ -409,14 +403,12 @@ export function dispatchRequestAndGetResponse<
   confirmed = false,
   dedupKey = (value: ActionType<AAC['request']>): unknown => value,
 ): OperatorFunction<T, R | ActionType<AAC['request']>> {
-  const arr = Array.isArray(aac) ? aac : [aac];
   return (input$) =>
     defer(() => {
       const requestOutput$ = new Subject<ActionType<AAC['request']>>();
       const pending = new Map<unknown, Observable<ActionType<AAC['success']>>>();
       const projectOutput$ = defer(() =>
         project((request) => {
-          const aac = arr.find(({ request: areq }) => areq.type === request.type)!;
           const key = dedupKey(request);
           const pending$ = pending.get(key);
           if (pending$) return pending$;

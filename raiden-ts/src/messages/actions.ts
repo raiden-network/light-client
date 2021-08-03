@@ -13,9 +13,7 @@ import { Message } from './types';
  */
 export const messageSend = createAsyncAction(
   t.type({ address: Address, msgId: t.string }),
-  'message/send/request',
-  'message/send/success',
-  'message/send/failure',
+  'message/send',
   t.intersection([
     t.type({ message: t.union([t.string, Signed(Message)]) }),
     t.partial({ msgtype: t.string }),
@@ -32,9 +30,7 @@ export namespace messageSend {
 /** One-shot send payload.message to a service room in transport */
 export const messageServiceSend = createAsyncAction(
   t.type({ service: ServiceC, msgId: t.string }),
-  'message/service/send/request',
-  'message/service/send/success',
-  'message/service/send/failure',
+  'message/service/send',
   t.type({ message: Signed(Message) }),
   t.union([t.undefined, t.type({ via: t.unknown, tookMs: t.number, retries: t.number })]),
 );

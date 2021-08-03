@@ -51,9 +51,7 @@ export interface tokenMonitored extends ActionType<typeof tokenMonitored> {}
  */
 export const channelOpen = createAsyncAction(
   ChannelId,
-  'channel/open/request',
-  'channel/open/success',
-  'channel/open/failed',
+  'channel/open',
   t.partial({ settleTimeout: t.number, subkey: t.boolean, deposit: UInt(32) }),
   t.type({
     id: t.number,
@@ -81,9 +79,7 @@ export interface channelMonitored extends ActionType<typeof channelMonitored> {}
 
 export const channelDeposit = createAsyncAction(
   ChannelId,
-  'channel/deposit/request',
-  'channel/deposit/success',
-  'channel/deposit/failure',
+  'channel/deposit',
   t.intersection([
     t.type({ deposit: UInt(32) }),
     t.partial({ subkey: t.boolean, waitOpen: t.literal(true) }),
@@ -121,9 +117,7 @@ export interface channelWithdrawn extends ActionType<typeof channelWithdrawn> {}
 
 export const channelClose = createAsyncAction(
   ChannelId,
-  'channel/close/request',
-  'channel/close/success',
-  'channel/close/failure',
+  'channel/close',
   t.union([t.partial({ subkey: t.boolean }), t.undefined]),
   t.type({
     id: t.number,
@@ -150,9 +144,7 @@ export interface channelSettleable extends ActionType<typeof channelSettleable> 
 
 export const channelSettle = createAsyncAction(
   ChannelId,
-  'channel/settle/request',
-  'channel/settle/success',
-  'channel/settle/failure',
+  'channel/settle',
   t.union([t.partial({ subkey: t.boolean }), t.undefined]),
   t.intersection([
     t.type({
@@ -164,7 +156,6 @@ export const channelSettle = createAsyncAction(
     t.partial({ locks: t.readonlyArray(Lock) }),
   ]),
 );
-
 export namespace channelSettle {
   export interface request extends ActionType<typeof channelSettle.request> {}
   export interface success extends ActionType<typeof channelSettle.success> {}
