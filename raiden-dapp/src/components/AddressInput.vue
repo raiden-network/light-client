@@ -54,8 +54,8 @@
 
 <script lang="ts">
 import type { Observable, Subscription } from 'rxjs';
-import { BehaviorSubject, defer, from, merge, of, partition } from 'rxjs';
-import { catchError, debounceTime, map, switchMap, tap } from 'rxjs/internal/operators';
+import { BehaviorSubject, defer, from, of } from 'rxjs';
+import { catchError, debounceTime, map, switchMap, tap } from 'rxjs/operators';
 import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import type { VTextField } from 'vuetify/lib';
 import { mapState } from 'vuex';
@@ -235,13 +235,10 @@ export default class AddressInput extends Mixins(BlockieMixin) {
           }
 
           this.touched = true;
-          const [addresses, nonAddresses] = partition(of(value), (value) =>
-            AddressUtils.isAddress(value),
-          );
-          return merge<ValidationResult>(
-            addresses.pipe(switchMap((value) => this.validateAddress(value))),
-            nonAddresses.pipe(switchMap((value) => this.lookupEnsDomain(value))),
-          ).pipe(switchMap((value) => this.checkAvailability(value)));
+          return defer(() => {
+            if (AddressUtils.isAddress(value)) return this.validateAddress(value);
+            else return this.lookupEnsDomain(value);
+          }).pipe(switchMap((value) => this.checkAvailability(value)));
         }),
       )
       .subscribe(({ error, value }) => {

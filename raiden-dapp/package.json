@@ -38,7 +38,7 @@
     "pouchdb": "^7.2.2",
     "pouchdb-adapter-cordova-sqlite": "^2.0.8",
     "raiden-ts": "*",
-    "rxjs": "^6.6.7",
+    "rxjs": "^7.3.0",
     "tiny-async-pool": "^1.2.0",
     "vue": "^2.6.14",
     "vue-class-component": "^7.2.6",

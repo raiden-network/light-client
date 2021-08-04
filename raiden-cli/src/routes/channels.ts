@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
+import { firstValueFrom } from 'rxjs';
 import { first, pluck } from 'rxjs/operators';
 
 import type { RaidenChannel, RaidenChannels } from 'raiden-ts';
@@ -77,7 +78,7 @@ function transformChannelFormatForApi(channel: RaidenChannel): ApiChannel {
 }
 
 async function getChannels(this: Cli, request: Request, response: Response) {
-  const channelsDict = await this.raiden.channels$.pipe(first()).toPromise();
+  const channelsDict = await firstValueFrom(this.raiden.channels$);
   const token: string | undefined = request.params.tokenAddress;
   const partner: string | undefined = request.params.partnerAddress;
   if (token && partner) {
@@ -105,9 +106,9 @@ async function openChannel(this: Cli, request: Request, response: Response, next
       settleTimeout: request.body.settle_timeout,
       deposit: request.body.total_deposit?.toString(),
     });
-    const channel = await this.raiden.channels$
-      .pipe(pluck(token, partner), first(isntNil))
-      .toPromise();
+    const channel = await firstValueFrom(
+      this.raiden.channels$.pipe(pluck(token, partner), first(isntNil)),
+    );
     response.status(201).json(transformChannelFormatForApi(channel));
   } catch (error) {
     if (isInsuficientFundsError(error)) {
@@ -143,17 +144,17 @@ async function updateChannelState(
   if (newState === ApiChannelState.closed) {
     await this.raiden.closeChannel(channel.token, channel.partner);
     const closedStates = [ChannelState.closed, ChannelState.settleable, ChannelState.settling];
-    channel = await this.raiden.channels$
-      .pipe(
+    channel = await firstValueFrom(
+      this.raiden.channels$.pipe(
         pluck(channel.token, channel.partner),
         first((channel) => closedStates.includes(channel.state)),
-      )
-      .toPromise();
+      ),
+    );
   } else if (newState === ApiChannelState.settled) {
     const promise = this.raiden.settleChannel(channel.token, channel.partner);
-    const newChannel = await this.raiden.channels$
-      .pipe(pluck(channel.token, channel.partner), first())
-      .toPromise();
+    const newChannel = await firstValueFrom(
+      this.raiden.channels$.pipe(pluck(channel.token, channel.partner)),
+    );
     await promise;
     if (newChannel) channel = newChannel; // channel may have been cleared
   }
@@ -168,12 +169,12 @@ async function updateChannelDeposit(
   // amount = new deposit - previous deposit == (previous deposit - new deposit) * -1
   const depositAmount = channel.ownDeposit.sub(totalDeposit).mul(-1);
   await this.raiden.depositChannel(channel.token, channel.partner, depositAmount);
-  return await this.raiden.channels$
-    .pipe(
+  return await firstValueFrom(
+    this.raiden.channels$.pipe(
       pluck(channel.token, channel.partner),
       first((channel) => channel.ownDeposit.gte(totalDeposit)),
-    )
-    .toPromise();
+    ),
+  );
 }
 
 async function updateChannelWithdraw(
@@ -184,19 +185,19 @@ async function updateChannelWithdraw(
   // amount = new withdraw - previous withdraw == (previous withdraw - new withdraw) * -1
   const withdrawAmount = channel.ownWithdraw.sub(totalWithdraw).mul(-1);
   await this.raiden.withdrawChannel(channel.token, channel.partner, withdrawAmount);
-  return await this.raiden.channels$
-    .pipe(
+  return await firstValueFrom(
+    this.raiden.channels$.pipe(
       pluck(channel.token, channel.partner),
       first((channel) => channel.ownWithdraw.gte(totalWithdraw)),
-    )
-    .toPromise();
+    ),
+  );
 }
 
 async function updateChannel(this: Cli, request: Request, response: Response, next: NextFunction) {
   const token: string = request.params.tokenAddress;
   const partner: string = request.params.partnerAddress;
   try {
-    let channel = await this.raiden.channels$.pipe(first(), pluck(token, partner)).toPromise();
+    let channel = await firstValueFrom(this.raiden.channels$.pipe(pluck(token, partner)));
     if (!channel) throw new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND); // one of conflict errors
     if (request.body.state) {
       channel = await updateChannelState.call(this, channel, request.body.state);

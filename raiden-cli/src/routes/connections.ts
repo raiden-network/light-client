@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
-import { first } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 
 import { ChannelState, isntNil } from 'raiden-ts';
 
@@ -23,7 +23,7 @@ export interface ApiTokenConnections {
 }
 
 async function getConnections(this: Cli, _request: Request, response: Response) {
-  const channelsDict = await this.raiden.channels$.pipe(first()).toPromise();
+  const channelsDict = await firstValueFrom(this.raiden.channels$);
   const connections = Object.entries(channelsDict).reduce<ApiTokenConnections>(
     (connections, [token, partnerChannel]) => ({
       ...connections,
@@ -68,7 +68,7 @@ async function connectTokenNetwork(
     return response.status(409).send('CLI only supports allocating whole funds');
   const token: string = request.params.tokenAddress;
   try {
-    const channelsDict = await this.raiden.channels$.pipe(first()).toPromise();
+    const channelsDict = await firstValueFrom(this.raiden.channels$);
     const hub = await this.raiden.resolveName('hub.raiden.eth');
     const channel = channelsDict[token]?.[hub];
     if (!channel) {
@@ -104,7 +104,7 @@ async function connectTokenNetwork(
  */
 async function disconnectTokenNetwork(this: Cli, request: Request, response: Response) {
   const token: string = request.params.tokenAddress;
-  const channelsDict = await this.raiden.channels$.pipe(first()).toPromise();
+  const channelsDict = await firstValueFrom(this.raiden.channels$);
   if (!channelsDict[token]) return response.status(404).send('No channels on tokenNetwork');
   const closeableChannels = Object.values(channelsDict[token]).filter((channel) =>
     [ChannelState.open, ChannelState.closing].includes(channel.state),
