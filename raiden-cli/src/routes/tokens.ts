@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { first } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 
 import type { Cli } from '../types';
 import {
@@ -32,7 +32,7 @@ async function getTokenNetwork(this: Cli, request: Request, response: Response) 
 
 async function getTokenPartners(this: Cli, request: Request, response: Response) {
   const token: string = request.params.tokenAddress;
-  const channelsDict = await this.raiden.channels$.pipe(first()).toPromise();
+  const channelsDict = await firstValueFrom(this.raiden.channels$);
   const baseUrl = request.baseUrl.replace(/\/\w+$/, '');
   response.json(
     Object.values(channelsDict[token] ?? {}).map(

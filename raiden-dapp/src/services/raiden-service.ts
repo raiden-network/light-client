@@ -188,9 +188,9 @@ export default class RaidenService {
     await this.monitorPreSetTokens(presetTokens);
 
     // update connected tokens data on each newBlock
-    raiden.events$
-      .pipe(filter((value) => value.type === 'block/new'))
-      .subscribe((event) => this.store.commit('updateBlock', event.payload.blockNumber));
+    raiden.events$.subscribe((event) => {
+      if (event.type === 'block/new') this.store.commit('updateBlock', event.payload.blockNumber);
+    });
 
     raiden.events$
       .pipe(
@@ -239,9 +239,9 @@ export default class RaidenService {
         await this.notifyWithdrawal(value.meta.amount, value.payload.withdrawal);
       } else if (value.type === 'udc/withdraw/plan/failure') {
         await this.notifyWithdrawalFailure(
-          value.payload?.code,
+          (value.payload as { code: string }).code,
           value.meta.amount,
-          value.payload.message,
+          (value.payload as { message: string }).message,
         );
       } else if (value.type === 'channel/settle/success') {
         if (value.payload.confirmed) {
@@ -256,8 +256,8 @@ export default class RaidenService {
           value.payload.confirmed,
           value.meta.partner,
         );
-      } else if (value.type === 'channel/open/failed') {
-        await this.notifyChannelOpenFailed(value.payload.message);
+      } else if (value.type === 'channel/open/failure') {
+        await this.notifyChannelOpenFailed((value.payload as Error).message);
       }
     });
 

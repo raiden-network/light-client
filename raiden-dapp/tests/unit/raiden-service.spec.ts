@@ -896,7 +896,7 @@ describe('RaidenService', () => {
     (raiden as any).events$ = subject;
     await setupSDK();
     subject.next({
-      type: 'channel/open/failed',
+      type: 'channel/open/failure',
       payload: { message: 'error message' },
       meta: { tokenNetwork: '0xTokenNetwork', partner: '0xPartner' },
     });
