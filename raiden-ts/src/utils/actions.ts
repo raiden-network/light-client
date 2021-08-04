@@ -2,6 +2,7 @@
 import * as t from 'io-ts';
 import isMatchWith from 'lodash/isMatchWith';
 import type { Observable } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { filter, map, take } from 'rxjs/operators';
 
 import { assert } from '../utils';
@@ -378,8 +379,8 @@ export async function asyncActionToPromise<
   action$: Observable<Action>,
   confirmed?: boolean,
 ) {
-  return action$
-    .pipe(
+  return firstValueFrom(
+    action$.pipe(
       filter(
         confirmed
           ? isConfirmationResponseOf<AAC>(asyncAction, meta)
@@ -401,8 +402,9 @@ export async function asyncActionToPromise<
           });
         return action.payload as ActionType<AAC['success']>['payload'];
       }),
-    )
-    .toPromise();
+    ),
+    { defaultValue: undefined },
+  );
 }
 
 // createReducer

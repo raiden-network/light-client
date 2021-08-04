@@ -508,7 +508,7 @@ export function validateRoute$(
   let result$: Observable<pathFind.success>;
   if ('error' in route) {
     const { error } = route;
-    result$ = throwError(
+    result$ = throwError(() =>
       isNoRouteFoundError(error)
         ? new RaidenError(ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES)
         : new RaidenError(ErrorCodes.PFS_ERROR_RESPONSE, {

@@ -10,7 +10,7 @@ import { decrypt, encrypt } from 'eciesjs';
 import * as t from 'io-ts';
 import isEmpty from 'lodash/isEmpty';
 import type { Observable } from 'rxjs';
-import { defer, from, of } from 'rxjs';
+import { defer, firstValueFrom, from, of } from 'rxjs';
 import { filter, first, map, mergeMap } from 'rxjs/operators';
 
 import type { Channel } from '../channels';
@@ -258,7 +258,7 @@ export async function getTransfer(
   key: string | { secrethash: Hash; direction: Direction },
 ): Promise<TransferState> {
   if (typeof key !== 'string') key = transferKey(key);
-  if (!('address' in state)) state = await state.pipe(first()).toPromise();
+  if (!('address' in state)) state = await firstValueFrom(state);
   if (key in state.transfers) return state.transfers[key];
   return decode(TransferState, await db.get<TransferStateish>(key));
 }

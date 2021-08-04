@@ -11,7 +11,7 @@ import type {
 } from '@ethersproject/providers';
 import { Formatter } from '@ethersproject/providers';
 import type { Observable } from 'rxjs';
-import { defer, from, fromEventPattern, of, throwError, timer } from 'rxjs';
+import { defer, from, fromEventPattern, of, timer } from 'rxjs';
 import {
   catchError,
   debounceTime,
@@ -136,9 +136,10 @@ export function getLogsByChunk$(
       mergeMap((logs) => from(logs)), // unwind
       // if it still fail [retry] times on lower bound, give up;
       // otherwise wait pollingInterval before retrying
-      catchError((err) =>
-        retry >= 0 ? timer(provider.pollingInterval).pipe(ignoreElements()) : throwError(err),
-      ),
+      catchError((err) => {
+        if (retry >= 0) return timer(provider.pollingInterval).pipe(ignoreElements());
+        throw err;
+      }),
       // repeat from inner defer while there's still ranges to scan
       repeatWhen((complete$) => complete$.pipe(takeWhile(() => start <= toBlock))),
     );

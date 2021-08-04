@@ -18,7 +18,7 @@ import { createLogger } from 'redux-logger';
 import type { EpicMiddleware } from 'redux-observable';
 import { createEpicMiddleware } from 'redux-observable';
 import type { Observable } from 'rxjs';
-import { EMPTY, from, of, throwError } from 'rxjs';
+import { EMPTY, firstValueFrom, from, lastValueFrom, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
 import {
   catchError,
@@ -399,7 +399,8 @@ export class Raiden {
     // start still can't be called again, but turns this.started to false
     // this.epicMiddleware is set to null by latest$'s complete callback
     if (this.started) this.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
-    if (this.started !== undefined) await this.deps.db.busy$.toPromise();
+    if (this.started !== undefined)
+      await lastValueFrom(this.deps.db.busy$, { defaultValue: undefined });
   }
 
   /**
@@ -511,7 +512,8 @@ export class Raiden {
    */
   public async dumpDatabase() {
     // only wait for db to be closed if it was started
-    if (this.started !== undefined) await this.deps.db.busy$.toPromise();
+    if (this.started !== undefined)
+      await lastValueFrom(this.deps.db.busy$, { defaultValue: undefined });
     return dumpDatabaseToArray(this.deps.db);
   }
 
@@ -549,18 +551,18 @@ export class Raiden {
    * @returns Promise to list of token addresses
    */
   public async getTokenList(): Promise<Address[]> {
-    return await getLogsByChunk$(this.deps.provider, {
-      ...this.deps.registryContract.filters.TokenNetworkCreated(null, null),
-      fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
-      toBlock: await this.getBlockNumber(),
-    })
-      .pipe(
+    return await lastValueFrom(
+      getLogsByChunk$(this.deps.provider, {
+        ...this.deps.registryContract.filters.TokenNetworkCreated(null, null),
+        fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
+        toBlock: await this.getBlockNumber(),
+      }).pipe(
         map((log) => this.deps.registryContract.interface.parseLog(log)),
         filter((parsed) => !!parsed.args.token_address),
         map((parsed) => parsed.args.token_address as Address),
         toArray(),
-      )
-      .toPromise();
+      ),
+    );
   }
 
   /**
@@ -804,7 +806,7 @@ export class Raiden {
 
     const meta = { tokenNetwork, partner };
     // wait for channel to become settleable
-    await waitChannelSettleable$(this.state$, meta).toPromise();
+    await lastValueFrom(waitChannelSettleable$(this.state$, meta));
 
     // wait for the corresponding success or error action
     const promise = asyncActionToPromise(channelSettle, meta, this.action$, true).then(
@@ -905,16 +907,16 @@ export class Raiden {
       this.log.info,
     );
 
-    const promise = this.action$
-      .pipe(
+    const promise = firstValueFrom(
+      this.action$.pipe(
         filter(isActionOf([transferSigned, transfer.failure])),
-        first(({ meta }) => meta.direction === Direction.SENT && meta.secrethash === secrethash),
+        filter(({ meta }) => meta.direction === Direction.SENT && meta.secrethash === secrethash),
         map((action) => {
           if (transfer.failure.is(action)) throw action.payload;
           return transferKey(action.meta);
         }),
-      )
-      .toPromise();
+      ),
+    );
     this.store.dispatch(
       transfer.request(
         {
@@ -961,12 +963,12 @@ export class Raiden {
 
     // throws/rejects if a failure occurs
     await asyncActionToPromise(transfer, { secrethash, direction }, this.action$);
-    const finalState = await this.state$
-      .pipe(
+    const finalState = await firstValueFrom(
+      this.state$.pipe(
         pluck('transfers', transferKey),
-        first((transferState) => !!transferState.unlockProcessed),
-      )
-      .toPromise();
+        filter((transferState) => !!transferState.unlockProcessed),
+      ),
+    );
     this.log.info('Transfer successful', {
       key: transferKey,
       partner: finalState.partner,
@@ -1061,7 +1063,7 @@ export class Raiden {
     await this.synced;
     const services = [...this.config.additionalServices];
     if (this.config.pfsMode === PfsMode.auto) services.push(...Object.keys(this.state.services));
-    return pfsListInfo(services, this.deps).toPromise();
+    return lastValueFrom(pfsListInfo(services, this.deps));
   }
 
   /**
@@ -1106,7 +1108,7 @@ export class Raiden {
       this.log.info,
     );
 
-    const gasPrice = await this.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise();
+    const gasPrice = await firstValueFrom(this.deps.latest$.pipe(pluck('gasPrice')));
 
     const value = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_AMOUNT);
     const receipt = await callAndWaitMined(
@@ -1159,7 +1161,7 @@ export class Raiden {
       () => undefined,
     );
 
-    const gasPrice = await this.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise();
+    const gasPrice = await firstValueFrom(this.deps.latest$.pipe(pluck('gasPrice')));
 
     const receipt = await callAndWaitMined(
       tokenNetworkRegistry,
@@ -1202,12 +1204,12 @@ export class Raiden {
    * @returns Promise to UDC total deposit
    */
   public async getUDCTotalDeposit(): Promise<BigNumber> {
-    return this.deps.latest$
-      .pipe(
+    return firstValueFrom(
+      this.deps.latest$.pipe(
         pluck('udcDeposit', 'totalDeposit'),
-        first((deposit) => !!deposit && deposit.lt(MaxUint256)),
-      )
-      .toPromise();
+        filter((deposit) => !!deposit && deposit.lt(MaxUint256)),
+      ),
+    );
   }
 
   /**
@@ -1289,7 +1291,7 @@ export class Raiden {
 
     const price = gasPrice
       ? BigNumber.from(gasPrice)
-      : await this.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise();
+      : await firstValueFrom(this.deps.latest$.pipe(pluck('gasPrice')));
     const gasLimit = BigNumber.from(21000);
 
     const curBalance = await this.getBalance(address);
@@ -1341,7 +1343,7 @@ export class Raiden {
     // caps value to balance, so if it's too big, transfer all
     const amount = curBalance.lte(value) ? curBalance : BigNumber.from(value);
 
-    const gasPrice = await this.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise();
+    const gasPrice = await firstValueFrom(this.deps.latest$.pipe(pluck('gasPrice')));
     const receipt = await callAndWaitMined(
       tokenContract,
       'transfer',
@@ -1416,12 +1418,12 @@ export class Raiden {
     };
     // wait for plan to be ready if needed
     if (!plan.ready)
-      await this.state$
-        .pipe(
+      await firstValueFrom(
+        this.state$.pipe(
           pluckDistinct('blockNumber'),
-          first((blockNumber) => blockNumber >= plan.block),
-        )
-        .toPromise();
+          filter((blockNumber) => blockNumber >= plan.block),
+        ),
+      );
     const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
@@ -1503,8 +1505,8 @@ export class Raiden {
     const pfss = options.pfs ? [decode(PFS, options.pfs)] : await this.findPFS();
 
     let firstResponse: Error | SuggestedPartner[] | undefined;
-    return from(pfss)
-      .pipe(
+    return firstValueFrom(
+      from(pfss).pipe(
         concatMap((pfs) =>
           fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/suggest_partner`, {
             method: 'GET',
@@ -1535,11 +1537,11 @@ export class Raiden {
           if (Array.isArray(firstResponse)) {
             return of(firstResponse);
           } else {
-            return throwError(firstResponse ?? err);
+            throw firstResponse ?? err;
           }
         }),
-      )
-      .toPromise();
+      ),
+    );
   }
 }
 
