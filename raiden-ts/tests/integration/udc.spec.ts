@@ -4,7 +4,8 @@ import { makeRaiden, makeRaidens, makeStruct, makeTransaction, waitBlock } from 
 import { BigNumber } from '@ethersproject/bignumber';
 import { MaxUint256, Zero } from '@ethersproject/constants';
 import { parseEther } from '@ethersproject/units';
-import { first, pluck } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
+import { pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate } from '@/actions';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
@@ -27,7 +28,7 @@ test('monitorUdcBalanceEpic', async () => {
     udcDeposit.success({ balance: Zero as UInt<32> }, { totalDeposit: Zero as UInt<32> }),
   );
   await expect(
-    raiden.deps.latest$.pipe(pluck('udcDeposit', 'balance'), first()).toPromise(),
+    firstValueFrom(raiden.deps.latest$.pipe(pluck('udcDeposit', 'balance'))),
   ).resolves.toEqual(Zero);
 
   const balance = BigNumber.from(23) as UInt<32>;
@@ -37,7 +38,7 @@ test('monitorUdcBalanceEpic', async () => {
 
   expect(raiden.output).toContainEqual(udcDeposit.success({ balance }, { totalDeposit: balance }));
   await expect(
-    raiden.deps.latest$.pipe(pluck('udcDeposit', 'balance'), first()).toPromise(),
+    firstValueFrom(raiden.deps.latest$.pipe(pluck('udcDeposit', 'balance'))),
   ).resolves.toEqual(balance);
   expect(userDepositContract.effectiveBalance).toHaveBeenCalledTimes(2);
 });

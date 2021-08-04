@@ -20,6 +20,7 @@ import {
 } from './mocks';
 
 import { One, Zero } from '@ethersproject/constants';
+import { firstValueFrom } from 'rxjs';
 import { first } from 'rxjs/operators';
 
 import { raidenConfigUpdate } from '@/actions';
@@ -150,7 +151,7 @@ describe('receive transfers', () => {
               type: MessageType.SECRET_REQUEST,
               secrethash,
             }),
-            userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
+            userId: (await firstValueFrom(partner.deps.matrix$)).getUserId()!,
           },
           receivedMeta,
         ),
@@ -166,7 +167,7 @@ describe('receive transfers', () => {
       await ensureChannelIsDeposited([partner, raiden]);
 
       // stopping mocked MatrixClient prevents messages from being forwarded
-      (await partner.deps.matrix$.toPromise()).stopClient();
+      (await firstValueFrom(partner.deps.matrix$)).stopClient();
 
       const sentState = getOrWaitTransfer(partner, sentMeta, true);
       partner.store.dispatch(
@@ -260,7 +261,7 @@ describe('receive transfers', () => {
       const [raiden, partner] = await makeRaidens(2);
       await ensureTransferPending([partner, raiden], value);
 
-      (await partner.deps.matrix$.toPromise()).stopClient();
+      (await firstValueFrom(partner.deps.matrix$)).stopClient();
 
       const sentStatePromise = getOrWaitTransfer(partner, sentMeta, (doc) => !!doc.unlock);
       partner.store.dispatch(transferSecret({ secret }, sentMeta));
@@ -271,7 +272,7 @@ describe('receive transfers', () => {
       // "wrong" secret/secrethash
       const secret_ = makeSecret();
       const secrethash_ = getSecrethash(secret_);
-      const promise = raiden.action$.pipe(first(transferUnlock.failure.is)).toPromise();
+      const promise = firstValueFrom(raiden.action$.pipe(first(transferUnlock.failure.is)));
       raiden.store.dispatch(
         messageReceived(
           {
@@ -296,7 +297,7 @@ describe('receive transfers', () => {
       const [raiden, partner] = await makeRaidens(2);
       await ensureTransferPending([partner, raiden], value);
 
-      (await partner.deps.matrix$.toPromise()).stopClient();
+      (await firstValueFrom(partner.deps.matrix$)).stopClient();
 
       const sentStatePromise = getOrWaitTransfer(partner, sentMeta, (doc) => !!doc.unlock);
       partner.store.dispatch(transferSecret({ secret }, sentMeta));
@@ -383,7 +384,7 @@ describe('receive transfers', () => {
       const [raiden, partner] = await makeRaidens(2);
       const pendingSentState = await ensureTransferPending([partner, raiden], value);
 
-      (await partner.deps.matrix$.toPromise()).stopClient();
+      (await firstValueFrom(partner.deps.matrix$)).stopClient();
 
       const sentStatePromise = getOrWaitTransfer(partner, sentMeta, (doc) => !!doc.expired);
       await waitBlock(pendingSentState.expiration + 2 * partner.config.confirmationBlocks + 1);
@@ -393,7 +394,7 @@ describe('receive transfers', () => {
       // "wrong" secret/secrethash
       const secret_ = makeSecret();
       const secrethash_ = getSecrethash(secret_);
-      const promise = raiden.action$.pipe(first(transferExpire.failure.is)).toPromise();
+      const promise = firstValueFrom(raiden.action$.pipe(first(transferExpire.failure.is)));
       raiden.store.dispatch(
         messageReceived(
           {
@@ -419,7 +420,7 @@ describe('receive transfers', () => {
       const [raiden, partner] = await makeRaidens(2);
       const pendingSentState = await ensureTransferPending([partner, raiden], value);
 
-      (await partner.deps.matrix$.toPromise()).stopClient();
+      (await firstValueFrom(partner.deps.matrix$)).stopClient();
 
       const sentStatePromise = getOrWaitTransfer(partner, sentMeta, (doc) => !!doc.expired);
       await waitBlock(pendingSentState.expiration + 2 * partner.config.confirmationBlocks + 1);

@@ -22,7 +22,8 @@ import {
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { Two, WeiPerEther } from '@ethersproject/constants';
-import { first, pluck } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
+import { pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate, raidenShutdown } from '@/actions';
 import { Capabilities } from '@/constants';
@@ -93,7 +94,7 @@ describe('msMonitorRequestEpic', () => {
     const [raiden, partner] = await makeRaidens(2);
     raiden.store.dispatch(raidenConfigUpdate({ rateToSvt: {} }));
     expect(
-      (await raiden.deps.latest$.pipe(pluck('udcDeposit', 'balance'), first()).toPromise()).gte(
+      (await firstValueFrom(raiden.deps.latest$.pipe(pluck('udcDeposit', 'balance')))).gte(
         raiden.config.monitoringReward!,
       ),
     ).toBe(true);
