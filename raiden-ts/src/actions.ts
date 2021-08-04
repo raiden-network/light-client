@@ -16,7 +16,7 @@ import * as ServicesActions from './services/actions';
 import * as TransfersActions from './transfers/actions';
 import * as TransportActions from './transport/actions';
 import { Caps } from './transport/types';
-import type { Action, ActionType, ActionTypeOf, AnyAC } from './utils/actions';
+import type { Action, ActionsUnion, ActionType, ActionTypeOf, AnyAC } from './utils/actions';
 import { createAction } from './utils/actions';
 import { ErrorCodec } from './utils/error';
 import { Hash } from './utils/types';
@@ -66,7 +66,7 @@ const RaidenActions = {
 };
 
 /* Tagged union of all action types from the action creators */
-// export type RaidenAction = ActionType<typeof RaidenActions[keyof typeof RaidenActions]>;
+// export type RaidenAction = ActionType<typeof RaidenActions>;
 export type RaidenAction = Action;
 
 /* Mapping { [type: string]: Action } of a subset of RaidenActions exposed as events */
@@ -88,26 +88,12 @@ export const RaidenEvents = [
 /* Tagged union of RaidenEvents actions */
 export type RaidenEvent = ActionType<typeof RaidenEvents>;
 
-type ValueOf<T> = T[keyof T];
 type UnionToActionsMap<T extends AnyAC> = {
-  [K in ActionTypeOf<T>]: Extract<T, { readonly type: K }>;
+  readonly [K in ActionTypeOf<T>]: Extract<T, { readonly type: K }>;
 };
-// receives an actions module/mapping, where values can be either ACs or AACs, and return a mapping
-// type where ACs are flattened from AACs and keys are their type tag literals
-type ActionsMap<T extends Record<string, AnyAC | Record<string, AnyAC>>> = UnionToActionsMap<
-  ValueOf<
-    {
-      [K in keyof T]: T[K] extends AnyAC
-        ? T[K]
-        : T[K] extends Record<string, AnyAC>
-        ? ValueOf<T[K]>
-        : never;
-    }
-  >
->;
 
 // type and object mapping from every action type to its ActionCreator object
-type RaidenActionsMap = Readonly<ActionsMap<typeof RaidenActions>>;
+type RaidenActionsMap = UnionToActionsMap<ActionsUnion<typeof RaidenActions>>;
 const RaidenActionsMap = reduce(
   RaidenActions,
   (acc, v) => ({ ...acc, ...('type' in v ? { [v.type]: v } : mapKeys(v, property('type'))) }),

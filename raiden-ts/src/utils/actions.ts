@@ -101,25 +101,46 @@ export function createAction<
 export type AnyAC = ActionCreator<any>;
 
 /**
+ * A version of ReturnType which returns `never` insted of `any` if it can't match function type
+ */
+export type OnlyReturnType<F> = F extends (...args: any) => infer R ? R : never;
+/** union of all value types in type T */
+export type ValueOf<T> = T[keyof T];
+
+/** Types extending this constraint can be unfolded/flattened into a union of ActionCreators */
+export type ActionsUnionConstraint =
+  | readonly AnyAC[]
+  | { readonly [K: string]: AnyAC | { readonly [K2: string]: AnyAC } }
+  | AnyAC;
+/** Convert tuples, arrays, modules and mappings containing ACs & AACs to the plain union of ACs */
+export type ActionsUnion<AC extends ActionsUnionConstraint> = AC extends readonly AnyAC[]
+  ? AC[number]
+  : AC extends AnyAC
+  ? AC
+  : ValueOf<
+      {
+        [K in keyof AC]: AC[K] extends AnyAC
+          ? AC[K]
+          : AC[K] extends { readonly [K2: string]: AnyAC }
+          ? ValueOf<AC[K]>
+          : never;
+      }
+    >;
+
+/**
  * Type helper to extract the type of an action or a mapping of actions
  * Usage: const action: ActionType<typeof actionCreator>;
  */
-export type ActionType<
-  AC extends { readonly [K: string]: AnyAC } | { readonly [K: number]: AnyAC } | AnyAC,
-> = ReturnType<
-  AC extends { readonly [K: string]: AnyAC } | { readonly [K: number]: AnyAC } ? AC[keyof AC] : AC
->;
-export type ActionTypeOf<
-  AC extends { readonly [K: string]: AnyAC } | { readonly [K: number]: AnyAC } | AnyAC,
-> = ActionType<AC>['type'];
+export type ActionType<AC extends ActionsUnionConstraint> = OnlyReturnType<ActionsUnion<AC>>;
+export type ActionTypeOf<AC extends ActionsUnionConstraint> = ActionType<AC>['type'];
 
 // isActionOf curry overloads
-export function isActionOf<AC extends AnyAC>(
-  ac: AC | readonly AC[],
+export function isActionOf<AC extends ActionsUnionConstraint>(
+  ac: AC,
   action: unknown,
 ): action is ActionType<AC>;
-export function isActionOf<AC extends AnyAC>(
-  ac: AC | readonly AC[],
+export function isActionOf<AC extends ActionsUnionConstraint>(
+  ac: AC,
 ): (action: unknown) => action is ActionType<AC>;
 
 /**
@@ -130,17 +151,15 @@ export function isActionOf<AC extends AnyAC>(
  * @returns boolean indicating object is of type of action, if passing 2nd argument,
  *      or typeguard function
  */
-export function isActionOf<AC extends AnyAC>(ac: AC | readonly AC[], ...args: any[]) {
-  const arr = Array.isArray(ac) ? ac : [ac];
-  /**
-   * @param action - action to check
-   * @returns boolean indicating whether object is of type of action
-   */
-  function _isActionOf(action: unknown): action is ReturnType<AC> {
-    return action != null && arr.some((a) => a.is(action));
+export function isActionOf<AC extends ActionsUnionConstraint>(ac: AC, ...args: any[]) {
+  function _isActionOf(this: ActionsUnionConstraint, action: unknown): boolean {
+    if (typeof this === 'function') return (this as AnyAC).is(action);
+    if (Array.isArray(this)) return this.some((a) => a.is(action));
+    if (typeof this === 'object') return _isActionOf.call(Object.values(this), action);
+    return false;
   }
-  if (args.length > 0) return _isActionOf(args[0]);
-  return _isActionOf;
+  if (args.length > 0) return _isActionOf.call(ac, args[0]);
+  return _isActionOf.bind(ac);
 }
 
 /*** Async Actions ***/
