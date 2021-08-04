@@ -6,8 +6,9 @@ import { Web3Provider } from '@ethersproject/providers';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/function';
 import * as t from 'io-ts';
-import { concat, defer, from, of, timer } from 'rxjs';
-import { delay, first, ignoreElements, map, mapTo, take, tap, toArray } from 'rxjs/operators';
+import type { Observable } from 'rxjs';
+import { concat, defer, firstValueFrom, from, lastValueFrom, of, timer } from 'rxjs';
+import { delay, ignoreElements, map, mapTo, take, tap, toArray } from 'rxjs/operators';
 
 import type { Lock } from '@/channels';
 import { LocksrootZero } from '@/constants';
@@ -40,7 +41,9 @@ describe('getLogsByChunk$', () => {
     provider.send.mockRejectedValueOnce(error);
 
     await expect(
-      getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 5).toPromise(),
+      lastValueFrom(getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 5), {
+        defaultValue: undefined,
+      }),
     ).resolves.toBeUndefined();
     expect(provider.send).toHaveBeenCalledTimes(5);
     expect(provider.send).toHaveBeenNthCalledWith(1, 'eth_getLogs', [
@@ -67,7 +70,9 @@ describe('getLogsByChunk$', () => {
     provider.send.mockRejectedValue(error);
 
     await expect(
-      getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 4).toPromise(),
+      lastValueFrom(getLogsByChunk$(provider, { fromBlock: 20, toBlock: 30 }, 10, 4), {
+        defaultValue: undefined,
+      }),
     ).rejects.toBe(error);
     expect(provider.send).toHaveBeenCalledTimes(5);
     expect(provider.send).toHaveBeenCalledWith('eth_getLogs', [
@@ -104,7 +109,7 @@ test('fromEthersEvent', async () => {
   const onSpy = jest.spyOn(provider, 'on');
   const removeListenerSpy = jest.spyOn(provider, 'removeListener');
 
-  const promise = fromEthersEvent<number>(provider, 'block').pipe(first()).toPromise();
+  const promise = firstValueFrom(fromEthersEvent<number>(provider, 'block'));
   const blockNumber = await promise;
 
   expect(blockNumber).toBe(123);
@@ -370,12 +375,12 @@ test('getNetworkName', () => {
 
 test('concatBuffer', async () => {
   await expect(
-    of(1, 2, 3)
-      .pipe(
+    lastValueFrom(
+      of(1, 2, 3).pipe(
         concatBuffer((values) => timer(10).pipe(mapTo(values))),
         toArray(),
-      )
-      .toPromise(),
+      ),
+    ),
   ).resolves.toStrictEqual([[1], [2, 3]]);
 });
 
@@ -419,13 +424,14 @@ test('completeWith', async () => {
   const completeBefore = jest.fn();
   const completeAfter = jest.fn();
   await expect(
-    timer(20)
-      .pipe(
+    lastValueFrom(
+      timer(20).pipe(
         tap({ complete: completeBefore }),
         completeWith(timer(10)),
         tap({ complete: completeAfter }),
-      )
-      .toPromise(),
+      ),
+      { defaultValue: undefined },
+    ),
   ).resolves.toBeUndefined();
   // since completeWith completed the output before the input timer, it seems like it was
   // unsubscribed instead, but second tap sees proper completion
@@ -435,29 +441,25 @@ test('completeWith', async () => {
   // since completeWith emits synchronously, it should unsubscribe from (even synchronous) input
   // before first emition
   await expect(
-    of(1)
-      .pipe(completeWith(of(2)))
-      .toPromise(),
+    lastValueFrom(of(1).pipe(completeWith(of(2))), { defaultValue: undefined }),
   ).resolves.toBeUndefined();
 
   // timer(0) is immediate but asynchronous, synchronous input should still go through
   await expect(
-    of(1)
-      .pipe(completeWith(timer(0)))
-      .toPromise(),
+    lastValueFrom(of(1).pipe(completeWith(timer(0))), { defaultValue: undefined }),
   ).resolves.toBe(1);
 });
 
 test('lastMap', async () => {
   const project = jest.fn(async () => true);
-  await expect(of(1, 2, 3).pipe(lastMap(project)).toPromise()).resolves.toBe(true);
+  await expect(lastValueFrom(of(1, 2, 3).pipe(lastMap(project)))).resolves.toBe(true);
   expect(project).toHaveBeenCalledTimes(1); // only last emition passes
   expect(project).toHaveBeenCalledWith(3, expect.anything());
 
   const project2 = jest.fn((v) => of([v]).pipe(delay(20)));
-  await expect(timer(10).pipe(ignoreElements(), lastMap(project2)).toPromise()).resolves.toEqual([
-    null,
-  ]);
+  await expect(
+    lastValueFrom(timer(10).pipe(ignoreElements(), lastMap(project2))),
+  ).resolves.toEqual([null]);
   expect(project2).toHaveBeenCalledTimes(1); // only last emition passed
   // ignoreElements calls project with null
   expect(project2).toHaveBeenCalledWith(null, expect.anything());
@@ -473,14 +475,14 @@ test('mergeWith', async () => {
   );
 
   expect(
-    obs1
-      .pipe(
+    lastValueFrom(
+      obs1.pipe(
         mergeWith((v1, count) => obs2(v1, count)),
         mergeWith(([v1, v2]) => obs3(v1, v2, true)),
         map(([[v1, v2], { v: v3 }]) => ({ v1, v2, v3 })),
         toArray(),
-      )
-      .toPromise(),
+      ),
+    ),
   ).resolves.toEqual([
     { v1: 1, v2: 0, v3: -1 },
     { v1: 2, v2: 1, v3: -1 },
@@ -494,43 +496,29 @@ test('takeIf', async () => {
   expect.assertions(7);
 
   // sync emit passes if condition is truthy
-  await expect(
-    of(0)
-      .pipe(takeIf(of(true)))
-      .toPromise(),
-  ).resolves.toBe(0);
+  await expect(lastValueFrom(of(0).pipe(takeIf(of(true))))).resolves.toBe(0);
 
   // falsy cond on sync emit emits nothing
   await expect(
-    of(0)
-      .pipe(takeIf(of(false)))
-      .toPromise(),
+    lastValueFrom(of(0).pipe(takeIf(of(false))), { defaultValue: undefined }),
   ).resolves.toBeUndefined();
 
   // async emit passes if condition is truthy
-  let source$ = jest.fn(() => timer(20));
-  await expect(
-    defer(source$)
-      .pipe(takeIf(of(true)))
-      .toPromise(),
-  ).resolves.toBe(0);
+  let source$ = jest.fn(() => timer(20) as Observable<number>);
+  await expect(lastValueFrom(defer(source$).pipe(takeIf(of(true))))).resolves.toBe(0);
   // source$ should be subscribed only once
   expect(source$).toHaveBeenCalledTimes(1);
 
   // falsy cond on async emit emits nothing
   await expect(
-    timer(10)
-      .pipe(takeIf(of(false)))
-      .toPromise(),
-  ).resolves.toBe(undefined);
+    lastValueFrom(timer(10).pipe(takeIf(of(false))), { defaultValue: undefined }),
+  ).resolves.toBeUndefined();
 
   source$ = jest.fn(() => timer(20, 20));
   // truthy - falsy - truthy..
   const cond$ = jest.fn(() => concat(of(true), timer(30, 10)));
   await expect(
-    defer(source$)
-      .pipe(takeIf(defer(cond$)), take(4), toArray())
-      .toPromise(),
+    lastValueFrom(defer(source$).pipe(takeIf(defer(cond$)), take(4), toArray())),
   ).resolves.toEqual([0, 0, 1, 2]);
   // source$ should be subscribed twice: once for true, once for 1..
   expect(source$).toHaveBeenCalledTimes(2);

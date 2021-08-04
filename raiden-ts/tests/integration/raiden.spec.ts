@@ -13,7 +13,8 @@ import { makeLog, makeRaiden, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { HashZero, One } from '@ethersproject/constants';
-import { first, pluck } from 'rxjs/operators';
+import { firstValueFrom, lastValueFrom } from 'rxjs';
+import { first } from 'rxjs/operators';
 
 import { raidenShutdown, raidenSynced } from '@/actions';
 import { channelMonitored, channelOpen, newBlock, tokenMonitored } from '@/channels/actions';
@@ -85,9 +86,7 @@ describe('raiden init epics', () => {
 
     // ensure one getLogs error doesn't fail and is retried by retryAsync$
     raiden.deps.provider.getLogs.mockRejectedValueOnce(new Error('invalid response'));
-    const promise = raiden.deps.latest$
-      .pipe(pluck('action'), first(tokenMonitored.is))
-      .toPromise();
+    const promise = firstValueFrom(raiden.action$.pipe(first(tokenMonitored.is)));
 
     await raiden.start();
     await waitBlock();
@@ -143,7 +142,7 @@ describe('raiden init epics', () => {
 
     // account is gone from listAccounts, so not available anymore
     raiden.deps.provider.listAccounts.mockResolvedValue([]);
-    await raiden.deps.latest$.toPromise(); // raidenShutdown completes subjects
+    await lastValueFrom(raiden.deps.latest$); // raidenShutdown completes subjects
 
     expect(raiden.started).toBe(false);
     expect(last(raiden.output)).toEqual(
@@ -158,7 +157,7 @@ describe('raiden init epics', () => {
 
     // change network at runtime
     raiden.deps.provider.detectNetwork.mockResolvedValue({ chainId: 899, name: 'unknown' });
-    await raiden.deps.latest$.toPromise(); // raidenShutdown completes subjects
+    await lastValueFrom(raiden.deps.latest$); // raidenShutdown completes subjects
 
     expect(raiden.started).toBe(false);
     expect(last(raiden.output)).toEqual(
@@ -172,7 +171,7 @@ describe('raiden init epics', () => {
     const raiden = await makeRaiden();
     const error = new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
     raiden.deps.provider.getNetwork.mockRejectedValue(error);
-    await raiden.deps.latest$.toPromise(); // raidenShutdown completes subjects
+    await lastValueFrom(raiden.deps.latest$); // raidenShutdown completes subjects
 
     expect(raiden.started).toBe(false);
     expect(last(raiden.output)).toEqual(raidenShutdown({ reason: error }));

@@ -3,7 +3,7 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { Wallet } from '@ethersproject/wallet';
 import type { OpenMode } from 'fs';
 import { promises as fs } from 'fs';
-import { first } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 
 import { Capabilities } from '@/constants';
 import { Raiden } from '@/raiden';
@@ -78,7 +78,7 @@ function getToken(): string {
 
 async function getChannelCapacity(raiden: Raiden, partner: Address): Promise<BigNumber> {
   const tokenAddress = getToken();
-  const channels = await raiden.channels$.pipe(first()).toPromise();
+  const channels = await firstValueFrom(raiden.channels$);
   const partnerChannel = channels[tokenAddress][partner];
   return partnerChannel.capacity;
 }

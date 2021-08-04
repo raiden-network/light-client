@@ -17,7 +17,7 @@ import { fetch, makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } fro
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { AddressZero, One, Zero } from '@ethersproject/constants';
-import { first } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 
 import { raidenConfigUpdate, raidenShutdown } from '@/actions';
 import { Capabilities } from '@/constants';
@@ -130,13 +130,11 @@ describe('PFS: pfsRequestEpic', () => {
           text: jest.fn(async () => ''),
         };
       }
-      const userId = (await client!.deps.matrix$.toPromise()).getUserId()!;
+      const userId = (await firstValueFrom(client!.deps.matrix$)).getUserId()!;
       const result = {
         user_id: userId,
         displayname: await client!.deps.signer.signMessage(userId),
-        capabilities: stringifyCaps(
-          (await client!.deps.latest$.pipe(first()).toPromise()).config.caps!,
-        ),
+        capabilities: stringifyCaps((await firstValueFrom(client!.deps.latest$)).config.caps!),
       };
       return {
         status: 200,

@@ -14,6 +14,7 @@ import { makeRaidens } from './mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { Zero } from '@ethersproject/constants';
+import { firstValueFrom } from 'rxjs';
 import { first } from 'rxjs/operators';
 
 import { raidenConfigUpdate } from '@/actions';
@@ -40,7 +41,7 @@ describe('mediate transfers', () => {
     partner.store.dispatch(raidenConfigUpdate({ mediationFees: { [token]: { flat } } }));
     await ensurePresence([raiden, target]);
 
-    const promise = target.action$.pipe(first(transfer.success.is)).toPromise();
+    const promise = firstValueFrom(target.action$.pipe(first(transfer.success.is)));
     raiden.store.dispatch(
       transfer.request(
         {
@@ -101,7 +102,7 @@ describe('mediate transfers', () => {
             ],
           },
           partner: target.address,
-          userId: (await target.deps.matrix$.toPromise()).getUserId()!,
+          userId: (await firstValueFrom(target.deps.matrix$)).getUserId()!,
         },
         { secrethash, direction: Direction.SENT },
       ),
@@ -127,7 +128,7 @@ describe('mediate transfers', () => {
     partner.store.dispatch(raidenConfigUpdate({ mediationFees: { [token]: { flat } } }));
     await ensurePresence([raiden, target]);
 
-    const promise = target.action$.pipe(first(transfer.success.is)).toPromise();
+    const promise = firstValueFrom(target.action$.pipe(first(transfer.success.is)));
     raiden.store.dispatch(
       transfer.request(
         {
@@ -189,7 +190,7 @@ describe('mediate transfers', () => {
             ],
           },
           partner: target.address,
-          userId: (await target.deps.matrix$.toPromise()).getUserId()!,
+          userId: (await firstValueFrom(target.deps.matrix$)).getUserId()!,
         },
         { secrethash, direction: Direction.SENT },
       ),

@@ -35,6 +35,7 @@ import { defaultAbiCoder, Interface } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
 import { HashZero, Zero } from '@ethersproject/constants';
+import { firstValueFrom } from 'rxjs';
 import { first, pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate } from '@/actions';
@@ -253,12 +254,12 @@ describe('channelEventsEpic', () => {
     await waitBlock();
     await waitBlock(blockNumber + raiden.config.confirmationBlocks);
     await expect(
-      raiden.deps.latest$
-        .pipe(
+      firstValueFrom(
+        raiden.deps.latest$.pipe(
           pluck('state', 'channels', channelKey({ tokenNetwork, partner }), 'partner', 'deposit'),
           first((deposit) => deposit.gt(0)),
-        )
-        .toPromise(),
+        ),
+      ),
     ).resolves.toEqual(deposit);
 
     expect(raiden.output).toContainEqual(
@@ -298,12 +299,12 @@ describe('channelEventsEpic', () => {
     await waitBlock();
     await waitBlock(blockNumber + raiden.config.confirmationBlocks);
     await expect(
-      raiden.deps.latest$
-        .pipe(
+      firstValueFrom(
+        raiden.deps.latest$.pipe(
           pluck('state', 'channels', channelKey({ tokenNetwork, partner }), 'partner', 'withdraw'),
           first((withdraw) => withdraw.gt(0)),
-        )
-        .toPromise(),
+        ),
+      ),
     ).resolves.toEqual(withdraw);
 
     expect(raiden.output).toContainEqual(
@@ -340,12 +341,12 @@ describe('channelEventsEpic', () => {
     );
     await waitBlock();
     await waitBlock(closeBlock + raiden.config.confirmationBlocks);
-    await raiden.deps.latest$
-      .pipe(
+    await firstValueFrom(
+      raiden.deps.latest$.pipe(
         pluck('state', 'channels', channelKey({ tokenNetwork, partner }), 'state'),
         first((state) => state === ChannelState.closed),
-      )
-      .toPromise();
+      ),
+    );
 
     expect(raiden.output).toContainEqual(
       channelClose.success(
@@ -1032,13 +1033,13 @@ test('blockGasPriceEpic updates latest.gasPrice on new block', async () => {
   raiden.deps.provider.getGasPrice.mockResolvedValue(BigNumber.from(2e9));
   await raiden.start();
   await sleep();
-  await expect(raiden.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise()).resolves.toEqual(
+  await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual(
     BigNumber.from(2e9),
   );
 
   raiden.deps.provider.getGasPrice.mockResolvedValue(BigNumber.from(3e9));
   await waitBlock();
-  await expect(raiden.deps.latest$.pipe(first(), pluck('gasPrice')).toPromise()).resolves.toEqual(
+  await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual(
     BigNumber.from(3e9),
   );
   expect(raiden.deps.provider.getGasPrice).toHaveBeenCalledTimes(2);

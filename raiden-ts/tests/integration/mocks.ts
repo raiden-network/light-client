@@ -26,8 +26,8 @@ import type { Store } from 'redux';
 import { applyMiddleware, createStore } from 'redux';
 import { createEpicMiddleware } from 'redux-observable';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, ReplaySubject } from 'rxjs';
-import { filter, finalize, take } from 'rxjs/operators';
+import { AsyncSubject, firstValueFrom, lastValueFrom, ReplaySubject } from 'rxjs';
+import { filter, finalize } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
 import { raidenShutdown, raidenStarted } from '@/actions';
@@ -416,7 +416,7 @@ function mockedMatrixCreateClient({
       mockedMatrixUsers[userId].presence = presence;
       for (const client of mockedClients) {
         if (client.address === address) continue;
-        const matrix = await client.deps.matrix$.toPromise();
+        const matrix = await firstValueFrom(client.deps.matrix$);
         matrix.emit('event', {
           getType: () => 'm.presence',
           getSender: () => userId,
@@ -457,7 +457,7 @@ function mockedMatrixCreateClient({
       }
       room.members[userId] = 'join';
       for (const client of mockedClients) {
-        const matrix = await client.deps.matrix$.toPromise();
+        const matrix = await firstValueFrom(client.deps.matrix$);
         if (!room.getMember(matrix.getUserId()!)) continue;
         matrix.emit('RoomMember.membership', { getSender: () => userId }, room.getMember(userId));
       }
@@ -476,7 +476,7 @@ function mockedMatrixCreateClient({
       assert(room.getMember(peerId)?.membership !== 'join', 'Peer is already in the room');
       room.members[peerId] = 'invite';
       for (const client of mockedClients) {
-        const matrix = await client.deps.matrix$.toPromise();
+        const matrix = await firstValueFrom(client.deps.matrix$);
         if (!room.getMember(matrix.getUserId()!)) continue;
         matrix.emit('RoomMember.membership', { getSender: () => userId }, room.getMember(peerId));
       }
@@ -487,7 +487,7 @@ function mockedMatrixCreateClient({
       assert(room.getMember(userId), 'not member');
       room.members[userId] = 'leave';
       for (const client of mockedClients) {
-        const matrix = await client.deps.matrix$.toPromise();
+        const matrix = await firstValueFrom(client.deps.matrix$);
         if (!room.getMember(matrix.getUserId()!)) continue;
         matrix.emit('RoomMember.membership', { getSender: () => userId }, room.getMember(userId));
       }
@@ -499,7 +499,7 @@ function mockedMatrixCreateClient({
       assert(roomId in mockedRooms, ['unknown room', { roomId }]);
       const room = mockedRooms[roomId];
       for (const client of mockedClients) {
-        const matrix = await client.deps.matrix$.toPromise();
+        const matrix = await firstValueFrom(client.deps.matrix$);
         if (!room.getMember(matrix.getUserId()!)) continue;
         matrix.emit(
           'Room.timeline',
@@ -519,7 +519,7 @@ function mockedMatrixCreateClient({
         if (stopped) return true;
         for (const [partnerId, map] of Object.entries(contentMap)) {
           for (const client of mockedClients) {
-            const matrix = await client.deps.matrix$.toPromise();
+            const matrix = await firstValueFrom(client.deps.matrix$);
             if (partnerId !== matrix.getUserId()) continue;
             for (const content of Object.values(map)) {
               matrix.emit('toDeviceEvent', {
@@ -965,13 +965,13 @@ export async function makeRaiden(
     started: undefined,
     stop: async () => {
       raiden.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
-      await raiden.deps.db.busy$.toPromise();
+      await lastValueFrom(raiden.deps.db.busy$, { defaultValue: undefined });
       raiden.deps.provider.removeAllListeners();
       const idx = mockedClients.indexOf(raiden);
       if (idx >= 0) mockedClients.splice(idx, 1);
       assert(!raiden.started, ['node did not stop', { address }]);
     },
-    synced: deps.init$.toPromise(),
+    synced: lastValueFrom(deps.init$),
   };
 
   mockedClients.push(raiden);
@@ -1020,12 +1020,9 @@ export async function waitBlock(block?: number): Promise<void> {
   if (!block) block = mockedClients[0].deps.provider.blockNumber + 1;
   const promise = Promise.all(
     mockedClients.map((r) =>
-      r.deps.latest$
-        .pipe(
-          filter(({ state }) => state.blockNumber >= block!),
-          take(1),
-        )
-        .toPromise(),
+      firstValueFrom(r.deps.latest$.pipe(filter(({ state }) => state.blockNumber >= block!)), {
+        defaultValue: undefined,
+      }),
     ),
   );
   await providersEmit('block', block);

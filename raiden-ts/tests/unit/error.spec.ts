@@ -1,4 +1,4 @@
-import { defer } from 'rxjs';
+import { defer, lastValueFrom } from 'rxjs';
 
 import { matchError } from '@/utils/error';
 import { retryWhile } from '@/utils/rx';
@@ -51,7 +51,9 @@ describe('retryWhile', () => {
 
   test('give up after maxRetries', async () => {
     const start = Date.now();
-    await expect(error$.pipe(retryWhile(5, { maxRetries: 7 })).toPromise()).rejects.toThrow(error);
+    await expect(lastValueFrom(error$.pipe(retryWhile(5, { maxRetries: 7 })))).rejects.toThrow(
+      error,
+    );
     expect(errorMock).toHaveBeenCalledTimes(8);
     expect(Date.now() - start).toBeGreaterThanOrEqual(7 * 5);
   });
@@ -60,7 +62,7 @@ describe('retryWhile', () => {
     const anotherError = new Error('anotherError');
     errorMock.mockRejectedValueOnce(anotherError);
     await expect(
-      error$.pipe(retryWhile(5, { onErrors: ['another'] })).toPromise(),
+      lastValueFrom(error$.pipe(retryWhile(5, { onErrors: ['another'] }))),
     ).rejects.toThrow(error);
     expect(errorMock).toHaveBeenCalledTimes(2);
   });
@@ -69,7 +71,7 @@ describe('retryWhile', () => {
     const anotherError = new Error('anotherError');
     errorMock.mockRejectedValueOnce(anotherError);
     await expect(
-      error$.pipe(retryWhile(5, { neverOnErrors: ['default'] })).toPromise(),
+      lastValueFrom(error$.pipe(retryWhile(5, { neverOnErrors: ['default'] }))),
     ).rejects.toThrow(error);
     expect(errorMock).toHaveBeenCalledTimes(2);
   });
@@ -79,7 +81,7 @@ describe('retryWhile', () => {
     errorMock.mockRejectedValueOnce(anotherError);
     errorMock.mockResolvedValueOnce(37);
     const predicate = jest.fn((err) => err === anotherError);
-    await expect(error$.pipe(retryWhile(5, { predicate })).toPromise()).resolves.toBe(37);
+    await expect(lastValueFrom(error$.pipe(retryWhile(5, { predicate })))).resolves.toBe(37);
     expect(errorMock).toHaveBeenCalledTimes(2);
     expect(predicate).toHaveBeenCalledTimes(1);
   });
@@ -89,9 +91,9 @@ describe('retryWhile', () => {
     errorMock.mockRejectedValueOnce(anotherError);
     const stopPredicate = jest.fn((err) => err === error);
     const log = jest.fn();
-    await expect(error$.pipe(retryWhile(5, { stopPredicate, log })).toPromise()).rejects.toThrow(
-      error,
-    );
+    await expect(
+      lastValueFrom(error$.pipe(retryWhile(5, { stopPredicate, log }))),
+    ).rejects.toThrow(error);
     expect(errorMock).toHaveBeenCalledTimes(2);
     expect(stopPredicate).toHaveBeenCalledTimes(2);
     expect(log).toHaveBeenCalledTimes(2);
@@ -100,7 +102,7 @@ describe('retryWhile', () => {
   test('give up when iterator depletes', async () => {
     const arr = [5, 4, 3];
     const iter = arr[Symbol.iterator]();
-    await expect(error$.pipe(retryWhile(iter)).toPromise()).rejects.toThrow(error);
+    await expect(lastValueFrom(error$.pipe(retryWhile(iter)))).rejects.toThrow(error);
     expect(errorMock).toHaveBeenCalledTimes(4);
   });
 });

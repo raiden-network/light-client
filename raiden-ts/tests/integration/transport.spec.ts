@@ -5,6 +5,7 @@ import { hexlify } from '@ethersproject/bytes';
 import { randomBytes } from '@ethersproject/random';
 import { EventEmitter } from 'events';
 import type { MatrixClient } from 'matrix-js-sdk';
+import { firstValueFrom, lastValueFrom } from 'rxjs';
 import { first, pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate, raidenShutdown } from '@/actions';
@@ -136,7 +137,7 @@ describe('initMatrixEpic', () => {
 
     await raiden.start();
     await sleep();
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const matrix = (await firstValueFrom(raiden.deps.matrix$)) as jest.Mocked<MatrixClient>;
 
     expect(raiden.output).toContainEqual(matrixSetup(setupPayload));
     expect(matrix.setPushRuleEnabled).toHaveBeenCalledWith(
@@ -233,7 +234,7 @@ describe('initMatrixEpic', () => {
     raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
 
     await raiden.start();
-    await raiden.action$.toPromise();
+    await lastValueFrom(raiden.action$);
 
     expect(raiden.started).toBeFalsy();
     expect(raiden.output).toContainEqual(
@@ -268,7 +269,7 @@ describe('initMatrixEpic', () => {
     // set fetch list from matrixServerLookup
     raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
     await raiden.start();
-    await raiden.action$.toPromise();
+    await lastValueFrom(raiden.action$);
 
     expect(raiden.started).toBeFalsy();
     expect(raiden.output).toContainEqual(
@@ -294,7 +295,7 @@ test('channelMonitored triggers matrixPresence.request', async () => {
 test('matrixShutdownEpic: stopClient called on action$ completion', async () => {
   expect.assertions(2);
   const raiden = await makeRaiden(undefined);
-  const matrix = await raiden.deps.matrix$.toPromise();
+  const matrix = await firstValueFrom(raiden.deps.matrix$);
   expect(matrix.stopClient).not.toHaveBeenCalled();
   raiden.stop();
   expect(matrix.stopClient).toHaveBeenCalledTimes(1);
@@ -312,7 +313,7 @@ describe('matrixMonitorPresenceEpic', () => {
     expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
-    const partnerUserId = (await partner.deps.matrix$.toPromise()).getUserId()!;
+    const partnerUserId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
     json.mockImplementationOnce(async () => ({ user_id: partnerUserId }));
 
     raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
@@ -327,7 +328,7 @@ describe('matrixMonitorPresenceEpic', () => {
     expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
-    const partnerUserId = (await partner.deps.matrix$.toPromise()).getUserId()!;
+    const partnerUserId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
     json.mockImplementationOnce(async () => ({
       user_id: partnerUserId,
       displayname: hexlify(randomBytes(65)),
@@ -349,7 +350,7 @@ describe('matrixMonitorPresenceEpic', () => {
     expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
-    const partnerUserId = (await partner.deps.matrix$.toPromise()).getUserId()!;
+    const partnerUserId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
     json.mockImplementationOnce(async () => ({
       user_id: partnerUserId,
       displayname: partner.store.getState().transport.setup!.displayName,
@@ -379,7 +380,7 @@ test('matrixUpdateCapsEpic', async () => {
   expect.assertions(5);
 
   const raiden = await makeRaiden();
-  const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+  const matrix = (await firstValueFrom(raiden.deps.matrix$)) as jest.Mocked<MatrixClient>;
 
   raiden.store.dispatch(raidenConfigUpdate({ caps: { [Capabilities.DELIVERY]: 0 } }));
 
@@ -413,7 +414,7 @@ test('matrixLeaveUnknownRoomsEpic', async () => {
   expect.assertions(3);
 
   const raiden = await makeRaiden();
-  const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+  const matrix = (await firstValueFrom(raiden.deps.matrix$)) as jest.Mocked<MatrixClient>;
   const roomId = `!unknownRoomId:${matrixServer}`;
 
   matrix.emit('Room', {
@@ -441,7 +442,7 @@ describe('matrixMessageSendEpic', () => {
     const message = 'Hello world!';
     const [raiden, partner] = getSortedClients(await makeRaidens(2));
     raiden.store.dispatch(raidenConfigUpdate({ httpTimeout: 30 }));
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const matrix = (await firstValueFrom(raiden.deps.matrix$)) as jest.Mocked<MatrixClient>;
     const userId = '@peer:server';
 
     await ensureChannelIsOpen([raiden, partner]);
@@ -478,8 +479,10 @@ describe('matrixMessageSendEpic', () => {
     expect.assertions(4);
     const [raiden, partner] = await makeRaidens(2);
 
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const matrix = (await firstValueFrom(raiden.deps.matrix$)) as jest.Mocked<MatrixClient>;
+    const partnerMatrix = (await firstValueFrom(
+      partner.deps.matrix$,
+    )) as jest.Mocked<MatrixClient>;
     const message = await signMessage(raiden.deps.signer, processed);
 
     // fail once, succeed on retry
@@ -513,9 +516,9 @@ describe('matrixMessageSendEpic', () => {
     expect.assertions(4);
     const [raiden, p1, p2] = await makeRaidens(3);
 
-    const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const p1Matrix = (await p1.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
-    const p2Matrix = (await p2.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const matrix = (await firstValueFrom(raiden.deps.matrix$)) as jest.Mocked<MatrixClient>;
+    const p1Matrix = (await firstValueFrom(p1.deps.matrix$)) as jest.Mocked<MatrixClient>;
+    const p2Matrix = (await firstValueFrom(p2.deps.matrix$)) as jest.Mocked<MatrixClient>;
 
     const actualSendToDevice = matrix.sendToDevice.getMockImplementation();
     // sendToDevice takes some time to send messages
@@ -571,7 +574,9 @@ describe('matrixMessageReceivedEpic', () => {
     expect.assertions(1);
     const message = 'test message';
     const [raiden, partner] = getSortedClients(await makeRaidens(2));
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const partnerMatrix = (await firstValueFrom(
+      partner.deps.matrix$,
+    )) as jest.Mocked<MatrixClient>;
 
     await ensureChannelIsOpen([raiden, partner]);
     await sleep();
@@ -598,7 +603,9 @@ describe('matrixMessageReceivedEpic', () => {
     expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const partnerMatrix = (await firstValueFrom(
+      partner.deps.matrix$,
+    )) as jest.Mocked<MatrixClient>;
     const signed = await signMessage(partner.deps.signer, processed);
     const message = encodeJsonMessage(signed);
 
@@ -627,7 +634,9 @@ describe('matrixMessageReceivedEpic', () => {
     expect.assertions(1);
 
     const [raiden, partner] = await makeRaidens(2);
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const partnerMatrix = (await firstValueFrom(
+      partner.deps.matrix$,
+    )) as jest.Mocked<MatrixClient>;
     // signed by ourselves
     const signed = await signMessage(raiden.deps.signer, processed);
     const message = encodeJsonMessage(signed);
@@ -660,7 +669,9 @@ describe('deliveredEpic', () => {
     expect.assertions(3);
 
     const [raiden, partner] = await makeRaidens(2);
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const partnerMatrix = (await firstValueFrom(
+      partner.deps.matrix$,
+    )) as jest.Mocked<MatrixClient>;
     const message: Signed<Processed> = {
         type: MessageType.PROCESSED,
         message_identifier: makeMessageId(),
@@ -715,7 +726,9 @@ describe('deliveredEpic', () => {
     expect.assertions(2);
 
     const [raiden, partner] = await makeRaidens(2);
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const partnerMatrix = (await firstValueFrom(
+      partner.deps.matrix$,
+    )) as jest.Mocked<MatrixClient>;
     const message: Signed<Processed> = {
         type: MessageType.PROCESSED,
         message_identifier: makeMessageId(),
@@ -762,7 +775,9 @@ describe('deliveredEpic', () => {
     expect.assertions(2);
 
     const [raiden, partner] = await makeRaidens(2);
-    const partnerMatrix = (await partner.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+    const partnerMatrix = (await firstValueFrom(
+      partner.deps.matrix$,
+    )) as jest.Mocked<MatrixClient>;
     // Delivered messages aren't in the set of messages which get replied with a Delivered
     const message: Signed<Delivered> = {
         type: MessageType.DELIVERED,
@@ -819,7 +834,7 @@ test('matrixMessageServiceSendEpic', async () => {
     text: jest.fn(async () => jsonStringify(pfsInfoResponse)),
   });
 
-  const matrix = (await raiden.deps.matrix$.toPromise()) as jest.Mocked<MatrixClient>;
+  const matrix = (await firstValueFrom(raiden.deps.matrix$)) as jest.Mocked<MatrixClient>;
   const service = makeAddress();
   const serviceUid = `@${service.toLowerCase()}:${getServerName(matrix.getHomeserverUrl())}`;
   const msgId = '123';
@@ -912,11 +927,11 @@ describe('rtcConnectionManagerEpic', () => {
   test('success: receive message & channel error', async () => {
     expect.assertions(8);
 
-    const partnerId = (await partner.deps.matrix$.toPromise()).getUserId()!;
+    const partnerId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
 
-    const promise = raiden.deps.latest$
-      .pipe(pluck('rtc', partner.address), first(isntNil))
-      .toPromise();
+    const promise = firstValueFrom(
+      raiden.deps.latest$.pipe(pluck('rtc', partner.address), first(isntNil)),
+    );
     await ensureChannelIsOpen([raiden, partner]);
 
     const channel = (await promise) as MockedDataChannel;
@@ -964,7 +979,7 @@ describe('rtcConnectionManagerEpic', () => {
     channel.emit('error', { error: new Error('errored') });
     // right after erroring, channel must be cleared
     await expect(
-      raiden.deps.latest$.pipe(first(), pluck('rtc', partner.address)).toPromise(),
+      firstValueFrom(raiden.deps.latest$.pipe(pluck('rtc', partner.address))),
     ).resolves.toBeUndefined();
 
     // erroring node should send a 'hangup' to partner

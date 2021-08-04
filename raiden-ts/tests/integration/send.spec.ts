@@ -18,6 +18,7 @@ import { makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } from './mo
 import { BigNumber } from '@ethersproject/bignumber';
 import { MaxUint256, Zero } from '@ethersproject/constants';
 import { keccak256 } from '@ethersproject/keccak256';
+import { firstValueFrom } from 'rxjs';
 import { first, pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate } from '@/actions';
@@ -168,7 +169,7 @@ describe('send transfer', () => {
           message: expectedLockedTransfer,
           fee,
           partner: partner.address,
-          userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
+          userId: (await firstValueFrom(partner.deps.matrix$)).getUserId()!,
         },
         meta,
       ),
@@ -258,9 +259,9 @@ describe('send transfer', () => {
 
       await waitBlock(sentState.expiration - 1);
 
-      const unlock = raiden.deps.latest$
-        .pipe(pluck('action'), first(transferUnlock.success.is), pluck('payload', 'message'))
-        .toPromise();
+      const unlock = firstValueFrom(
+        raiden.action$.pipe(first(transferUnlock.success.is), pluck('payload', 'message')),
+      );
       await providersEmit(
         {},
         makeLog({
@@ -287,7 +288,7 @@ describe('send transfer', () => {
           {
             message: expectedUnlock,
             partner: partner.address,
-            userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
+            userId: (await firstValueFrom(partner.deps.matrix$)).getUserId()!,
           },
           meta,
         ),
@@ -299,9 +300,7 @@ describe('send transfer', () => {
         unlockProcessed: expect.anything(),
       });
 
-      const promise = raiden.deps.latest$
-        .pipe(pluck('action'), first(transferUnlock.success.is))
-        .toPromise();
+      const promise = firstValueFrom(raiden.action$.pipe(first(transferUnlock.success.is)));
       raiden.store.dispatch(transferUnlock.request(undefined, meta));
       await expect(promise).resolves.toEqual(
         transferUnlock.success(
@@ -335,7 +334,7 @@ describe('send transfer', () => {
       );
 
       await expect(
-        raiden.action$.pipe(first(transferUnlock.success.is)).toPromise(),
+        firstValueFrom(raiden.action$.pipe(first(transferUnlock.success.is))),
       ).resolves.toBeDefined();
       await sleep();
 
@@ -348,9 +347,9 @@ describe('send transfer', () => {
       const [raiden, partner] = await makeRaidens(2);
       await ensureTransferPending([raiden, partner]);
 
-      const promise = raiden.deps.latest$
-        .pipe(pluck('action'), first(isResponseOf(transferUnlock, meta)))
-        .toPromise();
+      const promise = firstValueFrom(
+        raiden.action$.pipe(first(isResponseOf(transferUnlock, meta))),
+      );
       partner.store.dispatch(
         transferSecret({ secret }, { secrethash, direction: Direction.RECEIVED }),
       );
@@ -379,9 +378,9 @@ describe('send transfer', () => {
       const sentState = await ensureTransferPending([raiden, partner]);
 
       await waitBlock(sentState.expiration - 1);
-      const promise = raiden.deps.latest$
-        .pipe(pluck('action'), first(isResponseOf(transferUnlock, meta)))
-        .toPromise();
+      const promise = firstValueFrom(
+        raiden.action$.pipe(first(isResponseOf(transferUnlock, meta))),
+      );
       // we see expiration block before partner, so we don't unlock
       raiden.store.dispatch(newBlock({ blockNumber: sentState.expiration }));
       partner.store.dispatch(
@@ -439,9 +438,7 @@ describe('send transfer', () => {
         }),
       );
 
-      const promise = raiden.deps.latest$
-        .pipe(pluck('action'), first(transferExpire.success.is))
-        .toPromise();
+      const promise = firstValueFrom(raiden.action$.pipe(first(transferExpire.success.is)));
       raiden.store.dispatch(transferExpire.request(undefined, meta));
       await expect(promise).resolves.toEqual(
         transferExpire.success(
@@ -464,9 +461,9 @@ describe('send transfer', () => {
       const [raiden, partner] = await makeRaidens(2);
       await ensureTransferPending([raiden, partner]);
 
-      const promise = raiden.deps.latest$
-        .pipe(pluck('action'), first(isResponseOf(transferExpire, meta)))
-        .toPromise();
+      const promise = firstValueFrom(
+        raiden.action$.pipe(first(isResponseOf(transferExpire, meta))),
+      );
       raiden.store.dispatch(
         channelClose.request(undefined, { tokenNetwork, partner: partner.address }),
       );
@@ -493,9 +490,9 @@ describe('send transfer', () => {
       const sentState = await ensureTransferPending([raiden, partner]);
 
       await waitBlock(sentState.expiration - 1);
-      const promise = raiden.deps.latest$
-        .pipe(pluck('action'), first(isResponseOf(transferExpire, meta)))
-        .toPromise();
+      const promise = firstValueFrom(
+        raiden.action$.pipe(first(isResponseOf(transferExpire, meta))),
+      );
 
       raiden.store.dispatch(transferExpire.request(undefined, meta));
       await promise;
@@ -520,9 +517,9 @@ describe('send transfer', () => {
       const sentState = await ensureTransferUnlocked([raiden, partner]);
 
       await waitBlock(sentState.expiration + 1);
-      const promise = raiden.deps.latest$
-        .pipe(pluck('action'), first(isResponseOf(transferExpire, meta)))
-        .toPromise();
+      const promise = firstValueFrom(
+        raiden.action$.pipe(first(isResponseOf(transferExpire, meta))),
+      );
 
       raiden.store.dispatch(transferExpire.request(undefined, meta));
       await expect(promise).resolves.toEqual(

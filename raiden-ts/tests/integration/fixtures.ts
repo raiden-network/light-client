@@ -3,6 +3,7 @@ import { makeLog, providersEmit, waitBlock } from './mocks';
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { HashZero, Zero } from '@ethersproject/constants';
+import { firstValueFrom } from 'rxjs';
 import { exhaustMap, first, pluck } from 'rxjs/operators';
 
 import type { Channel } from '@/channels';
@@ -77,8 +78,8 @@ export async function getOrWaitTransfer(
   wait: boolean | ((doc: TransferState) => boolean) = false,
 ): Promise<TransferState> {
   if (typeof key !== 'string') key = transferKey(key);
-  return await raiden.deps.latest$
-    .pipe(
+  return await firstValueFrom(
+    raiden.deps.latest$.pipe(
       pluck('state'),
       exhaustMap((state) => getTransfer(state, raiden.deps.db, key).catch(() => undefined)),
       first((transfer): transfer is NonNullable<typeof transfer> => {
@@ -91,8 +92,8 @@ export async function getOrWaitTransfer(
           else return false;
         }
       }),
-    )
-    .toPromise();
+    ),
+  );
 }
 
 /**
@@ -294,7 +295,7 @@ export async function ensureTransferPending(
         metadata: { routes: [{ route: [partner.address] }] },
         fee: Zero as Int<32>,
         partner: partner.address,
-        userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
+        userId: (await firstValueFrom(partner.deps.matrix$)).getUserId()!,
       },
       { secrethash: secrethash_, direction: Direction.SENT },
     ),
@@ -375,10 +376,10 @@ export async function ensurePresence([raiden, partner]: [
   partner.store.dispatch(
     matrixPresence.success(
       {
-        userId: (await raiden.deps.matrix$.toPromise()).getUserId()!,
+        userId: (await firstValueFrom(raiden.deps.matrix$)).getUserId()!,
         available: true,
         ts: Date.now() + 120e3,
-        caps: (await raiden.deps.latest$.pipe(first()).toPromise()).config.caps!,
+        caps: (await firstValueFrom(raiden.deps.latest$)).config.caps!,
         pubkey: raiden.deps.signer.publicKey as PublicKey,
       },
       { address: raiden.address },
@@ -387,10 +388,10 @@ export async function ensurePresence([raiden, partner]: [
   raiden.store.dispatch(
     matrixPresence.success(
       {
-        userId: (await partner.deps.matrix$.toPromise()).getUserId()!,
+        userId: (await firstValueFrom(partner.deps.matrix$)).getUserId()!,
         available: true,
         ts: Date.now() + 120e3,
-        caps: (await partner.deps.latest$.pipe(first()).toPromise()).config.caps!,
+        caps: (await firstValueFrom(partner.deps.latest$)).config.caps!,
         pubkey: partner.deps.signer.publicKey as PublicKey,
       },
       { address: partner.address },

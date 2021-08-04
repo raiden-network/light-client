@@ -12,7 +12,16 @@ import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, BehaviorSubject, EMPTY, of, ReplaySubject, Subject } from 'rxjs';
+import {
+  AsyncSubject,
+  BehaviorSubject,
+  EMPTY,
+  firstValueFrom,
+  lastValueFrom,
+  of,
+  ReplaySubject,
+  Subject,
+} from 'rxjs';
 import {
   filter,
   first,
@@ -419,7 +428,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     await expect(raiden.start()).resolves.toBeUndefined();
     expect(raiden.started).toEqual(true);
-    const lastPromise = raiden.action$.toPromise();
+    const lastPromise = lastValueFrom(raiden.action$);
     await expect(raiden.stop()).resolves.toBeUndefined();
     await expect(lastPromise).resolves.toEqual(raidenShutdown({ reason: ShutdownReason.STOP }));
     expect(raiden.started).toBe(false);
@@ -429,7 +438,7 @@ describe('Raiden', () => {
     const deps = makeDummyDependencies();
     const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     await expect(raiden.start()).resolves.toBeUndefined();
-    const configPromise = raiden.action$.pipe(first(raidenConfigUpdate.is)).toPromise();
+    const configPromise = firstValueFrom(raiden.action$.pipe(first(raidenConfigUpdate.is)));
     const mediationFees = { [token]: { flat: 400 } };
     raiden.updateConfig({ mediationFees });
     await expect(configPromise).resolves.toEqual(
@@ -448,7 +457,7 @@ describe('Raiden', () => {
     } as any;
     const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     await expect(raiden.start()).resolves.toBeUndefined();
-    const monitorTokenPromise = raiden.action$.pipe(first(tokenMonitored.is)).toPromise();
+    const monitorTokenPromise = firstValueFrom(raiden.action$.pipe(first(tokenMonitored.is)));
     await expect(raiden.monitorToken(token.toString())).resolves.toEqual(tokenNetwork);
     await expect(monitorTokenPromise).resolves.toEqual(
       tokenMonitored({
@@ -485,9 +494,9 @@ describe('Raiden', () => {
     );
     await expect(raiden.start()).resolves.toBeUndefined();
 
-    const payload = raiden.action$
-      .pipe(first(matrixPresence.success.is), pluck('payload'))
-      .toPromise();
+    const payload = firstValueFrom(
+      raiden.action$.pipe(first(matrixPresence.success.is), pluck('payload')),
+    );
 
     raiden.getAvailability(partner);
     await expect(payload).resolves.toEqual(
@@ -551,12 +560,12 @@ describe('Raiden', () => {
     );
     await expect(raiden.start()).resolves.toBeUndefined();
 
-    const payload = raiden.action$
-      .pipe(
+    const payload = firstValueFrom(
+      raiden.action$.pipe(
         first(udcDeposit.success.is),
         map((e) => e.payload),
-      )
-      .toPromise();
+      ),
+    );
 
     raiden.depositToUDC(amount);
     await expect(payload).resolves.toEqual(
@@ -607,12 +616,12 @@ describe('Raiden', () => {
     );
     await expect(raiden.start()).resolves.toBeUndefined();
 
-    const payload = raiden.action$
-      .pipe(
+    const payload = firstValueFrom(
+      raiden.action$.pipe(
         first(udcWithdrawPlan.success.is),
         map((e) => e.payload),
-      )
-      .toPromise();
+      ),
+    );
 
     raiden.planUDCWithdraw(withdrawBlock);
     await expect(payload).resolves.toEqual(expect.objectContaining({ block: withdrawBlock }));
@@ -649,12 +658,12 @@ describe('Raiden', () => {
     );
     await expect(raiden.start()).resolves.toBeUndefined();
 
-    const payload = raiden.action$
-      .pipe(
+    const payload = firstValueFrom(
+      raiden.action$.pipe(
         first(udcWithdraw.success.is),
         map((e) => e.payload),
-      )
-      .toPromise();
+      ),
+    );
 
     raiden.withdrawFromUDC(withdrawAmount);
     await expect(payload).resolves.toEqual(
@@ -1022,9 +1031,9 @@ describe('Raiden', () => {
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
-    const channelCloseRequestPromise = raiden.action$
-      .pipe(first(channelClose.request.is))
-      .toPromise();
+    const channelCloseRequestPromise = firstValueFrom(
+      raiden.action$.pipe(first(channelClose.request.is)),
+    );
     await expect(raiden.closeChannel(token, partner, { subkey: false })).resolves.toEqual(txHash);
     await expect(channelCloseRequestPromise).resolves.toEqual(
       channelClose.request(undefined, meta),
@@ -1085,9 +1094,9 @@ describe('Raiden', () => {
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
-    const channelDepositRequestPromise = raiden.action$
-      .pipe(first(channelDeposit.request.is))
-      .toPromise();
+    const channelDepositRequestPromise = firstValueFrom(
+      raiden.action$.pipe(first(channelDeposit.request.is)),
+    );
     await expect(
       raiden.depositChannel(token, partner, deposit, { subkey: false }),
     ).resolves.toEqual(txHash);
@@ -1126,9 +1135,9 @@ describe('Raiden', () => {
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
-    const channelSettleRequestPromise = raiden.action$
-      .pipe(first(channelSettle.request.is))
-      .toPromise();
+    const channelSettleRequestPromise = firstValueFrom(
+      raiden.action$.pipe(first(channelSettle.request.is)),
+    );
     await expect(raiden.settleChannel(token, partner, { subkey: false })).resolves.toEqual(txHash);
     await expect(channelSettleRequestPromise).resolves.toEqual(
       channelSettle.request(undefined, meta),
@@ -1202,7 +1211,7 @@ describe('Raiden', () => {
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
-    const withdrawRequestPromise = raiden.action$.pipe(first(withdraw.request.is)).toPromise();
+    const withdrawRequestPromise = firstValueFrom(raiden.action$.pipe(first(withdraw.request.is)));
     await expect(raiden.withdrawChannel(token, partner, amount)).resolves.toEqual(txHash);
     await expect(withdrawRequestPromise).resolves.toEqual(
       withdraw.request(undefined, withdrawMeta),
@@ -1240,7 +1249,7 @@ describe('Raiden', () => {
     const [lockedTransferMessage, fee, secret] = getTransfer(raiden.address);
     const signedMessage = await signMessage(deps.signer, lockedTransferMessage);
     await raiden.start();
-    const transferRequestPromise = raiden.action$.pipe(first(transfer.request.is)).toPromise();
+    const transferRequestPromise = firstValueFrom(raiden.action$.pipe(first(transfer.request.is)));
 
     const transferResult = raiden.transfer(token, partner, 1, {
       paymentId: lockedTransferMessage.payment_identifier,
