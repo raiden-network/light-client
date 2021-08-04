@@ -13,7 +13,7 @@ import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, defer, merge, ReplaySubject } from 'rxjs';
+import { AsyncSubject, defer, firstValueFrom, merge, ReplaySubject } from 'rxjs';
 import {
   exhaustMap,
   filter,
@@ -21,7 +21,6 @@ import {
   map,
   mergeMap,
   pluck,
-  take,
   takeWhile,
   tap,
   withLatestFrom,
@@ -367,8 +366,8 @@ export async function waitConfirmation(
 ): Promise<number> {
   const txBlock = receipt.blockNumber!;
   const txHash = receipt.transactionHash!;
-  return latest$
-    .pipe(
+  return firstValueFrom(
+    latest$.pipe(
       pluckDistinct('state', 'blockNumber'),
       withLatestFrom(config$),
       filter(
@@ -390,9 +389,9 @@ export async function waitConfirmation(
           }),
         ),
       ),
-      first(isntNil),
-    )
-    .toPromise();
+      filter(isntNil),
+    ),
+  );
 }
 
 /**
@@ -425,13 +424,13 @@ export async function fetchContractsInfo(
   const serviceRegistry = (await monitoringServiceContract.service_registry()) as Address;
 
   const toBlock = await provider.getBlockNumber();
-  let firstBlock = await getLogsByChunk$(provider, {
-    ...tokenNetworkRegistryContract.filters.TokenNetworkCreated(null, null),
-    fromBlock: 1,
-    toBlock,
-  })
-    .pipe(pluck('blockNumber'), filter(isntNil), take(1))
-    .toPromise();
+  let firstBlock = await firstValueFrom(
+    getLogsByChunk$(provider, {
+      ...tokenNetworkRegistryContract.filters.TokenNetworkCreated(null, null),
+      fromBlock: 1,
+      toBlock,
+    }).pipe(pluck('blockNumber'), filter(isntNil)),
+  );
   firstBlock ??= 0;
 
   const oneToN = (await userDepositContract.one_to_n_address()) as Address;
@@ -453,12 +452,12 @@ export async function fetchContractsInfo(
  * @returns Promise to our current UDC balance
  */
 export async function getUdcBalance(latest$: Observable<Latest>): Promise<UInt<32>> {
-  return latest$
-    .pipe(
+  return firstValueFrom(
+    latest$.pipe(
       pluck('udcDeposit', 'balance'),
-      first((balance) => !!balance && balance.lt(MaxUint256)),
-    )
-    .toPromise();
+      filter((balance) => !!balance && balance.lt(MaxUint256)),
+    ),
+  );
 }
 
 /**
@@ -468,8 +467,8 @@ export async function getUdcBalance(latest$: Observable<Latest>): Promise<UInt<3
 export function makeSyncedPromise(
   action$: Observable<RaidenAction>,
 ): Promise<raidenSynced['payload'] | undefined> {
-  return action$
-    .pipe(
+  return firstValueFrom(
+    action$.pipe(
       first(isActionOf([raidenSynced, raidenShutdown])),
       map((action) => {
         if (raidenShutdown.is(action)) {
@@ -480,8 +479,8 @@ export function makeSyncedPromise(
         }
         return action.payload;
       }),
-    )
-    .toPromise();
+    ),
+  );
 }
 
 /**

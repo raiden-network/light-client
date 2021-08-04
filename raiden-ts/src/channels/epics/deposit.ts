@@ -1,17 +1,18 @@
 import findKey from 'lodash/findKey';
 import type { Observable } from 'rxjs';
-import { combineLatest, defer, merge, of, throwError } from 'rxjs';
+import { combineLatest, defer, merge, of, ReplaySubject } from 'rxjs';
 import {
   catchError,
   concatMap,
+  connect,
   filter,
   first,
   groupBy,
   ignoreElements,
+  map,
   mergeMap,
   mergeMapTo,
   pluck,
-  publishReplay,
   take,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -137,11 +138,9 @@ export function channelDepositEpic(
                         failure.meta.tokenNetwork === action.meta.tokenNetwork &&
                         failure.meta.partner === action.meta.partner,
                     ),
-                    mergeMapTo(
-                      throwError(
-                        new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND, action.meta),
-                      ),
-                    ),
+                    map(() => {
+                      throw new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND, action.meta);
+                    }),
                   ),
                   // wait for channel to become available
                   latest$.pipe(
@@ -166,15 +165,17 @@ export function channelDepositEpic(
                 pluck('id'),
                 // 'cache' channelId$ (if needed) while waiting for 'approve';
                 // also, subscribe early to error if seeing channelOpen.failure
-                publishReplay(1, undefined, (channelId$) =>
-                  // already start 'approve' even while waiting for 'channel$'
-                  makeDeposit$(
-                    [tokenContract, tokenNetworkContract],
-                    [onchainAddress, address, partner],
-                    action.payload.deposit,
-                    channelId$,
-                    deps,
-                  ),
+                connect(
+                  (channelId$) =>
+                    // already start 'approve' even while waiting for 'channel$'
+                    makeDeposit$(
+                      [tokenContract, tokenNetworkContract],
+                      [onchainAddress, address, partner],
+                      action.payload.deposit,
+                      channelId$,
+                      deps,
+                    ),
+                  { connector: () => new ReplaySubject(1) },
                 ),
                 // ignore success tx so it's picked by channelEventsEpic
                 ignoreElements(),

@@ -260,16 +260,22 @@ function makeDataChannelObservable(
   return merge(
     fromEvent<Event>(connection, 'connectionstatechange').pipe(
       startWith(null),
-      mergeMap(() =>
-        failedConnectionStates.includes(connection.connectionState)
-          ? throwError(new Error('RTC: connection failed'))
-          : EMPTY,
-      ),
+      mergeMap(() => {
+        if (failedConnectionStates.includes(connection.connectionState))
+          throw new Error('RTC: connection failed');
+        return EMPTY;
+      }),
     ),
-    fromEvent<Event>(dataChannel, 'close').pipe(mergeMapTo(throwError(new Error(closedError)))),
-    fromEvent<RTCErrorEvent>(dataChannel, 'error').pipe(mergeMap((ev) => throwError(ev.error))),
+    fromEvent<Event>(dataChannel, 'close').pipe(
+      mergeMapTo(throwError(() => new Error(closedError))),
+    ),
+    fromEvent<RTCErrorEvent>(dataChannel, 'error').pipe(
+      mergeMap((ev) => {
+        throw ev.error;
+      }),
+    ),
     matrixWebrtcEvents$(action$, RtcEventType.hangup, info, deps).pipe(
-      mergeMapTo(throwError(new Error(hangUpError))),
+      mergeMapTo(throwError(() => new Error(hangUpError))),
     ),
     fromEvent<Event>(dataChannel, 'open').pipe(
       take(1),

@@ -4,9 +4,9 @@ import * as t from 'io-ts';
 import memoize from 'lodash/memoize';
 import uniqBy from 'lodash/uniqBy';
 import type { Observable } from 'rxjs';
-import { defer, EMPTY, from } from 'rxjs';
+import { defer, EMPTY, firstValueFrom, from } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
-import { catchError, first, map, mergeMap, toArray } from 'rxjs/operators';
+import { catchError, map, mergeMap, toArray } from 'rxjs/operators';
 
 import type { ServiceRegistry } from '../contracts';
 import { AddressMetadata } from '../messages/types';
@@ -23,9 +23,13 @@ import type { IOU, PFS } from './types';
 
 const serviceRegistryToken = memoize(
   async (serviceRegistryContract: ServiceRegistry, pollingInterval: number) =>
-    retryAsync$(() => serviceRegistryContract.callStatic.token(), pollingInterval, {
-      onErrors: networkErrors,
-    }).toPromise() as Promise<Address>,
+    firstValueFrom(
+      retryAsync$(
+        async () => serviceRegistryContract.callStatic.token() as Promise<Address>,
+        pollingInterval,
+        { onErrors: networkErrors },
+      ),
+    ),
 );
 
 /**
@@ -98,7 +102,7 @@ export async function pfsInfo(
     'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
   >,
 ): Promise<PFS> {
-  const { pfsMaxFee } = await config$.pipe(first()).toPromise();
+  const { pfsMaxFee } = await firstValueFrom(config$);
   /**
    * Codec for PFS /api/v1/info result schema
    */

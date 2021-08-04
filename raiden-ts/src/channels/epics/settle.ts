@@ -1,6 +1,6 @@
 import { concat as concatBytes } from '@ethersproject/bytes';
 import type { Observable } from 'rxjs';
-import { combineLatest, defer, EMPTY, of, throwError } from 'rxjs';
+import { combineLatest, defer, EMPTY, of } from 'rxjs';
 import {
   catchError,
   delayWhen,
@@ -199,14 +199,12 @@ export function channelSettleEpic(
               Direction.SENT,
               ownBH as Hash,
             ).pipe(
-              catchError(() =>
-                throwError(
-                  new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
-                    address,
-                    ownBalanceHash: ownBH,
-                  }),
-                ),
-              ),
+              catchError(() => {
+                throw new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
+                  address,
+                  ownBalanceHash: ownBH,
+                });
+              }),
             );
           }
 
@@ -221,14 +219,12 @@ export function channelSettleEpic(
               Direction.RECEIVED,
               partnerBH as Hash,
             ).pipe(
-              catchError(() =>
-                throwError(
-                  new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
-                    address,
-                    partnerBalanceHash: partnerBH,
-                  }),
-                ),
-              ),
+              catchError(() => {
+                throw new RaidenError(ErrorCodes.CNL_SETTLE_INVALID_BALANCEHASH, {
+                  address,
+                  partnerBalanceHash: partnerBH,
+                });
+              }),
             );
           }
 

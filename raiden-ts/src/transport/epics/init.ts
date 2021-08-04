@@ -4,7 +4,7 @@ import type { Filter, MatrixClient } from 'matrix-js-sdk';
 import { createClient } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 import type { Observable } from 'rxjs';
-import { combineLatest, defer, EMPTY, from, merge, of, throwError } from 'rxjs';
+import { combineLatest, defer, EMPTY, from, merge, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
 import {
   catchError,
@@ -317,7 +317,12 @@ export function initMatrixEpic(
         retryWhen((err$) =>
           // if there're more servers$ observables in queue, emit once to retry from defer;
           // else, errors output with lastError to unsubscribe
-          err$.pipe(mergeMap(() => (servers$Array.length ? of(null) : throwError(lastError)))),
+          err$.pipe(
+            mergeMap(() => {
+              if (servers$Array.length) return of(null);
+              throw lastError;
+            }),
+          ),
         ),
       );
     }),

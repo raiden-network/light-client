@@ -3,7 +3,8 @@ import omit from 'lodash/fp/omit';
 import logging from 'loglevel';
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
-import { BehaviorSubject, defer, from, fromEvent, merge, throwError } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { BehaviorSubject, defer, from, fromEvent, lastValueFrom, merge } from 'rxjs';
 import { concatMap, finalize, mergeMap, pluck, takeUntil } from 'rxjs/operators';
 
 import type { Channel } from '../channels';
@@ -122,8 +123,12 @@ export function changes$<T = {}>(db: RaidenDatabase, options?: PouchDB.Core.Chan
   return defer(() => {
     const feed = db.changes<T>(options);
     return merge(
-      fromEvent<[PouchDB.Core.ChangesResponseChange<T>]>(feed, 'change'),
-      fromEvent<any>(feed, 'error').pipe(mergeMap((error) => throwError(error))),
+      fromEvent(feed, 'change') as Observable<[PouchDB.Core.ChangesResponseChange<T>]>,
+      fromEvent(feed, 'error').pipe(
+        mergeMap((error) => {
+          throw error;
+        }),
+      ),
     ).pipe(
       pluck(0),
       takeUntil(fromEvent(feed, 'complete')),
@@ -292,12 +297,12 @@ export async function migrateDatabase(
 
     try {
       const keyRe = /^[a-z]/i;
-      await changes$(db, {
-        since: 0,
-        include_docs: true,
-        filter: ({ _id }) => keyRe.test(_id),
-      })
-        .pipe(
+      await lastValueFrom(
+        changes$(db, {
+          since: 0,
+          include_docs: true,
+          filter: ({ _id }) => keyRe.test(_id),
+        }).pipe(
           concatMap((change) =>
             defer(() => migrations[newVersion](change.doc!, db!)).pipe(
               mergeMap((results) => from(results)),
@@ -307,8 +312,8 @@ export async function migrateDatabase(
               }),
             ),
           ),
-        )
-        .toPromise();
+        ),
+      );
     } catch (err) {
       log?.error('Error migrating db', { from: version, to: newVersion }, err);
       newStorage.destroy();

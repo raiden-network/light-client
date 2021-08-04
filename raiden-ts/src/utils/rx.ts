@@ -9,7 +9,6 @@ import {
   EMPTY,
   from,
   merge,
-  pairs,
   partition,
   pipe,
   race,
@@ -56,8 +55,8 @@ import { isntNil } from './types';
  * @param properties - The nested properties to pluck from each source value (an object).
  * @returns A new Observable of property values from the source values.
  */
-export const pluckDistinct: typeof pluck = <T, R>(...properties: string[]) =>
-  pipe(pluck<T, R>(...properties), distinctUntilChanged());
+export const pluckDistinct: typeof pluck = (...properties: string[]) =>
+  pipe(pluck(...properties), distinctUntilChanged());
 
 /**
  * Creates an operator to output changed values unique by key ([key, value] tuples)
@@ -71,7 +70,7 @@ export function distinctRecordValues<R>(
 ): OperatorFunction<{ [k: string]: R }, [string, R]> {
   return pipe(
     distinctUntilChanged(),
-    mergeMap((map) => pairs<R>(map)),
+    mergeMap((map) => Object.entries(map)),
     /* this scan stores a reference to each [key,value] in 'acc', and emit as 'changed' iff it
      * changes from last time seen. It relies on value references changing only if needed */
     scan<[string, R], { acc: { [k: string]: R }; changed?: [string, R] }>(
@@ -166,7 +165,8 @@ export function retryWhile<T>(
                 delayMs = !next.done ? next.value : -1;
               }
 
-              return delayMs >= 0 && shouldRetry(error) ? timer(delayMs) : throwError(error);
+              if (delayMs <= 0 || !shouldRetry(error)) throw error;
+              return timer(delayMs);
             }),
           ),
         ),
@@ -262,7 +262,10 @@ export function lastMap<T, R>(
  */
 export function timeoutFirst<T>(timeout: number): MonoTypeOperatorFunction<T> {
   return (input$) =>
-    race(timer(timeout).pipe(mergeMapTo(throwError(new Error('timeout waiting first')))), input$);
+    race(
+      timer(timeout).pipe(mergeMapTo(throwError(() => new Error('timeout waiting first')))),
+      input$,
+    );
 }
 
 /**
@@ -353,8 +356,8 @@ export function catchAndLog<T>(
   const shouldSuppress = shouldRetryError(opts);
   return pipe(
     catchError((err) => {
-      if (!shouldSuppress(err)) return throwError(err);
-      else return EMPTY;
+      if (!shouldSuppress(err)) throw err;
+      return EMPTY;
     }),
   );
 }
