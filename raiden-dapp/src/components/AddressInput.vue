@@ -53,9 +53,7 @@
 </template>
 
 <script lang="ts">
-import type { Observable, Subscription } from 'rxjs';
-import { BehaviorSubject, defer, from, of } from 'rxjs';
-import { catchError, debounceTime, map, switchMap, tap } from 'rxjs/operators';
+import debounce from 'lodash/debounce';
 import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 import type { VTextField } from 'vuetify/lib';
 import { mapState } from 'vuex';
@@ -80,9 +78,6 @@ const ETHSUM = 'https://ethsum.netlify.com';
   computed: { ...mapState(['presences']) },
 })
 export default class AddressInput extends Mixins(BlockieMixin) {
-  private valueChange = new BehaviorSubject<string | undefined>('');
-  private subscription?: Subscription;
-
   @Prop({ required: false, default: false, type: Boolean })
   hideErrorLabel!: boolean;
   @Prop()
@@ -141,121 +136,62 @@ export default class AddressInput extends Mixins(BlockieMixin) {
     return [() => isAddressValid || ''];
   }
 
-  private checkAvailability(value: ValidationResult): Observable<ValidationResult> {
-    return 'error' in value
-      ? of(value)
-      : of(value).pipe(
-          tap(() => (this.busy = true)),
-          switchMap((value) =>
-            value.value in this.presences
-              ? of(this.presences[value.value])
-              : defer(() => from(this.$raiden.getAvailability(value.value))),
-          ),
-          map((available) => {
-            this.busy = false;
-            this.isAddressAvailable = available;
-            if (!available) {
-              return {
-                ...value,
-                error: this.$t('address-input.error.target-offline') as string,
-                isAddress: true,
-              };
-            }
-            return value;
-          }),
-        );
-  }
-
-  private lookupEnsDomain(value: string): Observable<ValidationResult> {
-    return !AddressUtils.isDomain(value)
-      ? of({
-          error: this.$t('address-input.error.invalid-address') as string,
-          value,
-        })
-      : of(value).pipe(
-          tap(() => (this.busy = true)),
-          switchMap((value) => this.$raiden.ensResolve(value)),
-          map((resolvedAddress) => {
-            if (!resolvedAddress || !AddressUtils.checkAddressChecksum(resolvedAddress)) {
-              return {
-                error: this.$t('address-input.error.ens-resolve-failed') as string,
-                value: resolvedAddress,
-              };
-            }
-            return { value: resolvedAddress, originalValue: value };
-          }),
-          catchError(() =>
-            of({
-              error: this.$t('address-input.error.ens-resolve-failed') as string,
-              value,
-            }),
-          ),
-          tap(() => (this.busy = false)),
-        );
-  }
-
-  private validateAddress(value: string): Observable<ValidationResult> {
-    return defer(() => {
-      let message: string | undefined = undefined;
-
-      if (!AddressUtils.checkAddressChecksum(value)) {
-        message = this.$t('address-input.error.no-checksum', { ethsum: ETHSUM }) as string;
-      } else if (this.exclude.includes(value)) {
-        message = this.$t('address-input.error.invalid-excluded-address') as string;
+  private async checkAvailability(value: ValidationResult): Promise<ValidationResult> {
+    if (value.error) return value;
+    this.busy = true;
+    try {
+      let available;
+      if (value.value in this.presences) available = this.presences[value.value];
+      else available = await this.$raiden.getAvailability(value.value);
+      this.isAddressAvailable = available;
+      if (!available) {
+        return {
+          ...value,
+          error: this.$t('address-input.error.target-offline') as string,
+          isAddress: true,
+        };
       }
+      return value;
+    } finally {
+      this.busy = false;
+    }
+  }
 
-      if (message) {
-        return of({ error: message, value, isAddress: true });
+  private async lookupEnsDomain(value: string): Promise<ValidationResult> {
+    if (!AddressUtils.isDomain(value))
+      return {
+        error: this.$t('address-input.error.invalid-address') as string,
+        value,
+      };
+    this.busy = true;
+    try {
+      const resolvedAddress = await this.$raiden.ensResolve(value);
+      if (!resolvedAddress || !AddressUtils.checkAddressChecksum(resolvedAddress)) {
+        return {
+          error: this.$t('address-input.error.ens-resolve-failed') as string,
+          value: resolvedAddress,
+        };
       }
-      return of({ value });
-    });
+      const res = { value: resolvedAddress, originalValue: value };
+      return res;
+    } catch (e) {
+      return {
+        error: this.$t('address-input.error.ens-resolve-failed') as string,
+        value,
+      };
+    } finally {
+      this.busy = false;
+    }
   }
 
-  created() {
-    this.subscription = this.valueChange
-      .pipe(
-        tap(() => {
-          this.errorMessages = [];
-          this.typing = true;
-        }),
-        debounceTime(600),
-        switchMap((value) => {
-          if (!value) {
-            if (this.touched) {
-              return of<ValidationResult>({
-                error: '',
-                value: '',
-              });
-            }
-
-            return of<ValidationResult>({
-              error: '',
-              value: '',
-            });
-          }
-
-          this.touched = true;
-          return defer(() => {
-            if (AddressUtils.isAddress(value)) return this.validateAddress(value);
-            else return this.lookupEnsDomain(value);
-          }).pipe(switchMap((value) => this.checkAvailability(value)));
-        }),
-      )
-      .subscribe(({ error, value }) => {
-        this.typing = false;
-
-        if (error) {
-          this.errorMessages.push(error);
-        } else {
-          this.address = value;
-        }
-        this.input(value);
-        this.checkForErrors();
-      });
-  }
-
-  destroyed() {
-    this.subscription?.unsubscribe();
+  private validateAddress(value: string): ValidationResult {
+    let message;
+    if (!AddressUtils.checkAddressChecksum(value)) {
+      message = this.$t('address-input.error.no-checksum', { ethsum: ETHSUM }) as string;
+    } else if (this.exclude.includes(value)) {
+      message = this.$t('address-input.error.invalid-excluded-address') as string;
+    }
+    return { error: message, value, isAddress: true };
   }
 
   mounted() {
@@ -288,8 +224,31 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   }
 
   valueChanged(value?: string) {
-    this.valueChange.next(value);
+    this.errorMessages = [];
+    this.typing = true;
+    this.debouncedValueChanged(value);
   }
+
+  debouncedValueChanged = debounce(async function (this: AddressInput, value?: string) {
+    let result: ValidationResult;
+    if (!value) {
+      result = { error: '', value: '' };
+    } else {
+      this.touched = true;
+      if (AddressUtils.isAddress(value)) result = this.validateAddress(value);
+      else result = await this.lookupEnsDomain(value);
+      result = await this.checkAvailability(result);
+    }
+    this.typing = false;
+
+    if (result.error) {
+      this.errorMessages.push(result.error);
+    } else {
+      this.address = result.value;
+    }
+    this.input(result.value);
+    this.checkForErrors();
+  }, 600);
 
   isChecksumAddress(address: string): boolean {
     const tokenAddress = address;
