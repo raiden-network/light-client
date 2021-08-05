@@ -12,8 +12,9 @@ import store from '@/store/index';
 
 import { mockInput } from '../utils/interaction-utils';
 
+jest.mock('lodash/debounce', () => jest.fn((fn) => fn));
 jest.mock('@/services/raiden-service');
-jest.useFakeTimers();
+jest.useFakeTimers('modern');
 
 Vue.use(Vuetify);
 
@@ -21,7 +22,7 @@ describe('AddressInput', () => {
   let wrapper: Wrapper<AddressInput>;
   let vuetify: Vuetify;
 
-  let ensResolve: jest.Mock<string, [string]>;
+  let ensResolve: jest.Mock<Promise<string>, [string]>;
   let getAvailability: jest.Mock<{ available: boolean }, [string]>;
   const excludeAddress = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
   const onlineTarget = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
@@ -48,6 +49,12 @@ describe('AddressInput', () => {
     });
   }
 
+  async function flushWrapper(wrapper: ReturnType<typeof createWrapper>) {
+    await wrapper.vm.$nextTick();
+    jest.runOnlyPendingTimers();
+    await flushPromises();
+  }
+
   beforeEach(() => {
     ensResolve = jest.fn().mockResolvedValue(onlineTarget);
     getAvailability = jest.fn().mockResolvedValue(true);
@@ -66,20 +73,16 @@ describe('AddressInput', () => {
 
   test('set busy flag while fetching an ens domain', async () => {
     wrapper = createWrapper('', excludeAddress);
-    mockInput(wrapper, 'test.eth');
     const busy = jest.spyOn(wrapper.vm.$data, 'busy', 'set');
-    await wrapper.vm.$nextTick();
-    jest.runAllTimers();
-    await flushPromises();
+    mockInput(wrapper, 'test.eth');
+    await flushWrapper(wrapper);
     expect(busy).toHaveBeenCalledTimes(4);
   });
 
   test('show an error message when the input has an invalid address', async () => {
     wrapper = createWrapper('', excludeAddress);
     mockInput(wrapper, '0x21b');
-    jest.advanceTimersByTime(1000);
-    await wrapper.vm.$nextTick();
-
+    await flushWrapper(wrapper);
     const messages = wrapper.find('.v-messages__message');
     expect(messages.exists()).toBe(true);
     expect(messages.text()).toBe('address-input.error.invalid-address');
@@ -88,9 +91,7 @@ describe('AddressInput', () => {
   test('show an error message when the input address is not in checksum format', async () => {
     wrapper = createWrapper('', excludeAddress);
     mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
-    jest.advanceTimersByTime(1000);
-    await wrapper.vm.$nextTick();
-
+    await flushWrapper(wrapper);
     const messages = wrapper.find('.v-messages__message');
     expect(messages.exists()).toBe(true);
     expect(messages.text()).toBe('address-input.error.no-checksum');
@@ -101,10 +102,11 @@ describe('AddressInput', () => {
     (wrapper.vm as any).inputError = jest.fn();
 
     mockInput(wrapper, '0x21b');
-    jest.advanceTimersByTime(1000);
-    await wrapper.vm.$nextTick();
+    await flushWrapper(wrapper);
 
-    expect((wrapper.vm as any).inputError).toHaveBeenCalledTimes(1);
+    expect((wrapper.vm as any).inputError).toHaveBeenCalledWith(
+      expect.stringContaining('invalid-address'),
+    );
   });
 
   test('emits an input error when the input address is not in checksum format', async () => {
@@ -112,17 +114,17 @@ describe('AddressInput', () => {
     (wrapper.vm as any).inputError = jest.fn();
 
     mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
-    jest.advanceTimersByTime(1000);
-    await wrapper.vm.$nextTick();
+    await flushWrapper(wrapper);
 
-    expect((wrapper.vm as any).inputError).toHaveBeenCalledTimes(1);
+    expect((wrapper.vm as any).inputError).toHaveBeenCalledWith(
+      expect.stringContaining('no-checksum'),
+    );
   });
 
   test('fire an input event when the input address is valid', async () => {
     wrapper = createWrapper('', excludeAddress);
     mockInput(wrapper, onlineTarget);
-    jest.advanceTimersByTime(1000);
-    await wrapper.vm.$nextTick();
+    await flushWrapper(wrapper);
 
     const inputEvent = wrapper.emitted('input');
     expect(inputEvent).toBeTruthy();
@@ -133,8 +135,7 @@ describe('AddressInput', () => {
     wrapper = createWrapper('', excludeAddress, true);
     mockInput(wrapper, '0x774afb0652ca2c711fd13e6e9d51620568f6ca82');
 
-    jest.advanceTimersByTime(1000);
-    await wrapper.vm.$nextTick();
+    await flushWrapper(wrapper);
     const messages = wrapper.find('.v-messages__message');
 
     expect(messages.exists()).toBe(false);
@@ -142,7 +143,7 @@ describe('AddressInput', () => {
 
   test('render a blockie when the input address is valid', async () => {
     wrapper = createWrapper(onlineTarget, excludeAddress);
-    await wrapper.vm.$nextTick();
+    await flushWrapper(wrapper);
     expect(wrapper.vm.$identicon.getIdenticon).toHaveBeenCalled();
   });
 
@@ -151,7 +152,7 @@ describe('AddressInput', () => {
     expect(wrapper.vm.$data.isQrCodeOverlayVisible).toBe(false);
 
     wrapper.find('.address-input__qr-code svg').trigger('click');
-    await wrapper.vm.$nextTick();
+    await flushWrapper(wrapper);
 
     expect(wrapper.vm.$data.isQrCodeOverlayVisible).toBe(true);
   });
@@ -160,9 +161,7 @@ describe('AddressInput', () => {
     wrapper = createWrapper('', excludeAddress);
     (wrapper.vm as any).onDecode(onlineTarget);
 
-    jest.advanceTimersByTime(1000);
-    await wrapper.vm.$nextTick();
-
+    await flushWrapper(wrapper);
     const inputEvent = wrapper.emitted('input');
     expect(inputEvent).toBeTruthy();
     expect(inputEvent).toContainEqual([onlineTarget]);
@@ -172,14 +171,11 @@ describe('AddressInput', () => {
     test('with success', async () => {
       wrapper = createWrapper('', excludeAddress);
       mockInput(wrapper, 'ens');
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
       mockInput(wrapper, 'enstest');
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
       mockInput(wrapper, 'enstest.test');
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
 
       const inputEvent = wrapper.emitted('input');
       expect(inputEvent).toBeTruthy();
@@ -189,28 +185,26 @@ describe('AddressInput', () => {
     });
 
     test('without success', async () => {
-      ensResolve = jest.fn().mockResolvedValue(null);
+      ensResolve.mockResolvedValue('');
       wrapper = createWrapper('', excludeAddress);
 
       mockInput(wrapper, 'enstest.test');
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
 
       const inputEvent = wrapper.emitted('input');
       expect(inputEvent).toBeTruthy();
-      expect(inputEvent).toContainEqual([null]);
+      expect(inputEvent).toContainEqual(['']);
 
       expect(wrapper.vm.$data.errorMessages).toHaveLength(1);
       expect(wrapper.vm.$data.errorMessages).toContain('address-input.error.ens-resolve-failed');
     });
 
     test('with an error', async () => {
-      ensResolve = jest.fn().mockRejectedValue(new Error('something went wrong'));
+      ensResolve.mockRejectedValue(new Error('something went wrong'));
       wrapper = createWrapper('', excludeAddress);
 
       mockInput(wrapper, 'enstest.test');
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
 
       const inputEvent = wrapper.emitted('input');
       expect(inputEvent).toBeTruthy();
@@ -225,9 +219,7 @@ describe('AddressInput', () => {
     test('should show error message when the user enters an invalid or excluded address', async () => {
       wrapper = createWrapper('', excludeAddress);
       mockInput(wrapper, excludeAddress);
-      await wrapper.vm.$nextTick();
-      jest.runAllTimers();
-      await flushPromises();
+      await flushWrapper(wrapper);
 
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
@@ -255,7 +247,7 @@ describe('AddressInput', () => {
       wrapper = createWrapper();
       expect(wrapper.vm.$data.address).toBe('');
       wrapper.setProps({ value: '0x1aaaaaadshjd' });
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
       expect(wrapper.vm.$data.address).toBe('');
     });
   });
@@ -264,15 +256,14 @@ describe('AddressInput', () => {
     test('show target as online', async () => {
       getAvailability = jest.fn().mockResolvedValue(true);
       wrapper = createWrapper(onlineTarget);
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
       expect(wrapper.find('.address-input__availability--online').exists()).toBeTruthy();
     });
 
     test('show target as offline', async () => {
       getAvailability = jest.fn().mockResolvedValue(false);
       wrapper = createWrapper(offlineTarget);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
       expect(wrapper.find('.address-input__availability--offline').exists()).toBeTruthy();
     });
 
@@ -283,7 +274,7 @@ describe('AddressInput', () => {
         return false;
       });
       wrapper = createWrapper(offlineTarget);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
       expect(wrapper.find('.address-input__availability--offline').exists()).toBeTruthy();
     });
 
@@ -294,21 +285,17 @@ describe('AddressInput', () => {
         return true;
       });
       wrapper = createWrapper(onlineTarget);
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
       expect(wrapper.find('.address-input__availability--online').exists()).toBeTruthy();
     });
 
     test('input reacts to target going offline', async () => {
       store.commit('updatePresence', { [onlineTarget]: true });
       wrapper = createWrapper(onlineTarget);
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
       expect(wrapper.find('.address-input__availability--online').exists()).toBeTruthy();
       store.commit('updatePresence', { [onlineTarget]: false });
-      await flushPromises();
-      jest.advanceTimersByTime(1000);
-      await wrapper.vm.$nextTick();
+      await flushWrapper(wrapper);
       expect(wrapper.find('.address-input__availability--online').exists()).toBeFalsy();
     });
   });
