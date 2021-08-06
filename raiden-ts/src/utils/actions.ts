@@ -154,8 +154,9 @@ export function isActionOf<AC extends ActionsUnionConstraint>(
 export function isActionOf<AC extends ActionsUnionConstraint>(ac: AC, ...args: any[]) {
   function _isActionOf(this: ActionsUnionConstraint, action: unknown): boolean {
     if (typeof this === 'function') return (this as AnyAC).is(action);
-    if (Array.isArray(this)) return this.some((a) => a.is(action));
-    if (typeof this === 'object') return _isActionOf.call(Object.values(this), action);
+    if (Array.isArray(this)) return this.some((a) => _isActionOf.call(a, action));
+    if (typeof this === 'object')
+      return _isActionOf.call(Object.values(this) as ActionsUnionConstraint, action);
     return false;
   }
   if (args.length > 0) return _isActionOf.call(ac, args[0]);
