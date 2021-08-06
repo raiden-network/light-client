@@ -30,6 +30,11 @@ anchor_3: &executor_shared_options
   environment:
     JEST_JUNIT_OUTPUT_DIR: << pipeline.parameters.test_report_directory >>
 
+anchor_4: &workspace_parameter
+  workspace:
+    description: The yarn workspace to target
+    type: enum
+    enum: ['raiden-ts', 'raiden-dapp', '@raiden_network/raiden-cli']
 
 executors:
   base-executor:
@@ -46,9 +51,7 @@ executors:
 commands:
   upload_test_results_and_coverage:
     parameters:
-      base_flag:
-        type: enum
-        enum: [sdk, dapp, cli]
+      <<: *workspace_parameter
       test_kind_flag:
         type: enum
         enum: [unit, integration, e2e]
@@ -61,27 +64,12 @@ commands:
           name: Upload test coverage results to CodeCov
           command: >
             bash <(curl -s https://codecov.io/bash) -C $CIRCLE_SHA1
-            -F << parameters.base_flag >>
-            -F << parameters.base_flag >>.<< parameters.test_kind_flag >>
-
-  publish_workspace_on_npm_registry:
-    parameters:
-      workspace:
-        description: The yarn workspace to publish
-        type: enum
-        enum: ['raiden-ts', '@raiden_network/raiden-cli']
-    steps:
-      - run:
-          name: Authenticate with registry
-          command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
-      - run:
-          name: Publish on NPM registry
-          command: yarn workspace << parameters.workspace >> publish --no-git-tag-version --non-interactive
+            -F << parameters.workspace >>
+            -F << parameters.workspace >>.<< parameters.test_kind_flag >>
 
 jobs:
   install:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - checkout
       - run: git submodule sync
@@ -103,132 +91,87 @@ jobs:
           paths:
             - ./*
 
-  build_sdk:
+  build:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
-    steps:
-      - attach_workspace: *attach_options
-      - run: yarn build
-      - persist_to_workspace:
-          root: << pipeline.parameters.working_directory >>
-          paths:
-            - ./*
-
-  build_dapp:
     parameters:
-      mode:
-        description: Mode to configure the environment of the dApp build
-        type: enum
-        enum: [production, staging, development, e2e, raiden-package]
-    executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
+      <<: *workspace_parameter
+      additional_arguments:
+        description: Additional arguments that get attached to the end of the build command
+        type: string
+        default: ""
     steps:
       - attach_workspace: *attach_options
       - run:
-          name: Build dapp
-          command: yarn build --mode << parameters.mode >>
+          name: Build
+          command: yarn workspace << parameters.workspace >> build << parameters.additional_arguments >>
       - run:
-          name: Compress dapp
-          command: tar -czvf dapp.tgz dist
+          name: Archive and compress
+          command: >
+            tar --create --gzip --verbose --file $(basename << parameters.workspace >>).tgz
+            ./$(basename << parameters.workspace >>)/dist*
       - store_artifacts:
-          path: dapp.tgz
+          path: << parameters.workspace >>.tgz
       - persist_to_workspace:
           root: << pipeline.parameters.working_directory >>
           paths:
             - ./*
-
-  build_cli:
-    executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>/raiden-cli
-    steps:
-      - attach_workspace: *attach_options
-      - run:
-          name: Build CLI
-          command: yarn build
-      - run:
-          name: Compress CLI bundle
-          command: |
-            cp --verbose ./raiden ./package.json ./build/
-            tar --create --gzip --verbose --file raiden-cli.tgz ./build --transform='s/^build/raiden-cli/'
-      - store_artifacts:
-          path: raiden-cli.tgz
 
   lint:
-    working_directory: << pipeline.parameters.working_directory >>
     executor: base-executor
+    parameters:
+      <<: *workspace_parameter
     steps:
       - attach_workspace: *attach_options
-      - run: yarn lint
+      - run: yarn workspace << parameters.workspace >> lint
 
-  test_sdk_unit:
+  test_unit:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
+    parameters:
+       <<: *workspace_parameter
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run unit tests
-          command: yarn test:unit --ci --runInBand
+          command: yarn workspace << parameters.workspace >> test:unit --ci --runInBand
       - upload_test_results_and_coverage:
-          base_flag: sdk
+          workspace: << parameters.workspace >>
           test_kind_flag: unit
 
-  test_sdk_integration:
+  test_integration:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
+    parameters:
+       <<: *workspace_parameter
     steps:
       - attach_workspace: *attach_options
       - run:
           name: Run integration tests
-          command: yarn test:integration --ci --runInBand
+          command: yarn workspace << parameters.workspace >> test:integration --ci --runInBand
       - upload_test_results_and_coverage:
-          base_flag: sdk
+          workspace: << parameters.workspace >>
           test_kind_flag: integration
 
-  test_sdk_e2e:
+  test_e2e:
     executor: e2e-environment-executor
-    working_directory: << pipeline.parameters.working_directory >>/raiden-ts
+    parameters:
+      <<: *workspace_parameter
+      additional_arguments:
+        description: Additional arguments that get attached to the end of the test command
+        type: string
+        default: ""
     steps:
       - attach_workspace: *attach_options
       - run:
-          name: Run end-to-end tests
-          command: yarn test:e2e:docker --ci --runInBand
-      - upload_test_results_and_coverage:
-          base_flag: sdk
-          test_kind_flag: e2e
-
-  test_dapp_unit:
-    executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
-    steps:
-      - attach_workspace: *attach_options
-      - run:
-          name: Run unit tests
-          command: yarn test:unit --ci --runInBand
-      - upload_test_results_and_coverage:
-          base_flag: dapp
-          test_kind_flag: unit
-
-  test_dapp_e2e:
-    executor: e2e-environment-executor
-    working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
-    steps:
-      - attach_workspace: *attach_options
-      - run:
-          name: Run e2e tests
-          command: yarn test:e2e:docker
+          name: Run end-to-end tests for
+          command: yarn workspace << parameters.workspace >> test:e2e:docker << parameters.additional_arguments >>
           no_output_timeout: 60m
-      # TODO: Check how we can make this unified with how other jobs upload
-      # the test results (overwrite Cypress directory config via cli parameters)
+      - upload_test_results_and_coverage:
+          workspace: << parameters.workspace >>
+          test_kind_flag: e2e
       - store_test_results:
-          path: tests/e2e/results/reports
-      - store_artifacts:
-          path: tests/e2e/results/videos
-      - store_artifacts:
-          path: tests/e2e/results/screenshots
+          path: tests/e2e/results
 
   generate_documentation:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - attach_workspace: *attach_options
       - run:
@@ -255,15 +198,18 @@ jobs:
             - 'ed:c9:40:2a:96:6c:90:fd:46:18:2d:bf:8d:a8:a9:b3'
       - run: ./deploy.sh << parameters.public_path >>
 
-  publish_on_npm_registry:
+  publish:
     executor: base-executor
-    working_directory: << pipeline.parameters.working_directory >>
+    parameters:
+      <<: *workspace_parameter
     steps:
       - attach_workspace: *attach_options
-      - publish_workspace_on_npm_registry:
-          workspace: 'raiden-ts'
-      - publish_workspace_on_npm_registry:
-          workspace: '@raiden_network/raiden-cli'
+      - run:
+          name: Authenticate on NPM registry
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > ~/.npmrc
+      - run:
+          name: Publish on NPM registry
+          command: yarn workspace << parameters.workspace >> publish --no-git-tag-version --non-interactive
 
 workflows:
   version: 2
@@ -274,34 +220,52 @@ workflows:
 
     jobs:
       - install
-      - build_sdk:
-          requires:
-            - install
-      - test_sdk_unit:
-          requires:
-            - install
-      - test_sdk_integration:
-          requires:
-            - install
-      - test_sdk_e2e:
-          requires:
-            - install
-      - build_dapp:
-          mode: development
-          requires:
-            - build_sdk
-      - test_dapp_unit:
-          requires:
-            - build_sdk
-      - test_dapp_e2e:
-          requires:
-            - build_sdk
-      - build_cli:
-          requires:
-            - build_sdk
+      - build:
+          name: build raiden-ts
+          workspace: raiden-ts
+          requires: [ 'install' ]
+      - build:
+          name: build raiden-dapp
+          workspace: raiden-dapp
+          additional_arguments: --mode development
+          requires: [ 'build raiden-ts' ]
       - lint:
-          requires:
-            - build_sdk
+          name: lint raiden-ts
+          workspace: raiden-ts
+          requires: [ 'install' ]
+      - lint:
+          name: lint raiden-dapp
+          workspace: raiden-dapp
+          requires: [ 'build raiden-ts' ]
+      - lint:
+          name: lint raiden-cli
+          workspace: '@raiden_network/raiden-cli'
+          requires: [ 'build raiden-ts' ]
+      - build:
+          name: build raiden-cli
+          workspace: '@raiden_network/raiden-cli'
+          requires: [ 'build raiden-ts' ]
+      - test_unit:
+          name: test unit raiden-ts
+          workspace: raiden-ts
+          requires: [ 'install' ]
+      - test_unit:
+          name: test unit raiden-dapp
+          workspace: raiden-dapp
+          requires: [ 'build raiden-ts' ]
+      - test_integration:
+          name: test integration raiden-ts
+          workspace: raiden-ts
+          requires: [ 'install' ]
+      - test_e2e:
+          name: test end-to-end raiden-ts
+          workspace: raiden-ts
+          additional_arguments: --ci --runInBand
+          requires: [ 'install' ]
+      - test_e2e:
+          name: test end-to-end raiden-dapp
+          workspace: raiden-dapp
+          requires: [ 'build raiden-ts' ]
 
   publish_staging:
     when:
@@ -309,33 +273,39 @@ workflows:
 
     jobs:
       - install
-      - build_sdk:
-          requires:
-            - install
-      - test_sdk_unit:
-          requires:
-            - install
-      - test_sdk_integration:
-          requires:
-            - install
-      - test_sdk_e2e:
-          requires:
-            - install
-      - build_dapp:
-          mode: staging
-          requires:
-            - build_sdk
-      - test_dapp_unit:
-          requires:
-            - build_sdk
-      - test_dapp_e2e:
-          requires:
-            - build_sdk
+      - build:
+          name: build raiden-ts
+          workspace: raiden-ts
+          requires: [ 'install' ]
+      - build:
+          name: build raiden-dapp
+          workspace: raiden-dapp
+          additional_arguments: --mode staging
+          requires: [ 'build raiden-ts' ]
+      - test_unit:
+          name: test unit raiden-ts
+          workspace: raiden-ts
+          requires: [ 'install' ]
+      - test_unit:
+          name: test unit raiden-dapp
+          workspace: raiden-dapp
+          requires: [ 'build raiden-ts' ]
+      - test_integration:
+          name: test integration raiden-ts
+          workspace: raiden-ts
+          requires: [ 'install' ]
+      - test_e2e:
+          name: test end-to-end raiden-ts
+          workspace: raiden-ts
+          additional_arguments: --ci --runInBand
+          requires: [ 'install' ]
+      - test_e2e:
+          name: test end-to-end raiden-dapp
+          workspace: raiden-dapp
+          requires: [ 'build raiden-ts' ]
       - deploy_gh_pages:
           public_path: /staging
-          requires:
-            - test_dapp_unit
-            - test_dapp_e2e
+          requires: [ 'build-raiden-dapp' , 'test unit raiden-dapp', 'test end-to-end raiden-dapp' ]
 
   publish_production:
     when:
@@ -350,27 +320,33 @@ workflows:
     jobs:
       - install:
           <<: *filter_release_tag
-      - build_sdk:
+      - build:
           <<: *filter_release_tag
-          requires:
-            - install
-      - build_dapp:
+          name: build raiden-ts
+          workspace: raiden-ts
+          requires: [ 'install' ]
+      - build:
           <<: *filter_release_tag
-          mode: production
-          requires:
-            - build_sdk
+          name: build raiden-dapp
+          workspace: raiden-dapp
+          additional_arguments: --mode production
+          requires: [ 'build raiden-ts' ]
       - generate_documentation:
           <<: *filter_release_tag
-          requires:
-            - build_dapp
+          requires: [ 'build raiden-dapp' ]
       - deploy_gh_pages:
           <<: *filter_release_tag
           public_path: /
-          requires:
-            - build_dapp
-            - generate_documentation
-      - publish_on_npm_registry:
+          requires: [ 'build raiden-dapp' , 'generate_documentation' ]
+      - publish:
           <<: *filter_release_tag
+          name: publish raiden-ts on NPM registry
           context: 'Raiden Context'
-          requires:
-            - build_dapp
+          workspace: raiden-ts
+          requires: [ 'build raiden-ts' ]
+      - publish:
+          <<: *filter_release_tag
+          name: publish raiden-cli on NPM registry
+          context: 'Raiden Context'
+          workspace: '@raiden_network/raiden-cli'
+          requires: [ 'build raiden-cli' ]
