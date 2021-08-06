@@ -277,8 +277,23 @@ workflows:
       - build_sdk:
           requires:
             - install
+      - test_sdk_unit:
+          requires:
+            - install
+      - test_sdk_integration:
+          requires:
+            - install
+      - test_sdk_e2e:
+          requires:
+            - install
       - build_dapp:
-          mode: e2e
+          mode: development
+          requires:
+            - build_sdk
+      - test_dapp_unit:
+          requires:
+            - build_sdk
+      - test_dapp_e2e:
           requires:
             - build_sdk
       - build_cli:
@@ -287,21 +302,6 @@ workflows:
       - lint:
           requires:
             - build_sdk
-      - test_sdk_unit:
-          requires:
-            - build_sdk
-      - test_sdk_integration:
-          requires:
-            - build_sdk
-      - test_sdk_e2e:
-          requires:
-            - build_sdk
-      - test_dapp_unit:
-          requires:
-            - build_dapp
-      - test_dapp_e2e:
-          requires:
-            - build_dapp
 
   publish_staging:
     when:
@@ -312,29 +312,30 @@ workflows:
       - build_sdk:
           requires:
             - install
+      - test_sdk_unit:
+          requires:
+            - install
+      - test_sdk_integration:
+          requires:
+            - install
+      - test_sdk_e2e:
+          requires:
+            - install
       - build_dapp:
           mode: staging
           requires:
             - build_sdk
-      - test_sdk_unit:
-          requires:
-            - build_sdk
-      - test_sdk_integration:
-          requires:
-            - build_sdk
-      - test_sdk_e2e:
-          requires:
-            - build_sdk
       - test_dapp_unit:
           requires:
-            - build_dapp
+            - build_sdk
       - test_dapp_e2e:
           requires:
-            - build_dapp
+            - build_sdk
       - deploy_gh_pages:
           public_path: /staging
           requires:
-            - build_dapp
+            - test_dapp_unit
+            - test_dapp_e2e
 
   publish_production:
     when:
@@ -366,9 +367,10 @@ workflows:
           <<: *filter_release_tag
           public_path: /
           requires:
+            - build_dapp
             - generate_documentation
       - publish_on_npm_registry:
           <<: *filter_release_tag
           context: 'Raiden Context'
           requires:
-            - deploy_gh_pages
+            - build_dapp
