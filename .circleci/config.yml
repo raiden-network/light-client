@@ -334,6 +334,7 @@ workflows:
       - deploy_gh_pages:
           public_path: /staging
           requires:
+            - build_dapp
             - test_dapp_unit
             - test_dapp_e2e
 
