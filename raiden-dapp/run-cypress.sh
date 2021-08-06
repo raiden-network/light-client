@@ -16,16 +16,6 @@ function ensure_cypress_is_available() {
   npx cypress install
 }
 
-# This includes an time saving improvement to re-use the already existing dApp
-# build if running within the CI environment. The dApp got alreay build here in
-# every workflow, so it must be available. For local development it makes sense
-# to re-build the dApp for to fixes.
-function build_dapp_if_necessary() {
-  if [[ "$(whoami)" != "circleci" ]]; then
-    yarn build --mode e2e
-  fi
-}
-
 # The serve process will run in the background and gets killed when the script
 # ends (in fact when Cypress finished running the tests).
 # After a sensible timeout it will delete all asset files that get served. This
@@ -46,7 +36,7 @@ function serve_dapp_and_delete_assets_after_a_while() {
 
 set -e
 trap finish EXIT
-build_dapp_if_necessary
+yarn build --mode e2e
 ensure_cypress_is_available
 serve_dapp_and_delete_assets_after_a_while
 npx nyc cypress ${1-run --headless}
