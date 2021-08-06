@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+## [1.1.0] - 2021-08-09
+
 ## [1.0.0] - 2021-06-16
 
 ## [0.17.0] - 2021-06-15
@@ -603,7 +607,8 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/raiden-network/light-client/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/raiden-network/light-client/compare/v0.17.0...v1.0.0
 [0.17.0]: https://github.com/raiden-network/light-client/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/raiden-network/light-client/compare/v0.15.0...v0.16.0
