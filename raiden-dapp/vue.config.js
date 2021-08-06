@@ -1,12 +1,11 @@
 const path = require('path');
 
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const VersionFile = require('webpack-version-file-plugin');
+const VersionFilePlugin = require('webpack-version-file-plugin');
 const { DefinePlugin } = require('webpack');
 const { InjectManifest } = require('workbox-webpack-plugin');
 
 const sourceDirectoryPath = path.resolve(__dirname, 'src');
-const distributionDirectoryPath = path.resolve(__dirname, 'dist');
 const maxAssetSize = 30e6;
 
 function getPackageVersion() {
@@ -23,10 +22,10 @@ function getPackageVersion() {
 function setupServiceWorkerRelatedPlugins(config) {
   if (process.env.VUE_APP_SERVICE_WORKER_DISABLED === 'true') return;
 
-  const versionFilePlugin = new VersionFile({
+  const versionFilePlugin = new VersionFilePlugin({
     packageFile: path.join(__dirname, 'package.json'),
     template: path.join(__dirname, 'version.ejs'),
-    outputFile: path.join(distributionDirectoryPath, 'version.json'),
+    outputFile: path.join(config.output.path, 'version.json'),
   });
 
   const versionEnvironmentVariablePlugin = new DefinePlugin({
@@ -126,11 +125,11 @@ module.exports = {
       patterns.push(
         {
           from: path.resolve(process.env.DEPLOYMENT_INFO),
-          to: distributionDirectoryPath,
+          to: config.output.path,
         },
         {
           from: path.resolve(process.env.DEPLOYMENT_SERVICES_INFO),
-          to: distributionDirectoryPath,
+          to: config.output.path,
         },
       );
     }
