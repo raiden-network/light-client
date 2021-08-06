@@ -21,7 +21,7 @@
 <script lang="ts">
 import { Component, ModelSync, Prop, Vue } from 'vue-property-decorator';
 
-@Component
+@Component({})
 export default class TextInputWithToggle extends Vue {
   @ModelSync('value', 'input', { type: String })
   readonly syncedValue!: string;
@@ -43,6 +43,8 @@ export default class TextInputWithToggle extends Vue {
   created(): void {
     if (this.optional && this.syncedValue.length > 0) {
       this.disabled = false;
+    } else {
+      this.disabled = this.optional;
     }
   }
 }

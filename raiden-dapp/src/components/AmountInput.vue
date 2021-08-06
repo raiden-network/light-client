@@ -58,16 +58,24 @@ export default class AmountInput extends Vue {
   private static numericRegex = /^\d*[.]?\d*$/;
 
   readonly rules: InputValidationRule[] = [
-    (value) => !!value || '',
-    (value) =>
-      !Number.isNaN(Number(value)) || (this.$parent.$t('amount-input.error.invalid') as string),
-    (value) =>
-      !this.limit ||
-      (value && this.noDecimalOverflow(value)) ||
-      (this.$parent.$t('amount-input.error.too-many-decimals', {
-        decimals: this.token!.decimals,
-      }) as string),
-    (value) => {
+    function (this: AmountInput, value) {
+      return !!value || '';
+    },
+    function (this: AmountInput, value) {
+      return (
+        !Number.isNaN(Number(value)) || (this.$parent.$t('amount-input.error.invalid') as string)
+      );
+    },
+    function (this: AmountInput, value) {
+      return (
+        !this.limit ||
+        (value && this.noDecimalOverflow(value)) ||
+        (this.$parent.$t('amount-input.error.too-many-decimals', {
+          decimals: this.token!.decimals,
+        }) as string)
+      );
+    },
+    function (this: AmountInput, value) {
       let parsedAmount;
       try {
         parsedAmount = BalanceUtils.parse(value, this.token!.decimals!);
@@ -78,18 +86,21 @@ export default class AmountInput extends Vue {
         (this.$parent.$t('amount-input.error.zero') as string)
       );
     },
-    (value) =>
-      !this.limit ||
-      (value && this.hasEnoughBalance(value, this.max)) ||
-      (this.$parent.$t('amount-input.error.not-enough-funds', {
-        funds: BalanceUtils.toUnits(this.max, this.token!.decimals ?? 18),
-        symbol: this.token!.symbol,
-      }) as string),
+    function (this: AmountInput, value) {
+      return (
+        !this.limit ||
+        (value && this.hasEnoughBalance(value, this.max)) ||
+        (this.$parent.$t('amount-input.error.not-enough-funds', {
+          funds: BalanceUtils.toUnits(this.max, this.token!.decimals ?? 18),
+          symbol: this.token!.symbol,
+        }) as string)
+      );
+    },
   ];
 
   get errorMessages(): string[] {
     return this.rules
-      .map((rule) => rule(this.value))
+      .map((rule) => rule.call(this, this.value))
       .filter((res) => {
         return res !== true;
       }) as string[];
@@ -98,7 +109,7 @@ export default class AmountInput extends Vue {
   private noDecimalOverflow(v: string) {
     return (
       AmountInput.numericRegex.test(v) &&
-      !BalanceUtils.decimalsOverflow(v, this.token!.decimals ?? 18)
+      !BalanceUtils.decimalsOverflow(v, this.token?.decimals ?? 18)
     );
   }
 
