@@ -2,7 +2,7 @@
 
 set -e
 
-POSSIBLE_INDEX_JS_RELATIVE_PATHS=("index.js" "build/index.js" "bundle/index.js" "../@raiden_network/raiden-cli/index.js")
+POSSIBLE_INDEX_JS_RELATIVE_PATHS=("index.js" "dist/index.js" "dist:bundle/index.js" "../@raiden_network/raiden-cli/index.js")
 SCRIPT_DIRECTORY="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
 INDEX_JS_PATH=""
 

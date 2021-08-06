@@ -1,6 +1,5 @@
 node_modules/
-build/
-bundle/
+dist*/
 storage/
 
 src/deployment/*

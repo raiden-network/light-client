@@ -46,12 +46,12 @@ geth version
 geth account new
 ```
 
-Refer to the [raiden-cli](https://github.com/raiden-network/light-client/tree/master/raiden-cli) guide to generate the **bundle** folder on your x86_64 or x64 PC.
+Refer to the [raiden-cli](https://github.com/raiden-network/light-client/tree/master/raiden-cli) guide to generate the **bundle** on your x86_64 or x64 PC.
 
 Copy the bundle folder to the Raspberry Pi using the following example (needs to run on your **PC**):
 
 ```
-scp -r /pathto/light-client/raiden-cli/bundle pi@192.168.29.54:/home/pi/bundle
+scp -r /pathto/light-client/raiden-cli/dist:bundle pi@192.168.29.54:/home/pi/bundle
 ```
 
 Getting the **leveldown** and **node-webrtc** `.node` native dependencies for `armv7l` architecture

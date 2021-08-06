@@ -24,13 +24,13 @@
   ],
   "scripts": {
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
-    "build": "tsc",
-    "build:bundle": "TS_NODE_PROJECT=./ignored ncc build -C ./src/index.ts -o ./bundle",
+    "build": "tsc && cp ./raiden ./package.json ./dist/",
+    "build:bundle": "TS_NODE_PROJECT=./ignored ncc build -C ./src/index.ts -o ./dist:bundle",
     "preinstall": "npx only-allow yarn"
   },
   "files": [
     "raiden",
-    "build/**"
+    "dist/**"
   ],
   "bin": {
     "raiden-cli": "./raiden"

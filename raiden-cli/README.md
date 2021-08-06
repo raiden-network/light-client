@@ -64,8 +64,8 @@ yarn workspace raiden-cli build # build the dependent output
 yarn workspace raiden-cli build:bundle # build the bundled output
 ```
 
-The `build` script will output `./build/index.js`, which requires that the dependencies are in place in the `../raiden-ts/node_modules`, `../raiden-ts/dist*/` and `./node_modules/` folders.
-The `build:bundle` script will output `./build/bundle.js`, which depends only on `*.node` native libraries copied to the same output folder, therefore is a portable bundle which can be moved around (as long as the native libraries are in the same folder).
+The `build` script will output `./dist/index.js`, which requires that the dependencies are in place in the `../raiden-ts/node_modules`, `../raiden-ts/dist*/` and `./node_modules/` folders.
+The `build:bundle` script will output `./dist:bundle/bundle.js`, which depends only on `*.node` native libraries copied to the same output folder, therefore is a portable bundle which can be moved around (as long as the native libraries are in the same folder).
 
 If getting out-of-memory errors, you can build these files on a more capable machine, just be careful to copy the correct native libraries to the output folder if on a different architecture (e.g. copy `./node_modules/wrtc/build/Release/wrtc.node` to `./build`)
 
@@ -73,9 +73,7 @@ If getting out-of-memory errors, you can build these files on a more capable mac
 
 You can see a summary of the options:
 ```sh
-node build/index.js --help
-# or
-node build/bundle.js --help
+./raiden --help
 ```
 
 The CLI currently exposes parameters to configure the Raiden node that runs behind the REST service.
@@ -83,7 +81,7 @@ The CLI currently exposes parameters to configure the Raiden node that runs behi
 To run the CLI for the very first time, the only two thing necessary are a keystore file and an Ethereum node.
 
 ```sh
-node build/index.js -e https://provider.web3:8545 -k /path/privkey.json
+./raiden index.js -e https://provider.web3:8545 -k /path/privkey.json
 ```
 
 This starts the Raiden node and connects to a REST interface. The state is stored in `./storage` as JSON files. It is expected that the account is already funded with ETH to pay for on-chain transactions.
