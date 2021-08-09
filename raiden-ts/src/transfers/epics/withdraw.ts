@@ -28,14 +28,21 @@ import type { WithdrawRequest } from '../../messages';
 import { isMessageReceivedOfType, MessageType, Processed, signMessage } from '../../messages';
 import { messageSend } from '../../messages/actions';
 import type { RaidenState } from '../../state';
+import { matrixPresence } from '../../transport/actions';
 import { getNoDeliveryPeers } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
-import { retryWhile } from '../../utils/rx';
+import { dispatchRequestAndGetResponse, retryWhile } from '../../utils/rx';
 import { isntNil, Signed } from '../../utils/types';
-import { withdraw, withdrawCompleted, withdrawExpire, withdrawMessage } from '../actions';
+import {
+  withdraw,
+  withdrawCompleted,
+  withdrawExpire,
+  withdrawMessage,
+  withdrawResolve,
+} from '../actions';
 import { Direction } from '../state';
 import { matchWithdraw, retrySendUntil$ } from './utils';
 
@@ -86,6 +93,37 @@ export function initWithdrawMessagesEpic(
         }
       }
     }),
+  );
+}
+
+/**
+ * Resolve a withdrawResolve action and emit withdraw.request
+ * Resolving withdraws require that partner is online and contracts support `cooperativeSettle`.
+ *
+ * @param action$ - Observable of withdrawResolve actions
+ * @returns Observable of withdraw.request|withdraw.failure actions
+ */
+export function withdrawResolveEpic(
+  action$: Observable<RaidenAction>,
+): Observable<matrixPresence.request | withdraw.request | withdraw.failure> {
+  return action$.pipe(
+    dispatchRequestAndGetResponse(matrixPresence, (requestPresence$) =>
+      action$.pipe(
+        filter(withdrawResolve.is),
+        mergeMap((action) =>
+          requestPresence$(
+            matrixPresence.request(undefined, { address: action.meta.partner }),
+          ).pipe(
+            map((presence) => {
+              // assert shouldn't fail, because presence request would, but just in case
+              assert(presence.payload.available, 'partner offline');
+              return withdraw.request(action.payload, action.meta);
+            }),
+            catchError((err) => of(withdraw.failure(err, action.meta))),
+          ),
+        ),
+      ),
+    ),
   );
 }
 

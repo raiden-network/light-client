@@ -208,6 +208,16 @@ const WithdrawId = t.type({
 });
 
 /**
+ * Request withdrawResolveEpic to resolve and emit a withdraw.request
+ */
+export const withdrawResolve = createAction(
+  'withdraw/resolve',
+  t.union([t.undefined, t.type({ coopSettle: t.boolean })]),
+  WithdrawId,
+);
+export interface withdrawResolve extends ActionType<typeof withdrawResolve> {}
+
+/**
  * Start a withdraw
  * - request: request to start a withdraw
  * - success: withdraw finished on-chain
