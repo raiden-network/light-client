@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [1.1.0] - 2021-08-09
 ### Added
 - [#2766] Add `Capabilities.IMMUTABLE_METADATA` (true on LC, fallback to falsy for backwards compatibility) to allow opting in of not prunning metadata.route and allowing to pass it through mediators unchanged
 - [#2730] Add `config.encryptSecret` and `Raiden.transfer`'s `encryptSecret` boolean option, to allow sending secret to target on LockedTransfer's metadata, encrypted with ECIES over their publicKey, skipping SecretRequest/Reveal and speeding up transfers.
@@ -483,7 +485,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/raiden-network/light-client/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/raiden-network/light-client/compare/v0.17.0...v1.0.0
 [0.17.0]: https://github.com/raiden-network/light-client/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/raiden-network/light-client/compare/v0.15.0...v0.16.0
