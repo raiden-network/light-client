@@ -254,6 +254,13 @@ export namespace withdrawMessage {
 }
 
 /**
+ * Signals this withdraw is "busy" performing contract's transaction (either setTotalWithdraw
+ * or cooperativeSettle). Is "unlocked" by the respective withdraw.success|failure
+ */
+export const withdrawBusy = createAction('withdraw/busy', t.undefined, WithdrawId);
+export interface withdrawBusy extends ActionType<typeof withdrawBusy> {}
+
+/**
  * Expires a withdraw
  * - request: request to expire a past request
  * - success: WithdrawExpired sent or received
