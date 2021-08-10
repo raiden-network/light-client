@@ -1,3 +1,4 @@
+import pick from 'lodash/pick';
 import type { Observable } from 'rxjs';
 import { combineLatest, defer, EMPTY, from, merge, of } from 'rxjs';
 import {
@@ -8,9 +9,10 @@ import {
   groupBy,
   ignoreElements,
   map,
+  mapTo,
   mergeMap,
-  mergeMapTo,
   pluck,
+  scan,
   share,
   startWith,
   take,
@@ -19,6 +21,7 @@ import {
 } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
+import type { Channel } from '../../channels';
 import { ChannelState } from '../../channels';
 import { channelSettle, newBlock } from '../../channels/actions';
 import { assertTx, channelAmounts, channelKey } from '../../channels/utils';
@@ -35,9 +38,10 @@ import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { dispatchRequestAndGetResponse, retryWhile } from '../../utils/rx';
-import { isntNil, Signed } from '../../utils/types';
+import { Signed } from '../../utils/types';
 import {
   withdraw,
+  withdrawBusy,
   withdrawCompleted,
   withdrawExpire,
   withdrawMessage,
@@ -45,6 +49,19 @@ import {
 } from '../actions';
 import { Direction } from '../state';
 import { matchWithdraw, retrySendUntil$ } from './utils';
+
+function withdrawMetaFromRequest(
+  req: WithdrawRequest,
+  channel: Channel,
+): withdraw.request['meta'] {
+  return {
+    tokenNetwork: channel.tokenNetwork,
+    partner: channel.partner.address,
+    direction: req.participant === channel.partner.address ? Direction.RECEIVED : Direction.SENT,
+    expiration: req.expiration.toNumber(),
+    totalWithdraw: req.total_withdraw,
+  };
+}
 
 /**
  * Emits withdraw action once for each own non-confirmed message at startup
@@ -201,7 +218,7 @@ export function withdrawSendTxEpic(
     latest$,
     config$,
   }: RaidenEpicDeps,
-): Observable<withdraw.success | withdraw.failure> {
+): Observable<withdraw.success | withdraw.failure | withdrawBusy> {
   return action$.pipe(
     filter(withdrawMessage.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
@@ -213,13 +230,6 @@ export function withdrawSendTxEpic(
           combineLatest([latest$, config$]).pipe(
             first(),
             mergeMap(([{ state, gasPrice }, { subkey: configSubkey, revealTimeout }]) => {
-              // don't send on-chain tx if we're 'revealTimeout' blocks from expiration
-              // this is our confidence threshold when we can get a tx inside timeout
-              assert(
-                action.meta.expiration >= state.blockNumber + revealTimeout,
-                ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
-              );
-
               const channel = state.channels[grouped$.key];
               assert(channel?.state === ChannelState.open, 'channel not open');
               assert(
@@ -231,6 +241,13 @@ export function withdrawSendTxEpic(
                 matchWithdraw(MessageType.WITHDRAW_REQUEST, action.payload.message),
               );
               assert(req, 'no matching WithdrawRequest found');
+
+              // don't send on-chain tx if we're 'revealTimeout' blocks from expiration
+              // this is our confidence threshold when we can get a tx inside timeout
+              assert(
+                req.expiration.gte(state.blockNumber + revealTimeout),
+                ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
+              );
 
               // don't send withdraw rx if this is a coop_settle request (back or forth)
               if ('coop_settle' in req) return EMPTY;
@@ -284,6 +301,7 @@ export function withdrawSendTxEpic(
                     ),
                   ),
                 ),
+                startWith(withdrawBusy(undefined, action.meta)),
               );
             }),
             catchError((err) => of(withdraw.failure(err, action.meta))),
@@ -357,6 +375,10 @@ export function withdrawMessageProcessedEpic(
   );
 }
 
+function withdrawKey(meta: withdraw.request['meta']) {
+  return `${channelKey(meta)}|${meta.expiration}|${meta.totalWithdraw.toString()}`;
+}
+
 /**
  * Dispatch withdrawExpire.request when one of our sent WithdrawRequests expired
  *
@@ -370,28 +392,64 @@ export function autoWithdrawExpireEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<withdrawExpire.request> {
+): Observable<withdrawExpire.request | withdraw.failure> {
+  const alreadyFailed = new Set<string>();
+  const busyWithdraws = new Set<string>();
   return action$.pipe(
     filter(newBlock.is),
     pluck('payload', 'blockNumber'),
-    withLatestFrom(state$, config$),
-    mergeMap(function* ([blockNumber, state, { confirmationBlocks }]) {
+    withLatestFrom(
+      state$,
+      config$,
+      action$.pipe(
+        filter(isActionOf([withdrawBusy, withdraw.success, withdraw.failure])),
+        scan((acc, action) => {
+          // a string representing uniquely this withdraw.meta
+          const key = withdrawKey(action.meta);
+          // 'busy' adds withdraw to set, preventing these withdraws from failing due to expiration
+          // too soon; withdraw.success|failure clears it
+          if (withdrawBusy.is(action)) acc.add(key);
+          else acc.delete(key);
+          return acc;
+        }, busyWithdraws),
+        startWith(busyWithdraws),
+      ),
+    ),
+    mergeMap(function* ([
+      blockNumber,
+      state,
+      { confirmationBlocks, revealTimeout },
+      busyWithdraws,
+    ]) {
       for (const channel of Object.values(state.channels)) {
         if (channel.state !== ChannelState.open) continue;
         const requestMessages = channel.own.pendingWithdraws.filter(
           matchWithdraw(MessageType.WITHDRAW_REQUEST),
         );
         for (const req of requestMessages) {
-          if (req.expiration.add(confirmationBlocks * 2).gte(blockNumber)) continue;
-          if (channel.own.pendingWithdraws.some(matchWithdraw(MessageType.WITHDRAW_EXPIRED, req)))
-            continue;
-          yield withdrawExpire.request(undefined, {
-            direction: Direction.SENT,
-            tokenNetwork: channel.tokenNetwork,
-            partner: channel.partner.address,
-            expiration: req.expiration.toNumber(),
-            totalWithdraw: req.total_withdraw,
-          });
+          // do not withdraw.failure early for withdraws currently being processed
+          if (busyWithdraws.has(withdrawKey(withdrawMetaFromRequest(req, channel)))) continue;
+          if (req.expiration.lt(state.blockNumber + revealTimeout)) {
+            const coopSettleFailedKey = req.message_identifier.toHexString();
+            if (!alreadyFailed.has(coopSettleFailedKey)) {
+              alreadyFailed.add(coopSettleFailedKey);
+              yield withdraw.failure(
+                new RaidenError(ErrorCodes.CNL_WITHDRAW_EXPIRED),
+                withdrawMetaFromRequest(req, channel),
+              );
+            }
+          }
+          if (
+            req.expiration.lt(blockNumber + confirmationBlocks * 2) &&
+            !channel.own.pendingWithdraws.some(matchWithdraw(MessageType.WITHDRAW_EXPIRED, req))
+          )
+            yield withdrawExpire.request(undefined, {
+              direction: Direction.SENT,
+              tokenNetwork: channel.tokenNetwork,
+              partner: channel.partner.address,
+              expiration: req.expiration.toNumber(),
+              totalWithdraw: req.total_withdraw,
+            });
         }
       }
     }),
@@ -411,7 +469,7 @@ export function withdrawSendExpireMessageEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
   { config$ }: RaidenEpicDeps,
-): Observable<messageSend.request | withdraw.failure | withdrawCompleted> {
+): Observable<messageSend.request | withdrawCompleted> {
   return action$.pipe(
     filter(withdrawExpire.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
@@ -430,10 +488,7 @@ export function withdrawSendExpireMessageEpic(
             a.payload.message.message_identifier.eq(message.message_identifier),
         ),
         take(1),
-        mergeMapTo([
-          withdraw.failure(new RaidenError(ErrorCodes.CNL_WITHDRAW_EXPIRED), action.meta),
-          withdrawCompleted(undefined, action.meta),
-        ]),
+        mapTo(withdrawCompleted(undefined, action.meta)),
         share(),
       );
       // besides using notifier to stop retry, also merge the withdrawCompleted output action
@@ -452,42 +507,22 @@ export function withdrawSendExpireMessageEpic(
  * @param action$ - Observable of withdrawMessage.success actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
- * @param deps.config$ - Config observable
  * @param deps.log - Logger instance
  * @returns Observable of withdraw.request(coop_settle=false) actions
  */
 export function coopSettleWithdrawReplyEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { config$, log }: RaidenEpicDeps,
+  { log }: RaidenEpicDeps,
 ): Observable<withdraw.request> {
   return action$.pipe(
     filter(withdrawMessage.success.is),
     filter((action) => action.meta.direction === Direction.RECEIVED),
-    withLatestFrom(state$, config$),
-    mergeMap(([action, state, { revealTimeout }]) =>
+    withLatestFrom(state$),
+    mergeMap(([action, state]) =>
       defer(() => {
-        // don't act if request expires too soon
-        assert(
-          action.meta.expiration >= state.blockNumber + revealTimeout,
-          ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
-        );
-
         const channel = state.channels[channelKey(action.meta)];
         assert(channel?.state === ChannelState.open, 'channel not open');
-
-        const { ownTotalWithdrawable, partnerCapacity } = channelAmounts(channel);
-        assert(
-          !channel.own.locks.length && !channel.partner.locks.length && partnerCapacity.isZero(),
-          [
-            ErrorCodes.CNL_COOP_SETTLE_NOT_POSSIBLE,
-            {
-              ownLocks: channel.own.locks,
-              partnerLocks: channel.partner.locks,
-              partnerCapacity,
-            },
-          ],
-        );
 
         const req = channel.partner.pendingWithdraws.find(
           matchWithdraw(MessageType.WITHDRAW_REQUEST, action.payload.message),
@@ -497,6 +532,7 @@ export function coopSettleWithdrawReplyEpic(
         // only reply if this is a coop settle request from partner
         if (!req.coop_settle) return EMPTY;
 
+        const { ownTotalWithdrawable } = channelAmounts(channel);
         return of(
           withdraw.request(
             { coopSettle: false },
@@ -524,75 +560,104 @@ export function coopSettleWithdrawReplyEpic(
  * @param action$ - Observable of withdrawMessage.success actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
+ * @param deps.latest$ - Latest observable
  * @param deps.config$ - Config observable
  * @param deps.log - Logger instance
- * @returns Observable of channelSettle.request actions
+ * @returns Observable of channelSettle.request|withdraw.failure|success|withdrawBusy actions
  */
 export function coopSettleEpic(
   action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-  { config$, log }: RaidenEpicDeps,
-): Observable<channelSettle.request | withdraw.failure> {
+  {}: Observable<RaidenState>,
+  { latest$, config$, log }: RaidenEpicDeps,
+): Observable<channelSettle.request | withdraw.failure | withdraw.success | withdrawBusy> {
   return action$.pipe(
-    filter(withdrawMessage.success.is),
-    withLatestFrom(state$, config$),
-    map(([action, state, { revealTimeout }]) => {
-      // don't act if request expires too soon
-      if (action.meta.expiration < state.blockNumber + revealTimeout) return;
+    dispatchRequestAndGetResponse(channelSettle, (requestSettle$) =>
+      action$.pipe(
+        filter(withdrawMessage.success.is),
+        groupBy((action) => channelKey(action.meta)),
+        mergeMap((grouped$) =>
+          grouped$.pipe(
+            concatMap((action) =>
+              // observable inside concatMap ensures the body is evaluated at subscription time
+              combineLatest([latest$, config$]).pipe(
+                first(),
+                mergeMap(([{ state }, { revealTimeout }]) => {
+                  const channel = state.channels[channelKey(action.meta)];
+                  if (channel?.state !== ChannelState.open) return EMPTY;
 
-      const channel = state.channels[channelKey(action.meta)];
-      if (channel?.state !== ChannelState.open) return;
+                  const {
+                    ownCapacity,
+                    partnerCapacity,
+                    ownTotalWithdrawable,
+                    partnerTotalWithdrawable,
+                  } = channelAmounts(channel);
+                  if (
+                    channel.own.locks.length ||
+                    channel.partner.locks.length ||
+                    !ownCapacity.isZero() || // when both capacities are zero, both sides should be ready
+                    !partnerCapacity.isZero()
+                  )
+                    return EMPTY;
 
-      const { ownCapacity, partnerCapacity, ownTotalWithdrawable, partnerTotalWithdrawable } =
-        channelAmounts(channel);
-      if (
-        channel.own.locks.length ||
-        channel.partner.locks.length ||
-        !ownCapacity.isZero() || // when both capacities are zero, both sides should be ready
-        !partnerCapacity.isZero()
-      )
-        return;
+                  const ownReq = channel.own.pendingWithdraws.find(
+                    (msg): msg is Signed<WithdrawRequest> =>
+                      msg.type === MessageType.WITHDRAW_REQUEST &&
+                      msg.expiration.gte(state.blockNumber + revealTimeout) &&
+                      msg.total_withdraw.eq(ownTotalWithdrawable) &&
+                      !!msg.coop_settle, // only requests where coop_settle is true
+                  );
+                  if (!ownReq || ownReq.expiration.lt(state.blockNumber + revealTimeout))
+                    return EMPTY; // not our request or expires too soon
 
-      const ownReq = channel.own.pendingWithdraws.find(
-        (msg): msg is Signed<WithdrawRequest> =>
-          msg.type === MessageType.WITHDRAW_REQUEST &&
-          msg.expiration.gte(state.blockNumber + revealTimeout) &&
-          msg.total_withdraw.eq(ownTotalWithdrawable) &&
-          !!msg.coop_settle, // only requests where coop_settle is true
-      );
-      if (!ownReq) return; // not our request
+                  const ownConfirmation = channel.own.pendingWithdraws.find(
+                    matchWithdraw(MessageType.WITHDRAW_CONFIRMATION, ownReq),
+                  );
+                  const partnerReq = channel.partner.pendingWithdraws.find(
+                    (msg): msg is Signed<WithdrawRequest> =>
+                      msg.type === MessageType.WITHDRAW_REQUEST &&
+                      msg.expiration.gte(state.blockNumber + revealTimeout) &&
+                      msg.total_withdraw.eq(partnerTotalWithdrawable),
+                  );
+                  if (!partnerReq) return EMPTY; // shouldn't happen
+                  const partnerConfirmation = channel.partner.pendingWithdraws.find(
+                    matchWithdraw(MessageType.WITHDRAW_CONFIRMATION, partnerReq),
+                  );
+                  if (!ownConfirmation || !partnerConfirmation) {
+                    log.info('no matching WithdrawConfirmations found', {
+                      ownConfirmation,
+                      partnerConfirmation,
+                    });
+                    return EMPTY;
+                  }
 
-      const ownConfirmation = channel.own.pendingWithdraws.find(
-        matchWithdraw(MessageType.WITHDRAW_CONFIRMATION, ownReq),
-      );
-      const partnerReq = channel.partner.pendingWithdraws.find(
-        (msg): msg is Signed<WithdrawRequest> =>
-          msg.type === MessageType.WITHDRAW_REQUEST &&
-          msg.expiration.gte(state.blockNumber + revealTimeout) &&
-          msg.total_withdraw.eq(partnerTotalWithdrawable),
-      );
-      if (!partnerReq) return; // shouldn't happen
-      const partnerConfirmation = channel.partner.pendingWithdraws.find(
-        matchWithdraw(MessageType.WITHDRAW_CONFIRMATION, partnerReq),
-      );
-      if (!ownConfirmation || !partnerConfirmation) {
-        log.info('no matching WithdrawConfirmations found', {
-          ownConfirmation,
-          partnerConfirmation,
-        });
-        return;
-      }
-
-      return channelSettle.request(
-        {
-          coopSettle: [
-            [ownReq, ownConfirmation],
-            [partnerReq, partnerConfirmation],
-          ],
-        },
-        { tokenNetwork: action.meta.tokenNetwork, partner: action.meta.partner },
-      );
-    }),
-    filter(isntNil),
+                  const withdrawMeta = withdrawMetaFromRequest(ownReq, channel);
+                  return requestSettle$(
+                    channelSettle.request(
+                      {
+                        coopSettle: [
+                          [ownReq, ownConfirmation],
+                          [partnerReq, partnerConfirmation],
+                        ],
+                      },
+                      { tokenNetwork: withdrawMeta.tokenNetwork, partner: withdrawMeta.partner },
+                    ),
+                  ).pipe(
+                    map((success) =>
+                      withdraw.success(
+                        pick(success.payload, ['txBlock', 'txHash', 'confirmed'] as const),
+                        withdrawMeta,
+                      ),
+                    ),
+                    catchError((err) => of(withdraw.failure(err, withdrawMeta))),
+                    // prevents this withdraw from expire-failing while we're trying to settle
+                    startWith(withdrawBusy(undefined, withdrawMeta)),
+                  );
+                }),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 }
