@@ -768,6 +768,34 @@ export class Raiden {
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
     assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
+    // try coop-settle first
+    try {
+      const channel = this.state.channels[channelKey({ tokenNetwork, partner })];
+      assert(
+        channel?.state === ChannelState.open,
+        ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND,
+        this.log.error,
+      );
+      const { ownTotalWithdrawable: totalWithdraw } = channelAmounts(channel);
+      const expiration =
+        this.state.blockNumber + this.config.revealTimeout + this.config.confirmationBlocks;
+
+      const coopMeta = {
+        direction: Direction.SENT,
+        tokenNetwork,
+        partner,
+        totalWithdraw,
+        expiration,
+      };
+      const coopPromise = asyncActionToPromise(withdraw, coopMeta, this.action$, true).then(
+        ({ txHash }) => txHash,
+      );
+      this.store.dispatch(withdraw.request({ coopSettle: true }, coopMeta));
+      return await coopPromise;
+    } catch (err) {
+      this.log.info('Could not settle cooperatively, performing uncooperative close', err);
+    }
+
     const meta = { tokenNetwork, partner };
     const promise = asyncActionToPromise(channelClose, meta, this.action$, true).then(
       ({ txHash }) => txHash,
@@ -1484,49 +1512,6 @@ export class Raiden {
       ({ txHash }) => txHash,
     );
     this.store.dispatch(withdrawResolve(undefined, meta));
-    return promise;
-  }
-
-  /**
-   * Requests to withdraw from channel
-   *
-   * The requested amount defaults to the maximum withdrawable amount, which is exposed in
-   * [[channels$]] observable as the [[RaidenChannel.ownWithdrawable]] member.
-   * This involves requesting partner a signature which confirms they agree that we have the right
-   * for this amount of tokens, then a transaction is sent on-chain to withdraw tokens to the
-   * effective account.
-   * If this process fails, the amount remains locked until it can be expired later (defaults to
-   * 2 * config.revealTimeout blocks).
-   *
-   * @param token - Token address on currently configured token network registry
-   * @param partner - Partner address
-   * @returns Promise to the hash of the mined withdraw transaction
-   */
-  public async coopSettleChannel(token: string, partner: string): Promise<Hash> {
-    assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
-    assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
-    const tokenNetwork = this.state.tokens[token];
-    assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
-    const channel = this.state.channels[channelKey({ tokenNetwork, partner })];
-    assert(
-      channel?.state === ChannelState.open,
-      ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND,
-      this.log.error,
-    );
-    const { ownTotalWithdrawable: totalWithdraw } = channelAmounts(channel);
-    const expiration = this.state.blockNumber + 2 * this.config.revealTimeout;
-
-    const meta = {
-      direction: Direction.SENT,
-      tokenNetwork,
-      partner,
-      totalWithdraw,
-      expiration,
-    };
-    const promise = asyncActionToPromise(withdraw, meta, this.action$, true).then(
-      ({ txHash }) => txHash,
-    );
-    this.store.dispatch(withdraw.request({ coopSettle: true }, meta));
     return promise;
   }
 
