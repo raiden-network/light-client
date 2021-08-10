@@ -182,12 +182,27 @@ function channelSettleSuccessReducer(
 ): RaidenState {
   const key = channelKey(action.meta);
   const channel = state.channels[key];
-  if (channel?.id !== action.payload.id || !('closeBlock' in channel)) return state;
+  if (channel?.id !== action.payload.id) return state;
+
+  // closeBlock,closeParticipant get defaults if channel was coop-settled
+  const closeInfo = {
+    closeBlock: 'closeBlock' in channel ? channel.closeBlock : 0,
+    closeParticipant:
+      'closeParticipant' in channel ? channel.closeParticipant : (AddressZero as Address),
+  };
+
   if (action.payload.confirmed === undefined && channel.state !== ChannelState.settling)
     // on non-confirmed action, set channel as settling
     return {
       ...state,
-      channels: { ...state.channels, [key]: { ...channel, state: ChannelState.settling } },
+      channels: {
+        ...state.channels,
+        [key]: {
+          ...channel,
+          ...closeInfo,
+          state: ChannelState.settling,
+        },
+      },
     };
   else if (action.payload.confirmed) {
     const { [key]: _, ...channels } = state.channels; // pop [key] channel out of state.channels
@@ -199,6 +214,7 @@ function channelSettleSuccessReducer(
         ...state.oldChannels,
         [channelUniqueKey(channel)]: {
           ...channel,
+          ...closeInfo,
           state: ChannelState.settled,
           settleBlock: action.payload.txBlock,
         },
