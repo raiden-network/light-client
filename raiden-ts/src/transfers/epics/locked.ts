@@ -841,10 +841,6 @@ function sendWithdrawRequest(
       ]);
 
       assert(
-        action.meta.expiration >= state.blockNumber + revealTimeout,
-        ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
-      );
-      assert(
         action.meta.totalWithdraw.gt(channel.own.withdraw),
         ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_LOW,
       );
@@ -853,6 +849,8 @@ function sendWithdrawRequest(
         ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_HIGH,
       );
       if (action.payload?.coopSettle !== undefined) {
+        // coopSettle reply has a more relaxed constraint on expiration
+        assert(action.meta.expiration > state.blockNumber, ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON);
         const { ownLocked, partnerLocked, ownTotalWithdrawable, partnerCapacity } =
           channelAmounts(channel);
         assert(
@@ -861,6 +859,11 @@ function sendWithdrawRequest(
             action.meta.totalWithdraw.eq(ownTotalWithdrawable) &&
             (action.payload.coopSettle || partnerCapacity.isZero()),
           [ErrorCodes.CNL_COOP_SETTLE_NOT_POSSIBLE, { ownLocked, partnerLocked, partnerCapacity }],
+        );
+      } else {
+        assert(
+          action.meta.expiration >= state.blockNumber + revealTimeout,
+          ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
         );
       }
       const request: WithdrawRequest = {
