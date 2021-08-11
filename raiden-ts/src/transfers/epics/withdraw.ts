@@ -1,3 +1,4 @@
+import type { Contract } from '@ethersproject/contracts';
 import pick from 'lodash/pick';
 import type { Observable } from 'rxjs';
 import { combineLatest, defer, EMPTY, from, merge, of } from 'rxjs';
@@ -11,6 +12,7 @@ import {
   map,
   mapTo,
   mergeMap,
+  mergeMapTo,
   pluck,
   scan,
   share,
@@ -19,7 +21,6 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
-import { gte as semverGte } from 'semver';
 
 import type { RaidenAction } from '../../actions';
 import type { Channel } from '../../channels';
@@ -37,10 +38,10 @@ import { getNoDeliveryPeers } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
+import { contractHasMethod } from '../../utils/ethers';
 import { LruCache } from '../../utils/lru';
 import { dispatchRequestAndGetResponse, retryWhile } from '../../utils/rx';
-import { Signed } from '../../utils/types';
-import versions from '../../versions.json';
+import { decode, HexString, Signed } from '../../utils/types';
 import {
   withdraw,
   withdrawBusy,
@@ -63,6 +64,23 @@ function withdrawMetaFromRequest(
     expiration: req.expiration.toNumber(),
     totalWithdraw: req.total_withdraw,
   };
+}
+
+// observable of true if valid, errors otherwise
+function checkContractHasMethod$<C extends Contract>(
+  contract: C,
+  method: keyof C['functions'] & string,
+): Observable<true> {
+  return defer(async () => {
+    const sighash = contract.interface.getSighash(method);
+    // decode shouldn't fail if building with ^0.39 contracts, but runtime may be running
+    // with 0.37 contracts, and the only way to know is by checking contract's code (memoized)
+    assert(
+      await contractHasMethod(decode(HexString(4), sighash, 'signature hash not found'), contract),
+      ['contract does not have method', { contract: contract.address, method }],
+    );
+    return true as const;
+  });
 }
 
 /**
@@ -120,27 +138,32 @@ export function initWithdrawMessagesEpic(
  * Resolving withdraws require that partner is online and contracts support `cooperativeSettle`.
  *
  * @param action$ - Observable of withdrawResolve actions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.getTokenNetworkContract - TokenNetwork contract getter
  * @returns Observable of withdraw.request|withdraw.failure actions
  */
 export function withdrawResolveEpic(
   action$: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<matrixPresence.request | withdraw.request | withdraw.failure> {
   return action$.pipe(
     dispatchRequestAndGetResponse(matrixPresence, (requestPresence$) =>
       action$.pipe(
         filter(withdrawResolve.is),
         mergeMap((action) => {
-          return defer(() => {
-            if (action.payload?.coopSettle) {
-              assert(semverGte(versions.contracts, '0.39'), [
-                "contracts don't support coopSettle",
-                { ...versions, requireContracts: '0.39' },
-              ]);
-            }
-            return requestPresence$(
-              matrixPresence.request(undefined, { address: action.meta.partner }),
-            );
-          }).pipe(
+          let preCheck$ = of(true);
+          if (action.payload?.coopSettle) {
+            const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
+            preCheck$ = checkContractHasMethod$(tokenNetworkContract, 'cooperativeSettle');
+          }
+          return preCheck$.pipe(
+            mergeMapTo(
+              requestPresence$(
+                matrixPresence.request(undefined, { address: action.meta.partner }),
+              ),
+            ),
             map((presence) => {
               // assert shouldn't fail, because presence request would, but just in case
               assert(presence.payload.available, 'partner offline');
@@ -518,53 +541,50 @@ export function withdrawSendExpireMessageEpic(
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
  * @param deps.log - Logger instance
+ * @param deps.getTokenNetworkContract - TokenNetwork contract getter
  * @returns Observable of withdraw.request(coop_settle=false) actions
  */
 export function coopSettleWithdrawReplyEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { log }: RaidenEpicDeps,
+  { log, getTokenNetworkContract }: RaidenEpicDeps,
 ): Observable<withdraw.request> {
   return action$.pipe(
     filter(withdrawMessage.success.is),
     filter((action) => action.meta.direction === Direction.RECEIVED),
     withLatestFrom(state$),
-    mergeMap(([action, state]) =>
-      defer(() => {
-        assert(semverGte(versions.contracts, '0.39'), [
-          "contracts don't support coopSettle",
-          { ...versions, requireContracts: '0.39' },
-        ]);
+    mergeMap(([action, state]) => {
+      const tokenNetworkContract = getTokenNetworkContract(action.meta.tokenNetwork);
+      return checkContractHasMethod$(tokenNetworkContract, 'cooperativeSettle').pipe(
+        mergeMap(() => {
+          const channel = state.channels[channelKey(action.meta)];
+          assert(channel?.state === ChannelState.open, 'channel not open');
+          const req = channel.partner.pendingWithdraws.find(
+            matchWithdraw(MessageType.WITHDRAW_REQUEST, action.payload.message),
+          );
+          assert(req, 'no matching WithdrawRequest found'); // shouldn't happen
 
-        const channel = state.channels[channelKey(action.meta)];
-        assert(channel?.state === ChannelState.open, 'channel not open');
+          // only reply if this is a coop settle request from partner
+          if (!req.coop_settle) return EMPTY;
 
-        const req = channel.partner.pendingWithdraws.find(
-          matchWithdraw(MessageType.WITHDRAW_REQUEST, action.payload.message),
-        );
-        assert(req, 'no matching WithdrawRequest found'); // shouldn't happen
-
-        // only reply if this is a coop settle request from partner
-        if (!req.coop_settle) return EMPTY;
-
-        const { ownTotalWithdrawable } = channelAmounts(channel);
-        return of(
-          withdraw.request(
-            { coopSettle: false },
-            {
-              ...action.meta,
-              direction: Direction.SENT,
-              totalWithdraw: ownTotalWithdrawable,
-            },
-          ),
-        );
-      }).pipe(
+          const { ownTotalWithdrawable } = channelAmounts(channel);
+          return of(
+            withdraw.request(
+              { coopSettle: false },
+              {
+                ...action.meta,
+                direction: Direction.SENT,
+                totalWithdraw: ownTotalWithdrawable,
+              },
+            ),
+          );
+        }),
         catchError((error) => {
           log.warn('Could not reply to CoopSettle request, ignoring', { action, error });
           return EMPTY;
         }),
-      ),
-    ),
+      );
+    }),
   );
 }
 
