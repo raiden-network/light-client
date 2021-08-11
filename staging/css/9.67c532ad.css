@@ -1,0 +1,43 @@
+.text-input-with-toggle {
+  position: relative;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
+  color: #d8d8d8;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px !important;
+  font-size: 14px;
+  text-align: left;
+  margin: 20px 0;
+  padding: 16px;
+}
+@media only screen and (max-width: 600px) {
+.text-input-with-toggle {
+    margin: 10px 0;
+}
+}
+.text-input-with-toggle__toggle {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  height: 32px;
+}
+.text-input-with-toggle__input {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #d8d8d8;
+  height: 36px;
+  margin-top: 8px;
+  padding: 8px 8px 8px 16px;
+  width: 100%;
+}
+.text-input-with-toggle__input:disabled {
+  opacity: 30%;
+}
