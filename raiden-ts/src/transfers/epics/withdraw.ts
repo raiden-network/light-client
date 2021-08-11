@@ -19,6 +19,7 @@ import {
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
+import { gte as semverGte } from 'semver';
 
 import type { RaidenAction } from '../../actions';
 import type { Channel } from '../../channels';
@@ -39,6 +40,7 @@ import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/err
 import { LruCache } from '../../utils/lru';
 import { dispatchRequestAndGetResponse, retryWhile } from '../../utils/rx';
 import { Signed } from '../../utils/types';
+import versions from '../../versions.json';
 import {
   withdraw,
   withdrawBusy,
@@ -127,18 +129,26 @@ export function withdrawResolveEpic(
     dispatchRequestAndGetResponse(matrixPresence, (requestPresence$) =>
       action$.pipe(
         filter(withdrawResolve.is),
-        mergeMap((action) =>
-          requestPresence$(
-            matrixPresence.request(undefined, { address: action.meta.partner }),
-          ).pipe(
+        mergeMap((action) => {
+          return defer(() => {
+            if (action.payload?.coopSettle) {
+              assert(semverGte(versions.contracts, '0.39'), [
+                "contracts don't support coopSettle",
+                { ...versions, requireContracts: '0.39' },
+              ]);
+            }
+            return requestPresence$(
+              matrixPresence.request(undefined, { address: action.meta.partner }),
+            );
+          }).pipe(
             map((presence) => {
               // assert shouldn't fail, because presence request would, but just in case
               assert(presence.payload.available, 'partner offline');
               return withdraw.request(action.payload, action.meta);
             }),
             catchError((err) => of(withdraw.failure(err, action.meta))),
-          ),
-        ),
+          );
+        }),
       ),
     ),
   );
@@ -521,6 +531,11 @@ export function coopSettleWithdrawReplyEpic(
     withLatestFrom(state$),
     mergeMap(([action, state]) =>
       defer(() => {
+        assert(semverGte(versions.contracts, '0.39'), [
+          "contracts don't support coopSettle",
+          { ...versions, requireContracts: '0.39' },
+        ]);
+
         const channel = state.channels[channelKey(action.meta)];
         assert(channel?.state === ChannelState.open, 'channel not open');
 

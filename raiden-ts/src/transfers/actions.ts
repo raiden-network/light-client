@@ -212,7 +212,7 @@ const WithdrawId = t.type({
  */
 export const withdrawResolve = createAction(
   'withdraw/resolve',
-  t.union([t.undefined, t.type({ coopSettle: t.boolean })]),
+  t.union([t.undefined, t.type({ coopSettle: t.literal(true) })]),
   WithdrawId,
 );
 export interface withdrawResolve extends ActionType<typeof withdrawResolve> {}
