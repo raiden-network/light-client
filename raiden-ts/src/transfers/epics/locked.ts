@@ -854,8 +854,8 @@ function sendWithdrawRequest(
         const { ownLocked, partnerLocked, ownTotalWithdrawable, partnerCapacity } =
           channelAmounts(channel);
         assert(
-          ownLocked.isZero() &&
-            partnerLocked.isZero() &&
+          !channel.own.locks.length &&
+            !channel.partner.locks.length &&
             action.meta.totalWithdraw.eq(ownTotalWithdrawable) &&
             (action.payload.coopSettle || partnerCapacity.isZero()),
           [ErrorCodes.CNL_COOP_SETTLE_NOT_POSSIBLE, { ownLocked, partnerLocked, partnerCapacity }],

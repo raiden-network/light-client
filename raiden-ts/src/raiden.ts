@@ -771,11 +771,6 @@ export class Raiden {
     // try coop-settle first
     try {
       const channel = this.state.channels[channelKey({ tokenNetwork, partner })];
-      assert(
-        channel?.state === ChannelState.open,
-        ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND,
-        this.log.error,
-      );
       const { ownTotalWithdrawable: totalWithdraw } = channelAmounts(channel);
       const expiration =
         this.state.blockNumber + this.config.revealTimeout + this.config.confirmationBlocks;
@@ -790,7 +785,7 @@ export class Raiden {
       const coopPromise = asyncActionToPromise(withdraw, coopMeta, this.action$, true).then(
         ({ txHash }) => txHash,
       );
-      this.store.dispatch(withdraw.request({ coopSettle: true }, coopMeta));
+      this.store.dispatch(withdrawResolve({ coopSettle: true }, coopMeta));
       return await coopPromise;
     } catch (err) {
       this.log.info('Could not settle cooperatively, performing uncooperative close', err);
