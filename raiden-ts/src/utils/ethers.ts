@@ -8,8 +8,10 @@ import type {
   Listener,
   Log,
   Network,
+  Provider,
 } from '@ethersproject/providers';
 import { Formatter } from '@ethersproject/providers';
+import memoize from 'lodash/memoize';
 import type { Observable } from 'rxjs';
 import { defer, from, fromEventPattern, of, timer } from 'rxjs';
 import {
@@ -29,6 +31,7 @@ import {
 import { DEFAULT_CONFIRMATIONS } from '../constants';
 import type { TypedEventFilter, TypedListener } from '../contracts/commons';
 import { mergeWith } from './rx';
+import type { HexString } from './types';
 
 declare const _filter: unique symbol;
 /**
@@ -308,4 +311,30 @@ export function getNetworkName(network: Network) {
     : network.name === 'homestead'
     ? 'mainnet'
     : network.name;
+}
+
+// memoized get contract's code as hex string
+const getContractCode = memoize(async function _getContractCode(
+  address: string,
+  provider: Provider,
+) {
+  return provider.getCode(address);
+});
+
+/**
+ * Verify that contract has given method
+ *
+ * @param sighash - method to search for, as signature hash
+ * @param contract - Contract-like interface
+ * @param contract.address - Contract's address
+ * @param contract.provider - Contract's provider
+ * @returns truthy if contract has a method with given signature
+ */
+export async function contractHasMethod(
+  sighash: HexString<4>,
+  { address, provider }: { address: string; provider: Provider },
+): Promise<boolean> {
+  const code = await getContractCode(address, provider);
+  const push4opcode = '63'; // 0x63 is PUSH4 opcode, prefixes sighash in method contracts
+  return code.includes(push4opcode + sighash.substr(2));
 }
