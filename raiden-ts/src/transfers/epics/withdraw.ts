@@ -265,15 +265,18 @@ export function withdrawSendTxEpic(
             mergeMap(([{ state, gasPrice }, { subkey: configSubkey, revealTimeout }]) => {
               const channel = state.channels[grouped$.key];
               assert(channel?.state === ChannelState.open, 'channel not open');
-              assert(
-                action.meta.totalWithdraw.gt(channel.own.withdraw),
-                'withdraw already performed',
-              );
-
               const req = channel.own.pendingWithdraws.find(
                 matchWithdraw(MessageType.WITHDRAW_REQUEST, action.payload.message),
               );
               assert(req, 'no matching WithdrawRequest found');
+
+              // don't send withdraw tx if this is a coop_settle request (back or forth)
+              if ('coop_settle' in req) return EMPTY;
+
+              assert(
+                action.meta.totalWithdraw.gt(channel.own.withdraw),
+                'withdraw already performed',
+              );
 
               // don't send on-chain tx if we're 'revealTimeout' blocks from expiration
               // this is our confidence threshold when we can get a tx inside timeout
@@ -281,9 +284,6 @@ export function withdrawSendTxEpic(
                 req.expiration.gte(state.blockNumber + revealTimeout),
                 ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
               );
-
-              // don't send withdraw rx if this is a coop_settle request (back or forth)
-              if ('coop_settle' in req) return EMPTY;
 
               const { tokenNetwork } = action.meta;
               const { signer: onchainSigner } = chooseOnchainAccount(
