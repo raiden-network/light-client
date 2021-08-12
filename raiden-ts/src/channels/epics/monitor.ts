@@ -1,10 +1,13 @@
-import { defaultAbiCoder, Interface } from '@ethersproject/abi';
+import { defaultAbiCoder, EventFragment } from '@ethersproject/abi';
+import type { Log } from '@ethersproject/abstract-provider';
+import { AddressZero } from '@ethersproject/constants';
 import type { Event } from '@ethersproject/contracts';
 import isEmpty from 'lodash/isEmpty';
 import sortBy from 'lodash/sortBy';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, EMPTY, from, merge, timer } from 'rxjs';
+import { AsyncSubject, EMPTY, from, merge, ReplaySubject, timer } from 'rxjs';
 import {
+  connect,
   delayWhen,
   distinct,
   exhaustMap,
@@ -14,7 +17,6 @@ import {
   map,
   mergeMap,
   pluck,
-  publishReplay,
   take,
   toArray,
   withLatestFrom,
@@ -24,6 +26,7 @@ import type { RaidenAction } from '../../actions';
 import { raidenShutdown } from '../../actions';
 import { ShutdownReason } from '../../constants';
 import type { TokenNetwork } from '../../contracts';
+import { TokenNetwork__factory } from '../../contracts';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { assert, matchError, networkErrors } from '../../utils/error';
@@ -44,12 +47,13 @@ import {
 } from '../actions';
 import { channelKey, channelUniqueKey, groupChannel$ } from '../utils';
 
+const tokenNetworkInterface = TokenNetwork__factory.createInterface();
+
 function scanRegistryTokenNetworks({
   address,
   provider,
   registryContract,
   contractsInfo,
-  getTokenNetworkContract,
 }: RaidenEpicDeps): Observable<tokenMonitored> {
   const encodedAddress = defaultAbiCoder.encode(['address'], [address]);
   return getLogsByChunk$(
@@ -80,19 +84,17 @@ function scanRegistryTokenNetworks({
           logs.map(([token, tokenNetwork, event]) => [tokenNetwork, [token as Address, event]]),
         );
         const allTokenNetworkAddrs = Array.from(tokenNetworks.keys());
-        const aTokenNetworkContract = getTokenNetworkContract(allTokenNetworkAddrs[0] as Address);
-        const { openTopic } = getChannelEventsTopics(aTokenNetworkContract);
         // simultaneously query all tokenNetworks for channels from us and to us
         monitorsIfHasChannels$ = merge(
           getLogsByChunk$(provider, {
             address: allTokenNetworkAddrs,
-            topics: [openTopic, null, encodedAddress], // channels from us
+            topics: [channelEventsTopics.openTopic, null, encodedAddress], // channels from us
             fromBlock: firstBlock,
             toBlock: provider.blockNumber,
           }),
           getLogsByChunk$(provider, {
             address: allTokenNetworkAddrs,
-            topics: [openTopic, null, null, encodedAddress], // channels to us
+            topics: [channelEventsTopics.openTopic, null, null, encodedAddress], // channels to us
             fromBlock: firstBlock,
             toBlock: provider.blockNumber,
           }),
@@ -221,29 +223,56 @@ type ChannelNewDepositEvent = ChannelEvents<'ChannelNewDeposit'>;
 type ChannelWithdrawEvent = ChannelEvents<'ChannelWithdraw'>;
 type ChannelClosedEvent = ChannelEvents<'ChannelClosed'>;
 
-function getChannelEventsTopics(tokenNetworkContract: TokenNetwork) {
-  return {
-    openTopic: Interface.getEventTopic(tokenNetworkContract.interface.getEvent('ChannelOpened')),
-    depositTopic: Interface.getEventTopic(
-      tokenNetworkContract.interface.getEvent('ChannelNewDeposit'),
-    ),
-    withdrawTopic: Interface.getEventTopic(
-      tokenNetworkContract.interface.getEvent('ChannelWithdraw'),
-    ),
-    closedTopic: Interface.getEventTopic(tokenNetworkContract.interface.getEvent('ChannelClosed')),
-    settledTopic: Interface.getEventTopic(
-      tokenNetworkContract.interface.getEvent('ChannelSettled'),
-    ),
-  };
+const oldSettledFragment = EventFragment.fromString(
+  'ChannelSettled(uint256 indexed,uint256,bytes32,uint256,bytes32)',
+);
+
+const channelEventsTopics = {
+  openTopic: tokenNetworkInterface.getEventTopic('ChannelOpened'),
+  depositTopic: tokenNetworkInterface.getEventTopic('ChannelNewDeposit'),
+  withdrawTopic: tokenNetworkInterface.getEventTopic('ChannelWithdraw'),
+  closedTopic: tokenNetworkInterface.getEventTopic('ChannelClosed'),
+  settledTopic: tokenNetworkInterface.getEventTopic('ChannelSettled'),
+  oldSettledTopic: tokenNetworkInterface.getEventTopic(oldSettledFragment),
+} as const;
+
+/**
+ * 0.37 contracts had ChannelSettled event parameters as [id,amount1,hash1,amount2,hash2], but 0.39
+ * (our build base) emits/declares [id,addr1,amount1,hash1,addr2,amount2,hash2], i.e. expects addr1
+ * and addr2 before the respective amounts. In order for the contract object to be able to parse
+ * the old events, we need to map them to be compatible with the new ABI. Since we don't use the
+ * parameters and only care for the channelId, we may put zero'd addresses there
+ * FIXME: remove this function once we don't care for the old contracts compatibility anymore
+ *
+ * @param log - Log of old or new contracts
+ * @returns log compatible with contracts initialized with new ABI
+ */
+function mapOldToNewLogs<L extends Log>(log: L): L {
+  if (log.topics[0] === channelEventsTopics.oldSettledTopic) {
+    const decoded = tokenNetworkInterface.decodeEventLog(oldSettledFragment, log.data, log.topics);
+    log = {
+      ...log,
+      // re-encode old log as new, inserting dummy addresses as parameters[1,4]
+      ...tokenNetworkInterface.encodeEventLog(tokenNetworkInterface.getEvent('ChannelSettled'), [
+        decoded[0], // id, indexed
+        AddressZero, // participant1
+        decoded[1],
+        decoded[2],
+        AddressZero, // participant2
+        decoded[3],
+        decoded[4],
+      ]),
+    };
+  }
+  return log;
 }
 
 function mapChannelEventsToAction(
   [token, tokenNetwork]: [Address, Address],
-  { address, latest$, getTokenNetworkContract }: RaidenEpicDeps,
+  { address, latest$ }: RaidenEpicDeps,
 ) {
-  const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
   const { openTopic, depositTopic, withdrawTopic, closedTopic, settledTopic } =
-    getChannelEventsTopics(tokenNetworkContract);
+    channelEventsTopics;
   return (input$: Observable<ChannelEvents>) =>
     input$.pipe(
       withLatestFrom(latest$),
@@ -336,7 +365,8 @@ function mapChannelEventsToAction(
             break;
           }
           case settledTopic: {
-            // settle may only happen more tha confirmation blocks after opening, so be stricter
+            // settle may only happen more than confirmation blocks after opening, so be stricter;
+            // oldSettledTopic & settledTopic both have id as first arg, so it's compatible
             if (channel?.id === id)
               action = channelSettle.success(
                 { id, txHash, txBlock, confirmed, locks: channel.partner.locks },
@@ -358,7 +388,6 @@ function fetchPastChannelEvents$(
 ) {
   const { address, provider, latest$, getTokenNetworkContract } = deps;
   const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
-  const { openTopic } = getChannelEventsTopics(tokenNetworkContract);
 
   // start by scanning [fromBlock, toBlock] interval for ChannelOpened events limited to or from us
   return merge(
@@ -405,8 +434,8 @@ function fetchPastChannelEvents$(
         address: tokenNetwork,
         topics: [
           // events of interest as topics[0], without open events (already fetched above)
-          Object.values(getChannelEventsTopics(tokenNetworkContract)).filter(
-            (topic) => topic !== openTopic,
+          Object.values(channelEventsTopics).filter(
+            (topic) => topic !== channelEventsTopics.openTopic,
           ),
           channelIds, // ORed channelIds set as topics[1]=channelId
         ],
@@ -415,6 +444,7 @@ function fetchPastChannelEvents$(
         provider,
         Object.assign(allButOpenedFilter, { fromBlock, toBlock }),
       ).pipe(
+        map(mapOldToNewLogs),
         map(logToContractEvent(tokenNetworkContract)),
         toArray(),
         // synchronously sort/interleave open|(deposit|withdraw|close|settle) events, and unwind
@@ -446,13 +476,14 @@ function fetchNewChannelEvents$(
   const channelFilter = {
     address: tokenNetwork,
     // set only topics[0], to get also open events (new ids); filter client-side
-    topics: [Object.values(getChannelEventsTopics(tokenNetworkContract))],
+    topics: [Object.values(channelEventsTopics)],
   } as ContractFilter<TokenNetwork, ChannelEventsNames>;
   return fromEthersEvent(provider, channelFilter, {
     fromBlock,
     blockNumber$,
     confirmations: config$.pipe(pluck('confirmationBlocks')),
   }).pipe(
+    map(mapOldToNewLogs),
     map(logToContractEvent(tokenNetworkContract)),
     mapChannelEventsToAction([token, tokenNetwork], deps),
   );
@@ -491,42 +522,44 @@ export function channelEventsEpic(
   return action$.pipe(
     filter(newBlock.is),
     pluck('payload', 'blockNumber'),
-    publishReplay(1, undefined, (blockNumber$) =>
-      action$.pipe(
-        filter(tokenMonitored.is),
-        distinct((action) => action.payload.tokenNetwork),
-        withLatestFrom(deps.config$),
-        mergeMap(([action, { confirmationBlocks }]) => {
-          const { token, tokenNetwork } = action.payload;
-          // fromBlock is latest on-chain event seen for this contract, or registry deployment block +1
-          const fromBlock = action.payload.fromBlock ?? resetEventsBlock - confirmationBlocks;
+    connect(
+      (blockNumber$) =>
+        action$.pipe(
+          filter(tokenMonitored.is),
+          distinct((action) => action.payload.tokenNetwork),
+          withLatestFrom(deps.config$),
+          mergeMap(([action, { confirmationBlocks }]) => {
+            const { token, tokenNetwork } = action.payload;
+            // fromBlock is latest on-chain event seen for this contract, or registry deployment block +1
+            const fromBlock = action.payload.fromBlock ?? resetEventsBlock - confirmationBlocks;
 
-          // notifies when past events fetching completes
-          const pastDone$ = new AsyncSubject<true>();
-          deps.init$.next(pastDone$);
+            // notifies when past events fetching completes
+            const pastDone$ = new AsyncSubject<true>();
+            deps.init$.next(pastDone$);
 
-          // blockNumber$ holds latest blockNumber, or waits for it to be fetched
-          return blockNumber$.pipe(
-            first(),
-            mergeMap((toBlock) =>
-              // this merge + finalize + delayWhen AsyncSubject outputs like concat, but ensures
-              // both subscriptions are done simultaneously, to avoid losing monitored new events
-              // or that they'd come before any pastEvent
-              merge(
-                fetchPastChannelEvents$([fromBlock, toBlock], [token, tokenNetwork], deps).pipe(
-                  finalize(() => {
-                    pastDone$.next(true);
-                    pastDone$.complete();
-                  }),
-                ),
-                fetchNewChannelEvents$(toBlock + 1, [token, tokenNetwork], deps).pipe(
-                  delayWhen(() => pastDone$), // holds new events until pastEvents fetching ends
+            // blockNumber$ holds latest blockNumber, or waits for it to be fetched
+            return blockNumber$.pipe(
+              first(),
+              mergeMap((toBlock) =>
+                // this merge + finalize + delayWhen AsyncSubject outputs like concat, but ensures
+                // both subscriptions are done simultaneously, to avoid losing monitored new events
+                // or that they'd come before any pastEvent
+                merge(
+                  fetchPastChannelEvents$([fromBlock, toBlock], [token, tokenNetwork], deps).pipe(
+                    finalize(() => {
+                      pastDone$.next(true);
+                      pastDone$.complete();
+                    }),
+                  ),
+                  fetchNewChannelEvents$(toBlock + 1, [token, tokenNetwork], deps).pipe(
+                    delayWhen(() => pastDone$), // holds new events until pastEvents fetching ends
+                  ),
                 ),
               ),
-            ),
-          );
-        }),
-      ),
+            );
+          }),
+        ),
+      { connector: () => new ReplaySubject(1) },
     ),
     completeWith(action$),
   );
