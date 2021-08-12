@@ -841,10 +841,6 @@ function sendWithdrawRequest(
       ]);
 
       assert(
-        action.meta.totalWithdraw.gt(channel.own.withdraw),
-        ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_LOW,
-      );
-      assert(
         action.meta.totalWithdraw.lte(channelAmounts(channel).ownTotalWithdrawable),
         ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_HIGH,
       );
@@ -861,6 +857,10 @@ function sendWithdrawRequest(
           [ErrorCodes.CNL_COOP_SETTLE_NOT_POSSIBLE, { ownLocked, partnerLocked, partnerCapacity }],
         );
       } else {
+        assert(
+          action.meta.totalWithdraw.gt(channel.own.withdraw),
+          ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_LOW,
+        );
         assert(
           action.meta.expiration >= state.blockNumber + revealTimeout,
           ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
