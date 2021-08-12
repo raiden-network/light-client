@@ -714,17 +714,6 @@ describe('raidenReducer', () => {
       expect(newState).toEqual(state);
     });
 
-    test('channel not in "closed|settleable|settling" state', () => {
-      // still in "opened" state
-      const newState = [
-        channelSettle.success(
-          { id: channelId, txHash, txBlock: settleBlock, confirmed: true },
-          { tokenNetwork, partner },
-        ),
-      ].reduce(raidenReducer, state);
-      expect(newState).toEqual(state);
-    });
-
     test('unconfirmed settle => "settling", removed noop', () => {
       const newState = [
         channelClose.success(

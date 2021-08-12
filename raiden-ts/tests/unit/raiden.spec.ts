@@ -70,7 +70,7 @@ import { Service } from '@/services/types';
 import { pfsListInfo } from '@/services/utils';
 import type { RaidenState } from '@/state';
 import { makeInitialState } from '@/state';
-import { transfer, transferSigned, withdraw } from '@/transfers/actions';
+import { transfer, transferSigned, withdraw, withdrawResolve } from '@/transfers/actions';
 import { standardCalculator } from '@/transfers/mediate/types';
 import type { TransferState } from '@/transfers/state';
 import { Direction } from '@/transfers/state';
@@ -1002,19 +1002,22 @@ describe('Raiden', () => {
     const closeBlock = 60;
     function channelCloseEpicMock(action$: Observable<RaidenAction>) {
       return action$.pipe(
-        filter(channelClose.request.is),
-        mapTo(
-          channelClose.success(
-            {
-              id: channelId,
-              participant: address,
-              txHash,
-              txBlock: closeBlock,
-              confirmed: true,
-            },
-            { tokenNetwork, partner },
-          ),
-        ),
+        mergeMap(function* (action) {
+          if (withdrawResolve.is(action)) {
+            yield withdraw.failure(new Error('can not coop-settle'), action.meta);
+          } else if (channelClose.request.is(action)) {
+            yield channelClose.success(
+              {
+                id: channelId,
+                participant: address,
+                txHash,
+                txBlock: closeBlock,
+                confirmed: true,
+              },
+              { tokenNetwork, partner },
+            );
+          }
+        }),
       );
     }
     const deps = makeDummyDependencies();
@@ -1194,8 +1197,13 @@ describe('Raiden', () => {
     };
     function channelWithdrawEpicMock(action$: Observable<RaidenAction>) {
       return action$.pipe(
-        filter(withdraw.request.is),
-        mapTo(withdraw.success({ txHash, txBlock, confirmed: true }, withdrawMeta)),
+        mergeMap(function* (action) {
+          if (withdrawResolve.is(action)) {
+            yield withdraw.request(action.payload, action.meta);
+          } else if (withdraw.request.is(action)) {
+            yield withdraw.success({ txHash, txBlock, confirmed: true }, withdrawMeta);
+          }
+        }),
       );
     }
     const raiden = new Raiden(

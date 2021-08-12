@@ -1,7 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { hexDataLength, hexlify } from '@ethersproject/bytes';
+import { concat as concatBytes, hexDataLength, hexlify } from '@ethersproject/bytes';
 import { keccak256 } from '@ethersproject/keccak256';
-import type { JsonRpcProvider } from '@ethersproject/providers';
+import type { JsonRpcProvider, Provider } from '@ethersproject/providers';
 import { Web3Provider } from '@ethersproject/providers';
 import { fold, isRight } from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/function';
@@ -16,10 +16,17 @@ import { getLocksroot, getSecrethash, makeSecret } from '@/transfers/utils';
 import { getSortedAddresses } from '@/transport/utils';
 import { encode } from '@/utils/data';
 import { ErrorCodec, ErrorCodes, RaidenError } from '@/utils/error';
-import { fromEthersEvent, getLogsByChunk$, getNetworkName } from '@/utils/ethers';
+import {
+  contractHasMethod,
+  fromEthersEvent,
+  getLogsByChunk$,
+  getNetworkName,
+} from '@/utils/ethers';
 import { LruCache } from '@/utils/lru';
 import { completeWith, concatBuffer, lastMap, mergeWith, takeIf } from '@/utils/rx';
 import { Address, BigNumberC, decode, HexString, Secret, Timed, timed, UInt } from '@/utils/types';
+
+import { makeAddress } from '../utils';
 
 describe('getLogsByChunk$', () => {
   let provider: jest.Mocked<JsonRpcProvider>;
@@ -522,4 +529,25 @@ test('takeIf', async () => {
   ).resolves.toEqual([0, 0, 1, 2]);
   // source$ should be subscribed twice: once for true, once for 1..
   expect(source$).toHaveBeenCalledTimes(2);
+});
+
+test('contractHasMethod', async () => {
+  const sighash = '0xdeadbeef' as HexString<4>;
+  const provider = {
+    getCode: jest.fn(async () => hexlify(concatBytes(['0x001122', '0x63', sighash, '0x7890']))),
+  } as unknown as jest.Mocked<Provider>;
+  const contract1 = makeAddress();
+  const contract2 = makeAddress();
+
+  await expect(contractHasMethod(sighash, { address: contract1, provider })).resolves.toBeTrue();
+  expect(provider.getCode).toHaveBeenCalledWith(contract1);
+
+  provider.getCode.mockResolvedValue('0x1337');
+
+  // memoized call per address
+  await expect(contractHasMethod(sighash, { address: contract1, provider })).resolves.toBeTrue();
+
+  await expect(contractHasMethod(sighash, { address: contract2, provider })).resolves.toBeFalse();
+  expect(provider.getCode).toHaveBeenCalledWith(contract2);
+  expect(provider.getCode).toHaveBeenCalledTimes(2);
 });
