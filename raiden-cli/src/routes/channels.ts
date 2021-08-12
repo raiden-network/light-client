@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
+import type { Subscription } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-import { first, pluck } from 'rxjs/operators';
+import { filter, finalize, first, pluck, takeWhile } from 'rxjs/operators';
 
 import type { RaidenChannel, RaidenChannels } from 'raiden-ts';
 import { ChannelState, ErrorCodes, isntNil, RaidenError } from 'raiden-ts';
@@ -136,27 +137,46 @@ function validateChannelUpdateBody(request: Request, response: Response, next: N
   return next();
 }
 
+const closedStates = [ChannelState.closed, ChannelState.settleable, ChannelState.settling];
 async function updateChannelState(
   this: Cli,
   channel: RaidenChannel,
   newState: ApiChannelState.closed | ApiChannelState.settled,
 ): Promise<RaidenChannel> {
+  let sub!: Subscription;
   if (newState === ApiChannelState.closed) {
-    await this.raiden.closeChannel(channel.token, channel.partner);
-    const closedStates = [ChannelState.closed, ChannelState.settleable, ChannelState.settling];
-    channel = await firstValueFrom(
-      this.raiden.channels$.pipe(
-        pluck(channel.token, channel.partner),
-        first((channel) => closedStates.includes(channel.state)),
-      ),
-    );
+    const promise = new Promise<void>((resolve) => {
+      sub = this.raiden.channels$
+        .pipe(
+          pluck(channel.token, channel.partner),
+          takeWhile((channel) => !!channel && !closedStates.includes(channel.state), true),
+          filter(isntNil),
+          finalize(resolve),
+        )
+        .subscribe((c) => (channel = c));
+    });
+    try {
+      await this.raiden.closeChannel(channel.token, channel.partner);
+      await promise;
+    } finally {
+      sub.unsubscribe();
+    }
   } else if (newState === ApiChannelState.settled) {
-    const promise = this.raiden.settleChannel(channel.token, channel.partner);
-    const newChannel = await firstValueFrom(
-      this.raiden.channels$.pipe(pluck(channel.token, channel.partner)),
-    );
-    await promise;
-    if (newChannel) channel = newChannel; // channel may have been cleared
+    const promise = new Promise<void>((resolve) => {
+      sub = this.raiden.channels$
+        .pipe(
+          pluck(channel.token, channel.partner),
+          takeWhile((channel) => !!channel && channel.state !== ChannelState.settled),
+          finalize(resolve),
+        )
+        .subscribe((c) => (channel = c));
+    });
+    try {
+      await this.raiden.settleChannel(channel.token, channel.partner);
+      await promise;
+    } finally {
+      sub.unsubscribe();
+    }
   }
   return channel;
 }
