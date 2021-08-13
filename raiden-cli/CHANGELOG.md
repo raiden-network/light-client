@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.0.0-rc.1] - 2021-08-13
+
 ## [1.1.0] - 2021-08-09
 
 ## [1.0.0] - 2021-06-16
@@ -76,7 +78,8 @@
 [#2054]: https://github.com/raiden-network/light-client/pulls/2054
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.1...HEAD
+[2.0.0-rc.1]: https://github.com/raiden-network/light-client/compare/v1.1.0...v2.0.0-rc.1
 [1.1.0]: https://github.com/raiden-network/light-client/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/raiden-network/light-client/compare/v0.17.0...v1.0.0
 [0.17.0]: https://github.com/raiden-network/light-client/compare/v0.16.0...v0.17.0

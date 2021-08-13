@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [2.0.0-rc.1] - 2021-08-13
 ### Added
 - [#2839] Cooperative settle - allow users to exchange withdraw signatures enabling settling a channel instantly. This is the new default behavior on `Raiden.closeChannel`, falling back to default uncooperative close if needed.
 
@@ -489,7 +491,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.1...HEAD
+[2.0.0-rc.1]: https://github.com/raiden-network/light-client/compare/v1.1.0...v2.0.0-rc.1
 [1.1.0]: https://github.com/raiden-network/light-client/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/raiden-network/light-client/compare/v0.17.0...v1.0.0
 [0.17.0]: https://github.com/raiden-network/light-client/compare/v0.16.0...v0.17.0
