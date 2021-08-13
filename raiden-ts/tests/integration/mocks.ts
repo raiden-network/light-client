@@ -250,8 +250,14 @@ afterEach(async () => {
   fetch.mockRestore();
 });
 
-function spyContract(contract: Contract, rejectContractName?: string): void {
+function spyContract(
+  contract: Contract,
+  rejectContractName: string,
+  sighashes: Set<string>,
+): void {
   for (const func in contract.functions) {
+    const sighash = contract.interface.getSighash(func);
+    if (sighash) sighashes.add(sighash);
     const spied = jest.spyOn(contract, func);
     // if rejectContractName is set, use it as name for error if function gets called;
     // then functions which shouldn't be rejected should be mocked
@@ -673,9 +679,10 @@ export async function makeRaiden(
   jest.spyOn(provider, 'getNetwork');
   jest.spyOn(provider, 'detectNetwork');
   jest.spyOn(provider, 'resolveName').mockImplementation(async (addressOrName) => addressOrName);
+  const seenSighashes = new Set<string>();
   jest
     .spyOn(provider, 'getCode')
-    .mockImplementation((addr) => (log.trace('getCode called', addr), Promise.resolve('')));
+    .mockImplementation(async () => '0x00' + [...seenSighashes].map((s) => `63${s.substr(2)}`));
   jest.spyOn(provider, 'getBlock').mockImplementation(
     async (n: string | number | Promise<string | number>) =>
       ({
@@ -722,7 +729,7 @@ export async function makeRaiden(
     registryAddress,
     signer,
   ) as MockedContract<TokenNetworkRegistry>;
-  spyContract(registryContract, 'TokenNetworkRegistry');
+  spyContract(registryContract, 'TokenNetworkRegistry', seenSighashes);
   registryContract.token_to_token_networks.mockImplementation(async () => makeAddress());
 
   const getTokenNetworkContract = memoize((address: string): MockedContract<TokenNetwork> => {
@@ -730,7 +737,7 @@ export async function makeRaiden(
       address,
       signer,
     ) as MockedContract<TokenNetwork>;
-    spyContract(tokenNetworkContract, `TokenNetwork[${address}]`);
+    spyContract(tokenNetworkContract, `TokenNetwork[${address}]`, seenSighashes);
     tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
       Zero,
       Zero,
@@ -759,6 +766,9 @@ export async function makeRaiden(
       makeTransaction(undefined, { to: address }),
     );
     tokenNetworkContract.unlock.mockResolvedValue(makeTransaction(undefined, { to: address }));
+    tokenNetworkContract.cooperativeSettle.mockResolvedValue(
+      makeTransaction(undefined, { to: address }),
+    );
     return tokenNetworkContract;
   });
 
@@ -767,7 +777,7 @@ export async function makeRaiden(
       address,
       signer,
     ) as MockedContract<HumanStandardToken>;
-    spyContract(tokenContract, `Token[${address}]`);
+    spyContract(tokenContract, `Token[${address}]`, seenSighashes);
     tokenContract.approve.mockResolvedValue(makeTransaction(undefined, { to: address }));
     tokenContract.allowance.mockResolvedValue(Zero);
     tokenContract.balanceOf.mockResolvedValue(parseEther('1000'));
@@ -778,7 +788,7 @@ export async function makeRaiden(
     serviceRegistryAddress,
     signer,
   ) as MockedContract<ServiceRegistry>;
-  spyContract(serviceRegistryContract, 'ServiceRegistry');
+  spyContract(serviceRegistryContract, 'ServiceRegistry', seenSighashes);
   serviceRegistryContract.token.mockResolvedValue(svtAddress);
   serviceRegistryContract.urls.mockImplementation(async () => 'https://pfs.raiden.test');
 
@@ -786,7 +796,7 @@ export async function makeRaiden(
     udcAddress,
     signer,
   ) as MockedContract<UserDeposit>;
-  spyContract(userDepositContract, 'UserDeposit');
+  spyContract(userDepositContract, 'UserDeposit', seenSighashes);
   userDepositContract.token.mockResolvedValue(svtAddress);
   userDepositContract.one_to_n_address.mockResolvedValue(oneToNAddress);
   userDepositContract.balances.mockResolvedValue(DEFAULT_MS_REWARD);
@@ -801,7 +811,7 @@ export async function makeRaiden(
     signer,
   ) as MockedContract<SecretRegistry>;
 
-  spyContract(secretRegistryContract, 'SecretRegistry');
+  spyContract(secretRegistryContract, 'SecretRegistry', seenSighashes);
   secretRegistryContract.registerSecret.mockImplementation(async (secret_) => {
     const secret = decode(Secret, secret_);
     const transactionHash = makeHash();
@@ -822,7 +832,7 @@ export async function makeRaiden(
     signer,
   ) as MockedContract<MonitoringService>;
 
-  spyContract(monitoringServiceContract, 'MonitoringService');
+  spyContract(monitoringServiceContract, 'MonitoringService', seenSighashes);
 
   const contractsInfo: ContractsInfo = {
     TokenNetworkRegistry: {

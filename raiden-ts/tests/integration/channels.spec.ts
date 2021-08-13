@@ -34,7 +34,7 @@ import {
 import { defaultAbiCoder, Interface } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
-import { HashZero, Zero } from '@ethersproject/constants';
+import { AddressZero, HashZero, Zero } from '@ethersproject/constants';
 import { firstValueFrom } from 'rxjs';
 import { first, pluck } from 'rxjs/operators';
 
@@ -366,8 +366,8 @@ describe('channelEventsEpic', () => {
   test('new$ ChannelSettled event', async () => {
     expect.assertions(5);
     const settleDataEncoded = defaultAbiCoder.encode(
-      ['uint256', 'bytes32', 'uint256', 'bytes32'],
-      [Zero, HashZero, Zero, HashZero],
+      ['address', 'uint256', 'bytes32', 'address', 'uint256', 'bytes32'],
+      [AddressZero, Zero, HashZero, AddressZero, Zero, HashZero],
     );
 
     const [raiden, partner] = await makeRaidens(2);
@@ -381,7 +381,7 @@ describe('channelEventsEpic', () => {
       makeLog({
         blockNumber: settleBlock,
         transactionHash: settleHash,
-        filter: tokenNetworkContract.filters.ChannelSettled(id, null, null, null, null),
+        filter: tokenNetworkContract.filters.ChannelSettled(id),
         data: settleDataEncoded, // participants amounts aren't indexed, so they go in data
       }),
     );
