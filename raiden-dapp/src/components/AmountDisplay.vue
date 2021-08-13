@@ -1,9 +1,14 @@
 <template>
   <div
-    :class="{ 'amount-display--inline': inline }"
+    class="amount-display"
+    :class="{
+      'amount-display--inline': inline,
+      'amount-display--full-width': fullWidth,
+    }"
     @mouseover="exactAmount ? (displayExactAmount = true) : null"
     @mouseleave="exactAmount ? (displayExactAmount = false) : null"
   >
+    <span v-if="label">{{ label }}</span>
     <span v-if="displayExactAmount">
       {{ sign }}{{ amount | toUnits(token.decimals) }} {{ token.symbol || '' }}
     </span>
@@ -25,6 +30,9 @@ export default class AmountDisplay extends Vue {
   @Prop({ required: false, default: false, type: Boolean })
   exactAmount!: boolean;
 
+  @Prop({ type: String, default: '' })
+  label!: string;
+
   @Prop({ required: true })
   amount!: string | BigNumber;
 
@@ -37,13 +45,25 @@ export default class AmountDisplay extends Vue {
   @Prop({ required: false, default: false, type: Boolean })
   inline!: boolean;
 
+  @Prop({ type: Boolean, default: false })
+  fullWidth!: boolean;
+
   displayExactAmount = false;
 }
 </script>
+
 <style lang="scss" scoped>
 .amount-display {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
   &--inline {
     display: inline;
+  }
+
+  &--full-width {
+    width: 100%;
   }
 }
 </style>

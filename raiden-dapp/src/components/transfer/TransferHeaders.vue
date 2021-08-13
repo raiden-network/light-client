@@ -39,6 +39,15 @@
         </div>
       </v-menu>
     </div>
+
+    <div class="transfer-menus__capacity">
+      <template v-if="noChannels">{{ $t('transfer.transfer-menus.no-channels') }} </template>
+
+      <template v-else>
+        <amount-display exact-amount :amount="totalCapacity" :token="token" />
+      </template>
+    </div>
+
     <span v-if="noChannels">
       {{ $t('transfer.transfer-menus.no-channels') }}
     </span>
@@ -189,11 +198,12 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
     }
   }
 
-  > span {
+  &__capacity {
+    display: flex;
+    justify-content: center;
     font-size: 50px;
     font-weight: 300;
     height: 100px;
-    text-align: center;
     width: 100%;
 
     @include respond-to(handhelds) {

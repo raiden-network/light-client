@@ -52,21 +52,21 @@ describe('TransferHeaders.vue', () => {
 
   test('displays "no open channels" if no channels exist', () => {
     const wrapper = createWrapper(true, constants.Zero);
-    const amountDisplay = wrapper.findAll('span').at(3);
+    const amountDisplay = wrapper.find('.transfer-menus__capacity');
 
     expect(amountDisplay.text()).toContain('transfer.transfer-menus.no-channels');
   });
 
   test('displays zero amount if channel has no capacity', () => {
     const wrapper = createWrapper(false, constants.Zero);
-    const amountDisplay = wrapper.findAll('span').at(3);
+    const amountDisplay = wrapper.find('.transfer-menus__capacity');
 
     expect(amountDisplay.find('div').text()).toContain('0');
   });
 
   test('displays amount if channel has capacity', () => {
     const wrapper = createWrapper(false, constants.One);
-    const amountDisplay = wrapper.findAll('span').at(3);
+    const amountDisplay = wrapper.find('.transfer-menus__capacity');
 
     expect(amountDisplay.find('div').text()).toContain('0.000001');
   });

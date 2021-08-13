@@ -5,67 +5,75 @@ import Vue from 'vue';
 
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import Filters from '@/filters';
-import type { Token } from '@/model/types';
+
+import { generateToken } from '../utils/data-generator';
 
 Vue.filter('displayFormat', Filters.displayFormat);
 
+const token = generateToken({ balance: constants.One });
+
+function createWrapper(options?: {
+  exactAmount?: boolean;
+  sign?: string;
+  label?: string;
+}): Wrapper<AmountDisplay> {
+  return mount(AmountDisplay, {
+    propsData: {
+      token: token,
+      amount: token.balance,
+      exactAmount: options?.exactAmount,
+      sign: options?.sign,
+      label: options?.label,
+    },
+  });
+}
+
+async function triggerHoverEvent(
+  wrapper: Wrapper<AmountDisplay>,
+  eventName = 'mouseover',
+): Promise<void> {
+  wrapper.trigger(eventName);
+  await wrapper.vm.$nextTick();
+}
+
 describe('AmountDisplay.vue', () => {
-  let wrapper: Wrapper<AmountDisplay>;
+  test('does not display full amount when "exactAmount" prop is set to false', async () => {
+    const wrapper = createWrapper({ exactAmount: false });
 
-  const token: Token = {
-    address: '0xtoken',
-    balance: constants.One,
-    decimals: 18,
-    symbol: 'TTT',
-    name: 'Test Token',
-  };
+    await triggerHoverEvent(wrapper);
 
-  const createWrapper = (exactAmount: boolean, sign?: string) => {
-    return mount(AmountDisplay, {
-      propsData: {
-        exactAmount: exactAmount,
-        amount: token.balance,
-        token: token,
-        sign,
-      },
-    });
-  };
-
-  test('does not display full amount when "exactAmount" prop is set to false', () => {
-    wrapper = createWrapper(false);
-    const amountDisplay = wrapper.find('div');
-    amountDisplay.trigger('mouseover');
-
-    expect(amountDisplay.text()).toContain('<0.000001');
+    expect(wrapper.text()).toContain('<0.000001');
   });
 
   test('does display full amount when "exactAmount" prop is set to true', async () => {
-    wrapper = createWrapper(true);
-    const amountDisplay = wrapper.find('div');
-    amountDisplay.trigger('mouseover');
-    await wrapper.vm.$nextTick();
+    const wrapper = createWrapper({ exactAmount: true });
 
-    expect(amountDisplay.text()).toContain('0.000000000000000001');
+    await triggerHoverEvent(wrapper);
+
+    expect(wrapper.text()).toContain('0.000000000000000001');
   });
 
   test('toggles between displaying full amount and not displaying full amount', async () => {
-    wrapper = createWrapper(true);
-    const amountDisplay = wrapper.find('div');
-    amountDisplay.trigger('mouseover');
-    await wrapper.vm.$nextTick();
+    const wrapper = createWrapper({ exactAmount: true });
 
-    expect(amountDisplay.text()).toContain('0.000000000000000001');
+    await triggerHoverEvent(wrapper, 'mouseover');
 
-    amountDisplay.trigger('mouseleave');
-    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain('0.000000000000000001');
 
-    expect(amountDisplay.text()).toContain('<0.000001');
+    await triggerHoverEvent(wrapper, 'mouseleave');
+
+    expect(wrapper.text()).toContain('<0.000001');
   });
 
-  test('uses sign propery if given', () => {
-    wrapper = createWrapper(true, '+');
-    const amountDisplay = wrapper.find('div');
+  test('displays sign if propery is set', () => {
+    const wrapper = createWrapper({ sign: '+' });
 
-    expect(amountDisplay.text()).toContain('+');
+    expect(wrapper.text()).toContain('+');
+  });
+
+  test('displays label if propery is set', () => {
+    const wrapper = createWrapper({ label: 'test label' });
+
+    expect(wrapper.text()).toContain('test label');
   });
 });
