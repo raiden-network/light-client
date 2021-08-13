@@ -203,21 +203,22 @@ describe('PFS: pfsRequestEpic', () => {
   });
 
   test('fail target not available', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     raiden.store.dispatch(presenceFromClient(target, false));
-
-    await waitBlock();
+    // Emitting the pathFind.request action to check pfsRequestEpic runs
+    // and gets the earlier matrix presence error for target
     const pathFindMeta = {
       tokenNetwork,
       target: target.address,
       value: amount,
     };
-    // Emitting the pathFind.request action to check pfsRequestEpic runs
-    // and gets the earlier matrix presence error for target
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
-    await waitBlock();
-    await sleep(2 * raiden.config.pollingInterval);
+    await sleep();
+    // await sleep(2 * raiden.config.pollingInterval);
+    expect(raiden.output).not.toContainEqual(
+      pathFind.success(expect.anything(), expect.anything()),
+    );
     expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
