@@ -117,11 +117,11 @@ export function matrixMonitorPresenceEpic(
       grouped$.pipe(
         withLatestFrom(latest$, config$),
         // if we're already fetching presence for this address, no need to fetch again
-        exhaustMap(([action, { rtc }, { httpTimeout }]) => {
+        exhaustMap(([action, { rtc }, { pollingInterval }]) => {
           const { address } = action.meta;
           const cached = cache.get(address);
           // we already fetched this peer's presence recently, or there's an RTC channel with them
-          if (cached && (Date.now() - cached.payload.ts < httpTimeout || address in rtc))
+          if (cached && (Date.now() - cached.payload.ts < pollingInterval || address in rtc))
             return of(cached);
           return searchAddressPresence$(address, deps);
         }),
