@@ -28,7 +28,12 @@ describe('AddressInput', () => {
   const onlineTarget = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
   const offlineTarget = '0x39ff19161414E257AA29461dCD087F6a1AE362Fd';
 
-  function createWrapper(value = '', excluded?: string, hideErrorLabel = false) {
+  function createWrapper(
+    value = '',
+    excluded?: string,
+    hideErrorLabel = false,
+    excludeErrorMessage?: string,
+  ) {
     vuetify = new Vuetify();
     return mount(AddressInput, {
       vuetify,
@@ -37,6 +42,7 @@ describe('AddressInput', () => {
         value,
         hideErrorLabel,
         exclude: excluded ? [excluded] : undefined,
+        excludeErrorMessage,
       },
       mocks: {
         $raiden: {
@@ -224,6 +230,16 @@ describe('AddressInput', () => {
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
       expect(messages.text()).toBe('address-input.error.invalid-excluded-address');
+    });
+
+    test('should show custom error message when provided', async () => {
+      wrapper = createWrapper('', excludeAddress, false, 'some-custom-translation-key');
+      mockInput(wrapper, excludeAddress);
+      await flushWrapper(wrapper);
+
+      const messages = wrapper.find('.v-messages__message');
+      expect(messages.exists()).toBe(true);
+      expect(messages.text()).toBe('some-custom-translation-key');
     });
   });
 
