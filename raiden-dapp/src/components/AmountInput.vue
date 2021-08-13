@@ -139,8 +139,13 @@ export default class AmountInput extends Vue {
     input: VTextField;
   };
 
+  created(): void {
+    this.adaptZeroInputToDecimals();
+  }
+
   @Watch('token')
-  onTokenUpdate() {
+  onTokenUpdate(): void {
+    this.adaptZeroInputToDecimals();
     this.$refs.input.validate();
   }
 
@@ -180,6 +185,16 @@ export default class AmountInput extends Vue {
       this.valid = input.valid;
     }
     this.$emit('input', value);
+  }
+
+  adaptZeroInputToDecimals() {
+    if (this.token?.decimals !== undefined) {
+      if (this.amount === '0.00' && this.token.decimals === 0) {
+        this.$emit('input', '0');
+      } else if (this.amount === '0' && this.token.decimals > 0) {
+        this.$emit('input', '0.00');
+      }
+    }
   }
 }
 </script>

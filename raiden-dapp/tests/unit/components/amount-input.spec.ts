@@ -8,9 +8,13 @@ import Vuetify from 'vuetify';
 import AmountInput from '@/components/AmountInput.vue';
 
 import { TestData } from '../data/mock-data';
+import { generateToken } from '../utils/data-generator';
 import { mockInput } from '../utils/interaction-utils';
 
 Vue.use(Vuetify);
+
+const tokenWithZeroDecimals = generateToken({ decimals: 0 });
+const tokenWithMultiDecimals = generateToken({ decimals: 18 });
 
 describe('AmountInput.vue', () => {
   let wrapper: Wrapper<AmountInput>;
@@ -149,6 +153,35 @@ describe('AmountInput.vue', () => {
       expect(wrapper.vm.$data.amount).toBe('');
       wrapper.setProps({ value: '1.2asddswad' });
       expect(wrapper.vm.$data.amount).toBe('');
+    });
+  });
+
+  describe('adapt zero input values to changing decimals', () => {
+    test('changes zero decimal to multi decimal if input is zero', async () => {
+      wrapper = createWrapper({ value: '0', token: tokenWithZeroDecimals });
+
+      wrapper.setProps({ token: tokenWithMultiDecimals });
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.$data.amount).toBe('0.00');
+    });
+
+    test('changes multi decimal to zero decimal if input is zero', async () => {
+      wrapper = createWrapper({ value: '0.00', token: tokenWithMultiDecimals });
+
+      wrapper.setProps({ token: tokenWithZeroDecimals });
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.$data.amount).toBe('0');
+    });
+
+    test('does nothing if the input is not zero', async () => {
+      wrapper = createWrapper({ value: '2.1', token: tokenWithZeroDecimals });
+
+      wrapper.setProps({ token: tokenWithMultiDecimals });
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.$data.amount).toBe('2.1');
     });
   });
 });
