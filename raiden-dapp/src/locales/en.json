@@ -263,6 +263,7 @@
       "empty": "Enter an address or ENS name",
       "ens-resolve-failed": "Please enter a resolvable ENS name",
       "invalid-excluded-address": "Please enter a different address or ENS name. You can't use your own address or the address of the token network.",
+      "invalid-restricted-address": "Address not allowed, please enter a different address or ENS name.",
       "target-offline": "Target is offline."
     }
   },

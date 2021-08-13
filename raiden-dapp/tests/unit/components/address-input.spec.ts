@@ -25,6 +25,7 @@ describe('AddressInput', () => {
   let ensResolve: jest.Mock<Promise<string>, [string]>;
   let getAvailability: jest.Mock<{ available: boolean }, [string]>;
   const excludeAddress = '0x65E84e07dD79F3f03d72bc0fab664F56E6C55909';
+  const restrictedAddress = '0xc8F595E2084DB484f8A80109101D58625223b7C9';
   const onlineTarget = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
   const offlineTarget = '0x39ff19161414E257AA29461dCD087F6a1AE362Fd';
 
@@ -33,6 +34,8 @@ describe('AddressInput', () => {
     excluded?: string,
     hideErrorLabel = false,
     excludeErrorMessage?: string,
+    restricted?: string[],
+    restrictedErrorMessage?: string,
   ) {
     vuetify = new Vuetify();
     return mount(AddressInput, {
@@ -43,6 +46,8 @@ describe('AddressInput', () => {
         hideErrorLabel,
         exclude: excluded ? [excluded] : undefined,
         excludeErrorMessage,
+        restricted: restricted,
+        restrictedErrorMessage: restrictedErrorMessage,
       },
       mocks: {
         $raiden: {
@@ -240,6 +245,35 @@ describe('AddressInput', () => {
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
       expect(messages.text()).toBe('some-custom-translation-key');
+    });
+  });
+
+  describe('restricted addresses', () => {
+    test('should show error message when the user enters address not part of the restrited list', async () => {
+      wrapper = createWrapper('', undefined, false, undefined, [restrictedAddress]);
+      mockInput(wrapper, onlineTarget);
+      await flushWrapper(wrapper);
+
+      const messages = wrapper.find('.v-messages__message');
+      expect(messages.exists()).toBe(true);
+      expect(messages.text()).toBe('address-input.error.invalid-restricted-address');
+    });
+
+    test('should show custom error message when provided', async () => {
+      wrapper = createWrapper(
+        '',
+        undefined,
+        false,
+        undefined,
+        [restrictedAddress],
+        'some-custom-error-mesage',
+      );
+      mockInput(wrapper, onlineTarget);
+      await flushWrapper(wrapper);
+
+      const messages = wrapper.find('.v-messages__message');
+      expect(messages.exists()).toBe(true);
+      expect(messages.text()).toBe('some-custom-error-mesage');
     });
   });
 
