@@ -1,5 +1,6 @@
 <template>
-  <div class="address__container">
+  <div class="address__container" :class="{ 'address__container--full-width': fullWidth }">
+    <span v-if="label">{{ label }}</span>
     <v-tooltip bottom>
       <template #activator="{ on }">
         <p class="address__label" v-on="on" @click="copy">
@@ -28,6 +29,12 @@ export default class AddressDisplay extends Vue {
 
   @Prop({ required: false, default: false, type: Boolean })
   fullAddress!: boolean;
+
+  @Prop({ type: String, default: '' })
+  label!: string;
+
+  @Prop({ type: Boolean, default: false })
+  fullWidth!: boolean;
 
   copied = false;
   private timeout = 0;
@@ -82,7 +89,12 @@ export default class AddressDisplay extends Vue {
     line-height: 19px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     width: fit-content;
+
+    &--full-width {
+      width: 100%;
+    }
   }
 
   &__tooltip {
