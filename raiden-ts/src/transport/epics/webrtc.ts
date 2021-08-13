@@ -1,5 +1,6 @@
 import * as t from 'io-ts';
 import constant from 'lodash/constant';
+import isEqual from 'lodash/isEqual';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable, ObservedValueOf, OperatorFunction } from 'rxjs';
 import {
@@ -20,18 +21,22 @@ import {
   bufferTime,
   catchError,
   delayWhen,
+  distinctUntilChanged,
   endWith,
   exhaustMap,
   filter,
   finalize,
+  first,
   groupBy,
   ignoreElements,
   map,
+  mapTo,
   mergeMap,
   mergeMapTo,
   observeOn,
   pluck,
   retryWhen,
+  skip,
   startWith,
   switchMap,
   take,
@@ -503,7 +508,7 @@ function makeCallerCall$(
 function manageCalleeChannel(
   peer: Address,
   setChannel: Subject<ChannelUpdate>,
-  { log }: Pick<RaidenEpicDeps, 'log'>,
+  { log, config$ }: Pick<RaidenEpicDeps, 'log' | 'config$'>,
 ): OperatorFunction<ChannelRequest, ObservedValueOf<ChannelRequest[2]>> {
   return pipe(
     // switchMap *unsubscribes* previous incoming call
@@ -520,6 +525,15 @@ function manageCalleeChannel(
           error = err;
           return EMPTY;
         }),
+        // if caps change, disconnect every callee channel so they can be retried, but wait a bit
+        // so PFS can pick up the new cap
+        takeUntil(
+          config$.pipe(
+            distinctUntilChanged(({ caps: prev }, { caps: cur }) => isEqual(prev, cur)),
+            skip(1),
+            delayWhen(({ pollingInterval }) => timer(pollingInterval)),
+          ),
+        ),
         finalize(() => {
           log.info('RTC: callee disconnecting', peer);
           if (channel) setChannel.next([false, channel, error]);
@@ -557,6 +571,15 @@ function manageCallerChannel(
               error = err;
             },
           }),
+          // if caps change, disconnect every caller channel so they can be retried, but wait a bit
+          // so PFS can pick up the new cap
+          takeUntil(
+            config$.pipe(
+              distinctUntilChanged(({ caps: prev }, { caps: cur }) => isEqual(prev, cur)),
+              skip(1),
+              delayWhen(({ pollingInterval }) => timer(pollingInterval)),
+            ),
+          ),
           finalize(() => {
             if (channel) setChannel.next([false, channel, error]);
           }),
@@ -613,24 +636,32 @@ function mapRtcMessage(): OperatorFunction<
 }
 
 // from actions, choose peers which whom we should attempt to [re]establish RTC channels
-function getAddressOfInterest(action: RaidenAction, { address }: Pick<RaidenEpicDeps, 'address'>) {
-  let peer: Address | undefined;
-  if (channelMonitored.is(action)) peer = action.meta.partner;
-  else if (transferSigned.is(action)) {
+function getAddressOfInterest$(
+  action: RaidenAction,
+  { address, config$ }: Pick<RaidenEpicDeps, 'address' | 'config$'>,
+): Observable<Address> {
+  let peer$: Observable<Address> = EMPTY;
+  if (channelMonitored.is(action)) {
+    peer$ = of(action.meta.partner);
+  } else if (transferSigned.is(action)) {
     if (
       action.meta.direction === Direction.RECEIVED &&
       action.payload.message.target === address &&
       !('secret' in (action.payload.message.metadata as Record<string, unknown>))
     )
-      peer = action.payload.message.initiator;
+      peer$ = of(action.payload.message.initiator);
   } else if (messageSend.request.is(action) && action.payload.msgtype !== rtcMatrixMsgType) {
-    peer = action.meta.address;
+    peer$ = of(action.meta.address);
   } else if (rtcChannel.is(action) && !action.payload) {
     // payload=undefined is only emitted when the last valid RTC connection with this peer got
-    // closed, so let's attempt to call them
-    peer = action.meta.address;
+    // closed, so let's attempt to call them; but delay it by pollingInterval
+    peer$ = config$.pipe(
+      first(),
+      mergeMap(({ pollingInterval }) => timer(pollingInterval)),
+      mapTo(action.meta.address),
+    );
   }
-  return peer;
+  return peer$;
 }
 
 // adds channel to peer's channel queue when open/put; pops, reset & send hangup when closed
@@ -698,10 +729,7 @@ export function rtcConnectionManagerEpic(
   // observable of observables, created upon certain events which triggers us to try to call peer
   const asCaller$: Observable<ChannelRequest> = action$.pipe(
     // allow RTC connect to neighbors, initiators for received and targets for sent transfers
-    mergeMap(function* (action): Iterable<Address> {
-      const peerAddress = getAddressOfInterest(action, deps);
-      if (peerAddress) yield peerAddress;
-    }),
+    mergeMap((action) => getAddressOfInterest$(action, deps)),
     map((peer) => [peer, Role.caller, makeCallerCall$(action$, peer, deps)]),
   );
 
