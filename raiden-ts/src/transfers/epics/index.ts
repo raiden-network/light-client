@@ -1,4 +1,5 @@
 export * from '../mediate/epics';
+export * from './coopsettle';
 export * from './expire';
 export * from './init';
 export * from './locked';
