@@ -100,11 +100,17 @@ export async function getOrWaitTransfer(
  * Ensure token is monitored on raiden's state
  *
  * @param raiden - Client instance
+ * @param addrs - token addresses
+ * @param addrs."0" - token
+ * @param addrs."1" - token network
  */
-export async function ensureTokenIsMonitored(raiden: MockedRaiden): Promise<void> {
+export async function ensureTokenIsMonitored(
+  raiden: MockedRaiden,
+  [token_, tokenNetwork_] = [token, tokenNetwork] as const,
+): Promise<void> {
   await raiden.synced;
   if (token in raiden.store.getState().tokens) return;
-  raiden.store.dispatch(tokenMonitored({ token, tokenNetwork }));
+  raiden.store.dispatch(tokenMonitored({ token: token_, tokenNetwork: tokenNetwork_ }));
 }
 
 /**
@@ -115,16 +121,17 @@ export async function ensureTokenIsMonitored(raiden: MockedRaiden): Promise<void
  * @param clients.1 - Partner raiden to open channel with
  * @param opts - Options
  * @param opts.channelId - Channel id to use instead of default [id]
+ * @param opts.tokens - custom pair of token/tokenNetwork addresses
  */
 export async function ensureChannelIsOpen(
   [raiden, partner]: [MockedRaiden, MockedRaiden],
-  { channelId = id } = {},
+  { channelId = id, tokens = [token, tokenNetwork] as const } = {},
 ): Promise<void> {
-  await ensureTokenIsMonitored(raiden);
-  await ensureTokenIsMonitored(partner);
-  if (getChannel(raiden, partner)) return;
+  await ensureTokenIsMonitored(raiden, tokens);
+  await ensureTokenIsMonitored(partner, tokens);
+  if (getChannel(raiden, partner, tokens[1])) return;
   const openBlock = raiden.deps.provider.blockNumber + 1;
-  const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
+  const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokens[1]);
   await ensurePresence([raiden, partner]);
   await providersEmit(
     {},
@@ -143,8 +150,8 @@ export async function ensureChannelIsOpen(
   await waitBlock(openBlock);
   await waitBlock(openBlock + confirmationBlocks + 1); // confirmation
 
-  assert(getChannel(raiden, partner), 'Raiden channel not open');
-  assert(getChannel(partner, raiden), 'Partner channel not open');
+  assert(getChannel(raiden, partner, tokens[1]), 'Raiden channel not open');
+  assert(getChannel(partner, raiden, tokens[1]), 'Partner channel not open');
 }
 
 /**
@@ -241,10 +248,10 @@ export async function ensureChannelIsSettled([raiden, partner]: [
     makeLog({
       transactionHash: makeHash(),
       blockNumber: settleBlock,
-      filter: tokenNetworkContract.filters.ChannelSettled(id, null, null, null, null),
+      filter: tokenNetworkContract.filters.ChannelSettled(id),
       data: defaultAbiCoder.encode(
-        ['uint256', 'bytes32', 'uint256', 'bytes32'],
-        [Zero, HashZero, Zero, HashZero],
+        ['address', 'uint256', 'bytes32', 'address', 'uint256', 'bytes32'],
+        [raiden.address, Zero, HashZero, partner.address, Zero, HashZero],
       ),
     }),
   );
