@@ -1,5 +1,5 @@
 import type { BigNumber } from 'ethers';
-import { utils } from 'ethers';
+import { constants, utils } from 'ethers';
 
 export class BalanceUtils {
   static toEth(wei: BigNumber): string {
@@ -24,10 +24,14 @@ export class BalanceUtils {
     return decimalPart.length > decimals;
   }
 
-  static parse(deposit: string, decimals: number) {
-    return utils.parseUnits(
-      deposit.endsWith('.') ? deposit.substring(0, deposit.length - 1) : deposit,
-      decimals,
-    );
+  static parse(deposit: string, decimals: number): BigNumber {
+    try {
+      return utils.parseUnits(
+        deposit.endsWith('.') ? deposit.substring(0, deposit.length - 1) : deposit,
+        decimals,
+      );
+    } catch {
+      return constants.Zero;
+    }
   }
 }
