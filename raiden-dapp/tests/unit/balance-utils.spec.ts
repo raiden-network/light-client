@@ -43,4 +43,8 @@ describe('BalanceUtils', () => {
   test('parse ignores trailing dot', () => {
     expect(BalanceUtils.parse('1.', 0)).toEqual(constants.One);
   });
+
+  test('parsing maps error to zero', () => {
+    expect(BalanceUtils.parse('0.001', 0)).toEqual(constants.Zero);
+  });
 });
