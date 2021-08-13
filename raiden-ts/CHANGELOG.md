@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- [#2889] Ensure capabilities are updated when they change even if RTC channels are established by reconnecting them.
+
+[#2889]: https://github.com/raiden-network/light-client/issues/2889
 
 ## [2.0.0-rc.1] - 2021-08-13
 ### Added
