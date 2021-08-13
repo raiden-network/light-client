@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Contract } from '@ethersproject/contracts';
 import type { Observable } from 'rxjs';
 import { defer, merge, of } from 'rxjs';
 import { filter, ignoreElements, take } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
+import type { Channel } from '../../channels/state';
 import type {
   MessageType,
   WithdrawConfirmation,
@@ -11,9 +13,14 @@ import type {
   WithdrawRequest,
 } from '../../messages';
 import { messageSend } from '../../messages/actions';
+import { assert } from '../../utils';
 import { isResponseOf } from '../../utils/actions';
+import { contractHasMethod } from '../../utils/ethers';
 import { completeWith, repeatUntil } from '../../utils/rx';
 import type { UInt } from '../../utils/types';
+import { decode, HexString } from '../../utils/types';
+import type { withdraw } from '../actions';
+import { Direction } from '../state';
 
 /**
  * Exponential back-off infinite generator
@@ -114,4 +121,45 @@ export function matchWithdraw<
         msg.total_withdraw.eq(
           'totalWithdraw' in data ? data.totalWithdraw : data.total_withdraw,
         )));
+}
+
+/**
+ * @param req - WithdrawRequest message
+ * @param channel - Channel in which it was received
+ * @returns withdraw async action meta for respective request
+ */
+export function withdrawMetaFromRequest(
+  req: WithdrawRequest,
+  channel: Channel,
+): withdraw.request['meta'] {
+  return {
+    tokenNetwork: channel.tokenNetwork,
+    partner: channel.partner.address,
+    direction: req.participant === channel.partner.address ? Direction.RECEIVED : Direction.SENT,
+    expiration: req.expiration.toNumber(),
+    totalWithdraw: req.total_withdraw,
+  };
+}
+
+/**
+ * Fetches contract's code and parse if it has given method (by name)
+ *
+ * @param contract - contract instance to check
+ * @param method - method name
+ * @returns Observable of true, emitting a single value if successful, or erroring
+ */
+export function checkContractHasMethod$<C extends Contract>(
+  contract: C,
+  method: keyof C['functions'] & string,
+): Observable<true> {
+  return defer(async () => {
+    const sighash = contract.interface.getSighash(method);
+    // decode shouldn't fail if building with ^0.39 contracts, but runtime may be running
+    // with 0.37 contracts, and the only way to know is by checking contract's code (memoized)
+    assert(
+      await contractHasMethod(decode(HexString(4), sighash, 'signature hash not found'), contract),
+      ['contract does not have method', { contract: contract.address, method }],
+    );
+    return true as const;
+  });
 }
