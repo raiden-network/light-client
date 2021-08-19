@@ -16,7 +16,7 @@ else
   echo -e "\nStart the Docker container with the end-to-end environment"
   docker run --detach --rm \
     --name "$DOCKER_CONTAINER_NAME" \
-    --publish 127.0.0.1:80:80 \
+    --publish 127.0.0.1:9080:9080 \
     --publish 127.0.0.1:5555:5555 \
     --publish 127.0.0.1:5001:5001 \
     --publish 127.0.0.1:5002:5002 \

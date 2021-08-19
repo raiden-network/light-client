@@ -59,7 +59,7 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-ENV SERVER_NAME=localhost
+ENV SERVER_NAME="localhost:9080"
 ENV PASSWORD_FILE=/opt/passwd
 ENV PASSWORD=1234
 
@@ -134,15 +134,13 @@ EXPOSE 5555
 EXPOSE 5001 5002
 ## MATRIX
 # HTTP
-EXPOSE 8008 80
+EXPOSE 9080
 # HTTP metrics
 EXPOSE 9101
 # TCP replication
 EXPOSE 9092
 # HTTP replication
 EXPOSE 9093
-## ???
-EXPOSE 9001
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 

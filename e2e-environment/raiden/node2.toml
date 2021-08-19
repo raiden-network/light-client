@@ -10,7 +10,7 @@ network-id = 4321
 environment-type = "development"
 accept-disclaimer = true
 api-address = "0.0.0.0:5002"
-matrix-server = "http://localhost"
+matrix-server = "http://localhost:9080"
 
 default-reveal-timeout = 20
 default-settle-timeout = 40
