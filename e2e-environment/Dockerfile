@@ -1,13 +1,13 @@
-ARG RAIDEN_VERSION="9b45eff78272bb91a4fb59d42037b290ab1196d5"
+ARG RAIDEN_VERSION="v3.0.0rc0"
 ARG CONTRACTS_PACKAGE_VERSION="0.39.0"
 ARG CONTRACTS_VERSION="0.39.0"
 ARG SERVICES_VERSION="v0.16.0"
 ARG SYNAPSE_VERSION="v1.35.1"
 ARG RAIDEN_SYNAPSE_MODULES="0.1.3"
 ARG OS_NAME="LINUX"
-ARG GETH_VERSION="1.10.3"
-ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.10.3-991384a7.tar.gz"
-ARG GETH_MD5_LINUX="c601f6a651e23878229dd4a39fa2e6e4"
+ARG GETH_VERSION="1.10.8"
+ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.10.8-26675454.tar.gz"
+ARG GETH_MD5_LINUX="29dfd7f76e929c101ff96cf6088bb6c7"
 
 FROM python:3.9 as raiden-builder
 ARG RAIDEN_VERSION
@@ -109,7 +109,7 @@ RUN apt-get update \
     && /opt/services/venv/bin/pip install -r requirements.txt \
     && /opt/services/venv/bin/pip install -e . \
     && mkdir -p /opt/services/keystore
-RUN cp -R ${VENV}/lib/python3.9/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/* /opt/services/venv/lib/python3.7/site-packages/raiden_contracts/data \
+RUN cp -R ${VENV}/lib/python3.9/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/* /opt/services/venv/lib/python3.9/site-packages/raiden_contracts/data \
     && rm -rf ~/.cache/pip \
     && apt-get -y remove python3-dev \
     && apt-get -y autoremove \

@@ -26,7 +26,7 @@ else
 fi
 
 echo -e "\nWait to make sure all services are up and running"
-sleep 5s
+sleep 10s
 
 export DEPLOYMENT_INFO="${DEPLOYMENT_INFORMATION_DIRECTORY}/deployment_private_net.json"
 export DEPLOYMENT_SERVICES_INFO="${DEPLOYMENT_INFORMATION_DIRECTORY}/deployment_services_private_net.json"
@@ -34,8 +34,3 @@ source "${DEPLOYMENT_INFORMATION_DIRECTORY}/smartcontracts.sh"
 
 echo -e "\nRun the end-to-end tests for $( basename "$(pwd)")"
 yarn run test:e2e "$@"
-
-if ! running_inside_circleci; then
-  echo -e "\nGet the log files of the run services"
-  docker cp "$DOCKER_CONTAINER_NAME":/var/log/supervisor/. ./logs/
-fi

@@ -22,7 +22,7 @@ address = "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec"
 blockchain-query-interval = 1.0
 
 log-json = true
-log-file = "/tmp/node1.log"
+log-file = "/var/log/supervisor/node1.log.json"
 
 # Log settings
 [log-config]
