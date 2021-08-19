@@ -14,6 +14,6 @@ export ETH_RPC="http://localhost:8545"
     --token-network-registry-contract-address "${TOKEN_NETWORK_REGISTRY_ADDRESS}" \
     --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" \
     --one-to-n-contract-address "${ONE_TO_N_ADDRESS}" \
-    --matrix-server http://localhost \
+    --matrix-server http://localhost:9080 \
     --log-level DEBUG \
     --log-json

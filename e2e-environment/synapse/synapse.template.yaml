@@ -7,7 +7,7 @@ trusted_key_servers: []
 soft_file_limit: 0
 
 listeners:
-  - port: 80
+  - port: 9080
     bind_addresses: ['0.0.0.0']
     type: http
     tls: false
@@ -98,9 +98,6 @@ password_providers:
       credentials_file: /opt/synapse/config/admin_user_cred.json
 
 bcrypt_rounds: 12
-
-trusted_third_party_id_servers:
-  - localhost
 
 presence:
   enabled: true

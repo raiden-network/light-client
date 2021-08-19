@@ -41,7 +41,7 @@ works:
 ```sh
 docker run --detach --rm \
   --name lc-e2e \
-  --publish 127.0.0.1:80:80 \
+  --publish 127.0.0.1:9080:9080 \
   --publish 127.0.0.1:5555:5555 \
   --publish 127.0.0.1:5001:5001 \
   --publish 127.0.0.1:5002:5002 \
@@ -55,7 +55,7 @@ After the Docker container gets started, the services are accessible at the
 following ports on `localhost`:
 
 - RPC endpoint of the Geth Etherum node: `8545`
-- Synapse Matrix server: `80`
+- Synapse Matrix server: `9080`
 - Path-finding service: `5555`
 - First Raiden node: `5001`
 - Second Raiden node: `5002`
@@ -84,12 +84,12 @@ The image build gets controlled by a couple of version argument in the
 enough to simply update these version arguments.
 
 ```dockerfile
-ARG RAIDEN_VERSION="v1.1.1"
-ARG CONTRACTS_PACKAGE_VERSION="v.37.1"
-ARG CONTRACTS_VERSION="0.37.0"
-ARG SERVICES_VERSION="100fecf0d8c21ee68d8afbea912b67167ec7aad3"
-ARG SYNAPSE_VERSION="1.10.0"
-ARG GETH_VERSION="1.9.11"
+ARG RAIDEN_VERSION="v2.0.0"
+ARG CONTRACTS_PACKAGE_VERSION="0.39.0"
+ARG CONTRACTS_VERSION="0.39.0"
+ARG SERVICES_VERSION="v0.16.0"
+ARG SYNAPSE_VERSION="1.35.1"
+ARG GETH_VERSION="1.10.7"
 ```
 
 **Note:**
