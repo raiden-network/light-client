@@ -5,7 +5,7 @@
 # very beginning of each script.
 
 DOCKER_IMAGE_REPOSITORY="raidennetwork/lightclient-e2e-environment"
-DOCKER_IMAGE_TAG="v1.2.0"
+DOCKER_IMAGE_TAG="v1.2.1"
 DOCKER_IMAGE_NAME="${DOCKER_IMAGE_REPOSITORY}:${DOCKER_IMAGE_TAG}"
 DOCKER_CONTAINER_NAME="lc-e2e"
 E2E_ENVIRONMENT_DIRECTORY="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
@@ -13,6 +13,8 @@ DEPLOYMENT_INFORMATION_DIRECTORY="${E2E_ENVIRONMENT_DIRECTORY}/deployment_inform
 DEPLOYMENT_INFORMATION_VERSION_FILE="${DEPLOYMENT_INFORMATION_DIRECTORY}/version"
 
 function finish() {
+  echo -e "\nGet the log files of the run services"
+  docker cp "$DOCKER_CONTAINER_NAME":/var/log/supervisor/. ./logs/ || true
   echo -e "\nShut down the Docker container"
   docker stop "$DOCKER_CONTAINER_NAME" >/dev/null 2>&1 || true
 }
@@ -65,5 +67,4 @@ function verify_deployment_information() {
   fi
 }
 
-set -e
 trap finish EXIT
