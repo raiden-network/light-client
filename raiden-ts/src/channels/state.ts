@@ -4,7 +4,7 @@ import * as t from 'io-ts';
 import { WithdrawConfirmation, WithdrawExpired, WithdrawRequest } from '../messages';
 import type { Int } from '../utils/types';
 import { Address, Signed, UInt } from '../utils/types';
-import { BalanceProof, Lock } from './types';
+import { BalanceProof, ChannelUniqueKey, Lock } from './types';
 
 export enum ChannelState {
   open = 'open',
@@ -40,7 +40,7 @@ export const Channel = t.intersection([
   // readonly needs to be applied to the individual types to allow tagged union narrowing
   t.readonly(
     t.type({
-      _id: t.string,
+      _id: ChannelUniqueKey,
       id: t.number,
       token: Address,
       tokenNetwork: Address,

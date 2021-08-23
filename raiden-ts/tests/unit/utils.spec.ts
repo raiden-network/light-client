@@ -15,7 +15,7 @@ import { LocksrootZero } from '@/constants';
 import { getLocksroot, getSecrethash, makeSecret } from '@/transfers/utils';
 import { getSortedAddresses } from '@/transport/utils';
 import { encode } from '@/utils/data';
-import { ErrorCodec, ErrorCodes, RaidenError } from '@/utils/error';
+import { assert, ErrorCodec, ErrorCodes, RaidenError } from '@/utils/error';
 import {
   contractHasMethod,
   fromEthersEvent,
@@ -24,7 +24,17 @@ import {
 } from '@/utils/ethers';
 import { LruCache } from '@/utils/lru';
 import { completeWith, concatBuffer, lastMap, mergeWith, takeIf } from '@/utils/rx';
-import { Address, BigNumberC, decode, HexString, Secret, Timed, timed, UInt } from '@/utils/types';
+import {
+  Address,
+  BigNumberC,
+  decode,
+  HexString,
+  Secret,
+  templateLiteral,
+  Timed,
+  timed,
+  UInt,
+} from '@/utils/types';
 
 import { makeAddress } from '../utils';
 
@@ -550,4 +560,21 @@ test('contractHasMethod', async () => {
   await expect(contractHasMethod(sighash, { address: contract2, provider })).resolves.toBeFalse();
   expect(provider.getCode).toHaveBeenCalledWith(contract2);
   expect(provider.getCode).toHaveBeenCalledTimes(2);
+});
+
+test('templateLiteral', () => {
+  const myLiteral = templateLiteral<`#{number}#`>(/^#\d+#$/);
+  type MyLiteral = t.TypeOf<typeof myLiteral>;
+  expect(myLiteral.is('#123#')).toBe(true);
+  expect(myLiteral.is('##')).toBe(false);
+  expect(myLiteral.is('#1#')).toBe(true);
+  expect(myLiteral.is('#9999')).toBe(false);
+  expect(myLiteral.is('8888#')).toBe(false);
+
+  const str = '#456#' as string;
+  let encapsulated: `$${MyLiteral}$`;
+  assert(myLiteral.is(str));
+  // eslint-disable-next-line prefer-const
+  encapsulated = `$${str}$`; // assigning only possible if str is properly inferred
+  expect(myLiteral.is(encapsulated.substr(1, 5))).toBe(true);
 });

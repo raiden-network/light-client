@@ -32,7 +32,7 @@ export function channelKey({
 )): ChannelKey {
   const partnerAddr =
     typeof partner === 'string' ? partner : (partner as { address: Address }).address;
-  return `${tokenNetwork}@${partnerAddr}`;
+  return `${tokenNetwork}@${partnerAddr}` as ChannelKey;
 }
 
 /**
@@ -42,13 +42,13 @@ export function channelKey({
  * @returns A string, for now
  */
 export function channelUniqueKey<
-  C extends { _id?: string; id: number; tokenNetwork: Address } & (
+  C extends { _id?: ChannelUniqueKey; id: number; tokenNetwork: Address } & (
     | { partner: { address: Address } }
     | { partner: Address }
   ),
 >(channel: C): ChannelUniqueKey {
   if ('_id' in channel && channel._id) return channel._id;
-  return `${channelKey(channel)}#${channel.id.toString().padStart(9, '0')}`;
+  return `${channelKey(channel)}#${channel.id.toString().padStart(9, '0')}` as ChannelUniqueKey;
 }
 
 /**

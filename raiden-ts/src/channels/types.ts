@@ -3,13 +3,16 @@ import * as t from 'io-ts';
 
 import { LocksrootZero, SignatureZero } from '../constants';
 import type { Signed } from '../utils/types';
-import { Address, Hash, UInt } from '../utils/types';
+import { Address, Hash, templateLiteral, UInt } from '../utils/types';
 
 // should these become brands?
-export const ChannelKey = t.string;
-export type ChannelKey = string;
-export const ChannelUniqueKey = t.string;
-export type ChannelUniqueKey = string;
+export type ChannelKey = `0x${string}@0x${string}`;
+export const ChannelKey = templateLiteral<ChannelKey>(/^0x[0-9a-fA-F]{40}@0x[0-9a-fA-F]{40}$/);
+
+export type ChannelUniqueKey = `${ChannelKey}#${number}`;
+export const ChannelUniqueKey = templateLiteral<ChannelUniqueKey>(
+  /^0x[0-9a-fA-F]{40}@0x[0-9a-fA-F]{40}#\d+$/,
+);
 
 // Represents a HashTime-Locked amount in a channel
 export const Lock = t.intersection(
