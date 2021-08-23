@@ -31,7 +31,7 @@ import type { Hash, HexString } from '../../utils/types';
 import { channelSettle, channelSettleable, newBlock } from '../actions';
 import type { Channel } from '../state';
 import { ChannelState } from '../state';
-import { assertTx, channelKey, groupChannel$ } from '../utils';
+import { assertTx, channelKey, groupChannel } from '../utils';
 
 /**
  * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable
@@ -81,7 +81,7 @@ export function channelAutoSettleEpic(
   { config$ }: RaidenEpicDeps,
 ): Observable<channelSettle.request> {
   return state$.pipe(
-    groupChannel$,
+    groupChannel(),
     mergeMap((grouped$) =>
       grouped$.pipe(
         filter(

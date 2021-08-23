@@ -20,7 +20,7 @@ import {
 import type { RaidenAction } from '../../actions';
 import { newBlock } from '../../channels/actions';
 import type { Channel } from '../../channels/state';
-import { channelAmounts, groupChannel$ } from '../../channels/utils';
+import { channelAmounts, groupChannel } from '../../channels/utils';
 import { messageServiceSend } from '../../messages/actions';
 import type { MonitorRequest } from '../../messages/types';
 import { MessageType } from '../../messages/types';
@@ -148,7 +148,7 @@ export function msMonitorRequestEpic(
   deps: RaidenEpicDeps,
 ): Observable<messageServiceSend.request> {
   return state$.pipe(
-    groupChannel$,
+    groupChannel(),
     withLatestFrom(deps.config$),
     mergeMap(([grouped$, { httpTimeout }]) =>
       grouped$.pipe(

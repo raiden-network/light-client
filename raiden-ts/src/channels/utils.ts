@@ -184,31 +184,31 @@ export function assertTx(
  * states and completes when channel is settled.
  * Can be used either passing input directly or as an operator
  *
- * @param state$ - RaidenState observable, use Latest['state'] for emit at subscription
  * @returns Tuple containing grouped Observable and { key, id }: { ChannelKey, number } values
  */
-export function groupChannel$(state$: Observable<RaidenState>) {
-  return state$.pipe(
-    pluck('channels'),
-    distinctRecordValues(),
-    pluck(1),
-    // grouped$ output will be backed by a ReplaySubject(1), so will emit latest channel state
-    // immediately if resubscribed or withLatestFrom'd
-    groupBy(channelUniqueKey, undefined, undefined, () => new ReplaySubject<Channel>(1)),
-    map((grouped$) => {
-      const [key, _id] = grouped$.key.split('#');
-      const id = +_id;
-      return grouped$.pipe(
-        takeUntil(
-          state$.pipe(
-            // takeUntil first time state's channelId differs from this observable's
-            // e.g. when channel is settled and gone (channel.id will be undefined)
-            filter(({ channels }) => channels[key]?.id !== id),
+export function groupChannel(): OperatorFunction<RaidenState, Observable<Channel>> {
+  return (state$) =>
+    state$.pipe(
+      pluck('channels'),
+      distinctRecordValues(),
+      pluck(1),
+      // grouped$ output will be backed by a ReplaySubject(1), so will emit latest channel state
+      // immediately if resubscribed or withLatestFrom'd
+      groupBy(channelUniqueKey, { connector: () => new ReplaySubject<Channel>(1) }),
+      map((grouped$) => {
+        const [key, _id] = grouped$.key.split('#');
+        const id = +_id;
+        return grouped$.pipe(
+          takeUntil(
+            state$.pipe(
+              // takeUntil first time state's channelId differs from this observable's
+              // e.g. when channel is settled and gone (channel.id will be undefined)
+              filter(({ channels }) => channels[key]?.id !== id),
+            ),
           ),
-        ),
-      );
-    }),
-  );
+        );
+      }),
+    );
 }
 
 /**
