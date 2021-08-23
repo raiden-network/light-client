@@ -45,7 +45,7 @@ import {
   newBlock,
   tokenMonitored,
 } from '../actions';
-import { channelKey, channelUniqueKey, groupChannel$ } from '../utils';
+import { channelKey, channelUniqueKey, groupChannel } from '../utils';
 
 const tokenNetworkInterface = TokenNetwork__factory.createInterface();
 
@@ -576,7 +576,7 @@ export function channelMonitoredEpic(
   state$: Observable<RaidenState>,
 ): Observable<channelMonitored> {
   return state$.pipe(
-    groupChannel$,
+    groupChannel(),
     mergeMap((grouped$) =>
       grouped$.pipe(
         first(),

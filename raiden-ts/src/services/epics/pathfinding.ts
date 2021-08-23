@@ -24,7 +24,7 @@ import {
 import type { RaidenAction } from '../../actions';
 import { newBlock } from '../../channels/actions';
 import { ChannelState } from '../../channels/state';
-import { channelAmounts, groupChannel$ } from '../../channels/utils';
+import { channelAmounts, groupChannel } from '../../channels/utils';
 import { Capabilities } from '../../constants';
 import { messageServiceSend } from '../../messages/actions';
 import type { PFSCapacityUpdate, PFSFeeUpdate } from '../../messages/types';
@@ -98,7 +98,7 @@ export function pfsCapacityUpdateEpic(
   { log, address, network, signer, config$ }: RaidenEpicDeps,
 ): Observable<messageServiceSend.request> {
   return state$.pipe(
-    groupChannel$,
+    groupChannel(),
     mergeMap((grouped$) =>
       grouped$.pipe(
         pairwise(), // skips first emission on startup
@@ -174,7 +174,7 @@ export function pfsFeeUpdateEpic(
   { log, address, network, signer, config$, mediationFeeCalculator }: RaidenEpicDeps,
 ): Observable<messageServiceSend.request> {
   return state$.pipe(
-    groupChannel$,
+    groupChannel(),
     mergeMap((grouped$) =>
       combineLatest([
         grouped$,
