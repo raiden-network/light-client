@@ -5,7 +5,6 @@ import * as t from 'io-ts';
 
 import { ConfirmableAction } from './actions';
 import { Channel } from './channels/state';
-import { ChannelKey } from './channels/types';
 import { PartialRaidenConfig } from './config';
 import { IOU, ServicesValidityMap } from './services/types';
 import { TransferState } from './transfers/state';
@@ -21,8 +20,8 @@ const _RaidenState = t.readonly(
     registry: Address,
     blockNumber: t.number,
     config: PartialRaidenConfig,
-    channels: t.readonly(t.record(ChannelKey, Channel)),
-    oldChannels: t.readonly(t.record(t.string, Channel)),
+    channels: t.readonly(t.record(t.string /* ChannelKey */, Channel)),
+    oldChannels: t.readonly(t.record(t.string /* ChannelUniqueKey */, Channel)),
     tokens: t.readonly(t.record(t.string /* token: Address */, Address)),
     transport: t.readonly(t.partial({ server: t.string, setup: RaidenMatrixSetup })),
     transfers: t.readonly(t.record(t.string /*: key: TransferKey */, TransferState)),

@@ -344,3 +344,30 @@ export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) ex
 ) => void
   ? I
   : never;
+
+/**
+ * Creates a refinement of t.string which validates a template literal string
+ *
+ * @param regex - Regex which matches the generic parameter L
+ * @param name - codec name
+ * @returns refinement type of string to tempalte literal
+ */
+export function templateLiteral<L extends string>(regex: RegExp | string, name?: string) {
+  const regex_ = typeof regex === 'string' ? new RegExp(regex) : regex;
+  const predicate = (u: string): u is L => regex_.test(u);
+  return new t.RefinementType(
+    name ?? `TemplateLiteral<${regex_.source}>`,
+    (u): u is L => t.string.is(u) && predicate(u),
+    (i, c) => {
+      const e = t.string.validate(i, c);
+      if (isLeft(e)) {
+        return e;
+      }
+      const a = e.right;
+      return predicate(a) ? t.success(a) : t.failure(a, c);
+    },
+    t.string.encode,
+    t.string,
+    predicate,
+  );
+}
