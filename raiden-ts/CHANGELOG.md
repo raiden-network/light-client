@@ -2,8 +2,10 @@
 
 ## [Unreleased]
 ### Fixed
+- [#2798] Delay non-closing auto-settle to prevent wasted gas on channelSettle race; closing side is given priority on auto-settling
 - [#2889] Ensure capabilities are updated when they change even if RTC channels are established by reconnecting them.
 
+[#2798]: https://github.com/raiden-network/light-client/issues/2798
 [#2889]: https://github.com/raiden-network/light-client/issues/2889
 
 ## [2.0.0-rc.1] - 2021-08-13
