@@ -811,7 +811,7 @@ describe('channelSettleEpic', () => {
     );
 
     await waitBlock(settleBlock + 1);
-    await waitBlock(settleBlock + 2 * confirmationBlocks + 1);
+    await waitBlock(settleBlock + raiden.config.revealTimeout + 2);
     await waitBlock();
     await settled;
 
@@ -887,7 +887,7 @@ describe('channelSettleEpic', () => {
     );
 
     await waitBlock(settleBlock + 1);
-    await waitBlock(settleBlock + 2 * confirmationBlocks + 1);
+    await waitBlock(settleBlock + raiden.config.revealTimeout + 2);
     await waitBlock();
     await settled;
 
@@ -987,22 +987,48 @@ describe('channelUnlockEpic', () => {
   });
 });
 
-test('channelAutoSettleEpic', async () => {
-  expect.assertions(2);
+describe('channelAutoSettleEpic', () => {
+  test('closing side', async () => {
+    expect.assertions(2);
 
-  const [raiden, partner] = await makeRaidens(2);
+    const [raiden, partner] = await makeRaidens(2);
 
-  // enable autoSettle
-  raiden.store.dispatch(raidenConfigUpdate({ autoSettle: true }));
+    // enable autoSettle
+    raiden.store.dispatch(raidenConfigUpdate({ autoSettle: true }));
 
-  await ensureChannelIsClosed([raiden, partner]);
-  await waitBlock(settleBlock + 1);
-  await waitBlock(settleBlock + 2 * confirmationBlocks + 1);
+    // we close
+    await ensureChannelIsClosed([raiden, partner]);
+    await waitBlock(settleBlock + 1);
+    await waitBlock(settleBlock + 2 * confirmationBlocks + 1);
 
-  expect(raiden.output).toContainEqual(
-    channelSettle.request(undefined, { tokenNetwork, partner: partner.address }),
-  );
-  expect(getChannel(raiden, partner)?.state).toBe(ChannelState.settling);
+    expect(raiden.output).toContainEqual(
+      channelSettle.request(undefined, { tokenNetwork, partner: partner.address }),
+    );
+    expect(getChannel(raiden, partner)?.state).toBe(ChannelState.settling);
+  });
+
+  test('non-closing side', async () => {
+    expect.assertions(3);
+
+    const [raiden, partner] = await makeRaidens(2);
+
+    // enable autoSettle
+    raiden.store.dispatch(raidenConfigUpdate({ autoSettle: true }));
+
+    // partner closes
+    await ensureChannelIsClosed([partner, raiden]);
+    await waitBlock(settleBlock + 1);
+
+    // it should not close when settleable, if revealTimeout didn't pass yet
+    await waitBlock(settleBlock + 2 * confirmationBlocks + 1);
+    expect(raiden.output).not.toContainEqual(channelSettle.request(undefined, expect.anything()));
+
+    await waitBlock(settleBlock + raiden.config.revealTimeout + 1);
+    expect(raiden.output).toContainEqual(
+      channelSettle.request(undefined, { tokenNetwork, partner: partner.address }),
+    );
+    expect(getChannel(raiden, partner)?.state).toBe(ChannelState.settling);
+  });
 });
 
 test('stale provider disables receiving', async () => {
