@@ -60,7 +60,12 @@ import {
 } from '../../utils/rx';
 import { Address, isntNil, Signed } from '../../utils/types';
 import { matrixPresence } from '../actions';
-import { getAddressFromUserId, getNoDeliveryPeers, getPresencesByUserId } from '../utils';
+import {
+  getAddressFromUserId,
+  getPresencesByAddress,
+  getPresencesByUserId,
+  peerIsOnlineLC,
+} from '../utils';
 
 function getMessageBody(message: string | Signed<Message>): string {
   return typeof message === 'string' ? message : encodeJsonMessage(message);
@@ -354,7 +359,7 @@ export function matrixMessageReceivedEpic(
     dispatchRequestAndGetResponse(matrixPresence, (requestPresence) =>
       matrix$.pipe(
         // when matrix finishes initialization, register to matrix timeline events
-        mergeWith((matrix) => fromEvent<MatrixEvent>(matrix, 'toDeviceEvent')),
+        mergeWith((matrix) => fromEvent(matrix, 'toDeviceEvent') as Observable<MatrixEvent>),
         filter(
           ([matrix, event]) =>
             event.getType() === 'm.room.message' && event.getSender() !== matrix.getUserId(),
@@ -425,11 +430,9 @@ export function deliveredEpic(
     filter(
       isMessageReceivedOfType([Signed(Processed), Signed(SecretRequest), Signed(SecretReveal)]),
     ),
-    // aggregate seen matrixPresence.success addresses with !DELIVERY set;
-    // if an address's presence hasn't been seen, it's assumed Delivered is needed
-    withLatestFrom(getNoDeliveryPeers()(action$)),
-    // skip iff peer supports !Capabilities.DELIVERY
-    filter(([action, noDelivery]) => !noDelivery.has(action.meta.address)),
+    withLatestFrom(action$.pipe(getPresencesByAddress())),
+    // light-clients don't need Delivered messages
+    filter(([action, presences]) => !peerIsOnlineLC(presences[action.meta.address])),
     concatMap(([action]) => {
       const message = action.payload.message;
       // defer causes the cache check to be performed at subscription time

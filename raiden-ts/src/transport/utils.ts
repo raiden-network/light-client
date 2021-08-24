@@ -102,24 +102,6 @@ export function getSortedAddresses<A extends Address[]>(...addresses: A) {
 }
 
 /**
- * Extracts peer's addresses which don't need Delivered messages as a set
- *
- * @returns custom operator mapping from stream of RaidenActions to address set
- */
-export function getNoDeliveryPeers(): OperatorFunction<RaidenAction, Set<Address>> {
-  const noDelivery = new Set<Address>();
-  return pipe(
-    filter(matrixPresence.success.is),
-    scan((acc, presence) => {
-      if (!getCap(presence.payload.caps, Capabilities.DELIVERY)) acc.add(presence.meta.address);
-      else acc.delete(presence.meta.address);
-      return acc;
-    }, noDelivery),
-    startWith(noDelivery),
-  );
-}
-
-/**
  * Aggregates seen presence updates by userId
  *
  * @returns custom operator mapping from stream of RaidenActions to userId-presences dict
@@ -158,4 +140,15 @@ export function getPresencesByAddress(): OperatorFunction<
     }, emptyDict),
     startWith(emptyDict),
   );
+}
+
+/**
+ * Check if given presence is from an online partner which is another Light Client
+ * For now, this checks peer is online (known presence) and has Capabilities.DELIVERY set to 0
+ *
+ * @param presence - optional presence update
+ * @returns true if partner is online and is another light-client
+ */
+export function peerIsOnlineLC(presence: matrixPresence.success | undefined): boolean {
+  return !!presence && !getCap(presence.payload.caps, Capabilities.DELIVERY);
 }
