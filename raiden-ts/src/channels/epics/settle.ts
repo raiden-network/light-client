@@ -3,25 +3,26 @@ import type { Observable } from 'rxjs';
 import { combineLatest, defer, EMPTY, of } from 'rxjs';
 import {
   catchError,
-  delayWhen,
+  distinctUntilKeyChanged,
   filter,
   first,
   ignoreElements,
   map,
   mergeMap,
   pluck,
-  take,
   takeUntil,
   withLatestFrom,
 } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
 import { intervalFromConfig } from '../../config';
+import { Capabilities } from '../../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { createBalanceHash } from '../../messages/utils';
 import type { RaidenState } from '../../state';
 import { Direction } from '../../transfers/state';
 import { findBalanceProofMatchingBalanceHash$ } from '../../transfers/utils';
+import { getCap, getPresencesByAddress } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { encode } from '../../utils/data';
@@ -31,7 +32,7 @@ import type { Hash, HexString } from '../../utils/types';
 import { channelSettle, channelSettleable, newBlock } from '../actions';
 import type { Channel } from '../state';
 import { ChannelState } from '../state';
-import { assertTx, channelKey, groupChannel } from '../utils';
+import { assertTx, channelKey } from '../utils';
 
 /**
  * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable
@@ -66,56 +67,56 @@ export function channelSettleableEpic(
 
 /**
  * If config.autoSettle is true, calls channelSettle.request on settleable channels
- * The event is emitted between [confirmationBlocks, 2 * confirmationBlocks] after channel becomes
- * settleable, to give time for confirmation and for partner to settle.
+ * If partner is a LC and not the closing side, they're expected to wait [config.revealTimeout]
+ * after channel becomes settleable before attempting to auto-settle, so we should attempt it
+ * earlier [config.confirmationBlocks] after settleable. PCs always attempt earlier, so we should
+ * wait longer regardless of who closed the channel, to avoid races and wasted gas; if even after
+ * waiting (earlier or later) channel isn't settling/settled, we do it anyway.
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
  * @param deps.config$ - Config observable
+ * @param deps.address - Our address
  * @returns Observable of channelSettle.request actions
  */
 export function channelAutoSettleEpic(
-  {}: Observable<RaidenAction>,
+  action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { config$ }: RaidenEpicDeps,
+  { address, config$ }: RaidenEpicDeps,
 ): Observable<channelSettle.request> {
   return state$.pipe(
-    groupChannel(),
-    mergeMap((grouped$) =>
-      grouped$.pipe(
-        filter(
-          (channel): channel is Channel & { state: ChannelState.settleable } =>
-            channel.state === ChannelState.settleable,
-        ),
-        take(1),
-        withLatestFrom(config$),
-        // wait [confirmationBlocks, 2 * confirmationBlocks] before proceeding
-        delayWhen(([channel, { confirmationBlocks }]) => {
-          const settleBlock =
-            channel.closeBlock +
-            channel.settleTimeout +
-            Math.round(confirmationBlocks * (1.0 + Math.random()));
-          return state$.pipe(
-            pluck('blockNumber'),
-            filter((blockNumber) => settleBlock <= blockNumber),
-            take(1),
-          );
-        }),
-        withLatestFrom(state$),
-        // filter channel isn't yet being settled by us or partner (state=settling)
-        filter(
-          ([[channel], state]) =>
-            state.channels[channelKey(channel)]?.state === ChannelState.settleable,
-        ),
-        map(([[channel]]) =>
-          channelSettle.request(undefined, {
-            tokenNetwork: channel.tokenNetwork,
-            partner: channel.partner.address,
-          }),
-        ),
-      ),
-    ),
+    distinctUntilKeyChanged('blockNumber'),
+    withLatestFrom(action$.pipe(getPresencesByAddress()), config$),
+    mergeMap(function* ([
+      { blockNumber, channels },
+      presences,
+      { confirmationBlocks, revealTimeout },
+    ]) {
+      for (const channel of Object.values(channels)) {
+        if (channel.state !== ChannelState.settleable) continue;
+
+        const partnerIsOnlineLC =
+          channel.partner.address in presences &&
+          !getCap(presences[channel.partner.address]?.payload.caps, Capabilities.DELIVERY);
+
+        /* iff we are *sure* partner will wait longer (i.e. they're a LC and *we* are the closing
+         * side), then we autoSettle early; otherwise (it's a PC or they're the closing side),
+         * we can wait longer before autoSettling */
+        let waitConfirmations: number;
+        if (partnerIsOnlineLC && channel.closeParticipant === address)
+          waitConfirmations = confirmationBlocks;
+        else waitConfirmations = revealTimeout;
+
+        // not yet good to go, maybe partner is settling; skip and test later
+        if (blockNumber < channel.closeBlock + channel.settleTimeout + waitConfirmations) continue;
+
+        yield channelSettle.request(undefined, {
+          tokenNetwork: channel.tokenNetwork,
+          partner: channel.partner.address,
+        });
+      }
+    }),
     takeIf(config$.pipe(pluck('autoSettle'), completeWith(state$))),
   );
 }
