@@ -72,7 +72,7 @@ import {
 import type { Address } from '../../utils/types';
 import { decode, isntNil, last } from '../../utils/types';
 import { matrixPresence, rtcChannel } from '../actions';
-import { getCap, getSeenPresences } from '../utils';
+import { getCap, getPresencesByUserId } from '../utils';
 
 interface CallInfo {
   callId: string;
@@ -613,7 +613,7 @@ function mapRtcMessage(): OperatorFunction<
   return (action$) =>
     action$.pipe(
       filter(messageReceived.is),
-      withLatestFrom(action$.pipe(getSeenPresences())),
+      withLatestFrom(action$.pipe(getPresencesByUserId())),
       filter(
         ([action, seenPresences]) =>
           action.payload.msgtype === rtcMatrixMsgType &&

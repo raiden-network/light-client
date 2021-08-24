@@ -1,10 +1,12 @@
 import { getAddress } from '@ethersproject/address';
+import omit from 'lodash/omit';
 import type { OperatorFunction } from 'rxjs';
 import { pipe } from 'rxjs';
 import { filter, scan, startWith } from 'rxjs/operators';
 
 import type { RaidenAction } from '../actions';
 import { Capabilities, CapsFallback } from '../constants';
+import { isActionOf } from '../utils/actions';
 import { jsonParse } from '../utils/data';
 import type { Address } from '../utils/types';
 import { matrixPresence } from './actions';
@@ -118,11 +120,11 @@ export function getNoDeliveryPeers(): OperatorFunction<RaidenAction, Set<Address
 }
 
 /**
- * Extracts peer's addresses which don't need Delivered messages as a set
+ * Aggregates seen presence updates by userId
  *
- * @returns custom operator mapping from stream of RaidenActions to address set
+ * @returns custom operator mapping from stream of RaidenActions to userId-presences dict
  */
-export function getSeenPresences(): OperatorFunction<
+export function getPresencesByUserId(): OperatorFunction<
   RaidenAction,
   { [userId: string]: matrixPresence.success }
 > {
@@ -130,6 +132,30 @@ export function getSeenPresences(): OperatorFunction<
   return pipe(
     filter(matrixPresence.success.is),
     scan((acc, action) => ({ ...acc, [action.payload.userId]: action }), emptyDict),
+    startWith(emptyDict),
+  );
+}
+
+/**
+ * Aggregates seen presence updates by online addresses (afawk)
+ *
+ * @returns custom operator mapping from stream of RaidenActions to address-presence dict
+ */
+export function getPresencesByAddress(): OperatorFunction<
+  RaidenAction,
+  { [address: string]: matrixPresence.success }
+> {
+  const emptyDict: { [address: string]: matrixPresence.success } = {};
+  return pipe(
+    filter(isActionOf([matrixPresence.success, matrixPresence.failure])),
+    scan((acc, action) => {
+      if (matrixPresence.success.is(action) && action.payload.available) {
+        acc = { ...acc, [action.meta.address]: action };
+      } else if (action.meta.address in acc) {
+        acc = omit(acc, action.meta.address);
+      }
+      return acc;
+    }, emptyDict),
     startWith(emptyDict),
   );
 }

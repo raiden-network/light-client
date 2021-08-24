@@ -60,7 +60,7 @@ import {
 } from '../../utils/rx';
 import { Address, isntNil, Signed } from '../../utils/types';
 import { matrixPresence } from '../actions';
-import { getAddressFromUserId, getNoDeliveryPeers, getSeenPresences } from '../utils';
+import { getAddressFromUserId, getNoDeliveryPeers, getPresencesByUserId } from '../utils';
 
 function getMessageBody(message: string | Signed<Message>): string {
   return typeof message === 'string' ? message : encodeJsonMessage(message);
@@ -360,7 +360,7 @@ export function matrixMessageReceivedEpic(
             event.getType() === 'm.room.message' && event.getSender() !== matrix.getUserId(),
         ),
         pluck(1),
-        withLatestFrom(config$, action$.pipe(getSeenPresences())),
+        withLatestFrom(config$, action$.pipe(getPresencesByUserId())),
         mergeWith(([event, { httpTimeout }, seenPresences]) => {
           const senderId = event.getSender();
           if (senderId in seenPresences) return of(seenPresences[senderId]);
