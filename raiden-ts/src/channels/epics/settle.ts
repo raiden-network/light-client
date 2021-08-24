@@ -16,13 +16,12 @@ import {
 
 import type { RaidenAction } from '../../actions';
 import { intervalFromConfig } from '../../config';
-import { Capabilities } from '../../constants';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { createBalanceHash } from '../../messages/utils';
 import type { RaidenState } from '../../state';
 import { Direction } from '../../transfers/state';
 import { findBalanceProofMatchingBalanceHash$ } from '../../transfers/utils';
-import { getCap, getPresencesByAddress } from '../../transport/utils';
+import { getPresencesByAddress, peerIsOnlineLC } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { encode } from '../../utils/data';
@@ -87,19 +86,16 @@ export function channelAutoSettleEpic(
 ): Observable<channelSettle.request> {
   return state$.pipe(
     distinctUntilKeyChanged('blockNumber'),
-    withLatestFrom(action$.pipe(getPresencesByAddress()), config$),
+    withLatestFrom(config$, action$.pipe(getPresencesByAddress())),
     mergeMap(function* ([
       { blockNumber, channels },
-      presences,
       { confirmationBlocks, revealTimeout },
+      presences,
     ]) {
       for (const channel of Object.values(channels)) {
         if (channel.state !== ChannelState.settleable) continue;
 
-        const partnerIsOnlineLC =
-          channel.partner.address in presences &&
-          !getCap(presences[channel.partner.address]?.payload.caps, Capabilities.DELIVERY);
-
+        const partnerIsOnlineLC = peerIsOnlineLC(presences[channel.partner.address]);
         /* iff we are *sure* partner will wait longer (i.e. they're a LC and *we* are the closing
          * side), then we autoSettle early; otherwise (it's a PC or they're the closing side),
          * we can wait longer before autoSettling */

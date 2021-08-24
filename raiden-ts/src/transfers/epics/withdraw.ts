@@ -30,7 +30,7 @@ import { isMessageReceivedOfType, MessageType, Processed, signMessage } from '..
 import { messageSend } from '../../messages/actions';
 import type { RaidenState } from '../../state';
 import { matrixPresence } from '../../transport/actions';
-import { getNoDeliveryPeers } from '../../transport/utils';
+import { getPresencesByAddress, peerIsOnlineLC } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
@@ -340,10 +340,11 @@ export function withdrawMessageProcessedEpic(
       (action) =>
         (action.meta.direction === Direction.RECEIVED) !== withdrawMessage.success.is(action),
     ),
-    withLatestFrom(getNoDeliveryPeers()(action$)),
-    concatMap(([action, noDelivery]) =>
+    withLatestFrom(action$.pipe(getPresencesByAddress())),
+    concatMap(([action, presences]) =>
       defer(() => {
-        if (noDelivery.has(action.meta.partner)) return EMPTY;
+        // light-clients don't need Processed messages, only PCs
+        if (peerIsOnlineLC(presences[action.meta.partner])) return EMPTY;
         const message = action.payload.message;
         let processed$: Observable<Signed<Processed>>;
         const cacheKey = message.message_identifier.toString();
