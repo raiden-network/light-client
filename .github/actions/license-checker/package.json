@@ -10,11 +10,11 @@
     "lint": "eslint ./src/index.js"
   },
   "dependencies": {
-    "@actions/core": "^1.4.0",
+    "@actions/core": "^1.5.0",
     "query-registry": "^2.0.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.29.1",
+    "@vercel/ncc": "^0.29.2",
     "eslint": "^7.32.0"
   }
 }
