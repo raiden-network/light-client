@@ -22,11 +22,12 @@ import { MessageType } from '../../messages';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { assert } from '../../utils/error';
+import { checkContractHasMethod$ } from '../../utils/ethers';
 import { dispatchRequestAndGetResponse } from '../../utils/rx';
 import type { Signed } from '../../utils/types';
 import { withdraw, withdrawBusy, withdrawMessage } from '../actions';
 import { Direction } from '../state';
-import { checkContractHasMethod$, matchWithdraw, withdrawMetaFromRequest } from './utils';
+import { matchWithdraw, withdrawMetaFromRequest } from './utils';
 
 /**
  * Upon valid [[WithdrawConfirmation]] for a [[WithdrawRequest]].coop_settle=true from partner,

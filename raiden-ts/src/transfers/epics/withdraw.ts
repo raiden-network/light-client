@@ -34,6 +34,7 @@ import { getPresencesByAddress, peerIsOnlineLC } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
+import { checkContractHasMethod$ } from '../../utils/ethers';
 import { LruCache } from '../../utils/lru';
 import { dispatchRequestAndGetResponse, retryWhile } from '../../utils/rx';
 import { Signed } from '../../utils/types';
@@ -46,12 +47,7 @@ import {
   withdrawResolve,
 } from '../actions';
 import { Direction } from '../state';
-import {
-  checkContractHasMethod$,
-  matchWithdraw,
-  retrySendUntil$,
-  withdrawMetaFromRequest,
-} from './utils';
+import { matchWithdraw, retrySendUntil$, withdrawMetaFromRequest } from './utils';
 
 /**
  * Emits withdraw action once for each own non-confirmed message at startup

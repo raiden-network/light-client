@@ -30,8 +30,9 @@ import {
 
 import { DEFAULT_CONFIRMATIONS } from '../constants';
 import type { TypedEventFilter, TypedListener } from '../contracts/commons';
+import { assert } from './error';
 import { mergeWith } from './rx';
-import type { HexString } from './types';
+import { decode, HexString } from './types';
 
 declare const _filter: unique symbol;
 /**
@@ -337,4 +338,27 @@ export async function contractHasMethod(
   const code = await getContractCode(address, provider);
   const push4opcode = '63'; // 0x63 is PUSH4 opcode, prefixes sighash in method contracts
   return code.includes(push4opcode + sighash.substr(2));
+}
+
+/**
+ * Fetches contract's code and parse if it has given method (by name)
+ *
+ * @param contract - contract instance to check
+ * @param method - method name
+ * @returns Observable of true, emitting a single value if successful, or erroring
+ */
+export function checkContractHasMethod$<C extends Contract>(
+  contract: C,
+  method: keyof C['functions'] & string,
+): Observable<true> {
+  return defer(async () => {
+    const sighash = contract.interface.getSighash(method);
+    // decode shouldn't fail if building with ^0.39 contracts, but runtime may be running
+    // with 0.37 contracts, and the only way to know is by checking contract's code (memoized)
+    assert(
+      await contractHasMethod(decode(HexString(4), sighash, 'signature hash not found'), contract),
+      ['contract does not have method', { contract: contract.address, method }],
+    );
+    return true as const;
+  });
 }
