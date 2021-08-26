@@ -62,6 +62,7 @@ async function createRaiden(account: number | string | Signer): Promise<Raiden> 
       autoUDCWithdraw: false, // required to use `withdrawFromUDC` later
       caps: {
         [Capabilities.RECEIVE]: 1,
+        [Capabilities.MEDIATE]: 1,
       },
     },
   );
@@ -248,16 +249,7 @@ describe('e2e', () => {
       withdraw_amount - withdrawAmount2,
     );
 
-    /*
-     * Send mediated payment with LC as mediator
-     *
-     * For this we need to enable mediation in LC2
-     */
-    raiden2.updateConfig({
-      caps: {
-        [Capabilities.MEDIATE]: 1,
-      },
-    });
+    /* Send mediated payment with LC as mediator */
     await expect(raiden2.mint(getToken(), amount)).resolves.toMatch('0x');
     await expect(raiden2.getTokenBalance(getToken())).resolves.toBeBigNumber(amount);
     await expect(raiden2.openChannel(getToken(), partner2, { deposit: amount })).resolves.toMatch(
