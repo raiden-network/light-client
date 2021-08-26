@@ -226,7 +226,7 @@ export function takeIf<T>(
  * Complete an input when another observable completes
  *
  * @param complete$ - Observable which will complete input when completed
- * @param delayMs - Delay completion by some time after complete$ completes
+ * @param delayMs - Delay unsubscribing source by some time after complete$ completes
  * @returns Operator returning observable mirroring input, but completes when complete$ completes
  */
 export function completeWith<T>(
