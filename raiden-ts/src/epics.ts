@@ -3,11 +3,11 @@ import { MaxUint256 } from '@ethersproject/constants';
 import { uniq } from 'lodash/fp';
 import unset from 'lodash/fp/unset';
 import isEqual from 'lodash/isEqual';
-import negate from 'lodash/negate';
 import type { Observable, ObservableInput } from 'rxjs';
-import { combineLatest, concat, from, merge, of, timer, using } from 'rxjs';
+import { BehaviorSubject, combineLatest, concat, from, merge, of, timer, using } from 'rxjs';
 import {
   catchError,
+  combineLatestWith,
   delayWhen,
   distinctUntilChanged,
   filter,
@@ -18,10 +18,10 @@ import {
   mergeMap,
   pluck,
   scan,
+  skipUntil,
   startWith,
   take,
   takeUntil,
-  takeWhile,
   tap,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -259,13 +259,17 @@ export function getLatest$(
   );
 }
 
+// Order matters! When shutting down, each epic's completion triggers the next to shut down,
+// meaning epics in this list should not assume previous epics are running, but can assume later
+// ones are (e.g. services epics may assume transport epics are still be subscribed, so messages
+// can be sent)
 const raidenEpics = {
   ...ConfigEpics,
-  ...DatabaseEpics,
   ...ChannelsEpics,
-  ...TransportEpics,
   ...TransfersEpics,
   ...ServicesEpics,
+  ...TransportEpics,
+  ...DatabaseEpics,
 };
 
 type RaidenEpic = (
@@ -295,13 +299,7 @@ export function combineRaidenEpics(
     state$: Observable<RaidenState>,
     deps: RaidenEpicDeps,
   ): Observable<RaidenAction> {
-    // observable which emits once when a raidenShutdown action goes through actions pipeline
-    const shutdownNotification = action$.pipe(filter(raidenShutdown.is), take(1)),
-      // actions pipeline, but ends with (including) a raidenShutdown action
-      limitedAction$ = action$.pipe(takeWhile<RaidenAction>(negate(raidenShutdown.is), true)),
-      // states pipeline, but ends when shutdownNotification emits
-      limitedState$ = state$.pipe(takeUntil(shutdownNotification));
-
+    const shutdownNotification$ = action$.pipe(filter(raidenShutdown.is));
     // like combineEpics, but completes action$, state$ & output$ when a raidenShutdown goes through;
     return using(
       // wire deps.latest$ when observableFactory below gets subscribed, and tears down on complete
@@ -312,27 +310,45 @@ export function combineRaidenEpics(
         return sub;
       },
       () => {
-        const subscribedEpics = new Set<string>();
+        const subscribedChanged = new BehaviorSubject<readonly RaidenEpic[]>([]);
         // main epics output
         const output$ = from(epics).pipe(
           mergeMap((epic) => {
-            subscribedEpics.add(epic.name);
-            return epic(limitedAction$, limitedState$, deps).pipe(
+            subscribedChanged.next([...subscribedChanged.value, epic]); // append epic
+
+            // trigger each epic's shutdown after system's shutdown and after previous epic
+            // completed (serial completion)
+            const epicShutdown$: Observable<unknown> = subscribedChanged.pipe(
+              combineLatestWith(shutdownNotification$), // re-emit/evaluate when shutdown
+              skipUntil(shutdownNotification$), // don't shutdown first epic if not yet shutting down
+              filter(([subscribed]) => subscribed[0] === epic),
+            );
+
+            return epic(
+              // we shut down an epic by completing its inputs, then it should gracefully complete
+              // whenever it can
+              action$.pipe(takeUntil(epicShutdown$)),
+              state$.pipe(takeUntil(epicShutdown$)),
+              deps,
+            ).pipe(
               catchError((err) => {
                 deps.log.error('Epic error', epic.name, epic, err);
                 return of(raidenShutdown({ reason: err }));
               }),
-              finalize(() => subscribedEpics.delete(epic.name)),
+              // but if an epic takes more than httpTimeout, forcefully completes it
+              takeUntil(
+                epicShutdown$.pipe(
+                  withLatestFrom(deps.config$),
+                  // give up to httpTimeout for the epics to complete on their own
+                  delayWhen(([_, { httpTimeout }]) => timer(httpTimeout)),
+                  tap(() => deps.log.warn('Epic stuck:', epic.name, epic)),
+                ),
+              ),
+              finalize(() => {
+                subscribedChanged.next(subscribedChanged.value.filter((v) => v !== epic));
+              }),
             );
           }),
-          takeUntil(
-            shutdownNotification.pipe(
-              withLatestFrom(deps.config$),
-              // give up to httpTimeout for the epics to complete on their own
-              delayWhen(([_, { httpTimeout }]) => timer(httpTimeout)),
-              tap(() => deps.log.warn('Pending Epics :', subscribedEpics)),
-            ),
-          ),
         );
         // also concat db teardown tasks, to be done after main epic completes
         const teardown$ = deps.db.busy$.pipe(
