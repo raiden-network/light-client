@@ -220,7 +220,7 @@ export function makeTransaction(
 }
 
 // array of cleanup functions registered on current test
-const mockedCleanups: (() => void)[] = [];
+const mockedCleanups: (() => void | Promise<void>)[] = [];
 
 export const fetch = jest.fn<
   Promise<{
@@ -244,9 +244,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   let clean;
-  while ((clean = mockedCleanups.pop())) clean();
-  await sleep(10 * pollingInterval);
-  await flushPromises();
+  while ((clean = mockedCleanups.pop())) await clean();
   fetch.mockRestore();
 });
 
