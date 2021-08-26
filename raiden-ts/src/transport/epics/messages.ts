@@ -169,7 +169,7 @@ function sendBatchedToDevice(
   return action$.pipe(
     tap(([action, userId]) => queue.push({ ...action, payload: { ...action.payload, userId } })),
     // like concatBuffer, but takes queue control in order to do custom batch selection
-    concatMap(() => defer(() => flushQueueToDevice(queue, deps).pipe(completeWith(action$, 10)))),
+    concatMap(() => defer(() => flushQueueToDevice(queue, deps))),
     // notice the emitted elements are observables, which can be merged in the output *after*
     // the concatMap was released in order to "wait" for some condition before success|failure
     mergeMap((obs$: Observable<messageSend.success | messageSend.failure>) =>
@@ -333,7 +333,6 @@ export function matrixMessageServiceSendEpic(
     // wait until init$ is completed before handling requests, so state.services is populated
     delayWhen(() => deps.init$.pipe(ignoreElements(), endWith(true))),
     mergeMap((request) => sendServiceMessage(request, deps), 5),
-    completeWith(action$, 10),
   );
 }
 
