@@ -294,10 +294,12 @@ test('channelMonitored triggers matrixPresence.request', async () => {
 
 test('matrixShutdownEpic: stopClient called on action$ completion', async () => {
   expect.assertions(2);
-  const raiden = await makeRaiden(undefined);
+  const raiden = await makeRaiden(undefined, false);
+  raiden.store.dispatch(raidenConfigUpdate({ pollingInterval: 5, httpTimeout: 10 }));
+  await raiden.start();
   const matrix = await firstValueFrom(raiden.deps.matrix$);
   expect(matrix.stopClient).not.toHaveBeenCalled();
-  raiden.stop();
+  await raiden.stop();
   expect(matrix.stopClient).toHaveBeenCalledTimes(1);
 });
 

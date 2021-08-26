@@ -585,7 +585,7 @@ export interface MockedRaiden {
   output: RaidenAction[];
   start: () => Promise<void>;
   started: boolean | undefined;
-  stop: () => void;
+  stop: () => Promise<void>;
   synced: Promise<any>;
 }
 

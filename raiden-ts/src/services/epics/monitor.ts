@@ -4,7 +4,6 @@ import { MaxUint256, WeiPerEther, Zero } from '@ethersproject/constants';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, combineLatest, EMPTY, from, of, timer } from 'rxjs';
 import {
-  catchError,
   debounce,
   distinctUntilChanged,
   filter,
@@ -30,7 +29,7 @@ import { makeMessageId } from '../../transfers/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { encode } from '../../utils/data';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
-import { completeWith } from '../../utils/rx';
+import { catchAndLog, completeWith } from '../../utils/rx';
 import type { Address, Hash, Signature, UInt } from '../../utils/types';
 import { isntNil } from '../../utils/types';
 import { msBalanceProofSent } from '../actions';
@@ -39,6 +38,8 @@ import { Service } from '../types';
 /**
  * Makes a *Map callback which returns an observable of actions to send RequestMonitoring messages
  *
+ * @param state$ - Observable of RaidenStates
+ * @param channel - Channel state to generate a a monitoring request for
  * @param deps - Epics dependencies
  * @param deps.address - Our Address
  * @param deps.log - Logger instance
@@ -50,88 +51,78 @@ import { Service } from '../types';
  * @returns An operator which receives prev and current Channel states and returns a cold
  *      Observable of messageServiceSend.request actions to monitoring services
  */
-function makeMonitoringRequest$({
-  address,
-  log,
-  network,
-  signer,
-  contractsInfo,
-  latest$,
-  config$,
-}: RaidenEpicDeps) {
-  return ([, channel]: [Channel, Channel]) => {
-    const { partnerUnlocked } = channelAmounts(channel);
-    // give up early if nothing to lose
-    if (partnerUnlocked.isZero()) return EMPTY;
+function makeMonitoringRequest$(
+  state$: Observable<RaidenState>,
+  channel: Channel,
+  { address, log, network, signer, contractsInfo, latest$, config$ }: RaidenEpicDeps,
+) {
+  const { partnerUnlocked } = channelAmounts(channel);
+  // give up early if nothing to lose
+  if (partnerUnlocked.isZero()) return EMPTY;
 
-    return combineLatest([latest$, config$]).pipe(
-      // combineLatest + filter ensures it'll pass if anything here changes
-      filter(
-        ([{ udcDeposit }, { monitoringReward, rateToSvt }]) =>
-          // ignore actions while/if config.monitoringReward isn't enabled
-          !!monitoringReward?.gt(Zero) &&
-          // wait for udcDepost.balance >= monitoringReward, fires immediately if already
-          udcDeposit.balance.gte(monitoringReward) &&
-          // use partner's total off & on-chain unlocked, total we'd lose if don't update BP
-          partnerUnlocked
-            // use rateToSvt to convert to equivalent SVT, and pass only if > monitoringReward;
-            // default rate=MaxUint256 means it'll ALWAYS monitor if no rate is set for token
-            .mul(rateToSvt[channel.token] ?? MaxUint256)
-            .div(WeiPerEther)
-            .gt(monitoringReward),
-      ),
-      take(1), // take/act on first time all conditions above pass
-      mergeMap(([, { monitoringReward }]) => {
-        const balanceProof = channel.partner.balanceProof;
-        const balanceHash = createBalanceHash(balanceProof);
+  return combineLatest([latest$, config$]).pipe(
+    // combineLatest + filter ensures it'll pass if anything here changes
+    filter(
+      ([{ udcDeposit }, { monitoringReward, rateToSvt }]) =>
+        // ignore actions while/if config.monitoringReward isn't enabled
+        !!monitoringReward?.gt(Zero) &&
+        // wait for udcDepost.balance >= monitoringReward, fires immediately if already
+        udcDeposit.balance.gte(monitoringReward) &&
+        // use partner's total off & on-chain unlocked, total we'd lose if don't update BP
+        partnerUnlocked
+          // use rateToSvt to convert to equivalent SVT, and pass only if > monitoringReward;
+          // default rate=MaxUint256 means it'll ALWAYS monitor if no rate is set for token
+          .mul(rateToSvt[channel.token] ?? MaxUint256)
+          .div(WeiPerEther)
+          .gt(monitoringReward),
+    ),
+    take(1), // take/act on first time all conditions above pass
+    completeWith(state$, 10), // if conditions weren't met on shutdown, give up
+    mergeMap(([, { monitoringReward }]) => {
+      const balanceProof = channel.partner.balanceProof;
+      const balanceHash = createBalanceHash(balanceProof);
 
-        const nonClosingMessage = concatBytes([
-          encode(channel.tokenNetwork, 20),
-          encode(network.chainId, 32),
-          encode(MessageTypeId.BALANCE_PROOF_UPDATE, 32),
-          encode(channel.id, 32),
-          encode(balanceHash, 32),
-          encode(balanceProof.nonce, 32),
-          encode(balanceProof.additionalHash, 32),
-          encode(balanceProof.signature, 65), // partner's signature for this balance proof
-        ]); // UInt8Array of 277 bytes
-        const msgId = makeMessageId().toString();
+      const nonClosingMessage = concatBytes([
+        encode(channel.tokenNetwork, 20),
+        encode(network.chainId, 32),
+        encode(MessageTypeId.BALANCE_PROOF_UPDATE, 32),
+        encode(channel.id, 32),
+        encode(balanceHash, 32),
+        encode(balanceProof.nonce, 32),
+        encode(balanceProof.additionalHash, 32),
+        encode(balanceProof.signature, 65), // partner's signature for this balance proof
+      ]); // UInt8Array of 277 bytes
+      const msgId = makeMessageId().toString();
 
-        // first sign the nonClosing signature, then the actual message
-        return from(signer.signMessage(nonClosingMessage) as Promise<Signature>).pipe(
-          mergeMap((nonClosingSignature) =>
-            signMessage<MonitorRequest>(
-              signer,
-              {
-                type: MessageType.MONITOR_REQUEST,
-                balance_proof: {
-                  chain_id: balanceProof.chainId,
-                  token_network_address: balanceProof.tokenNetworkAddress,
-                  channel_identifier: BigNumber.from(channel.id) as UInt<32>,
-                  nonce: balanceProof.nonce,
-                  balance_hash: balanceHash,
-                  additional_hash: balanceProof.additionalHash,
-                  signature: balanceProof.signature,
-                },
-                non_closing_participant: address,
-                non_closing_signature: nonClosingSignature,
-                monitoring_service_contract_address: contractsInfo.MonitoringService.address,
-                reward_amount: monitoringReward!,
+      // first sign the nonClosing signature, then the actual message
+      return from(signer.signMessage(nonClosingMessage) as Promise<Signature>).pipe(
+        mergeMap((nonClosingSignature) =>
+          signMessage<MonitorRequest>(
+            signer,
+            {
+              type: MessageType.MONITOR_REQUEST,
+              balance_proof: {
+                chain_id: balanceProof.chainId,
+                token_network_address: balanceProof.tokenNetworkAddress,
+                channel_identifier: BigNumber.from(channel.id) as UInt<32>,
+                nonce: balanceProof.nonce,
+                balance_hash: balanceHash,
+                additional_hash: balanceProof.additionalHash,
+                signature: balanceProof.signature,
               },
-              { log },
-            ),
+              non_closing_participant: address,
+              non_closing_signature: nonClosingSignature,
+              monitoring_service_contract_address: contractsInfo.MonitoringService.address,
+              reward_amount: monitoringReward!,
+            },
+            { log },
           ),
-          map((message) =>
-            messageServiceSend.request({ message }, { service: Service.MS, msgId }),
-          ),
-        );
-      }),
-      catchError((err) => {
-        log.error('Error trying to generate & sign MonitorRequest', err);
-        return EMPTY;
-      }),
-    );
-  };
+        ),
+        map((message) => messageServiceSend.request({ message }, { service: Service.MS, msgId })),
+      );
+    }),
+    catchAndLog({ log: log.warn }, 'Error trying to generate & sign MonitorRequest'),
+  );
 }
 
 /**
@@ -169,7 +160,7 @@ export function msMonitorRequestEpic(
         ),
         // switchMap may unsubscribe from previous udcDeposit wait/signature prompts if partner's
         // balanceProof balance changes in the meantime
-        switchMap(makeMonitoringRequest$(deps)),
+        switchMap(([, channel]) => makeMonitoringRequest$(state$, channel, deps)),
       ),
     ),
   );

@@ -1,7 +1,7 @@
 import omit from 'lodash/omit';
 import pick from 'lodash/pick';
 import type { Observable } from 'rxjs';
-import { EMPTY, from, identity, merge, of } from 'rxjs';
+import { EMPTY, from, merge, of } from 'rxjs';
 import {
   catchError,
   debounceTime,
@@ -14,7 +14,6 @@ import {
   pluck,
   startWith,
   take,
-  takeUntil,
   withLatestFrom,
 } from 'rxjs/operators';
 
@@ -263,9 +262,8 @@ export function transferClearCompletedEpic(
     distinctRecordValues(),
     groupBy(
       ([key]) => key, // group per transfer
-      identity,
       // cleanup when transfer is cleared
-      (grouped$) => state$.pipe(filter(({ transfers }) => !(grouped$.key in transfers))),
+      { duration: ({ key }) => state$.pipe(filter(({ transfers }) => !(key in transfers))) },
     ),
     withLatestFrom(config$),
     mergeMap(([grouped$, { httpTimeout }]) =>
@@ -277,18 +275,20 @@ export function transferClearCompletedEpic(
         ),
         take(1),
         mergeMap(([, transfer]) =>
+          // in case any new "activity" happens on this transfer, bump debounceTimer'r
           action$.pipe(
             filter(hasTransferMeta),
             filter((action) => transferKey(action.meta) === grouped$.key),
             startWith({ meta: pick(transfer, ['secrethash', 'direction'] as const) }),
+            completeWith(grouped$),
           ),
         ),
-        completeWith(action$),
         // after some time with no action for this transfer going through (e.g. Processed retries)
         debounceTime(3 * httpTimeout),
         map(({ meta }) => transferClear(undefined, meta)), // clear transfer
-        takeUntil(state$.pipe(filter(({ transfers }) => !(grouped$.key in transfers)))),
       ),
     ),
+    // no need to transferClear on shutdown; let any pending transfer be cleared on next run
+    completeWith(action$),
   );
 }
