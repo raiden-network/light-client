@@ -2,7 +2,17 @@ import { Zero } from '@ethersproject/constants';
 import type { ContractReceipt, ContractTransaction } from '@ethersproject/contracts';
 import type { Observable, OperatorFunction } from 'rxjs';
 import { defer, of, ReplaySubject } from 'rxjs';
-import { filter, groupBy, map, mapTo, mergeMap, pluck, takeUntil, tap } from 'rxjs/operators';
+import {
+  filter,
+  groupBy,
+  map,
+  mapTo,
+  mergeMap,
+  pluck,
+  takeUntil,
+  tap,
+  withLatestFrom,
+} from 'rxjs/operators';
 
 import type { HumanStandardToken } from '../contracts';
 import { MessageType } from '../messages/types';
@@ -213,56 +223,59 @@ export function groupChannel(): OperatorFunction<RaidenState, Observable<Channel
 
 /**
  * Approves spender to transfer up to 'deposit' from our tokens; skips if already allowed
+ * Errors if sender doesn't have enough balance, or transaction fails (may be retried)
  *
- * @param amounts - Tuple of amounts
- * @param amounts.0 - Our current token balance
- * @param amounts.1 - Spender's current allowance
- * @param amounts.2 - The new desired allowance for spender
- * @param tokenContract - Token contract instance
+ * @param tokenContract - Token contract instance already connected to sender's signer
  * @param spender - Spender address
- * @param approveError - ErrorCode of approve transaction errors
- * @param deps - Partial epics dependencies-like object
- * @param deps.provider - Eth provider
+ * @param amount - Amount to be required to be approved
+ * @param deps - Epics dependencies
  * @param deps.log - Logger instance
- * @param opts - Options object
- * @param opts.minimumAllowance - Minimum allowance to approve
- * @param opts.gasPrice - Gas price for txs
- * @returns Cold observable to perform approve transactions
+ * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
+ * @returns Observable of true (if already approved) or approval receipt
  */
-export function approveIfNeeded$(
-  [balance, allowance, deposit]: [UInt<32>, UInt<32>, UInt<32>],
+export function ensureApprovedBalance$(
   tokenContract: HumanStandardToken,
   spender: Address,
-  approveError: string = ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
-  { provider, log }: Pick<RaidenEpicDeps, 'provider' | 'log'>,
-  { minimumAllowance, gasPrice }: { minimumAllowance: UInt<32>; gasPrice?: UInt<32> } = {
-    minimumAllowance: Zero as UInt<32>,
-  },
+  amount: UInt<32>,
+  { log, config$, latest$ }: Pick<RaidenEpicDeps, 'log' | 'config$' | 'latest$'>,
 ): Observable<true | ContractReceipt> {
-  assert(balance.gte(deposit), [
-    ErrorCodes.RDN_INSUFFICIENT_BALANCE,
-    { current: balance.toString(), required: deposit.toString() },
-  ]);
-
-  if (allowance.gte(deposit)) return of(true); // if allowance already enough
-
-  // secure ERC20 tokens require changing allowance only from or to Zero
-  // see https://github.com/raiden-network/light-client/issues/2010
-  let resetAllowance$: Observable<true> = of(true);
-  if (!allowance.isZero())
-    resetAllowance$ = defer(async () => tokenContract.approve(spender, 0, { gasPrice })).pipe(
-      assertTx('approve', approveError, { log, provider }),
-      mapTo(true),
-    );
-
-  // if needed, send approveTx and wait/assert it before proceeding; 'deposit' could be enough,
-  // but we send 'prevAllowance + deposit' in case there's a pending deposit
-  // default minimumAllowance=MaxUint256 allows to approve once and for all
-  return resetAllowance$.pipe(
-    mergeMap(async () =>
-      tokenContract.approve(spender, bnMax(minimumAllowance, deposit), { gasPrice }),
+  const provider = tokenContract.provider as RaidenEpicDeps['provider'];
+  return defer(async () => tokenContract.signer.getAddress() as Promise<Address>).pipe(
+    mergeMap(async (sender) =>
+      Promise.all([
+        tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
+        tokenContract.callStatic.allowance(sender, spender) as Promise<UInt<32>>,
+      ]),
     ),
-    assertTx('approve', approveError, { log, provider }),
-    pluck(1),
+    withLatestFrom(config$, latest$),
+    mergeMap(([[balance, allowance], { minimumAllowance }, { gasPrice }]) => {
+      assert(balance.gte(amount), [
+        ErrorCodes.RDN_INSUFFICIENT_BALANCE,
+        { current: balance, required: amount },
+      ]);
+
+      if (allowance.gte(amount)) return of(true as const); // if allowance already enough
+
+      // secure ERC20 tokens require changing allowance only from or to Zero
+      // see https://github.com/raiden-network/light-client/issues/2010
+      let resetAllowance$: Observable<true> = of(true);
+      if (!allowance.isZero())
+        resetAllowance$ = defer(async () => tokenContract.approve(spender, 0, { gasPrice })).pipe(
+          assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log, provider }),
+          mapTo(true),
+        );
+
+      // if needed, send approveTx and wait/assert it before proceeding; 'amount' could be enough,
+      // but we send 'prevAllowance + amount' in case there's a pending amount
+      // default minimumAllowance=MaxUint256 allows to approve once and for all
+      return resetAllowance$.pipe(
+        mergeMap(async () =>
+          tokenContract.approve(spender, bnMax(minimumAllowance, amount), { gasPrice }),
+        ),
+        assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log, provider }),
+        pluck(1),
+      );
+    }),
   );
 }
