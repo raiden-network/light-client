@@ -19,7 +19,7 @@ import {
 
 import type { RaidenAction } from '../../actions';
 import { newBlock } from '../../channels/actions';
-import { approveIfNeeded$, assertTx } from '../../channels/utils';
+import { assertTx, ensureApprovedBalance$ } from '../../channels/utils';
 import { intervalFromConfig } from '../../config';
 import { UDC_WITHDRAW_TIMEOUT } from '../../constants';
 import type { HumanStandardToken, UserDeposit } from '../../contracts';
@@ -80,30 +80,21 @@ export function monitorUdcBalanceEpic(
 
 function makeUdcDeposit$(
   [tokenContract, userDepositContract]: [HumanStandardToken, UserDeposit],
-  [sender, address]: [Address, Address],
   [deposit, totalDeposit]: [UInt<32>, UInt<32>],
-  deps: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$' | 'latest$'>,
+  deps: Pick<RaidenEpicDeps, 'address' | 'log' | 'config$' | 'latest$'>,
 ) {
-  const { log, provider, config$, latest$ } = deps;
+  const { address, log, config$, latest$ } = deps;
+  const provider = tokenContract.provider as RaidenEpicDeps['provider'];
   let finalBalance: UInt<32>;
-  return defer(async () =>
-    Promise.all([
-      tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
-      tokenContract.callStatic.allowance(sender, userDepositContract.address) as Promise<UInt<32>>,
-    ]),
+
+  return ensureApprovedBalance$(
+    tokenContract,
+    userDepositContract.address as Address,
+    deposit,
+    deps,
   ).pipe(
-    withLatestFrom(config$, latest$),
-    mergeWith(([[balance, allowance], { minimumAllowance }, { gasPrice }]) =>
-      approveIfNeeded$(
-        [balance, allowance, deposit],
-        tokenContract,
-        userDepositContract.address as Address,
-        ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
-        deps,
-        { minimumAllowance, gasPrice },
-      ),
-    ),
-    mergeMap(([[, , { gasPrice, udcDeposit: prev }]]) => {
+    withLatestFrom(latest$),
+    mergeMap(([, { gasPrice, udcDeposit: prev }]) => {
       assert(prev.totalDeposit.add(deposit).eq(totalDeposit), [
         ErrorCodes.UDC_DEPOSIT_OUTDATED,
         { requested: totalDeposit, current: prev.totalDeposit },
@@ -151,7 +142,7 @@ export function udcDepositEpic(
         retryWhile(intervalFromConfig(config$), { onErrors: networkErrors, log: log.debug }),
         withLatestFrom(config$),
         mergeMap(([token, config]) => {
-          const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
+          const { signer: onchainSigner } = chooseOnchainAccount(
             { signer, address, main },
             action.payload.subkey ?? config.subkey,
           );
@@ -160,7 +151,6 @@ export function udcDepositEpic(
 
           return makeUdcDeposit$(
             [tokenContract, udcContract],
-            [onchainAddress, address],
             [action.payload.deposit, action.meta.totalDeposit],
             deps,
           );

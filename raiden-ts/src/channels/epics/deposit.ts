@@ -1,6 +1,6 @@
 import findKey from 'lodash/findKey';
 import type { Observable } from 'rxjs';
-import { combineLatest, defer, merge, of, ReplaySubject } from 'rxjs';
+import { AsyncSubject, combineLatest, merge, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -13,7 +13,6 @@ import {
   mergeMap,
   mergeMapTo,
   pluck,
-  take,
   withLatestFrom,
 } from 'rxjs/operators';
 
@@ -25,48 +24,33 @@ import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { assert, commonAndFailTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
-import { retryWhile } from '../../utils/rx';
+import { mergeWith, retryWhile } from '../../utils/rx';
 import type { Address, UInt } from '../../utils/types';
 import { isntNil } from '../../utils/types';
 import { channelDeposit, channelOpen } from '../actions';
 import { ChannelState } from '../state';
-import { approveIfNeeded$, assertTx, channelKey } from '../utils';
+import { assertTx, channelKey, ensureApprovedBalance$ } from '../utils';
 
 function makeDeposit$(
   [tokenContract, tokenNetworkContract]: [HumanStandardToken, TokenNetwork],
-  [sender, address, partner]: [Address, Address, Address],
+  [partner, channelId$]: readonly [Address, Observable<number>],
   deposit: UInt<32>,
-  channelId$: Observable<number>,
-  deps: Pick<RaidenEpicDeps, 'log' | 'provider' | 'config$' | 'latest$'>,
+  deps: Pick<RaidenEpicDeps, 'address' | 'log' | 'config$' | 'latest$'>,
 ) {
-  const { log, provider, config$, latest$ } = deps;
+  const { address, log, config$, latest$ } = deps;
+  const provider = tokenContract.provider as RaidenEpicDeps['provider'];
   // retryWhile from here
-  return defer(() =>
-    Promise.all([
-      tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
-      tokenContract.callStatic.allowance(sender, tokenNetworkContract.address) as Promise<
-        UInt<32>
-      >,
-    ]),
+  return ensureApprovedBalance$(
+    tokenContract,
+    tokenNetworkContract.address as Address,
+    deposit,
+    deps,
   ).pipe(
-    withLatestFrom(config$, latest$),
-    mergeMap(([[balance, allowance], { minimumAllowance }, { gasPrice }]) =>
-      approveIfNeeded$(
-        [balance, allowance, deposit],
-        tokenContract,
-        tokenNetworkContract.address as Address,
-        ErrorCodes.CNL_APPROVE_TRANSACTION_FAILED,
-        deps,
-        { minimumAllowance, gasPrice },
-      ),
-    ),
     mergeMapTo(channelId$),
-    take(1),
     // get current 'view' of own/'address' deposit, despite any other pending deposits
-    mergeMap(async (id) =>
-      tokenNetworkContract.callStatic
-        .getChannelParticipantInfo(id, address, partner)
-        .then(({ 0: totalDeposit }) => [id, totalDeposit] as const),
+    mergeWith(
+      async (id) =>
+        (await tokenNetworkContract.callStatic.getChannelParticipantInfo(id, address, partner))[0],
     ),
     withLatestFrom(latest$),
     // send setTotalDeposit transaction
@@ -151,7 +135,7 @@ export function channelDepositEpic(
               else if (channel?.state === ChannelState.open) channel$ = of(channel);
               else throw new RaidenError(ErrorCodes.CNL_NO_OPEN_CHANNEL_FOUND);
 
-              const { signer: onchainSigner, address: onchainAddress } = chooseOnchainAccount(
+              const { signer: onchainSigner } = chooseOnchainAccount(
                 { signer, address, main },
                 action.payload.subkey ?? configSubkey,
               );
@@ -170,12 +154,11 @@ export function channelDepositEpic(
                     // already start 'approve' even while waiting for 'channel$'
                     makeDeposit$(
                       [tokenContract, tokenNetworkContract],
-                      [onchainAddress, address, partner],
+                      [partner, channelId$],
                       action.payload.deposit,
-                      channelId$,
                       deps,
                     ),
-                  { connector: () => new ReplaySubject(1) },
+                  { connector: () => new AsyncSubject() },
                 ),
                 // ignore success tx so it's picked by channelEventsEpic
                 ignoreElements(),
