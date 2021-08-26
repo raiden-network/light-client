@@ -503,7 +503,7 @@ describe('receive transfers', () => {
     const { secretRegistryContract } = raiden.deps;
     const sentState = await ensureTransferPending([partner, raiden]);
     // stop partner so it can't unlock
-    partner.stop();
+    await partner.stop();
     // "reveal" secret directly to target
     raiden.store.dispatch(transferSecret({ secret }, receivedMeta));
 
@@ -579,7 +579,7 @@ describe('transferRetryMessageEpic', () => {
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsDeposited([raiden, partner]);
     await ensureTransferPending([partner, raiden]);
-    partner.stop();
+    await partner.stop();
 
     await sleep(raiden.config.httpTimeout);
     expect(
@@ -595,7 +595,7 @@ describe('transferRetryMessageEpic', () => {
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsDeposited([raiden, partner]);
     await ensureTransferPending([partner, raiden]);
-    partner.stop();
+    await partner.stop();
 
     // once we know the secret for the received transfer, we start to reveal back to unlock
     raiden.store.dispatch(
@@ -619,7 +619,7 @@ test('initQueuePendingReceivedEpic', async () => {
   await ensureChannelIsDeposited([raiden, partner]);
   const sentState = await ensureTransferPending([partner, raiden]);
 
-  raiden.stop();
+  await raiden.stop();
   await flushPromises();
   await sleep(raiden.config.httpTimeout);
   // re-init client: requires memory pouchDB to persist across instances on same wallet (dbName)

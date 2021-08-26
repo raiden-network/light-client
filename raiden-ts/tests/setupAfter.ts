@@ -72,10 +72,11 @@ jasmine.getEnv().addReporter({
 });
 
 beforeAll(() => {
-  globalThis.console = testConsole;
+  if (!process.env['JEST_VERBOSE']) globalThis.console = testConsole;
 });
 
 afterEach(() => {
+  if (process.env['JEST_VERBOSE']) return;
   // this includes tests that got aborted, ran into errors etc.
   const failed =
     jasmine.currentTest && Array.isArray(jasmine.currentTest.failedExpectations)

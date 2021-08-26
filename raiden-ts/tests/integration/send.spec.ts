@@ -557,7 +557,7 @@ describe('transferRetryMessageEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsDeposited([raiden, partner]);
-    partner.stop();
+    await partner.stop();
 
     const sentState = await pendingTransfer([raiden, partner]);
 
@@ -592,7 +592,7 @@ describe('transferRetryMessageEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsDeposited([raiden, partner]);
-    partner.stop();
+    await partner.stop();
     await pendingTransfer([raiden, partner]);
 
     raiden.store.dispatch(transferSecret({ secret }, meta));
@@ -610,7 +610,7 @@ describe('transferRetryMessageEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsDeposited([raiden, partner]);
-    partner.stop();
+    await partner.stop();
 
     const sentState = await pendingTransfer([raiden, partner]);
 
@@ -668,7 +668,7 @@ describe('transferAutoExpireEpic', () => {
     const [raiden, partner] = await makeRaidens(2);
     const { secretRegistryContract } = raiden.deps;
     const sentState = await ensureTransferPending([raiden, partner]);
-    partner.stop();
+    await partner.stop();
 
     await waitBlock(sentState.expiration - 1);
     await providersEmit(
@@ -695,7 +695,7 @@ describe('transferAutoExpireEpic', () => {
     const [raiden, partner] = await makeRaidens(2);
     const { secretRegistryContract } = raiden.deps;
     const sentState = await ensureTransferPending([raiden, partner]);
-    partner.stop();
+    await partner.stop();
 
     await waitBlock(sentState.expiration);
     // register secret mined after (at) expiration
@@ -772,7 +772,7 @@ describe('monitorSecretRegistryEpic', () => {
     const { secretRegistryContract } = raiden.deps;
 
     await ensureTransferPending([raiden, partner]);
-    partner.stop(); // prevent partner from trying to unlocking
+    await partner.stop(); // prevent partner from trying to unlocking
 
     const txBlock = raiden.deps.provider.blockNumber;
     const txHash = makeHash();
