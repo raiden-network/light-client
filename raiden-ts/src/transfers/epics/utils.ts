@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Contract } from '@ethersproject/contracts';
 import type { Observable } from 'rxjs';
 import { defer, merge, of } from 'rxjs';
 import { filter, ignoreElements, take } from 'rxjs/operators';
@@ -13,12 +11,9 @@ import type {
   WithdrawRequest,
 } from '../../messages';
 import { messageSend } from '../../messages/actions';
-import { assert } from '../../utils';
 import { isResponseOf } from '../../utils/actions';
-import { contractHasMethod } from '../../utils/ethers';
 import { completeWith, repeatUntil } from '../../utils/rx';
 import type { UInt } from '../../utils/types';
-import { decode, HexString } from '../../utils/types';
 import type { withdraw } from '../actions';
 import { Direction } from '../state';
 
@@ -77,7 +72,7 @@ export function dispatchAndWait$<A extends RaidenAction>(
 export function retrySendUntil$(
   send: messageSend.request,
   action$: Observable<RaidenAction>,
-  notifier: Observable<any>,
+  notifier: Observable<unknown>,
   delayMs: number | Iterator<number> = 30e3,
 ): Observable<messageSend.request> {
   let first = true;
@@ -139,27 +134,4 @@ export function withdrawMetaFromRequest(
     expiration: req.expiration.toNumber(),
     totalWithdraw: req.total_withdraw,
   };
-}
-
-/**
- * Fetches contract's code and parse if it has given method (by name)
- *
- * @param contract - contract instance to check
- * @param method - method name
- * @returns Observable of true, emitting a single value if successful, or erroring
- */
-export function checkContractHasMethod$<C extends Contract>(
-  contract: C,
-  method: keyof C['functions'] & string,
-): Observable<true> {
-  return defer(async () => {
-    const sighash = contract.interface.getSighash(method);
-    // decode shouldn't fail if building with ^0.39 contracts, but runtime may be running
-    // with 0.37 contracts, and the only way to know is by checking contract's code (memoized)
-    assert(
-      await contractHasMethod(decode(HexString(4), sighash, 'signature hash not found'), contract),
-      ['contract does not have method', { contract: contract.address, method }],
-    );
-    return true as const;
-  });
 }
