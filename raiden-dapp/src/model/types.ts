@@ -50,6 +50,14 @@ export interface StepDescription {
   readonly description: string;
 }
 
+export interface ActionProgressStep {
+  readonly title: string;
+  readonly description: string;
+  active: boolean;
+  completed: boolean;
+  failed: boolean;
+}
+
 type RaidenPath = RaidenPaths[number];
 export interface Route extends RaidenPath {
   readonly key: number;
