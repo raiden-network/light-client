@@ -322,6 +322,12 @@
       "description": "Your tokens have been successfully withdrawn."
     }
   },
+  "channel-action-form": {
+    "partner": "Partner",
+    "amount": "Amount",
+    "restricted-partner-address-error": "Please enter the address of an existing channel partner.",
+    "exclude-partner-address-error": "You can't select an already existing channel partner."
+  },
   "find-routes": {
     "hops": "Hops",
     "price": "Price",
