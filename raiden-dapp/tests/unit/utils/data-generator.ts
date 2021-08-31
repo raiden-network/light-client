@@ -165,3 +165,20 @@ export function generateNotification(
     ...partialNotification,
   } as NotificationPayload;
 }
+
+/**
+ * @param partialActionProgressStep - ActionProgressStep overrides
+ * @returns ActionProgressStep mocked object
+ */
+export function generateActionProgressStep(
+  partialActionProgressStep: Partial<ActionProgressStep> = {},
+): ActionProgressStep {
+  return {
+    title: 'test step',
+    description: 'do test thingy',
+    active: false,
+    completed: false,
+    failed: false,
+    ...partialActionProgressStep,
+  };
+}
