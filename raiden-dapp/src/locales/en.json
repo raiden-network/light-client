@@ -293,6 +293,9 @@
     "settle": "Settle"
   },
   "channel-deposit": {
+    "title": "Channel Deposit",
+    "restricted-partner-error": "You can only use addresses you have an open channel with.",
+    "partner": "Channel Partner",
     "buttons": {
       "confirm": "Deposit"
     },
