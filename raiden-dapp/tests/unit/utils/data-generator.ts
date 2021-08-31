@@ -1,10 +1,11 @@
 import { BigNumber, constants } from 'ethers';
 import times from 'lodash/times';
+import type { Route } from 'vue-router';
 
 import type { Address, RaidenChannel, RaidenTransfer } from 'raiden-ts';
 import { ChannelState } from 'raiden-ts';
 
-import type { Token } from '@/model/types';
+import type { ActionProgressStep, Token } from '@/model/types';
 import { NotificationContext } from '@/store/notifications/notification-context';
 import { NotificationImportance } from '@/store/notifications/notification-importance';
 import type { NotificationPayload } from '@/store/notifications/types';
@@ -164,6 +165,22 @@ export function generateNotification(
     received: new Date('June 5, 1986'),
     ...partialNotification,
   } as NotificationPayload;
+}
+
+/**
+ * @param partialRoute - Route overrides
+ * @returns Route mocked object
+ */
+export function generateRoute(partialRoute: Partial<Route> = {}): Route {
+  return {
+    path: '/test',
+    fullPath: 'https://test.tld/test',
+    hash: 'test',
+    matched: [],
+    query: {},
+    params: {},
+    ...partialRoute,
+  };
 }
 
 /**

@@ -57,11 +57,9 @@ export function enterAndSelectHub(uiTimeout: number, partnerAddress: string) {
  */
 export function enterChannelDepositAmount(uiTimeout: number) {
   cy.log('enter channel deposit amount');
-  // cypress selectors: raiden-dapp/src/views/OpenChannelRoute.vue
-  cy.get('[data-cy=open_channel]').should('exist');
+  cy.get('[data-cy=channel-action-form]').should('exist');
   cy.contains('Open Channel');
-  // cypress selectors: raiden-dapp/src/components/AmountInput.vue
-  cy.get('[data-cy=amount_input]').type('0.5');
+  cy.get('[data-cy=channel-action-form__token-amount__input]').type('0.5');
   cy.wait(uiTimeout);
 }
 
@@ -167,8 +165,8 @@ export function downloadState() {
 export function enterDepositTokenAmountForOpenedChannel(uiTimeout: number) {
   cy.log('enter deposit token amount for opened channel');
   // cypress selectors: raiden-dapp/src/components/dialogs/ChannelDepositDialog.vue
-  cy.get('[data-cy=channel_deposit]').should('exist');
-  cy.get('[data-cy=channel_deposit_input]').type('001');
+  cy.get('[data-cy=channel-action-form]').should('exist');
+  cy.get('[data-cy=channel-action-form__token-amount__input]').type('0.0001');
   cy.wait(uiTimeout);
 }
 

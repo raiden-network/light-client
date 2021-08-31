@@ -105,7 +105,7 @@ export function navigateToTokenDepositFromTransferScreen() {
   cy.getWithCustomTimeout('[data-cy=transfer_menus_dot_menu_menu_deposit]').should('exist');
   cy.get('[data-cy=transfer_menus_dot_menu_menu_deposit]').click();
   // cypress selectors: raiden-dapp/src/components/dialogs/ChannelDepositDialog.vue
-  cy.getWithCustomTimeout('[data-cy=channel_deposit]').should('exist');
+  cy.getWithCustomTimeout('[data-cy=channel-deposit-dialog]').should('exist');
 }
 
 /**

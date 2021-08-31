@@ -46,9 +46,9 @@ export function openChannel() {
 export function depositTokensToOpenedChannel() {
   cy.log('deposit tokens to opened channel');
   // cypress selectors: raiden-dapp/src/components/dialogs/ChannelDepositDialog.vue
-  cy.get('[data-cy=channel_deposit]').should('exist');
-  cy.get('[data-cy=channel_deposit_button]').click();
-  cy.getWithCustomTimeout('[data-cy=channel_deposit]').should('not.exist');
+  cy.get('[data-cy=channel-action-form]').should('exist');
+  cy.get('[data-cy=channel-action-form__button]').click();
+  cy.getWithCustomTimeout('[data-cy=channel-deposit-dialog').should('not.exist');
 }
 
 /**
