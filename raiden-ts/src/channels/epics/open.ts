@@ -1,10 +1,15 @@
+import constant from 'lodash/constant';
+import findKey from 'lodash/findKey';
 import type { Observable } from 'rxjs';
-import { concat, defer, EMPTY, of } from 'rxjs';
+import { defer, EMPTY, merge, of } from 'rxjs';
 import {
   catchError,
   filter,
   ignoreElements,
   mergeMap,
+  mergeMapTo,
+  raceWith,
+  take,
   takeUntil,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -16,9 +21,11 @@ import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { commonAndFailTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
+import { checkContractHasMethod$ } from '../../utils/ethers';
 import { retryWhile } from '../../utils/rx';
+import type { Address } from '../../utils/types';
 import { channelDeposit, channelOpen } from '../actions';
-import { assertTx, channelKey } from '../utils';
+import { assertTx, channelKey, ensureApprovedBalance$ } from '../utils';
 
 /**
  * A channelOpen action requested by user
@@ -35,6 +42,7 @@ import { assertTx, channelKey } from '../utils';
  * @param deps.address - Our address
  * @param deps.main - Main signer/address
  * @param deps.provider - Provider instance
+ * @param deps.getTokenContract - Token contract instance getter
  * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
  * @param deps.config$ - Config observable
  * @param deps.latest$ - Latest observable
@@ -43,17 +51,9 @@ import { assertTx, channelKey } from '../utils';
 export function channelOpenEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  {
-    log,
-    signer,
-    address,
-    main,
-    provider,
-    getTokenNetworkContract,
-    config$,
-    latest$,
-  }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<channelOpen.failure | channelDeposit.request> {
+  const { log, address, getTokenContract, getTokenNetworkContract, config$, latest$ } = deps;
   return action$.pipe(
     filter(isActionOf(channelOpen.request)),
     withLatestFrom(state$, config$, latest$),
@@ -69,7 +69,7 @@ export function channelOpenEpic(
           ),
         );
       const { signer: onchainSigner } = chooseOnchainAccount(
-        { signer, address, main },
+        deps,
         action.payload.subkey ?? configSubkey,
       );
       const tokenNetworkContract = getContractWithSigner(
@@ -77,47 +77,80 @@ export function channelOpenEpic(
         onchainSigner,
       );
 
-      let deposit$: Observable<channelDeposit.request> = EMPTY;
-      if (action.payload.deposit?.gt(0))
-        // if it didn't fail so far, emit a channelDeposit.request in parallel with waitOpen=true
-        // to send 'approve' tx meanwhile we open the channel
-        deposit$ = of(
-          channelDeposit.request(
-            { deposit: action.payload.deposit, subkey: action.payload.subkey, waitOpen: true },
-            action.meta,
-          ),
-        );
+      return checkContractHasMethod$(tokenNetworkContract, 'openChannelWithDeposit').pipe(
+        catchError(constant(of(false))),
+        mergeMap((hasMethod) => {
+          const deposit = action.payload.deposit;
+          const openedByPartner$ = action$.pipe(
+            filter(channelOpen.success.is),
+            filter((a) => a.meta.tokenNetwork === tokenNetwork && a.meta.partner === partner),
+          );
 
-      return concat(
-        deposit$,
-        defer(async () =>
-          tokenNetworkContract.openChannel(
-            address,
-            partner,
-            action.payload.settleTimeout ?? settleTimeout,
-            { gasPrice },
-          ),
-        ).pipe(
-          assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, { log, provider }),
-          // also retry txFailErrors: if it's caused by partner having opened, takeUntil will see
-          retryWhile(intervalFromConfig(config$), {
-            onErrors: commonAndFailTxErrors,
-            log: log.info,
-          }),
-          // if channel gets opened while retrying (e.g. by partner), give up to avoid erroring
-          takeUntil(
-            action$.pipe(
-              filter(channelOpen.success.is),
-              filter(
-                (action_) =>
-                  action_.meta.tokenNetwork === tokenNetwork && action_.meta.partner === partner,
+          let deposit$: Observable<channelDeposit.request> = EMPTY;
+          // in case we need to deposit and contract doesn't support 'openChannelWithDeposit'
+          // method (legacy 0.37), emit channelDeposit.request with waitOpen=true, which will
+          // ensureApprovedBalance$ (in parallel with open) and deposit once open tx is confirmed
+          if (deposit?.gt(0))
+            deposit$ = of(
+              channelDeposit.request(
+                { deposit, subkey: action.payload.subkey, waitOpen: true },
+                action.meta,
               ),
-            ),
-          ),
-          // ignore success so it's picked by channelEventsEpic
-          ignoreElements(),
-          catchError((error) => of(channelOpen.failure(error, action.meta))),
-        ),
+            );
+
+          if (deposit?.gt(0) && hasMethod) {
+            const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
+            const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
+            // if we need to deposit and contract supports 'openChannelWithDeposit' (0.39+),
+            // we must ensureApprovedBalance$ ourselves and then call the method to open+deposit
+            return ensureApprovedBalance$(tokenContract, tokenNetwork, deposit, deps).pipe(
+              mergeMap(async () =>
+                tokenNetworkContract.openChannelWithDeposit(
+                  address,
+                  partner,
+                  action.payload.settleTimeout ?? settleTimeout,
+                  deposit,
+                  { gasPrice },
+                ),
+              ),
+              assertTx('openChannelWithDeposit', ErrorCodes.CNL_OPENCHANNEL_FAILED, deps),
+              retryWhile(intervalFromConfig(config$), {
+                onErrors: commonAndFailTxErrors,
+                log: log.info,
+              }),
+              ignoreElements(), // ignore success so it's picked by channelEventsEpic
+              // raceWith acts like takeUntil, but besides unsubscribing from retryWhile if channel
+              // gets opened by partner, also requests channelDeposit then
+              raceWith(openedByPartner$.pipe(take(1), mergeMapTo(deposit$))),
+              catchError((error) => of(channelOpen.failure(error, action.meta))),
+            );
+          } else {
+            return merge(
+              deposit$,
+              defer(async () =>
+                tokenNetworkContract.openChannel(
+                  address,
+                  partner,
+                  action.payload.settleTimeout ?? settleTimeout,
+                  { gasPrice },
+                ),
+              ).pipe(
+                assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, deps),
+                // also retry txFailErrors on open$ only; deposit$ (if not EMPTY) is handled by
+                // channelDepositEpic
+                retryWhile(intervalFromConfig(config$), {
+                  onErrors: commonAndFailTxErrors,
+                  log: log.info,
+                }),
+                // ignore success so it's picked by channelEventsEpic
+                ignoreElements(),
+                // if channel gets opened while retrying (e.g. by partner), give up to avoid erroring
+                takeUntil(openedByPartner$),
+                catchError((error) => of(channelOpen.failure(error, action.meta))),
+              ),
+            );
+          }
+        }),
       );
     }),
   );
