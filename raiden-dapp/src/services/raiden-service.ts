@@ -8,11 +8,11 @@ import asyncPool from 'tiny-async-pool';
 import type Router from 'vue-router';
 import type { Store } from 'vuex';
 
-import type { ChangeEvent, RaidenPaths, RaidenPFS } from 'raiden-ts';
+import type { ChangeEvent, OnChange, RaidenPaths, RaidenPFS } from 'raiden-ts';
 import { Capabilities, EventTypes, PfsMode, Raiden } from 'raiden-ts';
 
 import i18n from '@/i18n';
-import type { Progress, Token } from '@/model/types';
+import type { Token } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
 import type { Configuration } from '@/services/config-provider';
 import { ConfigProvider } from '@/services/config-provider';
@@ -534,23 +534,9 @@ export default class RaidenService {
     token: string,
     partner: string,
     amount: BigNumber,
-    progress?: (progress: Progress) => void,
+    onChange?: OnChange<EventTypes, { txHash: string }>,
   ): Promise<void> {
-    const progressUpdater = (current: number, total: number) => {
-      if (progress) {
-        progress({
-          current,
-          total,
-        });
-      }
-    };
-
-    const raiden = this.raiden;
-    progressUpdater(1, 3);
-
-    await raiden.openChannel(token, partner, { deposit: amount }, (e) =>
-      e.type === EventTypes.OPENED ? progressUpdater(2, 3) : '',
-    );
+    await this.raiden.openChannel(token, partner, { deposit: amount }, onChange);
   }
 
   async closeChannel(token: string, partner: string) {
