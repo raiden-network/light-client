@@ -287,6 +287,7 @@
     "currency": "ETH"
   },
   "channel-actions": {
+    "open": "Open",
     "deposit": "Deposit",
     "withdraw": "Withdraw",
     "close": "Close",
@@ -570,8 +571,11 @@
       "deposit-failed": "Could not deposit to the channel.",
       "open-failed": "Channel open failed."
     },
+    "title": "Open Channel",
     "open-button": "Open Channel",
     "partner": "Channel Partner",
+    "deposit": "Initial Deposit",
+    "excluded-partner-error": "You already have an open channel with the address for this token.",
     "steps": {
       "open": {
         "label": "Open",
@@ -580,13 +584,13 @@
       },
       "transfer": {
         "label": "Transfer",
-        "title": "Transferring tokens to the network and deposit into the channel",
+        "title": "Transferring tokens to the network",
         "description": "Please do not close the browser and confirm two (2) transactions with MetaMask."
       },
       "deposit": {
         "label": "Deposit",
-        "title": "Not implemented - split title above, when done",
-        "description": "Not implemented - split description above, when done"
+        "title": "Deposit tokens into the channel",
+        "description": "Wait until tokens are confirmed to be deposited in the channel"
       },
       "done": {
         "label": "Done",

@@ -39,10 +39,6 @@ export interface TokenModel extends AccTokenModel {
   readonly settling: number;
   readonly settled: number;
 }
-export interface Progress {
-  readonly current: number;
-  readonly total: number;
-}
 
 export interface StepDescription {
   readonly label: string;
