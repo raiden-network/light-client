@@ -1,288 +1,121 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { $t } from '../utils/mocks';
+
 import type { Wrapper } from '@vue/test-utils';
-import { mount } from '@vue/test-utils';
-import { utils } from 'ethers';
-import flushPromises from 'flush-promises';
+import { shallowMount } from '@vue/test-utils';
 import Vue from 'vue';
-import type { NavigationGuard } from 'vue-router';
 import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
 
-import { ErrorCodes, RaidenError } from 'raiden-ts';
-
-import ActionButton from '@/components/ActionButton.vue';
-import Filters from '@/filters';
-import NavigationMixin from '@/mixins/navigation-mixin';
-import type { Token } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
-import RaidenService from '@/services/raiden-service';
-import store from '@/store';
-import type { Tokens } from '@/types';
 import OpenChannelRoute from '@/views/OpenChannelRoute.vue';
 
-import { TestData } from '../data/mock-data';
-import { mockInput } from '../utils/interaction-utils';
-import Mocked = jest.Mocked;
+import { generateRoute } from '../utils/data-generator';
 
-jest.mock('@/services/raiden-service');
 jest.mock('vue-router');
-jest.useFakeTimers();
-
-jest.mock('@/i18n', () => jest.fn());
 
 Vue.use(Vuetify);
-Vue.filter('truncate', Filters.truncate);
+
+const vuetify = new Vuetify();
+const $router = new VueRouter() as jest.Mocked<VueRouter>;
+const checksumTokenAddress = '0xd1fC2cE93469927fD75Be012bd04Bc803Ba27c9B';
+const checksumPartnerAddress = '0x1D36124C90f53d491b6832F1c073F43E2550E35b';
+
+function createWrapper(options?: {
+  tokenAddress?: string;
+  partnerAddress?: string;
+  depositAmount?: string;
+}): Wrapper<OpenChannelRoute> {
+  const $route = generateRoute({
+    params: {
+      token: options?.tokenAddress ?? checksumTokenAddress,
+      partner: options?.partnerAddress ?? checksumPartnerAddress,
+    },
+    query: {
+      deposit: options?.depositAmount ?? '',
+    },
+  });
+
+  return shallowMount(OpenChannelRoute, {
+    vuetify,
+    mocks: {
+      $route,
+      $router,
+      $t,
+    },
+  });
+}
 
 describe('OpenChannelRoute.vue', () => {
-  let service: Mocked<RaidenService>;
-  let wrapper: Wrapper<OpenChannelRoute>;
-  let vuetify: Vuetify;
-  let button: Wrapper<Vue>;
-  let router: Mocked<VueRouter>;
-
-  function createWrapper(
-    routeParams: { token: string } | { partner: string },
-    shallow = false,
-  ): Wrapper<OpenChannelRoute> {
-    const options = {
-      vuetify,
-      store,
-      stubs: ['v-dialog', 'v-icon'],
-      propsData: {
-        current: 0,
-      },
-      mixins: [NavigationMixin],
-      mocks: {
-        $raiden: service,
-        $router: router,
-        $route: TestData.mockRoute(routeParams),
-        $t: (msg: string) => msg,
-        $te: (msg: string) => msg,
-      },
-    };
-
-    if (shallow) {
-      return mount(OpenChannelRoute, options);
-    }
-    return mount(OpenChannelRoute, options);
-  }
-
-  beforeAll(() => {
-    service = new RaidenService(store, router) as Mocked<RaidenService>;
-    service.fetchAndUpdateTokenData = jest.fn().mockResolvedValue(undefined);
-    router = new VueRouter() as Mocked<VueRouter>;
-  });
-
   beforeEach(() => {
-    router.push = jest.fn().mockImplementation(() => Promise.resolve());
+    jest.clearAllMocks();
   });
 
-  afterEach(async () => {
-    jest.clearAllTimers();
-  });
+  describe('token address route parameter', () => {
+    test('navigates to home when the address is not specified', async () => {
+      const wrapper = createWrapper({ tokenAddress: '' });
 
-  describe('valid route', () => {
-    beforeAll(async () => {
-      store.commit('updateTokens', {
-        '0xc778417E063141139Fce010982780140Aa0cD5Ab': {
-          address: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-          decimals: 10,
-          balance: utils.parseUnits('2', 10),
-        } as Token,
-      } as Tokens);
-      wrapper = createWrapper({
-        token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-        partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
+      await wrapper.vm.$nextTick();
+
+      expect($router.push).toHaveBeenCalledTimes(1);
+      expect($router.push).toHaveBeenLastCalledWith({ name: RouteNames.HOME });
+    });
+
+    test('navigates to home when the address is not in checksum format', async () => {
+      const wrapper = createWrapper({
+        tokenAddress: '0xd0a1e359811322d97991e03f863a0c30c2cf029c',
       });
 
-      button = wrapper.findComponent(ActionButton);
       await wrapper.vm.$nextTick();
-      service.openChannel = jest.fn();
+
+      expect($router.push).toHaveBeenCalledTimes(1);
+      expect($router.push).toHaveBeenLastCalledWith({ name: RouteNames.HOME });
     });
 
-    afterEach(() => {
-      service.openChannel.mockReset();
-    });
+    test('successfuly displays route if address is in checksum format', async () => {
+      const wrapper = createWrapper({ tokenAddress: checksumTokenAddress });
 
-    test('should be disabled after load', async () => {
-      await flushPromises();
-      expect(button.element.getAttribute('disabled')).toBe('disabled');
-    });
-
-    test('show an error when a channel open fails', async () => {
-      service.openChannel.mockRejectedValueOnce(
-        new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED),
-      );
-
-      mockInput(wrapper, '0.1');
       await wrapper.vm.$nextTick();
-      await flushPromises();
-      wrapper.find('form').trigger('submit');
-      await wrapper.vm.$nextTick();
-      await flushPromises();
-      expect(wrapper.vm.$data.error).toMatchObject({
-        code: 'CNL_OPENCHANNEL_FAILED',
-      });
-      await flushPromises();
-    });
 
-    test('show an error when the deposit fails', async () => {
-      service.openChannel.mockRejectedValueOnce(
-        new RaidenError(ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED),
-      );
-
-      mockInput(wrapper, '0.1');
-      wrapper.find('form').trigger('submit');
-      await wrapper.vm.$nextTick();
-      await flushPromises();
-      expect(wrapper.vm.$data.error).toMatchObject({
-        code: 'RDN_DEPOSIT_TRANSACTION_FAILED',
-      });
-      await flushPromises();
-    });
-
-    test('show an error when any error occurs during channel opening', async () => {
-      service.openChannel.mockRejectedValueOnce(new Error('unknown'));
-      mockInput(wrapper, '0.1');
-      wrapper.find('form').trigger('submit');
-      await wrapper.vm.$nextTick();
-      await flushPromises();
-      expect(wrapper.vm.$data.error).toMatchObject({ message: 'unknown' });
-      await flushPromises();
-    });
-
-    test('navigate to the "Transfer" view when the channel opens', async () => {
-      service.openChannel.mockResolvedValue(undefined);
-      mockInput(wrapper, '0.1');
-      const loading = jest.spyOn(wrapper.vm.$data, 'loading', 'set');
-      wrapper.find('form').trigger('submit');
-      await wrapper.vm.$nextTick();
-      await flushPromises();
-      jest.advanceTimersByTime(2000);
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.TRANSFER,
-        }),
-      );
-      expect(loading).toHaveBeenCalledTimes(2);
+      expect($router.push).not.toHaveBeenCalled();
     });
   });
 
-  describe('invalid route', () => {
-    beforeAll(() => {
-      service.fetchAndUpdateTokenData = jest.fn().mockResolvedValue(null);
+  describe('partner address route parameter', () => {
+    test('navigates to home when the address is not specified', async () => {
+      const wrapper = createWrapper({ partnerAddress: '' });
+
+      await wrapper.vm.$nextTick();
+
+      expect($router.push).toHaveBeenCalledTimes(1);
+      expect($router.push).toHaveBeenLastCalledWith({ name: RouteNames.SELECT_TOKEN });
     });
 
-    afterEach(() => {
-      store.commit('reset');
-    });
-
-    test('navigate to "Home" when the address is not in checksum format', async () => {
-      wrapper = createWrapper(
-        {
-          token: '0xc778417e063141139fce010982780140aa0cd5ab',
-        },
-        true,
-      );
-
-      await flushPromises();
-
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.HOME,
-        }),
-      );
-    });
-
-    test('navigate to "SelectToken" when partner address is not in checksum format', async () => {
-      store.commit('updateTokens', {
-        '0xc778417E063141139Fce010982780140Aa0cD5Ab': {
-          address: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-          decimals: 18,
-        },
+    test('navigates to home when the address is not in checksum format', async () => {
+      const wrapper = createWrapper({
+        partnerAddress: '0xd0a1e359811322d97991e03f863a0c30c2cf029c',
       });
-      wrapper = createWrapper(
-        {
-          token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-          partner: '0x1d36124c90f53d491b6832f1c073f43e2550e35b',
-        },
-        true,
-      );
 
-      await flushPromises();
+      await wrapper.vm.$nextTick();
 
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.SELECT_TOKEN,
-        }),
-      );
+      expect($router.push).toHaveBeenCalledTimes(1);
+      expect($router.push).toHaveBeenLastCalledWith({ name: RouteNames.SELECT_TOKEN });
     });
 
-    test('navigate to "Home" when token cannot be found', async () => {
-      wrapper = createWrapper(
-        {
-          token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-          partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
-        },
-        true,
-      );
-      await flushPromises();
+    test('successfuly displays route if address is in checksum format', async () => {
+      const wrapper = createWrapper({ partnerAddress: checksumPartnerAddress });
 
-      expect(router.push).toHaveBeenCalledTimes(1);
-      expect(router.push).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: RouteNames.HOME,
-        }),
-      );
+      await wrapper.vm.$nextTick();
+
+      expect($router.push).not.toHaveBeenCalled();
     });
   });
 
-  describe('navigation guard', () => {
-    let beforeRouteLeave: NavigationGuard;
-    beforeEach(() => {
-      wrapper = createWrapper(
-        {
-          token: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-          partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b',
-        },
-        true,
-      );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      beforeRouteLeave = (wrapper.vm as any).beforeRouteLeave as NavigationGuard;
-    });
+  test('uses deposit amount query parameter if given', async () => {
+    const wrapper = createWrapper({ depositAmount: '0.1' });
 
-    test('do not block when it is not loading', () => {
-      const next = jest.fn();
-      const mockRoute = TestData.mockRoute();
-      beforeRouteLeave(mockRoute, mockRoute, next);
-      expect(next).toHaveBeenCalled();
-      expect(next).toHaveBeenCalledWith();
-    });
+    await wrapper.vm.$nextTick();
 
-    test('request the user to confirm and then navigate', () => {
-      window.confirm = jest.fn().mockReturnValue(true);
-      const next = jest.fn();
-      const mockRoute = TestData.mockRoute();
-      wrapper.setData({
-        loading: true,
-      });
-      beforeRouteLeave(mockRoute, mockRoute, next);
-      expect(next).toHaveBeenCalled();
-      expect(next).toHaveBeenCalledWith();
-    });
-
-    test('request the user to confirm and block navigation on cancel', () => {
-      window.confirm = jest.fn().mockReturnValue(false);
-      const next = jest.fn();
-      const mockRoute = TestData.mockRoute();
-      wrapper.setData({
-        loading: true,
-      });
-      beforeRouteLeave(mockRoute, mockRoute, next);
-      expect(next).toHaveBeenCalled();
-      expect(next).toHaveBeenCalledWith(false);
-    });
+    expect((wrapper.vm as any).depositAmount).toBe('0.1');
   });
 });

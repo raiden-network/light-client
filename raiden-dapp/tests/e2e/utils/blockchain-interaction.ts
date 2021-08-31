@@ -33,11 +33,9 @@ export function mintConnectedTokenFromSelectHubScreen() {
 export function openChannel() {
   cy.log('open channel');
   // cypress selectors: raiden-dapp/src/views/OpenChannelRoute.vue
-  cy.get('[data-cy=open_channel]').should('exist');
-  cy.get('[data-cy=open_channel_button]').click();
-  // cypress selectors: raiden-dapp/src/components/dialogs/OpenChannelDialog.vue
-  cy.getWithCustomTimeout('[data-cy=open_channel_dialog]').should('not.exist');
-  cy.getWithCustomTimeout('[data-cy=open_channel]').should('not.exist');
+  cy.get('[data-cy=open-channel]').should('exist');
+  cy.get('[data-cy=channel-action-form__button]').click();
+  cy.getWithCustomTimeout('[data-cy=open-channel]').should('not.exist');
 }
 
 /**
