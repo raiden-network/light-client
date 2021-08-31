@@ -24,7 +24,7 @@
             :disabled="noChannels"
             data-cy="transfer_menus_dot_menu_menu_deposit"
             class="transfer-menus__dot-menu__menu__deposit"
-            @click="depositDialogOpen()"
+            @click="openDepositDialog()"
           >
             {{ $t('transfer.transfer-menus.deposit-button') }}
           </v-btn>
@@ -48,22 +48,15 @@
       </template>
     </div>
 
-    <span v-if="noChannels">
-      {{ $t('transfer.transfer-menus.no-channels') }}
-    </span>
-    <span v-else>
-      <amount-display exact-amount :amount="totalCapacity" :token="token" />
-    </span>
     <token-overlay v-if="showTokenOverlay" @cancel="showTokenOverlay = false" />
+
     <channel-deposit-dialog
-      :loading="loading"
-      :done="done"
-      :token="token"
-      :visible="showDepositDialog"
-      identifier="0"
-      @deposit-tokens="deposit($event)"
-      @cancel="depositDialogClosed()"
+      v-if="showDepositDialog"
+      :token-address="token.address"
+      :partner-address="biggestChannelPartner"
+      @close="closeDepositDialog"
     />
+
     <error-dialog :error="error" @dismiss="error = null" />
   </v-row>
 </template>
@@ -76,7 +69,7 @@ import { mapGetters } from 'vuex';
 import type { RaidenChannel } from 'raiden-ts';
 
 import AmountDisplay from '@/components/AmountDisplay.vue';
-import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
+import ChannelDepositDialog from '@/components/channels/ChannelDepositDialog.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import TokenOverlay from '@/components/overlays/TokenOverlay.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -109,40 +102,16 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
   @Prop({ required: true })
   totalCapacity!: BigNumber;
 
-  depositDialogOpen() {
+  get biggestChannelPartner(): string {
+    return this.channelWithBiggestCapacity(this.token.address)!.partner;
+  }
+
+  openDepositDialog() {
     this.showDepositDialog = true;
   }
 
-  depositDialogClosed() {
+  closeDepositDialog() {
     this.showDepositDialog = false;
-  }
-
-  /* istanbul ignore next */
-  async deposit(amount: BigNumber) {
-    this.loading = true;
-
-    try {
-      await this.$raiden.deposit(
-        this.token.address,
-        this.channelWithBiggestCapacity(this.token.address)!.partner,
-        amount,
-      );
-      this.done = true;
-      this.loading = false;
-      this.dismissProgress();
-    } catch (err) {
-      this.error = err as Error;
-      this.loading = false;
-      this.showDepositDialog = false;
-    }
-  }
-
-  /* istanbul ignore next */
-  private dismissProgress() {
-    setTimeout(() => {
-      this.done = false;
-      this.showDepositDialog = false;
-    }, 2000);
   }
 }
 </script>

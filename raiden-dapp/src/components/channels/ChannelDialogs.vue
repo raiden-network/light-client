@@ -36,19 +36,15 @@
 
   <channel-deposit-dialog
     v-else-if="channel && action === 'deposit'"
-    :identifier="channel.id"
-    :token="token(channel.token)"
-    :visible="visible"
-    :loading="depositInProgress"
-    :done="false"
-    @deposit-tokens="deposit($event)"
-    @cancel="dismiss()"
+    :token-address="token.address"
+    :partner-address="channel.partner"
+    @close="dismiss()"
   />
 
   <channel-withdraw-dialog
     v-else-if="channel && action === 'withdraw'"
     :identifier="channel.id"
-    :token="token(channel.token)"
+    :token="token"
     :channel="channel"
     :visible="visible"
     :loading="withdrawInProgress"
@@ -65,7 +61,7 @@ import { mapGetters } from 'vuex';
 
 import type { RaidenChannel } from 'raiden-ts';
 
-import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
+import ChannelDepositDialog from '@/components/channels/ChannelDepositDialog.vue';
 import ChannelWithdrawDialog from '@/components/dialogs/ChannelWithdrawDialog.vue';
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
@@ -80,20 +76,25 @@ import type { ChannelAction } from '@/types';
     ErrorDialog,
   },
   computed: {
-    ...mapGetters(['token']),
+    ...mapGetters({ getToken: 'token' }),
   },
 })
 export default class ChannelDialogs extends Vue {
   @Prop({ required: true })
-  channel!: RaidenChannel | null;
+  channel!: RaidenChannel;
+
   @Prop({ required: true })
   action!: ChannelAction;
-  token!: (address: string) => Token;
 
+  getToken!: (address: string) => Token;
   depositInProgress = false;
   withdrawInProgress = false;
   visible = true;
   error: Error | null = null;
+
+  get token(): Token {
+    return this.getToken(this.channel.token);
+  }
 
   @Emit()
   message(message: string): string {

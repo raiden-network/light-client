@@ -1,113 +1,135 @@
-import { $identicon } from '../utils/mocks';
+import { $t } from '../utils/mocks';
 
 import type { Wrapper } from '@vue/test-utils';
-import { mount } from '@vue/test-utils';
-import flushPromises from 'flush-promises';
+import { shallowMount } from '@vue/test-utils';
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
 import Vuex from 'vuex';
 
-import Filters from '@/filters';
+import type { RaidenChannel } from 'raiden-ts';
+import { ChannelState } from 'raiden-ts';
+
+import ChannelList from '@/components/channels/ChannelList.vue';
+import ListHeader from '@/components/ListHeader.vue';
+import type { Token } from '@/model/types';
 import { RouteNames } from '@/router/route-names';
-import RaidenService from '@/services/raiden-service';
-import store from '@/store';
+import type { Tokens } from '@/types';
 import ChannelsRoute from '@/views/ChannelsRoute.vue';
 
-import { TestData } from '../data/mock-data';
-import Mocked = jest.Mocked;
+import { generateChannel, generateRoute, generateToken } from '../utils/data-generator';
 
 jest.mock('vue-router');
 
-jest.mock('@/i18n', () => jest.fn());
-
-Vue.use(Vuetify);
 Vue.use(Vuex);
-Vue.filter('displayFormat', Filters.displayFormat);
+Vue.use(Vuetify);
+
+// Vue.filter('displayFormat', Filters.displayFormat);
+
+const vuetify = new Vuetify();
+const $router = new VueRouter() as jest.Mocked<VueRouter>;
+const $raiden = { fetchAndUpdateTokenData: jest.fn() };
+const token = generateToken({ address: '0xd1fC2cE93469927fD75Be012bd04Bc803Ba27c9B' }); // Must be a checksum address here;
+const openChannel = generateChannel({ state: ChannelState.open }, token);
+const closedChannel = generateChannel({ state: ChannelState.closed }, token);
+const settableChannel = generateChannel({ state: ChannelState.settleable }, token);
+
+function createWrapper(options?: {
+  token?: Token;
+  tokens?: Tokens;
+  channels?: RaidenChannel[];
+}): Wrapper<ChannelsRoute> {
+  const selectedToken = options?.token ?? token;
+  const $route = generateRoute({ params: { token: selectedToken.address } });
+  const state = {
+    tokens: options?.tokens ?? {
+      [selectedToken.address]: selectedToken,
+    },
+  };
+
+  const getters = {
+    channels: () => () => options?.channels ?? [],
+  };
+
+  const store = new Vuex.Store({ state, getters });
+
+  return shallowMount(ChannelsRoute, {
+    vuetify,
+    store,
+    mocks: {
+      $raiden,
+      $router,
+      $route,
+      $t,
+    },
+  });
+}
 
 describe('ChannelsRoute.vue', () => {
-  let $raiden: Mocked<RaidenService>;
-  let $router: Mocked<VueRouter>;
-  let wrapper: Wrapper<ChannelsRoute>;
-  let vuetify: Vuetify;
-
-  store.commit('updateChannels', TestData.mockChannels);
-  store.commit('updateTokens', TestData.mockTokens);
-
-  function createWrapper(token = '0xd0A1E359811322d97991E03f863a0C30C2cF029C', shallow = false) {
-    vuetify = new Vuetify();
-
-    const options = {
-      vuetify,
-      store,
-      stubs: ['v-dialog'],
-      mocks: {
-        $router,
-        $route: TestData.mockRoute({
-          token,
-        }),
-        $raiden,
-        $identicon: $identicon(),
-        $t: (msg: string) => msg,
-      },
-    };
-
-    if (shallow) {
-      return mount(ChannelsRoute, options);
-    }
-    return mount(ChannelsRoute, options);
-  }
-
   beforeEach(() => {
-    $router = new VueRouter() as Mocked<VueRouter>;
-    $router.push = jest.fn().mockResolvedValue(undefined);
-
-    $raiden = new RaidenService(store, $router) as Mocked<RaidenService>;
-    $raiden.fetchAndUpdateTokenData = jest.fn().mockResolvedValue(undefined);
-    $raiden.connect = jest.fn().mockResolvedValue(undefined);
-
-    vuetify = new Vuetify();
+    jest.clearAllMocks();
   });
 
-  afterEach(() => {
-    $router.push.mockReset();
+  describe('channel lists', () => {
+    test('displays no channel list if there are no channels independet of their state.', () => {
+      const wrapper = createWrapper({ channels: [] });
+      const channelLists = wrapper.findAllComponents(ChannelList);
+
+      expect(channelLists.length).toBe(0);
+    });
+
+    test('displays open channel list if there are some', () => {
+      const wrapper = createWrapper({ channels: [openChannel] });
+      const channelLists = wrapper.findAllComponents(ChannelList);
+      const listHeaders = wrapper.findAllComponents(ListHeader);
+
+      expect(channelLists.length).toBe(1);
+      expect(listHeaders.length).toBe(1);
+      expect(listHeaders.at(0).html()).toContain('channels.open.header');
+    });
+
+    test('displays closed channel list if there are some', () => {
+      const wrapper = createWrapper({ channels: [closedChannel] });
+      const channelLists = wrapper.findAllComponents(ChannelList);
+      const listHeaders = wrapper.findAllComponents(ListHeader);
+
+      expect(channelLists.length).toBe(1);
+      expect(listHeaders.length).toBe(1);
+      expect(listHeaders.at(0).html()).toContain('channels.closed.header');
+    });
+
+    test('displays settable channel list if there are some', () => {
+      const wrapper = createWrapper({ channels: [settableChannel] });
+      const channelLists = wrapper.findAllComponents(ChannelList);
+      const listHeaders = wrapper.findAllComponents(ListHeader);
+
+      expect(channelLists.length).toBe(1);
+      expect(listHeaders.length).toBe(1);
+      expect(listHeaders.at(0).html()).toContain('channels.settleable.header');
+    });
   });
 
-  test('render the test data', () => {
-    wrapper = createWrapper();
-    expect(wrapper.findAll('.channel-list__channels__channel').length).toEqual(2);
-  });
+  describe('token route parameter', () => {
+    test('navigates to home when the address is not in checksum format', async () => {
+      const token = generateToken({ address: '0xd0a1e359811322d97991e03f863a0c30c2cf029c' });
+      const wrapper = createWrapper({ token });
 
-  test('navigate to home when the address is not in checksum format', async () => {
-    wrapper = createWrapper('0xd0a1e359811322d97991e03f863a0c30c2cf029c', true);
-    await wrapper.vm.$nextTick();
-    await flushPromises();
+      await wrapper.vm.$nextTick();
 
-    expect($router.push).toHaveBeenCalledTimes(1);
-    expect($router.push).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: RouteNames.HOME,
-      }),
-    );
-  });
+      expect($router.push).toHaveBeenCalledTimes(1);
+      expect($router.push).toHaveBeenLastCalledWith({ name: RouteNames.HOME });
+    });
 
-  test('navigate to home when the token cannot be found', async () => {
-    wrapper = createWrapper('0x111157460c0F41EfD9107239B7864c062aA8B978', true);
-    await wrapper.vm.$nextTick();
-    await flushPromises();
+    test('navigates to home when the token can not be found', async () => {
+      const token = generateToken({ address: '0xd1fC2cE93469927fD75Be012bd04Bc803Ba27c9B' });
+      const otherToken = generateToken({ address: '0x82641569b2062B545431cF6D7F0A418582865ba7' });
+      const tokens = { [otherToken.address]: otherToken };
+      const wrapper = createWrapper({ token, tokens });
 
-    expect($router.push).toHaveBeenCalledTimes(1);
-    expect($router.push).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: RouteNames.HOME,
-      }),
-    );
-  });
+      await wrapper.vm.$nextTick();
 
-  test('clicking on deposit changes action', async () => {
-    wrapper = createWrapper();
-    wrapper.find('#deposit-278').trigger('click');
-    await wrapper.vm.$nextTick();
-    expect(wrapper.vm.$data['action']).toBe('deposit');
+      expect($router.push).toHaveBeenCalledTimes(1);
+      expect($router.push).toHaveBeenLastCalledWith({ name: RouteNames.HOME });
+    });
   });
 });

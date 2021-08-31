@@ -82,7 +82,7 @@
 
 <script lang="ts">
 import { Component, Mixins } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 
 import type { RaidenChannel } from 'raiden-ts';
 import { ChannelState } from 'raiden-ts';
@@ -93,19 +93,22 @@ import ListHeader from '@/components/ListHeader.vue';
 import Filters from '@/filters';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import type { Token } from '@/model/types';
-import type { ChannelAction } from '@/types';
+import type { ChannelAction, Tokens } from '@/types';
 import AddressUtils from '@/utils/address-utils';
 
 @Component({
   components: { ChannelDialogs, ListHeader, ChannelList },
   computed: {
+    ...mapState(['tokens']),
     ...mapGetters(['channels']),
   },
 })
 export default class ChannelsRoute extends Mixins(NavigationMixin) {
+  channels!: (address: string) => RaidenChannel[];
+  tokens!: Tokens;
+
   message = '';
   snackbar = false;
-  channels!: (address: string) => RaidenChannel[];
 
   selectedChannel: RaidenChannel | null = null;
   action: ChannelAction | null = null;
@@ -143,7 +146,7 @@ export default class ChannelsRoute extends Mixins(NavigationMixin) {
 
   get token(): Token {
     const { token: address } = this.$route.params;
-    return this.$store.state.tokens[address] || ({ address } as Token);
+    return this.tokens[address] || ({ address } as Token);
   }
 
   async created() {

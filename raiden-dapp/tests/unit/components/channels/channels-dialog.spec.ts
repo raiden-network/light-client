@@ -7,8 +7,8 @@ import VueRouter from 'vue-router';
 import Vuetify from 'vuetify';
 import Vuex from 'vuex';
 
+import ChannelDepositDialog from '@/components/channels/ChannelDepositDialog.vue';
 import ChannelDialogs from '@/components/channels/ChannelDialogs.vue';
-import ChannelDepositDialog from '@/components/dialogs/ChannelDepositDialog.vue';
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue';
 import Filters from '@/filters';
 import RaidenService from '@/services/raiden-service';
