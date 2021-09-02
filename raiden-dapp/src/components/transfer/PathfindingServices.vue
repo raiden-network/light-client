@@ -113,7 +113,7 @@ export default class PathfindingServices extends Vue {
 
       await this.$raiden.fetchAndUpdateTokenData(tokens);
     } catch (e) {
-      this.error = e;
+      this.error = e as Error;
     } finally {
       this.loading = false;
     }

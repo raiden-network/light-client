@@ -112,7 +112,7 @@ export default class RaidenService {
         process.env.VUE_APP_SUBKEY_ORIGIN_URL,
       );
     } catch (e) {
-      throw new RaidenInitializationFailed(e);
+      throw new RaidenInitializationFailed((e as Error).message);
     }
   }
 
@@ -158,7 +158,7 @@ export default class RaidenService {
     try {
       return await this.raiden.resolveName(name);
     } catch (e) {
-      throw new EnsResolveFailed(e);
+      throw new EnsResolveFailed((e as Error).message);
     }
   }
 

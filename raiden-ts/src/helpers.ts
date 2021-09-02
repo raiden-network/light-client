@@ -329,7 +329,7 @@ export async function callAndWaitMined<
     tx = await (contract.functions as C)[method](...params);
   } catch (err) {
     log.error(`Error sending ${method} tx`, err);
-    throw new RaidenError(error, { error: err.message });
+    throw new RaidenError(error, { error: err });
   }
   log.debug(`sent ${method} tx "${tx.hash}" to "${contract.address}"`);
 

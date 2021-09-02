@@ -172,7 +172,7 @@ export default class UdcDepositDialog extends Vue {
       });
       this.$emit('done');
     } catch (e) {
-      this.error = e;
+      this.error = e as Error;
     }
 
     this.step = DepositSteps.NONE;

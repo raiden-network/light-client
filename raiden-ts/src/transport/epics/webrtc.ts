@@ -32,7 +32,6 @@ import {
   map,
   mapTo,
   mergeMap,
-  mergeMapTo,
   observeOn,
   pluck,
   retryWhen,
@@ -272,15 +271,18 @@ function makeDataChannelObservable(
       }),
     ),
     fromEvent<Event>(dataChannel, 'close').pipe(
-      mergeMapTo(throwError(() => new Error(closedError))),
-    ),
-    fromEvent<RTCErrorEvent>(dataChannel, 'error').pipe(
-      mergeMap((ev) => {
-        throw ev.error;
+      map(() => {
+        throw new Error(closedError);
       }),
     ),
+    fromEvent<{ error: DOMException }>(dataChannel, 'error').pipe(
+      pluck('error'),
+      mergeMap(throwError),
+    ),
     matrixWebrtcEvents$(action$, RtcEventType.hangup, info, deps).pipe(
-      mergeMapTo(throwError(() => new Error(hangUpError))),
+      map(() => {
+        throw new Error(hangUpError);
+      }),
     ),
     fromEvent<Event>(dataChannel, 'open').pipe(
       take(1),

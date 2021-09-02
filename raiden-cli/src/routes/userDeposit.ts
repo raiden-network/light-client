@@ -136,7 +136,7 @@ async function interactWithUDC(this: Cli, request: Request, response: Response):
     response.json(interactionResponse);
   } catch (error) {
     if (error === MalformedNumberValue || error === MalformedRequestFormat) {
-      response.status(400).send(error.message);
+      response.status(400).send((error as Error).message);
     } else if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
     } else if (
@@ -144,9 +144,9 @@ async function interactWithUDC(this: Cli, request: Request, response: Response):
       isConflictError(error) ||
       error === TotalDepositTooLowError
     ) {
-      response.status(409).send(error.message);
+      response.status(409).send((error as Error).message);
     } else {
-      response.status(500).send(error.message);
+      response.status(500).send((error as Error).message);
     }
   }
 }

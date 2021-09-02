@@ -161,7 +161,7 @@ export default class OpenChannelRoute extends Mixins(NavigationMixin) {
         this.navigateToSelectTransferTarget(address);
       }, 2000);
     } catch (e) {
-      this.error = e;
+      this.error = e as Error;
       this.done = false;
       this.loading = false;
     }

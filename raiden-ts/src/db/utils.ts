@@ -10,7 +10,7 @@ import { concatMap, finalize, mergeMap, pluck, takeUntil } from 'rxjs/operators'
 import type { Channel } from '../channels';
 import { channelKey } from '../channels/utils';
 import type { RaidenState } from '../state';
-import { assert, ErrorCodes } from '../utils/error';
+import { assert, ErrorCodec, ErrorCodes } from '../utils/error';
 import type { Address } from '../utils/types';
 import { last } from '../utils/types';
 import { getDefaultPouchAdapter } from './adapter';
@@ -496,7 +496,7 @@ export async function dumpDatabaseToArray(db: RaidenDatabase, opts?: { batch?: n
       if (shouldCloseAfter) await db.close(); // on success
       return result;
     } catch (e) {
-      if (e?.message?.includes('database is closed')) {
+      if (ErrorCodec.is(e) && e.message.includes('database is closed')) {
         shouldCloseAfter = true;
         db = await reopenDatabase(db);
       }

@@ -26,7 +26,7 @@ export class ConfigProvider {
       }
       return undefined;
     } catch (error) {
-      throw new DeploymentInfoParsingFailed(error);
+      throw new DeploymentInfoParsingFailed((error as Error).message);
     }
   }
 

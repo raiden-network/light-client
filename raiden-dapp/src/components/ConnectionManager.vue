@@ -203,7 +203,7 @@ export default class ConnectionManager extends Vue {
         useRaidenAccount,
       );
     } catch (error) {
-      this.errorCode = mapRaidenServiceErrorToErrorCode(error);
+      this.errorCode = mapRaidenServiceErrorToErrorCode(error as Error);
       this.inProgress = false;
       return;
     }

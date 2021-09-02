@@ -175,7 +175,7 @@ export default class RaidenAccount extends Vue {
         ? await this.$raiden.transferToRaidenAccount(this.amount)
         : await this.$raiden.transferToMainAccount(this.amount);
     } catch (e) {
-      this.error = e;
+      this.error = e as Error;
     }
 
     this.loading = false;

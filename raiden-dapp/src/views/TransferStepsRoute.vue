@@ -304,7 +304,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
         this.selectedPfs ?? undefined,
       );
     } catch (e) {
-      this.error = e;
+      this.error = e as Error;
     }
 
     if (fetchedRoutes) {
@@ -330,7 +330,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
         await this.findRoutes();
       } catch (e) {
         this.pfsFeesConfirmed = false;
-        this.error = e;
+        this.error = e as Error;
         return;
       }
 
@@ -431,7 +431,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
       this.transferDone = true;
       this.dismissProgress();
     } catch (e) {
-      this.error = e;
+      this.error = e as Error;
     }
   }
 

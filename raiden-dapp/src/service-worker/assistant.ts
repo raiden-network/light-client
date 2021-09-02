@@ -58,7 +58,7 @@ export default class ServiceWorkerAssistant {
         throw new Error(`Maleformed version string: ${version}`);
       }
     } catch (error) {
-      console.warn(`Failed to get (a valid) version: ${error.message}`); // eslint-disable-line no-console
+      console.warn(`Failed to get (a valid) version: ${(error as Error).message}`); // eslint-disable-line no-console
     }
   };
 

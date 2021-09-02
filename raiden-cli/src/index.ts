@@ -247,7 +247,7 @@ async function getWallet(
       return await Wallet.fromEncryptedJson(json, password);
     } catch (err) {
       lastError = err;
-      if (err?.message?.includes('invalid counter bytes size')) {
+      if (err instanceof Error && err.message.includes('invalid counter bytes size')) {
         const parsed = JSON.parse(json);
         // try to fix non-16-bytes [crypto.cipherparams.iv]
         keys[address].push(

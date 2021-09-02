@@ -48,7 +48,7 @@ function transformSdkTransferToApiPayment(transfer: RaidenTransfer): ApiPayment 
   };
 }
 
-function isConflictError(error: RaidenError): boolean {
+function isConflictError(error: unknown): error is RaidenError {
   return [
     ErrorCodes.PFS_INVALID_INFO,
     ErrorCodes.PFS_NO_ROUTES_FOUND,
@@ -60,7 +60,7 @@ function isConflictError(error: RaidenError): boolean {
     ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED,
     ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH,
     ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES,
-  ].includes(error.message);
+  ].includes((error as Error).message);
 }
 
 function getPayments(this: Cli, request: Request, response: Response) {
@@ -98,7 +98,8 @@ async function doTransfer(this: Cli, request: Request, response: Response, next:
     } else if (isTransferFailedError(error)) {
       response.status(409).send(error.message);
     } else if (isConflictError(error)) {
-      const pfsErrorDetail = error.details?.errors ? ` (${error.details.errors})` : '';
+      const errors = (error.details as { errors: string } | undefined)?.errors;
+      const pfsErrorDetail = errors ? ` (${errors})` : '';
       response.status(409).json({ message: error.message, details: pfsErrorDetail });
     } else {
       next(error);

@@ -1,3 +1,4 @@
+import constant from 'lodash/constant';
 import type {
   MonoTypeOperatorFunction,
   Observable,
@@ -9,6 +10,7 @@ import {
   EMPTY,
   from,
   merge,
+  of,
   partition,
   pipe,
   race,
@@ -20,12 +22,9 @@ import {
 import {
   catchError,
   concatMap,
-  delay,
   distinctUntilChanged,
-  endWith,
   filter,
   finalize,
-  ignoreElements,
   last,
   map,
   mergeMap,
@@ -233,11 +232,9 @@ export function completeWith<T>(
   complete$: Observable<unknown>,
   delayMs?: number,
 ): MonoTypeOperatorFunction<T> {
-  return (input$) => {
-    complete$ = complete$.pipe(ignoreElements(), endWith(null));
-    if (delayMs !== undefined) complete$ = complete$.pipe(delay(delayMs));
-    return input$.pipe(takeUntil(complete$));
-  };
+  return pipe(
+    takeUntil(complete$.pipe(lastMap(constant(delayMs === undefined ? of(0) : timer(delayMs))))),
+  );
 }
 
 /**
