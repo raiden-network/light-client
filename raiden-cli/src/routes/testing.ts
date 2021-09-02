@@ -1,10 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 
-import { ErrorCodes } from 'raiden-ts';
-
 import type { Cli } from '../types';
-import { validateAddressParameter } from '../utils/validation';
+import { isInvalidParameterError, validateAddressParameter } from '../utils/validation';
 
 async function mintTokens(this: Cli, request: Request, response: Response, next: NextFunction) {
   try {
@@ -15,8 +13,7 @@ async function mintTokens(this: Cli, request: Request, response: Response, next:
     );
     response.json({ transaction_hash: transactionHash });
   } catch (error) {
-    if ([ErrorCodes.DTA_INVALID_ADDRESS, ErrorCodes.DTA_INVALID_AMOUNT].includes(error.message))
-      response.status(400).send(error.message);
+    if (isInvalidParameterError(error)) response.status(400).send(error.message);
     else next(error);
   }
 }

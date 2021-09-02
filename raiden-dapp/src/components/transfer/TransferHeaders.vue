@@ -122,7 +122,7 @@ export default class TransferHeaders extends Mixins(NavigationMixin) {
       this.loading = false;
       this.dismissProgress();
     } catch (err) {
-      this.error = err;
+      this.error = err as Error;
       this.loading = false;
       this.showDepositDialog = false;
     }

@@ -107,7 +107,7 @@ describe('utils/actions', () => {
     try {
       throw new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
     } catch (e) {
-      expect(actionFailed(e, { context: 'init' })).toStrictEqual({
+      expect(actionFailed(e as Error, { context: 'init' })).toStrictEqual({
         type: 'TEST_FAILED',
         payload: expect.any(RaidenError),
         meta: { context: 'init' },

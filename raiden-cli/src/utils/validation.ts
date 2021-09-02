@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { NextFunction, Request, Response } from 'express';
 
 import type { RaidenError } from 'raiden-ts';
@@ -52,7 +53,7 @@ export function validateOptionalAddressParameter(
  * @param error - Error to test
  * @returns True if error is one of InvalidParameter errors
  */
-export function isInvalidParameterError(error: RaidenError): boolean {
+export function isInvalidParameterError(error: unknown): error is RaidenError {
   return [
     ErrorCodes.DTA_NEGATIVE_NUMBER,
     ErrorCodes.DTA_NUMBER_TOO_LARGE,
@@ -66,7 +67,7 @@ export function isInvalidParameterError(error: RaidenError): boolean {
     ErrorCodes.DTA_INVALID_PFS,
     ErrorCodes.DTA_INVALID_DEPOSIT,
     ErrorCodes.DTA_INVALID_AMOUNT,
-  ].includes(error.message);
+  ].includes((error as Error).message);
 }
 
 /**
@@ -79,8 +80,8 @@ export function isInvalidParameterError(error: RaidenError): boolean {
  * @param error - Error to test
  * @returns True if error is a TransactionWoulfFail error
  */
-export function isTransactionWouldFailError(error: Error): boolean {
-  return /always failing transaction/.test(error.message);
+export function isTransactionWouldFailError(error: unknown): error is RaidenError {
+  return /always failing transaction/.test((error as Error).message);
 }
 
 /**
@@ -89,7 +90,7 @@ export function isTransactionWouldFailError(error: Error): boolean {
  * @param error - Error to test
  * @returns True if error signals failed transfer
  */
-export function isTransferFailedError(error: Error): boolean {
+export function isTransferFailedError(error: unknown): error is RaidenError {
   return [
     ErrorCodes.XFER_ALREADY_COMPLETED,
     ErrorCodes.XFER_CHANNEL_CLOSED_PREMATURELY,
@@ -97,14 +98,14 @@ export function isTransferFailedError(error: Error): boolean {
     ErrorCodes.XFER_INVALID_SECRETREQUEST,
     ErrorCodes.XFER_REFUNDED,
     ErrorCodes.XFER_REGISTERSECRET_TX_FAILED,
-  ].includes(error.message);
+  ].includes((error as Error).message);
 }
 
 /**
  * @param error - Error to test
  * @returns True if error is a Conflict error
  */
-export function isConflictError(error: Error): boolean {
+export function isConflictError(error: unknown): error is RaidenError {
   return (
     [
       ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK,
@@ -116,7 +117,7 @@ export function isConflictError(error: Error): boolean {
       ErrorCodes.UDC_PLAN_WITHDRAW_EXCEEDS_AVAILABLE,
       ErrorCodes.UDC_WITHDRAW_NO_PLAN,
       ErrorCodes.UDC_WITHDRAW_TOO_LARGE,
-    ].includes(error.message) || isTransactionWouldFailError(error)
+    ].includes((error as Error).message) || isTransactionWouldFailError(error)
   );
 }
 
@@ -126,10 +127,7 @@ export function isConflictError(error: Error): boolean {
  * @param error.code - Error code
  * @returns True if error is an InsufficientFunds error
  */
-export function isInsuficientFundsError(error: {
-  message: string;
-  code?: string | number;
-}): boolean {
+export function isInsuficientFundsError(error: any): error is RaidenError {
   return (
     error.code === 'INSUFFICIENT_FUNDS' ||
     [

@@ -29,7 +29,7 @@ import type { TokenNetwork } from '../../contracts';
 import { TokenNetwork__factory } from '../../contracts';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
-import { assert, matchError, networkErrors } from '../../utils/error';
+import { assert, ErrorCodec, matchError, networkErrors } from '../../utils/error';
 import type { ContractFilter, EventTuple } from '../../utils/ethers';
 import { fromEthersEvent, getLogsByChunk$, logToContractEvent } from '../../utils/ethers';
 import { completeWith, pluckDistinct } from '../../utils/rx';
@@ -197,7 +197,7 @@ export function initMonitorProviderEpic(
         if (isProviderAccount && accounts && !accounts.includes(mainAddress))
           return raidenShutdown({ reason: ShutdownReason.ACCOUNT_CHANGED });
       } catch (error) {
-        if (error?.message?.includes('network changed'))
+        if (ErrorCodec.is(error) && error.message.includes('network changed'))
           return raidenShutdown({ reason: ShutdownReason.NETWORK_CHANGED });
         // ignore network errors, so they're retried by timer
         if (matchError(networkErrors, error)) return;

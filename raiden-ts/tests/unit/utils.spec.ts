@@ -233,12 +233,7 @@ describe('types', () => {
   });
 
   test('ErrorCodec', () => {
-    let err;
-    try {
-      throw new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
-    } catch (e) {
-      err = e;
-    }
+    const err = new RaidenError(ErrorCodes.RDN_GENERAL_ERROR);
     expect(ErrorCodec.is(err)).toBe(true);
     const encoded = ErrorCodec.encode(err);
     expect(encoded).toEqual({
@@ -342,7 +337,7 @@ describe('RaidenError', () => {
     } catch (err) {
       expect(err).toBeInstanceOf(RaidenError);
       expect(err instanceof Error).toBeTruthy();
-      expect(err.name).toEqual('RaidenError');
+      expect((err as Error).name).toEqual('RaidenError');
     }
   });
 
@@ -354,15 +349,15 @@ describe('RaidenError', () => {
       doSomething();
     } catch (err) {
       // Stack trace exists
-      expect(err.stack).toBeDefined();
+      expect((err as Error).stack).toBeDefined();
 
       // Stack trace starts with the error message
-      expect(err.stack.split('\n').shift()).toEqual(
+      expect((err as Error).stack!.split('\n').shift()).toEqual(
         'RaidenError: Pathfinding Service is disabled and no direct route is available.',
       );
 
       // Stack trace contains function where error was thrown
-      expect(err.stack.split('\n')[1]).toContain('doSomething');
+      expect((err as Error).stack!.split('\n')[1]).toContain('doSomething');
     }
   });
 
@@ -370,8 +365,8 @@ describe('RaidenError', () => {
     try {
       throw new RaidenError(ErrorCodes.PFS_DISABLED);
     } catch (err) {
-      expect(err.code).toBeDefined();
-      expect(err.code).toEqual('PFS_DISABLED');
+      expect((err as RaidenError).code).toBeDefined();
+      expect((err as RaidenError).code).toEqual('PFS_DISABLED');
     }
   });
 
@@ -379,7 +374,7 @@ describe('RaidenError', () => {
     try {
       throw new RaidenError(ErrorCodes.PFS_DISABLED, { value: 'bar', key: 'foo' });
     } catch (err) {
-      expect(err.details).toStrictEqual({ value: 'bar', key: 'foo' });
+      expect((err as RaidenError).details).toStrictEqual({ value: 'bar', key: 'foo' });
     }
   });
 });

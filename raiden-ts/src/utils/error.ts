@@ -182,7 +182,7 @@ export const ErrorCodec = new t.Type<
 >(
   'Error',
   // if it quacks like a duck... without relying on instanceof
-  (u: unknown): u is Error => typeof u === 'object' && !!u && 'name' in u && 'message' in u,
+  (u: unknown): u is Error => typeof u === 'object' && !!u && 'message' in u,
   (u) =>
     pipe(
       serializedErr.decode(u),

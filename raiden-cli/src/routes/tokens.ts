@@ -26,7 +26,7 @@ async function getTokenNetwork(this: Cli, request: Request, response: Response) 
     const tokenNetwork = await this.raiden.monitorToken(request.params.tokenAddress);
     response.json(tokenNetwork);
   } catch (error) {
-    response.status(404).send(error.message);
+    response.status(404).send((error as Error).message);
   }
 }
 
@@ -55,7 +55,7 @@ async function registerToken(this: Cli, request: Request, response: Response) {
     } else if (isInvalidParameterError(error) || isConflictError(error)) {
       response.status(409).send({ message: error.message });
     } else {
-      response.status(500).send(error.message);
+      response.status(500).send((error as Error).message);
     }
   }
 }

@@ -121,7 +121,7 @@ export default class ChannelDialogs extends Vue {
       this.dismiss(id);
     } catch (e) {
       this.message(this.$t('channel-list.messages.deposit.failure') as string);
-      this.error = e;
+      this.error = e as Error;
     }
     this.busy([false, id]);
   }
@@ -136,7 +136,7 @@ export default class ChannelDialogs extends Vue {
       this.dismiss(id);
     } catch (e) {
       this.message(this.$t('channel-list.messages.withdraw.failure') as string);
-      this.error = e;
+      this.error = e as Error;
     }
     this.busy([false, id]);
   }
@@ -151,7 +151,7 @@ export default class ChannelDialogs extends Vue {
       this.dismiss(id);
     } catch (e) {
       this.message(this.$t('channel-list.messages.close.failure') as string);
-      this.error = e;
+      this.error = e as Error;
     }
     this.busy([false, id]);
   }
@@ -166,7 +166,7 @@ export default class ChannelDialogs extends Vue {
       this.dismiss(id);
     } catch (e) {
       this.message(this.$t('channel-list.messages.settle.failure') as string);
-      this.error = e;
+      this.error = e as Error;
     }
     this.busy([false, id]);
   }

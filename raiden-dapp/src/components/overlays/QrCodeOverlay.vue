@@ -38,7 +38,7 @@ export default class QrCodeOverlay extends Vue {
     try {
       await promise;
     } catch (error) {
-      this.error = error;
+      this.error = error as Error;
     } finally {
       this.showPermissionHint = false;
     }

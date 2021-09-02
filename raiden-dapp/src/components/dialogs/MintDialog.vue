@@ -71,7 +71,7 @@ export default class MintDialog extends Vue {
       );
       this.$emit('done');
     } catch (e) {
-      this.error = e;
+      this.error = e as Error;
     }
 
     this.loading = false;
