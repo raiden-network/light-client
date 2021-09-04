@@ -116,7 +116,7 @@ describe('channelOpenEpic', () => {
     );
   });
 
-  test('success', async () => {
+  test('success!', async () => {
     expect.assertions(2);
 
     const [raiden, partner] = await makeRaidens(2);
@@ -135,6 +135,75 @@ describe('channelOpenEpic', () => {
     // tokenMonitoredEpic, which monitors the blockchain for ChannelOpened events
     expect(tokenNetworkContract.openChannel).toHaveBeenCalledTimes(1);
     expect(openTx.wait).toHaveBeenCalledTimes(1);
+  });
+
+  test('success with deposit', async () => {
+    expect.assertions(3);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const token = makeAddress();
+    const tokenNetwork = makeAddress();
+    await ensureTokenIsMonitored(raiden, [token, tokenNetwork]);
+
+    const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
+    const openTx = makeTransaction();
+    tokenNetworkContract.openChannelWithDeposit.mockResolvedValue(openTx);
+
+    raiden.store.dispatch(
+      channelOpen.request({ deposit }, { tokenNetwork, partner: partner.address }),
+    );
+    await waitBlock();
+
+    // result is undefined on success as the respective channelOpen.success is emitted by the
+    // tokenMonitoredEpic, which monitors the blockchain for ChannelOpened events
+    expect(tokenNetworkContract.openChannelWithDeposit).toHaveBeenCalledTimes(1);
+    expect(openTx.wait).toHaveBeenCalledTimes(1);
+    expect(raiden.output).not.toContainEqual(
+      channelDeposit.request(expect.anything(), expect.anything()),
+    );
+  });
+
+  test('success race deposited while partner opened', async () => {
+    expect.assertions(4);
+
+    const [raiden, partner] = await makeRaidens(2);
+    const token = makeAddress();
+    const tokenNetwork = makeAddress();
+    await ensureTokenIsMonitored(raiden, [token, tokenNetwork]);
+
+    const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
+    tokenNetworkContract.openChannelWithDeposit.mockRejectedValue(new Error('transaction failed'));
+
+    const openTx = makeTransaction();
+    const partnerTokenNetworkContract = partner.deps.getTokenNetworkContract(tokenNetwork);
+    partnerTokenNetworkContract.openChannelWithDeposit.mockResolvedValue(openTx);
+
+    raiden.store.dispatch(
+      channelOpen.request({ deposit }, { tokenNetwork, partner: partner.address }),
+    );
+    await waitBlock();
+
+    // still retrying
+    expect(raiden.output).not.toContainEqual(
+      channelOpen.success(expect.anything(), expect.anything()),
+    );
+    expect(raiden.output).not.toContainEqual(
+      channelOpen.failure(expect.anything(), expect.anything()),
+    );
+    expect(raiden.output).not.toContainEqual(
+      channelDeposit.success(expect.anything(), expect.anything()),
+    );
+    // partner opens channel with us while we were retrying
+    await ensureChannelIsOpen([partner, raiden], { tokens: [token, tokenNetwork] });
+    await waitBlock();
+
+    // when channelOpen.success is picked, we must channelDeposit.request due to the race
+    expect(raiden.output).toContainEqual(
+      channelDeposit.request(
+        { deposit, waitOpen: true },
+        { tokenNetwork, partner: partner.address },
+      ),
+    );
   });
 });
 
