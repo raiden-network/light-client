@@ -5,8 +5,12 @@
 - [#2798] Delay non-closing auto-settle to prevent wasted gas on channelSettle race; closing side is given priority on auto-settling
 - [#2889] Ensure capabilities are updated when they change even if RTC channels are established by reconnecting them.
 
+### Added
+- [#2891] Use `TokenNetwork.openChannelWithDeposit` on new contracts for faster open+deposit in a single transaction.
+
 [#2798]: https://github.com/raiden-network/light-client/issues/2798
 [#2889]: https://github.com/raiden-network/light-client/issues/2889
+[#2891]: https://github.com/raiden-network/light-client/issues/2891
 
 ## [2.0.0-rc.1] - 2021-08-13
 ### Added
