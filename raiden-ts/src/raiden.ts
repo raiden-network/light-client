@@ -1425,9 +1425,16 @@ export class Raiden {
    *
    * @param value - Maximum value which we may try to withdraw. An error will be thrown if this
    *    value is larger than [[getUDCCapacity]]+[[getUDCWithdrawPlan]].amount
+   * @param options - options object
+   * @param options.subkey - if true, force withdrawing to subkey instead of the main account as
+   *       beneficiary
    * @returns Promise to hash of plan transaction, if it succeeds.
    */
-  public async withdrawFromUDC(value?: BigNumberish): Promise<Hash> {
+  public async withdrawFromUDC(
+    value?: BigNumberish,
+    options?: { subkey?: boolean },
+  ): Promise<Hash> {
+    assert(!options?.subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
     assert(!this.config.autoUDCWithdraw, ErrorCodes.UDC_WITHDRAW_AUTO_ENABLED, this.log.warn);
     const plan = await this.getUDCWithdrawPlan();
     assert(plan, ErrorCodes.UDC_WITHDRAW_NO_PLAN, this.log.warn);
@@ -1450,7 +1457,7 @@ export class Raiden {
     const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
-    this.store.dispatch(udcWithdraw.request(undefined, meta));
+    this.store.dispatch(udcWithdraw.request(options, meta));
     return promise;
   }
 

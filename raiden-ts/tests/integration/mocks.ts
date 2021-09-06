@@ -158,14 +158,20 @@ export function makeSignature(): Signature {
   return '0x5770d597b270ad9d1225c901b1ef6bfd8782b15d7541379619c5dae02c5c03c1196291b042a4fea9dbddcb1c6bcd2a5ee19180e8dc881c2e9298757e84ad190b1c' as Signature;
 }
 
-// not all random 32bytes values are valid secp256k1 private keys, retry
-function makeWallet() {
+/**
+ * Creates and returns a valid Wallet instance
+ *
+ * @returns some wallet instance
+ */
+export function makeWallet() {
   let wallet: Wallet | undefined;
   do {
     try {
-      wallet = new Wallet(makeSecret());
-      assert(Address.is(wallet.address));
+      const wallet_ = new Wallet(makeSecret());
+      assert(Address.is(wallet_.address));
+      wallet = wallet_;
     } catch (err) {}
+    // not all random 32bytes values are valid secp256k1 private keys, retry
   } while (!wallet);
   return wallet;
 }

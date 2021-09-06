@@ -637,6 +637,7 @@ describe('Raiden', () => {
           udcWithdraw.success(
             {
               withdrawal: BigNumber.from(withdrawAmount) as UInt<32>,
+              beneficiary: address,
               txHash: txHash,
               txBlock: txBlock,
               confirmed: true,

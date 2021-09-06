@@ -80,9 +80,10 @@ export namespace udcWithdrawPlan {
 export const udcWithdraw = createAsyncAction(
   UdcWithdrawId,
   'udc/withdraw',
-  t.undefined,
+  t.union([t.undefined, t.partial({ subkey: t.boolean })]),
   t.type({
     withdrawal: UInt(32),
+    beneficiary: Address,
     txHash: Hash,
     txBlock: t.number,
     confirmed: t.union([t.undefined, t.boolean]),
