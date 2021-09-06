@@ -78,7 +78,7 @@ async function createWrapper(options?: {
     stubs: ['v-form'],
   });
 
-  if (options?.inputsAreValid !== undefined) {
+  if (typeof options?.inputsAreValid === 'boolean') {
     (wrapper.vm as any).inputsAreValid = options.inputsAreValid;
     await wrapper.vm.$nextTick();
   }
@@ -296,6 +296,29 @@ describe('ChannelActionForm.vue', () => {
       );
 
       expect(input.html()).toContain('10');
+    });
+  });
+
+  describe('emit input update event', () => {
+    test('emits event', async () => {
+      const wrapper = await createWrapper({
+        tokenAddress: '0xToken',
+        partnerAddress: '0xPartner',
+        tokenAmount: '0.1',
+      });
+      const form = wrapper.get('.channel-action-form');
+
+      form.vm.$emit('input');
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.emitted('inputsChanged')).toBeTruthy();
+      expect(wrapper.emitted('inputsChanged')![0]).toEqual([
+        {
+          tokenAddress: '0xToken',
+          partnerAddress: '0xPartner',
+          tokenAmount: '0.1',
+        },
+      ]);
     });
   });
 
