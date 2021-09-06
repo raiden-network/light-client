@@ -4,6 +4,7 @@
       v-model="inputsAreValid"
       class="channel-action-form"
       autocomplete="off"
+      @input="emitInputsChanged"
       @submit.prevent="submit"
     >
       <template v-if="!hideTokenAddress">
@@ -77,7 +78,7 @@
       <action-button
         data-cy="channel-action-form__button"
         :text="confirmButtonLabel"
-        :enabled="inputsAreValid"
+        :enabled="!!inputsAreValid"
         :sticky="stickyButton"
       />
     </v-form>
@@ -86,7 +87,7 @@
 
 <script lang="ts">
 import { BigNumber } from 'ethers';
-import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
+import { Component, Emit, Prop, Vue, Watch } from 'vue-property-decorator';
 import { mapGetters } from 'vuex';
 
 import type { RaidenChannel } from 'raiden-ts';
@@ -206,7 +207,11 @@ export default class ChannelActionForm extends Vue {
   }
 
   get tokenAmountInputFocused(): boolean {
-    return !this.tokenAddressInputFocused && !this.partnerAddressInputFocused && this.tokenAmountEditable;
+    return (
+      !this.tokenAddressInputFocused &&
+      !this.partnerAddressInputFocused &&
+      this.tokenAmountEditable
+    );
   }
 
   get channelPartnerAddresses(): Array<string> | undefined {
@@ -252,6 +257,15 @@ export default class ChannelActionForm extends Vue {
       partnerAddress: this.partnerAddressInput,
       tokenAmount: this.parsedTokenAmount,
     });
+  }
+
+  @Emit('inputsChanged')
+  emitInputsChanged(): { [key: string]: string } {
+    return {
+      tokenAddress: this.tokenAddressInput,
+      partnerAddress: this.partnerAddressInput,
+      tokenAmount: this.tokenAmountInput,
+    };
   }
 }
 </script>
