@@ -3,7 +3,7 @@ import { $t } from '../../utils/mocks';
 
 import type { Wrapper } from '@vue/test-utils';
 import { shallowMount } from '@vue/test-utils';
-import { BigNumber } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
 import Vuex from 'vuex';
@@ -36,6 +36,7 @@ async function createWrapper(options?: {
   tokenAmountEditable?: boolean;
   limitToTokenBalance?: boolean;
   limitToChannelWithdrawable?: boolean;
+  minimumTokenAmount?: BigNumber;
   confirmButtonLabel?: string;
   stickyButton?: boolean;
   runAction?: () => void;
@@ -71,6 +72,7 @@ async function createWrapper(options?: {
       tokenAmountEditable: options?.tokenAmountEditable,
       limitToTokenBalance: options?.limitToTokenBalance,
       limitToChannelWithdrawable: options?.limitToChannelWithdrawable,
+      minimumTokenAmount: options?.minimumTokenAmount,
       confirmButtonLabel: options?.confirmButtonLabel ?? 'confirm label',
       stickyButton: options?.stickyButton,
       runAction: options?.runAction ?? jest.fn(),
@@ -296,6 +298,18 @@ describe('ChannelActionForm.vue', () => {
       );
 
       expect(input.html()).toContain('10');
+    });
+
+    test('limits input to minimum amount if set so', async () => {
+      const wrapper = await createWrapper({
+        minimumTokenAmount: constants.Two,
+        tokenAmountEditable: true,
+      });
+      const input = wrapper.get(
+        '.channel-action-form__token-amount.channel-action-form__editable-input',
+      );
+
+      expect(input.html()).toContain(constants.Two);
     });
   });
 

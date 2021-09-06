@@ -57,6 +57,7 @@
           :token="token"
           :placeholder="$t('channel-action-form.amount')"
           :max="tokenAmountLimit"
+          :min="minimumTokenAmount"
           :limit="!!tokenAmountLimit"
           :autofocus="tokenAmountInputFocused"
         />
@@ -154,6 +155,9 @@ export default class ChannelActionForm extends Vue {
 
   @Prop({ type: Boolean, default: false })
   readonly limitToChannelWithdrawable!: boolean;
+
+  @Prop({ required: false })
+  readonly minimumTokenAmount!: BigNumber | undefined;
 
   @Prop({ type: Boolean, default: false })
   readonly hideTokenAmount!: boolean;

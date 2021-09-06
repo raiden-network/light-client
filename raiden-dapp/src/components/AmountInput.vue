@@ -47,6 +47,10 @@ export default class AmountInput extends Vue {
   limit!: boolean;
   @Prop({ default: '', type: String })
   placeholder!: string;
+
+  @Prop({ required: false, default: () => constants.Zero })
+  min!: BigNumber;
+
   @Prop({ required: false, default: () => constants.Zero })
   max!: BigNumber;
 
@@ -82,8 +86,11 @@ export default class AmountInput extends Vue {
       } catch (e) {}
       return (
         !this.limit ||
-        (value && parsedAmount && !parsedAmount.isZero()) ||
-        (this.$parent.$t('amount-input.error.zero') as string)
+        (value && parsedAmount && parsedAmount.gte(this.min)) ||
+        (this.$parent.$t('amount-input.error.less-than-minimum', {
+          funds: BalanceUtils.toUnits(this.min, this.token!.decimals ?? 18),
+          symbol: this.token!.symbol,
+        }) as string)
       );
     },
     function (this: AmountInput, value) {
