@@ -1,7 +1,7 @@
 import { Zero } from '@ethersproject/constants';
 import constant from 'lodash/constant';
 import type { Observable } from 'rxjs';
-import { defer, EMPTY, of } from 'rxjs';
+import { defer, EMPTY, forkJoin, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -29,6 +29,7 @@ import { dispatchAndWait$ } from '../../transfers/epics/utils';
 import type { RaidenEpicDeps } from '../../types';
 import { isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, networkErrors } from '../../utils/error';
+import { checkContractHasMethod$ } from '../../utils/ethers';
 import { catchAndLog, completeWith, mergeWith, retryWhile, takeIf } from '../../utils/rx';
 import type { Address, UInt } from '../../utils/types';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '../actions';
@@ -300,29 +301,47 @@ export function udcAutoWithdrawEpic(
  * @param deps.provider - Provider instance
  * @param deps.config$ - Config observable
  * @param deps.latest$ - Latest observable
+ * @param deps.main - Main account
  * @returns Observable of udcWithdraw.success|udcWithdraw.failure actions
  */
 export function udcWithdrawEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, userDepositContract, address, signer, provider, config$, latest$ }: RaidenEpicDeps,
+  { log, userDepositContract, address, signer, provider, config$, latest$, main }: RaidenEpicDeps,
 ): Observable<udcWithdraw.success | udcWithdraw.failure> {
   return action$.pipe(
     filter(udcWithdraw.request.is),
     concatMap((action) => {
       const contract = getContractWithSigner(userDepositContract, signer);
       let balance: UInt<32>;
-      return defer(async () => userDepositContract.callStatic.balances(address)).pipe(
-        withLatestFrom(latest$),
-        mergeMap(async ([balance_, { gasPrice }]) => {
+      let toAccount: Address;
+      return forkJoin([
+        defer(async () => userDepositContract.callStatic.balances(address)),
+        checkContractHasMethod$(contract, 'withdrawToBeneficiary').pipe(
+          catchError(constant(of(false))),
+        ),
+      ]).pipe(
+        withLatestFrom(latest$, config$),
+        mergeMap(([[balance_, hasMethod], { gasPrice }, { subkey }]) => {
           assert(balance_.gt(Zero), [
             ErrorCodes.UDC_WITHDRAW_NO_BALANCE,
             { balance: balance_.toString() },
           ]);
           balance = balance_ as UInt<32>;
-          return contract.withdraw(action.meta.amount, { gasPrice });
+          const toMain = hasMethod && main && !(action.payload?.subkey ?? subkey);
+          toAccount = toMain ? main!.address : address;
+          return defer(async () =>
+            toMain
+              ? contract.withdrawToBeneficiary(action.meta.amount, main!.address, { gasPrice })
+              : contract.withdraw(action.meta.amount, { gasPrice }),
+          ).pipe(
+            assertTx(
+              toMain ? 'withdrawToBeneficiary' : 'withdraw',
+              ErrorCodes.UDC_WITHDRAW_FAILED,
+              { log, provider },
+            ),
+          );
         }),
-        assertTx('withdraw', ErrorCodes.UDC_WITHDRAW_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.info }),
         mergeMap(([, { transactionHash, blockNumber }]) =>
           action$.pipe(
@@ -338,6 +357,7 @@ export function udcWithdrawEpic(
               udcWithdraw.success(
                 {
                   withdrawal: balance.sub(newBalance) as UInt<32>,
+                  beneficiary: toAccount,
                   txHash: transactionHash,
                   txBlock: blockNumber,
                   confirmed: undefined, // let confirmationEpic confirm this, values only FYI

@@ -7,10 +7,12 @@
 
 ### Added
 - [#2891] Use `TokenNetwork.openChannelWithDeposit` on new contracts for faster open+deposit in a single transaction.
+- [#2892] Use `UserDeposit.withdrawToBeneficiary` to withdraw from UDC directly to main account
 
 [#2798]: https://github.com/raiden-network/light-client/issues/2798
 [#2889]: https://github.com/raiden-network/light-client/issues/2889
 [#2891]: https://github.com/raiden-network/light-client/issues/2891
+[#2892]: https://github.com/raiden-network/light-client/issues/2892
 
 ## [2.0.0-rc.1] - 2021-08-13
 ### Added

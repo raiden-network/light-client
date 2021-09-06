@@ -1,5 +1,12 @@
 import { confirmationBlocks } from './fixtures';
-import { makeRaiden, makeRaidens, makeStruct, makeTransaction, waitBlock } from './mocks';
+import {
+  makeRaiden,
+  makeRaidens,
+  makeStruct,
+  makeTransaction,
+  makeWallet,
+  waitBlock,
+} from './mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { MaxUint256, Zero } from '@ethersproject/constants';
@@ -10,7 +17,7 @@ import { pluck } from 'rxjs/operators';
 import { raidenConfigUpdate } from '@/actions';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
 import { ErrorCodes } from '@/utils/error';
-import type { Hash, UInt } from '@/utils/types';
+import type { Address, Hash, UInt } from '@/utils/types';
 
 import { sleep } from '../utils';
 
@@ -308,7 +315,7 @@ describe('udcAutoWithdrawEpic', () => {
 });
 
 describe('udcWithdraw', () => {
-  test('success', async () => {
+  test('success!', async () => {
     expect.assertions(1);
 
     const amount = parseEther('5');
@@ -332,12 +339,57 @@ describe('udcWithdraw', () => {
       udcWithdraw.success(
         {
           withdrawal: amount as UInt<32>,
+          beneficiary: raiden.address,
           txHash: withdrawTx.hash as Hash,
           txBlock: expect.any(Number),
           confirmed: true,
         },
         { amount: amount as UInt<32> },
       ),
+    );
+  });
+
+  test('success to main account as beneficiary', async () => {
+    expect.assertions(2);
+
+    const amount = parseEther('5');
+    const raiden = await makeRaiden(undefined, false);
+    // make raiden understand it's using a subkey of this main account
+    const mainSigner = makeWallet();
+    Object.assign(raiden.deps, {
+      main: { signer: mainSigner, address: mainSigner.address as Address },
+    });
+
+    raiden.store.dispatch(raidenConfigUpdate({ autoUDCWithdraw: false }));
+    const withdrawTx = makeTransaction(1);
+    raiden.deps.userDepositContract.withdrawToBeneficiary.mockResolvedValue(withdrawTx);
+    raiden.deps.userDepositContract.balances
+      .mockClear()
+      .mockResolvedValueOnce(parseEther('5'))
+      .mockResolvedValueOnce(Zero);
+
+    await raiden.start();
+    await waitBlock(200);
+
+    raiden.store.dispatch(udcWithdraw.request(undefined, { amount: amount as UInt<32> }));
+    await waitBlock();
+
+    expect(raiden.output).toContainEqual(
+      udcWithdraw.success(
+        {
+          withdrawal: amount as UInt<32>,
+          beneficiary: raiden.deps.main!.address,
+          txHash: withdrawTx.hash as Hash,
+          txBlock: expect.any(Number),
+          confirmed: true,
+        },
+        { amount: amount as UInt<32> },
+      ),
+    );
+    expect(raiden.deps.userDepositContract.withdrawToBeneficiary).toHaveBeenCalledWith(
+      amount,
+      raiden.deps.main!.address,
+      expect.anything(),
     );
   });
 
