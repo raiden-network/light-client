@@ -13,6 +13,7 @@
         'address-input--untouched': !touched,
       }"
       :placeholder="$t('address-input.input.placeholder')"
+      :autofocus="autofocus"
       persistent-hint
       @blur="$emit('blur')"
       @focus="$emit('focus')"
@@ -84,6 +85,9 @@ export default class AddressInput extends Mixins(BlockieMixin) {
   disabled!: boolean;
   @Prop({ required: true })
   value!: string;
+
+  @Prop({ default: false })
+  readonly autofocus!: boolean;
 
   @Prop({
     default: function () {
