@@ -32,6 +32,7 @@
           restricted-error-message="channel-action-form.restricted-partner-address-error"
           :exclude="excludedPartnerAddresses"
           exclude-error-message="channel-action-form.exclude-partner-address-error"
+          :autofocus="partnerAddressInputFocused"
         />
 
         <div
@@ -56,6 +57,7 @@
           :placeholder="$t('channel-action-form.amount')"
           :max="tokenAmountLimit"
           :limit="!!tokenAmountLimit"
+          :autofocus="tokenAmountInputFocused"
         />
 
         <div
@@ -193,6 +195,18 @@ export default class ChannelActionForm extends Vue {
 
   get token(): Token {
     return this.getToken(this.tokenAddressInput);
+  }
+
+  get tokenAddressInputFocused(): boolean {
+    return this.tokenAddressEditable;
+  }
+
+  get partnerAddressInputFocused(): boolean {
+    return !this.tokenAddressInputFocused && this.partnerAddressEditable;
+  }
+
+  get tokenAmountInputFocused(): boolean {
+    return !this.tokenAddressInputFocused && !this.partnerAddressInputFocused && this.tokenAmountEditable;
   }
 
   get channelPartnerAddresses(): Array<string> | undefined {
