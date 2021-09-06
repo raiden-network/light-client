@@ -157,6 +157,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   udcCapacity: BigNumber = constants.Zero;
   udcToken!: Token;
   tokens!: Tokens;
+  checkDirectRoutePromise: Promise<unknown> | undefined;
 
   amount = '';
   target = '';
@@ -270,11 +271,15 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
       return;
     }
 
-    const directRoutes = await this.$raiden.directRoute(
+    this.checkDirectRoutePromise = this.checkDirectRoute(
       address,
-      this.target,
       BalanceUtils.parse(this.amount, this.token.decimals),
     );
+    await this.checkDirectRoutePromise;
+  }
+
+  async checkDirectRoute(address: string, amount: BigNumber) {
+    const directRoutes = await this.$raiden.directRoute(address, this.target, amount);
 
     if (directRoutes) {
       const [route] = directRoutes;
@@ -290,6 +295,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
       this.pfsSelectionSkipped = true;
       this.routeSelectionSkipped = true;
     }
+    this.checkDirectRoutePromise = undefined;
   }
 
   async findRoutes(): Promise<void> {
@@ -324,6 +330,8 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
   }
 
   async handleStep() {
+    await this.checkDirectRoutePromise;
+
     if (this.step === 1 && this.selectedPfs && !this.pfsFeesConfirmed) {
       this.pfsFeesConfirmed = true;
       try {
@@ -398,7 +406,7 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
     return (this.selectedRoute?.fee as BigNumber) ?? constants.Zero;
   }
 
-  setPFS(payload: [RaidenPFS, boolean]) {
+  async setPFS(payload: [RaidenPFS, boolean]) {
     this.selectedPfs = null;
 
     if (payload) {
