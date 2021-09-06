@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Wrapper } from '@vue/test-utils';
 import { mount } from '@vue/test-utils';
+import { BigNumber } from 'ethers';
 import flushPromises from 'flush-promises';
 import Vue from 'vue';
 import Vuetify from 'vuetify';
@@ -66,7 +67,7 @@ describe('AmountInput.vue', () => {
 
   describe('limited', () => {
     beforeEach(async () => {
-      wrapper = createWrapper({ limit: true, value: '0.00' });
+      wrapper = createWrapper({ limit: true, min: BigNumber.from(100000), value: '0.00' });
       await wrapper.vm.$nextTick();
     });
 
@@ -92,6 +93,18 @@ describe('AmountInput.vue', () => {
       const messages = wrapper.find('.v-messages__message');
       expect(messages.exists()).toBe(true);
       expect(messages.text()).toEqual('amount-input.error.too-many-decimals');
+    });
+
+    test('show an error if the amount is less than the minimum', async () => {
+      mockInput(wrapper, '0.5');
+      await wrapper.vm.$nextTick();
+      await flushPromises();
+      const inputEvent = wrapper.emitted('input');
+      expect(inputEvent).toBeTruthy();
+      expect(inputEvent?.shift()).toEqual(['0.5']);
+      const messages = wrapper.find('.v-messages__message');
+      expect(messages.exists()).toBe(true);
+      expect(messages.text()).toEqual('amount-input.error.less-than-minimum');
     });
 
     test('call preventDefault when pasting an invalid value', () => {

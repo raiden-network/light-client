@@ -275,7 +275,7 @@
       "empty": "Please enter an amount",
       "too-many-decimals": "Please use only up to {decimals} decimals for this token",
       "not-enough-funds": "Your maximum usable amount is {funds} {symbol}",
-      "zero": "Enter an amount larger than zero",
+      "less-than-minimum": "Enter an amount larger than {funds}",
       "invalid": "Please enter a valid amount"
     }
   },
