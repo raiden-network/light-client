@@ -242,7 +242,7 @@ describe('ChannelActionForm.vue', () => {
     });
 
     test('only displays value if not set to be editable', async () => {
-      const wrapper = await createWrapper({ tokenAmountEditable: false, tokenAmount: '0.1' });
+      const wrapper = await createWrapper({ tokenAmountEditable: false, tokenAmount: '1' });
       const display = wrapper.find(
         '.channel-action-form__token-amount.channel-action-form__fixed-input-wrapper',
       );
@@ -251,7 +251,7 @@ describe('ChannelActionForm.vue', () => {
       );
 
       expect(display.exists()).toBeTruthy();
-      expect(display.html()).toContain('0.1');
+      expect(display.html()).toContain(constants.One);
       expect(input.exists()).toBeFalsy();
     });
 
