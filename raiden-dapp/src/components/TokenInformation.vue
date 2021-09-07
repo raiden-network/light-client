@@ -76,6 +76,7 @@ export default class TokenInformation extends Vue {
   align-items: center;
   display: flex;
   height: 100%;
+  padding: 0 16px;
   width: 100%;
 
   &__details {
