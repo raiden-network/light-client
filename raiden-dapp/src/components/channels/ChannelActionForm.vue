@@ -68,7 +68,7 @@
         >
           <amount-display
             :label="$t('channel-action-form.amount')"
-            :amount="tokenAmount"
+            :amount="parsedTokenAmount"
             :token="token"
             exact-amount
             full-width
