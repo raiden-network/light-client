@@ -731,6 +731,11 @@
         "Connect with a more popular hub, e.g. hub.raiden.eth. That way, Pathfinding Service is more likely to find a route between you and the target",
         "Retry your transfer"
       ]
+    },
+    "PFS_TARGET_NO_RECEIVE": {
+      "title": "Target does not receive payments",
+      "problem": "The target is online but does not seem to receive payments.",
+      "solution": "Please contact the payment target to make sure he can receive payments and try again."
     }
   },
   "versions": {
