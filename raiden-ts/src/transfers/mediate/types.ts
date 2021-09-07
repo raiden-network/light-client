@@ -190,7 +190,7 @@ export const proportionalFee: FeeModel<number, { proportional: Int<32> }> = {
 };
 
 type Point<N = BigNumber> = readonly [N, N];
-type DiscreteFunc<N = BigNumber> = readonly Point<N>[];
+type DiscreteFunc<N = BigNumber> = readonly [Point<N>, ...Point<N>[], Point<N>];
 
 /**
  * Creates an array of [count] BNs, starting with [start], ending with [end], and
@@ -202,7 +202,11 @@ type DiscreteFunc<N = BigNumber> = readonly Point<N>[];
  * @param count - Values count, which will divide range into [count - 1] stretches
  * @returns Sorted array of BNs of length [count]
  */
-function linspace<N extends BigNumber = BigNumber>(start: N, end: N, count: number): readonly N[] {
+function linspace<N extends BigNumber = BigNumber>(
+  start: N,
+  end: N,
+  count: number,
+): readonly [N, ...N[], N] {
   const width = end.sub(start);
   assert(count >= 2 && width.gte(count - 1), 'invalid linspace params');
   const ranges = count - 1;
@@ -227,7 +231,7 @@ function linspace<N extends BigNumber = BigNumber>(start: N, end: N, count: numb
 function findRangeIndex(x: Decimal, func: DiscreteFunc): number {
   assert(func.length >= 2, 'invalid linspace');
   const x0 = func[0][0];
-  const xL = func[func.length - 1][0]; // x_last
+  const xL = func[func.length - 1]![0]; // x_last
   // special-case where x is exactly over xLast, make it part of last stretch instead of beyond it
   if (x.eq(xL.toHexString())) return func.length - 2;
   const width = new Decimal(xL.sub(x0).toHexString());
@@ -239,8 +243,8 @@ function findRangeIndex(x: Decimal, func: DiscreteFunc): number {
     if (index < 0) return -1;
     else if (index >= func.length - 1) return func.length - 1;
 
-    if (x.gte(func[index + 1][0].toHexString())) offs = -1;
-    else if (x.lt(func[index][0].toHexString())) offs = 1;
+    if (x.gte(func[index + 1]![0].toHexString())) offs = -1;
+    else if (x.lt(func[index]![0].toHexString())) offs = 1;
     else offs = 0;
 
     index += offs;
@@ -269,7 +273,7 @@ function interpolateFunc(x: Decimal, arr: DiscreteFunc): Decimal {
   // in case index before|beyond arr limits, use first|last stretches
   if (index < 0) index = 0;
   else if (index >= arr.length - 1) index = arr.length - 2;
-  return interpolate(x, arr[index], arr[index + 1]);
+  return interpolate(x, arr[index]!, arr[index + 1]!);
 }
 
 /**
@@ -322,7 +326,8 @@ function calculatePenaltyFunction(
         .div(o.pow(b))
         .toFixed(0, Decimal.ROUND_HALF_EVEN),
     ) as UInt<32>;
-  return xValues.map((x) => [x, func(x)]);
+  // TS can't properly type the map to tuple, even if the input has the correct type
+  return xValues.map((x) => [x, func(x)] as const) as unknown as DiscreteFunc<UInt<32>>;
 }
 
 export const imbalancePenaltyFee: FeeModel<
@@ -399,7 +404,7 @@ export function getStandardFeeCalculator<
       };
       for (const [token_, config] of Object.entries(tokenConfigMap)) {
         const token = decode(Address, token_);
-        const perTokenConfig = { cap: config.cap ?? true } as PerTokenConfig;
+        const perTokenConfig = { cap: config['cap'] ?? true } as PerTokenConfig;
         for (const [key_, model] of Object.entries<FeeModel<any, any>>(models)) {
           const key = key_ as keyof Models;
           if (!(key in config)) continue;

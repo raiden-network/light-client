@@ -37,7 +37,7 @@ jest.mock('@ethersproject/signing-key', () => {
   class MockedSigningKey extends SigningKey {
     private _address?: string;
     signDigest({}: BytesLike): Signature {
-      if (!this._address) this._address = mockOrigComputeAddress(this.publicKey);
+      if (!this._address) this._address = mockOrigComputeAddress(this['publicKey']);
       const s = HashZero.substr(0, 24) + this._address!.substr(2).toLowerCase() + '00';
       return {
         r: HashZero,

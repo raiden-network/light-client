@@ -76,7 +76,7 @@ export function createPersisterMiddleware(
         // iterate over channels separately
         for (const id in state[key]) {
           if (state[key][id] === prevState[key][id]) continue;
-          const _id = `channels.${state[key][id]._id}`;
+          const _id = `channels.${state[key][id]!._id}`;
           db.storageKeys.add(_id);
           dirtyDocs[_id] = state[key][id];
         }

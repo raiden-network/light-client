@@ -79,7 +79,7 @@ function scanRegistryTokenNetworks({
 
       let monitorsIfHasChannels$: Observable<tokenMonitored> = EMPTY;
       if (logs.length) {
-        const firstBlock = logs[0][2].blockNumber;
+        const firstBlock = logs[0]![2].blockNumber;
         const tokenNetworks = new Map<string, [token: Address, event: Event]>(
           logs.map(([token, tokenNetwork, event]) => [tokenNetwork, [token as Address, event]]),
         );
@@ -415,10 +415,11 @@ function fetchPastChannelEvents$(
         const partner = (address === p1 ? p2 : p1) as Address;
         const id = _id.toNumber();
         const key = channelKey({ tokenNetwork, partner });
+        const channel = state.channels[key];
         // filter out settled or old channels, no new event could come from it
         return !(
           channelUniqueKey({ id, tokenNetwork, partner }) in state.oldChannels ||
-          (key in state.channels && id < state.channels[key].id)
+          (channel && id < channel.id)
         );
       });
       const channelIds = [

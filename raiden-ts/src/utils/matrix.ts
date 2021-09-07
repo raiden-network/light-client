@@ -9,7 +9,7 @@ import { encodeUri } from 'matrix-js-sdk/lib/utils';
  */
 export function getServerName(server: string): string | null {
   const match = /^(?:\w*:?\/\/)?([^/#?&]+)/.exec(server);
-  return match && match[1];
+  return match && match[1]!;
 }
 
 /**

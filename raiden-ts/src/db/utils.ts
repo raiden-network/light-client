@@ -233,7 +233,7 @@ export function latestVersion(migrations: Migrations = defaultMigrations): numbe
  * @returns Version of db passed as param
  */
 export function databaseVersion(db: RaidenDatabase): number {
-  return +db.name.match(/_(\d+)$/)![1];
+  return +db.name.match(/_(\d+)$/)![1]!;
 }
 
 /**
@@ -275,7 +275,7 @@ export async function migrateDatabase(
   let db: RaidenDatabase | undefined;
   // try to load some version present on migrations
   for (let i = sortedMigrations.length - 1; i >= 0; --i) {
-    const _version = sortedMigrations[i];
+    const _version = sortedMigrations[i]!;
     const _db = await databaseExists.call(this, `${name}_${_version}`);
     if (_db) {
       version = _version;
@@ -304,7 +304,7 @@ export async function migrateDatabase(
           filter: ({ _id }) => keyRe.test(_id),
         }).pipe(
           concatMap((change) =>
-            defer(() => migrations[newVersion](change.doc!, db!)).pipe(
+            defer(() => migrations[newVersion]!(change.doc!, db!)).pipe(
               mergeMap((results) => from(results)),
               concatMap(async (result) => {
                 const { _rev: _, ...doc } = result;

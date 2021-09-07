@@ -65,7 +65,7 @@ export const pluckDistinct: typeof pluck = (...properties: string[]) =>
  * @returns Operator to map from a record to changed values (all on first)
  */
 export function distinctRecordValues<R>(
-  compareFn: (x: R, y: R) => boolean = (x, y) => x === y,
+  compareFn: (prev: R | undefined, new_: R) => boolean = (prev, new_) => prev === new_,
 ): OperatorFunction<{ [k: string]: R }, [string, R]> {
   return pipe(
     distinctUntilChanged(),

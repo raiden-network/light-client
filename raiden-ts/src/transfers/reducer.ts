@@ -39,8 +39,8 @@ function transferSecretReducer(
   action: transferSecret | transferSecretRegister.success,
 ): RaidenState {
   const key = transferKey(action.meta);
-  if (!(key in state.transfers)) return state;
   const transferState = state.transfers[key];
+  if (!transferState) return state;
   // store when seeing unconfirmed, but registerBlock only after confirmation
   if (!transferState.secret)
     state = {
@@ -78,27 +78,27 @@ function transferEnvelopeReducer(
   action: transferSigned | transferExpire.success | transferUnlock.success,
 ): RaidenState {
   const message = action.payload.message;
-  const secrethash = action.meta.secrethash;
   const tKey = transferKey(action.meta);
-  const tokenNetwork = message.token_network_address;
   const partner = action.payload.partner;
-  const cKey = channelKey({ tokenNetwork, partner });
+  const cKey = channelKey({ tokenNetwork: message.token_network_address, partner });
   const end = END[action.meta.direction];
   let channel = state.channels[cKey];
 
-  const isTransferPresent = tKey in state.transfers;
+  let transferState = state.transfers[tKey];
   const field = transferUnlock.success.is(action) ? 'unlock' : 'expired';
   // nonce must be next, otherwise we already processed this message; validation happens on epic
+  const isSignedAndNoState = transferSigned.is(action) && transferState;
+  const isntSignedAndState =
+    !transferSigned.is(action) && (!transferState || field in transferState);
   if (
-    (transferSigned.is(action) && isTransferPresent) ||
-    (!transferSigned.is(action) && (!isTransferPresent || field in state.transfers[tKey])) ||
+    isSignedAndNoState ||
+    isntSignedAndState ||
     channel?.state !== ChannelState.open ||
     !message.nonce.eq(channel[end].nextNonce)
   )
     return state;
 
   let locks;
-  let transferState;
   switch (action.type) {
     case transferSigned.type:
       locks = [...channel[end].locks, action.payload.message.lock]; // append lock
@@ -115,10 +115,10 @@ function transferEnvelopeReducer(
       break;
     case transferUnlock.success.type:
     case transferExpire.success.type:
-      locks = channel[end].locks.filter((l) => l.secrethash !== secrethash); // pop lock
+      locks = channel[end].locks.filter((l) => l.secrethash !== action.meta.secrethash); // pop lock
       transferState = {
         [field]: timed(action.payload.message),
-        ...state.transfers[tKey], // don't overwrite previous [field]
+        ...transferState!, // don't overwrite previous [field]
       }; // set unlock or expired members on existing tranferState
       break;
   } // switch without default helps secure against incomplete casing
@@ -164,16 +164,14 @@ function transferMessagesReducer(
 ) {
   const key = transferKey(action.meta);
   const field = fieldMap[action.type];
-  if (
-    key in state.transfers &&
-    (transferSecretRequest.is(action) || !(field in state.transfers[key]))
-  )
+  const transferState = state.transfers[key];
+  if (transferState && (transferSecretRequest.is(action) || !(field in transferState)))
     state = {
       ...state,
       transfers: {
         ...state.transfers,
         [key]: {
-          ...state.transfers[key],
+          ...transferState,
           [field]: timed(action.payload.message),
         },
       },

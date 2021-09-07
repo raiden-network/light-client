@@ -24,7 +24,7 @@ export function getAddressFromUserId(userId: string): Address | undefined {
   let address: Address | undefined;
   try {
     const match = userRe.exec(userId);
-    if (match) address = getAddress(match[1]) as Address;
+    if (match) address = getAddress(match[1]!) as Address;
   } catch (e) {}
   return address;
 }
@@ -70,12 +70,12 @@ export function parseCaps(caps?: string | null): Caps | undefined {
         else if (lowValue === 'false') resValue = false;
         else if (lowValue === 'true') resValue = true;
       }
-      if (!(key in result)) {
+      let val = result[key];
+      if (val === undefined) {
         result[key] = resValue;
       } else {
-        let prevValues = result[key];
-        if (!Array.isArray(prevValues)) result[key] = prevValues = [prevValues];
-        prevValues.push(resValue);
+        if (!Array.isArray(val)) result[key] = val = [val];
+        val.push(resValue);
       }
     });
     return result;

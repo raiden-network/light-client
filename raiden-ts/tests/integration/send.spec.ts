@@ -99,6 +99,7 @@ describe('resolve transfer', () => {
   test('failure target presence offline passes through', async () => {
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsDeposited([raiden, partner]);
+    raiden.store.dispatch(raidenConfigUpdate({ pollingInterval: 100 }));
     raiden.store.dispatch(presenceFromClient(partner, false));
 
     raiden.store.dispatch(

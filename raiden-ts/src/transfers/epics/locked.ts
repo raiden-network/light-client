@@ -315,9 +315,10 @@ function makeAndSignUnlock$(
       const transferState = state.transfers[transferKey(action.meta)];
       const channel = getOpenChannel(state, { tokenNetwork, partner });
       assert(
-        transferState.expiration > state.blockNumber ||
-          transferState.secretRegistered ||
-          channel.own.locks.find((lock) => lock.secrethash === secrethash && lock.registered),
+        transferState &&
+          (transferState.expiration > state.blockNumber ||
+            transferState.secretRegistered ||
+            channel.own.locks.find((lock) => lock.secrethash === secrethash && lock.registered)),
         'lock expired',
       );
       return transferUnlock.success(
