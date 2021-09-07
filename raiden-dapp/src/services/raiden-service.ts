@@ -277,10 +277,10 @@ export default class RaidenService {
     this.store.commit('network', raiden.network);
 
     /* istanbul ignore next */
-    window.addEventListener('beforeunload', (event) => {
+    window.onbeforeunload = (event) => {
       event.preventDefault();
       return ''; // Some engines like Chrome expect this.
-    });
+    };
 
     await raiden.start();
     this.store.commit('balance', await this.getBalance());
@@ -495,6 +495,7 @@ export default class RaidenService {
 
   disconnect = async (): Promise<void> => {
     await this.raiden.stop();
+    window.onbeforeunload = null;
   };
 
   getAccount = (): string => {
