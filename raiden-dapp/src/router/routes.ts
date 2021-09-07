@@ -67,6 +67,15 @@ export const routes: RouteConfig[] = [
     component: () => import('../views/TransferStepsRoute.vue'),
   },
   {
+    path: '/quick_pay',
+    name: RouteNames.QUICK_PAY,
+    meta: {
+      title: 'Quick Pay',
+      cannotNavigateBack: true,
+    },
+    component: () => import('../views/QuickPayRoute.vue'),
+  },
+  {
     path: '/connect',
     name: RouteNames.SELECT_TOKEN,
     meta: {

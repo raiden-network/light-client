@@ -2,6 +2,7 @@ export enum RouteNames {
   DISCLAIMER = 'disclaimer',
   TRANSFER = 'transfer',
   TRANSFER_STEPS = 'transfer-steps',
+  QUICK_PAY = 'quick-pay',
   SELECT_TOKEN = 'select-token',
   SELECT_HUB = 'select-hub',
   HOME = 'home',
