@@ -65,6 +65,7 @@ export default class ChannelDepositAction extends Vue {
 
   async runAction(options: { [key: string]: unknown }): Promise<void> {
     try {
+      this.emitStarted();
       this.resetState();
       this.inProgress = true;
       this.progressVisible = true;
@@ -117,6 +118,11 @@ export default class ChannelDepositAction extends Vue {
     }
 
     return createElement('div', children);
+  }
+
+  @Emit('started')
+  emitStarted(): void {
+    // pass
   }
 
   @Emit('completed')

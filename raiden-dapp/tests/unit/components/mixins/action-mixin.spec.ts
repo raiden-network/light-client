@@ -122,6 +122,14 @@ describe('ActionMixin', () => {
     expect(progressCard.exists()).toBeFalsy();
   });
 
+  test('emits started event when actions gets triggered', async () => {
+    const wrapper = createWrapper();
+
+    await triggerAndCompleteAction(wrapper);
+
+    expect(wrapper.emitted('started')).toBeTruthy();
+  });
+
   test('emits completed event when actions completes', async () => {
     const wrapper = createWrapper({ actionShouldComplete: true });
 
