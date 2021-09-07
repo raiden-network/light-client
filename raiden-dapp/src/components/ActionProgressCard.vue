@@ -1,6 +1,6 @@
 <template>
   <div data-cy="action-progress-card" class="action-progress-card">
-    <ul class="action-progress-card__step-list">
+    <ul v-if="!singleStepOnly" class="action-progress-card__step-list">
       <li
         v-for="(step, index) in steps"
         :key="index"
@@ -48,7 +48,7 @@ import type { ActionProgressStep } from '@/model/types';
 
 @Component({ components: { Spinner } })
 export default class ActionProgressCard extends Vue {
-  @Prop({ required: true, validator: (input) => input.length > 0 })
+  @Prop({ default: () => [] })
   steps!: ActionProgressStep[];
 
   @Prop({ required: true, type: Boolean })
@@ -62,6 +62,10 @@ export default class ActionProgressCard extends Vue {
 
   get activeStep(): ActionProgressStep | undefined {
     return this.steps.filter((step) => step.active)[0];
+  }
+
+  get singleStepOnly(): boolean {
+    return this.steps.length === 1;
   }
 
   get statusIcon() {

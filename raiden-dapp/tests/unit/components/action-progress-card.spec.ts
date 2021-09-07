@@ -83,6 +83,13 @@ describe('ActionProgressCard.vue', () => {
       expect(failedSteps.length).toBe(1);
       expect(failedStepIcons.length).toBe(1);
     });
+
+    test('hides steps if there is only one', () => {
+      const wrapper = createWrapper({ steps: [step] });
+      const steps = wrapper.findAll('.action-progress-card__step-list__step');
+
+      expect(steps.length).toBe(0);
+    });
   });
 
   describe('status indicator', () => {
