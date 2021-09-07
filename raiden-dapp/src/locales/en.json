@@ -304,6 +304,45 @@
       "label": "Amount"
     }
   },
+  "transfer-action": {
+    "confirm-button-label": "Confirm Payment",
+    "steps": {
+      "transfer": {
+        "title": "Transfering tokens",
+        "description": "Please wait"
+      }
+    }
+  },
+  "channel-deposit-and-transfer-action": {
+    "confirm-button-label": "Deposit and Pay",
+    "steps": {
+      "deposit": {
+        "title": "Depositing tokens to channel",
+        "description": "Please do not close the browser and confirm the transaction with your wallet."
+      },
+      "transfer": {
+        "title": "Transfering tokens",
+        "description": "Please wait until tokens have ben successfully sent."
+      }
+    }
+  },
+  "channel-open-and-transfer-action": {
+    "confirm-button-label": "Open Channel and Pay",
+    "steps": {
+      "open": {
+        "title": "Opening new channel with target",
+        "description": "Please do not close the browser and confirm the transaction with your wallet."
+      },
+      "deposit": {
+        "title": "Depositing tokens into channel",
+        "description": "Please confirm the transaction with your wallet."
+      },
+      "transfer": {
+        "title": "Transfering tokens",
+        "description": "Please wait until tokens have ben successfully sent."
+      }
+    }
+  },
   "channel-withdraw": {
     "buttons": {
       "confirm": "Withdraw"
