@@ -875,5 +875,24 @@
         "button": "Cancel"
       }
     }
+  },
+  "quick-pay": {
+    "transfer-information-labels": {
+      "header": "Payment Information",
+      "target-address": "Receiver",
+      "token-amount": "Payment amount"
+    },
+    "action-titles": {
+      "channel-deposit": "Channel Deposit",
+      "channel-open": "Open Channel",
+      "channel-deposit-and-transfer": "Channel Deposit and Pay",
+      "channel-open-and-transfer": "Channel Open and Pay"
+    },
+    "action-messages": {
+      "transfer": "Please confirm the above payment information.",
+      "channel-deposit-and-transfer": "{deposit} will be deposited into the existing channel and {payment} will be paid out.",
+      "channel-open-and-transfer": "{deposit} will be deposited into a new channel and {payment} will be paid out."
+    },
+    "invalid-parameter-error": "Some payment parameters are invalid. Please verify the link is correct."
   }
 }
