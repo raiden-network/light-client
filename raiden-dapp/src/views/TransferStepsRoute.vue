@@ -432,8 +432,8 @@ export default class TransferSteps extends Mixins(BlockieMixin, NavigationMixin)
         address,
         this.target,
         BalanceUtils.parse(this.amount, decimals!),
-        [this.selectedRoute!],
         this.paymentId,
+        [this.selectedRoute!],
       );
 
       this.transferDone = true;

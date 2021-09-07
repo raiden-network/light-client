@@ -578,8 +578,8 @@ export default class RaidenService {
     token: string,
     target: string,
     amount: BigNumber,
-    paths: RaidenPaths,
     paymentId: BigNumber,
+    paths?: RaidenPaths,
   ) {
     const key = await this.raiden.transfer(token, target, amount, {
       paymentId,
