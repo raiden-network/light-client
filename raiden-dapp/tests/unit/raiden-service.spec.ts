@@ -316,7 +316,7 @@ describe('RaidenService', () => {
         raiden.waitTransfer.mockResolvedValue(null as any);
 
         await expect(
-          raidenService.transfer('0xtoken', '0xpartner', constants.One, path, paymentId),
+          raidenService.transfer('0xtoken', '0xpartner', constants.One, paymentId, path),
         ).resolves.toBeUndefined();
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
         expect(raiden.transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', constants.One, {
@@ -330,7 +330,7 @@ describe('RaidenService', () => {
         raiden.waitTransfer.mockRejectedValue(error);
 
         await expect(
-          raidenService.transfer('0xtoken', '0xpartner', constants.One, path, paymentId),
+          raidenService.transfer('0xtoken', '0xpartner', constants.One, paymentId, path),
         ).rejects.toThrow(RaidenError);
         expect(raiden.transfer).toHaveBeenCalledTimes(1);
         expect(raiden.transfer).toHaveBeenCalledWith('0xtoken', '0xpartner', constants.One, {
