@@ -57,6 +57,7 @@ export default class AmountDisplay extends Vue {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  align-items: center;
 
   &--inline {
     display: inline;
