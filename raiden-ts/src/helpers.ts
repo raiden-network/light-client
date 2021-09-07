@@ -645,7 +645,8 @@ export async function waitForPFSCapacityUpdate(
         // ensure it's a PFSCapacityUpdate for this specific channel
         if (
           message.canonical_identifier.token_network_address !== meta.tokenNetwork ||
-          !message.canonical_identifier.channel_identifier.eq(state.channels[channelKey(meta)]?.id)
+          !(channelKey(meta) in state.channels) ||
+          !message.canonical_identifier.channel_identifier.eq(state.channels[channelKey(meta)].id)
         )
           return;
         // on the first messageServiceSend.request for a PFSCapacityUpdate for this channel
