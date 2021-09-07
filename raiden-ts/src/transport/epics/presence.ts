@@ -2,7 +2,7 @@ import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import uniq from 'lodash/uniq';
 import type { Observable } from 'rxjs';
-import { combineLatest, from, merge, of } from 'rxjs';
+import { combineLatest, from, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -97,23 +97,14 @@ export function matrixMonitorPresenceEpic(
   const { latest$, config$ } = deps;
   const cache = new Map<Address, matrixPresence.success>();
   return action$.pipe(
+    tap((action) => {
+      if (matrixPresence.success.is(action)) cache.set(action.meta.address, action);
+      else if (matrixPresence.failure.is(action)) cache.delete(action.meta.address);
+    }),
     filter(isActionOf(matrixPresence.request)),
     // this mergeMap is like withLatestFrom, but waits until matrix$ emits its only value
     groupBy((action) => action.meta.address),
-    withLatestFrom(
-      merge(
-        action$.pipe(
-          filter(isActionOf([matrixPresence.success, matrixPresence.failure])),
-          tap((action) => {
-            if (matrixPresence.success.is(action)) cache.set(action.meta.address, action);
-            else cache.delete(action.meta.address);
-          }),
-          ignoreElements(),
-        ),
-        of(cache),
-      ),
-    ),
-    mergeMap(([grouped$, cache]) =>
+    mergeMap((grouped$) =>
       grouped$.pipe(
         withLatestFrom(latest$, config$),
         // if we're already fetching presence for this address, no need to fetch again

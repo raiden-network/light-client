@@ -206,7 +206,7 @@ export function groupChannel(): OperatorFunction<RaidenState, Observable<Channel
       // immediately if resubscribed or withLatestFrom'd
       groupBy(channelUniqueKey, { connector: () => new ReplaySubject<Channel>(1) }),
       map((grouped$) => {
-        const [key, _id] = grouped$.key.split('#');
+        const [key, _id] = grouped$.key.split('#') as [ChannelKey, `${number}`];
         const id = +_id;
         return grouped$.pipe(
           takeUntil(

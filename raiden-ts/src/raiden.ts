@@ -558,8 +558,8 @@ export class Raiden {
         toBlock: await this.getBlockNumber(),
       }).pipe(
         map((log) => this.deps.registryContract.interface.parseLog(log)),
-        filter((parsed) => !!parsed.args.token_address),
-        map((parsed) => parsed.args.token_address as Address),
+        filter((parsed) => !!parsed.args['token_address']),
+        map((parsed) => parsed.args['token_address'] as Address),
         toArray(),
       ),
     );
@@ -771,6 +771,7 @@ export class Raiden {
     // try coop-settle first
     try {
       const channel = this.state.channels[channelKey({ tokenNetwork, partner })];
+      assert(channel, 'channel not found');
       const { ownTotalWithdrawable: totalWithdraw } = channelAmounts(channel);
       const expiration =
         this.state.blockNumber + this.config.revealTimeout + this.config.confirmationBlocks;

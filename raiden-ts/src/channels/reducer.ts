@@ -251,9 +251,7 @@ function channelLockRegisteredReducer(
 
   const end = action.meta.direction === Direction.SENT ? 'own' : 'partner';
   // iterate over channels and update any matching lock
-  const keys = [...Object.keys(state.channels)];
-  for (const key of keys) {
-    const channel = state.channels[key];
+  for (const [key, channel] of Object.entries(state.channels)) {
     const newLocks = markLocksAsRegistered(
       channel[end].locks,
       action.meta.secrethash,

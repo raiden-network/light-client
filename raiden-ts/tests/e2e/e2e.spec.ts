@@ -22,8 +22,8 @@ const partner1 = '0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec' as Address;
 const partner2 = '0xCBC49ec22c93DB69c78348C90cd03A323267db86' as Address;
 
 async function createRaiden(account: number | string | Signer): Promise<Raiden> {
-  const deploymentInfoFile = process.env.DEPLOYMENT_INFO;
-  const deploymentServiceInfoFile = process.env.DEPLOYMENT_SERVICES_INFO;
+  const deploymentInfoFile = process.env['DEPLOYMENT_INFO'];
+  const deploymentServiceInfoFile = process.env['DEPLOYMENT_SERVICES_INFO'];
 
   assert(deploymentInfoFile !== undefined);
   assert(deploymentServiceInfoFile !== undefined);
@@ -72,7 +72,7 @@ const wait = async (timeInMs: number): Promise<void> =>
   new Promise((resolve) => setTimeout(() => resolve(), timeInMs));
 
 function getToken(): string {
-  const token = process.env.TTT_TOKEN_ADDRESS;
+  const token = process.env['TTT_TOKEN_ADDRESS'];
   assert(token !== undefined, 'TTT Token address is undefined');
   return token;
 }
@@ -85,18 +85,18 @@ async function getChannelCapacity(raiden: Raiden, partner: Address): Promise<Big
 }
 
 async function depositToUDC(raiden: Raiden) {
-  await expect(raiden.mint(process.env.SVT_TOKEN_ADDRESS as string, svtBalance)).resolves.toMatch(
-    '0x',
-  );
   await expect(
-    raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
+    raiden.mint(process.env['SVT_TOKEN_ADDRESS'] as string, svtBalance),
+  ).resolves.toMatch('0x');
+  await expect(
+    raiden.getTokenBalance(process.env['SVT_TOKEN_ADDRESS'] as string),
   ).resolves.toBeBigNumber(svtBalance);
 
   await expect(raiden.depositToUDC(svtBalance)).resolves.toMatch('0x');
   await expect(raiden.getUDCCapacity()).resolves.toBeBigNumber(svtBalance);
 
   await expect(
-    raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
+    raiden.getTokenBalance(process.env['SVT_TOKEN_ADDRESS'] as string),
   ).resolves.toBeBigNumber(0);
 
   // Give PFS some time
@@ -283,14 +283,14 @@ describe('e2e', () => {
      */
     const udcWithdrawAmount = 10;
     await expect(
-      raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
+      raiden.getTokenBalance(process.env['SVT_TOKEN_ADDRESS'] as string),
     ).resolves.toBeBigNumber(0);
 
     await expect(raiden.planUDCWithdraw(udcWithdrawAmount)).resolves.toMatch('0x');
     await expect(raiden.withdrawFromUDC(udcWithdrawAmount)).resolves.toMatch('0x');
 
     await expect(
-      raiden.getTokenBalance(process.env.SVT_TOKEN_ADDRESS as string),
+      raiden.getTokenBalance(process.env['SVT_TOKEN_ADDRESS'] as string),
     ).resolves.toBeBigNumber(udcWithdrawAmount);
   });
 });

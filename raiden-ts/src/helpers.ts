@@ -643,10 +643,11 @@ export async function waitForPFSCapacityUpdate(
         const message = action.payload.message;
         if (message.type !== 'PFSCapacityUpdate') return;
         // ensure it's a PFSCapacityUpdate for this specific channel
+        const channel = state.channels[channelKey(meta)];
         if (
           message.canonical_identifier.token_network_address !== meta.tokenNetwork ||
-          !(channelKey(meta) in state.channels) ||
-          !message.canonical_identifier.channel_identifier.eq(state.channels[channelKey(meta)].id)
+          !channel ||
+          !message.canonical_identifier.channel_identifier.eq(channel.id)
         )
           return;
         // on the first messageServiceSend.request for a PFSCapacityUpdate for this channel

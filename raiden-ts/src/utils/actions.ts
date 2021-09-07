@@ -80,7 +80,7 @@ export function createAction<
   type A = t.TypeOf<typeof codec>;
 
   const is =
-    process.env.NODE_ENV === 'development'
+    process.env['NODE_ENV'] === 'development'
       ? (action: unknown): action is A => codec.is(action)
       : (action: unknown): action is A =>
           (action as { type: string } | undefined)?.['type'] === type;
@@ -467,8 +467,8 @@ export function createReducer<S, A extends Action = Action>(initialState: S) {
    */
   function makeReducer<ACs>(handlers: Handlers): ExtReducer<ACs> {
     const reducer: Reducer<S, A> = (state: S = initialState, action: A) => {
-      if (action.type in handlers && handlers[action.type][0].is(action))
-        return handlers[action.type][1](state, action); // calls registered handler
+      const handler = handlers[action.type];
+      if (handler && handler[0].is(action)) return handler[1](state, action); // calls registered handler
       return state; // fallback returns unchanged state
     };
 

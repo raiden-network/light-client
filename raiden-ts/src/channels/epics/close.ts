@@ -205,7 +205,7 @@ export function channelUpdateEpic(
         getTokenNetworkContract(tokenNetwork),
         onchainSigner,
       );
-      const channel = state.channels[channelKey(action.meta)];
+      const channel = state.channels[channelKey(action.meta)]!; // checked in filter
 
       const balanceHash = createBalanceHash(channel.partner.balanceProof);
       const nonce = channel.partner.balanceProof.nonce;

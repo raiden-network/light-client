@@ -259,7 +259,8 @@ export async function getTransfer(
 ): Promise<TransferState> {
   if (typeof key !== 'string') key = transferKey(key);
   if (!('address' in state)) state = await firstValueFrom(state);
-  if (key in state.transfers) return state.transfers[key];
+  const transfer = state.transfers[key];
+  if (transfer) return transfer;
   return decode(TransferState, await db.get<TransferStateish>(key));
 }
 
@@ -319,8 +320,10 @@ export function metadataFromPaths(
     ...(address_metadata && !isEmpty(address_metadata) ? { address_metadata } : {}),
   }));
   const viaPath = paths[0];
+  assert(viaPath, 'empty paths');
   const fee = viaPath.fee;
   const partner = viaPath.path[1]; // we're first address in route, partner is 2nd
+  assert(partner, 'empty route');
   let partnerUserId: string | undefined;
   let partnerCaps: Caps | null | undefined;
   if (partner === target.meta.address) {
@@ -337,7 +340,7 @@ export function metadataFromPaths(
   // iff partner requires a clear route (to be first address), clear it;
   // in routes received from PFS, we're always first address and partner second
   if (!getCap(partnerCaps, Capabilities.IMMUTABLE_METADATA))
-    metadata = clearMetadataRoute(viaPath.path[0], metadata);
+    metadata = clearMetadataRoute(viaPath.path[0]!, metadata);
   else if (encryptSecret) {
     const encrypted = hexlify(
       encrypt(

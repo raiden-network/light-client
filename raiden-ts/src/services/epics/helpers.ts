@@ -258,7 +258,7 @@ function filterPaths$(
           path.path.length >= 2 && path.path[0] === address,
           'we are not the first address in path',
         );
-        recipient = path.path[1];
+        recipient = path.path[1]!;
         assert(!invalidatedRecipients.has(recipient), 'already invalidated recipient');
         if (firstPath) {
           assert(firstPath.path[1] === recipient, 'already selected another recipient');
@@ -274,12 +274,11 @@ function filterPaths$(
           );
           if (partnerCanRoutePossible !== true)
             throw new RaidenError(partnerCanRoutePossible, { partnerPresence, channel });
-          for (let idx = 2; idx < path.path.length - 1; ++idx) {
-            const hop = path.path[idx];
+          for (const [idx, hop] of Object.entries(path.path.slice(2, -1))) {
             const presence = searchValidMetadata(path.address_metadata, hop);
             assert(getCap(presence?.payload.caps, Capabilities.MEDIATE), [
               "path: hop doesn't mediate transfers",
-              { hopIndex: idx, hop, hopPresence: presence },
+              { hopIndex: idx + 2, hop, hopPresence: presence },
             ]);
           }
         }
@@ -336,7 +335,7 @@ function getPfsInfo$(
                 additionalServices: config.additionalServices.join(','),
               },
             ]);
-            return pfsInfos[0]; // pop best ranked
+            return pfsInfos[0]!; // pop best ranked
           }),
         ),
       ),

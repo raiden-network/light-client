@@ -68,8 +68,8 @@ function findValidPartner(
     const outPartner = route[route.indexOf(address) + 1];
     if (!outPartner || !partnersWithOpenChannels.has(outPartner)) continue;
 
-    const channelIn = state.channels[channelKey({ tokenNetwork, partner: inPartner })];
-    const channelOut = state.channels[channelKey({ tokenNetwork, partner: outPartner })];
+    const channelIn = state.channels[channelKey({ tokenNetwork, partner: inPartner })]!;
+    const channelOut = state.channels[channelKey({ tokenNetwork, partner: outPartner })]!;
 
     let fee: Int<32>;
     try {

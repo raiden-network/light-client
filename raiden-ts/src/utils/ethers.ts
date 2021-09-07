@@ -213,7 +213,8 @@ export function fromEthersEvent<T>(
     : typeof confirmations === 'number'
     ? of(confirmations)
     : confirmations;
-  const blockQueue: number[] = []; // sorted 'fromBlock' queue, at most of [confirmations * 2] size
+  // sorted 'fromBlock' queue, at most of [confirmations * 2] size
+  const blockQueue: [number, ...number[]] = [0];
   let start = Date.now();
   return confirmations$.pipe(
     distinctUntilChanged(),

@@ -629,7 +629,7 @@ function mapRtcMessage(): OperatorFunction<
           const json = jsonParse(action.payload.text);
           if (json['type'] === RtcEventType.offer)
             yield [
-              seenPresences[action.payload.userId!],
+              seenPresences[action.payload.userId!]!,
               decode(rtcCodecs[RtcEventType.offer], json),
             ] as const;
         } catch (error) {}

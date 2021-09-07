@@ -1,5 +1,5 @@
 import type { Observable } from 'rxjs';
-import { AsyncSubject, defer, EMPTY, from, identity, of } from 'rxjs';
+import { AsyncSubject, defer, EMPTY, from, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -68,9 +68,10 @@ export function transferSecretRequestedEpic(
       const message = action.payload.message;
       // proceed only if we know the secret and the SENT transfer
       const key = transferKey({ secrethash: message.secrethash, direction: Direction.SENT });
-      if (!(key in state.transfers)) return;
+      const transferState = state.transfers[key];
+      if (!transferState) return;
 
-      const locked = state.transfers[key].transfer;
+      const locked = transferState.transfer;
       // we do only some basic verification here, as most of it is done upon SecretReveal,
       // to persist the request in most cases in TransferState.secretRequest
       if (
@@ -110,7 +111,7 @@ const secretReveal$ = (
     mergeMap(({ state }) => {
       const transferState = state.transfers[transferKey(action.meta)];
       // shouldn't happen, as we're the initiator (for now), and always know the secret
-      assert(transferState.secret, ['SecretRequest for unknown secret', request]);
+      assert(transferState?.secret, ['SecretRequest for unknown secret', request]);
 
       const locked = transferState.transfer;
       const target = locked.target;
@@ -339,7 +340,8 @@ export function monitorSecretRegistryEpic(
       // find sent|received transfers matching secrethash and secret registered before expiration
       for (const direction of Object.values(Direction)) {
         const key = transferKey({ secrethash: secrethash as Hash, direction });
-        if (!(key in transfers)) continue;
+        const transferState = transfers[key];
+        if (!transferState) continue;
         yield transferSecretRegister.success(
           {
             secret: secret as Secret,
@@ -347,7 +349,7 @@ export function monitorSecretRegistryEpic(
             txBlock: event.blockNumber!,
             confirmed:
               event.blockNumber! + confirmationBlocks <= blockNumber
-                ? event.blockNumber! < transfers[key].expiration // false is like event got reorged/removed
+                ? event.blockNumber! < transferState.expiration // false is like event got reorged/removed
                 : undefined,
           },
           { secrethash: secrethash as Hash, direction },
@@ -409,23 +411,22 @@ export function transferAutoRegisterEpic(
     ),
     // emit each result every block
     // group results by transferKey, so we don't overlap requests for the same transfer
-    groupBy(
-      (transferState) => transferState._id,
-      identity, // elementSelector
+    groupBy((transferState) => transferState._id, {
       // durationSelector: should emit when we want to dispose of the grouped$ subject
-      (grouped$) =>
+      duration: (grouped$) =>
         latest$.pipe(
           pluck('state'),
-          filter(
-            ({ blockNumber, transfers }) =>
-              !!(
-                transfers[grouped$.key].expiration < blockNumber ||
-                transfers[grouped$.key].unlock ||
-                transfers[grouped$.key].secretRegistered
-              ),
-          ),
+          filter(({ blockNumber, transfers }) => {
+            const transferState = transfers[grouped$.key];
+            return (
+              !transferState ||
+              transferState.expiration < blockNumber ||
+              !!transferState.unlock ||
+              !!transferState.secretRegistered
+            );
+          }),
         ),
-    ),
+    }),
     mergeMap((grouped$) =>
       grouped$.pipe(
         exhaustMap((transferState) => {

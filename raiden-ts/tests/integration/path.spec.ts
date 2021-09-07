@@ -205,6 +205,7 @@ describe('PFS: pfsRequestEpic', () => {
   test('fail target not available', async () => {
     expect.assertions(2);
 
+    raiden.store.dispatch(raidenConfigUpdate({ pollingInterval: 100 }));
     raiden.store.dispatch(presenceFromClient(target, false));
     // Emitting the pathFind.request action to check pfsRequestEpic runs
     // and gets the earlier matrix presence error for target

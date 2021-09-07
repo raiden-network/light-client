@@ -94,7 +94,7 @@ function popMessagesOfSameType<T extends requestWithUserId>(
   // per userId message queues with at least one message (which defines chosen msgtype)
   const selected = new Map<string, [T, ...T[]]>();
   for (let i = 0; i < queue.length && selectedCount < maxBatchSize; i++) {
-    const request = queue[i];
+    const request = queue[i]!;
     // guaranteed to be defined from request$
     const peerId = request.payload.userId;
     const peerQueue = selected.get(peerId);
@@ -367,7 +367,8 @@ export function matrixMessageReceivedEpic(
         withLatestFrom(config$, action$.pipe(getPresencesByUserId())),
         mergeWith(([event, { httpTimeout }, seenPresences]) => {
           const senderId = event.getSender();
-          if (senderId in seenPresences) return of(seenPresences[senderId]);
+          const presence = seenPresences[senderId];
+          if (presence) return of(presence);
           return latest$.pipe(
             pluckDistinct('whitelisted'),
             map((whitelisted) => {
