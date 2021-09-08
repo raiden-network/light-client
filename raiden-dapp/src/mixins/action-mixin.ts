@@ -17,7 +17,6 @@ export default class ChannelDepositAction extends Vue {
   @Prop({ type: Number, default: 5000 })
   readonly completionDelayTimeout!: number;
 
-  inProgress = false;
   completed = false;
   error: Error | null = null;
   progressVisible = false;
@@ -33,12 +32,15 @@ export default class ChannelDepositAction extends Vue {
     ];
   }
 
+  get dialogClosable(): boolean {
+    return this.completed || this.error != null;
+  }
+
   resetStepsState(): void {
     // Implemented by components using the mixin.
   }
 
   resetProgressState(): void {
-    this.inProgress = false;
     this.error = null;
     this.completed = false;
     this.progressVisible = false;
@@ -67,7 +69,6 @@ export default class ChannelDepositAction extends Vue {
     try {
       this.emitStarted();
       this.resetState();
-      this.inProgress = true;
       this.progressVisible = true;
       await this.handleAction(options);
       this.completed = true;
@@ -78,8 +79,6 @@ export default class ChannelDepositAction extends Vue {
       this.setActiveStepAsFailed();
       this.error = error as Error;
       this.emitFailed(error as Error);
-    } finally {
-      this.inProgress = false;
     }
   }
 
@@ -88,13 +87,14 @@ export default class ChannelDepositAction extends Vue {
   }
 
   closeProgressDialog(): void {
-    if (!this.inProgress) {
+    if (this.dialogClosable) {
       this.progressDialogClosed = true;
+      this.emitDialogClosed();
     }
   }
 
   render(createElement: CreateElement): VNode {
-    const { runAction, confirmButtonLabel, steps, completed, error, inProgress } = this;
+    const { runAction, confirmButtonLabel, steps, completed, error, dialogClosable } = this;
     const progressCard = createElement(ActionProgressCard, { props: { steps, completed, error } });
     const dialogTitle = createElement(VCardTitle, `${this.dialogTitle}`);
     const dialogText = createElement(VCardText, [progressCard]);
@@ -102,7 +102,7 @@ export default class ChannelDepositAction extends Vue {
     const dialog = createElement(
       RaidenDialog,
       {
-        props: { visible: dialogVisible, hideClose: inProgress },
+        props: { visible: dialogVisible, hideClose: !dialogClosable },
         on: { close: this.closeProgressDialog },
       },
       [dialogTitle, dialogText],
@@ -133,5 +133,10 @@ export default class ChannelDepositAction extends Vue {
   @Emit('failed')
   emitFailed(error: Error): Error {
     return error;
+  }
+
+  @Emit('dialogClosed')
+  emitDialogClosed(): void {
+    // pass
   }
 }
