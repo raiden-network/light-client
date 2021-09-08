@@ -634,7 +634,11 @@ export async function waitForPFSCapacityUpdate(
     action$.pipe(
       withLatestFrom(state$),
       tap(([action, state]) => {
-        if (channelDeposit.success.is(action) && action.payload.confirmed) {
+        if (
+          channelDeposit.success.is(action) &&
+          action.payload.confirmed &&
+          action.payload.participant === state.address // only act after our own deposit
+        ) {
           deposited = true;
           return;
         }

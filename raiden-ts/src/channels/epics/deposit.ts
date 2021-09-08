@@ -1,6 +1,6 @@
 import findKey from 'lodash/findKey';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, combineLatest, merge, of } from 'rxjs';
+import { combineLatest, merge, of, ReplaySubject } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -13,6 +13,7 @@ import {
   mergeMap,
   mergeMapTo,
   pluck,
+  take,
   withLatestFrom,
 } from 'rxjs/operators';
 
@@ -154,11 +155,11 @@ export function channelDepositEpic(
                     // already start 'approve' even while waiting for 'channel$'
                     makeDeposit$(
                       [tokenContract, tokenNetworkContract],
-                      [partner, channelId$],
+                      [partner, channelId$.pipe(take(1))],
                       action.payload.deposit,
                       deps,
                     ),
-                  { connector: () => new AsyncSubject() },
+                  { connector: () => new ReplaySubject(1) },
                 ),
                 // ignore success tx so it's picked by channelEventsEpic
                 ignoreElements(),

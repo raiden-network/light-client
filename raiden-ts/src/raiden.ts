@@ -651,7 +651,19 @@ export class Raiden {
     let depositPromise: Promise<Hash> | undefined;
     let postPromise: Promise<unknown> | undefined;
     if (deposit?.gt(0)) {
-      depositPromise = asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
+      depositPromise = asyncActionToPromise(
+        channelDeposit,
+        meta,
+        this.action$.pipe(
+          filter(isActionOf([channelDeposit.success, channelDeposit.failure])),
+          // ensure we only react on own deposit's responses
+          filter(
+            (action) =>
+              channelDeposit.failure.is(action) || action.payload.participant === this.address,
+          ),
+        ),
+        true,
+      ).then(
         ({ txHash }) => txHash, // pluck txHash
       );
       postPromise = waitForPFSCapacityUpdate(this.action$, this.state$, {
