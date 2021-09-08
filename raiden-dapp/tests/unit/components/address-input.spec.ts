@@ -249,7 +249,7 @@ describe('AddressInput', () => {
   });
 
   describe('restricted addresses', () => {
-    test('should show error message when the user enters address not part of the restrited list', async () => {
+    test('should show error message when the user enters address not part of the restricted list', async () => {
       wrapper = createWrapper('', undefined, false, undefined, [restrictedAddress]);
       mockInput(wrapper, onlineTarget);
       await flushWrapper(wrapper);
