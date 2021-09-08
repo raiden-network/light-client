@@ -1,3 +1,20 @@
+.error-message[data-v-14000ce2] {
+  width: 100%;
+  text-align: left;
+}
+.error-message__image[data-v-14000ce2] {
+  max-width: 75px;
+  margin: 15px auto;
+}
+.error-message__title[data-v-14000ce2] {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 15px;
+}
+.error-message__label[data-v-14000ce2] {
+  font-weight: bold;
+  margin-bottom: 15px;
+}
 .amount-input[data-v-bce3595c] {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -88,21 +105,4 @@
   text-transform: uppercase;
   text-align: left;
   width: 100%;
-}
-.error-message[data-v-14000ce2] {
-  width: 100%;
-  text-align: left;
-}
-.error-message__image[data-v-14000ce2] {
-  max-width: 75px;
-  margin: 15px auto;
-}
-.error-message__title[data-v-14000ce2] {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 15px;
-}
-.error-message__label[data-v-14000ce2] {
-  font-weight: bold;
-  margin-bottom: 15px;
 }

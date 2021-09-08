@@ -1,0 +1,150 @@
+.amount-display[data-v-2ea71c4a] {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+}
+.amount-display--inline[data-v-2ea71c4a] {
+  display: inline;
+}
+.amount-display--full-width[data-v-2ea71c4a] {
+  width: 100%;
+}
+.udc-withdrawal-dialog__done[data-v-4b370dcd] {
+  width: 110px;
+  height: 110px;
+  margin: 0 auto;
+}
+.udc-withdrawal-dialog__available-eth[data-v-4b370dcd] {
+  border-radius: 8px;
+  color: #84878a;
+  background-color: #262829;
+  padding: 4px 8px;
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.udc-withdrawal-dialog__available-eth--too-low[data-v-4b370dcd] {
+  color: #ff0000;
+  background-color: #420d0d;
+}
+.planned-udc-withdrawal-information {
+  width: 100%;
+  height: 24px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+.planned-udc-withdrawal-information--no-progress {
+  color: #7a7a80;
+  background-color: #232323;
+}
+.planned-udc-withdrawal-information--pending {
+  color: #ffc700;
+  background-color: #293300;
+}
+.planned-udc-withdrawal-information--ready {
+  color: #00ff66;
+  background-color: #003214;
+}
+.planned-udc-withdrawal-information__amount {
+  font-size: 15px;
+}
+hr[data-v-e105f0f0] {
+  border: solid 1px #646464;
+  margin-top: 50px;
+}
+.udc[data-v-e105f0f0] {
+  padding: 26px;
+}
+.udc > div[data-v-e105f0f0] {
+  margin-bottom: 16px;
+}
+.udc__content-box[data-v-e105f0f0] {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  width: 100%;
+  padding: 16px;
+  border-radius: 8px;
+  color: #7a7a80;
+  background-color: #1c1c1c;
+  font-size: 12px;
+  line-height: 18px;
+}
+.udc__content-box--nested[data-v-e105f0f0] {
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  width: auto;
+  color: #84878a;
+  background-color: #262829;
+  padding: 4px 8px;
+}
+.udc__content-box--nested > *[data-v-e105f0f0] {
+  margin: 0 4px;
+}
+.udc__content-box__header[data-v-e105f0f0] {
+  font-size: 15px;
+  -ms-flex-item-align: start;
+      align-self: flex-start;
+}
+.udc__content-box > div[data-v-e105f0f0] {
+  margin-bottom: 8px;
+}
+.udc__amount[data-v-e105f0f0] {
+  color: #ffffff;
+  font-size: 31px;
+  line-height: 47px;
+}
+.udc__actions[data-v-e105f0f0] {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+.udc__actions__button[data-v-e105f0f0] {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-flex: 1;
+      -ms-flex-positive: 1;
+          flex-grow: 1;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  height: 40px;
+  border-radius: 8px;
+  color: #44ddff;
+  background-color: #182d32;
+  font-size: 14px;
+  line-height: 16px;
+}
+.udc__actions__button[data-v-e105f0f0]:not(:last-child) {
+  margin-right: 16px;
+}
+.udc__actions__button[data-v-e105f0f0]:hover {
+  background-color: #213e45;
+  cursor: pointer;
+}
+.udc__actions__button img[data-v-e105f0f0] {
+  margin-right: 5px;
+}
