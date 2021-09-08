@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Wrapper } from '@vue/test-utils';
 import { shallowMount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';

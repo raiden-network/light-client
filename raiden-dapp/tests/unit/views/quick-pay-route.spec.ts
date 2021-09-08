@@ -305,17 +305,6 @@ describe('QuickPayRoute.vue', () => {
   });
 
   describe('action events', () => {
-    test('hides action message when action starts', async () => {
-      const wrapper = createWrapper();
-      const action = wrapper.get('.quick-pay__action__component');
-      expect(wrapper.find('.quick-pay__action__message').exists()).toBeTruthy();
-
-      action.vm.$emit('started');
-      await wrapper.vm.$nextTick();
-
-      expect(wrapper.find('.quick-pay__action__message').exists()).toBeFalsy();
-    });
-
     describe('redirections', () => {
       const originalWindowLocation = global.window.location;
       let windowReplaceSpy: jest.Mock;
@@ -403,28 +392,16 @@ describe('QuickPayRoute.vue', () => {
     });
 
     describe('failed action handling', () => {
-      test('displays action message again on any error', async () => {
-        const wrapper = createWrapper();
-        const action = wrapper.get('.quick-pay__action__component');
-
-        const error = new Error('Any transfer error');
-        action.vm.$emit('failed', error);
-        await wrapper.vm.$nextTick();
-
-        const message = wrapper.find('.quick-pay__action__message');
-        expect(message.exists()).toBeTruthy();
-      });
-
-      test('displays error dialog when error is not recoverable', async () => {
-        const wrapper = createWrapper();
-        const action = wrapper.get('.quick-pay__action__component');
+      test('remains same action when error is not recoverable', async () => {
+        const wrapper = createWrapper(optionsForStraightTransfer);
+        const firstAction = wrapper.getComponent(TransferAction);
 
         const error = new Error('The requested target is offline.');
-        action.vm.$emit('failed', error);
+        firstAction.vm.$emit('failed', error);
         await wrapper.vm.$nextTick();
 
-        const errorDialog = wrapper.findComponent(ErrorDialog);
-        expect(errorDialog.exists()).toBeTruthy();
+        const secondAction = wrapper.get('.quick-pay__action__component');
+        expect(secondAction.vm).toEqual(firstAction.vm);
       });
 
       describe('can recover from no valid routes found error', () => {

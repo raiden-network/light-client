@@ -33,11 +33,13 @@
         class="quick-pay__action__component"
         :transfer-token-amount="tokenAmount"
         :payment-identifier="paymentIdentifier"
-        :show-progress-in-dialog="showActionProgressInDialog"
         :dialog-title="actionDialogTitle"
+        :completion-delay-timeout="1500"
+        show-progress-in-dialog
         @started="setActionInProgress"
         @completed="redirect"
         @failed="handleActionError"
+        @dialogClosed="redirect"
       >
         <channel-action-form
           :token-address="tokenAddress"
@@ -56,7 +58,7 @@
         />
       </component>
 
-      <i18n v-if="!actionInProgress" class="quick-pay__action__message" :path="actionMessagePath">
+      <i18n class="quick-pay__action__message" :path="actionMessagePath">
         <template #deposit>
           <amount-display :amount="depositAmountInput" :token="token" inline />
         </template>
@@ -66,7 +68,7 @@
       </i18n>
     </div>
 
-    <error-dialog v-if="error" :error="error" @dismiss="redirect" />
+    <error-dialog v-if="errorVisible" :error="error" @dismiss="redirect" />
   </div>
 </template>
 
@@ -129,10 +131,11 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
     | typeof ChannelOpenAndTransferAction
     | typeof ChannelDepositAndTransferAction = TransferAction;
   actionInProgress = false;
-  error: Error | null = null;
+  actionFailed = false;
+  error: Error | null = null; // Note that action errors are not set here.
 
   get tokenAddress(): string {
-    return getAddress(this.$route.query.token);
+    return getAddress(this.$route.query.tokenAddress);
   }
 
   get token(): Token | null {
@@ -140,7 +143,7 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
   }
 
   get targetAddress(): string {
-    return getAddress(this.$route.query.target);
+    return getAddress(this.$route.query.targetAddress);
   }
 
   get tokenAmount(): BigNumber | undefined {
@@ -171,7 +174,7 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
   }
 
   get paymentIdentifier(): BigNumber | undefined {
-    return getPaymentId(this.$route.query.paymentId);
+    return getPaymentId(this.$route.query.identifier);
   }
 
   get redirectionTarget(): string {
@@ -179,8 +182,8 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
   }
 
   get redirectionUrl(): string {
-    let url = `${this.redirectionTarget}?paymentId=${this.paymentIdentifier}`;
-    url += this.error ? '&failed=true' : `&payerAddress=${this.$raiden.getAccount()}`;
+    let url = `${this.redirectionTarget}?identifier=${this.paymentIdentifier}`;
+    url += this.actionFailed ? '&failed=true' : `&payerAddress=${this.$raiden.getAccount()}`;
     return url;
   }
 
@@ -191,6 +194,10 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
       this.tokenAmount &&
       this.paymentIdentifier
     );
+  }
+
+  get errorVisible(): boolean {
+    return this.error != null && !this.actionInProgress && !this.actionFailed;
   }
 
   get directChannelWithTarget(): RaidenChannel | undefined {
@@ -216,48 +223,50 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
   }
 
   get actionHeader(): string {
-    return this.actionComponent === TransferAction
-      ? '' // Empty on purpose. No header for this case.
-      : this.actionComponent === ChannelDepositAndTransferAction
-      ? (this.$t('quick-pay.action-titles.channel-deposit') as string)
-      : this.actionComponent === ChannelOpenAndTransferAction
-      ? (this.$t('quick-pay.action-titles.channel-open') as string)
-      : '';
-  }
-
-  get showActionProgressInDialog(): boolean {
-    return this.actionComponent !== TransferAction;
+    switch (this.actionComponent) {
+      case TransferAction:
+        return ''; // Empty on purpose. No header for this case.
+      case ChannelDepositAndTransferAction:
+        return this.$t('quick-pay.action-titles.channel-deposit') as string;
+      case ChannelOpenAndTransferAction:
+        return this.$t('quick-pay.action-titles.channel-open') as string;
+      default:
+        return ''; // Necessary for TypeScript
+    }
   }
 
   get actionDialogTitle(): string {
-    return this.actionComponent === TransferAction
-      ? '' // Empty on purpose. No title for this case.
-      : this.actionComponent === ChannelDepositAndTransferAction
-      ? (this.$t('quick-pay.action-titles.channel-deposit-and-transfer') as string)
-      : this.actionComponent === ChannelOpenAndTransferAction
-      ? (this.$t('quick-pay.action-titles.channel-open-and-transfer') as string)
-      : '';
+    switch (this.actionComponent) {
+      case TransferAction:
+        return ''; // Empty on purpose. No title for this case.
+      case ChannelDepositAndTransferAction:
+        return this.$t('quick-pay.action-titles.channel-deposit-and-transfer') as string;
+      case ChannelOpenAndTransferAction:
+        return this.$t('quick-pay.action-titles.channel-open-and-transfer') as string;
+      default:
+        return ''; // Necessary for TypeScript
+    }
   }
 
   get actionMessagePath(): string {
-    return this.actionComponent === TransferAction
-      ? 'quick-pay.action-messages.transfer'
-      : this.actionComponent === ChannelDepositAndTransferAction
-      ? 'quick-pay.action-messages.channel-deposit-and-transfer'
-      : this.actionComponent === ChannelOpenAndTransferAction
-      ? 'quick-pay.action-messages.channel-open-and-transfer'
-      : '';
+    switch (this.actionComponent) {
+      case TransferAction:
+        return 'quick-pay.action-messages.transfer';
+      case ChannelDepositAndTransferAction:
+        return 'quick-pay.action-messages.channel-deposit-and-transfer';
+      case ChannelOpenAndTransferAction:
+        return 'quick-pay.action-messages.channel-open-and-transfer';
+      default:
+        return ''; // Necessary for TypeScript
+    }
   }
 
   @Watch('$route.query', { immediate: true })
   onRouteQueryChanged(): void {
-    if (this.actionInProgress) {
-      return;
-    }
-
     if (this.anyRequiredQueryParameterInvalid) {
       this.error = new Error(this.$t('quick-pay.invalid-parameter-error') as string);
     } else {
+      this.error = null;
       this.decideOnActionComponent();
     }
   }
@@ -290,7 +299,7 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
     if (isRecoverableTransferError(error)) {
       this.decideToDepositOrOpenChannel();
     } else {
-      this.error = error;
+      this.actionFailed = true;
     }
   }
 
