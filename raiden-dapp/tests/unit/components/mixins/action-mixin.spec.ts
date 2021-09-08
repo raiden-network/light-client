@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Wrapper } from '@vue/test-utils';
 import { shallowMount } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
@@ -122,14 +121,6 @@ describe('ActionMixin', () => {
     expect(progressCard.exists()).toBeFalsy();
   });
 
-  test('emits started event when actions gets triggered', async () => {
-    const wrapper = createWrapper();
-
-    await triggerAndCompleteAction(wrapper);
-
-    expect(wrapper.emitted('started')).toBeTruthy();
-  });
-
   test('emits completed event when actions completes', async () => {
     const wrapper = createWrapper({ actionShouldComplete: true });
 
@@ -151,6 +142,32 @@ describe('ActionMixin', () => {
     await new Promise((resolve) => setTimeout(resolve, 400)); // Add buffer
     await wrapper.vm.$nextTick();
     expect(wrapper.emitted('completed')).toBeTruthy();
+  });
+
+  test('emits close dialog event when dialog got closed', async () => {
+    const wrapper = createWrapper({
+      showProgressInDialog: true,
+      actionShouldComplete: true,
+      completionDelayTimeout: 500, // else the dialog disappears immediately.
+    });
+
+    await triggerAndCompleteAction(wrapper);
+    const dialog = wrapper.getComponent(RaidenDialog);
+    dialog.vm.$emit('close');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('dialogClosed')).toBeTruthy();
+  });
+
+  test('can not close dialog when action did not complete yet', async () => {
+    const wrapper = createWrapper({ showProgressInDialog: true, actionShouldComplete: false });
+
+    await triggerAndCompleteAction(wrapper);
+    const dialog = wrapper.getComponent(RaidenDialog);
+    dialog.vm.$emit('close');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('dialogClosed')).toBeFalsy();
   });
 
   // TODO: tests for failing handle action (for some reason there are JS issues here...)
