@@ -9,9 +9,15 @@
   -webkit-box-align: center;
       -ms-flex-align: center;
           align-items: center;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
   width: -webkit-fit-content;
   width: -moz-fit-content;
   width: fit-content;
+}
+.address__container--full-width[data-v-0911415e] {
+  width: 100%;
 }
 .address__tooltip[data-v-0911415e] {
   text-align: center;
