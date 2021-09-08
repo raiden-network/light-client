@@ -200,7 +200,7 @@ describe('channelOpenEpic', () => {
     // when channelOpen.success is picked, we must channelDeposit.request due to the race
     expect(raiden.output).toContainEqual(
       channelDeposit.request(
-        { deposit, waitOpen: true },
+        { totalDeposit: deposit, waitOpen: true },
         { tokenNetwork, partner: partner.address },
       ),
     );
@@ -580,7 +580,7 @@ describe('channelDepositEpic', () => {
     );
   });
 
-  test('success', async () => {
+  test('success!', async () => {
     expect.assertions(6);
 
     const prevDeposit = BigNumber.from(330) as UInt<32>;
@@ -600,15 +600,6 @@ describe('channelDepositEpic', () => {
 
     const setTotalDepositTx = makeTransaction();
     tokenNetworkContract.setTotalDeposit.mockResolvedValue(setTotalDepositTx);
-    tokenNetworkContract.getChannelParticipantInfo.mockResolvedValue([
-      prevDeposit,
-      Zero,
-      true,
-      '',
-      Zero,
-      '',
-      Zero,
-    ]);
 
     raiden.store.dispatch(
       channelDeposit.request({ deposit }, { tokenNetwork, partner: partner.address }),
@@ -633,6 +624,45 @@ describe('channelDepositEpic', () => {
       expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
     );
     expect(setTotalDepositTx.wait).toHaveBeenCalledTimes(1);
+  });
+
+  test('success totalDeposit waitOpen', async () => {
+    expect.assertions(6);
+
+    const [raiden, partner] = await makeRaidens(2);
+
+    raiden.store.dispatch(raidenConfigUpdate({ minimumAllowance: Zero as UInt<32> }));
+    const tokenContract = raiden.deps.getTokenContract(token);
+    const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
+    await Promise.all([ensureTokenIsMonitored(raiden), ensureTokenIsMonitored(partner)]);
+
+    raiden.store.dispatch(
+      channelDeposit.request(
+        { totalDeposit: deposit, waitOpen: true },
+        { tokenNetwork, partner: partner.address },
+      ),
+    );
+    await waitBlock();
+    expect(tokenNetworkContract.setTotalDeposit).not.toHaveBeenCalled();
+    expect(tokenContract.approve).toHaveBeenCalledTimes(1);
+    expect(tokenContract.approve).toHaveBeenCalledWith(tokenNetwork, deposit, expect.anything());
+
+    await ensureChannelIsOpen([raiden, partner], { channelId: 29 });
+    await waitBlock();
+
+    // result is undefined on success as the respective channelDeposit.success is emitted by the
+    // channelMonitoredEpic, which monitors the blockchain for ChannelNewDeposit events
+    expect(raiden.output).not.toContainEqual(
+      channelDeposit.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
+    );
+    expect(tokenNetworkContract.setTotalDeposit).toHaveBeenCalledTimes(1);
+    expect(tokenNetworkContract.setTotalDeposit).toHaveBeenCalledWith(
+      29,
+      raiden.address,
+      deposit,
+      partner.address,
+      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+    );
   });
 });
 

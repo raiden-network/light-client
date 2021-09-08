@@ -1,5 +1,6 @@
 import constant from 'lodash/constant';
 import findKey from 'lodash/findKey';
+import isEqual from 'lodash/isEqual';
 import type { Observable } from 'rxjs';
 import { EMPTY, merge, of } from 'rxjs';
 import {
@@ -98,8 +99,10 @@ function openAndDeposit$(
   [tokenNetworkContract, tokenContract]: [TokenNetwork, HumanStandardToken],
   deps: RaidenEpicDeps,
 ) {
-  const deposit = request.payload.deposit;
-  const { tokenNetwork, partner } = request.meta;
+  const {
+    payload: { deposit: totalDeposit },
+    meta: { partner },
+  } = request;
   const { config$ } = deps;
   return checkContractHasMethod$(tokenNetworkContract, 'openChannelWithDeposit').pipe(
     catchError(constant(of(false))),
@@ -107,15 +110,15 @@ function openAndDeposit$(
     mergeMap(([hasMethod, { settleTimeout: configSettleTimeout }]) => {
       const openedByPartner$ = action$.pipe(
         filter(channelOpen.success.is),
-        filter((a) => a.meta.tokenNetwork === tokenNetwork && a.meta.partner === partner),
+        filter((a) => isEqual(a.meta, request.meta)),
       );
       const settleTimeout = request.payload.settleTimeout ?? configSettleTimeout;
 
       let open$: Observable<boolean>;
-      if (deposit?.gt(0) && hasMethod) {
+      if (totalDeposit?.gt(0) && hasMethod) {
         open$ = openWithDeposit$(
           [tokenNetworkContract, tokenContract],
-          [partner, deposit, settleTimeout, openedByPartner$],
+          [partner, totalDeposit, settleTimeout, openedByPartner$],
           deps,
         );
       } else {
@@ -127,10 +130,10 @@ function openAndDeposit$(
       }
       return open$.pipe(
         mergeMap((shouldDeposit) =>
-          shouldDeposit && deposit?.gt(0)
+          shouldDeposit && totalDeposit?.gt(0)
             ? of(
                 channelDeposit.request(
-                  { deposit, subkey: request.payload.subkey, waitOpen: true },
+                  { totalDeposit, subkey: request.payload.subkey, waitOpen: true },
                   request.meta,
                 ),
               )
