@@ -156,7 +156,7 @@ describe('AmountInput.vue', () => {
     });
   });
 
-  describe('adapt zero input values to changing decimals', () => {
+  describe('adapt zero input values to decimals', () => {
     test('changes zero decimal to multi decimal if input is zero', async () => {
       wrapper = createWrapper({ value: '0', token: tokenWithZeroDecimals });
 
