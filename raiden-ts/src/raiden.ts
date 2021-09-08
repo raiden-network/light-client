@@ -717,7 +717,7 @@ export class Raiden {
     token: string,
     partner: string,
     amount: BigNumberish,
-    { subkey, confirmConfirmation }: { subkey?: boolean; confirmConfirmation?: true } = {},
+    { subkey, confirmConfirmation }: { subkey?: boolean; confirmConfirmation?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
@@ -733,9 +733,19 @@ export class Raiden {
       config: this.config,
     });
 
-    const promise = asyncActionToPromise(channelDeposit, meta, this.action$, true).then(
-      ({ txHash }) => txHash,
-    );
+    const promise = asyncActionToPromise(
+      channelDeposit,
+      meta,
+      this.action$.pipe(
+        filter(isActionOf([channelDeposit.success, channelDeposit.failure])),
+        // ensure we only react on own deposit's responses
+        filter(
+          (action) =>
+            channelDeposit.failure.is(action) || action.payload.participant === this.address,
+        ),
+      ),
+      true,
+    ).then(({ txHash }) => txHash);
     this.store.dispatch(channelDeposit.request({ deposit, subkey }, meta));
     const depositTxHash = await promise;
     await postPromise; // if undefined, noop
