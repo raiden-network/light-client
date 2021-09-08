@@ -82,7 +82,7 @@ export const channelDeposit = createAsyncAction(
   ChannelId,
   'channel/deposit',
   t.intersection([
-    t.type({ deposit: UInt(32) }),
+    t.union([t.type({ deposit: UInt(32) }), t.type({ totalDeposit: UInt(32) })]),
     t.partial({ subkey: t.boolean, waitOpen: t.literal(true) }),
   ]),
   t.type({
