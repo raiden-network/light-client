@@ -23,11 +23,11 @@
     "serve:no-logging": "export NODE_ENV=nologging && vue-cli-service serve"
   },
   "dependencies": {
-    "@capacitor/core": "^3.2.1",
+    "@capacitor/core": "^3.2.2",
     "@walletconnect/web3-provider": "^1.6.5",
     "compare-versions": "^3.6.0",
     "cordova-sqlite-storage": "^6.0.0",
-    "core-js": "^3.17.1",
+    "core-js": "^3.17.2",
     "eslint-plugin-cypress": "^2.11.3",
     "ethereum-blockies-base64": "^1.0.2",
     "ethers": "^5.4.6",
@@ -54,13 +54,13 @@
     "workbox-routing": "^6.2.4"
   },
   "devDependencies": {
-    "@babel/core": "7.15.0",
+    "@babel/core": "7.15.5",
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.14.5",
     "@babel/plugin-proposal-optional-chaining": "^7.14.5",
     "@babel/preset-typescript": "^7.15.0",
-    "@capacitor/android": "^3.2.1",
-    "@capacitor/cli": "^3.2.1",
-    "@capacitor/ios": "^3.2.1",
+    "@capacitor/android": "^3.2.2",
+    "@capacitor/cli": "^3.2.2",
+    "@capacitor/ios": "^3.2.2",
     "@cypress/code-coverage": "^3.9.10",
     "@cypress/webpack-preprocessor": "^5.9.1",
     "@kazupon/vue-i18n-loader": "^0.5.0",
