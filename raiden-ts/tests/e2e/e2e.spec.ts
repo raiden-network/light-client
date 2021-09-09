@@ -11,6 +11,7 @@ import type { RaidenPaths } from '@/services/types';
 import { PfsMode } from '@/services/types';
 import type { ContractsInfo } from '@/types';
 import { assert } from '@/utils';
+import { ErrorCodes } from '@/utils/error';
 import type { Address } from '@/utils/types';
 
 jest.setTimeout(500_000);
@@ -227,7 +228,10 @@ describe('e2e', () => {
      */
     await expect(raiden.closeChannel(getToken(), partner1)).resolves.toMatch('0x');
 
-    const settlePromise = raiden.settleChannel(getToken(), partner1);
+    // channel coop-settled!
+    await expect(raiden.settleChannel(getToken(), partner1)).rejects.toMatchObject({
+      message: ErrorCodes.CNL_NO_SETTLEABLE_OR_SETTLING_CHANNEL_FOUND,
+    });
 
     /*
      * Deposit and withdraw between two LCs
@@ -275,8 +279,6 @@ describe('e2e', () => {
     await expect(getChannelCapacity(raiden2, partner2)).resolves.toBeBigNumber(
       amount - sendAmount,
     );
-
-    await expect(settlePromise).resolves.toMatch('0x');
 
     /*
      * Withdraw from UDC
