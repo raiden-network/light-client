@@ -1,3 +1,4 @@
+import { MaxUint256 } from '@ethersproject/constants';
 import constant from 'lodash/constant';
 import findKey from 'lodash/findKey';
 import isEqual from 'lodash/isEqual';
@@ -5,11 +6,14 @@ import type { Observable } from 'rxjs';
 import { EMPTY, merge, of } from 'rxjs';
 import {
   catchError,
+  concatWith,
   filter,
   first,
+  groupBy,
   ignoreElements,
   mapTo,
   mergeMap,
+  pluck,
   raceWith,
   take,
   takeUntil,
@@ -22,7 +26,7 @@ import type { HumanStandardToken, TokenNetwork } from '../../contracts';
 import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
-import { isActionOf } from '../../utils/actions';
+import { isConfirmationResponseOf } from '../../utils/actions';
 import { commonAndFailTxErrors, ErrorCodes, RaidenError } from '../../utils/error';
 import { checkContractHasMethod$ } from '../../utils/ethers';
 import { retryWhile } from '../../utils/rx';
@@ -139,6 +143,12 @@ function openAndDeposit$(
               )
             : EMPTY,
         ),
+        concatWith(
+          action$.pipe(
+            first(isConfirmationResponseOf(channelOpen, request.meta)),
+            ignoreElements(),
+          ),
+        ),
         catchError((error) => of(channelOpen.failure(error, request.meta))),
       );
     }),
@@ -173,31 +183,42 @@ export function channelOpenEpic(
 ): Observable<channelOpen.failure | channelDeposit.request> {
   const { getTokenNetworkContract, getTokenContract, config$ } = deps;
   return action$.pipe(
-    filter(isActionOf(channelOpen.request)),
-    withLatestFrom(state$, config$),
-    mergeMap(([action, state, { subkey: configSubkey }]) => {
-      const { tokenNetwork } = action.meta;
-      const channelState = state.channels[channelKey(action.meta)]?.state;
-      // fails if channel already exist
-      if (channelState)
-        return of(
-          channelOpen.failure(
-            new RaidenError(ErrorCodes.CNL_INVALID_STATE, { state: channelState }),
-            action.meta,
-          ),
-        );
-      const { signer: onchainSigner } = chooseOnchainAccount(
-        deps,
-        action.payload.subkey ?? configSubkey,
-      );
-      const tokenNetworkContract = getContractWithSigner(
-        getTokenNetworkContract(tokenNetwork),
-        onchainSigner,
-      );
-      const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
-      const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
+    filter(channelOpen.request.is),
+    withLatestFrom(config$),
+    // if minimumAllowance is default=big, we can relax the serialization to be per channel,
+    // instead of per token, as parallel deposits in different channels won't conflict on allowance
+    groupBy(([{ meta }, { minimumAllowance }]) =>
+      minimumAllowance.eq(MaxUint256) ? channelKey(meta) : meta.tokenNetwork,
+    ),
+    mergeMap((grouped$) =>
+      grouped$.pipe(
+        pluck(0),
+        withLatestFrom(state$, config$),
+        mergeMap(([action, state, { subkey: configSubkey }]) => {
+          const { tokenNetwork } = action.meta;
+          const channelState = state.channels[channelKey(action.meta)]?.state;
+          // fails if channel already exist
+          if (channelState)
+            return of(
+              channelOpen.failure(
+                new RaidenError(ErrorCodes.CNL_INVALID_STATE, { state: channelState }),
+                action.meta,
+              ),
+            );
+          const { signer: onchainSigner } = chooseOnchainAccount(
+            deps,
+            action.payload.subkey ?? configSubkey,
+          );
+          const tokenNetworkContract = getContractWithSigner(
+            getTokenNetworkContract(tokenNetwork),
+            onchainSigner,
+          );
+          const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
+          const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
 
-      return openAndDeposit$(action$, action, [tokenNetworkContract, tokenContract], deps);
-    }),
+          return openAndDeposit$(action$, action, [tokenNetworkContract, tokenContract], deps);
+        }),
+      ),
+    ),
   );
 }

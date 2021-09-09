@@ -1,3 +1,4 @@
+import { MaxUint256 } from '@ethersproject/constants';
 import findKey from 'lodash/findKey';
 import isEqual from 'lodash/isEqual';
 import type { Observable } from 'rxjs';
@@ -17,6 +18,7 @@ import {
   pluck,
   raceWith,
   take,
+  withLatestFrom,
 } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
@@ -157,9 +159,15 @@ export function channelDepositEpic(
 ): Observable<channelDeposit.failure> {
   return action$.pipe(
     filter(channelDeposit.request.is),
-    groupBy((action) => action.meta.tokenNetwork),
+    withLatestFrom(deps.config$),
+    // if minimumAllowance is default=big, we can relax the serialization to be per channel,
+    // instead of per token, as parallel deposits in different channels won't conflict on allowance
+    groupBy(([{ meta }, { minimumAllowance }]) =>
+      minimumAllowance.eq(MaxUint256) ? channelKey(meta) : meta.tokenNetwork,
+    ),
     mergeMap((grouped$) =>
       grouped$.pipe(
+        pluck(0),
         // groupBy + concatMap ensure actions handling is serialized in a given tokenNetwork
         concatMap((action) =>
           deps.latest$.pipe(
