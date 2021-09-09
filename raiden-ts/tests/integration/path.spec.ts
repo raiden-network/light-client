@@ -1240,6 +1240,7 @@ describe('PFS: pfsServiceRegistryMonitorEpic', () => {
       }),
     );
     await waitBlock(raiden.deps.provider.blockNumber + raiden.config.confirmationBlocks + 1);
+    await sleep(100);
 
     expect(raiden.store.getState()).toMatchObject({
       services: { [pfsAddress]: expect.any(Number) },
