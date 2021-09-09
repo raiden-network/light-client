@@ -216,7 +216,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
     await sleep();
-    // await sleep(2 * raiden.config.pollingInterval);
+    await sleep(raiden.config.pollingInterval);
     expect(raiden.output).not.toContainEqual(
       pathFind.success(expect.anything(), expect.anything()),
     );
@@ -261,11 +261,12 @@ describe('PFS: pfsRequestEpic', () => {
       target: target.address,
       value: amount,
     };
+    raiden.store.dispatch(raidenConfigUpdate({ pollingInterval: 100 }));
     raiden.store.dispatch(presenceFromClient(target, false));
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
     await waitBlock();
-    await sleep(2 * raiden.config.pollingInterval);
+    await sleep(raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
         expect.objectContaining({
