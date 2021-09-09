@@ -5,7 +5,7 @@
 # very beginning of each script.
 
 DOCKER_IMAGE_REPOSITORY="raidennetwork/lightclient-e2e-environment"
-DOCKER_IMAGE_TAG="v1.3.0"
+DOCKER_IMAGE_TAG="v1.3.1"
 DOCKER_IMAGE_NAME="${DOCKER_IMAGE_REPOSITORY}:${DOCKER_IMAGE_TAG}"
 DOCKER_CONTAINER_NAME="lc-e2e"
 E2E_ENVIRONMENT_DIRECTORY="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
