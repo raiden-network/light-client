@@ -47,6 +47,6 @@
   "resolutions": {
     "typescript": "4.4.2",
     "@types/node": "^14.17.15",
-    "jest-environment-jsdom": "^26.6.2"
+    "jest-environment-jsdom": "^27.1.1"
   }
 }
