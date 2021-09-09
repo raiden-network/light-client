@@ -4,7 +4,6 @@ import {
   mintAndDepositUtilityTokenFromSelectHubScreen,
   mintConnectedTokenFromSelectHubScreen,
   openChannel,
-  settleChannel,
   transferETHToRaidenAccount,
   withdrawTokens,
   withdrawTokensBackToMainAccount,
@@ -85,7 +84,6 @@ describe('dApp e2e tests', () => {
     enterTokenWithdrawalAmoutFromChannelsList(uiTimeout);
     withdrawTokens();
     closeChannel();
-    settleChannel();
     navigateToAccountMenu();
     navigateToRaidenAccount();
     enterETHAmountToTransferFromRaidenAccount(uiTimeout);

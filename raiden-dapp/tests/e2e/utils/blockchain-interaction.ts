@@ -112,21 +112,3 @@ export function closeChannel() {
   // cypress selectors: raiden-dapp/src/components/dialogs/RaidenDialog.vue
   cy.get('[data-cy=raiden_dialog]').should('not.exist');
 }
-
-/**
- *
- */
-export function settleChannel() {
-  cy.log('settle channel');
-  // cypress selectors: raiden-dapp/src/components/channels/ChannelList.vue
-  cy.getWithCustomTimeout('[data-cy=channel_action]').should('exist').and('contain', 'Settle');
-  cy.get('[data-cy=channel_action]').click();
-  // cypress selectors: raiden-dapp/src/components/dialogs/RaidenDialog.vue
-  cy.getWithCustomTimeout('[data-cy=raiden_dialog]').should('exist');
-  cy.contains('Settle Channel');
-  // cypress selectors: raiden-dapp/src/components/ActionButton.vue
-  cy.get('[data-cy=action_button]').should('exist');
-  cy.get('[data-cy=action_button]').click();
-  // cypress selectors: raiden-dapp/src/components/dialogs/RaidenDialog.vue
-  cy.get('[data-cy=raiden_dialog]').should('not.exist');
-}
