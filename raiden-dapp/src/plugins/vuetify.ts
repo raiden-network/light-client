@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 import '@mdi/font/css/materialdesignicons.css';
 import 'material-design-icons-iconfont/dist/material-design-icons.css';
-import 'fontsource-roboto/latin.css';
+import '@fontsource/roboto/latin.css';
 
 import Vue from 'vue';
 import Vuetify from 'vuetify/lib';

@@ -3,11 +3,12 @@ module.exports = {
   setupFilesAfterEnv: ['./jest.setup-after.ts'],
   moduleFileExtensions: ['js', 'jsx', 'json', 'vue', 'ts', 'tsx', 'node'],
   transform: {
-    '^.+\\.vue$': 'vue-jest',
+    '^.+\\.vue$': '@vue/vue2-jest',
     '.+\\.(css|styl|less|sass|scss|svg|png|jpg|ttf|woff|woff2)$': 'jest-transform-stub',
     '^.+\\.tsx?$': 'ts-jest',
-    '^.+\\.js$': 'babel-jest',
+    '^.+\\.jsx?$': 'babel-jest',
   },
+  testEnvironment: 'jsdom',
   transformIgnorePatterns: ['<rootDir>/node_modules/(?!workbox.*/.*)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
