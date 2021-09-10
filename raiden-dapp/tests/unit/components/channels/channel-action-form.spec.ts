@@ -119,7 +119,6 @@ describe('ChannelActionForm.vue', () => {
       );
 
       expect(display.exists()).toBeTruthy();
-      expect(display.html()).toContain(token);
       expect(input.exists()).toBeFalsy();
     });
 
