@@ -52,7 +52,7 @@
     "@sastan/typedoc-plugin-pages": "^0.0.1",
     "@typechain/ethers-v5": "^7.0.1",
     "@types/isomorphic-fetch": "^0.0.35",
-    "@types/jest": "^26.0.24",
+    "@types/jest": "^27.0.1",
     "@types/json-bigint": "^1.0.1",
     "@types/lodash": "^4.14.172",
     "@types/matrix-js-sdk": "^11.0.1",
@@ -129,7 +129,7 @@
   ],
   "jest": {
     "preset": "ts-jest",
-    "testEnvironment": "node",
+    "testEnvironment": "./tests/logenv.ts",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1"
     },
