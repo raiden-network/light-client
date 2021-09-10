@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- [#2882] Add new quick pay feature
+
+[#2882]: https://github.com/raiden-network/light-client/issues/2882
+
 ## [2.0.0-rc.1] - 2021-08-13
 
 ## [1.1.0] - 2021-08-09
