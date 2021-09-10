@@ -146,7 +146,12 @@ describe('types', () => {
     expect(B).toBe(b);
     pipe(
       HexString().decode(B),
-      fold(fail, (result) => expect(result).toBe(b)),
+      fold(
+        () => {
+          throw new Error('failed');
+        },
+        (result) => expect(result).toBe(b),
+      ),
     );
   });
 
@@ -183,7 +188,12 @@ describe('types', () => {
     expect(BigNumberC.encode(b)).toEqual('16');
     pipe(
       BigNumberC.decode(b),
-      fold(fail, (result) => expect(result).toBeInstanceOf(BigNumber)),
+      fold(
+        () => {
+          throw new Error('failed');
+        },
+        (result) => expect(result).toBeInstanceOf(BigNumber),
+      ),
     );
     expect(isRight(BigNumberC.decode(null))).toBe(false);
   });

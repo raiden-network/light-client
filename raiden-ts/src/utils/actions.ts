@@ -117,15 +117,13 @@ export type ActionsUnion<AC extends ActionsUnionConstraint> = AC extends readonl
   ? AC[number]
   : AC extends AnyAC
   ? AC
-  : ValueOf<
-      {
-        [K in keyof AC]: AC[K] extends AnyAC
-          ? AC[K]
-          : AC[K] extends { readonly [K2: string]: AnyAC }
-          ? ValueOf<AC[K]>
-          : never;
-      }
-    >;
+  : ValueOf<{
+      [K in keyof AC]: AC[K] extends AnyAC
+        ? AC[K]
+        : AC[K] extends { readonly [K2: string]: AnyAC }
+        ? ValueOf<AC[K]>
+        : never;
+    }>;
 
 /**
  * Type helper to extract the type of an action or a mapping of actions
