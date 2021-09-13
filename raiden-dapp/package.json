@@ -37,6 +37,7 @@
     "loglevel": "^1.7.1",
     "pouchdb": "^7.2.2",
     "pouchdb-adapter-cordova-sqlite": "^2.0.8",
+    "query-string": "^7.0.1",
     "raiden-ts": "^2.0.0-rc.1",
     "rxjs": "^7.3.0",
     "tiny-async-pool": "^1.2.0",
