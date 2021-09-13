@@ -251,7 +251,7 @@ describe('ChannelActionForm.vue', () => {
       );
 
       expect(display.exists()).toBeTruthy();
-      expect(display.html()).toContain(constants.One);
+      expect(display.html()).toContain('1');
       expect(input.exists()).toBeFalsy();
     });
 
@@ -309,7 +309,7 @@ describe('ChannelActionForm.vue', () => {
         '.channel-action-form__token-amount.channel-action-form__editable-input',
       );
 
-      expect(input.html()).toContain(constants.Two);
+      expect(input.html()).toContain('2');
     });
   });
 

@@ -2,7 +2,7 @@ import { $t } from '../utils/mocks';
 
 import type { Wrapper } from '@vue/test-utils';
 import { createLocalVue, shallowMount } from '@vue/test-utils';
-import { BigNumber, constants } from 'ethers';
+import { constants } from 'ethers';
 import Vuex, { Store } from 'vuex';
 
 import type { Address, RaidenChannel } from 'raiden-ts';
@@ -121,7 +121,7 @@ describe('QuickPayRoute.vue', () => {
       const tokenInformation = wrapper.find('.quick-pay__transfer-information__token');
 
       expect(tokenInformation.exists()).toBeTruthy();
-      expect(tokenInformation.html()).toContain(token);
+      expect(tokenInformation.html()).toContain(token.toString());
     });
 
     test('displays target address', () => {
@@ -143,8 +143,8 @@ describe('QuickPayRoute.vue', () => {
       const amountDisplay = wrapper.find('.quick-pay__transfer-information__amount');
 
       expect(amountDisplay.exists()).toBeTruthy();
-      expect(amountDisplay.html()).toContain(constants.One);
-      expect(amountDisplay.html()).toContain(token);
+      expect(amountDisplay.html()).toContain('1');
+      expect(amountDisplay.html()).toContain(token.toString());
       expect(amountDisplay.html()).toContain('quick-pay.transfer-information-labels.token-amount');
     });
   });
@@ -224,8 +224,8 @@ describe('QuickPayRoute.vue', () => {
       const action = wrapper.findComponent(TransferAction);
 
       expect(action.exists()).toBeTruthy();
-      expect(action.html()).toContain(BigNumber.from('1')); // token amount
-      expect(action.html()).toContain(BigNumber.from('501')); // payment identifier
+      expect(action.html()).toContain('1'); // token amount
+      expect(action.html()).toContain('501'); // payment identifier
     });
 
     test('displays message', () => {
@@ -255,8 +255,8 @@ describe('QuickPayRoute.vue', () => {
       const action = wrapper.findComponent(ChannelDepositAndTransferAction);
 
       expect(action.exists()).toBeTruthy();
-      expect(action.html()).toContain(BigNumber.from('5'));
-      expect(action.html()).toContain(BigNumber.from('501'));
+      expect(action.html()).toContain('5');
+      expect(action.html()).toContain('501');
       expect(action.html()).toContain('showprogressindialog');
       expect(action.html()).toContain('quick-pay.action-titles.channel-deposit-and-transfer');
     });
@@ -289,8 +289,8 @@ describe('QuickPayRoute.vue', () => {
 
       expect(action.exists()).toBeTruthy();
       expect(action.exists()).toBeTruthy();
-      expect(action.html()).toContain(BigNumber.from('5'));
-      expect(action.html()).toContain(BigNumber.from('501'));
+      expect(action.html()).toContain('5');
+      expect(action.html()).toContain('501');
       expect(action.html()).toContain('showprogressindialog');
       expect(action.html()).toContain('quick-pay.action-titles.channel-open-and-transfer');
     });
