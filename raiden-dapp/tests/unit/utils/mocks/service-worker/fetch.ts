@@ -25,13 +25,11 @@ export class MockedRequest {
 }
 
 export class MockedResponse {
-  private body: string;
-  private init: ResponseInit | undefined;
-
-  constructor(body: string, init?: ResponseInit) {
-    this.body = body;
-    this.init = init;
-  }
+  constructor(
+    private body: string,
+    private init?: ResponseInit,
+    public headers: Headers = new Headers(),
+  ) {}
 
   get status(): number {
     return this.init?.status ?? 200;
