@@ -1,6 +1,6 @@
 {
   "name": "@raiden_network/raiden-cli",
-  "version": "2.0.0-rc.1",
+  "version": "2.0.0-rc.2",
   "author": "brainbot labs est.",
   "license": "MIT",
   "description": "Raiden Light Client standalone app with a REST API via HTTP",
@@ -55,7 +55,7 @@
     "loglevel": "^1.7.1",
     "morgan": "^1.10.0",
     "node-localstorage": "^2.2.1",
-    "raiden-ts": "^2.0.0-rc.1",
+    "raiden-ts": "^2.0.0-rc.2",
     "rxjs": "^7.3.0",
     "wrtc": "^0.4.7",
     "yargs": "^17.1.1"
