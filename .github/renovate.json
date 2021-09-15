@@ -1,34 +1,42 @@
 {
-  "extends": [
-    "config:base"
-  ],
+  "extends": ["config:base"],
   "commitMessagePrefix": "deps:",
   "packageRules": [
     {
-      "packagePatterns": ["*"],
-      "excludePackageNames": ["typescript"],
-      "updateTypes": ["minor", "patch", "pin", "digest", "lockFileMaintenance", "rollback", "bump"],
-      "groupName": "all non-major dependencies",
-      "groupSlug": "all-minor-patch",
+      "excludePackagePatterns": ["^typescript$", "^typedoc$", "typedoc-plugin"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all non-major dependencies and lockFile maintenance",
+      "groupSlug": "all-minor-patch-lock",
+      "schedule": ["before 8am on thursday"]
+    },
+    {
+      "matchUpdateTypes": ["lockFileMaintenance", "pin", "digest", "rollback", "bump"],
+      "groupName": "all non-major dependencies and lockFile maintenance",
+      "groupSlug": "all-minor-patch-lock",
       "schedule": ["before 8am on thursday"]
     },
     {
       "matchPackageNames": ["typescript"],
-      "updateTypes": ["minor", "patch", "pin", "digest", "lockFileMaintenance", "rollback", "bump"],
+      "matchUpdateTypes": ["minor", "patch"],
       "groupName": "typescript",
       "groupSlug": "typescript",
-      "schedule": ["before 8am on wednesday"]
+      "schedule": ["before 8am on thursday"]
     },
     {
-      "updateTypes": ["major"],
-      "masterIssueApproval": true
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchPackagePatterns": ["^typedoc$", "typedoc-plugin"],
+      "groupName": "typedoc",
+      "groupSlug": "typedoc",
+      "dependencyDashboardApproval": true
     }
   ],
-  "masterIssue": true,
   "labels": ["dependencies"],
-  "lockFileMaintenance": { "enabled": true },
   "reviewers": ["team:raiden-network/light-client"],
   "reviewersSampleSize": 1,
   "rangeStrategy": "bump",
-  "timezone": "Europe/Berlin"
+  "timezone": "Europe/Berlin",
+  "dependencyDashboard": true
 }
