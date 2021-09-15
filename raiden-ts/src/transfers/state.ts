@@ -10,7 +10,8 @@ import {
   SecretReveal,
   Unlock,
 } from '../messages/types';
-import { Address, Hash, Int, Secret, Signed, Timed, UInt } from '../utils/types';
+import { Fee } from '../services/types';
+import { Address, Hash, Secret, Signed, Timed, UInt } from '../utils/types';
 
 // it's like an enum, but with literals
 export const Direction = {
@@ -35,7 +36,7 @@ const _TransferState = t.readonly(
         expiration: t.number, // [number] version of [transfer.lock.expiration]
         /** -> outgoing locked transfer */
         transfer: Timed(Signed(LockedTransfer)),
-        fee: Int(32),
+        fee: Fee,
         partner: Address,
         /* timestamp of when transfer completed and may be cleared from state (non-cleared=0) */
         cleared: t.number,

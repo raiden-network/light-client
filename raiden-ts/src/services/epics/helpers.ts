@@ -36,10 +36,10 @@ import { jsonParse, jsonStringify } from '../../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { lastMap, mergeWith, retryWhile } from '../../utils/rx';
 import type { Address, Signature, Signed } from '../../utils/types';
-import { decode, Int, UInt } from '../../utils/types';
+import { decode, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
 import type { AddressMetadataMap, IOU, Paths, PFS } from '../types';
-import { LastIOUResults, PfsError, PfsMode, PfsResult } from '../types';
+import { Fee, LastIOUResults, PfsError, PfsMode, PfsResult } from '../types';
 import { packIOU, pfsInfo, pfsListInfo, signIOU } from '../utils';
 
 type Route = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { error: PfsError });
@@ -361,10 +361,10 @@ function requestPfs$(
 }
 
 function addFeeSafetyMargin(
-  fee: Int<32>,
+  fee: Fee,
   amount: UInt<32>,
   { pfsSafetyMargin }: Pick<RaidenConfig, 'pfsSafetyMargin'>,
-): Int<32> {
+): Fee {
   let feeMarginMultiplier = 0.0;
   let amountMultiplier = 0.0;
   if (typeof pfsSafetyMargin === 'number') {
@@ -379,7 +379,7 @@ function addFeeSafetyMargin(
     .mul(feeMarginMultiplier)
     .add(new Decimal(amount.toHexString()).mul(amountMultiplier));
   return decode(
-    Int(32),
+    Fee,
     // fee += abs(estimatedFee) * feeMarginMultiplier + amount * amountMultiplier
     fee.add(feeMargin.toFixed(0, Decimal.ROUND_CEIL)),
   );
@@ -446,7 +446,7 @@ export function getRoute$(
       paths: [
         {
           path: [deps.address, target],
-          fee: Zero as Int<32>,
+          fee: Zero as Fee,
           ...(!isEmpty(addressMetadata) ? { address_metadata: addressMetadata } : {}),
         },
       ],

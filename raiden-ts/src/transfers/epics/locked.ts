@@ -37,6 +37,7 @@ import {
   isMessageReceivedOfType,
   signMessage,
 } from '../../messages/utils';
+import type { Fee } from '../../services/types';
 import type { RaidenState } from '../../state';
 import { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
@@ -46,7 +47,7 @@ import { isActionOf } from '../../utils/actions';
 import { ErrorCodes, RaidenError } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
 import { completeWith, pluckDistinct } from '../../utils/rx';
-import type { Address, Hash, Int } from '../../utils/types';
+import type { Address, Hash } from '../../utils/types';
 import { decode, Secret, Signed, UInt, untime } from '../../utils/types';
 import {
   transfer,
@@ -585,7 +586,7 @@ function receiveTransferSigned(
       // if any of these signature prompts fail, none of these actions will be emitted
       return combineLatest([processed$, request$]).pipe(
         mergeMap(function* ([processed, requestOrSecret]) {
-          yield transferSigned({ message: locked, fee: Zero as Int<32>, partner }, meta);
+          yield transferSigned({ message: locked, fee: Zero as Fee, partner }, meta);
           // sets TransferState.transferProcessed
           yield transferProcessed({ message: processed, userId: action.payload.userId }, meta);
           if (Secret.is(requestOrSecret)) {

@@ -22,7 +22,7 @@ import type { RaidenDatabase, TransferStateish } from '../db/types';
 import type { RouteMetadata } from '../messages/types';
 import { Metadata } from '../messages/types';
 import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from '../messages/utils';
-import type { Paths } from '../services/types';
+import type { Fee, Paths } from '../services/types';
 import { validateAddressMetadata } from '../services/utils';
 import type { RaidenState } from '../state';
 import type { matrixPresence } from '../transport/actions';
@@ -30,7 +30,7 @@ import type { Caps, Via } from '../transport/types';
 import { getCap } from '../transport/utils';
 import { assert } from '../utils';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
-import type { Address, Hash, Int, PrivateKey, Secret, UInt } from '../utils/types';
+import type { Address, Hash, PrivateKey, Secret, UInt } from '../utils/types';
 import { decode, HexString, isntNil } from '../utils/types';
 import type { RaidenTransfer } from './state';
 import { Direction, RaidenTransferStatus, RevealedSecret, TransferState } from './state';
@@ -310,7 +310,7 @@ export function metadataFromPaths(
   paths: Paths,
   target: matrixPresence.success,
   encryptSecret?: RevealedSecret,
-): Readonly<{ resolved: true; fee: Int<32>; partner: Address; metadata: unknown } & Via> {
+): Readonly<{ resolved: true; fee: Fee; partner: Address; metadata: unknown } & Via> {
   // paths may come with undesired parameters, so map&filter here before passing to metadata
   const routes = paths.map(({ path: route, fee: _, address_metadata }) => ({
     route,
