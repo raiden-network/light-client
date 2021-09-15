@@ -54,12 +54,11 @@ export interface ActionProgressStep {
   failed: boolean;
 }
 
-type RaidenPath = RaidenPaths[number];
-export interface Route extends RaidenPath {
+export type Route = RaidenPaths[number] & {
   readonly key: number;
   readonly hops: number;
   readonly displayFee?: string;
-}
+};
 
 export interface Transfer {
   pfsAddress?: string;
