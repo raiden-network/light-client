@@ -601,11 +601,7 @@ export default class RaidenService {
   }
 
   /* istanbul ignore next */
-  async directRoute(
-    token: string,
-    target: string,
-    value: BigNumberish,
-  ): Promise<RaidenPaths | undefined> {
+  async directRoute(token: string, target: string, value: BigNumberish) {
     return await this.raiden.directRoute(token, target, value);
   }
 
