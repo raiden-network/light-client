@@ -83,7 +83,7 @@
   padding: 16px 0 0 22px;
 }
 .transaction-history__transactions[data-v-1d8d579c] {
-  height: calc(300px - 50px);
+  height: 250px;
   overflow-y: scroll;
   scrollbar-width: none;
 }
@@ -92,7 +92,7 @@
 }
 @media only screen and (max-width: 600px) {
 .transaction-history__transactions[data-v-1d8d579c] {
-    height: calc(260px - 50px);
+    height: 210px;
 }
 }
 .transaction-history__transactions__list[data-v-1d8d579c] {
