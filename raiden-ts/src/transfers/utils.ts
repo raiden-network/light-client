@@ -21,12 +21,9 @@ import { Capabilities } from '../constants';
 import type { RaidenDatabase, TransferStateish } from '../db/types';
 import type { RouteMetadata } from '../messages/types';
 import { Metadata } from '../messages/types';
-import {
-  createBalanceHash,
-  getBalanceProofFromEnvelopeMessage,
-  validateAddressMetadata,
-} from '../messages/utils';
+import { createBalanceHash, getBalanceProofFromEnvelopeMessage } from '../messages/utils';
 import type { Paths } from '../services/types';
+import { validateAddressMetadata } from '../services/utils';
 import type { RaidenState } from '../state';
 import type { matrixPresence } from '../transport/actions';
 import type { Caps, Via } from '../transport/types';

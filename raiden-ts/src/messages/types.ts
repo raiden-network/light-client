@@ -3,11 +3,10 @@
  * They include BigNumber strings validation, enum validation (if needed), Address checksum
  * validation, etc, and converting everything to its respective object, where needed.
  */
-import { isLeft } from 'fp-ts/lib/Either';
 import * as t from 'io-ts';
-import isEmpty from 'lodash/isEmpty';
 
 import { Lock } from '../channels/types';
+import { Path, RoutesExtra } from '../services/types';
 import { Address, Hash, Int, Secret, Signature, UInt } from '../utils/types';
 
 // types
@@ -101,53 +100,10 @@ const EnvelopeMessage = t.readonly(
   ]),
 );
 
-const _AddressMetadata = t.readonly(
-  t.type({
-    user_id: t.string,
-    displayname: t.string,
-    capabilities: t.string,
-  }),
-);
-export interface AddressMetadata extends t.TypeOf<typeof _AddressMetadata> {}
-export interface AddressMetadataC
-  extends t.Type<AddressMetadata, t.OutputOf<typeof _AddressMetadata>> {}
-export const AddressMetadata: AddressMetadataC = _AddressMetadata;
-
-const _RouteMetadata = t.readonly(
-  t.intersection([
-    t.type({ route: t.readonlyArray(Address) }),
-    t.partial({ address_metadata: t.record(t.string, AddressMetadata) }),
-  ]),
-);
+const _RouteMetadata = t.readonly(t.intersection([t.type({ route: Path }), RoutesExtra]));
 export interface RouteMetadata extends t.TypeOf<typeof _RouteMetadata> {}
 export interface RouteMetadataC extends t.Type<RouteMetadata, t.OutputOf<typeof _RouteMetadata>> {}
-const routeMetadataPredicate = (u: RouteMetadata) =>
-  !u.address_metadata || t.array(Address).is(Object.keys(u.address_metadata));
-export const RouteMetadata: RouteMetadataC = new t.RefinementType(
-  'RouteMetadata',
-  (u): u is RouteMetadata => _RouteMetadata.is(u) && routeMetadataPredicate(u),
-  (i, c) => {
-    const e = _RouteMetadata.validate(i, c);
-    if (isLeft(e)) return e;
-    const a = e.right;
-    if (!a.address_metadata) return t.success(a);
-    else if (isEmpty(a.address_metadata)) {
-      const { address_metadata: _, ...rest } = a;
-      return t.success(rest);
-    }
-    const address_metadata: NonNullable<RouteMetadata['address_metadata']> = {};
-    // for each key of address_metadata's record, validate/decode it as Address
-    for (const [addr, meta] of Object.entries(a.address_metadata!)) {
-      const ev = Address.validate(addr, c);
-      if (isLeft(ev)) return ev;
-      address_metadata[ev.right] = meta;
-    }
-    return t.success({ ...a, address_metadata });
-  },
-  _RouteMetadata.encode,
-  _RouteMetadata,
-  routeMetadataPredicate,
-);
+export const RouteMetadata: RouteMetadataC = _RouteMetadata;
 
 const _Metadata = t.readonly(
   t.type({

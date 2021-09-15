@@ -1,5 +1,8 @@
 import type { Signer } from '@ethersproject/abstract-signer';
-import { concat as concatBytes } from '@ethersproject/bytes';
+import { arrayify, concat as concatBytes } from '@ethersproject/bytes';
+import { hashMessage } from '@ethersproject/hash';
+import { recoverPublicKey } from '@ethersproject/signing-key';
+import { computeAddress } from '@ethersproject/transactions';
 import * as t from 'io-ts';
 import memoize from 'lodash/memoize';
 import uniqBy from 'lodash/uniqBy';
@@ -9,17 +12,18 @@ import { fromFetch } from 'rxjs/fetch';
 import { catchError, map, mergeMap, toArray } from 'rxjs/operators';
 
 import type { ServiceRegistry } from '../contracts';
-import { AddressMetadata } from '../messages/types';
-import { MessageTypeId, validateAddressMetadata } from '../messages/utils';
-import type { matrixPresence } from '../transport/actions';
+import { MessageTypeId } from '../messages/utils';
+import { matrixPresence } from '../transport/actions';
+import { parseCaps } from '../transport/utils';
 import type { RaidenEpicDeps } from '../types';
 import { encode, jsonParse } from '../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { LruCache } from '../utils/lru';
 import { retryAsync$ } from '../utils/rx';
-import type { Signature, Signed } from '../utils/types';
+import type { PublicKey, Signature, Signed } from '../utils/types';
 import { Address, decode, UInt } from '../utils/types';
 import type { IOU, PFS } from './types';
+import { AddressMetadata, PfsError } from './types';
 
 const serviceRegistryToken = memoize(
   async (serviceRegistryContract: ServiceRegistry, pollingInterval: number) =>
@@ -62,18 +66,6 @@ function validatePfsUrl(url: string) {
 }
 
 const pfsAddressCache_ = new LruCache<string, Promise<Address>>(32);
-
-/** Codec for PFS API returned error */
-export const ServiceError = t.readonly(
-  t.intersection([
-    t.type({
-      error_code: t.number,
-      errors: t.string,
-    }),
-    t.partial({ error_details: t.record(t.string, t.unknown) }),
-  ]),
-);
-export type ServiceError = t.TypeOf<typeof ServiceError>;
 
 /**
  * Returns a cold observable which fetch PFS info & validate for a given server address or URL
@@ -223,6 +215,55 @@ export function pfsListInfo(
 }
 
 /**
+ * @param metadata - to convert to presence
+ * @returns presence for metadata, assuming node is available
+ */
+function metadataToPresence(metadata: AddressMetadata): matrixPresence.success {
+  const pubkey = recoverPublicKey(
+    arrayify(hashMessage(metadata.user_id)),
+    metadata.displayname,
+  ) as PublicKey;
+  const address = computeAddress(pubkey) as Address;
+  return matrixPresence.success(
+    {
+      userId: metadata.user_id,
+      available: true,
+      ts: Date.now(),
+      caps: parseCaps(metadata.capabilities),
+      pubkey,
+    },
+    { address },
+  );
+}
+
+/**
+ * Validates metadata was signed by address
+ *
+ * @param metadata - Peer's metadata
+ * @param address - Peer's address
+ * @param opts - Options
+ * @param opts.log - Logger instance
+ * @returns presence iff metadata is valid and was signed by address
+ */
+export function validateAddressMetadata(
+  metadata: AddressMetadata | undefined,
+  address: Address,
+  { log }: Partial<Pick<RaidenEpicDeps, 'log'>> = {},
+): matrixPresence.success | undefined {
+  if (!metadata) return;
+  try {
+    const presence = metadataToPresence(metadata);
+    assert(presence.meta.address === address, [
+      'Wrong signature',
+      { expected: address, recovered: presence.meta.address },
+    ]);
+    return presence;
+  } catch (error) {
+    log?.warn('Invalid address metadata', { address, metadata, error });
+  }
+}
+
+/**
  * @param address - Peer address to fetch presence for
  * @param pfsAddrOrUrl - PFS/service address to fetch presence from
  * @param deps - Epics dependencies subset
@@ -247,7 +288,7 @@ export function getPresenceFromService$(
         return presence;
       } catch (err) {
         try {
-          const { errors: msg, ...details } = decode(ServiceError, json);
+          const { errors: msg, ...details } = decode(PfsError, json);
           err = new RaidenError(msg, details);
         } catch (e) {}
         throw err;

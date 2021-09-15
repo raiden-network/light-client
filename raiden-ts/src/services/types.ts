@@ -1,7 +1,7 @@
+import { isLeft } from 'fp-ts/lib/Either';
 import * as t from 'io-ts';
 import invert from 'lodash/invert';
 
-import { AddressMetadata } from '../messages/types';
 import type { Decodable } from '../utils/types';
 import { Address, Int, Signed, UInt } from '../utils/types';
 
@@ -26,21 +26,73 @@ export const PfsMode = {
 export type PfsMode = typeof PfsMode[keyof typeof PfsMode];
 export const PfsModeC = t.keyof(invert(PfsMode) as { [D in PfsMode]: string });
 
+export const Path = t.readonlyArray(Address);
+export type Path = t.TypeOf<typeof Path>;
+
+const _AddressMetadata = t.readonly(
+  t.type({
+    user_id: t.string,
+    displayname: t.string,
+    capabilities: t.string,
+  }),
+);
+export interface AddressMetadata extends t.TypeOf<typeof _AddressMetadata> {}
+export interface AddressMetadataC
+  extends t.Type<AddressMetadata, t.OutputOf<typeof _AddressMetadata>> {}
+/** metadata/presence information of an address */
+export const AddressMetadata: AddressMetadataC = _AddressMetadata;
+
+const _AddressMetadataMap = t.readonly(t.record(t.string, AddressMetadata));
+export type AddressMetadataMap = t.TypeOf<typeof _AddressMetadataMap>;
+const addressMetadataMapPredicate = (u: AddressMetadataMap) => t.array(Address).is(Object.keys(u));
+/** an address_metadata map which decodes to checksummed addresses as keys */
+export const AddressMetadataMap = new t.RefinementType(
+  'AddressMetadataMap',
+  (u): u is AddressMetadataMap => _AddressMetadataMap.is(u) && addressMetadataMapPredicate(u),
+  (i, c) => {
+    const e = _AddressMetadataMap.validate(i, c);
+    if (isLeft(e)) return e;
+    const a = e.right;
+    const res: Mutable<AddressMetadataMap> = {};
+    // for each key of address_metadata's record, validate/decode it as Address
+    for (const [addr, meta] of Object.entries(a)) {
+      const ev = Address.validate(addr, c);
+      if (isLeft(ev)) return ev;
+      res[ev.right] = meta;
+    }
+    return t.success<AddressMetadataMap>(res);
+  },
+  _AddressMetadataMap.encode,
+  _AddressMetadataMap,
+  addressMetadataMapPredicate,
+);
+
+export const RoutesExtra = t.partial({ address_metadata: AddressMetadataMap });
+
 /**
  * Codec for raiden-ts internal representation of a PFS result/routes
  */
 export const Paths = t.readonlyArray(
-  t.readonly(
-    t.intersection([
-      t.type({
-        path: t.readonlyArray(Address),
-        fee: Int(32),
-      }),
-      t.partial({ address_metadata: t.readonly(t.record(t.string, AddressMetadata)) }),
-    ]),
-  ),
+  t.readonly(t.intersection([t.type({ path: Path, fee: Int(32) }), RoutesExtra])),
 );
 export type Paths = t.TypeOf<typeof Paths>;
+
+/** Codec for result from PFS path request */
+export const PfsResult = t.type({
+  result: t.array(t.intersection([t.type({ path: Path, estimated_fee: Int(32) }), RoutesExtra])),
+});
+
+/** Codec for PFS API returned error */
+export const PfsError = t.readonly(
+  t.intersection([
+    t.type({
+      error_code: t.number,
+      errors: t.string,
+    }),
+    t.partial({ error_details: t.record(t.string, t.unknown) }),
+  ]),
+);
+export type PfsError = t.TypeOf<typeof PfsError>;
 
 /**
  * Public Raiden interface for routes data
