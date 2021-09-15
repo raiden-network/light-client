@@ -5,6 +5,7 @@ import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
 import { Decimal } from 'decimal.js';
 import isEmpty from 'lodash/isEmpty';
+import omit from 'lodash/omit';
 import type { Observable } from 'rxjs';
 import { concat, defer, EMPTY, from, of, throwError } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
@@ -38,11 +39,11 @@ import { lastMap, mergeWith, retryWhile } from '../../utils/rx';
 import type { Address, Signature, Signed } from '../../utils/types';
 import { decode, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
-import type { AddressMetadataMap, IOU, Paths, PFS } from '../types';
+import type { AddressMetadataMap, InputPaths, IOU, Paths, PFS } from '../types';
 import { Fee, LastIOUResults, PfsError, PfsMode, PfsResult } from '../types';
 import { packIOU, pfsInfo, pfsListInfo, signIOU } from '../utils';
 
-type Route = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { error: PfsError });
+type RouteResult = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { error: PfsError });
 
 /**
  * Returns a ISO string with millisecond resolution (same as PC)
@@ -201,7 +202,10 @@ function pfsIsDisabled(action: pathFind.request, config: Pick<RaidenConfig, 'pfs
   return disabledByAction || disabledByConfig;
 }
 
-function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Observable<Route> {
+function getRouteFromPfs$(
+  action: pathFind.request,
+  deps: RaidenEpicDeps,
+): Observable<RouteResult> {
   return deps.config$.pipe(
     first(),
     mergeWith((config) => getPfsInfo$(action.payload.pfs, config, deps)),
@@ -217,7 +221,7 @@ function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Obser
         const error = decode(PfsError, data);
         return { iou, error };
       }
-      return { iou, paths: parsePfsResponse(action.meta.value, data, config) };
+      return { iou, paths: parsePfsResponse(data, action.meta.value, config) };
     }),
   );
 }
@@ -385,19 +389,28 @@ function addFeeSafetyMargin(
   );
 }
 
-function parsePfsResponse(amount: UInt<32>, data: unknown, config: RaidenConfig): Paths {
-  // decode results and cap also client-side for pfsMaxPaths
-  const results = decode(PfsResult, data).result.slice(0, config.pfsMaxPaths);
-  return results.map(({ estimated_fee, ...rest }) => {
-    // add fee margins iff estimated_fee is not zero
-    const fee = estimated_fee.isZero()
-      ? estimated_fee
-      : addFeeSafetyMargin(estimated_fee, amount, config);
-    return { ...rest, fee };
+// map a generic InputPaths to a specific Paths (see docstring of the types)
+function inputToPaths(inputPaths: InputPaths, amount: UInt<32>, config: RaidenConfig): Paths {
+  return inputPaths.map((input) => {
+    const path = 'path' in input ? input.path : input.route;
+    const rest1 = omit(input, ['path', 'route']);
+    const fee =
+      'fee' in input
+        ? input.fee
+        : input.estimated_fee.isZero()
+        ? input.estimated_fee
+        : addFeeSafetyMargin(input.estimated_fee, amount, config);
+    const rest2 = omit(rest1, ['fee', 'estimated_fee']);
+    return { path, fee, ...rest2 };
   });
 }
 
-function shouldPersistIou(route: Route): boolean {
+function parsePfsResponse(data: unknown, amount: UInt<32>, config: RaidenConfig): Paths {
+  // decode results and cap also client-side for pfsMaxPaths
+  return inputToPaths(decode(PfsResult, data).result, amount, config).slice(0, config.pfsMaxPaths);
+}
+
+function shouldPersistIou(route: RouteResult): boolean {
   return 'paths' in route || isNoRouteFoundError(route.error);
 }
 
@@ -419,13 +432,13 @@ export function getRoute$(
   deps: RaidenEpicDeps,
   { state, config }: Pick<Latest, 'state' | 'config'>,
   targetPresence: matrixPresence.success,
-): Observable<Route> {
+): Observable<RouteResult> {
   validateRouteTarget(action, state, targetPresence);
 
   const { tokenNetwork, target, value } = action.meta;
 
   if (action.payload.paths) {
-    return of({ paths: action.payload.paths, iou: undefined });
+    return of({ paths: inputToPaths(action.payload.paths, value, config), iou: undefined });
   } else if (
     partnerCanRoute(
       state.channels[channelKey({ tokenNetwork, partner: target })],
@@ -468,7 +481,7 @@ export function getRoute$(
  * @returns Observable of results actions after route is validated
  */
 export function validateRoute$(
-  [action, route]: readonly [action: pathFind.request, route: Route],
+  [action, route]: readonly [action: pathFind.request, route: RouteResult],
   state: RaidenState,
   deps: RaidenEpicDeps,
 ): Observable<pathFind.success | iouPersist | iouClear> {

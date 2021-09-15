@@ -13,7 +13,7 @@ import {
   WithdrawExpired,
   WithdrawRequest,
 } from '../messages/types';
-import { Fee, Paths, PFS } from '../services/types';
+import { Fee, InputPaths, PFS } from '../services/types';
 import { Via } from '../transport/types';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
@@ -55,7 +55,7 @@ export const transfer = createAsyncAction(
     t.union([
       t.intersection([
         t.type({ resolved: t.literal(false) }),
-        t.partial({ paths: Paths, pfs: t.union([PFS, t.null]), encryptSecret: t.boolean }),
+        t.partial({ paths: InputPaths, pfs: t.union([PFS, t.null]), encryptSecret: t.boolean }),
       ]),
       t.intersection([
         t.type({

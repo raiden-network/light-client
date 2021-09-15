@@ -4,7 +4,7 @@ import * as t from 'io-ts';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
 import { Address, Hash, Signed, UInt } from '../utils/types';
-import { IOU, Paths, PFS, ServicesValidityMap } from './types';
+import { InputPaths, IOU, Paths, PFS, ServicesValidityMap } from './types';
 
 const PathId = t.type({
   tokenNetwork: Address,
@@ -20,7 +20,7 @@ const ServiceId = t.type({
 export const pathFind = createAsyncAction(
   PathId,
   'path/find',
-  t.partial({ paths: Paths, pfs: t.union([PFS, t.null]) }),
+  t.partial({ paths: InputPaths, pfs: t.union([PFS, t.null]) }),
   t.type({ paths: Paths }),
 );
 export namespace pathFind {
