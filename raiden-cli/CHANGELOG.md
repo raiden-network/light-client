@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#2949] Passthrough `/payments` parameters, including `paths`, which should receive pre-fetched route in the format `{ route: Address[]; estimated_fee: NumericString; address_metadata?: MetadataMap }[]`.
+
+[#2949]: https://github.com/raiden-network/light-client/issues/2949
 
 ## [2.0.0-rc.2] - 2021-09-14
 
