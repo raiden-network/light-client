@@ -661,7 +661,7 @@ export async function waitForPFSCapacityUpdate(
       pluck(0),
       takeWhile((action) => !(channelDeposit.failure.is(action) && isEqual(action.meta, meta))),
     ),
-  );
+  ).catch(() => undefined);
 }
 
 const settleableStates = [ChannelState.settleable, ChannelState.settling] as const;
