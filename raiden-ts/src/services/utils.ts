@@ -87,11 +87,13 @@ export type ServiceError = t.TypeOf<typeof ServiceError>;
  * @param deps.contractsInfo - ContractsInfo mapping
  * @param deps.config$ - Config observable
  * @param deps.provider - Eth provider
+ * @param deps.log - Logger instance
  * @returns Promise containing PFS server info
  */
 export async function pfsInfo(
   pfsAddrOrUrl: Address | string,
   {
+    log,
     serviceRegistryContract,
     network,
     contractsInfo,
@@ -99,7 +101,7 @@ export async function pfsInfo(
     config$,
   }: Pick<
     RaidenEpicDeps,
-    'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
+    'log' | 'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
   >,
 ): Promise<PFS> {
   const { pfsMaxFee } = await firstValueFrom(config$);
@@ -119,28 +121,33 @@ export async function pfsInfo(
     version: t.string,
   });
 
-  // if it's an address, fetch url from ServiceRegistry, else it's already the URL
-  const url = await pfsAddressUrl(pfsAddrOrUrl, { serviceRegistryContract });
+  try {
+    // if it's an address, fetch url from ServiceRegistry, else it's already the URL
+    const url = await pfsAddressUrl(pfsAddrOrUrl, { serviceRegistryContract });
 
-  const start = Date.now();
-  const res = await fetch(url + '/api/v1/info', { mode: 'cors' });
-  const text = await res.text();
-  assert(res.ok, [ErrorCodes.PFS_ERROR_RESPONSE, { text }]);
-  const info = decode(PathInfo, jsonParse(text));
+    const start = Date.now();
+    const res = await fetch(url + '/api/v1/info', { mode: 'cors' });
+    const text = await res.text();
+    assert(res.ok, [ErrorCodes.PFS_ERROR_RESPONSE, { text }]);
+    const info = decode(PathInfo, jsonParse(text));
 
-  assert(info.price_info.lte(pfsMaxFee), [
-    ErrorCodes.PFS_TOO_EXPENSIVE,
-    { price: info.price_info.toString() },
-  ]);
-  pfsAddressCache_.set(url, Promise.resolve(info.payment_address));
+    assert(info.price_info.lte(pfsMaxFee), [
+      ErrorCodes.PFS_TOO_EXPENSIVE,
+      { price: info.price_info.toString() },
+    ]);
+    pfsAddressCache_.set(url, Promise.resolve(info.payment_address));
 
-  return {
-    address: info.payment_address,
-    url,
-    rtt: Date.now() - start,
-    price: info.price_info,
-    token: await serviceRegistryToken(serviceRegistryContract, provider.pollingInterval),
-  };
+    return {
+      address: info.payment_address,
+      url,
+      rtt: Date.now() - start,
+      price: info.price_info,
+      token: await serviceRegistryToken(serviceRegistryContract, provider.pollingInterval),
+    };
+  } catch (err) {
+    log.warn('Error fetching PFS info:', pfsAddrOrUrl, err);
+    throw err;
+  }
 }
 
 /**
@@ -156,7 +163,7 @@ export const pfsInfoAddress = Object.assign(
     url: string,
     deps: Pick<
       RaidenEpicDeps,
-      'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
+      'log' | 'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
     >,
   ): Promise<Address> {
     url = validatePfsUrl(url);
