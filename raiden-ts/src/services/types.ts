@@ -72,18 +72,33 @@ export const RoutesExtra = t.partial({ address_metadata: AddressMetadataMap });
 export const Fee = Int(32);
 export type Fee = t.TypeOf<typeof Fee>;
 
-/**
- * Codec for raiden-ts internal representation of a PFS result/routes
- */
+/** Codec for raiden-ts internal representation of a PFS result/routes */
 export const Paths = t.readonlyArray(
   t.readonly(t.intersection([t.type({ path: Path, fee: Fee }), RoutesExtra])),
 );
 export type Paths = t.TypeOf<typeof Paths>;
 
+/**
+ * A broader codec representing paths received as input:
+ * - paths array can come on a `route` or `path` member
+ * - `fee` represents the final fee to be used, `estimated_fee` is what comes from PFS and can be
+ *   increased of fee margins
+ * - rest is kept (currently, `address_metadata` map)
+ * Paths is a specific subset of InputPaths
+ */
+export const InputPaths = t.readonlyArray(
+  t.readonly(
+    t.intersection([
+      t.union([t.type({ route: Path }), t.type({ path: Path })]),
+      t.union([t.type({ fee: Fee }), t.type({ estimated_fee: Fee })]),
+      RoutesExtra,
+    ]),
+  ),
+);
+export type InputPaths = t.TypeOf<typeof InputPaths>;
+
 /** Codec for result from PFS path request */
-export const PfsResult = t.type({
-  result: t.array(t.intersection([t.type({ path: Path, estimated_fee: Fee }), RoutesExtra])),
-});
+export const PfsResult = t.readonly(t.type({ result: InputPaths }));
 
 /** Codec for PFS API returned error */
 export const PfsError = t.readonly(
@@ -97,9 +112,7 @@ export const PfsError = t.readonly(
 );
 export type PfsError = t.TypeOf<typeof PfsError>;
 
-/**
- * Public Raiden interface for routes data
- */
+/** Public Raiden interface for routes data */
 export type RaidenPaths = Decodable<Paths>;
 
 /**

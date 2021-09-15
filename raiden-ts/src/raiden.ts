@@ -72,8 +72,8 @@ import {
 import { createPersisterMiddleware } from './persister';
 import { raidenReducer } from './reducer';
 import { pathFind, udcDeposit, udcWithdraw, udcWithdrawPlan } from './services/actions';
-import type { IOU, RaidenPaths, RaidenPFS, SuggestedPartner } from './services/types';
-import { Paths, PFS, PfsMode, SuggestedPartners } from './services/types';
+import type { IOU, Paths, RaidenPFS, SuggestedPartner } from './services/types';
+import { InputPaths, PFS, PfsMode, SuggestedPartners } from './services/types';
 import { pfsListInfo } from './services/utils';
 import type { RaidenState } from './state';
 import { transfer, transferSigned, withdraw, withdrawResolve } from './transfers/actions';
@@ -896,6 +896,7 @@ export class Raiden {
    * @param options.secrethash - Must match secret, if both provided, or else, secret must be
    *     informed to target by other means, and reveal can't be performed
    * @param options.paths - Used to specify possible routes & fees instead of querying PFS.
+   *     Should receive a decodable super-set of the public RaidenPaths interface
    * @param options.pfs - Use this PFS instead of configured or automatically choosen ones.
    *     Is ignored if paths were already provided. If neither are set and config.pfs is not
    *     disabled (null), use it if set or if undefined (auto mode), fetches the best
@@ -913,7 +914,7 @@ export class Raiden {
       paymentId?: BigNumberish;
       secret?: string;
       secrethash?: string;
-      paths?: RaidenPaths;
+      paths?: Decodable<InputPaths>;
       pfs?: RaidenPFS;
       lockTimeout?: number;
       encryptSecret?: boolean;
@@ -930,7 +931,8 @@ export class Raiden {
         ? decode(UInt(8), options.paymentId, ErrorCodes.DTA_INVALID_PAYMENT_ID, this.log.info)
         : makePaymentId();
     const paths =
-      options.paths && decode(Paths, options.paths, ErrorCodes.DTA_INVALID_PATH, this.log.info);
+      options.paths &&
+      decode(InputPaths, options.paths, ErrorCodes.DTA_INVALID_PATH, this.log.info);
     const pfs = options.pfs && decode(PFS, options.pfs, ErrorCodes.DTA_INVALID_PFS, this.log.info);
 
     assert(
