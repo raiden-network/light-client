@@ -4,7 +4,6 @@ import { Zero } from '@ethersproject/constants';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { verifyMessage } from '@ethersproject/wallet';
 import { Decimal } from 'decimal.js';
-import * as t from 'io-ts';
 import isEmpty from 'lodash/isEmpty';
 import type { Observable } from 'rxjs';
 import { concat, defer, EMPTY, from, of, throwError } from 'rxjs';
@@ -28,7 +27,6 @@ import { channelAmounts, channelKey } from '../../channels/utils';
 import type { RaidenConfig } from '../../config';
 import { intervalFromConfig } from '../../config';
 import { Capabilities } from '../../constants';
-import { AddressMetadata } from '../../messages/types';
 import type { RaidenState } from '../../state';
 import { searchValidMetadata } from '../../transfers/utils';
 import type { matrixPresence } from '../../transport/actions';
@@ -37,30 +35,14 @@ import type { Latest, RaidenEpicDeps } from '../../types';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { lastMap, mergeWith, retryWhile } from '../../utils/rx';
-import type { Signature, Signed } from '../../utils/types';
-import { Address, decode, Int, UInt } from '../../utils/types';
+import type { Address, Signature, Signed } from '../../utils/types';
+import { decode, Int, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
-import type { IOU, Paths, PFS } from '../types';
-import { LastIOUResults, PfsMode } from '../types';
-import { packIOU, pfsInfo, pfsListInfo, ServiceError, signIOU } from '../utils';
+import type { AddressMetadataMap, IOU, Paths, PFS } from '../types';
+import { LastIOUResults, PfsError, PfsMode, PfsResult } from '../types';
+import { packIOU, pfsInfo, pfsListInfo, signIOU } from '../utils';
 
-type Route = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { error: ServiceError });
-
-/**
- * Codec for PFS API returned data
- */
-const PathResults = t.type({
-  result: t.array(
-    t.intersection([
-      t.type({
-        path: t.array(Address),
-        estimated_fee: Int(32),
-      }),
-      t.partial({ address_metadata: t.record(t.string, AddressMetadata) }),
-    ]),
-  ),
-});
-type PathResults = t.TypeOf<typeof PathResults>;
+type Route = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { error: PfsError });
 
 /**
  * Returns a ISO string with millisecond resolution (same as PC)
@@ -232,7 +214,7 @@ function getRouteFromPfs$(action: pathFind.request, deps: RaidenEpicDeps): Obser
       const data = jsonParse(text);
 
       if (!response.ok) {
-        const error = decode(ServiceError, data);
+        const error = decode(PfsError, data);
         return { iou, error };
       }
       return { iou, paths: parsePfsResponse(action.meta.value, data, config) };
@@ -405,7 +387,7 @@ function addFeeSafetyMargin(
 
 function parsePfsResponse(amount: UInt<32>, data: unknown, config: RaidenConfig): Paths {
   // decode results and cap also client-side for pfsMaxPaths
-  const results = decode(PathResults, data).result.slice(0, config.pfsMaxPaths);
+  const results = decode(PfsResult, data).result.slice(0, config.pfsMaxPaths);
   return results.map(({ estimated_fee, ...rest }) => {
     // add fee margins iff estimated_fee is not zero
     const fee = estimated_fee.isZero()
@@ -419,7 +401,7 @@ function shouldPersistIou(route: Route): boolean {
   return 'paths' in route || isNoRouteFoundError(route.error);
 }
 
-function isNoRouteFoundError(error: ServiceError | undefined): boolean {
+function isNoRouteFoundError(error: PfsError | undefined): boolean {
   return error?.error_code === 2201;
 }
 
@@ -452,7 +434,7 @@ export function getRoute$(
       value,
     ) === true
   ) {
-    const addressMetadata: { [k: string]: AddressMetadata } = {};
+    const addressMetadata: Mutable<AddressMetadataMap> = {};
     if (state.transport.setup) {
       addressMetadata[deps.address] = {
         user_id: state.transport.setup.userId,

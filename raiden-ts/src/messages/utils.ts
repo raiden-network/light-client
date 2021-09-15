@@ -1,12 +1,9 @@
 import type { Signer } from '@ethersproject/abstract-signer';
 import { arrayify, concat as concatBytes, hexlify } from '@ethersproject/bytes';
 import { HashZero } from '@ethersproject/constants';
-import { hashMessage } from '@ethersproject/hash';
 import { keccak256 } from '@ethersproject/keccak256';
 import { encode as rlpEncode } from '@ethersproject/rlp';
-import { recoverPublicKey } from '@ethersproject/signing-key';
 import { toUtf8Bytes } from '@ethersproject/strings';
-import { computeAddress } from '@ethersproject/transactions';
 import { verifyMessage } from '@ethersproject/wallet';
 import type * as t from 'io-ts';
 import { canonicalize } from 'json-canonicalize';
@@ -14,17 +11,17 @@ import logging from 'loglevel';
 
 import type { BalanceProof } from '../channels/types';
 import { Capabilities, LocksrootZero } from '../constants';
-import { matrixPresence } from '../transport/actions';
+import type { matrixPresence } from '../transport/actions';
 import type { Caps } from '../transport/types';
-import { getCap, parseCaps } from '../transport/utils';
+import { getCap } from '../transport/utils';
 import type { RaidenEpicDeps } from '../types';
 import { assert } from '../utils';
 import { encode, jsonParse, jsonStringify } from '../utils/data';
 import { ErrorCodes } from '../utils/error';
-import type { Address, Hash, HexString, PublicKey } from '../utils/types';
+import type { Address, Hash, HexString } from '../utils/types';
 import { decode, Signature, Signed } from '../utils/types';
 import { messageReceived } from './actions';
-import type { AddressMetadata, EnvelopeMessage } from './types';
+import type { EnvelopeMessage } from './types';
 import { Message, MessageType, Metadata } from './types';
 
 const CMDIDs: { readonly [T in MessageType]: number } = {
@@ -420,55 +417,6 @@ export function isMessageReceivedOfType<C extends t.Mixed>(messageCodecs: C | C[
     (Array.isArray(messageCodecs)
       ? messageCodecs.some((c) => c.is(action.payload.message))
       : messageCodecs.is(action.payload.message));
-}
-
-/**
- * @param metadata - to convert to presence
- * @returns presence for metadata, assuming node is available
- */
-export function metadataToPresence(metadata: AddressMetadata): matrixPresence.success {
-  const pubkey = recoverPublicKey(
-    arrayify(hashMessage(metadata.user_id)),
-    metadata.displayname,
-  ) as PublicKey;
-  const address = computeAddress(pubkey) as Address;
-  return matrixPresence.success(
-    {
-      userId: metadata.user_id,
-      available: true,
-      ts: Date.now(),
-      caps: parseCaps(metadata.capabilities),
-      pubkey,
-    },
-    { address },
-  );
-}
-
-/**
- * Validates metadata was signed by address
- *
- * @param metadata - Peer's metadata
- * @param address - Peer's address
- * @param opts - Options
- * @param opts.log - Logger instance
- * @returns presence iff metadata is valid and was signed by address
- */
-export function validateAddressMetadata(
-  metadata: AddressMetadata | undefined,
-  address: Address,
-  { log }: Partial<Pick<RaidenEpicDeps, 'log'>> = {},
-): matrixPresence.success | undefined {
-  if (!metadata) return;
-  try {
-    const presence = metadataToPresence(metadata);
-    assert(presence.meta.address === address, [
-      'Wrong signature',
-      { expected: address, recovered: presence.meta.address },
-    ]);
-    return presence;
-  } catch (error) {
-    log?.warn('Invalid address metadata', { address, metadata, error });
-  }
 }
 
 /**
