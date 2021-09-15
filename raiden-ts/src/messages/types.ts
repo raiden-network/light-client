@@ -6,8 +6,8 @@
 import * as t from 'io-ts';
 
 import { Lock } from '../channels/types';
-import { Path, RoutesExtra } from '../services/types';
-import { Address, Hash, Int, Secret, Signature, UInt } from '../utils/types';
+import { Fee, Path, RoutesExtra } from '../services/types';
+import { Address, Hash, Secret, Signature, UInt } from '../utils/types';
 
 // types
 export enum MessageType {
@@ -274,8 +274,8 @@ const _PFSFeeUpdate = t.readonly(
         t.null,
         t.readonlyArray(t.readonly(t.tuple([UInt(32), UInt(32)]))),
       ]),
-      proportional: Int(32),
-      flat: Int(32),
+      proportional: Fee,
+      flat: Fee,
     }),
   }),
 );

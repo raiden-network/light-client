@@ -7,10 +7,11 @@ import { channelKey } from '../../channels/utils';
 import type { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { Metadata } from '../../messages/types';
+import type { Fee } from '../../services/types';
 import type { RaidenState } from '../../state';
 import { getCap } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
-import type { Address, Int } from '../../utils/types';
+import type { Address } from '../../utils/types';
 import { decode, isntNil } from '../../utils/types';
 import { transfer, transferSigned } from '../actions';
 import { Direction } from '../state';
@@ -71,7 +72,7 @@ function findValidPartner(
     const channelIn = state.channels[channelKey({ tokenNetwork, partner: inPartner })]!;
     const channelOut = state.channels[channelKey({ tokenNetwork, partner: outPartner })]!;
 
-    let fee: Int<32>;
+    let fee: Fee;
     try {
       fee = mediationFeeCalculator.fee(
         config.mediationFees,
@@ -94,7 +95,7 @@ function findValidPartner(
       partner: outPartner,
       // on a transfer.request, fee is *added* to the value to get final sent amount,
       // therefore here it needs to contain a negative fee, which we will "earn" instead of pay
-      fee: fee.mul(-1) as Int<32>,
+      fee: fee.mul(-1) as Fee,
       userId: outPartnerPresence?.payload.userId,
       metadata,
     };

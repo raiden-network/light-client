@@ -13,11 +13,11 @@ import {
   WithdrawExpired,
   WithdrawRequest,
 } from '../messages/types';
-import { Paths, PFS } from '../services/types';
+import { Fee, Paths, PFS } from '../services/types';
 import { Via } from '../transport/types';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
-import { Address, Hash, Int, Secret, Signed, UInt } from '../utils/types';
+import { Address, Hash, Secret, Signed, UInt } from '../utils/types';
 import { DirectionC, TransferState } from './state';
 
 const TransferId = t.type({
@@ -61,7 +61,7 @@ export const transfer = createAsyncAction(
         t.type({
           resolved: t.literal(true),
           metadata: t.unknown,
-          fee: Int(32),
+          fee: Fee,
           partner: Address,
         }),
         Via,
@@ -83,10 +83,7 @@ export namespace transfer {
 /** A LockedTransfer was signed and should be sent to partner */
 export const transferSigned = createAction(
   'transfer/signed',
-  t.intersection([
-    t.type({ message: Signed(LockedTransfer), fee: Int(32), partner: Address }),
-    Via,
-  ]),
+  t.intersection([t.type({ message: Signed(LockedTransfer), fee: Fee, partner: Address }), Via]),
   TransferId,
 );
 export interface transferSigned extends ActionType<typeof transferSigned> {}

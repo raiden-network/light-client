@@ -69,17 +69,20 @@ export const AddressMetadataMap = new t.RefinementType(
 
 export const RoutesExtra = t.partial({ address_metadata: AddressMetadataMap });
 
+export const Fee = Int(32);
+export type Fee = t.TypeOf<typeof Fee>;
+
 /**
  * Codec for raiden-ts internal representation of a PFS result/routes
  */
 export const Paths = t.readonlyArray(
-  t.readonly(t.intersection([t.type({ path: Path, fee: Int(32) }), RoutesExtra])),
+  t.readonly(t.intersection([t.type({ path: Path, fee: Fee }), RoutesExtra])),
 );
 export type Paths = t.TypeOf<typeof Paths>;
 
 /** Codec for result from PFS path request */
 export const PfsResult = t.type({
-  result: t.array(t.intersection([t.type({ path: Path, estimated_fee: Int(32) }), RoutesExtra])),
+  result: t.array(t.intersection([t.type({ path: Path, estimated_fee: Fee }), RoutesExtra])),
 });
 
 /** Codec for PFS API returned error */

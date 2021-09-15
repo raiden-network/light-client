@@ -6,9 +6,10 @@ import * as t from 'io-ts';
 
 import type { Channel } from '../../channels';
 import { channelAmounts } from '../../channels/utils';
+import { Fee } from '../../services/types';
 import { assert } from '../../utils';
 import type { UInt, UnionToIntersection } from '../../utils/types';
-import { Address, decode, Int, isntNil } from '../../utils/types';
+import { Address, decode, isntNil } from '../../utils/types';
 
 const Decimal = RootDecimal.clone({ precision: 40, rounding: RootDecimal.ROUND_HALF_EVEN });
 type Decimal = RootDecimal;
@@ -54,7 +55,7 @@ export interface FeeModel<Config, Schedule> {
    * @param channelOut - Channel state where transfer is supposed to be forwarded through
    * @returns Function which receives input amounts and returns fee
    */
-  fee: (config: Config, channelIn: Channel, channelOut: Channel) => FeeFunc<UInt<32>, Int<32>>;
+  fee: (config: Config, channelIn: Channel, channelOut: Channel) => FeeFunc<UInt<32>, Fee>;
   /**
    * Calculate this model's slice of the payload to PFSFeeUpdate messages
    *
@@ -96,7 +97,7 @@ function toInteger(value: unknown): number {
 function makeFeeFunctionFromAmountIn(
   outCapacity: Decimal,
   [inFeeFunc, outFeeFunc]: [FeeFunc<Decimal>, FeeFunc<Decimal>],
-): FeeFunc<UInt<32>, Int<32>> {
+): FeeFunc<UInt<32>, Fee> {
   assert(outCapacity.gt(0), 'no output channel capacity available');
 
   return (amountIn_: UInt<32>) => {
@@ -135,16 +136,16 @@ function makeFeeFunctionFromAmountIn(
     // x₀ = xA - yA/Δ, Δ=(yB-yA)/(xB-xA)
     const amountOut = xA.sub(fA.mul(xB.sub(xA)).div(fB.sub(fA)));
     // return fee = amountIn - amountOut
-    return decode(Int(32), amountIn.sub(amountOut).toFixed(0, Decimal.ROUND_HALF_EVEN));
+    return decode(Fee, amountIn.sub(amountOut).toFixed(0, Decimal.ROUND_HALF_EVEN));
   };
 }
 
-export const flatFee: FeeModel<Int<32>, { flat: Int<32> }> = {
+export const flatFee: FeeModel<Fee, { flat: Fee }> = {
   name: 'flat',
-  emptySchedule: { flat: Zero as Int<32> },
+  emptySchedule: { flat: Zero as Fee },
   decodeConfig(config, defaultConfig) {
     // flat config uses 'half' the per-token config, one half for each channel [in, out]
-    return decode(Int(32), config ?? defaultConfig).div(2) as Int<32>;
+    return decode(Fee, config ?? defaultConfig).div(2) as Fee;
   },
   channelFee(flat) {
     const flatFee = new Decimal(flat.toHexString());
@@ -152,7 +153,7 @@ export const flatFee: FeeModel<Int<32>, { flat: Int<32> }> = {
   },
   fee(flat) {
     // flat fee just sums once for each channel
-    const res = decode(Int(32), flat.mul(2));
+    const res = decode(Fee, flat.mul(2));
     return () => res;
   },
   schedule(flat) {
@@ -160,9 +161,9 @@ export const flatFee: FeeModel<Int<32>, { flat: Int<32> }> = {
   },
 };
 
-export const proportionalFee: FeeModel<number, { proportional: Int<32> }> = {
+export const proportionalFee: FeeModel<number, { proportional: Fee }> = {
   name: 'proportional',
-  emptySchedule: { proportional: Zero as Int<32> },
+  emptySchedule: { proportional: Zero as Fee },
   decodeConfig(config, defaultConfig) {
     // https://raiden-network-specification.readthedocs.io/en/latest/mediation_fees.html#converting-per-hop-proportional-fees-in-per-channel-proportional-fees
     // 1M is because config is received and returned as parts-per-million integers
@@ -181,11 +182,11 @@ export const proportionalFee: FeeModel<number, { proportional: Int<32> }> = {
       // for proportional fees only: xout = xin*(1-q)/(1+q)
       const amountOut = amountIn.mul(OneDec.sub(perChannelRatio).div(OneDec.add(perChannelRatio)));
       const fee = amountIn.sub(amountOut);
-      return decode(Int(32), fee.toFixed(0, Decimal.ROUND_HALF_EVEN));
+      return decode(Fee, fee.toFixed(0, Decimal.ROUND_HALF_EVEN));
     };
   },
   schedule(perChannelPPM) {
-    return { proportional: BigNumber.from(perChannelPPM) as Int<32> };
+    return { proportional: BigNumber.from(perChannelPPM) as Fee };
   },
 };
 
@@ -439,7 +440,7 @@ export function getStandardFeeCalculator<
 
       return (amountIn) => {
         let fee = feeFunction(amountIn);
-        if (capFees && fee.lt(0)) fee = Zero as Int<32>; // cap fee
+        if (capFees && fee.lt(0)) fee = Zero as Fee; // cap fee
         return fee;
       };
     },
