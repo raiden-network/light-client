@@ -54,7 +54,7 @@
     "@types/isomorphic-fetch": "^0.0.35",
     "@types/jest": "^27.0.1",
     "@types/json-bigint": "^1.0.1",
-    "@types/lodash": "^4.14.172",
+    "@types/lodash": "^4.14.173",
     "@types/matrix-js-sdk": "^11.0.1",
     "@types/pouchdb": "^6.4.0",
     "@types/pouchdb-adapter-leveldb": "^6.1.3",
