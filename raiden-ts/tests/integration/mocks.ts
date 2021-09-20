@@ -697,6 +697,11 @@ export async function makeRaiden(
   );
   jest.spyOn(provider, 'getTransaction');
   jest.spyOn(provider, 'getGasPrice').mockResolvedValue(BigNumber.from(1e9));
+  jest.spyOn(provider, 'getFeeData').mockResolvedValue({
+    maxFeePerGas: BigNumber.from(1e9),
+    maxPriorityFeePerGas: BigNumber.from(2.5e9),
+    gasPrice: null,
+  });
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([address]);
   // See: https://github.com/cartant/rxjs-marbles/issues/11
   jest.spyOn(provider, 'getBlockNumber').mockImplementation(async () => provider.blockNumber);

@@ -41,6 +41,7 @@ import { first, pluck } from 'rxjs/operators';
 import { raidenConfigUpdate } from '@/actions';
 import { ChannelState } from '@/channels';
 import {
+  blockGasprice,
   channelClose,
   channelDeposit,
   channelMonitored,
@@ -543,15 +544,11 @@ describe('channelDepositEpic', () => {
       channelDeposit.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
     );
     expect(tokenContract.approve).toHaveBeenCalledTimes(2);
-    expect(tokenContract.approve).toHaveBeenCalledWith(
-      tokenNetwork,
-      0,
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
-    );
+    expect(tokenContract.approve).toHaveBeenCalledWith(tokenNetwork, 0, expect.anything());
     expect(tokenContract.approve).toHaveBeenCalledWith(
       tokenNetwork,
       raiden.config.minimumAllowance,
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
   });
 
@@ -621,7 +618,7 @@ describe('channelDepositEpic', () => {
       raiden.address,
       deposit.add(prevDeposit),
       partner.address,
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
     expect(setTotalDepositTx.wait).toHaveBeenCalledTimes(1);
   });
@@ -661,7 +658,7 @@ describe('channelDepositEpic', () => {
       raiden.address,
       deposit,
       partner.address,
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
   });
 });
@@ -747,7 +744,7 @@ describe('channelCloseEpic', () => {
       expect.any(String), // additional_hash
       expect.any(String), // non_closing_signature
       expect.any(String), // closing_signature
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
     expect(closeTx.wait).toHaveBeenCalledTimes(1);
   });
@@ -860,7 +857,7 @@ describe('channelSettleEpic', () => {
       Zero, // partner transfered amount
       Zero, // partner locked amount
       LocksrootZero, // partner locksroot
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
     expect(settleTx.wait).toHaveBeenCalledTimes(1);
   });
@@ -935,7 +932,7 @@ describe('channelSettleEpic', () => {
       Zero, // self transfered amount
       amount, // self locked amount
       getLocksroot([locked.lock]), // self locksroot
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
     expect(settleTx.wait).toHaveBeenCalledTimes(1);
     expect(tokenNetworkContract.getChannelParticipantInfo).toHaveBeenCalledTimes(2);
@@ -1011,7 +1008,7 @@ describe('channelSettleEpic', () => {
       Zero, // partner transfered amount
       amount, // partner locked amount
       getLocksroot([locked.lock]), // partner locksroot
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
     expect(settleTx.wait).toHaveBeenCalledTimes(1);
     expect(tokenNetworkContract.getChannelParticipantInfo).toHaveBeenCalledTimes(2);
@@ -1050,7 +1047,7 @@ describe('channelUnlockEpic', () => {
       raiden.address,
       partner.address,
       expect.any(Uint8Array),
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
   });
 
@@ -1081,7 +1078,7 @@ describe('channelUnlockEpic', () => {
       raiden.address,
       partner.address,
       expect.any(Uint8Array),
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
   });
 });
@@ -1151,21 +1148,72 @@ test('stale provider disables receiving', async () => {
   expect(raiden.config.caps?.[Capabilities.RECEIVE]).toBeTruthy();
 });
 
-test('blockGasPriceEpic updates latest.gasPrice on new block', async () => {
-  expect.assertions(3);
+describe('blockGasPriceEpic', () => {
+  test('updates latest.gasPrice on new block', async () => {
+    expect.assertions(7);
 
-  const raiden = await makeRaiden(undefined, false);
-  raiden.deps.provider.getGasPrice.mockResolvedValue(BigNumber.from(2e9));
-  await raiden.start();
-  await sleep();
-  await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual(
-    BigNumber.from(2e9),
-  );
+    const raiden = await makeRaiden(undefined, false);
+    raiden.deps.provider.getFeeData.mockResolvedValue({
+      maxFeePerGas: BigNumber.from(1e9),
+      maxPriorityFeePerGas: BigNumber.from(2.5e9),
+      gasPrice: null,
+    });
 
-  raiden.deps.provider.getGasPrice.mockResolvedValue(BigNumber.from(3e9));
-  await waitBlock();
-  await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual(
-    BigNumber.from(3e9),
-  );
-  expect(raiden.deps.provider.getGasPrice).toHaveBeenCalledTimes(2);
+    await raiden.start();
+    await sleep();
+    await expect(
+      firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice'))),
+    ).resolves.toBeUndefined();
+
+    raiden.store.dispatch(raidenConfigUpdate({ gasPriceFactor: 2.0 }));
+    await waitBlock();
+    expect(raiden.output.filter(blockGasprice.is)).toHaveLength(2);
+    await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual({
+      // maxFeePerGas must contain increased maxPriorityFeePerGas
+      maxFeePerGas: expect.toBeBigNumber(1e9 + 2.5e9),
+      maxPriorityFeePerGas: expect.toBeBigNumber(2.5e9 * 2),
+    });
+
+    raiden.deps.provider.getFeeData.mockResolvedValue({
+      maxFeePerGas: BigNumber.from(1.1e9), // increase maxFeePerGas
+      maxPriorityFeePerGas: BigNumber.from(2.5e9),
+      gasPrice: null,
+    });
+    await waitBlock();
+    expect(raiden.output.filter(blockGasprice.is)).toHaveLength(3);
+    await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual({
+      // maxFeePerGas must contain increased maxPriorityFeePerGas
+      maxFeePerGas: expect.toBeBigNumber(1.1e9 + 2.5e9),
+      maxPriorityFeePerGas: expect.toBeBigNumber(2.5e9 * 2),
+    });
+
+    expect(raiden.deps.provider.getGasPrice).not.toHaveBeenCalled();
+    expect(raiden.deps.provider.getFeeData).toHaveBeenCalledTimes(2);
+  });
+
+  test('supports legacy networks', async () => {
+    expect.assertions(3);
+
+    const raiden = await makeRaiden(undefined, false);
+    raiden.deps.provider.getFeeData.mockResolvedValue({
+      maxFeePerGas: null,
+      maxPriorityFeePerGas: null,
+      gasPrice: BigNumber.from(1e9),
+    });
+
+    await raiden.start();
+    await waitBlock();
+
+    await expect(
+      firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice'))),
+    ).resolves.toBeUndefined();
+
+    raiden.store.dispatch(raidenConfigUpdate({ gasPriceFactor: 2.0 }));
+    await waitBlock();
+    await waitBlock();
+    expect(raiden.output.filter(blockGasprice.is)).toHaveLength(2);
+    await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual({
+      gasPrice: expect.toBeBigNumber(2e9),
+    });
+  });
 });
