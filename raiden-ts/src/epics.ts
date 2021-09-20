@@ -1,4 +1,3 @@
-import { BigNumber } from '@ethersproject/bignumber';
 import { MaxUint256 } from '@ethersproject/constants';
 import { uniq } from 'lodash/fp';
 import unset from 'lodash/fp/unset';
@@ -167,11 +166,7 @@ export function getLatest$(
     pluck('payload', 'blockTime'),
     startWith(15e3), // default initial blockTime of 15s
   );
-  const gasPrice$ = action$.pipe(
-    filter(blockGasprice.is),
-    pluck('payload', 'gasPrice'),
-    startWith(BigNumber.from(1e9) as UInt<32>),
-  );
+  const gasPrice$ = action$.pipe(filter(blockGasprice.is), pluck('payload'), startWith(undefined));
   const stale$ = action$.pipe(
     filter(blockStale.is),
     pluck('payload', 'stale'),

@@ -1,3 +1,4 @@
+import type { BigNumber } from '@ethersproject/bignumber';
 import constant from 'lodash/constant';
 import type { Observable } from 'rxjs';
 import { combineLatest, concat, defer, EMPTY, from, of, timer } from 'rxjs';
@@ -29,7 +30,7 @@ import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { fromEthersEvent } from '../../utils/ethers';
 import { completeWith, lastMap, pluckDistinct, retryAsync$ } from '../../utils/rx';
-import { decode, isntNil, UInt } from '../../utils/types';
+import { isntNil } from '../../utils/types';
 import { blockGasprice, blockStale, blockTime, newBlock } from '../actions';
 
 /**
@@ -184,6 +185,10 @@ export function blockStaleEpic(
   );
 }
 
+function bnIsClose(a: BigNumber, b: BigNumber, factor = 100): boolean {
+  return a.sub(b).abs().lt(a.div(factor));
+}
+
 /**
  * Monitors provider for current mean gasPrice, and multiply it by config.gasPriceFactor
  *
@@ -202,18 +207,43 @@ export function blockGasPriceEpic(
   return state$.pipe(
     pluckDistinct('blockNumber'),
     withLatestFrom(config$),
-    // switchMap will "reset" timer every block, restarting the timeout
-    exhaustMap(([, { gasPriceFactor }]) =>
-      defer(async () => provider.getGasPrice()).pipe(
-        map((price) => price.mul(Math.round(gasPriceFactor * 1e6)).div(1e6)),
-        map((price) => (price.gte(1e9) ? price : 1e9)), // min 1Gwei
-        map((price) => decode(UInt(32), price)),
+    exhaustMap(([, { gasPriceFactor }]) => {
+      if (!gasPriceFactor || gasPriceFactor === 1.0) return of(undefined);
+      return defer(async () => provider.getFeeData()).pipe(
+        map((feeData) => {
+          if (feeData.maxPriorityFeePerGas && feeData.maxFeePerGas) {
+            // post-EIP1559, we apply gasPriceFactor only over maxPriorityFeePerGas, and it allows
+            // to decrease the default priority fee if <1
+            const addedPriorityFee = feeData.maxPriorityFeePerGas
+              .mul(Math.round((gasPriceFactor - 1.0) * 1e6))
+              .div(1e6);
+            return {
+              // default ethers maxPriorityFeePerGas is constant 2.5Gwei
+              maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.add(addedPriorityFee),
+              maxFeePerGas: feeData.maxFeePerGas.add(addedPriorityFee),
+            } as const;
+          } else if (feeData.gasPrice) {
+            return {
+              gasPrice: feeData.gasPrice.mul(Math.round(gasPriceFactor * 1e6)).div(1e6),
+            } as const;
+          }
+        }),
         catchError(constant(EMPTY)),
-      ),
-    ),
+      );
+    }),
     // debounce gasPrice changes smaller than 1%
-    distinctUntilChanged((a, b) => a.sub(b).abs().lt(a.div(100))),
-    map((gasPrice) => blockGasprice({ gasPrice })),
+    distinctUntilChanged((a, b) => {
+      if (!a && !b) return true;
+      // one truthy, one undefined
+      else if (!!a !== !!b) return false;
+      else if (a!.gasPrice) return bnIsClose(a!.gasPrice, b!.gasPrice!, 100);
+      else
+        return (
+          a!.maxPriorityFeePerGas!.eq(b!.maxPriorityFeePerGas!) &&
+          bnIsClose(a!.maxFeePerGas!, b!.maxFeePerGas!, 100)
+        );
+    }),
+    map((gasPrice) => blockGasprice(gasPrice)),
   );
 }
 
