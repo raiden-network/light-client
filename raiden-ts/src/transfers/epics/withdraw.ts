@@ -269,7 +269,7 @@ export function withdrawSendTxEpic(
                   action.meta.expiration,
                   req.signature,
                   action.payload.message.signature,
-                  { gasPrice },
+                  { ...gasPrice },
                 ),
               ).pipe(
                 assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, {

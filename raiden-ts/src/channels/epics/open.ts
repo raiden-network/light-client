@@ -53,7 +53,7 @@ function openWithDeposit$(
     withLatestFrom(latest$),
     mergeMap(async ([, { gasPrice }]) =>
       tokenNetworkContract.openChannelWithDeposit(address, partner, settleTimeout, deposit, {
-        gasPrice,
+        ...gasPrice,
       }),
     ),
     assertTx('openChannelWithDeposit', ErrorCodes.CNL_OPENCHANNEL_FAILED, deps),
@@ -80,7 +80,7 @@ function openAndThenDeposit$(
     latest$.pipe(
       first(),
       mergeMap(async ({ gasPrice }) =>
-        tokenNetworkContract.openChannel(address, partner, settleTimeout, { gasPrice }),
+        tokenNetworkContract.openChannel(address, partner, settleTimeout, { ...gasPrice }),
       ),
       assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, deps),
       // also retry txFailErrors on open$ only; deposit$ (if not EMPTY) is handled by

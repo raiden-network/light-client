@@ -1162,7 +1162,7 @@ export class Raiden {
     const receipt = await callAndWaitMined(
       customTokenContract,
       'mintFor',
-      [value, beneficiary, { gasPrice }],
+      [value, beneficiary, { ...gasPrice }],
       ErrorCodes.RDN_MINT_FAILED,
       { log: this.log },
     );
@@ -1214,7 +1214,7 @@ export class Raiden {
     const receipt = await callAndWaitMined(
       tokenNetworkRegistry,
       'createERC20TokenNetwork',
-      [token, channelParticipantDepositLimit, tokenNetworkDepositLimit, { gasPrice }],
+      [token, channelParticipantDepositLimit, tokenNetworkDepositLimit, { ...gasPrice }],
       ErrorCodes.RDN_REGISTER_TOKEN_FAILED,
       { log: this.log },
     );
@@ -1337,9 +1337,9 @@ export class Raiden {
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
-    const price = gasPrice
-      ? BigNumber.from(gasPrice)
-      : await firstValueFrom(this.deps.latest$.pipe(pluck('gasPrice')));
+    // we use provider.getGasPrice directly in order to use the old gasPrice for txs, which
+    // allows us to predict exactly the final gasPrice and deplet balance
+    const price = gasPrice ? BigNumber.from(gasPrice) : await this.deps.provider.getGasPrice();
     const gasLimit = BigNumber.from(21000);
 
     const curBalance = await this.getBalance(address);
@@ -1395,7 +1395,7 @@ export class Raiden {
     const receipt = await callAndWaitMined(
       tokenContract,
       'transfer',
-      [to, amount, { gasPrice }],
+      [to, amount, { ...gasPrice }],
       ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED,
       { log: this.log },
     );

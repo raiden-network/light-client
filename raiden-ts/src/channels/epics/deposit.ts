@@ -117,7 +117,7 @@ function makeDeposit$(
         // send setTotalDeposit transaction
         mergeMap(async (id) =>
           tokenNetworkContract.setTotalDeposit(id, address, totalDeposit, partner, {
-            gasPrice,
+            ...gasPrice,
           }),
         ),
       );

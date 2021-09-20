@@ -261,7 +261,9 @@ export function ensureApprovedBalance$(
       // see https://github.com/raiden-network/light-client/issues/2010
       let resetAllowance$: Observable<true> = of(true);
       if (!allowance.isZero())
-        resetAllowance$ = defer(async () => tokenContract.approve(spender, 0, { gasPrice })).pipe(
+        resetAllowance$ = defer(async () =>
+          tokenContract.approve(spender, 0, { ...gasPrice }),
+        ).pipe(
           assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log, provider }),
           mapTo(true),
         );
@@ -271,7 +273,7 @@ export function ensureApprovedBalance$(
       // default minimumAllowance=MaxUint256 allows to approve once and for all
       return resetAllowance$.pipe(
         mergeMap(async () =>
-          tokenContract.approve(spender, bnMax(minimumAllowance, amount), { gasPrice }),
+          tokenContract.approve(spender, bnMax(minimumAllowance, amount), { ...gasPrice }),
         ),
         assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log, provider }),
         pluck(1),
