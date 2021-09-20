@@ -102,7 +102,7 @@ function makeUdcDeposit$(
       ]);
       finalBalance = prev.balance.add(deposit) as UInt<32>;
       // send setTotalDeposit transaction
-      return userDepositContract.deposit(address, totalDeposit, { gasPrice });
+      return userDepositContract.deposit(address, totalDeposit, { ...gasPrice });
     }),
     assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
@@ -200,7 +200,7 @@ export function udcWithdrawPlanRequestEpic(
             { balance: balance.toString(), amount: amount.toString() },
           ]);
 
-          return contract.planWithdraw(amount, { gasPrice });
+          return contract.planWithdraw(amount, { ...gasPrice });
         }),
         assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.info }),
@@ -332,8 +332,8 @@ export function udcWithdrawEpic(
           toAccount = toMain ? main!.address : address;
           return defer(async () =>
             toMain
-              ? contract.withdrawToBeneficiary(action.meta.amount, main!.address, { gasPrice })
-              : contract.withdraw(action.meta.amount, { gasPrice }),
+              ? contract.withdrawToBeneficiary(action.meta.amount, main!.address, { ...gasPrice })
+              : contract.withdraw(action.meta.amount, { ...gasPrice }),
           ).pipe(
             assertTx(
               toMain ? 'withdrawToBeneficiary' : 'withdraw',

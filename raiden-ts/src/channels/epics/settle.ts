@@ -216,7 +216,7 @@ function settleSettleableChannel(
               part2[1].transferredAmount,
               part2[1].lockedAmount,
               part2[1].locksroot,
-              { gasPrice },
+              { ...gasPrice },
             ),
           ).pipe(
             assertTx('settleChannel', ErrorCodes.CNL_SETTLE_FAILED, { log, provider }),
@@ -282,7 +282,7 @@ function coopSettleChannel(
         channel.id,
         withdrawPairToCoopSettleParams(part1),
         withdrawPairToCoopSettleParams(part2),
-        { gasPrice },
+        { ...gasPrice },
       ),
     ),
     assertTx('cooperativeSettle', ErrorCodes.CNL_COOP_SETTLE_FAILED, { log, provider }),
@@ -427,7 +427,7 @@ export function channelUnlockEpic(
 
       // send unlock transaction
       return defer(() =>
-        tokenNetworkContract.unlock(action.payload.id, address, partner, locks, { gasPrice }),
+        tokenNetworkContract.unlock(action.payload.id, address, partner, locks, { ...gasPrice }),
       ).pipe(
         assertTx('unlock', ErrorCodes.CNL_ONCHAIN_UNLOCK_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), {

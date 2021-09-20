@@ -115,7 +115,7 @@ export function channelCloseEpic(
               additionalHash,
               nonClosingSignature,
               closingSignature,
-              { gasPrice },
+              { ...gasPrice },
             ),
           ).pipe(
             assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log, provider }),
@@ -236,7 +236,7 @@ export function channelUpdateEpic(
               additionalHash,
               closingSignature,
               nonClosingSignature,
-              { gasPrice },
+              { ...gasPrice },
             ),
           ).pipe(
             assertTx('updateNonClosingBalanceProof', ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED, {
