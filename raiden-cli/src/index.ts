@@ -181,7 +181,7 @@ async function parseArguments() {
         desc: 'Enables capping mediation fees to not allow them to be negative (output transfers amount always less than or equal input transfers)',
       },
       gasPrice: {
-        desc: 'Set gasPrice strategy for transactions, as a multiplier of ETH node returned "eth_gasPrice"; some aliases: medium=1.05, fast=1.2, rapid=1.5',
+        desc: "Set gasPrice factor for transactions's priority fees, as a multiplier of default `maxPriorityFeePerGas` (2.5 Gwei); some aliases: medium=1.05, fast=1.2, rapid=1.5",
         coerce(val?: string | string[]): number | undefined {
           if (!val) return;
           if (Array.isArray(val)) val = val[val.length - 1];
@@ -195,7 +195,7 @@ async function parseArguments() {
               return 1.5;
             default:
               value = +val;
-              assert(value && 0.1 <= value && value <= 10, 'invalid gasPrice');
+              assert(value && value > 0, 'invalid gasPrice');
               return value;
           }
         },
