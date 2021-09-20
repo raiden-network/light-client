@@ -3,8 +3,11 @@
 ## [Unreleased]
 ### Changed
 - [#2949] Allows `Raiden.transfer`'s `options.paths` to receive a broader schema, including `{ route: Address[]; estimated_fee: Int<32>; address_metadata?: ... }[]`, needed to support CLI's `paths` parameter of `/payments` endpoint
+- [#2953] `config.gasPriceFactor` applies over `maxPriorityFeePerGas`, using the new fee parameters from London when possible; now, by default, no fee parameters are specified, leaving `ethers` and provider (e.g. Metamask) to figure out best gas fees, fixing [#2952];
 
 [#2949]: https://github.com/raiden-network/light-client/issues/2949
+[#2952]: https://github.com/raiden-network/light-client/issues/2952
+[#2953]: https://github.com/raiden-network/light-client/pull/2953
 
 ## [2.0.0-rc.2] - 2021-09-14
 

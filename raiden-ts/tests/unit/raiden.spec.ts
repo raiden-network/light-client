@@ -1449,7 +1449,7 @@ describe('Raiden', () => {
       token,
       MaxUint256,
       MaxUint256,
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      expect.anything(),
     );
   });
 
