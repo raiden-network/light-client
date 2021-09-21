@@ -8,30 +8,32 @@
     @mouseover="exactAmount ? (displayExactAmount = true) : null"
     @mouseleave="exactAmount ? (displayExactAmount = false) : null"
   >
-    <span v-if="label">{{ label }}</span>
-    <span v-if="displayExactAmount">
-      {{ sign }}{{ amount | toUnits(token.decimals) }} {{ token.symbol || '' }}
+    <span v-if="showLabel" class="amount-display__label">
+      {{ label }}
     </span>
-    <span v-else>
-      {{ sign }}{{ amount | displayFormat(token.decimals) }}
-      {{ token.symbol || '' }}
-    </span>
+
+    <slot>
+      <span class="amount-display__formatted-amount">
+        {{ formattedAmount }}
+      </span>
+    </slot>
   </div>
 </template>
 
 <script lang="ts">
-import type { BigNumber } from 'ethers';
+import { BigNumber } from 'ethers';
 import { Component, Prop, Vue } from 'vue-property-decorator';
 
+import Filters from '@/filters';
 import type { Token } from '@/model/types';
 
-@Component({})
+@Component
 export default class AmountDisplay extends Vue {
   @Prop({ required: false, default: false, type: Boolean })
   exactAmount!: boolean;
 
-  @Prop({ type: String, default: '' })
-  label!: string;
+  @Prop({ type: String, required: false })
+  label?: string;
 
   @Prop({ required: true })
   amount!: string | BigNumber;
@@ -49,6 +51,27 @@ export default class AmountDisplay extends Vue {
   fullWidth!: boolean;
 
   displayExactAmount = false;
+
+  get showLabel(): boolean {
+    return this.label !== undefined;
+  }
+
+  get exactAmountValue(): string {
+    const amount = BigNumber.from(this.amount);
+    return Filters.toUnits(amount, this.token.decimals);
+  }
+
+  get roundedAmountValue(): string {
+    const amount = BigNumber.from(this.amount);
+    return Filters.displayFormat(amount, this.token.decimals);
+  }
+
+  get formattedAmount(): string {
+    let formattedAmount = this.sign;
+    formattedAmount += this.displayExactAmount ? this.exactAmountValue : this.roundedAmountValue;
+    formattedAmount += ' ' + this.token.symbol;
+    return formattedAmount;
+  }
 }
 </script>
 
