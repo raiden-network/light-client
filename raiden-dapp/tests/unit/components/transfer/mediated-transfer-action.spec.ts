@@ -7,7 +7,9 @@ import type { BigNumber } from 'ethers';
 import { constants } from 'ethers';
 import flushPromises from 'flush-promises';
 
-import TransferAction from '@/components/transfer/TransferAction.vue';
+import type { RaidenPaths } from 'raiden-ts';
+
+import MediatedTransfer from '@/components/transfer/MediatedTransferAction.vue';
 
 const defaultTransferOptions = {
   tokenAddress: '0xToken',
@@ -17,32 +19,35 @@ const defaultTransferOptions = {
 function createWrapper(options?: {
   transferTokenAmount?: BigNumber;
   paymentIdentifier?: BigNumber;
+  route?: RaidenPaths[number];
   transfer?: (...args: any[]) => void;
-}): Wrapper<TransferAction> {
+}): Wrapper<MediatedTransfer> {
   const $raiden = {
     transfer: options?.transfer ?? jest.fn(),
   };
 
-  return shallowMount(TransferAction, {
+  return shallowMount(MediatedTransfer, {
     propsData: {
       transferTokenAmount: options?.transferTokenAmount ?? constants.One,
       paymentIdentifier: options?.paymentIdentifier ?? constants.Two,
+      route: options?.route ?? 'no-actual-route',
       completionDelayTimeout: 0,
     },
     mocks: { $raiden, $t },
   });
 }
 
-describe('TransferAction', () => {
+describe('MediatedTransferAction', () => {
   afterEach(() => {
     flushPromises();
   });
 
-  test('executes raiden service deposit with correct arguments', async () => {
+  test('executes raiden service transfer with correct arguments', async () => {
     const transfer = jest.fn().mockResolvedValue(undefined);
     const wrapper = createWrapper({
       transferTokenAmount: constants.One,
       paymentIdentifier: constants.Two,
+      route: 'no-actual-route' as unknown as RaidenPaths[number],
       transfer,
     });
 
@@ -57,6 +62,7 @@ describe('TransferAction', () => {
       '0xPartner',
       constants.One,
       constants.Two,
+      ['no-actual-route'],
     );
   });
 
