@@ -168,6 +168,9 @@ export default class ChannelActionForm extends Vue {
   @Prop({ type: Boolean, default: false })
   readonly stickyButton!: boolean;
 
+  @Prop({ type: Boolean, default: false })
+  readonly autofocusDisabled!: boolean;
+
   @Prop({ required: true })
   readonly runAction!: (options: unknown) => Promise<void>;
 
@@ -203,15 +206,18 @@ export default class ChannelActionForm extends Vue {
   }
 
   get tokenAddressInputFocused(): boolean {
-    return this.tokenAddressEditable;
+    return !this.autofocusDisabled && this.tokenAddressEditable;
   }
 
   get partnerAddressInputFocused(): boolean {
-    return !this.tokenAddressInputFocused && this.partnerAddressEditable;
+    return (
+      !this.autofocusDisabled && !this.tokenAddressInputFocused && this.partnerAddressEditable
+    );
   }
 
   get tokenAmountInputFocused(): boolean {
     return (
+      !this.autofocusDisabled &&
       !this.tokenAddressInputFocused &&
       !this.partnerAddressInputFocused &&
       this.tokenAmountEditable
