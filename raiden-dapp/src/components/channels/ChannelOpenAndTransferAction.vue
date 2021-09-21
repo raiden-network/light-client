@@ -1,12 +1,17 @@
 <script lang="ts">
 import type { BigNumber } from 'ethers';
-import { Component, Mixins, Prop } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 
 import type { ChangeEvent } from 'raiden-ts';
 import { EventTypes } from 'raiden-ts';
 
 import ActionMixin from '@/mixins/action-mixin';
 import type { ActionProgressStep } from '@/model/types';
+
+type FixedRunOptions = {
+  transferTokenAmount: BigNumber;
+  paymentIdentifier: BigNumber;
+};
 
 const cleanOpenStep: ActionProgressStep = {
   title: 'channel-open-and-transfer-action.steps.open.title',
@@ -34,12 +39,6 @@ const cleanTransferStep: ActionProgressStep = {
 
 @Component
 export default class ChannelOpenAndTransferAction extends Mixins(ActionMixin) {
-  @Prop({ required: true })
-  readonly transferTokenAmount!: BigNumber;
-
-  @Prop({ required: true })
-  readonly paymentIdentifier!: BigNumber;
-
   openStep = Object.assign({}, cleanOpenStep);
   depositStep = Object.assign({}, cleanDepositStep);
   transferStep = Object.assign({}, cleanTransferStep);
@@ -76,12 +75,15 @@ export default class ChannelOpenAndTransferAction extends Mixins(ActionMixin) {
     partnerAddress: string;
     tokenAmount: BigNumber;
   }): Promise<void> {
+    const { tokenAddress, partnerAddress, tokenAmount: depositTokenAmount } = options;
+    const { transferTokenAmount, paymentIdentifier } = this.fixedRunOptions as FixedRunOptions;
+
     this.openStep.active = true;
 
     await this.$raiden.openChannel(
-      options.tokenAddress,
-      options.partnerAddress,
-      options.tokenAmount,
+      tokenAddress,
+      partnerAddress,
+      depositTokenAmount,
       this.handleOpenEvents,
     );
 
@@ -90,10 +92,10 @@ export default class ChannelOpenAndTransferAction extends Mixins(ActionMixin) {
     this.transferStep.active = true;
 
     await this.$raiden.transfer(
-      options.tokenAddress,
-      options.partnerAddress,
-      this.transferTokenAmount,
-      this.paymentIdentifier,
+      tokenAddress,
+      partnerAddress,
+      transferTokenAmount,
+      paymentIdentifier,
     );
 
     this.transferStep.completed = true;

@@ -14,6 +14,9 @@ export default class ChannelDepositAction extends Vue {
   @Prop({ type: String, default: '' })
   readonly dialogTitle!: string;
 
+  @Prop({ required: false })
+  readonly fixedRunOptions?: Record<string, unknown>;
+
   @Prop({ type: Number, default: 5000 })
   readonly completionDelayTimeout!: number;
 

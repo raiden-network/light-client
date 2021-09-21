@@ -26,13 +26,14 @@ function createWrapper(options?: {
     transfer: options?.transfer ?? jest.fn(),
   };
 
+  const fixedRunOptions = {
+    transferTokenAmount: options?.transferTokenAmount ?? constants.One,
+    paymentIdentifier: options?.paymentIdentifier ?? constants.Two,
+    route: options?.route ?? 'no-actual-route',
+  };
+
   return shallowMount(MediatedTransfer, {
-    propsData: {
-      transferTokenAmount: options?.transferTokenAmount ?? constants.One,
-      paymentIdentifier: options?.paymentIdentifier ?? constants.Two,
-      route: options?.route ?? 'no-actual-route',
-      completionDelayTimeout: 0,
-    },
+    propsData: { fixedRunOptions, completionDelayTimeout: 0 },
     mocks: { $raiden, $t },
   });
 }

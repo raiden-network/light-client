@@ -1,9 +1,14 @@
 <script lang="ts">
 import type { BigNumber } from 'ethers';
-import { Component, Mixins, Prop } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 
 import ActionMixin from '@/mixins/action-mixin';
 import type { ActionProgressStep } from '@/model/types';
+
+type FixedRunOptions = {
+  transferTokenAmount: BigNumber;
+  paymentIdentifier: BigNumber;
+};
 
 const cleanDepositStep: ActionProgressStep = {
   title: 'channel-deposit-and-transfer-action.steps.deposit.title',
@@ -23,12 +28,6 @@ const cleanTransferStep: ActionProgressStep = {
 
 @Component
 export default class ChannelDepositAndTransferAction extends Mixins(ActionMixin) {
-  @Prop({ required: true })
-  readonly transferTokenAmount!: BigNumber;
-
-  @Prop({ required: true })
-  readonly paymentIdentifier!: BigNumber;
-
   depositStep = Object.assign({}, cleanDepositStep);
   transferStep = Object.assign({}, cleanTransferStep);
 
@@ -50,19 +49,22 @@ export default class ChannelDepositAndTransferAction extends Mixins(ActionMixin)
     partnerAddress: string;
     tokenAmount: BigNumber;
   }): Promise<void> {
+    const { tokenAddress, partnerAddress, tokenAmount: depositTokenAmount } = options;
+    const { transferTokenAmount, paymentIdentifier } = this.fixedRunOptions as FixedRunOptions;
+
     this.depositStep.active = true;
 
-    await this.$raiden.deposit(options.tokenAddress, options.partnerAddress, options.tokenAmount);
+    await this.$raiden.deposit(tokenAddress, partnerAddress, depositTokenAmount);
 
     this.depositStep.completed = true;
     this.depositStep.active = false;
     this.transferStep.active = true;
 
     await this.$raiden.transfer(
-      options.tokenAddress,
-      options.partnerAddress,
-      this.transferTokenAmount,
-      this.paymentIdentifier,
+      tokenAddress,
+      partnerAddress,
+      transferTokenAmount,
+      paymentIdentifier,
     );
 
     this.transferStep.completed = true;
