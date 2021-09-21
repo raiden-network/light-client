@@ -304,12 +304,22 @@
       "label": "Amount"
     }
   },
-  "transfer-action": {
+  "mediated-transfer-action": {
     "confirm-button-label": "Confirm Payment",
     "steps": {
       "transfer": {
-        "title": "Transfering tokens",
-        "description": "Please wait"
+        "title": "Transfering tokens via route",
+        "description": "Transfer in progress"
+      }
+    }
+  },
+  "direct-transfer-action": {
+    "confirm-button-label": "Confirm Payment",
+    "no-route-error": "Please verify that the recipient is online and receives payments before trying again.",
+    "steps": {
+      "transfer": {
+        "title": "Transfering tokens directly",
+        "description": "Transfer in progress"
       }
     }
   },

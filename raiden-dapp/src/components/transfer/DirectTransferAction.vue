@@ -6,15 +6,15 @@ import ActionMixin from '@/mixins/action-mixin';
 import type { ActionProgressStep } from '@/model/types';
 
 const cleanTransferStep: ActionProgressStep = {
-  title: 'transfer-action.steps.transfer.title',
-  description: 'transfer-action.steps.transfer.description',
+  title: 'direct-transfer-action.steps.transfer.title',
+  description: 'direct-transfer-action.steps.transfer.description',
   active: false,
   completed: false,
   failed: false,
 };
 
 @Component
-export default class ChannelOpenAndTransferAction extends Mixins(ActionMixin) {
+export default class DirectTransferAction extends Mixins(ActionMixin) {
   @Prop({ required: true })
   readonly transferTokenAmount!: BigNumber;
 
@@ -24,7 +24,7 @@ export default class ChannelOpenAndTransferAction extends Mixins(ActionMixin) {
   transferStep = Object.assign({}, cleanTransferStep);
 
   get confirmButtonLabel(): string {
-    return this.$t('transfer-action.confirm-button-label') as string;
+    return this.$t('direct-transfer-action.confirm-button-label') as string;
   }
 
   get steps(): ActionProgressStep[] {
@@ -38,11 +38,22 @@ export default class ChannelOpenAndTransferAction extends Mixins(ActionMixin) {
   async handleAction(options: { tokenAddress: string; partnerAddress: string }): Promise<void> {
     this.transferStep.active = true;
 
+    const route = await this.$raiden.directRoute(
+      options.tokenAddress,
+      options.partnerAddress,
+      this.transferTokenAmount,
+    )
+
+    if (route === undefined) {
+      throw new Error(this.$t('direct-transfer-action.no-route-error') as string);
+    }
+
     await this.$raiden.transfer(
       options.tokenAddress,
       options.partnerAddress,
       this.transferTokenAmount,
       this.paymentIdentifier,
+      route,
     );
 
     this.transferStep.completed = true;
