@@ -1,11 +1,17 @@
 <script lang="ts">
 import type { BigNumber } from 'ethers';
-import { Component, Mixins, Prop } from 'vue-property-decorator';
+import { Component, Mixins } from 'vue-property-decorator';
 
 import type { RaidenPaths } from 'raiden-ts';
 
 import ActionMixin from '@/mixins/action-mixin';
 import type { ActionProgressStep } from '@/model/types';
+
+type FixedRunOptions = {
+  transferTokenAmount: BigNumber;
+  paymentIdentifier: BigNumber;
+  route: RaidenPaths[number];
+};
 
 const cleanTransferStep: ActionProgressStep = {
   title: 'mediated-transfer-action.steps.transfer.title',
@@ -17,15 +23,6 @@ const cleanTransferStep: ActionProgressStep = {
 
 @Component
 export default class MediatedTransferAction extends Mixins(ActionMixin) {
-  @Prop({ required: true })
-  readonly transferTokenAmount!: BigNumber;
-
-  @Prop({ required: true })
-  readonly paymentIdentifier!: BigNumber;
-
-  @Prop({ required: true })
-  readonly route!: RaidenPaths[number];
-
   transferStep = Object.assign({}, cleanTransferStep);
 
   get confirmButtonLabel(): string {
@@ -41,14 +38,17 @@ export default class MediatedTransferAction extends Mixins(ActionMixin) {
   }
 
   async handleAction(options: { tokenAddress: string; partnerAddress: string }): Promise<void> {
+    const { tokenAddress, partnerAddress } = options;
+    const { transferTokenAmount, paymentIdentifier, route } = this
+      .fixedRunOptions as FixedRunOptions;
     this.transferStep.active = true;
 
     await this.$raiden.transfer(
-      options.tokenAddress,
-      options.partnerAddress,
-      this.transferTokenAmount,
-      this.paymentIdentifier,
-      [this.route],
+      tokenAddress,
+      partnerAddress,
+      transferTokenAmount,
+      paymentIdentifier,
+      [route],
     );
 
     this.transferStep.completed = true;
