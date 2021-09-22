@@ -13,7 +13,10 @@
     </span>
 
     <slot>
-      <span class="amount-display__formatted-amount">
+      <span
+        class="amount-display__formatted-amount"
+        :class="{ 'amount-display__formatted-amount--warning': warning }"
+      >
         {{ formattedAmount }}
       </span>
     </slot>
@@ -50,6 +53,9 @@ export default class AmountDisplay extends Vue {
   @Prop({ type: Boolean, default: false })
   fullWidth!: boolean;
 
+  @Prop({ type: Boolean, default: false })
+  warning!: boolean;
+
   displayExactAmount = false;
 
   get showLabel(): boolean {
@@ -76,6 +82,8 @@ export default class AmountDisplay extends Vue {
 </script>
 
 <style lang="scss" scoped>
+@import '@/scss/colors';
+
 .amount-display {
   display: flex;
   flex-direction: row;
@@ -88,6 +96,12 @@ export default class AmountDisplay extends Vue {
 
   &--full-width {
     width: 100%;
+  }
+
+  &__formatted-amount {
+    &--warning {
+      color: $error-color;
+    }
   }
 }
 </style>
