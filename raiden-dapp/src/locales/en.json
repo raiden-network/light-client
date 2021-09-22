@@ -887,10 +887,13 @@
     }
   },
   "quick-pay": {
-    "transfer-information-labels": {
+    "transfer-information": {
       "header": "Payment Information",
       "target-address": "Receiver",
-      "token-amount": "Payment amount"
+      "token-amount": "Payment amount",
+      "pathfinding-service-price": "Mediation possible, price for requesting route",
+      "fetch-route-trigger": "Pay to find route",
+      "fetch-route-error": "No route available"
     },
     "action-titles": {
       "channel-deposit": "Channel Deposit",
@@ -899,7 +902,8 @@
       "channel-open-and-transfer": "Channel Open and Pay"
     },
     "action-messages": {
-      "transfer": "Please confirm the above payment information.",
+      "direct-transfer": "Please confirm the above payment information.",
+      "mediated-transfer": "Please confirm the above payment information including the mediation fees for the to use route.",
       "channel-deposit-and-transfer": "{deposit} will be deposited into the existing channel and {payment} will be paid out.",
       "channel-open-and-transfer": "{deposit} will be deposited into a new channel and {payment} will be paid out."
     },

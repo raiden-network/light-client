@@ -2,43 +2,83 @@
   <div class="quick-pay">
     <div v-if="token" class="quick-pay__transfer-information">
       <span class="quick-pay__transfer-information__header">
-        {{ $t('quick-pay.transfer-information-labels.header') }}
+        {{ $t('quick-pay.transfer-information.header') }}
       </span>
 
       <token-information class="quick-pay__transfer-information__token" :token="token" />
 
       <address-display
         class="quick-pay__transfer-information__target"
-        :label="$t('quick-pay.transfer-information-labels.target-address')"
+        :label="$t('quick-pay.transfer-information.target-address')"
         :address="targetAddress"
         full-width
       />
 
       <amount-display
         class="quick-pay__transfer-information__amount"
-        :label="$t('quick-pay.transfer-information-labels.token-amount')"
+        :label="$t('quick-pay.transfer-information.token-amount')"
         :amount="tokenAmount"
         :token="token"
         exact-amount
         full-width
       />
+
+      <div v-if="mediationTransferIsPossible" class="quick-pay__transfer-information__mediation">
+        <amount-display
+          class="quick-pay__transfer-information__mediation__pathfinding-service-price"
+          :label="$t('quick-pay.transfer-information.pathfinding-service-price')"
+          :amount="pathfindingServicePrice"
+          :token="serviceToken"
+          :warning="pathfindingServiceTooExpensive"
+          exact-amount
+          full-width
+        >
+          <spinner v-if="!pathfindingServicePrice" :size="25" :width="3" inline />
+        </amount-display>
+
+        <amount-display
+          class="quick-pay__transfer-information__mediation__fees"
+          label=""
+          :amount="mediationFees"
+          :token="token"
+          exact-amount
+          full-width
+        >
+          <button
+            v-if="showFetchMediationRouteButton"
+            class="quick-pay__transfer-information__mediation__button"
+            :disabled="fetchMediationRouteDisabled"
+            @click="fetchCheapestMediationRoute"
+          >
+            {{ $t('quick-pay.transfer-information.fetch-route-trigger') }}
+          </button>
+
+          <spinner v-if="fetchMediationRouteInProgress" :size="25" :width="3" inline />
+
+          <span
+            v-if="fetchMediationRouteFailed"
+            class="quick-pay__transfer-information__mediation__error"
+          >
+            {{ $t('quick-pay.transfer-information.fetch-route-error') }}
+          </span>
+        </amount-display>
+      </div>
     </div>
 
-    <div class="quick-pay__action">
+    <div v-if="actionComponent" class="quick-pay__action">
       <span v-if="actionHeader" class="quick-pay__action__header">{{ actionHeader }}</span>
 
       <component
         :is="actionComponent"
         #default="{ runAction, confirmButtonLabel }"
         class="quick-pay__action__component"
-        :transfer-token-amount="tokenAmount"
-        :payment-identifier="paymentIdentifier"
+        :fixed-run-options="actionFixedRunOptions"
         :dialog-title="actionDialogTitle"
         :completion-delay-timeout="1500"
         show-progress-in-dialog
         @started="setActionInProgress"
+        @failed="setActionFailed"
         @completed="redirect"
-        @failed="handleActionError"
         @dialogClosed="redirect"
       >
         <channel-action-form
@@ -47,6 +87,7 @@
           :token-amount="formattedDepositAmount"
           :minimum-token-amount="depositAmount"
           :confirm-button-label="confirmButtonLabel"
+          :autofocus-disabled="actionFormAutofocusDisabled"
           :run-action="runAction"
           hide-token-address
           hide-partner-address
@@ -75,12 +116,12 @@
 <script lang="ts">
 import { BigNumber, constants } from 'ethers';
 import { Component, Mixins, Watch } from 'vue-property-decorator';
-import { mapGetters } from 'vuex';
+import { createNamespacedHelpers, mapGetters } from 'vuex';
 
-import type { RaidenChannel, RaidenError } from 'raiden-ts';
-import { ChannelState, ErrorCodes } from 'raiden-ts';
+import type { RaidenChannel, RaidenPaths, RaidenPFS } from 'raiden-ts';
+import { ChannelState } from 'raiden-ts';
 
-import ActionProgressCard from '@/components/ActionProgressCard.vue';
+import ActionButton from '@/components/ActionButton.vue';
 import AddressDisplay from '@/components/AddressDisplay.vue';
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import ChannelActionForm from '@/components/channels/ChannelActionForm.vue';
@@ -89,21 +130,18 @@ import ChannelOpenAndTransferAction from '@/components/channels/ChannelOpenAndTr
 import ErrorDialog from '@/components/dialogs/ErrorDialog.vue';
 import Spinner from '@/components/icons/Spinner.vue';
 import TokenInformation from '@/components/TokenInformation.vue';
-import TransferAction from '@/components/transfer/TransferAction.vue';
+import DirectTransferAction from '@/components/transfer/DirectTransferAction.vue';
+import MediatedTransferAction from '@/components/transfer/MediatedTransferAction.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
 import type { Token } from '@/model/types';
 import { BalanceUtils } from '@/utils/balance-utils';
 import { getAddress, getAmount, getPaymentId } from '@/utils/query-params';
 
-function isRecoverableTransferError(error: RaidenError): boolean {
-  return [ErrorCodes.PFS_NO_ROUTES_FOUND, ErrorCodes.PFS_NO_ROUTES_BETWEEN_NODES].includes(
-    error.message,
-  );
-}
+const { mapState: mapUserDepositContractState } = createNamespacedHelpers('userDepositContract');
 
 @Component({
   components: {
-    ActionProgressCard,
+    ActionButton,
     AddressDisplay,
     AmountDisplay,
     ChannelActionForm,
@@ -112,24 +150,36 @@ function isRecoverableTransferError(error: RaidenError): boolean {
     ErrorDialog,
     Spinner,
     TokenInformation,
-    TransferAction,
+    DirectTransferAction,
+    MediatedTransferAction,
   },
   computed: {
     ...mapGetters({
       getChannels: 'channels',
       getToken: 'token',
     }),
+    ...mapUserDepositContractState({
+      serviceToken: 'token',
+    }),
   },
 })
 export default class QuickPayRoute extends Mixins(NavigationMixin) {
   getChannels!: (tokenAddress: string) => RaidenChannel[];
   getToken!: (tokenAddress: string) => Token | null;
+  serviceToken!: Token;
 
+  pathfindingService: RaidenPFS | null = null;
+  serviceTokenCapacity = constants.Zero;
+  fetchMediationRouteInProgress = false;
+  fetchMediationRouteFailed = false;
+  mediationRoute: RaidenPaths[number] | null = null;
   depositAmountInput = constants.Zero;
   actionComponent:
-    | typeof TransferAction
+    | typeof DirectTransferAction
+    | typeof MediatedTransferAction
     | typeof ChannelOpenAndTransferAction
-    | typeof ChannelDepositAndTransferAction = TransferAction;
+    | typeof ChannelDepositAndTransferAction
+    | null = null;
   actionInProgress = false;
   actionFailed = false;
   error: Error | null = null; // Note that action errors are not set here.
@@ -170,7 +220,11 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
   }
 
   get tokenAmountInputHidden(): boolean {
-    return this.actionComponent === TransferAction;
+    return (
+      this.actionComponent === null ||
+      this.actionComponent === DirectTransferAction ||
+      this.actionComponent === MediatedTransferAction
+    );
   }
 
   get paymentIdentifier(): BigNumber | undefined {
@@ -222,9 +276,44 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
     return channelsWithEnoughCapacity.length > 0;
   }
 
+  get mediationTransferIsPossible(): boolean {
+    return this.hasAnyChannelWithEnoughCapacity && !this.directChannelHasEnoughCapacity;
+  }
+
+  get pathfindingServicePrice(): BigNumber | undefined {
+    return this.pathfindingService?.price
+      ? BigNumber.from(this.pathfindingService.price)
+      : undefined;
+  }
+
+  get pathfindingServiceTooExpensive(): boolean {
+    if (this.pathfindingServicePrice === undefined) {
+      return false;
+    } else {
+      return this.pathfindingServicePrice.gt(this.serviceTokenCapacity);
+    }
+  }
+
+  get showFetchMediationRouteButton(): boolean {
+    return (
+      !this.mediationRoute &&
+      !this.fetchMediationRouteInProgress &&
+      !this.fetchMediationRouteFailed
+    );
+  }
+
+  get fetchMediationRouteDisabled(): boolean {
+    return this.pathfindingService === null || this.pathfindingServiceTooExpensive;
+  }
+
+  get mediationFees(): BigNumber | undefined {
+    return this.mediationRoute?.fee ? BigNumber.from(this.mediationRoute.fee) : undefined;
+  }
+
   get actionHeader(): string {
     switch (this.actionComponent) {
-      case TransferAction:
+      case DirectTransferAction:
+      case MediatedTransferAction:
         return ''; // Empty on purpose. No header for this case.
       case ChannelDepositAndTransferAction:
         return this.$t('quick-pay.action-titles.channel-deposit') as string;
@@ -235,9 +324,18 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
     }
   }
 
+  get actionFixedRunOptions(): { [key: string]: unknown } {
+    return {
+      transferTokenAmount: this.tokenAmount,
+      paymentIdentifier: this.paymentIdentifier,
+      route: this.mediationRoute,
+    };
+  }
+
   get actionDialogTitle(): string {
     switch (this.actionComponent) {
-      case TransferAction:
+      case DirectTransferAction:
+      case MediatedTransferAction:
         return ''; // Empty on purpose. No title for this case.
       case ChannelDepositAndTransferAction:
         return this.$t('quick-pay.action-titles.channel-deposit-and-transfer') as string;
@@ -250,14 +348,60 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
 
   get actionMessagePath(): string {
     switch (this.actionComponent) {
-      case TransferAction:
-        return 'quick-pay.action-messages.transfer';
+      case DirectTransferAction:
+        return 'quick-pay.action-messages.direct-transfer';
+      case MediatedTransferAction:
+        return 'quick-pay.action-messages.mediated-transfer';
       case ChannelDepositAndTransferAction:
         return 'quick-pay.action-messages.channel-deposit-and-transfer';
       case ChannelOpenAndTransferAction:
         return 'quick-pay.action-messages.channel-open-and-transfer';
       default:
         return ''; // Necessary for TypeScript
+    }
+  }
+
+  get actionFormAutofocusDisabled(): boolean {
+    // In this case the it could be that the user can fetch a route for
+    // a mediated transfer. In such a case the active action and its form will
+    // be either the channel deposit and transfer or channel open and transfer.
+    // Focusing their form in such a case it not nice as the user theoretically
+    // should prefer the mediated transfer if possible.
+    // In case of a direct transfer this does basically nothing.
+    // In case no direct transfer nor a mediated transfer is possible, this will
+    // still autofocus the respective form.
+    return this.hasAnyChannelWithEnoughCapacity;
+  }
+
+  created(): void {
+    this.fetchServiceTokenCapacity();
+    this.fetchCheapestPathfindingService();
+  }
+
+  async fetchServiceTokenCapacity(): Promise<void> {
+    this.serviceTokenCapacity = await this.$raiden.getUDCCapacity();
+  }
+
+  async fetchCheapestPathfindingService(): Promise<void> {
+    const allServiceSorted = await this.$raiden.fetchServices();
+    this.pathfindingService = allServiceSorted[0];
+  }
+
+  async fetchCheapestMediationRoute(): Promise<void> {
+    try {
+      this.fetchMediationRouteFailed = false;
+      this.fetchMediationRouteInProgress = true;
+      const allRoutesSorted = await this.$raiden.findRoutes(
+        this.tokenAddress,
+        this.targetAddress,
+        this.tokenAmount!,
+        this.pathfindingService!,
+      );
+      this.mediationRoute = allRoutesSorted[0];
+    } catch (error) {
+      this.fetchMediationRouteFailed = true;
+    } finally {
+      this.fetchMediationRouteInProgress = false;
     }
   }
 
@@ -271,6 +415,11 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
     }
   }
 
+  @Watch('mediationRoute')
+  onMediationRouteChanged(): void {
+    this.decideOnActionComponent();
+  }
+
   onActionFromInputsChanged(event: { tokenAmount: string }): void {
     this.depositAmountInput = BalanceUtils.parse(event.tokenAmount, this.token?.decimals ?? 18);
   }
@@ -279,28 +428,25 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
     this.actionInProgress = true;
   }
 
+  setActionFailed(): void {
+    this.actionFailed = true;
+  }
+
   decideOnActionComponent(): void {
-    this.actionComponent = this.hasAnyChannelWithEnoughCapacity
-      ? TransferAction
+    if (this.actionInProgress) {
+      return;
+    }
+
+    // Note that the mediated transfer takes precedence here because the user
+    // manually fetches a route. If a direct transfer is possible, the user
+    // can't fetch such a route, so this case will never happen.
+    this.actionComponent = this.mediationRoute
+      ? MediatedTransferAction
+      : this.directChannelHasEnoughCapacity
+      ? DirectTransferAction
       : this.directChannelWithTarget
       ? ChannelDepositAndTransferAction
       : ChannelOpenAndTransferAction;
-  }
-
-  decideToDepositOrOpenChannel(): void {
-    this.actionComponent = this.directChannelWithTarget
-      ? ChannelDepositAndTransferAction
-      : ChannelOpenAndTransferAction;
-  }
-
-  async handleActionError(error: RaidenError): Promise<void> {
-    this.actionInProgress = false;
-
-    if (isRecoverableTransferError(error)) {
-      this.decideToDepositOrOpenChannel();
-    } else {
-      this.actionFailed = true;
-    }
   }
 
   async redirect(): Promise<void> {
@@ -351,12 +497,33 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
   &__transfer-information {
     &__token,
     &__target,
-    &__amount {
+    &__amount,
+    &__mediation {
       height: 48px;
       margin: 10px 0;
       padding: 0 22px 0 16px;
       border-radius: 8px;
       background-color: $input-background;
+    }
+
+    &__mediation {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 80px;
+      width: 100%;
+
+      &__button {
+        color: $primary-color;
+
+        &:disabled {
+          color: $primary-disabled-color;
+        }
+      }
+
+      &__error {
+        color: $error-color;
+      }
     }
   }
 }

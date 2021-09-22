@@ -1,5 +1,5 @@
 <template>
-  <div class="spinner my-4" :class="{ 'spinner--blocking': !inline }">
+  <div class="spinner" :class="{ 'spinner--blocking': !inline }">
     <div class="spinner__circle" :style="style" />
   </div>
 </template>
