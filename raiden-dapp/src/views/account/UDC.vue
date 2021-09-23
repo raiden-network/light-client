@@ -81,6 +81,8 @@ import type { PlannedUdcWithdrawal } from '@/store/user-deposit-contract';
 const { mapState: mapStateUserSettings } = createNamespacedHelpers('userSettings');
 const { mapState: mapStateUserDepositContract } = createNamespacedHelpers('userDepositContract');
 
+const UDC_SECURITY_MARGIN_PERCENTAGE = 10;
+
 @Component({
   components: {
     ActionButton,
@@ -103,7 +105,9 @@ const { mapState: mapStateUserDepositContract } = createNamespacedHelpers('userD
 })
 export default class UDC extends Vue {
   amount = utils.formatEther(DEFAULT_MS_REWARD.mul(2));
-  minAmount = +utils.formatEther(DEFAULT_MS_REWARD);
+  minAmount = +utils.formatEther(
+    DEFAULT_MS_REWARD.add(DEFAULT_MS_REWARD.mul(UDC_SECURITY_MARGIN_PERCENTAGE).div(100)),
+  );
   udcCapacity = constants.Zero;
   hasEnoughServiceTokens = false;
   blockNumber!: number;
