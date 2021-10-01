@@ -29,7 +29,7 @@ import {
 } from 'rxjs/operators';
 
 import { DEFAULT_CONFIRMATIONS } from '../constants';
-import type { TypedEventFilter, TypedListener } from '../contracts/commons';
+import type { TypedEventFilter, TypedListener } from '../contracts/common';
 import { assert } from './error';
 import { mergeWith } from './rx';
 import { decode, HexString } from './types';
