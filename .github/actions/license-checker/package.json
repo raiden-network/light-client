@@ -10,7 +10,7 @@
     "lint": "eslint ./src/index.js"
   },
   "dependencies": {
-    "@actions/core": "^1.5.0",
+    "@actions/core": "^1.6.0",
     "query-registry": "^2.0.0"
   },
   "devDependencies": {
