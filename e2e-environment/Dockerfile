@@ -9,7 +9,7 @@ ARG GETH_VERSION="1.10.8"
 ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.10.8-26675454.tar.gz"
 ARG GETH_MD5_LINUX="29dfd7f76e929c101ff96cf6088bb6c7"
 
-FROM python:3.9 as raiden-builder
+FROM python:3.10 as raiden-builder
 ARG RAIDEN_VERSION
 
 # clone raiden repo + install dependencies
@@ -21,7 +21,7 @@ WORKDIR /app/raiden
 RUN git checkout ${RAIDEN_VERSION}
 RUN make install
 
-FROM python:3.9 as synapse-builder
+FROM python:3.10 as synapse-builder
 
 RUN python -m venv /synapse-venv && /synapse-venv/bin/pip install wheel
 
@@ -44,7 +44,7 @@ RUN sed -i 's/\(\s*\)if self.worker_type/\1if True or self.worker_type/' /synaps
 
 COPY synapse/auth/ /synapse-venv/lib/python3.9/site-packages/
 
-FROM python:3.9
+FROM python:3.10
 LABEL maintainer="Raiden Network Team <contact@raiden.network>"
 
 ARG OS_NAME
