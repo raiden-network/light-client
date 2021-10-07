@@ -41,7 +41,7 @@ export interface iouClear extends ActionType<typeof iouClear> {}
 export const udcDeposit = createAsyncAction(
   t.type({ totalDeposit: UInt(32) }),
   'udc/deposit',
-  t.intersection([t.type({ deposit: UInt(32) }), t.partial({ subkey: t.boolean })]),
+  t.type({ deposit: UInt(32) }),
   t.union([
     t.type({ balance: UInt(32) }),
     t.type({
@@ -80,6 +80,10 @@ export namespace udcWithdrawPlan {
 export const udcWithdraw = createAsyncAction(
   UdcWithdrawId,
   'udc/withdraw',
+  /**
+   * subkey here isn't the msg.sender (as udc withdraws must always be sent from effective account)
+   * but instead the beneficiary of the withdrawal
+   */
   t.union([t.undefined, t.partial({ subkey: t.boolean })]),
   t.type({
     withdrawal: UInt(32),

@@ -602,7 +602,6 @@ export class Raiden {
    * @param partner - Partner address
    * @param options - (optional) option parameter
    * @param options.settleTimeout - Custom, one-time settle timeout
-   * @param options.subkey - Whether to use the subkey for on-chain tx or main account (default)
    * @param options.deposit - Deposit to perform in parallel with channel opening
    * @param options.confirmConfirmation - Whether to wait `confirmationBlocks` after last
    *    transaction confirmation; default=true
@@ -614,7 +613,6 @@ export class Raiden {
     partner: string,
     options: {
       settleTimeout?: number;
-      subkey?: boolean;
       deposit?: BigNumberish;
       confirmConfirmation?: boolean;
     } = {},
@@ -623,7 +621,6 @@ export class Raiden {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const tokenNetwork = await this.monitorToken(token);
-    assert(!options.subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     // Note that we use the advantage of the UInt decoding here, but immediately
     // convert it to a plain number again.
@@ -705,10 +702,6 @@ export class Raiden {
    * @param partner - Partner address
    * @param amount - Number of tokens to deposit on channel
    * @param options - tx options
-   * @param options.subkey - By default, if using subkey, main account is used to send transactions
-   *    (and is also the account used as source of the deposit tokens).
-   *    Set this to true if one wants to force sending the transaction with the subkey, and using
-   *    tokens held in the subkey.
    * @param options.confirmConfirmation - Whether to wait `confirmationBlocks` after last
    *    transaction confirmation; default=true
    * @returns txHash of setTotalDeposit call, iff it succeeded
@@ -717,14 +710,13 @@ export class Raiden {
     token: string,
     partner: string,
     amount: BigNumberish,
-    { subkey, confirmConfirmation }: { subkey?: boolean; confirmConfirmation?: boolean } = {},
+    { confirmConfirmation }: { confirmConfirmation?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
-    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     const deposit = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
     const meta = { tokenNetwork, partner };
@@ -746,7 +738,7 @@ export class Raiden {
       ),
       true,
     ).then(({ txHash }) => txHash);
-    this.store.dispatch(channelDeposit.request({ deposit, subkey }, meta));
+    this.store.dispatch(channelDeposit.request({ deposit }, meta));
     const depositTxHash = await promise;
     await postPromise; // if undefined, noop
 
@@ -773,22 +765,14 @@ export class Raiden {
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
-   * @param options - tx options
-   * @param options.subkey - By default, if using subkey, main account is used to send transactions
-   *    Set this to true if one wants to force sending the transaction with the subkey
    * @returns txHash of closeChannel call, iff it succeeded
    */
-  public async closeChannel(
-    token: string,
-    partner: string,
-    { subkey }: { subkey?: boolean } = {},
-  ): Promise<Hash> {
+  public async closeChannel(token: string, partner: string): Promise<Hash> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
-    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     // try coop-settle first
     try {
@@ -818,7 +802,7 @@ export class Raiden {
     const promise = asyncActionToPromise(channelClose, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
-    this.store.dispatch(channelClose.request(subkey ? { subkey } : undefined, meta));
+    this.store.dispatch(channelClose.request(undefined, meta));
     return promise;
   }
 
@@ -832,22 +816,14 @@ export class Raiden {
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
-   * @param options - tx options
-   * @param options.subkey - By default, if using subkey, main account is used to send transactions
-   *    Set this to true if one wants to force sending the transaction with the subkey
    * @returns txHash of settleChannel call, iff it succeeded
    */
-  public async settleChannel(
-    token: string,
-    partner: string,
-    { subkey }: { subkey?: boolean } = {},
-  ): Promise<Hash> {
+  public async settleChannel(token: string, partner: string): Promise<Hash> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const state = this.state;
     const tokenNetwork = state.tokens[token];
     assert(tokenNetwork, ErrorCodes.RDN_UNKNOWN_TOKEN_NETWORK, this.log.info);
-    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
     assert(!this.config.autoSettle, ErrorCodes.CNL_SETTLE_AUTO_ENABLED, this.log.info);
 
     const meta = { tokenNetwork, partner };
@@ -858,7 +834,7 @@ export class Raiden {
     const promise = asyncActionToPromise(channelSettle, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
-    this.store.dispatch(channelSettle.request(subkey ? { subkey } : undefined, meta));
+    this.store.dispatch(channelSettle.request(undefined, meta));
     return promise;
   }
 
@@ -1126,26 +1102,21 @@ export class Raiden {
    * @param token - Address of the token to be minted
    * @param amount - Amount to be minted
    * @param options - tx options
-   * @param options.subkey - By default, if using subkey, main account is used to send transactions
-   *    Notice the beneficiary here is always the account that sends the transaction, as this is
-   *    expectedly also the account that will pay for e.g. future deposits.
-   *    Set this to true if one wants to force sending the transaction with the subkey
    * @param options.to - Beneficiary, defaults to mainAddress or address
    * @returns transaction
    */
   public async mint(
     token: string,
     amount: BigNumberish,
-    { subkey, to }: { subkey?: boolean; to?: string } = {},
+    { to }: { to?: string } = {},
   ): Promise<Hash> {
     // Check whether address is valid
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
-    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     // Check whether we are on a test network
     assert(this.deps.network.chainId !== 1, ErrorCodes.RDN_MINT_MAINNET, this.log.info);
 
-    const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
+    const { signer, address } = chooseOnchainAccount(this.deps, this.config.subkey);
     // Mint token
     const customTokenContract = CustomToken__factory.connect(token, signer);
 
@@ -1275,18 +1246,12 @@ export class Raiden {
    *
    * @param amount - The amount to deposit on behalf of the target/beneficiary.
    * @param onChange - callback providing notifications about state changes
-   * @param options - tx options
-   * @param options.subkey - By default, if using subkey, main account is used to send transactions
-   *    Set this to true if one wants to force sending the transaction with the subkey
    * @returns transaction hash
    */
   public async depositToUDC(
     amount: BigNumberish,
     onChange?: OnChange<EventTypes, { txHash: string }>,
-    { subkey }: { subkey?: boolean } = {},
   ): Promise<Hash> {
-    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
-
     const deposit = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
     assert(deposit.gt(Zero), ErrorCodes.DTA_NON_POSITIVE_NUMBER, this.log.info);
     const deposited = await this.deps.userDepositContract.callStatic.total_deposit(this.address);
@@ -1295,7 +1260,7 @@ export class Raiden {
     const mined = asyncActionToPromise(udcDeposit, meta, this.action$, false).then(
       (res) => res.txHash,
     );
-    this.store.dispatch(udcDeposit.request({ deposit, subkey }, meta));
+    this.store.dispatch(udcDeposit.request({ deposit }, meta));
 
     let txHash = await mined;
     onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: txHash! } });
@@ -1333,7 +1298,6 @@ export class Raiden {
     { subkey, gasPrice }: { subkey?: boolean; gasPrice?: BigNumberish } = {},
   ): Promise<Hash> {
     assert(Address.is(to), [ErrorCodes.DTA_INVALID_ADDRESS, { to }], this.log.info);
-    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
@@ -1382,7 +1346,6 @@ export class Raiden {
   ): Promise<Hash> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(to), [ErrorCodes.DTA_INVALID_ADDRESS, { to }], this.log.info);
-    assert(!subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
 
     const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
     const tokenContract = getContractWithSigner(this.deps.getTokenContract(token), signer);
@@ -1459,7 +1422,6 @@ export class Raiden {
     value?: BigNumberish,
     options?: { subkey?: boolean },
   ): Promise<Hash> {
-    assert(!options?.subkey || this.deps.main, ErrorCodes.RDN_SUBKEY_NOT_SET, this.log.info);
     assert(!this.config.autoUDCWithdraw, ErrorCodes.UDC_WITHDRAW_AUTO_ENABLED, this.log.warn);
     const plan = await this.getUDCWithdrawPlan();
     assert(plan, ErrorCodes.UDC_WITHDRAW_NO_PLAN, this.log.warn);
