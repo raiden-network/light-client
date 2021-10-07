@@ -107,7 +107,7 @@ export interface transferSecret extends ActionType<typeof transferSecret> {}
 export const transferSecretRegister = createAsyncAction(
   TransferId,
   'transfer/secret/register',
-  t.intersection([t.type({ secret: Secret }), t.partial({ subkey: t.boolean })]),
+  t.type({ secret: Secret }),
   t.type({
     secret: Secret,
     txHash: Hash,

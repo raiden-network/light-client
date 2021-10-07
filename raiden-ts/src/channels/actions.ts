@@ -60,7 +60,7 @@ export interface tokenMonitored extends ActionType<typeof tokenMonitored> {}
 export const channelOpen = createAsyncAction(
   ChannelId,
   'channel/open',
-  t.partial({ settleTimeout: t.number, subkey: t.boolean, deposit: UInt(32) }),
+  t.partial({ settleTimeout: t.number, deposit: UInt(32) }),
   t.type({
     id: t.number,
     token: Address,
@@ -90,7 +90,7 @@ export const channelDeposit = createAsyncAction(
   'channel/deposit',
   t.intersection([
     t.union([t.type({ deposit: UInt(32) }), t.type({ totalDeposit: UInt(32) })]),
-    t.partial({ subkey: t.boolean, waitOpen: t.literal(true) }),
+    t.partial({ waitOpen: t.literal(true) }),
   ]),
   t.type({
     id: t.number,
@@ -126,7 +126,7 @@ export interface channelWithdrawn extends ActionType<typeof channelWithdrawn> {}
 export const channelClose = createAsyncAction(
   ChannelId,
   'channel/close',
-  t.union([t.partial({ subkey: t.boolean }), t.undefined]),
+  t.undefined,
   t.type({
     id: t.number,
     participant: Address,
@@ -155,13 +155,7 @@ const WithdrawPair = t.tuple([Signed(WithdrawRequest), Signed(WithdrawConfirmati
 export const channelSettle = createAsyncAction(
   ChannelId,
   'channel/settle',
-  t.union([
-    t.partial({
-      subkey: t.boolean,
-      coopSettle: t.tuple([WithdrawPair, WithdrawPair]),
-    }),
-    t.undefined,
-  ]),
+  t.union([t.type({ coopSettle: t.tuple([WithdrawPair, WithdrawPair]) }), t.undefined]),
   t.intersection([
     t.type({
       id: t.number,
