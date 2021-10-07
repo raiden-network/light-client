@@ -1,5 +1,5 @@
 import type { Observable } from 'rxjs';
-import { AsyncSubject, defer, EMPTY, from, of } from 'rxjs';
+import { AsyncSubject, EMPTY, from, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -17,10 +17,9 @@ import {
 } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
-import { assertTx } from '../../channels/utils';
+import { transact } from '../../channels/utils';
 import { intervalFromConfig } from '../../config';
 import { Capabilities } from '../../constants';
-import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { messageSend } from '../../messages/actions';
 import { MessageType, SecretRequest, SecretReveal } from '../../messages/types';
 import { isMessageReceivedOfType, signMessage } from '../../messages/utils';
@@ -458,47 +457,25 @@ export function transferAutoRegisterEpic(
  * @param action$ - Observable of transferSecretRegister.request actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
- * @param deps.log - Logger instance
- * @param deps.signer - Signer instance
- * @param deps.address - Our address
- * @param deps.main - Main signer/address
- * @param deps.provider - Provider instance
- * @param deps.secretRegistryContract - SecretRegistry contract instance
- * @param deps.config$ - Config observable
- * @param deps.latest$ - Latest observable
  * @returns Observable of transferSecretRegister.failure actions
  */
 export function transferSecretRegisterEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  {
-    log,
-    signer,
-    address,
-    main,
-    provider,
-    secretRegistryContract,
-    config$,
-    latest$,
-  }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<transferSecretRegister.failure> {
+  const { log, secretRegistryContract, config$ } = deps;
   return action$.pipe(
     filter(transferSecretRegister.request.is),
-    withLatestFrom(config$, latest$),
-    mergeMap(([action, { subkey: configSubkey }, { gasPrice }]) => {
-      const { signer: onchainSigner } = chooseOnchainAccount(
-        { signer, address, main },
-        action.payload.subkey ?? configSubkey,
-      );
-      const contract = getContractWithSigner(secretRegistryContract, onchainSigner);
-
-      return defer(() => contract.registerSecret(action.payload.secret, { ...gasPrice })).pipe(
-        assertTx('registerSecret', ErrorCodes.XFER_REGISTERSECRET_TX_FAILED, { log, provider }),
+    mergeMap((action) =>
+      transact(secretRegistryContract, 'registerSecret', [action.payload.secret], deps, {
+        error: ErrorCodes.XFER_REGISTERSECRET_TX_FAILED,
+      }).pipe(
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
         // transferSecretRegister.success handled by monitorSecretRegistryEpic
         ignoreElements(),
         catchError((err) => of(transferSecretRegister.failure(err, action.meta))),
-      );
-    }),
+      ),
+    ),
   );
 }

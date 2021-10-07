@@ -19,11 +19,11 @@ import {
 
 import type { RaidenAction } from '../../actions';
 import { newBlock } from '../../channels/actions';
-import { assertTx, ensureApprovedBalance$ } from '../../channels/utils';
+import { ensureApprovedBalance$, transact } from '../../channels/utils';
 import { intervalFromConfig } from '../../config';
 import { UDC_WITHDRAW_TIMEOUT } from '../../constants';
 import type { HumanStandardToken, UserDeposit } from '../../contracts';
-import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
+import { getContractWithSigner } from '../../helpers';
 import type { RaidenState } from '../../state';
 import { dispatchAndWait$ } from '../../transfers/epics/utils';
 import type { RaidenEpicDeps } from '../../types';
@@ -82,10 +82,9 @@ export function monitorUdcBalanceEpic(
 function makeUdcDeposit$(
   [tokenContract, userDepositContract]: [HumanStandardToken, UserDeposit],
   [deposit, totalDeposit]: [UInt<32>, UInt<32>],
-  deps: Pick<RaidenEpicDeps, 'address' | 'log' | 'config$' | 'latest$'>,
+  deps: RaidenEpicDeps,
 ) {
   const { address, log, config$, latest$ } = deps;
-  const provider = tokenContract.provider as RaidenEpicDeps['provider'];
   let finalBalance: UInt<32>;
 
   return ensureApprovedBalance$(
@@ -95,16 +94,17 @@ function makeUdcDeposit$(
     deps,
   ).pipe(
     withLatestFrom(latest$),
-    mergeMap(([, { gasPrice, udcDeposit: prev }]) => {
+    mergeMap(([, { udcDeposit: prev }]) => {
       assert(prev.totalDeposit.add(deposit).eq(totalDeposit), [
         ErrorCodes.UDC_DEPOSIT_OUTDATED,
         { requested: totalDeposit, current: prev.totalDeposit },
       ]);
       finalBalance = prev.balance.add(deposit) as UInt<32>;
       // send setTotalDeposit transaction
-      return userDepositContract.deposit(address, totalDeposit, { ...gasPrice });
+      return transact(userDepositContract, 'deposit', [address, totalDeposit], deps, {
+        error: ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED,
+      });
     }),
-    assertTx('deposit', ErrorCodes.RDN_DEPOSIT_TRANSACTION_FAILED, { log, provider }),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
     retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.debug }),
@@ -135,27 +135,19 @@ export function udcDepositEpic(
   {}: Observable<RaidenState>,
   deps: RaidenEpicDeps,
 ): Observable<udcDeposit.failure | udcDeposit.success> {
-  const { userDepositContract, getTokenContract, address, signer, main, config$, log } = deps;
+  const { userDepositContract, getTokenContract, config$, log } = deps;
   return action$.pipe(
     filter(udcDeposit.request.is),
     concatMap((action) =>
       defer(async () => userDepositContract.callStatic.token() as Promise<Address>).pipe(
         retryWhile(intervalFromConfig(config$), { onErrors: networkErrors, log: log.debug }),
-        withLatestFrom(config$),
-        mergeMap(([token, config]) => {
-          const { signer: onchainSigner } = chooseOnchainAccount(
-            { signer, address, main },
-            action.payload.subkey ?? config.subkey,
-          );
-          const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
-          const udcContract = getContractWithSigner(userDepositContract, onchainSigner);
-
-          return makeUdcDeposit$(
-            [tokenContract, udcContract],
+        mergeMap((token) =>
+          makeUdcDeposit$(
+            [getTokenContract(token), userDepositContract],
             [action.payload.deposit, action.meta.totalDeposit],
             deps,
-          );
-        }),
+          ),
+        ),
         catchError((error) => of(udcDeposit.failure(error, action.meta))),
       ),
     ),
@@ -168,28 +160,21 @@ export function udcDepositEpic(
  * @param action$ - Observable of udcWithdrawPlan.request actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
- * @param deps.userDepositContract - UDC contract instance
- * @param deps.address - Our address
- * @param deps.log - Logger instance
- * @param deps.signer - Signer instance
- * @param deps.provider - Provider instance
- * @param deps.config$ - Config observable
- * @param deps.latest$ - Latest observable
  * @returns Observable of udcWithdrawPlan.success|udcWithdrawPlan.failure actions
  */
 export function udcWithdrawPlanRequestEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { userDepositContract, address, log, signer, provider, config$, latest$ }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<udcWithdrawPlan.success | udcWithdrawPlan.failure> {
+  const { userDepositContract, address, log, signer, config$ } = deps;
   return action$.pipe(
     filter(udcWithdrawPlan.request.is),
     concatMap((action) => {
       const contract = getContractWithSigner(userDepositContract, signer);
       const amount = action.meta.amount;
       return defer(async () => userDepositContract.callStatic.balances(address)).pipe(
-        withLatestFrom(latest$),
-        mergeMap(async ([balance, { gasPrice }]) => {
+        mergeMap((balance) => {
           assert(amount.gt(Zero), [
             ErrorCodes.UDC_PLAN_WITHDRAW_GT_ZERO,
             { amount: amount.toString() },
@@ -200,9 +185,11 @@ export function udcWithdrawPlanRequestEpic(
             { balance: balance.toString(), amount: amount.toString() },
           ]);
 
-          return contract.planWithdraw(amount, { ...gasPrice });
+          return transact(contract, 'planWithdraw', [amount], deps, {
+            subkey: true,
+            error: ErrorCodes.UDC_PLAN_WITHDRAW_FAILED,
+          });
         }),
-        assertTx('planWithdraw', ErrorCodes.UDC_PLAN_WITHDRAW_FAILED, { log, provider }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.info }),
         mergeWith(() =>
           action$.pipe(
@@ -294,35 +281,27 @@ export function udcAutoWithdrawEpic(
  * @param action$ - Observable of udcWithdraw.request actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
- * @param deps.log - Logger instance
- * @param deps.userDepositContract - UDC contract instance
- * @param deps.address - Our address
- * @param deps.signer - Signer instance
- * @param deps.provider - Provider instance
- * @param deps.config$ - Config observable
- * @param deps.latest$ - Latest observable
- * @param deps.main - Main account
  * @returns Observable of udcWithdraw.success|udcWithdraw.failure actions
  */
 export function udcWithdrawEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { log, userDepositContract, address, signer, provider, config$, latest$, main }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<udcWithdraw.success | udcWithdraw.failure> {
+  const { log, userDepositContract, address, config$, main } = deps;
   return action$.pipe(
     filter(udcWithdraw.request.is),
     concatMap((action) => {
-      const contract = getContractWithSigner(userDepositContract, signer);
       let balance: UInt<32>;
       let toAccount: Address;
       return forkJoin([
         defer(async () => userDepositContract.callStatic.balances(address)),
-        checkContractHasMethod$(contract, 'withdrawToBeneficiary').pipe(
+        checkContractHasMethod$(userDepositContract, 'withdrawToBeneficiary').pipe(
           catchError(constant(of(false))),
         ),
       ]).pipe(
-        withLatestFrom(latest$, config$),
-        mergeMap(([[balance_, hasMethod], { gasPrice }, { subkey }]) => {
+        withLatestFrom(config$),
+        mergeMap(([[balance_, hasMethod], { subkey }]) => {
           assert(balance_.gt(Zero), [
             ErrorCodes.UDC_WITHDRAW_NO_BALANCE,
             { balance: balance_.toString() },
@@ -330,24 +309,26 @@ export function udcWithdrawEpic(
           balance = balance_ as UInt<32>;
           const toMain = hasMethod && main && !(action.payload?.subkey ?? subkey);
           toAccount = toMain ? main!.address : address;
-          return defer(async () =>
-            toMain
-              ? contract.withdrawToBeneficiary(action.meta.amount, main!.address, { ...gasPrice })
-              : contract.withdraw(action.meta.amount, { ...gasPrice }),
-          ).pipe(
-            assertTx(
-              toMain ? 'withdrawToBeneficiary' : 'withdraw',
-              ErrorCodes.UDC_WITHDRAW_FAILED,
-              { log, provider },
-            ),
-          );
+          if (toMain)
+            return transact(
+              userDepositContract,
+              'withdrawToBeneficiary',
+              [action.meta.amount, main!.address],
+              deps,
+              { subkey: true, error: ErrorCodes.UDC_WITHDRAW_FAILED },
+            );
+          else
+            return transact(userDepositContract, 'withdraw', [action.meta.amount], deps, {
+              subkey: true,
+              error: ErrorCodes.UDC_WITHDRAW_FAILED,
+            });
         }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.info }),
         mergeMap(([, { transactionHash, blockNumber }]) =>
           action$.pipe(
             filter(newBlock.is),
             exhaustMap(() =>
-              defer(async () => contract.callStatic.balances(address)).pipe(
+              defer(async () => userDepositContract.callStatic.balances(address)).pipe(
                 catchAndLog({ onErrors: networkErrors, log: log.info }),
               ),
             ),

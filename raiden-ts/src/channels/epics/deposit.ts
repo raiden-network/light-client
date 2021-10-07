@@ -2,7 +2,7 @@ import { MaxUint256 } from '@ethersproject/constants';
 import findKey from 'lodash/findKey';
 import isEqual from 'lodash/isEqual';
 import type { Observable } from 'rxjs';
-import { combineLatest, of, ReplaySubject } from 'rxjs';
+import { of, ReplaySubject } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -23,7 +23,6 @@ import {
 
 import type { RaidenAction } from '../../actions';
 import { intervalFromConfig } from '../../config';
-import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isConfirmationResponseOf } from '../../utils/actions';
@@ -34,7 +33,7 @@ import { isntNil } from '../../utils/types';
 import { channelDeposit, channelOpen } from '../actions';
 import type { Channel } from '../state';
 import { ChannelState } from '../state';
-import { assertTx, channelKey, ensureApprovedBalance$ } from '../utils';
+import { channelKey, ensureApprovedBalance$, transact } from '../utils';
 
 // returns observable of channel states, or errors in case of channelOpen.failure
 function getChannel$(
@@ -87,42 +86,26 @@ function makeDeposit$(
   [deposit, totalDeposit]: readonly [deposit: UInt<32>, totalDeposit: UInt<32>],
   deps: RaidenEpicDeps,
 ) {
-  const {
-    address,
-    log,
-    signer,
-    main,
-    getTokenContract,
-    getTokenNetworkContract,
-    config$,
-    latest$,
-  } = deps;
+  const { address, log, getTokenContract, getTokenNetworkContract, config$, latest$ } = deps;
   const { tokenNetwork, partner } = request.meta;
   // retryWhile from here
-  return combineLatest([latest$, config$]).pipe(
+  return latest$.pipe(
     first(),
-    mergeMap(([{ state, gasPrice }, { subkey }]) => {
+    mergeMap(({ state }) => {
       const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
-      const { signer: onchainSigner } = chooseOnchainAccount(
-        { signer, address, main },
-        request.payload.subkey ?? subkey,
-      );
-      const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
-      const tokenNetworkContract = getContractWithSigner(
-        getTokenNetworkContract(request.meta.tokenNetwork),
-        onchainSigner,
-      );
-      return ensureApprovedBalance$(tokenContract, tokenNetwork, deposit, deps).pipe(
-        mergeMapTo(channelId$),
-        // send setTotalDeposit transaction
-        mergeMap(async (id) =>
-          tokenNetworkContract.setTotalDeposit(id, address, totalDeposit, partner, {
-            ...gasPrice,
-          }),
-        ),
-      );
+      return ensureApprovedBalance$(getTokenContract(token), tokenNetwork, deposit, deps);
     }),
-    assertTx('setTotalDeposit', ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED, deps),
+    mergeMapTo(channelId$),
+    // send setTotalDeposit transaction
+    mergeMap((id) =>
+      transact(
+        getTokenNetworkContract(tokenNetwork),
+        'setTotalDeposit',
+        [id, address, totalDeposit, partner],
+        deps,
+        { error: ErrorCodes.CNL_SETTOTALDEPOSIT_FAILED },
+      ),
+    ),
     // retry also txFail errors, since estimateGas can lag behind just-opened channel or
     // just-approved allowance
     retryWhile(intervalFromConfig(config$), { onErrors: commonAndFailTxErrors, log: log.info }),

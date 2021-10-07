@@ -23,9 +23,8 @@ import {
 import type { RaidenAction } from '../../actions';
 import { ChannelState } from '../../channels';
 import { newBlock } from '../../channels/actions';
-import { assertTx, channelKey } from '../../channels/utils';
+import { channelKey, transact } from '../../channels/utils';
 import { intervalFromConfig } from '../../config';
-import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { isMessageReceivedOfType, MessageType, Processed, signMessage } from '../../messages';
 import { messageSend } from '../../messages/actions';
 import type { RaidenState } from '../../state';
@@ -194,30 +193,14 @@ export function withdrawSendRequestMessageEpic(
  * @param action$ - Observable of withdrawMessage.success actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
- * @param deps.address - Our address
- * @param deps.signer - Signer instance
- * @param deps.main - Main signer and address (if present)
- * @param deps.provider - Provider instance
- * @param deps.log - Logger instance
- * @param deps.getTokenNetworkContract - TokenNetwork contract getter
- * @param deps.latest$ - Latest observable
- * @param deps.config$ - Config observable
  * @returns Observable of withdraw.success|withdraw.failure actions
  */
 export function withdrawSendTxEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  {
-    address,
-    signer,
-    main,
-    provider,
-    log,
-    getTokenNetworkContract,
-    latest$,
-    config$,
-  }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<withdraw.success | withdraw.failure | withdrawBusy> {
+  const { address, log, getTokenNetworkContract, latest$, config$ } = deps;
   return action$.pipe(
     filter(withdrawMessage.success.is),
     filter((action) => action.meta.direction === Direction.SENT),
@@ -228,7 +211,7 @@ export function withdrawSendTxEpic(
         concatMap((action) =>
           combineLatest([latest$, config$]).pipe(
             first(),
-            mergeMap(([{ state, gasPrice }, { subkey: configSubkey, revealTimeout }]) => {
+            mergeMap(([{ state }, { revealTimeout }]) => {
               const channel = state.channels[grouped$.key];
               assert(channel?.state === ChannelState.open, 'channel not open');
               const req = channel.own.pendingWithdraws.find(
@@ -252,34 +235,25 @@ export function withdrawSendTxEpic(
               );
 
               const { tokenNetwork } = action.meta;
-              const { signer: onchainSigner } = chooseOnchainAccount(
-                { signer, address, main },
-                configSubkey,
-              );
-              const tokenNetworkContract = getContractWithSigner(
-                getTokenNetworkContract(tokenNetwork),
-                onchainSigner,
-              );
 
-              return defer(async () =>
-                tokenNetworkContract.setTotalWithdraw(
+              return transact(
+                getTokenNetworkContract(tokenNetwork),
+                'setTotalWithdraw',
+                [
                   channel.id,
                   address,
                   action.meta.totalWithdraw,
                   action.meta.expiration,
                   req.signature,
                   action.payload.message.signature,
-                  { ...gasPrice },
-                ),
+                ],
+                deps,
+                { error: ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED },
               ).pipe(
-                assertTx('setTotalWithdraw', ErrorCodes.CNL_WITHDRAW_TRANSACTION_FAILED, {
-                  log,
-                  provider,
-                }),
                 retryWhile(intervalFromConfig(config$), {
-                  maxRetries: 3,
+                  maxRetries: 5,
                   onErrors: commonTxErrors,
-                  log: log.debug,
+                  log: log.info,
                 }),
                 mergeMap(([, receipt]) =>
                   action$.pipe(

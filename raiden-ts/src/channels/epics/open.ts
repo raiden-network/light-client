@@ -23,7 +23,6 @@ import {
 import type { RaidenAction } from '../../actions';
 import { intervalFromConfig } from '../../config';
 import type { HumanStandardToken, TokenNetwork } from '../../contracts';
-import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isConfirmationResponseOf } from '../../utils/actions';
@@ -32,7 +31,7 @@ import { checkContractHasMethod$ } from '../../utils/ethers';
 import { retryWhile } from '../../utils/rx';
 import type { Address, UInt } from '../../utils/types';
 import { channelDeposit, channelOpen } from '../actions';
-import { assertTx, channelKey, ensureApprovedBalance$ } from '../utils';
+import { channelKey, ensureApprovedBalance$, transact } from '../utils';
 
 // if contract supports `openChannelWithDeposit`
 function openWithDeposit$(
@@ -45,18 +44,20 @@ function openWithDeposit$(
   ],
   deps: RaidenEpicDeps,
 ): Observable<boolean> {
-  const { address, latest$, config$, log } = deps;
+  const { address, config$, log } = deps;
   const tokenNetwork = tokenNetworkContract.address as Address;
   // if we need to deposit and contract supports 'openChannelWithDeposit' (0.39+),
   // we must ensureApprovedBalance$ ourselves and then call the method to open+deposit
   return ensureApprovedBalance$(tokenContract, tokenNetwork, deposit, deps).pipe(
-    withLatestFrom(latest$),
-    mergeMap(async ([, { gasPrice }]) =>
-      tokenNetworkContract.openChannelWithDeposit(address, partner, settleTimeout, deposit, {
-        ...gasPrice,
-      }),
+    mergeMap(() =>
+      transact(
+        tokenNetworkContract,
+        'openChannelWithDeposit',
+        [address, partner, settleTimeout, deposit],
+        deps,
+        { subkey: null, error: ErrorCodes.CNL_OPENCHANNEL_FAILED },
+      ),
     ),
-    assertTx('openChannelWithDeposit', ErrorCodes.CNL_OPENCHANNEL_FAILED, deps),
     retryWhile(intervalFromConfig(config$), {
       onErrors: commonAndFailTxErrors,
       log: log.info,
@@ -74,15 +75,13 @@ function openAndThenDeposit$(
   [partner, settleTimeout, raced$]: readonly [Address, number, Observable<unknown>],
   deps: RaidenEpicDeps,
 ) {
-  const { address, log, latest$, config$ } = deps;
+  const { address, log, config$ } = deps;
   return merge(
     of(true), // should deposit in parallel (approve + deposit[waitOpen])
-    latest$.pipe(
-      first(),
-      mergeMap(async ({ gasPrice }) =>
-        tokenNetworkContract.openChannel(address, partner, settleTimeout, { ...gasPrice }),
-      ),
-      assertTx('openChannel', ErrorCodes.CNL_OPENCHANNEL_FAILED, deps),
+    transact(tokenNetworkContract, 'openChannel', [address, partner, settleTimeout], deps, {
+      subkey: null,
+      error: ErrorCodes.CNL_OPENCHANNEL_FAILED,
+    }).pipe(
       // also retry txFailErrors on open$ only; deposit$ (if not EMPTY) is handled by
       // channelDepositEpic
       retryWhile(intervalFromConfig(config$), {
@@ -107,10 +106,9 @@ function openAndDeposit$(
     payload: { deposit: totalDeposit },
     meta: { partner },
   } = request;
-  const { config$ } = deps;
   return checkContractHasMethod$(tokenNetworkContract, 'openChannelWithDeposit').pipe(
     catchError(constant(of(false))),
-    withLatestFrom(config$),
+    withLatestFrom(deps.config$),
     mergeMap(([hasMethod, { settleTimeout: configSettleTimeout }]) => {
       const openedByPartner$ = action$.pipe(
         filter(channelOpen.success.is),
@@ -135,12 +133,7 @@ function openAndDeposit$(
       return open$.pipe(
         mergeMap((shouldDeposit) =>
           shouldDeposit && totalDeposit?.gt(0)
-            ? of(
-                channelDeposit.request(
-                  { totalDeposit, subkey: request.payload.subkey, waitOpen: true },
-                  request.meta,
-                ),
-              )
+            ? of(channelDeposit.request({ totalDeposit, waitOpen: true }, request.meta))
             : EMPTY,
         ),
         concatWith(
@@ -193,8 +186,8 @@ export function channelOpenEpic(
     mergeMap((grouped$) =>
       grouped$.pipe(
         pluck(0),
-        withLatestFrom(state$, config$),
-        mergeMap(([action, state, { subkey: configSubkey }]) => {
+        withLatestFrom(state$),
+        mergeMap(([action, state]) => {
           const { tokenNetwork } = action.meta;
           const channelState = state.channels[channelKey(action.meta)]?.state;
           // fails if channel already exist
@@ -205,16 +198,9 @@ export function channelOpenEpic(
                 action.meta,
               ),
             );
-          const { signer: onchainSigner } = chooseOnchainAccount(
-            deps,
-            action.payload.subkey ?? configSubkey,
-          );
-          const tokenNetworkContract = getContractWithSigner(
-            getTokenNetworkContract(tokenNetwork),
-            onchainSigner,
-          );
+          const tokenNetworkContract = getTokenNetworkContract(tokenNetwork);
           const token = findKey(state.tokens, (tn) => tn === tokenNetwork)! as Address;
-          const tokenContract = getContractWithSigner(getTokenContract(token), onchainSigner);
+          const tokenContract = getTokenContract(token);
 
           return openAndDeposit$(action$, action, [tokenNetworkContract, tokenContract], deps);
         }),
