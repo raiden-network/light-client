@@ -1,13 +1,21 @@
+import type { BigNumber } from '@ethersproject/bignumber';
 import { Zero } from '@ethersproject/constants';
-import type { ContractReceipt, ContractTransaction } from '@ethersproject/contracts';
+import type {
+  Contract,
+  ContractFunction,
+  ContractReceipt,
+  ContractTransaction,
+} from '@ethersproject/contracts';
 import type { Observable, OperatorFunction } from 'rxjs';
-import { defer, of, ReplaySubject } from 'rxjs';
+import { combineLatest, defer, of, ReplaySubject } from 'rxjs';
 import {
   filter,
+  first,
   groupBy,
   map,
   mapTo,
   mergeMap,
+  mergeMapTo,
   pluck,
   takeUntil,
   tap,
@@ -15,13 +23,14 @@ import {
 } from 'rxjs/operators';
 
 import type { HumanStandardToken } from '../contracts';
+import { chooseOnchainAccount, getContractWithSigner } from '../helpers';
 import { MessageType } from '../messages/types';
 import type { RaidenState } from '../state';
 import type { RaidenEpicDeps } from '../types';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { distinctRecordValues, retryAsync$ } from '../utils/rx';
 import type { Address, Hash, Int, UInt } from '../utils/types';
-import { bnMax } from '../utils/types';
+import { bnMax, last } from '../utils/types';
 import type { Channel, ChannelBalances } from './state';
 import type { ChannelKey, ChannelUniqueKey } from './types';
 
@@ -154,7 +163,7 @@ export function channelAmounts(channel: Channel): ChannelBalances {
  * @param deps.provider - Eth provider
  * @returns operator function to wait for transaction and output hash
  */
-export function assertTx(
+function assertTx(
   method: string,
   error: string,
   { log, provider }: Pick<RaidenEpicDeps, 'log' | 'provider'>,
@@ -222,6 +231,68 @@ export function groupChannel(): OperatorFunction<RaidenState, Observable<Channel
 }
 
 /**
+ * Performs a contract transaction with retries
+ * It automatically choose gasPrice from latest$ gasPrice, and choose which account to use for call
+ * depending on opts.subkey or config.subkey (defaults to main account, if available);
+ * this function errors if tx doesn't succeed; retry must be implemented by caller
+ *
+ * @param contract - Contract instance
+ * @param method - Method name (string)
+ * @param parameters - Parameters array for contract method
+ * @param deps - Epics dependencies
+ * @param opts - transact options
+ * @param opts.subkey - whether to force use of subkey (true) or main key (false); null uses
+ *      contract instance as is
+ * @param opts.error - error to throw if tx can't go through
+ * @returns Observable returning [transaction, receipt] tuple
+ */
+export function transact<C extends Contract, M extends keyof C['estimateGas'] & string>(
+  contract: C,
+  method: M,
+  parameters: Parameters<C['estimateGas'][M]>,
+  deps: Pick<
+    RaidenEpicDeps,
+    'log' | 'signer' | 'address' | 'main' | 'provider' | 'config$' | 'latest$'
+  >,
+  {
+    subkey,
+    error = ErrorCodes.RDN_TRANSACTION_FAILED,
+  }: { subkey?: boolean | null; error?: string } = {},
+) {
+  const { config$, latest$ } = deps;
+  return combineLatest([config$, latest$]).pipe(
+    first(),
+    mergeMap(([{ subkey: configSubkey }, { gasPrice }]) => {
+      let contractWithSigner = contract;
+      if (subkey !== null) {
+        const { signer: onchainSigner } = chooseOnchainAccount(deps, subkey ?? configSubkey);
+        contractWithSigner = getContractWithSigner(contract, onchainSigner);
+      }
+
+      return defer(async () =>
+        (contractWithSigner.estimateGas[method] as ContractFunction<BigNumber>)(...parameters),
+      ).pipe(
+        mergeMap(async (gasLimit) => {
+          gasLimit = gasLimit.add(gasLimit.mul(5).div(100)); // add +5% gasLimit
+
+          let paramsWithOverrides;
+          if (parameters.length === contractWithSigner[method].length)
+            paramsWithOverrides = parameters
+              .slice(0, -1)
+              .concat({ ...last(parameters), ...gasPrice, gasLimit });
+          else paramsWithOverrides = parameters.concat({ ...gasPrice, gasLimit });
+
+          return contractWithSigner[method](
+            ...paramsWithOverrides,
+          ) as Promise<ContractTransaction>;
+        }),
+      );
+    }),
+    assertTx(method, error, deps),
+  );
+}
+
+/**
  * Approves spender to transfer up to 'deposit' from our tokens; skips if already allowed
  * Errors if sender doesn't have enough balance, or transaction fails (may be retried)
  *
@@ -238,18 +309,23 @@ export function ensureApprovedBalance$(
   tokenContract: HumanStandardToken,
   spender: Address,
   amount: UInt<32>,
-  { log, config$, latest$ }: Pick<RaidenEpicDeps, 'log' | 'config$' | 'latest$'>,
+  deps: Pick<
+    RaidenEpicDeps,
+    'log' | 'provider' | 'signer' | 'address' | 'main' | 'config$' | 'latest$'
+  >,
 ): Observable<true | ContractReceipt> {
-  const provider = tokenContract.provider as RaidenEpicDeps['provider'];
-  return defer(async () => tokenContract.signer.getAddress() as Promise<Address>).pipe(
-    mergeMap(async (sender) =>
-      Promise.all([
+  const { config$ } = deps;
+  return config$.pipe(
+    first(),
+    mergeMap(async ({ subkey }) => {
+      const { address: sender } = chooseOnchainAccount(deps, subkey);
+      return Promise.all([
         tokenContract.callStatic.balanceOf(sender) as Promise<UInt<32>>,
         tokenContract.callStatic.allowance(sender, spender) as Promise<UInt<32>>,
-      ]),
-    ),
-    withLatestFrom(config$, latest$),
-    mergeMap(([[balance, allowance], { minimumAllowance }, { gasPrice }]) => {
+      ]);
+    }),
+    withLatestFrom(config$),
+    mergeMap(([[balance, allowance], { minimumAllowance }]) => {
       assert(balance.gte(amount), [
         ErrorCodes.RDN_INSUFFICIENT_BALANCE,
         { current: balance, required: amount },
@@ -261,21 +337,19 @@ export function ensureApprovedBalance$(
       // see https://github.com/raiden-network/light-client/issues/2010
       let resetAllowance$: Observable<true> = of(true);
       if (!allowance.isZero())
-        resetAllowance$ = defer(async () =>
-          tokenContract.approve(spender, 0, { ...gasPrice }),
-        ).pipe(
-          assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log, provider }),
-          mapTo(true),
-        );
+        resetAllowance$ = transact(tokenContract, 'approve', [spender, 0], deps, {
+          error: ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
+        }).pipe(mapTo(true));
 
       // if needed, send approveTx and wait/assert it before proceeding; 'amount' could be enough,
       // but we send 'prevAllowance + amount' in case there's a pending amount
       // default minimumAllowance=MaxUint256 allows to approve once and for all
       return resetAllowance$.pipe(
-        mergeMap(async () =>
-          tokenContract.approve(spender, bnMax(minimumAllowance, amount), { ...gasPrice }),
+        mergeMapTo(
+          transact(tokenContract, 'approve', [spender, bnMax(minimumAllowance, amount)], deps, {
+            error: ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED,
+          }),
         ),
-        assertTx('approve', ErrorCodes.RDN_APPROVE_TRANSACTION_FAILED, { log, provider }),
         pluck(1),
       );
     }),
