@@ -14,7 +14,6 @@ import {
 
 import type { RaidenAction } from '../../actions';
 import { intervalFromConfig } from '../../config';
-import { chooseOnchainAccount, getContractWithSigner } from '../../helpers';
 import { createBalanceHash, MessageTypeId } from '../../messages/utils';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
@@ -25,7 +24,7 @@ import { retryWhile } from '../../utils/rx';
 import type { Signature } from '../../utils/types';
 import { channelClose, newBlock } from '../actions';
 import { ChannelState } from '../state';
-import { assertTx, channelKey } from '../utils';
+import { channelKey, transact } from '../utils';
 
 /**
  * A ChannelClose action requested by user
@@ -37,45 +36,19 @@ import { assertTx, channelKey } from '../utils';
  * @param action$ - Observable of channelClose actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
- * @param deps.log - Logger instance
- * @param deps.signer - Signer instance
- * @param deps.address - Our address
- * @param deps.main - Main signer/address
- * @param deps.provider - Provider instance
- * @param deps.network - Current network
- * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
- * @param deps.config$ - Config observable
- * @param deps.latest$ - Latest observable
  * @returns Observable of channelClose.failure actions
  */
 export function channelCloseEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  {
-    log,
-    signer,
-    address,
-    main,
-    provider,
-    network,
-    getTokenNetworkContract,
-    config$,
-    latest$,
-  }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<channelClose.failure> {
+  const { log, signer, address, network, getTokenNetworkContract, config$ } = deps;
   return action$.pipe(
     filter(isActionOf(channelClose.request)),
-    withLatestFrom(state$, config$, latest$),
-    mergeMap(([action, state, { subkey: configSubkey }, { gasPrice }]) => {
+    withLatestFrom(state$),
+    mergeMap(([action, state]) => {
       const { tokenNetwork, partner } = action.meta;
-      const { signer: onchainSigner } = chooseOnchainAccount(
-        { signer, address, main },
-        action.payload?.subkey ?? configSubkey,
-      );
-      const tokenNetworkContract = getContractWithSigner(
-        getTokenNetworkContract(tokenNetwork),
-        onchainSigner,
-      );
       const channel = state.channels[channelKey(action.meta)];
       if (channel?.state !== ChannelState.open && channel?.state !== ChannelState.closing) {
         const error = new RaidenError(
@@ -105,8 +78,10 @@ export function channelCloseEpic(
       // sign counter balance proof, then send closeChannel transaction with our signature
       return from(signer.signMessage(closingMessage) as Promise<Signature>).pipe(
         mergeMap((closingSignature) =>
-          defer(() =>
-            tokenNetworkContract.closeChannel(
+          transact(
+            getTokenNetworkContract(tokenNetwork),
+            'closeChannel',
+            [
               channel.id,
               partner,
               address,
@@ -115,10 +90,10 @@ export function channelCloseEpic(
               additionalHash,
               nonClosingSignature,
               closingSignature,
-              { ...gasPrice },
-            ),
+            ],
+            deps,
+            { error: ErrorCodes.CNL_CLOSECHANNEL_FAILED },
           ).pipe(
-            assertTx('closeChannel', ErrorCodes.CNL_CLOSECHANNEL_FAILED, { log, provider }),
             retryWhile(intervalFromConfig(config$), {
               onErrors: commonAndFailTxErrors,
               log: log.info,
@@ -154,39 +129,21 @@ export function channelCloseEpic(
  * @param action$ - Observable of channelClose.success|newBlock actions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
- * @param deps.log - Logger instance
- * @param deps.signer - Signer instance
- * @param deps.address - Our address
- * @param deps.main - Main signer/address
- * @param deps.provider - Provider instance
- * @param deps.network - Current network
- * @param deps.getTokenNetworkContract - TokenNetwork contract instance getter
- * @param deps.config$ - Config observable
- * @param deps.latest$ - Latest observable
  * @returns Empty observable
  */
 export function channelUpdateEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  {
-    log,
-    signer,
-    address,
-    main,
-    provider,
-    network,
-    getTokenNetworkContract,
-    config$,
-    latest$,
-  }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<never> {
+  const { log, signer, address, network, getTokenNetworkContract, config$ } = deps;
   return action$.pipe(
     filter(isActionOf(channelClose.success)),
     filter((action) => !!action.payload.confirmed),
     // wait a newBlock go through after channelClose confirmation, to ensure any pending
     // channelSettle could have been processed
     delayWhen(() => action$.pipe(filter(newBlock.is))),
-    withLatestFrom(state$, config$, latest$),
+    withLatestFrom(state$),
     filter(([action, state]) => {
       const channel = state.channels[channelKey(action.meta)];
       return (
@@ -198,13 +155,8 @@ export function channelUpdateEpic(
         channel.closeParticipant !== address // we're not the closing end
       );
     }),
-    mergeMap(([action, state, { subkey }, { gasPrice }]) => {
+    mergeMap(([action, state]) => {
       const { tokenNetwork, partner } = action.meta;
-      const { signer: onchainSigner } = chooseOnchainAccount({ signer, address, main }, subkey);
-      const tokenNetworkContract = getContractWithSigner(
-        getTokenNetworkContract(tokenNetwork),
-        onchainSigner,
-      );
       const channel = state.channels[channelKey(action.meta)]!; // checked in filter
 
       const balanceHash = createBalanceHash(channel.partner.balanceProof);
@@ -224,10 +176,12 @@ export function channelUpdateEpic(
       ]); // UInt8Array of 277 bytes
 
       // send updateNonClosingBalanceProof transaction
-      return from(signer.signMessage(nonClosingMessage) as Promise<Signature>).pipe(
+      return defer(() => signer.signMessage(nonClosingMessage) as Promise<Signature>).pipe(
         mergeMap((nonClosingSignature) =>
-          defer(() =>
-            tokenNetworkContract.updateNonClosingBalanceProof(
+          transact(
+            getTokenNetworkContract(tokenNetwork),
+            'updateNonClosingBalanceProof',
+            [
               channel.id,
               partner,
               address,
@@ -236,19 +190,15 @@ export function channelUpdateEpic(
               additionalHash,
               closingSignature,
               nonClosingSignature,
-              { ...gasPrice },
-            ),
-          ).pipe(
-            assertTx('updateNonClosingBalanceProof', ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED, {
-              log,
-              provider,
-            }),
-            retryWhile(intervalFromConfig(config$), {
-              onErrors: commonAndFailTxErrors,
-              log: log.info,
-            }),
+            ],
+            deps,
+            { error: ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED },
           ),
         ),
+        retryWhile(intervalFromConfig(config$), {
+          onErrors: commonAndFailTxErrors,
+          log: log.info,
+        }),
         // if succeeded, return a empty/completed observable
         ignoreElements(),
         catchError((error) => {
