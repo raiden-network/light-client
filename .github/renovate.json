@@ -3,7 +3,7 @@
   "commitMessagePrefix": "deps:",
   "packageRules": [
     {
-      "excludePackagePatterns": ["^typescript$", "^typedoc$", "typedoc-plugin"],
+      "excludePackagePatterns": ["^typescript$", "^typedoc$", "typedoc-plugin", "^python$"],
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "all non-major dependencies and lockFile maintenance",
       "groupSlug": "all-minor-patch-lock",
@@ -23,13 +23,17 @@
       "schedule": ["before 8am on thursday"]
     },
     {
+      "matchPackagePatterns": ["^typedoc$", "typedoc-plugin"],
+      "groupName": "typedoc",
+      "groupSlug": "typedoc",
+      "dependencyDashboardApproval": true
+    },
+    {
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true
     },
     {
-      "matchPackagePatterns": ["^typedoc$", "typedoc-plugin"],
-      "groupName": "typedoc",
-      "groupSlug": "typedoc",
+      "matchPackageNames": ["python"],
       "dependencyDashboardApproval": true
     }
   ],
