@@ -101,7 +101,7 @@
     "jest": "^27.2.4",
     "jest-canvas-mock": "^2.3.1",
     "jest-fail-on-console": "^2.0.4",
-    "jest-junit": "^12.3.0",
+    "jest-junit": "^13.0.0",
     "material-design-icons-iconfont": "^6.1.0",
     "nyc": "^15.1.0",
     "sass": "1.42.1",
