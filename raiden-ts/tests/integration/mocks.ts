@@ -274,6 +274,7 @@ function spyContract(
     jest
       .spyOn(contract.callStatic, func)
       .mockImplementation(async (...args) => contract[func](...args));
+    jest.spyOn(contract.estimateGas, func).mockImplementation(async () => BigNumber.from(50e3));
     jest.spyOn(contract.functions, func).mockImplementation(async (...args) => {
       const res = await contract[func](...args);
       return Array.isArray(res) ? res : [res];
