@@ -18,6 +18,7 @@ import {
   pluck,
   raceWith,
   take,
+  takeUntil,
   withLatestFrom,
 } from 'rxjs/operators';
 
@@ -176,20 +177,24 @@ export function channelDepositEpic(
                       channel$.pipe(pluck('id'), take(1)),
                       [deposit, totalDeposit],
                       deps,
+                    ).pipe(
+                      // hold this _lock_ (concatMap) until deposit has been confirmed or failed
+                      concatWith(
+                        action$.pipe(
+                          filter(isConfirmationResponseOf(channelDeposit, action.meta)),
+                          first(
+                            (a) =>
+                              !channelDeposit.success.is(a) ||
+                              a.payload.totalDeposit.gte(totalDeposit),
+                          ),
+                        ),
+                      ),
+                      // complete on confirmation
+                      takeUntil(
+                        channel$.pipe(filter((channel) => channel.own.deposit.gte(totalDeposit))),
+                      ),
                     ),
                   { connector: () => new ReplaySubject(1) },
-                ),
-                // hold this _lock_ (concatMap) until deposit has been confirmed or failed
-                concatWith(
-                  action$.pipe(
-                    filter(isConfirmationResponseOf(channelDeposit, action.meta)),
-                    first(
-                      (a) =>
-                        !channelDeposit.success.is(a) ||
-                        !a.payload.confirmed ||
-                        a.payload.totalDeposit.gte(totalDeposit),
-                    ),
-                  ),
                 ),
                 // ignore success tx so it's picked by channelEventsEpic
                 ignoreElements(),
