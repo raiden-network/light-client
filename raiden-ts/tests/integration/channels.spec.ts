@@ -149,18 +149,17 @@ describe('channelOpenEpic', () => {
     const tokenNetworkContract = raiden.deps.getTokenNetworkContract(tokenNetwork);
     const openTx = makeTransaction();
     tokenNetworkContract.openChannelWithDeposit.mockResolvedValue(openTx);
+    const meta = { tokenNetwork, partner: partner.address };
 
-    raiden.store.dispatch(
-      channelOpen.request({ deposit }, { tokenNetwork, partner: partner.address }),
-    );
+    raiden.store.dispatch(channelOpen.request({ deposit }, meta));
     await waitBlock();
 
     // result is undefined on success as the respective channelOpen.success is emitted by the
     // tokenMonitoredEpic, which monitors the blockchain for ChannelOpened events
     expect(tokenNetworkContract.openChannelWithDeposit).toHaveBeenCalledTimes(1);
     expect(openTx.wait).toHaveBeenCalledTimes(1);
-    expect(raiden.output).not.toContainEqual(
-      channelDeposit.request(expect.anything(), expect.anything()),
+    expect(raiden.output).toContainEqual(
+      channelDeposit.request({ totalDeposit: deposit, waitOpen: true }, meta),
     );
   });
 

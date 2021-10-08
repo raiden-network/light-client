@@ -7,9 +7,13 @@
 - [#2965] Add +5% `gasLimit` margin on transactions which are successfuly estimated, to avoid running out of gas on narrow calls.
 - [#2965] Remove `options.subkey` on certain `Raiden` public methods; if you need to force subkey or main account usage for single txs, set `config.subkey` then reset after tx is sent; default behavior is kept
 
+### Fixed
+- [#2963] Don't set channel as `closing` upon `channelClose.request`, allowing user to cancel Metamask's prompt and keep an usable channel; Channel becomes `closing` only after tx is sent
+
 [#2949]: https://github.com/raiden-network/light-client/issues/2949
 [#2952]: https://github.com/raiden-network/light-client/issues/2952
 [#2953]: https://github.com/raiden-network/light-client/pull/2953
+[#2963]: https://github.com/raiden-network/light-client/issues/2963
 [#2965]: https://github.com/raiden-network/light-client/pull/2965
 
 ## [2.0.0-rc.2] - 2021-09-14
