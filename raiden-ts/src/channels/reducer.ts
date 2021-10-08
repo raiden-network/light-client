@@ -159,13 +159,15 @@ function channelCloseSuccessReducer(
 
 function channelUpdateStateReducer(
   state: RaidenState,
-  action: channelClose.request | channelSettle.request | channelSettleable,
+  action: channelClose.request | channelClose.failure | channelSettle.request | channelSettleable,
 ): RaidenState {
   const key = channelKey(action.meta);
   let channel = state.channels[key];
   if (!channel) return state;
   if (channelClose.request.is(action) && channel.state === ChannelState.open) {
     channel = { ...channel, state: ChannelState.closing };
+  } else if (channelClose.failure.is(action) && channel.state === ChannelState.closing) {
+    channel = { ...channel, state: ChannelState.open }; // rollback to open
   } else if (channelSettle.request.is(action) && channel.state === ChannelState.settleable) {
     channel = { ...channel, state: ChannelState.settling };
   } else if (channelSettleable.is(action) && channel.state === ChannelState.closed) {
@@ -281,7 +283,7 @@ const completeReducer = createReducer(initialState)
   .handle(channelOpen.success, channelOpenSuccessReducer)
   .handle([channelDeposit.success, channelWithdrawn], channelUpdateOnchainBalanceStateReducer)
   .handle(
-    [channelClose.request, channelSettleable, channelSettle.request],
+    [channelClose.request, channelClose.failure, channelSettleable, channelSettle.request],
     channelUpdateStateReducer,
   )
   .handle(channelClose.success, channelCloseSuccessReducer)

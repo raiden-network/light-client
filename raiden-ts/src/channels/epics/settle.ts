@@ -4,6 +4,7 @@ import { combineLatest, defer, EMPTY, of } from 'rxjs';
 import {
   catchError,
   distinctUntilKeyChanged,
+  exhaustMap,
   filter,
   ignoreElements,
   map,
@@ -17,11 +18,12 @@ import type { RaidenAction } from '../../actions';
 import { intervalFromConfig } from '../../config';
 import { createBalanceHash } from '../../messages/utils';
 import type { RaidenState } from '../../state';
+import { dispatchAndWait$ } from '../../transfers/epics/utils';
 import { Direction } from '../../transfers/state';
 import { findBalanceProofMatchingBalanceHash$ } from '../../transfers/utils';
 import { getPresencesByAddress, peerIsOnlineLC } from '../../transport/utils';
 import type { RaidenEpicDeps } from '../../types';
-import { isActionOf } from '../../utils/actions';
+import { isActionOf, isResponseOf } from '../../utils/actions';
 import { encode } from '../../utils/data';
 import { commonAndFailTxErrors, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { completeWith, retryWhile, takeIf } from '../../utils/rx';
@@ -111,6 +113,10 @@ export function channelAutoSettleEpic(
         });
       }
     }),
+    // ensures only one auto request is handled at a time
+    exhaustMap((request) =>
+      dispatchAndWait$(action$, request, isResponseOf(channelSettle, request.meta)),
+    ),
     takeIf(config$.pipe(pluck('autoSettle'), completeWith(state$))),
   );
 }
