@@ -541,7 +541,7 @@ describe('raidenReducer', () => {
       expect(newState).toEqual(state);
     });
 
-    test("channelClose.failure doesn't mutate state", () => {
+    test('channelClose.failure revert closing to open', () => {
       const newState = raidenReducer(
         state,
         channelClose.failure(new RaidenError(ErrorCodes.CNL_CLOSECHANNEL_FAILED), {
@@ -549,7 +549,9 @@ describe('raidenReducer', () => {
           partner,
         }),
       );
-      expect(newState).toEqual(state);
+      expect(newState.channels).toMatchObject({
+        [key]: { state: ChannelState.open, id: channelId },
+      });
     });
   });
 
