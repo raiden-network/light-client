@@ -315,8 +315,8 @@ export function concatBuffer<T, R>(
  *
  * You can now:
  *   obs1.pipe(
- *     mergeWith((v1) => obs2(v1, 123)),
- *     mergeWith(([v1, v2]) => obs3(v1, v2, true)),
+ *     withMergeFrom((v1) => obs2(v1, 123)),
+ *     withMergeFrom(([v1, v2]) => obs3(v1, v2, true)),
  *     // you can use tuple-destructuring on values, and obj-destructuring on objects
  *     map(([[v1, v2], { v3_a, v3_b }]) => ({ v1, v2, v3: v3_a + v3_b })),
  *   );
@@ -326,7 +326,7 @@ export function concatBuffer<T, R>(
  * @returns Observable mirroring project's return, but prepending emitted values from this inner
  *    observable in a tuple with the value from the outter observable which generated the inner.
  */
-export function mergeWith<T, R>(
+export function withMergeFrom<T, R>(
   project: (value: T, index: number) => ObservableInput<R>,
   mapFunc = mergeMap,
 ): OperatorFunction<T, [T, R]> {

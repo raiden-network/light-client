@@ -23,7 +23,7 @@ import {
   getNetworkName,
 } from '@/utils/ethers';
 import { LruCache } from '@/utils/lru';
-import { completeWith, concatBuffer, lastMap, mergeWith, takeIf } from '@/utils/rx';
+import { completeWith, concatBuffer, lastMap, takeIf, withMergeFrom } from '@/utils/rx';
 import {
   Address,
   BigNumberC,
@@ -487,7 +487,7 @@ test('lastMap', async () => {
   expect(project2).toHaveBeenCalledWith(null, expect.anything());
 });
 
-test('mergeWith', async () => {
+test('withMergeFrom', async () => {
   const obs1 = of(1, 2);
   const obs2 = jest.fn(
     (v1: number, count: number) => from(Array.from({ length: v1 }, () => count)), // [0], [1, 1]
@@ -499,8 +499,8 @@ test('mergeWith', async () => {
   expect(
     lastValueFrom(
       obs1.pipe(
-        mergeWith((v1, count) => obs2(v1, count)),
-        mergeWith(([v1, v2]) => obs3(v1, v2, true)),
+        withMergeFrom((v1, count) => obs2(v1, count)),
+        withMergeFrom(([v1, v2]) => obs3(v1, v2, true)),
         map(([[v1, v2], { v: v3 }]) => ({ v1, v2, v3 })),
         toArray(),
       ),

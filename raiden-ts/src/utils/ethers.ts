@@ -31,7 +31,7 @@ import {
 import { DEFAULT_CONFIRMATIONS } from '../constants';
 import type { TypedEventFilter, TypedListener } from '../contracts/common';
 import { assert } from './error';
-import { mergeWith } from './rx';
+import { withMergeFrom } from './rx';
 import { decode, HexString } from './types';
 
 declare const _filter: unique symbol;
@@ -218,7 +218,7 @@ export function fromEthersEvent<T>(
   let start = Date.now();
   return confirmations$.pipe(
     distinctUntilChanged(),
-    mergeWith((confirmations) => {
+    withMergeFrom((confirmations) => {
       if (!fromBlock) {
         let resetBlock = target._lastBlockNumber;
         const innerBlockNumber = target.blockNumber;

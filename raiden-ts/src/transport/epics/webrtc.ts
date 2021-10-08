@@ -63,10 +63,10 @@ import { assert, matchError } from '../../utils/error';
 import {
   completeWith,
   dispatchRequestAndGetResponse,
-  mergeWith,
   partitionMap,
   takeIf,
   timeoutFirst,
+  withMergeFrom,
 } from '../../utils/rx';
 import type { Address } from '../../utils/types';
 import { decode, isntNil, last } from '../../utils/types';
@@ -370,7 +370,7 @@ function makeCalleeAnswer$(
         handleCandidates$(connection, action$, info, deps).pipe(delayWhen(constant(start$))),
         defer(async () => connection.setRemoteDescription(offer)).pipe(
           mergeMap(async () => connection.createAnswer()),
-          mergeWith(async (answer) => connection.setLocalDescription(answer)),
+          withMergeFrom(async (answer) => connection.setLocalDescription(answer)),
           mergeMap(([answer]) => {
             const body: t.TypeOf<typeof RtcAnswer> = {
               type: answer.type as RtcEventType.answer,

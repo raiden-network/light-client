@@ -32,7 +32,7 @@ import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { networkErrors } from '../../utils/error';
-import { catchAndLog, completeWith, mergeWith, retryWhile } from '../../utils/rx';
+import { catchAndLog, completeWith, retryWhile, withMergeFrom } from '../../utils/rx';
 import type { Address } from '../../utils/types';
 import { matrixPresence } from '../actions';
 import { stringifyCaps } from '../utils';
@@ -159,12 +159,14 @@ export function matrixUpdateCapsEpic(
     withLatestFrom(init$.pipe(ignoreElements(), startWith(false), endWith(true))),
     switchMap(([caps, synced]) =>
       matrix$.pipe(
-        mergeWith(async (matrix) =>
+        withMergeFrom(async (matrix) =>
           matrix.setAvatarUrl(caps && !isEmpty(caps) ? stringifyCaps(caps) : ''),
         ),
         filter(() => synced),
-        mergeWith(async ([matrix]) => matrix.setPresence({ presence: 'offline', status_msg: '' })),
-        mergeWith(async ([[matrix]]) =>
+        withMergeFrom(async ([matrix]) =>
+          matrix.setPresence({ presence: 'offline', status_msg: '' }),
+        ),
+        withMergeFrom(async ([[matrix]]) =>
           matrix.setPresence({ presence: 'online', status_msg: Date.now().toString() }),
         ),
         retryWhile(intervalFromConfig(config$)),

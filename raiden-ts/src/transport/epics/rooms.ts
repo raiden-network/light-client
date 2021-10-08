@@ -6,7 +6,7 @@ import { delayWhen, filter, ignoreElements, mergeMap, withLatestFrom } from 'rxj
 import type { RaidenAction } from '../../actions';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
-import { completeWith, mergeWith } from '../../utils/rx';
+import { completeWith, withMergeFrom } from '../../utils/rx';
 
 /**
  * Leave any (new or invited) room
@@ -26,7 +26,7 @@ export function matrixLeaveUnknownRoomsEpic(
 ): Observable<RaidenAction> {
   return matrix$.pipe(
     // when matrix finishes initialization, register to matrix Room events
-    mergeWith((matrix) => fromEvent<Room>(matrix, 'Room')),
+    withMergeFrom((matrix) => fromEvent<Room>(matrix, 'Room')),
     withLatestFrom(config$),
     // this room may become known later for some reason, so wait a little
     delayWhen(([, { httpTimeout }]) =>
