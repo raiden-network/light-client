@@ -35,7 +35,7 @@ import { getCap, stringifyCaps } from '../../transport/utils';
 import type { Latest, RaidenEpicDeps } from '../../types';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
-import { lastMap, mergeWith, retryWhile } from '../../utils/rx';
+import { lastMap, retryWhile, withMergeFrom } from '../../utils/rx';
 import type { Address, Signature, Signed } from '../../utils/types';
 import { decode, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
@@ -208,9 +208,9 @@ function getRouteFromPfs$(
 ): Observable<RouteResult> {
   return deps.config$.pipe(
     first(),
-    mergeWith((config) => getPfsInfo$(action.payload.pfs, config, deps)),
-    mergeWith(([, pfs]) => prepareNextIOU$(pfs, action.meta.tokenNetwork, deps)),
-    mergeWith(([[config, pfs], iou]) =>
+    withMergeFrom((config) => getPfsInfo$(action.payload.pfs, config, deps)),
+    withMergeFrom(([, pfs]) => prepareNextIOU$(pfs, action.meta.tokenNetwork, deps)),
+    withMergeFrom(([[config, pfs], iou]) =>
       requestPfs$(pfs, iou, action.meta, { address: deps.address, config }),
     ),
     map(([[[config], iou], { response, text }]) => {

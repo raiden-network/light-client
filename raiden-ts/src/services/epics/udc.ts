@@ -30,7 +30,7 @@ import type { RaidenEpicDeps } from '../../types';
 import { isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes, networkErrors } from '../../utils/error';
 import { checkContractHasMethod$ } from '../../utils/ethers';
-import { catchAndLog, completeWith, mergeWith, retryWhile, takeIf } from '../../utils/rx';
+import { catchAndLog, completeWith, retryWhile, takeIf, withMergeFrom } from '../../utils/rx';
 import type { Address, UInt } from '../../utils/types';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '../actions';
 
@@ -191,7 +191,7 @@ export function udcWithdrawPlanRequestEpic(
           });
         }),
         retryWhile(intervalFromConfig(config$), { onErrors: commonTxErrors, log: log.info }),
-        mergeWith(() =>
+        withMergeFrom(() =>
           action$.pipe(
             filter(newBlock.is),
             startWith(0),

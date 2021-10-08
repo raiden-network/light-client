@@ -54,9 +54,9 @@ import { getServerName } from '../../utils/matrix';
 import {
   completeWith,
   dispatchRequestAndGetResponse,
-  mergeWith,
   pluckDistinct,
   retryWhile,
+  withMergeFrom,
 } from '../../utils/rx';
 import { Address, isntNil, Signed } from '../../utils/types';
 import { matrixPresence } from '../actions';
@@ -216,7 +216,7 @@ export function matrixMessageSendEpic(
         const request$ = action$.pipe(
           filter(messageSend.request.is),
           // "holds" message until it can be handled: there's either a rtcChannel or presence for peer
-          mergeWith((action) => {
+          withMergeFrom((action) => {
             const address = action.meta.address;
             const rtc$ =
               getMsgType(action) !== textMsgType
@@ -271,7 +271,7 @@ function sendServiceMessage(request: messageServiceSend.request, deps: RaidenEpi
   const { matrix$, config$, latest$ } = deps;
   return matrix$.pipe(
     withLatestFrom(latest$, config$),
-    mergeWith(([, , { additionalServices }]) =>
+    withMergeFrom(([, , { additionalServices }]) =>
       from(additionalServices).pipe(
         mergeMap(
           (serviceAddrOrUrl) =>
@@ -358,14 +358,14 @@ export function matrixMessageReceivedEpic(
     dispatchRequestAndGetResponse(matrixPresence, (requestPresence) =>
       matrix$.pipe(
         // when matrix finishes initialization, register to matrix timeline events
-        mergeWith((matrix) => fromEvent(matrix, 'toDeviceEvent') as Observable<MatrixEvent>),
+        withMergeFrom((matrix) => fromEvent(matrix, 'toDeviceEvent') as Observable<MatrixEvent>),
         filter(
           ([matrix, event]) =>
             event.getType() === 'm.room.message' && event.getSender() !== matrix.getUserId(),
         ),
         pluck(1),
         withLatestFrom(config$, action$.pipe(getPresencesByUserId())),
-        mergeWith(([event, { httpTimeout }, seenPresences]) => {
+        withMergeFrom(([event, { httpTimeout }, seenPresences]) => {
           const senderId = event.getSender();
           const presence = seenPresences[senderId];
           if (presence) return of(presence);
