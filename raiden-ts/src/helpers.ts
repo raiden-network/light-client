@@ -8,32 +8,20 @@ import { sha256 } from '@ethersproject/sha2';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { Wallet } from '@ethersproject/wallet';
 import constant from 'lodash/constant';
-import isEqual from 'lodash/isEqual';
 import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, defer, firstValueFrom, merge, ReplaySubject } from 'rxjs';
-import {
-  exhaustMap,
-  filter,
-  first,
-  map,
-  mergeMap,
-  pluck,
-  takeWhile,
-  tap,
-  withLatestFrom,
-} from 'rxjs/operators';
+import { exhaustMap, filter, first, map, mergeMap, pluck, withLatestFrom } from 'rxjs/operators';
 
 import type { RaidenAction } from './actions';
 import { raidenShutdown, raidenSynced } from './actions';
 import type { channelSettle } from './channels/actions';
-import { channelDeposit } from './channels/actions';
 import type { Channel, RaidenChannel, RaidenChannels } from './channels/state';
 import { ChannelState } from './channels/state';
 import { channelAmounts, channelKey } from './channels/utils';
-import type { PartialRaidenConfig, RaidenConfig } from './config';
+import type { PartialRaidenConfig } from './config';
 import { makeDefaultConfig } from './config';
 import { ShutdownReason } from './constants';
 import {
@@ -62,8 +50,6 @@ import goerliServicesDeploy from './deployment/deployment_services_goerli_unstab
 import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
-import { messageServiceSend } from './messages/actions';
-import { PfsMode, Service } from './services/types';
 import { makeInitialState, RaidenState } from './state';
 import { standardCalculator } from './transfers/mediate/types';
 import type { RaidenTransfer } from './transfers/state';
@@ -71,7 +57,7 @@ import { Direction, TransferState } from './transfers/state';
 import { raidenTransfer } from './transfers/utils';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from './types';
 import { assert } from './utils';
-import { asyncActionToPromise, isActionOf } from './utils/actions';
+import { isActionOf } from './utils/actions';
 import { jsonParse } from './utils/data';
 import { ErrorCodes, RaidenError } from './utils/error';
 import { getLogsByChunk$, getNetworkName } from './utils/ethers';
@@ -375,7 +361,7 @@ export async function waitConfirmation(
           txBlock + (confBlocks ?? confirmationBlocks) <= blockNumber,
       ),
       exhaustMap(([blockNumber, { confirmationBlocks }]) =>
-        defer(() => provider.getTransactionReceipt(txHash)).pipe(
+        defer(async () => provider.getTransactionReceipt(txHash)).pipe(
           map((receipt) => {
             if (
               receipt?.confirmations &&
@@ -605,63 +591,6 @@ export async function getState(
   }
 
   return { db, state };
-}
-
-/**
- * For a given channelId (passed as opts.meta), waits for a deposit to be confirmed and for the
- * following messageServiceSend for its PFSCapacityUpdate to succeed
- *
- * @param action$ - Observable of RaidenActions
- * @param state$ - Observable of RaidenStates
- * @param opts - Options
- * @param opts.meta - channelId on which to wait for a deposit
- * @param opts.config - RaidenConfig to check if PFS is enabled
- * @returns Promise for undefined or messageServiceSend.success action
- */
-export async function waitForPFSCapacityUpdate(
-  action$: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-  { meta, config }: { meta: channelDeposit.request['meta']; config: RaidenConfig },
-) {
-  if (config.pfsMode === PfsMode.disabled) return;
-  const postMeta: messageServiceSend.request['meta'] = { service: Service.PFS, msgId: '' };
-  let deposited = false;
-  return asyncActionToPromise(
-    messageServiceSend,
-    postMeta, // pass postMeta by reference, so it gets used for filtering once msgId is set
-    // like action$, but sets proper postMeta for filtering *once* deposited and request is
-    // identified in a synchronous way
-    action$.pipe(
-      withLatestFrom(state$),
-      tap(([action, state]) => {
-        if (
-          channelDeposit.success.is(action) &&
-          action.payload.confirmed &&
-          action.payload.participant === state.address // only act after our own deposit
-        ) {
-          deposited = true;
-          return;
-        }
-        // ignore if not deposited yet or request's msgId already identified
-        if (!deposited || postMeta.msgId || !messageServiceSend.request.is(action)) return;
-        const message = action.payload.message;
-        if (message.type !== 'PFSCapacityUpdate') return;
-        // ensure it's a PFSCapacityUpdate for this specific channel
-        const channel = state.channels[channelKey(meta)];
-        if (
-          message.canonical_identifier.token_network_address !== meta.tokenNetwork ||
-          !channel ||
-          !message.canonical_identifier.channel_identifier.eq(channel.id)
-        )
-          return;
-        // on the first messageServiceSend.request for a PFSCapacityUpdate for this channel
-        // *after* deposit is confirmed, "save" msgId to be used in filter for success
-        postMeta.msgId = action.meta.msgId;
-      }),
-      pluck(0),
-      takeWhile((action) => !(channelDeposit.failure.is(action) && isEqual(action.meta, meta))),
-    ),
-  ).catch(() => undefined);
 }
 
 const settleableStates = [ChannelState.settleable, ChannelState.settling] as const;

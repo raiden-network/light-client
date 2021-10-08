@@ -67,7 +67,6 @@ import {
   mapRaidenChannels,
   waitChannelSettleable$,
   waitConfirmation,
-  waitForPFSCapacityUpdate,
 } from './helpers';
 import { createPersisterMiddleware } from './persister';
 import { raidenReducer } from './reducer';
@@ -641,47 +640,44 @@ export class Raiden {
     const meta = { tokenNetwork, partner };
     // wait for confirmation
     const openPromise = asyncActionToPromise(channelOpen, meta, this.action$).then(
-      ({ txHash }) => txHash, // pluck txHash
+      ({ txHash }) => {
+        onChange?.({ type: EventTypes.OPENED, payload: { txHash } });
+        return txHash; // pluck txHash
+      },
     );
-    const openConfirmedPromise = asyncActionToPromise(channelOpen, meta, this.action$, true);
+    const openConfirmedPromise = asyncActionToPromise(channelOpen, meta, this.action$, true).then(
+      ({ txHash }) => {
+        onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash } });
+        return txHash; // pluck txHash
+      },
+    );
 
     let depositPromise: Promise<Hash> | undefined;
-    let postPromise: Promise<unknown> | undefined;
     if (deposit?.gt(0)) {
       depositPromise = asyncActionToPromise(
         channelDeposit,
         meta,
         this.action$.pipe(
-          filter(isActionOf([channelDeposit.success, channelDeposit.failure])),
           // ensure we only react on own deposit's responses
           filter(
             (action) =>
-              channelDeposit.failure.is(action) || action.payload.participant === this.address,
+              !channelDeposit.success.is(action) || action.payload.participant === this.address,
           ),
         ),
         true,
-      ).then(
-        ({ txHash }) => txHash, // pluck txHash
-      );
-      postPromise = waitForPFSCapacityUpdate(this.action$, this.state$, {
-        meta,
-        config: this.config,
+      ).then(({ txHash }) => {
+        onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash } });
+        return txHash; // pluck txHash
       });
     }
 
     this.store.dispatch(channelOpen.request({ ...options, settleTimeout, deposit }, meta));
 
-    const openTxHash = await openPromise;
-    onChange?.({ type: EventTypes.OPENED, payload: { txHash: openTxHash } });
-    await openConfirmedPromise;
-    onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash: openTxHash } });
+    await openPromise;
+    const openTxHash = await openConfirmedPromise;
 
     let depositTxHash: Hash | undefined;
-    if (depositPromise) {
-      depositTxHash = await depositPromise;
-      onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: depositTxHash } });
-      await postPromise;
-    }
+    if (depositPromise) depositTxHash = await depositPromise;
 
     if (confirmConfirmation) {
       // wait twice confirmationBlocks for deposit or open tx
@@ -710,7 +706,7 @@ export class Raiden {
     token: string,
     partner: string,
     amount: BigNumberish,
-    { confirmConfirmation }: { confirmConfirmation?: boolean } = {},
+    { confirmConfirmation = true }: { confirmConfirmation?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
@@ -720,29 +716,24 @@ export class Raiden {
 
     const deposit = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
     const meta = { tokenNetwork, partner };
-    const postPromise = waitForPFSCapacityUpdate(this.action$, this.state$, {
-      meta,
-      config: this.config,
-    });
 
     const promise = asyncActionToPromise(
       channelDeposit,
       meta,
       this.action$.pipe(
-        filter(isActionOf([channelDeposit.success, channelDeposit.failure])),
         // ensure we only react on own deposit's responses
         filter(
           (action) =>
-            channelDeposit.failure.is(action) || action.payload.participant === this.address,
+            !channelDeposit.success.is(action) || action.payload.participant === this.address,
         ),
       ),
       true,
     ).then(({ txHash }) => txHash);
+
     this.store.dispatch(channelDeposit.request({ deposit }, meta));
     const depositTxHash = await promise;
-    await postPromise; // if undefined, noop
 
-    if (confirmConfirmation ?? true) {
+    if (confirmConfirmation) {
       // wait twice confirmationBlocks for deposit or open tx
       await waitConfirmation(
         await this.deps.provider.getTransactionReceipt(depositTxHash),
@@ -1257,20 +1248,17 @@ export class Raiden {
     const deposited = await this.deps.userDepositContract.callStatic.total_deposit(this.address);
     const meta = { totalDeposit: deposited.add(deposit) as UInt<32> };
 
-    const mined = asyncActionToPromise(udcDeposit, meta, this.action$, false).then(
-      (res) => res.txHash,
+    const mined = asyncActionToPromise(udcDeposit, meta, this.action$, false).then(({ txHash }) =>
+      onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash } }),
     );
     this.store.dispatch(udcDeposit.request({ deposit }, meta));
 
-    let txHash = await mined;
-    onChange?.({ type: EventTypes.DEPOSITED, payload: { txHash: txHash! } });
+    await mined;
 
-    const confirmed = asyncActionToPromise(udcDeposit, meta, this.action$, true).then(
-      (res) => res.txHash,
-    );
-    txHash = await confirmed;
-    onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash } });
-    return txHash;
+    return asyncActionToPromise(udcDeposit, meta, this.action$, true).then(({ txHash }) => {
+      onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash } });
+      return txHash;
+    });
   }
 
   /**
