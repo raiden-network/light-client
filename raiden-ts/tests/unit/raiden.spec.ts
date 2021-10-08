@@ -738,7 +738,6 @@ describe('Raiden', () => {
   });
 
   test('openChannel', async () => {
-    const subkey = false;
     const channelDepositHash = makeHash();
 
     function channelOpenSuccessReducer(
@@ -773,11 +772,7 @@ describe('Raiden', () => {
         filter(channelOpen.request.is),
         mergeMap((action) => [
           channelDeposit.request(
-            {
-              deposit: action.payload.deposit as UInt<32>,
-              subkey: action.payload.subkey,
-              waitOpen: true,
-            },
+            { deposit: action.payload.deposit as UInt<32>, waitOpen: true },
             action.meta,
           ),
           channelOpen.success(
@@ -821,13 +816,9 @@ describe('Raiden', () => {
     );
     await expect(raiden.start()).resolves.toBeUndefined();
 
-    await expect(
-      raiden.openChannel(token, partner, {
-        settleTimeout,
-        subkey,
-        deposit,
-      }),
-    ).resolves.toEqual(channelOpenHash);
+    await expect(raiden.openChannel(token, partner, { settleTimeout, deposit })).resolves.toEqual(
+      channelOpenHash,
+    );
   });
 
   test('suggestPartners', async () => {
@@ -1038,7 +1029,7 @@ describe('Raiden', () => {
     const channelCloseRequestPromise = firstValueFrom(
       raiden.action$.pipe(first(channelClose.request.is)),
     );
-    await expect(raiden.closeChannel(token, partner, { subkey: false })).resolves.toEqual(txHash);
+    await expect(raiden.closeChannel(token, partner)).resolves.toEqual(txHash);
     await expect(channelCloseRequestPromise).resolves.toEqual(
       channelClose.request(undefined, meta),
     );
@@ -1101,11 +1092,9 @@ describe('Raiden', () => {
     const channelDepositRequestPromise = firstValueFrom(
       raiden.action$.pipe(first(channelDeposit.request.is)),
     );
-    await expect(
-      raiden.depositChannel(token, partner, deposit, { subkey: false }),
-    ).resolves.toEqual(txHash);
+    await expect(raiden.depositChannel(token, partner, deposit)).resolves.toEqual(txHash);
     await expect(channelDepositRequestPromise).resolves.toEqual(
-      channelDeposit.request({ deposit: deposit as UInt<32>, subkey: false }, meta),
+      channelDeposit.request({ deposit: deposit as UInt<32> }, meta),
     );
   });
 
@@ -1142,7 +1131,7 @@ describe('Raiden', () => {
     const channelSettleRequestPromise = firstValueFrom(
       raiden.action$.pipe(first(channelSettle.request.is)),
     );
-    await expect(raiden.settleChannel(token, partner, { subkey: false })).resolves.toEqual(txHash);
+    await expect(raiden.settleChannel(token, partner)).resolves.toEqual(txHash);
     await expect(channelSettleRequestPromise).resolves.toEqual(
       channelSettle.request(undefined, meta),
     );
