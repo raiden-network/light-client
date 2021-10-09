@@ -8,8 +8,10 @@
 - [#2965] Remove `options.subkey` on certain `Raiden` public methods; if you need to force subkey or main account usage for single txs, set `config.subkey` then reset after tx is sent; default behavior is kept
 
 ### Fixed
+- [#2913] Fix crash when starting client with `userDepositContractAddress` as contracts entrypoint on a `TokenNetworkRegistry` with no registered tokens yet
 - [#2963] Don't set channel as `closing` upon `channelClose.request`, allowing user to cancel Metamask's prompt and keep an usable channel; Channel becomes `closing` only after tx is sent
 
+[#2913]: https://github.com/raiden-network/light-client/issues/2913
 [#2949]: https://github.com/raiden-network/light-client/issues/2949
 [#2952]: https://github.com/raiden-network/light-client/issues/2952
 [#2953]: https://github.com/raiden-network/light-client/pull/2953
