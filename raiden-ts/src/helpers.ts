@@ -410,14 +410,14 @@ export async function fetchContractsInfo(
   const serviceRegistry = (await monitoringServiceContract.service_registry()) as Address;
 
   const toBlock = await provider.getBlockNumber();
-  let firstBlock = await firstValueFrom(
+  const firstBlock = await firstValueFrom(
     getLogsByChunk$(provider, {
       ...tokenNetworkRegistryContract.filters.TokenNetworkCreated(null, null),
       fromBlock: 1,
       toBlock,
     }).pipe(pluck('blockNumber'), filter(isntNil)),
+    { defaultValue: toBlock },
   );
-  firstBlock ??= 0;
 
   const oneToN = (await userDepositContract.one_to_n_address()) as Address;
 
