@@ -49,6 +49,7 @@
     "@types/node": "^14.17.21",
     "jest-environment-jsdom": "^27.2.4",
     "jest": "^27.2.4",
-    "**/redux-observable/rxjs": "^7.4.0"
+    "**/redux-observable/rxjs": "^7.4.0",
+    "@ethersproject/bignumber": "^5.4.2"
   }
 }
