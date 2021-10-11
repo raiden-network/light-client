@@ -1,7 +1,7 @@
 import { Signer } from '@ethersproject/abstract-signer';
 import type { BigNumber } from '@ethersproject/bignumber';
 import { MaxUint256 } from '@ethersproject/constants';
-import type { Contract, ContractReceipt, ContractTransaction } from '@ethersproject/contracts';
+import type { Contract, ContractReceipt } from '@ethersproject/contracts';
 import type { Network } from '@ethersproject/networks';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { sha256 } from '@ethersproject/sha2';
@@ -285,52 +285,6 @@ export function chooseOnchainAccount(
 export function getContractWithSigner<C extends Contract>(contract: C, signer: Signer): C {
   if (contract.signer === signer) return contract;
   return contract.connect(signer) as C;
-}
-
-/**
- * Calls a contract method and wait for it to be mined successfuly, rejects otherwise
- *
- * @param contract - Contract instance
- * @param method - Method name
- * @param params - Params tuple to method
- * @param error - Error message to throw in case of failure
- * @param opts - Options
- * @param opts.log - Logger instance
- * @returns Promise to successful receipt
- */
-export async function callAndWaitMined<
-  C extends Contract,
-  M extends keyof C['functions'],
-  P extends Parameters<C['functions'][M]>,
->(
-  contract: C,
-  method: M,
-  params: P,
-  error: string,
-  { log }: { log: logging.Logger } = { log: logging },
-): Promise<ContractReceipt> {
-  let tx: ContractTransaction;
-  try {
-    // 'as C' just to avoid error with unknown functions Bucket
-    tx = await (contract.functions as C)[method](...params);
-  } catch (err) {
-    log.error(`Error sending ${method} tx`, err);
-    throw new RaidenError(error, { error: err });
-  }
-  log.debug(`sent ${method} tx "${tx.hash}" to "${contract.address}"`);
-
-  let receipt: ContractReceipt;
-  try {
-    receipt = await tx.wait();
-    assert(receipt.status, `tx status: ${receipt.status}`);
-  } catch (err) {
-    log.error(`Error mining ${method} tx`, err);
-    throw new RaidenError(error, {
-      transactionHash: tx.hash!,
-    });
-  }
-  log.debug(`${method} tx "${tx.hash}" successfuly mined!`);
-  return receipt;
 }
 
 /**

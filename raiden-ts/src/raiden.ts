@@ -44,7 +44,7 @@ import {
 } from './channels/actions';
 import type { RaidenChannels } from './channels/state';
 import { ChannelState } from './channels/state';
-import { channelAmounts, channelKey } from './channels/utils';
+import { channelAmounts, channelKey, transact } from './channels/utils';
 import type { RaidenConfig } from './config';
 import { PartialRaidenConfig } from './config';
 import { ShutdownReason } from './constants';
@@ -52,7 +52,6 @@ import { CustomToken__factory } from './contracts';
 import { dumpDatabaseToArray } from './db/utils';
 import { combineRaidenEpics, getLatest$ } from './epics';
 import {
-  callAndWaitMined,
   chooseOnchainAccount,
   fetchContractsInfo,
   getContracts,
@@ -1118,15 +1117,11 @@ export class Raiden {
       this.log.info,
     );
 
-    const gasPrice = await firstValueFrom(this.deps.latest$.pipe(pluck('gasPrice')));
-
     const value = decode(UInt(32), amount, ErrorCodes.DTA_INVALID_AMOUNT);
-    const receipt = await callAndWaitMined(
-      customTokenContract,
-      'mintFor',
-      [value, beneficiary, { ...gasPrice }],
-      ErrorCodes.RDN_MINT_FAILED,
-      { log: this.log },
+    const [, receipt] = await lastValueFrom(
+      transact(customTokenContract, 'mintFor', [value, beneficiary], this.deps, {
+        error: ErrorCodes.RDN_MINT_FAILED,
+      }),
     );
 
     // wait for a single block, so future calls will correctly pick value
@@ -1171,14 +1166,14 @@ export class Raiden {
       () => undefined,
     );
 
-    const gasPrice = await firstValueFrom(this.deps.latest$.pipe(pluck('gasPrice')));
-
-    const receipt = await callAndWaitMined(
-      tokenNetworkRegistry,
-      'createERC20TokenNetwork',
-      [token, channelParticipantDepositLimit, tokenNetworkDepositLimit, { ...gasPrice }],
-      ErrorCodes.RDN_REGISTER_TOKEN_FAILED,
-      { log: this.log },
+    const [, receipt] = await lastValueFrom(
+      transact(
+        tokenNetworkRegistry,
+        'createERC20TokenNetwork',
+        [token, channelParticipantDepositLimit, tokenNetworkDepositLimit],
+        this.deps,
+        { error: ErrorCodes.RDN_REGISTER_TOKEN_FAILED },
+      ),
     );
     await waitConfirmation(receipt, this.deps);
 
@@ -1342,13 +1337,10 @@ export class Raiden {
     // caps value to balance, so if it's too big, transfer all
     const amount = curBalance.lte(value) ? curBalance : BigNumber.from(value);
 
-    const gasPrice = await firstValueFrom(this.deps.latest$.pipe(pluck('gasPrice')));
-    const receipt = await callAndWaitMined(
-      tokenContract,
-      'transfer',
-      [to, amount, { ...gasPrice }],
-      ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED,
-      { log: this.log },
+    const [, receipt] = await lastValueFrom(
+      transact(tokenContract, 'transfer', [to, amount], this.deps, {
+        error: ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED,
+      }),
     );
     return receipt.transactionHash as Hash;
   }

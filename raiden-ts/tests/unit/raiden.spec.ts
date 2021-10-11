@@ -36,7 +36,6 @@ import {
 import type { RaidenAction } from '@/actions';
 import { raidenConfigUpdate, raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
 import {
-  blockGasprice,
   channelClose,
   channelDeposit,
   channelOpen,
@@ -152,6 +151,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
   const provider = new JsonRpcProvider();
   Object.assign(provider, {
     _isProvider: true,
+    blockNumber: 118,
     getNetwork: jest.fn(async () => network),
     getBalance: jest.fn(async () => BigNumber.from(1_000_000)),
     getGasPrice: jest.fn(async () => BigNumber.from(5)),
@@ -160,6 +160,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
       confirmations: 11,
       transactionHash: txHash,
     })),
+    getFeeData: jest.fn(async () => ({ gasPrice: BigNumber.from(1e9) })),
   });
   const signer = wallet.connect(provider);
   const latest$ = new ReplaySubject<Latest>(1);
@@ -276,7 +277,6 @@ describe('Raiden', () => {
     return action$.pipe(
       filter(raidenStarted.is),
       mergeMapTo([
-        blockGasprice({ gasPrice: BigNumber.from(5) as UInt<32> }),
         raidenSynced({
           tookMs: 9,
           initialBlock: 1,
@@ -904,26 +904,28 @@ describe('Raiden', () => {
     );
   });
 
-  test('getTokenBalance/transferOnchainTokens', async () => {
+  test('getTokenBalance/transferOnchainTokens and gasPriceFactor', async () => {
     const deps = makeDummyDependencies();
     const mockTokenContract = {
       signer: deps.signer,
-      functions: {
-        transfer: jest.fn(async () => ({
-          wait: jest.fn(async () => ({
-            status: 1,
-            transactionHash: txHash,
-          })),
-        })),
+      estimateGas: {
+        transfer: jest.fn(async () => BigNumber.from(50e3)),
       },
+      transfer: jest.fn(async () => ({
+        wait: jest.fn(async () => ({
+          status: 1,
+          transactionHash: txHash,
+          blockNumber: deps.provider.blockNumber,
+        })),
+      })),
       callStatic: {
-        balanceOf: jest.fn(async () => BigNumber.from(1_000_000)),
+        balanceOf: jest.fn(async (_address: string) => BigNumber.from(1_000_000)),
       },
     };
     const mockGetTokenContract = jest.fn(() => mockTokenContract);
     deps.getTokenContract = mockGetTokenContract as any;
     const raiden = new Raiden(
-      makeInitialState({ address, network, contractsInfo }),
+      makeInitialState({ address, network, contractsInfo }, { config: { gasPriceFactor: 1.2 } }),
       deps,
       combineRaidenEpics([initEpicMock]),
       dummyReducer,
@@ -934,34 +936,39 @@ describe('Raiden', () => {
     const balance = raiden.getTokenBalance(token);
     await expect(balance).resolves.toEqual(BigNumber.from(1_000_000));
 
-    const tokenContract = deps.getTokenContract(token);
-    const mockedBalanceOf = tokenContract.callStatic.balanceOf as jest.MockedFunction<
-      typeof tokenContract.callStatic.balanceOf
-    >;
-    expect(mockedBalanceOf.mock.calls[0][0]).toEqual(raiden.address);
+    expect(mockTokenContract.callStatic.balanceOf.mock.calls[0][0]).toEqual(raiden.address);
 
     // Test transfering a specified amount of tokens
     const tx = raiden.transferOnchainTokens(token, partner, 1);
     await expect(tx).resolves.toEqual(txHash);
 
-    const mockedTransfer = tokenContract.functions.transfer as jest.MockedFunction<
-      typeof tokenContract.functions.transfer
-    >;
-    expect(mockedTransfer).toHaveBeenNthCalledWith(
-      1,
-      partner,
-      One,
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
-    );
+    expect(mockTokenContract.transfer).toHaveBeenNthCalledWith(1, partner, One, {
+      gasLimit: expect.toBeBigNumber(50e3 * 1.05),
+      gasPrice: expect.toBeBigNumber(1.2e9),
+    });
+
+    // update getFeeData to provide EIP-1559 fee data values
+    (
+      deps.provider.getFeeData as jest.MockedFunction<typeof deps.provider.getFeeData>
+    ).mockResolvedValue({
+      maxFeePerGas: BigNumber.from(3e9),
+      maxPriorityFeePerGas: BigNumber.from(2e9),
+      gasPrice: null,
+    });
+    Object.assign(deps.provider, { blockNumber: deps.provider.blockNumber + 1 });
 
     // Test transfering all tokens
     const tx2 = raiden.transferOnchainTokens(token, partner);
     await expect(tx2).resolves.toEqual(txHash);
-    expect(mockedTransfer).toHaveBeenNthCalledWith(
+    expect(mockTokenContract.transfer).toHaveBeenNthCalledWith(
       2,
       partner,
       BigNumber.from(1_000_000),
-      expect.objectContaining({ gasPrice: expect.toBeBigNumber() }),
+      {
+        gasLimit: expect.toBeBigNumber(50e3 * 1.05),
+        maxFeePerGas: expect.toBeBigNumber(3.4e9),
+        maxPriorityFeePerGas: expect.toBeBigNumber(2.4e9),
+      },
     );
   });
 
@@ -1382,21 +1389,23 @@ describe('Raiden', () => {
     const svtAddress = await raiden.userDepositTokenAddress();
     const svtContract = {
       address: svtAddress,
-      functions: {
-        mintFor: jest.fn(async () => ({
-          hash: txHash,
-          wait: jest.fn(async () => ({
-            blockNumber: blockNumber - 1,
-            status: 1,
-            transactionHash: txHash,
-          })),
-        })),
+      signer: deps.signer,
+      estimateGas: {
+        mintFor: jest.fn(async () => BigNumber.from(50e3)),
       },
+      mintFor: jest.fn(async () => ({
+        hash: txHash,
+        wait: jest.fn(async () => ({
+          blockNumber: blockNumber - 1,
+          status: 1,
+          transactionHash: txHash,
+        })),
+      })),
     } as any;
     const svtSpy = jest.spyOn(CustomToken__factory, 'connect').mockReturnValue(svtContract);
 
     await expect(raiden.mint(svtAddress, 10, { to: beneficiary })).resolves.toBe(txHash);
-    expect(svtContract.functions.mintFor).toHaveBeenCalledWith(
+    expect(svtContract.mintFor).toHaveBeenCalledWith(
       BigNumber.from(10),
       beneficiary,
       expect.anything(),
@@ -1409,15 +1418,17 @@ describe('Raiden', () => {
     const deps = makeDummyDependencies();
     deps.registryContract = {
       ...deps.registryContract,
-      functions: {
-        createERC20TokenNetwork: jest.fn(async () => ({
-          hash: txHash,
-          wait: jest.fn(async () => ({
-            blockNumber: blockNumber - 5,
-            status: 1,
-          })),
-        })),
+      estimateGas: {
+        createERC20TokenNetwork: jest.fn(async () => BigNumber.from(50e3)),
       },
+      createERC20TokenNetwork: jest.fn(async () => ({
+        hash: txHash,
+        wait: jest.fn(async () => ({
+          blockNumber: blockNumber - 5,
+          transactionHash: makeHash(),
+          status: 1,
+        })),
+      })),
     } as any;
     const blockNumber = 119;
     const raiden = new Raiden(
@@ -1434,7 +1445,7 @@ describe('Raiden', () => {
     raiden.monitorToken = monitorTokenMock;
 
     await expect(raiden.registerToken(token)).resolves.toBe(tokenNetworkAddress);
-    expect(deps.registryContract.functions.createERC20TokenNetwork).toHaveBeenCalledWith(
+    expect(deps.registryContract.createERC20TokenNetwork).toHaveBeenCalledWith(
       token,
       MaxUint256,
       MaxUint256,
