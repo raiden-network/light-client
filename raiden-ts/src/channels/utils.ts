@@ -7,7 +7,7 @@ import type {
   ContractTransaction,
 } from '@ethersproject/contracts';
 import type { Observable, OperatorFunction } from 'rxjs';
-import { combineLatest, defer, of, ReplaySubject } from 'rxjs';
+import { defer, of, ReplaySubject } from 'rxjs';
 import {
   filter,
   first,
@@ -230,10 +230,38 @@ export function groupChannel(): OperatorFunction<RaidenState, Observable<Channel
     );
 }
 
+const feeDataCache = new WeakMap<
+  RaidenEpicDeps['provider'],
+  readonly [blockNumber: number, promise: ReturnType<RaidenEpicDeps['provider']['getFeeData']>]
+>();
+/**
+ * provider.getFeeData, but caches result per provider and per blockNumber (i.e. invalidates cache
+ * on each block)
+ *
+ * @param provider - JsonRpcProvider instance to getFeeData from
+ * @returns cached promise to feeData
+ */
+const getFeeData = Object.assign(
+  function getFeeData_(
+    provider: RaidenEpicDeps['provider'],
+  ): ReturnType<RaidenEpicDeps['provider']['getFeeData']> {
+    const cached = feeDataCache.get(provider);
+    if (cached?.[0] === provider.blockNumber) return cached[1];
+    const promise = provider.getFeeData().catch((err) => {
+      feeDataCache.delete(provider);
+      throw err; // re-throw
+    });
+    feeDataCache.set(provider, [provider.blockNumber, promise]);
+    return promise;
+  },
+  { cache: feeDataCache },
+);
+
 /**
  * Performs a contract transaction with retries
- * It automatically choose gasPrice from latest$ gasPrice, and choose which account to use for call
- * depending on opts.subkey or config.subkey (defaults to main account, if available);
+ * It automatically choose gasPrice from latest provider.getFeeData, and choose which account to
+ * use for call depending on opts.subkey or config.subkey (defaults to main account, if available),
+ * it also adds a +5% margin over estimated gasLimit;
  * this function errors if tx doesn't succeed; retry must be implemented by caller
  *
  * @param contract - Contract instance
@@ -259,10 +287,32 @@ export function transact<C extends Contract, M extends keyof C['estimateGas'] & 
     error = ErrorCodes.RDN_TRANSACTION_FAILED,
   }: { subkey?: boolean | null; error?: string } = {},
 ) {
-  const { config$, latest$ } = deps;
-  return combineLatest([config$, latest$]).pipe(
-    first(),
-    mergeMap(([{ subkey: configSubkey }, { gasPrice }]) => {
+  const { provider, config$ } = deps;
+  return defer(async () => getFeeData(provider)).pipe(
+    withLatestFrom(config$),
+    mergeMap(([feeData, { gasPriceFactor, subkey: configSubkey }]) => {
+      let gasPrice:
+        | { gasPrice: BigNumber }
+        | { maxPriorityFeePerGas: BigNumber; maxFeePerGas: BigNumber }
+        | undefined;
+      if (!gasPriceFactor || gasPriceFactor === 1.0) gasPrice = undefined;
+      else if (feeData.maxPriorityFeePerGas && feeData.maxFeePerGas) {
+        // post-EIP1559, we apply gasPriceFactor only over maxPriorityFeePerGas, and it allows
+        // to decrease the default priority fee if <1
+        const addedPriorityFee = feeData.maxPriorityFeePerGas
+          .mul(Math.round((gasPriceFactor - 1.0) * 1e6))
+          .div(1e6);
+        gasPrice = {
+          // default ethers maxPriorityFeePerGas is constant 2.5Gwei
+          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.add(addedPriorityFee),
+          maxFeePerGas: feeData.maxFeePerGas.add(addedPriorityFee),
+        };
+      } else if (feeData.gasPrice) {
+        gasPrice = {
+          gasPrice: feeData.gasPrice.mul(Math.round(gasPriceFactor * 1e6)).div(1e6),
+        };
+      }
+
       let contractWithSigner = contract;
       if (subkey !== null) {
         const { signer: onchainSigner } = chooseOnchainAccount(deps, subkey ?? configSubkey);

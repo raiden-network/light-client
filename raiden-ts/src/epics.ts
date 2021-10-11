@@ -27,7 +27,7 @@ import {
 
 import type { RaidenAction } from './actions';
 import { raidenConfigCaps, raidenShutdown } from './actions';
-import { blockGasprice, blockStale, blockTime } from './channels/actions';
+import { blockStale, blockTime } from './channels/actions';
 import * as ChannelsEpics from './channels/epics';
 import type { RaidenConfig } from './config';
 import { Capabilities } from './constants';
@@ -167,7 +167,6 @@ export function getLatest$(
     pluck('payload', 'blockTime'),
     startWith(15e3), // default initial blockTime of 15s
   );
-  const gasPrice$ = action$.pipe(filter(blockGasprice.is), pluck('payload'), startWith(undefined));
   const stale$ = action$.pipe(
     filter(blockStale.is),
     pluck('payload', 'stale'),
@@ -237,21 +236,18 @@ export function getLatest$(
 
   return combineLatest([
     combineLatest([action$, state$, config$, whitelisted$, rtc$]),
-    combineLatest([udcDeposit$, blockTime$, stale$, gasPrice$]),
+    combineLatest([udcDeposit$, blockTime$, stale$]),
   ]).pipe(
-    map(
-      ([[action, state, config, whitelisted, rtc], [udcDeposit, blockTime, stale, gasPrice]]) => ({
-        action,
-        state,
-        config,
-        whitelisted,
-        rtc,
-        udcDeposit,
-        blockTime,
-        stale,
-        gasPrice,
-      }),
-    ),
+    map(([[action, state, config, whitelisted, rtc], [udcDeposit, blockTime, stale]]) => ({
+      action,
+      state,
+      config,
+      whitelisted,
+      rtc,
+      udcDeposit,
+      blockTime,
+      stale,
+    })),
   );
 }
 
