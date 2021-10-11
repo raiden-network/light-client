@@ -4,7 +4,7 @@ import * as t from 'io-ts';
 import { WithdrawConfirmation, WithdrawRequest } from '../messages';
 import type { ActionType } from '../utils/actions';
 import { createAction, createAsyncAction } from '../utils/actions';
-import { Address, BigNumberC, Hash, Signed, UInt } from '../utils/types';
+import { Address, Hash, Signed, UInt } from '../utils/types';
 import { Lock } from './types';
 
 // interfaces need to be exported, and we need/want to support `import * as RaidenActions`
@@ -23,16 +23,6 @@ export interface blockTime extends ActionType<typeof blockTime> {}
 
 export const blockStale = createAction('block/stale', t.type({ stale: t.boolean }));
 export interface blockStale extends ActionType<typeof blockStale> {}
-
-export const blockGasprice = createAction(
-  'block/gasPrice',
-  t.union([
-    t.type({ gasPrice: BigNumberC }),
-    t.partial({ maxPriorityFeePerGas: BigNumberC, maxFeePerGas: BigNumberC }),
-    t.undefined,
-  ]),
-);
-export interface blockGasprice extends ActionType<typeof blockGasprice> {}
 
 /**
  * A new token network is detected in the TokenNetworkRegistry instance

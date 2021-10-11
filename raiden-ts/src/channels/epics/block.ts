@@ -1,4 +1,3 @@
-import type { BigNumber } from '@ethersproject/bignumber';
 import constant from 'lodash/constant';
 import type { Observable } from 'rxjs';
 import { combineLatest, concat, defer, EMPTY, from, of, timer } from 'rxjs';
@@ -31,7 +30,7 @@ import type { RaidenEpicDeps } from '../../types';
 import { fromEthersEvent } from '../../utils/ethers';
 import { completeWith, lastMap, pluckDistinct, retryAsync$ } from '../../utils/rx';
 import { isntNil } from '../../utils/types';
-import { blockGasprice, blockStale, blockTime, newBlock } from '../actions';
+import { blockStale, blockTime, newBlock } from '../actions';
 
 /**
  * Emits raidenSynced when all init$ tasks got completed
@@ -182,68 +181,6 @@ export function blockStaleEpic(
     ),
     distinctUntilChanged(),
     map((stale) => blockStale({ stale })),
-  );
-}
-
-function bnIsClose(a: BigNumber, b: BigNumber, factor = 100): boolean {
-  return a.sub(b).abs().lt(a.div(factor));
-}
-
-/**
- * Monitors provider for current mean gasPrice, and multiply it by config.gasPriceFactor
- *
- * @param action$ - Observable of RaidenActions
- * @param state$ - Observable of RaidenStates
- * @param deps - RaidenEpicDeps members
- * @param deps.provider - Provider instance
- * @param deps.config$ - Config observable
- * @returns Observable of blockGasprice actions
- */
-export function blockGasPriceEpic(
-  {}: Observable<RaidenAction>,
-  state$: Observable<RaidenState>,
-  { provider, config$ }: RaidenEpicDeps,
-): Observable<blockGasprice> {
-  return state$.pipe(
-    pluckDistinct('blockNumber'),
-    withLatestFrom(config$),
-    exhaustMap(([, { gasPriceFactor }]) => {
-      if (!gasPriceFactor || gasPriceFactor === 1.0) return of(undefined);
-      return defer(async () => provider.getFeeData()).pipe(
-        map((feeData) => {
-          if (feeData.maxPriorityFeePerGas && feeData.maxFeePerGas) {
-            // post-EIP1559, we apply gasPriceFactor only over maxPriorityFeePerGas, and it allows
-            // to decrease the default priority fee if <1
-            const addedPriorityFee = feeData.maxPriorityFeePerGas
-              .mul(Math.round((gasPriceFactor - 1.0) * 1e6))
-              .div(1e6);
-            return {
-              // default ethers maxPriorityFeePerGas is constant 2.5Gwei
-              maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.add(addedPriorityFee),
-              maxFeePerGas: feeData.maxFeePerGas.add(addedPriorityFee),
-            } as const;
-          } else if (feeData.gasPrice) {
-            return {
-              gasPrice: feeData.gasPrice.mul(Math.round(gasPriceFactor * 1e6)).div(1e6),
-            } as const;
-          }
-        }),
-        catchError(constant(EMPTY)),
-      );
-    }),
-    // debounce gasPrice changes smaller than 1%
-    distinctUntilChanged((a, b) => {
-      if (!a && !b) return true;
-      // one truthy, one undefined
-      else if (!!a !== !!b) return false;
-      else if (a!.gasPrice) return bnIsClose(a!.gasPrice, b!.gasPrice!, 100);
-      else
-        return (
-          a!.maxPriorityFeePerGas!.eq(b!.maxPriorityFeePerGas!) &&
-          bnIsClose(a!.maxFeePerGas!, b!.maxFeePerGas!, 100)
-        );
-    }),
-    map((gasPrice) => blockGasprice(gasPrice)),
   );
 }
 

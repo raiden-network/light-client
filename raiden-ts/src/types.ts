@@ -1,5 +1,4 @@
 import type { Signer } from '@ethersproject/abstract-signer';
-import type { BigNumber } from '@ethersproject/bignumber';
 import type { Network } from '@ethersproject/networks';
 import type { JsonRpcProvider } from '@ethersproject/providers';
 import type { Logger } from 'loglevel';
@@ -46,10 +45,6 @@ export interface Latest {
   udcDeposit: { balance: UInt<32>; totalDeposit: UInt<32> };
   blockTime: number;
   stale: boolean;
-  gasPrice?:
-    | { readonly gasPrice: BigNumber }
-    | { readonly maxPriorityFeePerGas?: BigNumber; readonly maxFeePerGas?: BigNumber }
-    | undefined;
 }
 
 export interface RaidenEpicDeps {

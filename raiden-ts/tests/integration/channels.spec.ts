@@ -41,7 +41,6 @@ import { first, pluck } from 'rxjs/operators';
 import { raidenConfigUpdate } from '@/actions';
 import { ChannelState } from '@/channels';
 import {
-  blockGasprice,
   channelClose,
   channelDeposit,
   channelMonitored,
@@ -1145,74 +1144,4 @@ test('stale provider disables receiving', async () => {
   await waitBlock();
   await sleep();
   expect(raiden.config.caps?.[Capabilities.RECEIVE]).toBeTruthy();
-});
-
-describe('blockGasPriceEpic', () => {
-  test('updates latest.gasPrice on new block', async () => {
-    expect.assertions(7);
-
-    const raiden = await makeRaiden(undefined, false);
-    raiden.deps.provider.getFeeData.mockResolvedValue({
-      maxFeePerGas: BigNumber.from(1e9),
-      maxPriorityFeePerGas: BigNumber.from(2.5e9),
-      gasPrice: null,
-    });
-
-    await raiden.start();
-    await sleep();
-    await expect(
-      firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice'))),
-    ).resolves.toBeUndefined();
-
-    raiden.store.dispatch(raidenConfigUpdate({ gasPriceFactor: 2.0 }));
-    await waitBlock();
-    expect(raiden.output.filter(blockGasprice.is)).toHaveLength(2);
-    await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual({
-      // maxFeePerGas must contain increased maxPriorityFeePerGas
-      maxFeePerGas: expect.toBeBigNumber(1e9 + 2.5e9),
-      maxPriorityFeePerGas: expect.toBeBigNumber(2.5e9 * 2),
-    });
-
-    raiden.deps.provider.getFeeData.mockResolvedValue({
-      maxFeePerGas: BigNumber.from(1.1e9), // increase maxFeePerGas
-      maxPriorityFeePerGas: BigNumber.from(2.5e9),
-      gasPrice: null,
-    });
-    await waitBlock();
-    expect(raiden.output.filter(blockGasprice.is)).toHaveLength(3);
-    await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual({
-      // maxFeePerGas must contain increased maxPriorityFeePerGas
-      maxFeePerGas: expect.toBeBigNumber(1.1e9 + 2.5e9),
-      maxPriorityFeePerGas: expect.toBeBigNumber(2.5e9 * 2),
-    });
-
-    expect(raiden.deps.provider.getGasPrice).not.toHaveBeenCalled();
-    expect(raiden.deps.provider.getFeeData).toHaveBeenCalledTimes(2);
-  });
-
-  test('supports legacy networks', async () => {
-    expect.assertions(3);
-
-    const raiden = await makeRaiden(undefined, false);
-    raiden.deps.provider.getFeeData.mockResolvedValue({
-      maxFeePerGas: null,
-      maxPriorityFeePerGas: null,
-      gasPrice: BigNumber.from(1e9),
-    });
-
-    await raiden.start();
-    await waitBlock();
-
-    await expect(
-      firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice'))),
-    ).resolves.toBeUndefined();
-
-    raiden.store.dispatch(raidenConfigUpdate({ gasPriceFactor: 2.0 }));
-    await waitBlock();
-    await waitBlock();
-    expect(raiden.output.filter(blockGasprice.is)).toHaveLength(2);
-    await expect(firstValueFrom(raiden.deps.latest$.pipe(pluck('gasPrice')))).resolves.toEqual({
-      gasPrice: expect.toBeBigNumber(2e9),
-    });
-  });
 });
