@@ -84,7 +84,7 @@ import {
 import { matrixPresence } from '@/transport/actions';
 import type { ContractsInfo, Latest, RaidenEpicDeps } from '@/types';
 import { assert } from '@/utils';
-import { ErrorCodes } from '@/utils/error';
+import { ErrorCodes, RaidenError } from '@/utils/error';
 import { completeWith, pluckDistinct } from '@/utils/rx';
 import type { Int, Secret, UInt } from '@/utils/types';
 import { Address, timed } from '@/utils/types';
@@ -1546,7 +1546,7 @@ describe('Raiden', () => {
         { adapter: 'memory' },
         contractsInfo,
       ),
-    ).rejects.toMatchObject({ message: ErrorCodes.RDN_ACCOUNT_NOT_FOUND });
+    ).rejects.toThrowWithMessage(RaidenError, ErrorCodes.RDN_ACCOUNT_NOT_FOUND);
     await expect(
       Raiden.create.call(
         MockedRaiden as any,
@@ -1555,7 +1555,7 @@ describe('Raiden', () => {
         { adapter: 'memory' },
         contractsInfo,
       ),
-    ).rejects.toMatchObject({ message: ErrorCodes.RDN_STRING_ACCOUNT_INVALID });
+    ).rejects.toThrowWithMessage(RaidenError, ErrorCodes.RDN_STRING_ACCOUNT_INVALID);
     await expect(
       Raiden.create.call(
         MockedRaiden as any,
@@ -1583,7 +1583,7 @@ describe('Raiden', () => {
         { adapter: 'memory' },
         contractsInfo,
       ),
-    ).rejects.toMatchObject({ message: ErrorCodes.RDN_SIGNER_NOT_CONNECTED });
+    ).rejects.toThrowWithMessage(RaidenError, ErrorCodes.RDN_SIGNER_NOT_CONNECTED);
     const privKey = keccak256([]); // hashes are valid private keys
     await expect(
       Raiden.create.call(
