@@ -140,7 +140,7 @@
       "<rootDir>/tests/setup.ts"
     ],
     "setupFilesAfterEnv": [
-      "jest-extended",
+      "jest-extended/all",
       "<rootDir>/tests/setupAfter.ts"
     ],
     "verbose": true,
