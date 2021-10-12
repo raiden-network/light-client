@@ -245,7 +245,6 @@ export function udcAutoWithdrawEpic(
     filter((currentBlock) => currentBlock >= nextCheckBlock),
     exhaustMap((currentBlock) =>
       defer(async () => userDepositContract.withdraw_plans(address)).pipe(
-        catchAndLog({ onErrors: networkErrors, log: log.debug }),
         mergeMap(function* ({ amount, withdraw_block: withdrawBlock }) {
           const meta = { amount: amount as UInt<32> };
           if (withdrawBlock.isZero()) {
@@ -269,6 +268,7 @@ export function udcAutoWithdrawEpic(
           }
         }),
         mergeAll(), // mergeMap above yields observables, so merge them inside exhaustMap
+        catchAndLog({ log: log.info }),
       ),
     ),
     takeIf(config$.pipe(pluck('autoUDCWithdraw'), completeWith(action$))),

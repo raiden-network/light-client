@@ -339,11 +339,13 @@ export async function waitConfirmation(
  *
  * @param provider - Ethers provider to use to fetch contracts data
  * @param userDeposit - UserDeposit contract address as entrypoint
+ * @param fromBlock - If specified, uses this as initial scanning block
  * @returns contracts info, with blockNumber as block of first registered tokenNetwork
  */
 export async function fetchContractsInfo(
   provider: JsonRpcProvider,
   userDeposit: Address,
+  fromBlock?: number,
 ): Promise<ContractsInfo> {
   const userDepositContract = UserDeposit__factory.connect(userDeposit, provider);
 
@@ -364,14 +366,16 @@ export async function fetchContractsInfo(
   const serviceRegistry = (await monitoringServiceContract.service_registry()) as Address;
 
   const toBlock = await provider.getBlockNumber();
-  const firstBlock = await firstValueFrom(
-    getLogsByChunk$(provider, {
-      ...tokenNetworkRegistryContract.filters.TokenNetworkCreated(null, null),
-      fromBlock: 1,
-      toBlock,
-    }).pipe(pluck('blockNumber'), filter(isntNil)),
-    { defaultValue: toBlock },
-  );
+  const firstBlock =
+    fromBlock ||
+    (await firstValueFrom(
+      getLogsByChunk$(provider, {
+        ...tokenNetworkRegistryContract.filters.TokenNetworkCreated(null, null),
+        fromBlock: 1,
+        toBlock,
+      }).pipe(pluck('blockNumber'), filter(isntNil)),
+      { defaultValue: toBlock },
+    ));
 
   const oneToN = (await userDepositContract.one_to_n_address()) as Address;
 

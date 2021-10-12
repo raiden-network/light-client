@@ -303,13 +303,18 @@ export class Raiden {
     if (!contractsOrUDCAddress) {
       contractsInfo = getContracts(network);
     } else if (typeof contractsOrUDCAddress === 'string') {
+      const [udcAddress, ...rest] = contractsOrUDCAddress.split(':');
       // if an Address is provided, use it as UserDeposit contract address entrypoint and fetch
       // all contracts from there
-      assert(Address.is(contractsOrUDCAddress), [
+      assert(Address.is(udcAddress), [
         ErrorCodes.DTA_INVALID_ADDRESS,
         { contractsOrUserDepositAddress: contractsOrUDCAddress },
       ]);
-      contractsInfo = await fetchContractsInfo(provider, contractsOrUDCAddress);
+      contractsInfo = await fetchContractsInfo(
+        provider,
+        udcAddress,
+        ...(rest.map((s) => +s) as [number?]),
+      );
     } else {
       contractsInfo = contractsOrUDCAddress;
     }
