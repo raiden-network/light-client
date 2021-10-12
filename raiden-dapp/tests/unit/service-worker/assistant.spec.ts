@@ -94,7 +94,6 @@ describe('ServiceWorkerAssistant', () => {
     Object.defineProperty(global.navigator, 'serviceWorker', { writable: true });
     Object.defineProperty(global, 'fetch', { writable: true });
 
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((_message) => undefined);
     windowReloadSpy = jest.fn().mockImplementation(() => undefined);
     Reflect.deleteProperty(global.window, 'location');
     global.window.location = {
@@ -117,6 +116,7 @@ describe('ServiceWorkerAssistant', () => {
   });
 
   beforeEach(() => {
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((_message) => undefined);
     intervalIds = [];
     jest.clearAllMocks();
     serviceWorkerContainer.clear();
