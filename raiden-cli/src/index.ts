@@ -75,8 +75,7 @@ async function parseArguments() {
       },
       userDepositContractAddress: {
         type: 'string',
-        desc: "Address of UserDeposit contract to use as contract's entrypoint",
-        check: Address.is,
+        desc: "Address of UserDeposit contract to use as contract's entrypoint; optionally, append ':<block>' to start scanning since this block",
       },
       acceptDisclaimer: {
         type: 'boolean',

@@ -3,8 +3,10 @@
 ## [Unreleased]
 ### Added
 - [#2949] Passthrough `/payments` parameters, including `paths`, which should receive pre-fetched route in the format `{ route: Address[]; estimated_fee: NumericString; address_metadata?: MetadataMap }[]`.
+- [#2971] Allow appending `:<block>` to `--user-deposit-contract-address=` option, to start scanning since this block instead of genesis
 
 [#2949]: https://github.com/raiden-network/light-client/issues/2949
+[#2971]: https://github.com/raiden-network/light-client/pull/2971
 
 ## [2.0.0-rc.2] - 2021-09-14
 

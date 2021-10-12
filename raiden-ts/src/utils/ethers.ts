@@ -105,7 +105,7 @@ export function getLogsByChunk$(
   // this defer ensures consistent behavior upon re-subscription
   return defer(() => {
     let start = fromBlock;
-    let curChunk = chunk;
+    let curChunk = Math.min(chunk, toBlock - fromBlock + 1);
     let retry = 3;
     // every time repeatWhen re-subscribes to this defer, yield (current/retried/next) range/chunk
     return defer(async () =>
