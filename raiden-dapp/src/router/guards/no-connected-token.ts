@@ -20,10 +20,11 @@ export const redirectIfNoConnectedToken: NavigationGuardChild = (to, store) => {
   const { tokensWithChannels } = store.getters;
   const noTokenWithChannel = Object.keys(tokensWithChannels).length === 0;
   const routingToNoTokens = to.name === RouteNames.NO_CONNECTED_TOKEN;
+  const routingToQuickPayRoute = to.name === RouteNames.QUICK_PAY;
   const routingToAccountRoute = accountRoutes.includes(to.name ?? '');
   const routingToConnectTokenRoute = connectTokenRoutes.includes(to.name ?? '');
 
-  if (routingToAccountRoute) return undefined;
+  if (routingToAccountRoute || routingToQuickPayRoute) return undefined;
 
   if (routingToConnectTokenRoute) return null;
 

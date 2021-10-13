@@ -21,6 +21,7 @@ const {
   [RouteNames.SELECT_TOKEN]: selectTokenRoute,
   [RouteNames.SELECT_HUB]: selectHubRoute,
   [RouteNames.OPEN_CHANNEL]: openChannelRoute,
+  [RouteNames.QUICK_PAY]: quickPayRoute,
   ...protectedRoutes
 } = transformRouteConfigsToRoutes();
 
@@ -96,5 +97,11 @@ describe('redirectIfNoConnectedToken()', () => {
     Object.values(accountRoutes).forEach((route) => {
       expect(redirectIfNoConnectedToken(route, store)).toBeUndefined();
     });
+  });
+
+  test('do nothing if navigating to quick pay route', () => {
+    const store = createStore();
+
+    expect(redirectIfNoConnectedToken(quickPayRoute, store)).toBeUndefined();
   });
 });
