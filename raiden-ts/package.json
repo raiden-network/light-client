@@ -101,7 +101,7 @@
     "decimal.js": "^10.3.1",
     "eciesjs": "^0.3.12",
     "ethers": "^5.4.7",
-    "fp-ts": "^2.11.4",
+    "fp-ts": "^2.11.5",
     "io-ts": "^2.2.16",
     "isomorphic-fetch": "^3.0.0",
     "json-bigint": "^1.0.0",
