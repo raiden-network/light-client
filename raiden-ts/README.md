@@ -14,7 +14,7 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
-> **INFO:** The Light Client SDK is **work in progress**, doesn't work for token transfers yet and currently can only be used on the Ethereum **Testnets**.
+> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects. All three projects have been released for mainnet and all code is available in the [Light Client repository](https://github.com/raiden-network/light-client). As this release still has its limitations and is a beta release, it is crucial to read this readme including the security notes carefully before using the software.
 
 ## Table of Contents
 
@@ -67,13 +67,13 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 
 The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, enabling near-instant, low-fee and scalable payments. It’s complementary to the Ethereum blockchain and works with any ERC20 compatible token.
 
-The Raiden client code is available [here](https://github.com/raiden-network/raiden) and has been [released for mainnet](https://medium.com/raiden-network/red-eyes-mainnet-release-announcement-d48235bbef3c) with a limited alpha release of the Raiden Network in December 2018.
+The Raiden client code is available [here](https://github.com/raiden-network/raiden) and has been [released for mainnet](https://medium.com/raiden-network/alderaan-mainnet-release-announcement-7f701e58c236) in beta state as part of the Alderaan Raiden Network release in May 2020.
 
 The main entry point of the SDK is the `Raiden` class, which exposes an `async`/promise-based public API to fetch state, events and perform every action provided by the SDK on the blockchain and the Raiden Network.
 
-Internally, the SDK architecture is a Redux-powered state machine, where every blockchain event, user request and off-chain message from other Raiden nodes and service providers follows an unified flow as actions on this state machine. These actions produce deterministic changes to the state and may cause other actions to be emitted as well. Asynchronous operations are handled by a pipeline of [redux-observable](https://redux-observable.js.org) epics, an [RxJs](https://rxjs.dev/) async extension for Redux which unleashes the power, versatility and correctness of observables to Redux actions processing. These epics interact with the blockchain through [ethers.js](https://github.com/ethers-io/ethers.js) providers, signers and contracts, allowing seamless integration with different web3 providers, such as [Metamask](https://metamask.io/). Redux state is optionally persisted on the `indexedDB` on the browser if you use the `raiden-dapp` or if used with `raiden-cli` is persisted on the file system with `leveldown` db or emitted to be persisted somewhere else. Tests are implemented with [Jest](https://jestjs.io).
+Internally, the SDK architecture is a Redux-powered state machine, where every blockchain event, user request and off-chain message from other Raiden nodes and service providers follows an unified flow as actions on this state machine. These actions produce deterministic changes to the state and may cause other actions to be emitted as well. Asynchronous operations are handled by a pipeline of [redux-observable](https://redux-observable.js.org) epics, an [RxJs](https://rxjs.dev/) async extension for Redux which unleashes the power, versatility and correctness of observables to Redux actions processing. These epics interact with the blockchain through [ethers.js](https://github.com/ethers-io/ethers.js) providers, signers and contracts, allowing seamless integration with different web3 providers, such as [Metamask](https://metamask.io/). Redux state is persisted using [PouchDB](https://pouchdb.com/), with `indexedDB` as backend on browsers, if you use the `raiden-dapp`, or `LevelDown` if used with `raiden-cli` on NodeJS. Tests are implemented with [Jest](https://jestjs.io).
 
-External off-chain communication with the Raiden Network is provided by a dedicated federation of community-provided [matrix.org](https://matrix.org) homeservers, accessed through [matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk).
+External off-chain communication with the Raiden Network is provided by a dedicated federation of community-provided [matrix.org](https://matrix.org) homeservers, accessed through [matrix-js-sdk](https://github.com/matrix-org/matrix-js-sdk), and [WebRTC](https://webrtc.org/) for fast p2p communication.
 
 ### Architecture diagram
 
@@ -83,15 +83,15 @@ External off-chain communication with the Raiden Network is provided by a dedica
             |    Raiden SDK     |
             |                   |
             +----+----+----+----+
-            |         |         |      +------------+
-         +--+  redux  +  epics  +------+ Matrix.org |
-         |  |         |         |      +-----+------+
-         |  +---------+-----+---+            |
-         |                  |          +-----+------+
-+--------+-------+   +------+------+   |   Raiden   |
-|    database    |   |  ethers.js  |   |   Network  |
-+----------------+   +------+------+   +------------+
-                            |
+            |         |         |      +--------------+
+        +---+  redux  +  epics  +------+ Matrix.org / |
+        |   |         |         |      |    WebRTC    |
+        |   +---------+-----+---+      +-------+------+
+        |                   |                  |
++-------+--------+   +------+------+    +------+------+
+|    pouchDB     |   |  ethers.js  |    |    Raiden   |
++----------------+   +------+------+    |    Network  |
+                            |           +-------------+
                      +------+------+
                      |  ethereum   |
                      +-------------+
@@ -103,17 +103,11 @@ A technical deep dive into the SDK architecture, technologies, tips and details 
 
 - **Layer 1 works reliably:** That means that you have got a web3 provider (eg. MetaMask) that is always synced and working reliably. If there are any problems or bugs on the client then Raiden can not work reliably.
 
-- **Persistency of local DB:** Your local state database is stored in your browser storage (IndexedDB). This data should not be deleted by the user or tampered with in any way. Frequent backups are also recommended. Deleting this storage could mean losing funds.
+- **Persistency of local DB:** Your local state database is stored in your IndexedDB storage on browser environments, and local LevelDown database folder on NodeJS environments. This data should not be deleted by the user or tampered with in any way. Frequent backups are also recommended. Deleting this storage could mean losing funds.
 
 - **Dedicated account for Raiden:** We need to have a specific Ethereum account dedicated to Raiden. Creating any manual transaction with the account that Raiden uses, while the Raiden client is running, can result in undefined behavior.
 
-- **Raiden account has sufficient ETH:** Raiden will try to warn you if there is not enough ETH in your Raiden account in order to maintain your current open channels and go through their entire cycle. But it is your job as the user to refill your account with ETH and always have it filled.
-
-- **Raiden always online:** Make sure that your node is always working, your network connection is stable and that the Raiden node is always online. If it crashes for whatever reason you are responsible to restart it and keep it always online. We recommend running it inside some form of monitor that will restart if for some reason the Raiden node crashes.
-
-- **Ethereum client always online:** Make sure that your Ethereum client is always running and is synced. We recommend running it inside some form of monitor that will restart if for some reason it crashes.
-
-- **Ethereum client is not changed:** Swapping the Ethereum client while transactions are not mined is considered unsafe. We recommend avoiding switching Ethereum clients once the Raiden node is running.
+- **Raiden account has sufficient ETH:** It is your job as the user to ensure your account has enough ETH at all times when some on-chain transactions needs to be performed. Most of those are on-demand/interactive, but some may be required as a reaction to some non-interactive event (e.g. registering the secret for a received but not unlocked transfer).
 
 ## Getting Started
 
