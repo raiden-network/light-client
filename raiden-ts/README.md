@@ -105,8 +105,6 @@ A technical deep dive into the SDK architecture, technologies, tips and details 
 
 - **Persistency of local DB:** Your local state database is stored in your IndexedDB storage on browser environments, and local LevelDown database folder on NodeJS environments. This data should not be deleted by the user or tampered with in any way. Frequent backups are also recommended. Deleting this storage could mean losing funds.
 
-- **Dedicated account for Raiden:** We need to have a specific Ethereum account dedicated to Raiden. Creating any manual transaction with the account that Raiden uses, while the Raiden client is running, can result in undefined behavior.
-
 - **Raiden account has sufficient ETH:** It is your job as the user to ensure your account has enough ETH at all times when some on-chain transactions needs to be performed. Most of those are on-demand/interactive, but some may be required as a reaction to some non-interactive event (e.g. registering the secret for a received but not unlocked transfer).
 
 ## Getting Started
