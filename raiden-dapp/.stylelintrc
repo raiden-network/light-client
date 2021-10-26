@@ -6,6 +6,7 @@
   "extends": "stylelint-config-recommended-scss",
   "rules": {
     "no-empty-source": null,
+    "scss/no-global-function-names": null,
     "selector-pseudo-element-no-unknown": [
       true,
       {
@@ -14,11 +15,13 @@
     ],
     "scss/selector-nest-combinators": "always",
     "scss/selector-no-redundant-nesting-selector": true,
-    "plugin/stylelint-bem-namics": {
-      "patternPrefixes": [],
-      "helperPrefixes": []
-    },
     "selector-class-pattern": "^(?:(?![^&](__|--))[\\s\\S])*$",
     "selector-nested-pattern": "^(?:(?![^&](__|--))[\\s\\S])*$"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["./src/**/*.vue"],
+      "customSyntax": "postcss-html"
+    }
+  ]
 }
