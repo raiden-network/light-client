@@ -67,7 +67,7 @@ The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compat
 
 The [Raiden Network](https://raiden.network/) is an off-chain scaling solution, enabling near-instant, low-fee and scalable payments. It’s complementary to the Ethereum blockchain and works with any ERC20 compatible token.
 
-The Raiden client code is available [here](https://github.com/raiden-network/raiden) and has been [released for mainnet](https://medium.com/raiden-network/alderaan-mainnet-release-announcement-7f701e58c236) in beta state as part of the Alderaan Raiden Network release in May 2020.
+The Raiden client code is available [here](https://github.com/raiden-network/raiden) and has been [released for mainnet](https://medium.com/raiden-network/bespin-mainnet-release-announcement-87f5d5ede018) as part of the Bespin Raiden Network release in June 2021.
 
 The main entry point of the SDK is the `Raiden` class, which exposes an `async`/promise-based public API to fetch state, events and perform every action provided by the SDK on the blockchain and the Raiden Network.
 
