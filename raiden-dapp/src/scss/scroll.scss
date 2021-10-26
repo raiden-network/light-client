@@ -13,7 +13,7 @@
 }
 
 
-.themed-scrollbar {
+.themed-scrollbar, %themed-scrollbar {
   scrollbar-color: $secondary-color $card-background;
   scrollbar-width: thin;
 

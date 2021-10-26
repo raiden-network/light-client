@@ -45,7 +45,7 @@ export default class TokenList extends Vue {
 
   &__wrapper {
     overflow-y: auto;
-    @extend .themed-scrollbar;
+    @extend %themed-scrollbar;
   }
 }
 </style>
