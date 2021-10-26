@@ -14,7 +14,7 @@
 
 The Raiden Light Client SDK is a [Raiden Network](https://raiden.network) compatible client written in JavaScript/Typescript, capable of running in modern web3-enabled browsers, wallets and Node.js environments.
 
-> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects. All three projects have been released for mainnet and all code is available in the [Light Client repository](https://github.com/raiden-network/light-client). As this release still has its limitations and is a beta release, it is crucial to read this readme including the security notes carefully before using the software.
+> **INFO:** The Light Client SDK, CLI and dApp are all **work in progress** projects. All three projects have been released for mainnet and all code is available in the [Light Client repository](https://github.com/raiden-network/light-client). As this release still has its limitations it is crucial to read this readme including the security notes carefully before using the software.
 
 ## Table of Contents
 
@@ -105,7 +105,7 @@ A technical deep dive into the SDK architecture, technologies, tips and details 
 
 - **Persistency of local DB:** Your local state database is stored in your IndexedDB storage on browser environments, and local LevelDown database folder on NodeJS environments. This data should not be deleted by the user or tampered with in any way. Frequent backups are also recommended. Deleting this storage could mean losing funds.
 
-- **Raiden account has sufficient ETH:** It is your job as the user to ensure your account has enough ETH at all times when some on-chain transactions needs to be performed. Most of those are on-demand/interactive, but some may be required as a reaction to some non-interactive event (e.g. registering the secret for a received but not unlocked transfer).
+- **Raiden account has sufficient ETH:** You need to ensure that your account has enough ETH at all times when performing on-chain transactions. Most of those are on-demand/interactive, but some may be required as a reaction to some non-interactive event (e.g. registering the secret for a received but not unlocked transfer).
 
 ## Getting Started
 
