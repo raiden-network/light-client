@@ -156,7 +156,7 @@ export default class Disclaimer extends Vue {
       flex-direction: column;
       overflow-y: auto;
       text-align: justify;
-      @extend .themed-scrollbar;
+      @extend %themed-scrollbar;
 
       &__body,
       &__imprint-terms-body,
