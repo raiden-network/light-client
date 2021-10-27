@@ -39,6 +39,7 @@ async function createWrapper(options?: {
   minimumTokenAmount?: BigNumber;
   confirmButtonLabel?: string;
   stickyButton?: boolean;
+  autofocusDisabled?: boolean;
   runAction?: () => void;
   inputsAreValid?: boolean;
   fetchAndUpdateTokenData?: () => void;
@@ -75,6 +76,7 @@ async function createWrapper(options?: {
       minimumTokenAmount: options?.minimumTokenAmount,
       confirmButtonLabel: options?.confirmButtonLabel ?? 'confirm label',
       stickyButton: options?.stickyButton,
+      autofocusDisabled: options?.autofocusDisabled,
       runAction: options?.runAction ?? jest.fn(),
     },
     stubs: ['v-form'],
@@ -310,6 +312,48 @@ describe('ChannelActionForm.vue', () => {
       );
 
       expect(input.html()).toContain('2');
+    });
+  });
+
+  describe('autofocus', () => {
+    test('focuses the partner address input if it is editable', async () => {
+      const wrapper = await createWrapper({ partnerAddressEditable: true });
+      const input = wrapper.get(
+        '.channel-action-form__partner-address.channel-action-form__editable-input',
+      );
+
+      expect(input.attributes('autofocus')).toBeTruthy();
+    });
+
+    test('focuses the token amount input if it is editable, but partner address is not editable', async () => {
+      const wrapper = await createWrapper({
+        tokenAmountEditable: true,
+        partnerAddressEditable: false,
+      });
+      const input = wrapper.get(
+        '.channel-action-form__token-amount.channel-action-form__editable-input',
+      );
+
+      expect(input.attributes('autofocus')).toBeTruthy();
+    });
+
+    test('focuses no input if autofocus is disabled, even if inputs are editable', async () => {
+      const wrapper = await createWrapper({
+        autofocusDisabled: true,
+        tokenAmountEditable: true,
+        partnerAddressEditable: true,
+      });
+
+      const partnerAddressInput = wrapper.get(
+        '.channel-action-form__partner-address.channel-action-form__editable-input',
+      );
+
+      const tokenAmountInput = wrapper.get(
+        '.channel-action-form__token-amount.channel-action-form__editable-input',
+      );
+
+      expect(partnerAddressInput.attributes('autofocus')).toBeFalsy();
+      expect(tokenAmountInput.attributes('autofocus')).toBeFalsy();
     });
   });
 
