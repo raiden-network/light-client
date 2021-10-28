@@ -29,7 +29,6 @@
           :label="$t('quick-pay.transfer-information.pathfinding-service-price')"
           :amount="pathfindingServicePrice"
           :token="serviceToken"
-          :warning="pathfindingServiceTooExpensive"
           exact-amount
           full-width
         >
@@ -56,10 +55,10 @@
           <spinner v-if="fetchMediationRouteInProgress" :size="25" :width="3" inline />
 
           <span
-            v-if="fetchMediationRouteFailed"
+            v-if="showFetchMediationRouteError"
             class="quick-pay__transfer-information__mediation__error"
           >
-            {{ $t('quick-pay.transfer-information.fetch-route-error') }}
+            {{ fetchMediationRouteError }}
           </span>
         </amount-display>
       </div>
@@ -294,9 +293,22 @@ export default class QuickPayRoute extends Mixins(NavigationMixin) {
     }
   }
 
+  get showFetchMediationRouteError(): boolean {
+    return this.fetchMediationRouteFailed || this.pathfindingServiceTooExpensive;
+  }
+
+  get fetchMediationRouteError(): string | undefined {
+    if (this.pathfindingServiceTooExpensive) {
+      return this.$t('quick-pay.transfer-information.fetch-route-error-too-expensive') as string;
+    } else if (this.fetchMediationRouteFailed) {
+      return this.$t('quick-pay.transfer-information.fetch-route-error-no-route') as string;
+    }
+  }
+
   get showFetchMediationRouteButton(): boolean {
     return (
       !this.mediationRoute &&
+      !this.pathfindingServiceTooExpensive &&
       !this.fetchMediationRouteInProgress &&
       !this.fetchMediationRouteFailed
     );
