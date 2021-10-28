@@ -893,7 +893,8 @@
       "token-amount": "Payment amount",
       "pathfinding-service-price": "Mediation possible, price for requesting route",
       "fetch-route-trigger": "Pay to find route",
-      "fetch-route-error": "No route available"
+      "fetch-route-error-too-expensive": "UDC balance too low",
+      "fetch-route-error-no-route": "No route available"
     },
     "action-titles": {
       "channel-deposit": "Channel Deposit",

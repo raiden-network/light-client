@@ -312,7 +312,7 @@ describe('QuickPayRoute.vue', () => {
       expect(pathfindingServicePrice.html()).toContain('1');
     });
 
-    test('marks pathfinding service price with a warning when price is higher than user deposit capacity', async () => {
+    test('shows warning message when pathfinding service price is higher than user deposit capacity', async () => {
       const getUDCCapacity = jest.fn().mockResolvedValue(constants.One);
       const fetchServices = jest.fn().mockResolvedValue([{ price: constants.Two }]);
       const wrapper = createWrapper({
@@ -320,26 +320,15 @@ describe('QuickPayRoute.vue', () => {
         fetchServices,
         ...optionsForMediatedTransfer,
       });
-      const pathfindingServicePrice = wrapper.find(
-        '.quick-pay__transfer-information__mediation__pathfinding-service-price',
-      );
 
       await flushPromises(); // Fetch services must complete.
 
-      expect(pathfindingServicePrice.html()).toContain('warning');
-    });
+      const mediationError = wrapper.find('.quick-pay__transfer-information__mediation__error');
 
-    test('disables get route button when pathfinding service price is higher than user deposit capacity', () => {
-      const getUDCCapacity = jest.fn().mockResolvedValue(constants.One);
-      const fetchServices = jest.fn().mockResolvedValue([{ price: constants.Two }]);
-      const wrapper = createWrapper({
-        getUDCCapacity,
-        fetchServices,
-        ...optionsForMediatedTransfer,
-      });
-      const getRouteButton = wrapper.get('.quick-pay__transfer-information__mediation__button');
-
-      expect(getRouteButton.attributes('disabled')).toBeTruthy();
+      expect(mediationError.exists()).toBeTruthy();
+      expect(mediationError.text()).toBe(
+        'quick-pay.transfer-information.fetch-route-error-too-expensive',
+      );
     });
 
     test('fetches routes from cheapest pathfinding service when user click button', async () => {
@@ -372,8 +361,11 @@ describe('QuickPayRoute.vue', () => {
       await clickGetRoutesButton(wrapper);
 
       const mediationError = wrapper.find('.quick-pay__transfer-information__mediation__error');
+
       expect(mediationError.exists()).toBeTruthy();
-      expect(mediationError.text()).toBe('quick-pay.transfer-information.fetch-route-error');
+      expect(mediationError.text()).toBe(
+        'quick-pay.transfer-information.fetch-route-error-no-route',
+      );
     });
 
     test('selects the first returned route as cheapest', async () => {
