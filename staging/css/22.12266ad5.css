@@ -1,0 +1,22 @@
+.list-header__header[data-v-a8ce650a] {
+  color: #ffffff;
+  font-family: Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 19px;
+  text-transform: uppercase;
+  padding-left: 20px;
+  padding-bottom: 8px;
+}
+.list-header__divider[data-v-a8ce650a] {
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+  height: 1px;
+  width: 100%;
+  border: 1.5px solid #0a6e87;
+  -webkit-transform: scaleY(-1);
+          transform: scaleY(-1);
+}
+.select-token[data-v-675b47b4] {
+  height: 100%;
+}
