@@ -30,7 +30,7 @@ import { TokenNetwork__factory } from '../../contracts';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { assert, ErrorCodec, matchError, networkErrors } from '../../utils/error';
-import type { ContractFilter, EventTuple } from '../../utils/ethers';
+import type { ContractEvent, ContractFilter, EventTuple } from '../../utils/ethers';
 import { fromEthersEvent, getLogsByChunk$, logToContractEvent } from '../../utils/ethers';
 import { completeWith, pluckDistinct } from '../../utils/rx';
 import type { Address, Hash, UInt } from '../../utils/types';
@@ -216,7 +216,7 @@ type ChannelEventsNames =
   | 'ChannelClosed'
   | 'ChannelSettled';
 type ChannelEvents<E extends keyof TokenNetwork['filters'] = ChannelEventsNames> = EventTuple<
-  ContractFilter<TokenNetwork, E>
+  ContractEvent<TokenNetwork, E>
 >;
 type ChannelOpenedEvent = ChannelEvents<'ChannelOpened'>;
 type ChannelNewDepositEvent = ChannelEvents<'ChannelNewDeposit'>;
@@ -441,7 +441,7 @@ function fetchPastChannelEvents$(
           channelIds, // ORed channelIds set as topics[1]=channelId
         ],
       } as ContractFilter<TokenNetwork, Exclude<ChannelEventsNames, 'ChannelOpened'>>;
-      return getLogsByChunk$(
+      return getLogsByChunk$<typeof allButOpenedFilter>(
         provider,
         Object.assign(allButOpenedFilter, { fromBlock, toBlock }),
       ).pipe(
