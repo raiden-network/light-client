@@ -29,12 +29,27 @@ import {
 } from 'rxjs/operators';
 
 import { DEFAULT_CONFIRMATIONS } from '../constants';
-import type { TypedEventFilter, TypedListener } from '../contracts/common';
+import type { TypedEvent, TypedEventFilter, TypedListener } from '../contracts/common';
 import { assert } from './error';
 import { withMergeFrom } from './rx';
 import { decode, HexString } from './types';
 
-declare const _filter: unique symbol;
+declare const _event: unique symbol;
+
+/**
+ * A simple Log, but tagged (at typecheck-time) to indicate the logs will map to a specific
+ * TypedEvent/EventTuple
+ */
+export interface LogWithEvent<E extends TypedEvent> extends Log {
+  readonly [_event]: E;
+}
+type EventFromLog<L extends LogWithEvent<any>> = L[typeof _event];
+type EventFromFilter<F> = F extends TypedEventFilter<infer E> ? E : never;
+// a part of a Filter which definitely has fromBlock & toBlock defined and numeric
+type BlockRange = { fromBlock: number; toBlock: number };
+// like Filter, but 'address' can be a set of contracts addresses, instead of a single one
+type MultiFilter = Omit<Filter, 'address'> & { address?: string | string[] };
+
 /**
  * Extract the union of TypedEventFilters for a given contract
  */
@@ -42,37 +57,22 @@ export type ContractFilter<
   C extends Contract,
   E extends keyof C['filters'] = keyof C['filters'],
 > = ReturnType<C['filters'][E]>;
-/**
- * A simple Log, but tagged (at typecheck-time) to indicate the logs will map to a specific
- * TypedEvent/EventTuple
- */
-export type FilteredLog<F extends TypedEventFilter<any[], any>> = Log & {
-  readonly [_filter]: F;
-};
-type FilterFromLog<L extends Log> = L extends { readonly [_filter]: infer F } ? F : never;
-// a part of a Filter which definitely has fromBlock & toBlock defined and numeric
-type BlockRange = { fromBlock: number; toBlock: number };
-// like Filter, but 'address' can be a set of contracts addresses, instead of a single one
-type MultiFilter = Omit<Filter, 'address'> & { address?: string | string[] };
+export type ContractEvent<
+  C extends Contract,
+  E extends keyof C['filters'] = keyof C['filters'],
+> = EventFromFilter<ContractFilter<C, E>>;
 
 /**
  * For given TypedEventFilters, return the tuple of arguments plus the TypedEvent as last element
  */
-export type EventTuple<F extends TypedEventFilter<any[], any>> = F extends TypedEventFilter<
-  infer EventArgsArray,
-  infer EventArgsObject
->
-  ? EventArgsArray extends any[]
-    ? Parameters<TypedListener<EventArgsArray, EventArgsObject>>
-    : never
-  : never;
+export type EventTuple<F extends TypedEvent> = Parameters<TypedListener<F>>;
 
-export function getLogsByChunk$<F extends TypedEventFilter<any[], any>>(
+export function getLogsByChunk$<F extends TypedEventFilter<any>>(
   provider: JsonRpcProvider,
   filter: F & BlockRange,
   chunk?: number,
   minChunk?: number,
-): Observable<FilteredLog<F>>;
+): Observable<LogWithEvent<EventFromFilter<F>>>;
 export function getLogsByChunk$(
   provider: JsonRpcProvider,
   filter: MultiFilter & BlockRange,
@@ -154,7 +154,7 @@ export function fromEthersEvent<T>(
   target: JsonRpcProvider,
   event: string | string[],
 ): Observable<T>;
-export function fromEthersEvent<F extends TypedEventFilter<any[], any>>(
+export function fromEthersEvent<F extends TypedEventFilter<any>>(
   target: JsonRpcProvider,
   event: F,
   opts?: {
@@ -163,7 +163,7 @@ export function fromEthersEvent<F extends TypedEventFilter<any[], any>>(
     blockNumber$?: Observable<number>;
     onPastCompleted?: (elapsedMs: number) => void;
   },
-): Observable<FilteredLog<F>>;
+): Observable<LogWithEvent<EventFromFilter<F>>>;
 export function fromEthersEvent<T extends Log>(
   target: JsonRpcProvider,
   event: Filter,
@@ -280,9 +280,9 @@ export function fromEthersEvent<T>(
  * @returns Function to map logs to event tuples for contract
  */
 export function logToContractEvent<C extends Contract>(contract: C) {
-  return function mapper<L extends FilteredLog<ContractFilter<C>>>(
+  return function mapper<L extends LogWithEvent<ContractEvent<C>>>(
     log: L,
-  ): EventTuple<FilterFromLog<L>> {
+  ): EventTuple<EventFromLog<L>> {
     // parse log into [...args, event: Event] array,
     // the same that contract.on events/callbacks
     const parsed = contract.interface.parseLog(log);
@@ -297,7 +297,7 @@ export function logToContractEvent<C extends Contract>(contract: C) {
       getTransaction: () => contract.provider.getTransaction(log.transactionHash!),
       getTransactionReceipt: () => contract.provider.getTransactionReceipt(log.transactionHash!),
     };
-    return [...parsed.args, event] as EventTuple<FilterFromLog<L>>;
+    return [...parsed.args, event] as EventTuple<EventFromLog<L>>;
   };
 }
 
