@@ -60,8 +60,8 @@ $ raiden-cli --help
 ```sh
 yarn install
 yarn workspace raiden-ts build # build local dependency
-yarn workspace raiden-cli build # build the dependent output
-yarn workspace raiden-cli build:bundle # build the bundled output
+yarn workspace @raiden_network/raiden-cli build # build the dependent output
+yarn workspace @raiden_network/raiden-cli build:bundle # build the bundled output
 ```
 
 The `build` script will output `./build/index.js`, which requires that the dependencies are in place in the `../raiden-ts/node_modules`, `../raiden-ts/dist*/` and `./node_modules/` folders.
