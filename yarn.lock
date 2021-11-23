@@ -2717,10 +2717,10 @@
   resolved "https://registry.yarnpkg.com/@tootallnate/once/-/once-1.1.2.tgz#ccb91445360179a04e7fe6aff78c00ffc1eeaf82"
   integrity sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==
 
-"@typechain/ethers-v5@^8.0.3":
-  version "8.0.3"
-  resolved "https://registry.yarnpkg.com/@typechain/ethers-v5/-/ethers-v5-8.0.3.tgz#c9a41615648597568751bcc67200f6987a295379"
-  integrity sha512-p85DhWgbE4prFkHcIQzQuAK1+TrgJLjkMSWdATKg6nO1FfWl7hX7mICsbgGgqmRh0+iPE29d/etqmbSAQlffPw==
+"@typechain/ethers-v5@^8.0.4":
+  version "8.0.4"
+  resolved "https://registry.yarnpkg.com/@typechain/ethers-v5/-/ethers-v5-8.0.4.tgz#b5492554e5d907b5632d74a150eec1d07eb72388"
+  integrity sha512-778WF5PUsnftVjFp16TMMDgii2if8+WNx+BeVZffPtKhk8Qxg2GD1+5RulR2c7XxxmqWM6H/cla+1oA8qQdjBw==
   dependencies:
     lodash "^4.17.15"
     ts-essentials "^7.0.1"
@@ -13337,10 +13337,10 @@ mathml-tag-names@^2.1.3:
   resolved "https://registry.yarnpkg.com/mathml-tag-names/-/mathml-tag-names-2.1.3.tgz#4ddadd67308e780cf16a47685878ee27b736a0a3"
   integrity sha512-APMBEanjybaPzUrfqU0IMU5I0AswKMH7k8OTLs0vvV4KZpExkTkY87nR/zpbuTPj+gARop7aGUbl11pnDfW6xg==
 
-matrix-js-sdk@^15.1.0:
-  version "15.1.0"
-  resolved "https://registry.yarnpkg.com/matrix-js-sdk/-/matrix-js-sdk-15.1.0.tgz#46bb1185e80d1c9aeccf290bc214a0ad27351aa3"
-  integrity sha512-1qF6RO3jrMdL2X7WsHW520oHMH6ns3rOkhdJi3PAYknCG8Yv87KCyI46o+7OgdBUTH2a+iwMcH8kP3T9/abKEA==
+matrix-js-sdk@^15.1.1:
+  version "15.1.1"
+  resolved "https://registry.yarnpkg.com/matrix-js-sdk/-/matrix-js-sdk-15.1.1.tgz#791aefb2c68e1e8d398beee3eedcb6c23b63315d"
+  integrity sha512-tKZQLFwYMQk2G4nmLNR0cDDXcfDkdzJGyg2S15HooB2aI7/Ev9PhCczkw+xzwhJusxzfa8j+yx52KjMXUb81WQ==
   dependencies:
     "@babel/runtime" "^7.12.5"
     another-json "^0.2.0"
@@ -15314,11 +15314,6 @@ postcss-safe-parser@^6.0.0:
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/postcss-safe-parser/-/postcss-safe-parser-6.0.0.tgz#bb4c29894171a94bc5c996b9a30317ef402adaa1"
   integrity sha512-FARHN8pwH+WiS2OPCxJI8FuRJpTVnn6ZNFiqAM2aeW2LwTHWWmWgIyKC6cUo0L8aeKiF/14MNvnpls6R2PBeMQ==
-
-postcss-scss@^4.0.1:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/postcss-scss/-/postcss-scss-4.0.1.tgz#6f5827f4457dac35fcc5a0b3de566cfb377db1e7"
-  integrity sha512-7QghUu2l07OyVFT5LyvU/QJ1f2s8IL0mfToN69Yu533PgMZm2B1S6hYd4bao8tFq70r3P5MmAbKhVrZ4wOADxg==
 
 postcss-scss@^4.0.2:
   version "4.0.2"
@@ -17872,12 +17867,12 @@ stylehacks@^4.0.0:
     postcss "^7.0.0"
     postcss-selector-parser "^3.0.0"
 
-stylelint-config-recommended-scss@^5.0.1:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/stylelint-config-recommended-scss/-/stylelint-config-recommended-scss-5.0.1.tgz#4f16ff9c85966c0c37de5243b628eef104da504e"
-  integrity sha512-kVI5lX8jtaw9uNnnxxziw+LhW59m0x/JzGj8zVepeFQJ56eM4HazN4gMyCRQQSLr/8CXlIHGOW34CV5hIMr3FQ==
+stylelint-config-recommended-scss@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.yarnpkg.com/stylelint-config-recommended-scss/-/stylelint-config-recommended-scss-5.0.2.tgz#193f483861c76a36ece24c52eb6baca4838f4a48"
+  integrity sha512-b14BSZjcwW0hqbzm9b0S/ScN2+3CO3O4vcMNOw2KGf8lfVSwJ4p5TbNEXKwKl1+0FMtgRXZj6DqVUe/7nGnuBg==
   dependencies:
-    postcss-scss "^4.0.1"
+    postcss-scss "^4.0.2"
     stylelint-config-recommended "^6.0.0"
     stylelint-scss "^4.0.0"
 
@@ -18695,10 +18690,10 @@ type-is@^1.6.16, type-is@~1.6.17, type-is@~1.6.18:
     media-typer "0.3.0"
     mime-types "~2.1.24"
 
-typechain@^6.0.3:
-  version "6.0.3"
-  resolved "https://registry.yarnpkg.com/typechain/-/typechain-6.0.3.tgz#c0663f024ed11c2c5ad730309334283078d0289d"
-  integrity sha512-NPyCl4bvUtcd2g5Xlqznv6w6i9N5nQLG/UOkazkkyMkjKmo7smpub5UIJ8DLUc/nrZSiV75jEmOjvC2W7d+qvg==
+typechain@^6.0.4:
+  version "6.0.4"
+  resolved "https://registry.yarnpkg.com/typechain/-/typechain-6.0.4.tgz#deee38a4813e3f86a8f46daeb1d3d2caa9c4e3e1"
+  integrity sha512-EnFqSLBIggmCzIL7OF3ogRCgRRf/TRE2HmG4WGmRpP0x+kqiLYW9nOQKjo2Hm3caS4/Ktr5R0FUiNGwSWtfBGg==
   dependencies:
     "@types/prettier" "^2.1.1"
     command-line-args "^4.0.7"
@@ -19154,10 +19149,10 @@ vue-cli-plugin-i18n@^2.3.1:
     vue-i18n "^8.17.0"
     vue-i18n-extract "1.0.2"
 
-vue-cli-plugin-vuetify@^2.4.3:
-  version "2.4.3"
-  resolved "https://registry.yarnpkg.com/vue-cli-plugin-vuetify/-/vue-cli-plugin-vuetify-2.4.3.tgz#68a893642b354ed8d534e4a9bc63d0728a8987ac"
-  integrity sha512-dT9KpH1rXT6UWzBDFLMB69sgrNCoWFcxWiIyDDZ4vikv85JDweMHh2dT5n6QaAt7qsGlvL4IMOopjcyUTiPW9g==
+vue-cli-plugin-vuetify@^2.4.4:
+  version "2.4.4"
+  resolved "https://registry.yarnpkg.com/vue-cli-plugin-vuetify/-/vue-cli-plugin-vuetify-2.4.4.tgz#462256a54180b70f3aaa1b1dc279b324f8114474"
+  integrity sha512-asc6G7+yN7NCk2ha0zaaeVZ+hSUP++Akao99SeW8rPO/nCxN2AIeCZg7PHPHDvcDYL9+KWhTsw5YbqYCk8x4LA==
   dependencies:
     null-loader "^4.0.1"
     semver "^7.1.2"
