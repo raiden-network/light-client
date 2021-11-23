@@ -677,11 +677,11 @@ export class Raiden {
 
     this.store.dispatch(channelOpen.request({ ...options, settleTimeout, deposit }, meta));
 
-    await openPromise;
-    const openTxHash = await openConfirmedPromise;
-
-    let depositTxHash: Hash | undefined;
-    if (depositPromise) depositTxHash = await depositPromise;
+    const [, openTxHash, depositTxHash] = await Promise.all([
+      openPromise,
+      openConfirmedPromise,
+      depositPromise,
+    ]);
 
     if (confirmConfirmation) {
       // wait twice confirmationBlocks for deposit or open tx
@@ -1253,12 +1253,15 @@ export class Raiden {
     );
     this.store.dispatch(udcDeposit.request({ deposit }, meta));
 
-    await mined;
+    const confirmed = asyncActionToPromise(udcDeposit, meta, this.action$, true).then(
+      ({ txHash }) => {
+        onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash } });
+        return txHash;
+      },
+    );
 
-    return asyncActionToPromise(udcDeposit, meta, this.action$, true).then(({ txHash }) => {
-      onChange?.({ type: EventTypes.CONFIRMED, payload: { txHash } });
-      return txHash;
-    });
+    const [, txHash] = await Promise.all([mined, confirmed]);
+    return txHash;
   }
 
   /**
