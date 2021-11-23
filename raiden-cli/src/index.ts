@@ -313,6 +313,7 @@ function registerShutdownHooks(this: Cli): void {
     this.log.info('Exiting', code);
     process.exit(code);
   });
+  process.on('unhandledRejection', (reason) => this.log.warn('Unhandled rejection:', reason));
 }
 
 type Await<T> = T extends Promise<infer U> ? U : T;
