@@ -119,22 +119,24 @@ export async function pfsInfo(
 
     const start = Date.now();
     const res = await fetch(url + '/api/v1/info', { mode: 'cors' });
+    const rtt = Date.now() - start;
     const text = await res.text();
     assert(res.ok, [ErrorCodes.PFS_ERROR_RESPONSE, { text }]);
     const info = decode(PathInfo, jsonParse(text));
 
-    assert(info.price_info.lte(pfsMaxFee), [
-      ErrorCodes.PFS_TOO_EXPENSIVE,
-      { price: info.price_info.toString() },
-    ]);
+    const { payment_address: address, price_info: price } = info;
+    assert(price.lte(pfsMaxFee), [ErrorCodes.PFS_TOO_EXPENSIVE, { price }]);
     pfsAddressCache_.set(url, Promise.resolve(info.payment_address));
+    const validTill =
+      (await serviceRegistryContract.callStatic.service_valid_till(address)).toNumber() * 1e3;
 
     return {
-      address: info.payment_address,
+      address,
       url,
-      rtt: Date.now() - start,
-      price: info.price_info,
+      rtt,
+      price,
       token: await serviceRegistryToken(serviceRegistryContract, provider.pollingInterval),
+      validTill,
     };
   } catch (err) {
     log.warn('Error fetching PFS info:', pfsAddrOrUrl, err);
