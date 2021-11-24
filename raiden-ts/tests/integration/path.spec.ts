@@ -397,6 +397,7 @@ describe('PFS: pfsRequestEpic', () => {
             rtt: 3,
             price: One as UInt<32>,
             token: (await raiden.deps.serviceRegistryContract.token()) as Address,
+            validTill: Date.now() + 86.4e6,
           },
         },
         pathFindMeta,

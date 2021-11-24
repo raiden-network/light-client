@@ -27,6 +27,7 @@ describe('PathfindingService.vue', () => {
     rtt: 62,
     token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
     url: 'https://pfs-goerli-with-fee.services-test.raiden.network',
+    validTill: Date.now() + 86.4e6,
   };
 
   const raidenPFS2: RaidenPFS = {
@@ -35,6 +36,7 @@ describe('PathfindingService.vue', () => {
     rtt: 171,
     token: '0x3a989D97388a39A0B5796306C615d10B7416bE77',
     url: 'https://pfs-goerli.services-test.raiden.network',
+    validTill: Date.now() + 86.4e6,
   };
 
   function createWrapper() {

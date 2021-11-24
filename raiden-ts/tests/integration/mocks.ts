@@ -349,7 +349,7 @@ function mockedMatrixCreateClient({
       userId: providedUserId,
       presence: 'offline',
     };
-    address = getAddress(providedUserId.substr(1, 42));
+    address = getAddress(providedUserId.substring(1, 43));
   }
 
   let stopped: typeof mockedMatrixUsers[string] | undefined;
@@ -438,7 +438,7 @@ function mockedMatrixCreateClient({
     createRoom: jest.fn(async ({ invite }) => {
       let pair = [address, '0x'];
       try {
-        const peerAddr = getAddress((invite[0] as string).substr(1, 42));
+        const peerAddr = getAddress((invite[0] as string).substring(1, 43));
         pair = getSortedAddresses(...([address, peerAddr] as Address[]));
       } catch (e) {}
       const roomId = `!roomId_${pair[0]}_${pair[1]}:${server}`;
@@ -687,7 +687,7 @@ export async function makeRaiden(
   const seenSighashes = new Set<string>();
   jest
     .spyOn(provider, 'getCode')
-    .mockImplementation(async () => '0x00' + [...seenSighashes].map((s) => `63${s.substr(2)}`));
+    .mockImplementation(async () => '0x00' + [...seenSighashes].map((s) => `63${s.substring(2)}`));
   jest.spyOn(provider, 'getBlock').mockImplementation(
     async (n: string | number | Promise<string | number>) =>
       ({
@@ -801,6 +801,9 @@ export async function makeRaiden(
   spyContract(serviceRegistryContract, 'ServiceRegistry', seenSighashes);
   serviceRegistryContract.token.mockResolvedValue(svtAddress);
   serviceRegistryContract.urls.mockImplementation(async () => 'https://pfs.raiden.test');
+  serviceRegistryContract.callStatic.service_valid_till.mockImplementation(async () =>
+    BigNumber.from(Math.round(Date.now() / 1e3) + 86400),
+  );
 
   const userDepositContract = UserDeposit__factory.connect(
     udcAddress,
