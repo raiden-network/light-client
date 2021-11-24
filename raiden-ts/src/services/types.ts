@@ -125,6 +125,7 @@ export const PFS = t.readonly(
     rtt: t.number,
     price: UInt(32),
     token: Address,
+    validTill: t.number,
   }),
 );
 export interface PFS extends t.TypeOf<typeof PFS> {}

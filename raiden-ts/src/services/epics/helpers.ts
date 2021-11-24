@@ -52,7 +52,7 @@ type RouteResult = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { erro
  * @returns string representing time in the format expected by PFS
  */
 export function makeTimestamp(time = new Date()): string {
-  return time.toISOString().substr(0, 23) + '000';
+  return time.toISOString().substring(0, 23) + '000';
 }
 
 function fetchLastIou$(
@@ -292,22 +292,23 @@ function getPfsInfo$(
   config: Pick<RaidenConfig, 'pfsMode' | 'additionalServices'>,
   deps: RaidenEpicDeps,
 ): Observable<PFS> {
-  if (pfsByAction) return of(pfsByAction);
+  const { log, latest$, init$ } = deps;
+  let pfs$: Observable<PFS> = EMPTY;
+  if (pfsByAction) pfs$ = of(pfsByAction);
   else if (config.pfsMode === PfsMode.onlyAdditional)
-    return defer(async () => {
+    pfs$ = defer(async () => {
       let firstErr;
       for (const pfsUrlOrAddr of config.additionalServices) {
         try {
           return await pfsInfo(pfsUrlOrAddr, deps);
         } catch (e) {
-          if (!firstErr) firstErr = e;
+          firstErr ??= e;
         }
       }
       throw firstErr;
     });
   else {
-    const { log, latest$, init$ } = deps;
-    return init$.pipe(
+    pfs$ = init$.pipe(
       lastMap(() => latest$.pipe(first(), pluck('state', 'services'))),
       // fetch pfsInfo from whole list & sort it
       mergeMap((services) =>
@@ -327,6 +328,16 @@ function getPfsInfo$(
       ),
     );
   }
+  return pfs$.pipe(
+    tap((pfs) => {
+      if (pfs.validTill < Date.now()) {
+        log.warn(
+          'WARNING: PFS registration not valid! This service deposit may have expired and it may not receive network updates anymore.',
+          pfs,
+        );
+      }
+    }),
+  );
 }
 
 function requestPfs$(
