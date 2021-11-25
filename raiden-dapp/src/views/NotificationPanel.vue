@@ -31,9 +31,7 @@
               <v-lazy transition="fade-transition" :options="{ threshold: 0.7 }" min-height="110">
                 <notification-card
                   :notification="notification"
-                  class="
-                    notification-panel-content__notifications__notification-wrapper__notification
-                  "
+                  class="notification-panel-content__notifications__notification-wrapper__notification"
                 />
               </v-lazy>
             </div>
