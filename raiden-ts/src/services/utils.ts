@@ -74,12 +74,13 @@ const pfsAddressCache_ = new LruCache<string, Promise<Address>>(32);
  *
  * @param pfsAddrOrUrl - PFS account/address or URL
  * @param deps - RaidenEpicDeps needed for various parameters
+ * @param deps.log - Logger instance
  * @param deps.serviceRegistryContract - ServiceRegistry contract instance
  * @param deps.network - Current Network
  * @param deps.contractsInfo - ContractsInfo mapping
- * @param deps.config$ - Config observable
  * @param deps.provider - Eth provider
- * @param deps.log - Logger instance
+ * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Promise containing PFS server info
  */
 export async function pfsInfo(
@@ -91,12 +92,21 @@ export async function pfsInfo(
     contractsInfo,
     provider,
     config$,
+    latest$,
   }: Pick<
     RaidenEpicDeps,
-    'log' | 'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
+    | 'log'
+    | 'serviceRegistryContract'
+    | 'network'
+    | 'contractsInfo'
+    | 'provider'
+    | 'config$'
+    | 'latest$'
   >,
 ): Promise<PFS> {
   const { pfsMaxFee } = await firstValueFrom(config$);
+  const { state } = await firstValueFrom(latest$);
+  const { services } = state;
   /**
    * Codec for PFS /api/v1/info result schema
    */
@@ -128,6 +138,7 @@ export async function pfsInfo(
     assert(price.lte(pfsMaxFee), [ErrorCodes.PFS_TOO_EXPENSIVE, { price }]);
     pfsAddressCache_.set(url, Promise.resolve(info.payment_address));
     const validTill =
+      services[address] ??
       (await serviceRegistryContract.callStatic.service_valid_till(address)).toNumber() * 1e3;
 
     return {
@@ -157,7 +168,13 @@ export const pfsInfoAddress = Object.assign(
     url: string,
     deps: Pick<
       RaidenEpicDeps,
-      'log' | 'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
+      | 'log'
+      | 'serviceRegistryContract'
+      | 'network'
+      | 'contractsInfo'
+      | 'provider'
+      | 'config$'
+      | 'latest$'
     >,
   ): Promise<Address> {
     url = validatePfsUrl(url);
@@ -188,7 +205,13 @@ export function pfsListInfo(
   pfsList: readonly (string | Address)[],
   deps: Pick<
     RaidenEpicDeps,
-    'log' | 'serviceRegistryContract' | 'network' | 'contractsInfo' | 'provider' | 'config$'
+    | 'log'
+    | 'serviceRegistryContract'
+    | 'network'
+    | 'contractsInfo'
+    | 'provider'
+    | 'config$'
+    | 'latest$'
   >,
 ): Observable<PFS[]> {
   const { log } = deps;
