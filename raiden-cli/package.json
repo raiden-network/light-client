@@ -50,7 +50,7 @@
     "cors": "^2.8.5",
     "ethers": "^5.5.2",
     "express": "^4.17.1",
-    "http-errors": "^1.8.1",
+    "http-errors": "^2.0.0",
     "inquirer": "^8.2.0",
     "loglevel": "^1.8.0",
     "morgan": "^1.10.0",
