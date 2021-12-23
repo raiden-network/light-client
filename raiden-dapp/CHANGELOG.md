@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.0.0] - 2021-12-23
+
 ## [2.0.0-rc.2] - 2021-09-14
 
 ### Added
@@ -617,7 +619,8 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.2...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.2...v2.0.0
 [2.0.0-rc.2]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.1...v2.0.0-rc.2
 [2.0.0-rc.1]: https://github.com/raiden-network/light-client/compare/v1.1.0...v2.0.0-rc.1
 [1.1.0]: https://github.com/raiden-network/light-client/compare/v1.0.0...v1.1.0

@@ -1,10 +1,15 @@
 # Changelog
 
 ## [Unreleased]
+
+## [2.0.0] - 2021-12-23
 ### Changed
 - [#2949] Allows `Raiden.transfer`'s `options.paths` to receive a broader schema, including `{ route: Address[]; estimated_fee: Int<32>; address_metadata?: ... }[]`, needed to support CLI's `paths` parameter of `/payments` endpoint
 - [#2953] `config.gasPriceFactor` applies over `maxPriorityFeePerGas`, using the new fee parameters from London when possible; now, by default, no fee parameters are specified, leaving `ethers` and provider (e.g. Metamask) to figure out best gas fees, fixing [#2952];
 - [#2965] Add +5% `gasLimit` margin on transactions which are successfuly estimated, to avoid running out of gas on narrow calls.
+- [#3012] Updated raiden-contracts to [v0.40](https://github.com/raiden-network/raiden-contracts/releases/tag/v0.40.0)
+
+### Removed
 - [#2965] Remove `options.subkey` on certain `Raiden` public methods; if you need to force subkey or main account usage for single txs, set `config.subkey` then reset after tx is sent; default behavior is kept
 
 ### Fixed
@@ -17,6 +22,7 @@
 [#2953]: https://github.com/raiden-network/light-client/pull/2953
 [#2963]: https://github.com/raiden-network/light-client/issues/2963
 [#2965]: https://github.com/raiden-network/light-client/pull/2965
+[#3012]: https://github.com/raiden-network/light-client/pull/3012
 
 ## [2.0.0-rc.2] - 2021-09-14
 
@@ -522,7 +528,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.2...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.2...v2.0.0
 [2.0.0-rc.2]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.1...v2.0.0-rc.2
 [2.0.0-rc.1]: https://github.com/raiden-network/light-client/compare/v1.1.0...v2.0.0-rc.1
 [1.1.0]: https://github.com/raiden-network/light-client/compare/v1.0.0...v1.1.0
