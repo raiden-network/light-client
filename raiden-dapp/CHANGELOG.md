@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- [#3021] Fix version handling to detect client updates
+
+[#3021]: https://github.com/raiden-network/light-client/issues/3021
+
 ## [2.0.0] - 2021-12-23
 
 ## [2.0.0-rc.2] - 2021-09-14

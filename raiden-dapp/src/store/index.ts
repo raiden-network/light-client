@@ -1,4 +1,4 @@
-import compareVersions from 'compare-versions';
+import { compare as compareVersions, validate as validateVersion } from 'compare-versions';
 import type { BigNumber, providers } from 'ethers';
 import clone from 'lodash/clone';
 import filter from 'lodash/filter';
@@ -154,7 +154,7 @@ const store: StoreOptions<CombinedStoreState> = {
       state.stateBackupReminderDateMs = newReminderDate;
     },
     setAvailableVersion(state: RootState, version: string) {
-      if (compareVersions.validate(version)) {
+      if (validateVersion(version)) {
         state.versionInfo = { ...state.versionInfo, availableVersion: version };
       }
     },
@@ -258,7 +258,7 @@ const store: StoreOptions<CombinedStoreState> = {
       return (
         !!activeVersion &&
         !!availableVersion &&
-        compareVersions.compare(availableVersion, activeVersion, '>')
+        compareVersions(availableVersion, activeVersion, '>')
       );
     },
   },

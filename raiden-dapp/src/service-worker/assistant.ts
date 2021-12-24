@@ -1,5 +1,5 @@
 /* istanbul ignore file */
-import compareVersions from 'compare-versions';
+import { validate as validateVersion } from 'compare-versions';
 import type { Store } from 'vuex';
 
 import type { CombinedStoreState } from '@/store/index';
@@ -52,7 +52,7 @@ export default class ServiceWorkerAssistant {
       const data = await response.json();
       const version = data.version.version;
 
-      if (compareVersions.validate(version)) {
+      if (validateVersion(version)) {
         this.store.commit('setAvailableVersion', version);
       } else {
         throw new Error(`Maleformed version string: ${version}`);
