@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.0.1] - 2021-12-24
+
 ## [2.0.0] - 2021-12-23
 ### Changed
 - [#2949] Allows `Raiden.transfer`'s `options.paths` to receive a broader schema, including `{ route: Address[]; estimated_fee: Int<32>; address_metadata?: ... }[]`, needed to support CLI's `paths` parameter of `/payments` endpoint
@@ -528,7 +530,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/raiden-network/light-client/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.2...v2.0.0
 [2.0.0-rc.2]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.1...v2.0.0-rc.2
 [2.0.0-rc.1]: https://github.com/raiden-network/light-client/compare/v1.1.0...v2.0.0-rc.1
