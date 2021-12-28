@@ -15,3 +15,7 @@ export interface UserDepositContractState {
   token: Token | undefined;
   plannedWithdrawal: PlannedUdcWithdrawal | undefined;
 }
+
+export interface RootStateWithUserDepositContract {
+  userDepositContract: UserDepositContractState;
+}
