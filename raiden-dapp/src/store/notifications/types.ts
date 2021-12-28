@@ -24,3 +24,7 @@ export interface NotificationsState {
   notifications: NotificationDictionary;
   newNotifications: boolean;
 }
+
+export interface RootStateWithNotifications {
+  notifications: NotificationsState;
+}

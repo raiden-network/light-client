@@ -17,14 +17,14 @@ import { ChannelState, getNetworkName } from 'raiden-ts';
 import type { AccTokenModel, Presences, Token, TokenModel } from '@/model/types';
 import { emptyTokenModel, PlaceHolderNetwork } from '@/model/types';
 import { notifications } from '@/store/notifications';
-import type { UserDepositContractState } from '@/store/user-deposit-contract';
+import type { RootStateWithNotifications } from '@/store/notifications/types';
+import type { RootStateWithUserDepositContract } from '@/store/user-deposit-contract';
 import { userDepositContract } from '@/store/user-deposit-contract';
+import type { RootStateWithUserSettings } from '@/store/user-settings';
 import { userSettings, userSettingsLocalStorage } from '@/store/user-settings';
-import type { VersionInformationState } from '@/store/version-information';
+import type { RootStateWithVersionInformation } from '@/store/version-information';
 import { versionInformation, versionInformtaionLocalStorage } from '@/store/version-information';
 import type { RootState, Tokens, Transfers } from '@/types';
-
-import type { NotificationsState } from './notifications/types';
 
 Vue.use(Vuex);
 
@@ -76,11 +76,11 @@ const backupReminderLocalStorage = new VuexPersistence<RootState>({
   key: 'backupReminder',
 });
 
-export type CombinedStoreState = RootState & {
-  notifications: NotificationsState;
-  userDepositContract: UserDepositContractState;
-  versionInformation: VersionInformationState;
-};
+export type CombinedStoreState = RootState &
+  RootStateWithNotifications &
+  RootStateWithUserDepositContract &
+  RootStateWithUserSettings &
+  RootStateWithVersionInformation;
 
 const store: StoreOptions<CombinedStoreState> = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

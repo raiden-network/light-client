@@ -5,6 +5,10 @@ export interface UserSettingsState {
   ethereumProviderOptions: { [providerName: string]: EthereumProviderOptions };
 }
 
+export interface RootStateWithUserSettings {
+  userSettings: UserSettingsState;
+}
+
 export type UserSettingsGetters<S = UserSettingsState> = {
   getEthereumProviderOptions(state: S): (providerName: string) => EthereumProviderOptions;
 };

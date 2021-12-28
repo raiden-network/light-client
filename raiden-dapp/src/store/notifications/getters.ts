@@ -1,8 +1,11 @@
 import type { GetterTree } from 'vuex';
 
 import { NotificationImportance } from '@/store/notifications/notification-importance';
-import type { NotificationPayload, NotificationsState } from '@/store/notifications/types';
-import type { RootState } from '@/types';
+import type {
+  NotificationPayload,
+  NotificationsState,
+  RootStateWithNotifications,
+} from '@/store/notifications/types';
 
 function compareById(a: NotificationPayload, b: NotificationPayload): number {
   return b.id - a.id;
@@ -13,7 +16,7 @@ type Getters = {
   notificationQueue(state: NotificationsState): NotificationPayload[];
 };
 
-export const getters: GetterTree<NotificationsState, RootState> & Getters = {
+export const getters: GetterTree<NotificationsState, RootStateWithNotifications> & Getters = {
   notifications: (state: NotificationsState): NotificationPayload[] => {
     return Object.values(state.notifications).sort(compareById);
   },

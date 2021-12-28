@@ -1,12 +1,13 @@
 import type { Module } from 'vuex';
 
-import type { RootState } from '@/types';
-
 import { mutations } from './mutations';
 import state from './state';
-import type { UserDepositContractState } from './types';
+import type { RootStateWithUserDepositContract, UserDepositContractState } from './types';
 
-export const userDepositContract: Module<UserDepositContractState, RootState> = {
+export const userDepositContract: Module<
+  UserDepositContractState,
+  RootStateWithUserDepositContract
+> = {
   namespaced: true,
   mutations,
   state,

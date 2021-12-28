@@ -2,9 +2,8 @@ import { BigNumber, constants } from 'ethers';
 
 import type { Token } from '@/model/types';
 import { emptyTokenModel } from '@/model/types';
+import type { CombinedStoreState } from '@/store/index';
 import store, { defaultState } from '@/store/index';
-import { defaultState as defaultNotificationsState } from '@/store/notifications/state';
-import { defaultState as defaultUserDepositContractState } from '@/store/user-deposit-contract/state';
 import type { Tokens } from '@/types';
 
 import { TestData } from './data/mock-data';
@@ -33,11 +32,7 @@ describe('store', () => {
   };
 
   beforeEach(() => {
-    store.replaceState({
-      ...defaultState(),
-      notifications: defaultNotificationsState(),
-      userDepositContract: defaultUserDepositContractState(),
-    });
+    store.replaceState({ ...defaultState() } as CombinedStoreState);
   });
 
   test('setConnected and setDisconnected mutations change isConnected state', () => {
