@@ -4,7 +4,10 @@ import type { Store } from 'vuex';
 
 import type { CombinedStoreState } from '@/store/index';
 
-import { ServiceWorkerAssistantMessages, ServiceWorkerMessages } from './messages';
+import {
+  ServiceWorkerAssistantMessageIdentifier,
+  ServiceWorkerMessageIdentifier,
+} from './messages';
 
 const VERSION_FILE_PATH = (process.env.BASE_URL ?? '/') + 'version.json';
 
@@ -23,27 +26,36 @@ export default class ServiceWorkerAssistant {
   }
 
   public update = (): void => {
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.controller?.postMessage(ServiceWorkerAssistantMessages.UPDATE);
-    }
+    this.postMessage(ServiceWorkerAssistantMessageIdentifier.UPDATE);
   };
 
   private onMessage = (event: MessageEvent): void => {
-    if (!event.data) return;
+    if (!(event.data && event.data.messageIdentifier)) return;
 
-    switch (event.data) {
-      case ServiceWorkerMessages.INSTALLATION_ERROR:
-      case ServiceWorkerMessages.CACHE_IS_INVALID:
+    const { messageIdentifier, ...payload } = event.data;
+
+    switch (messageIdentifier) {
+      case ServiceWorkerMessageIdentifier.INSTALLATION_ERROR:
+        this.reportInstallationError(payload.error);
+        break;
+
+      case ServiceWorkerMessageIdentifier.CACHE_IS_INVALID:
         this.setUpdateIsMandatory();
         break;
 
-      case ServiceWorkerMessages.RELOAD_WINDOW:
+      case ServiceWorkerMessageIdentifier.RELOAD_WINDOW:
         this.reloadWindow();
         break;
 
       default:
         break;
     }
+  };
+
+  private reportInstallationError = (error: Error): void => {
+    console.error('Service worker failed during installation phase.'); // eslint-disable-line
+    console.error(error); // eslint-disable-line
+    this.setUpdateIsMandatory();
   };
 
   private updateAvailableVersion = async (): Promise<void> => {
@@ -58,13 +70,18 @@ export default class ServiceWorkerAssistant {
         throw new Error(`Maleformed version string: ${version}`);
       }
     } catch (error) {
-      console.warn(`Failed to get (a valid) version: ${(error as Error).message}`); // eslint-disable-line no-console
+      console.error(`Failed to get (a valid) version: ${(error as Error).message}`); // eslint-disable-line no-console
     }
   };
 
   private verifyCacheValidity = (): void => {
-    navigator.serviceWorker.controller?.postMessage(ServiceWorkerAssistantMessages.VERIFY_CACHE);
+    this.postMessage(ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE);
   };
+
+  private postMessage(messageIdentifier: ServiceWorkerAssistantMessageIdentifier) {
+    const message = { messageIdentifier };
+    navigator.serviceWorker.controller?.postMessage(message);
+  }
 
   private reloadWindow = (): void => {
     window.location.reload();

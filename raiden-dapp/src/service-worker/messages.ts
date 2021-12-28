@@ -4,13 +4,13 @@
  * it work correctly within the service worker.
  */
 
-export enum ServiceWorkerMessages {
+export enum ServiceWorkerMessageIdentifier {
   INSTALLATION_ERROR = 'installation_error',
   RELOAD_WINDOW = 'reload_window',
   CACHE_IS_INVALID = 'cache_is_invalid',
 }
 
-export enum ServiceWorkerAssistantMessages {
+export enum ServiceWorkerAssistantMessageIdentifier {
   UPDATE = 'update',
   VERIFY_CACHE = 'verify_cache',
 }
