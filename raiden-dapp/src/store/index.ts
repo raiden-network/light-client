@@ -23,7 +23,10 @@ import { userDepositContract } from '@/store/user-deposit-contract';
 import type { RootStateWithUserSettings } from '@/store/user-settings';
 import { createUserSettingsPersistencePlugin, userSettings } from '@/store/user-settings';
 import type { RootStateWithVersionInformation } from '@/store/version-information';
-import { versionInformation, versionInformtaionLocalStorage } from '@/store/version-information';
+import {
+  createVersionInformationPeristencePlugin,
+  versionInformation,
+} from '@/store/version-information';
 import type { RootState, Tokens, Transfers } from '@/types';
 
 Vue.use(Vuex);
@@ -247,6 +250,7 @@ const store: StoreOptions<CombinedStoreState> = {
     createUserSettingsPersistencePlugin(),
     disclaimerLocalStorage.plugin,
     backupReminderLocalStorage.plugin,
+    createVersionInformationPeristencePlugin(),
   ],
   modules: {
     notifications,

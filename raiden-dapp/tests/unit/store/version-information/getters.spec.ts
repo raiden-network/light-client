@@ -2,35 +2,37 @@ import { getters } from '@/store/version-information/getters';
 import { defaultState } from '@/store/version-information/state';
 
 describe('version information store getters', () => {
-  test('update is available when available version is higher than active one', () => {
-    const state = defaultState();
-    state.activeVersion = '1.0.0';
-    state.availableVersion = '2.0.0';
+  describe('update is available', () => {
+    test('is true when the available version is higher than the installed version', () => {
+      const state = defaultState();
+      state.installedVersion = '1.0.0';
+      state.availableVersion = '2.0.0';
 
-    expect(getters.updateIsAvailable(state)).toBeTruthy();
-  });
+      expect(getters.updateIsAvailable(state)).toBeTruthy();
+    });
 
-  test('no update is available when available version is equal to the active one', () => {
-    const state = defaultState();
-    state.activeVersion = '2.0.0';
-    state.availableVersion = '2.0.0';
+    test('is false when the available version is equal to the installed version', () => {
+      const state = defaultState();
+      state.installedVersion = '2.0.0';
+      state.availableVersion = '2.0.0';
 
-    expect(getters.updateIsAvailable(state)).toBeFalsy();
-  });
+      expect(getters.updateIsAvailable(state)).toBeFalsy();
+    });
 
-  test('no update is available when available version is lower than the active one', () => {
-    const state = defaultState();
-    state.activeVersion = '2.0.0';
-    state.availableVersion = '1.0.0';
+    test('is false when the available version is lower than the active version', () => {
+      const state = defaultState();
+      state.installedVersion = '2.0.0';
+      state.availableVersion = '1.0.0';
 
-    expect(getters.updateIsAvailable(state)).toBeFalsy();
-  });
+      expect(getters.updateIsAvailable(state)).toBeFalsy();
+    });
 
-  test('no update is available when the available version is unknown', () => {
-    const state = defaultState();
-    state.activeVersion = '1.0.0';
-    state.availableVersion = undefined;
+    test('is false when the available version is unknown', () => {
+      const state = defaultState();
+      state.installedVersion = '1.0.0';
+      state.availableVersion = undefined;
 
-    expect(getters.updateIsAvailable(state)).toBeFalsy();
+      expect(getters.updateIsAvailable(state)).toBeFalsy();
+    });
   });
 });

@@ -5,6 +5,7 @@
  */
 
 export enum ServiceWorkerMessageIdentifier {
+  INSTALLED_VERSION = 'installed_version',
   INSTALLATION_ERROR = 'installation_error',
   RELOAD_WINDOW = 'reload_window',
   CACHE_IS_INVALID = 'cache_is_invalid',

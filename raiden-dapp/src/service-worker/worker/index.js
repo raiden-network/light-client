@@ -62,7 +62,11 @@ async function onActivate(event) {
     sendMessageToClients.call(this, ServiceWorkerMessageIdentifier.INSTALLATION_ERROR, {
       error: this.installError,
     });
-  } else if (!this.shouldUpdate) {
+  } else if (this.shouldUpdate) {
+    sendMessageToClients.call(this, ServiceWorkerMessageIdentifier.INSTALLED_VERSION, {
+      version: process.env.PACKAGE_VERSION,
+    });
+  } else {
     // For unknown reason this is necessary to prevent bugs when an old version
     // gets taken over. We were not able find the root cause, just that it works.
     await sendMessageToClients.call(this, ServiceWorkerMessageIdentifier.RELOAD_WINDOW);

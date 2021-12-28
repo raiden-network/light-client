@@ -73,6 +73,11 @@ describe('service worker index', () => {
   beforeEach(() => {
     jest.resetModules(); // Required so that the service worker script does not get cached.
     jest.restoreAllMocks();
+    process.env.PACKAGE_VERSION = '2.0.0';
+  });
+
+  afterEach(() => {
+    delete process.env.PACKAGE_VERSION;
   });
 
   describe('installation and activation phases', () => {
@@ -116,6 +121,21 @@ describe('service worker index', () => {
 
       expect(cache.put).not.toHaveBeenCalled();
       expect(objectStore.put).not.toHaveBeenCalled();
+    });
+
+    test('sends installed version message when activation completed after update', async () => {
+      const cache = new MockedCache([]);
+      const client = new MockedClient();
+      const indexedDB = new MockedIDBFactory();
+      const context = mockEnvironmentForServiceWorker({ cache, client, indexedDB });
+
+      await installAndActivateServiceWorker(context);
+
+      expect(client.postMessage).toHaveBeenCalledTimes(1);
+      expect(client.postMessage).toHaveBeenLastCalledWith({
+        messageIdentifier: ServiceWorkerMessageIdentifier.INSTALLED_VERSION,
+        version: '2.0.0',
+      });
     });
 
     test('sends window reload message after activation if taking over old version', async () => {

@@ -35,6 +35,10 @@ export default class ServiceWorkerAssistant {
     const { messageIdentifier, ...payload } = event.data;
 
     switch (messageIdentifier) {
+      case ServiceWorkerMessageIdentifier.INSTALLED_VERSION:
+        this.setInstalledVersion(payload.version);
+        break;
+
       case ServiceWorkerMessageIdentifier.INSTALLATION_ERROR:
         this.reportInstallationError(payload.error);
         break;
@@ -60,18 +64,18 @@ export default class ServiceWorkerAssistant {
 
   private updateAvailableVersion = async (): Promise<void> => {
     try {
-      const response = await fetch(VERSION_FILE_PATH);
-      const data = await response.json();
-      const version = data.version.version;
-
-      if (validateVersion(version)) {
-        this.setAvailableVersion(version);
-      } else {
-        throw new Error(`Maleformed version string: ${version}`);
-      }
+      const version = await this.getAvailabeVersion();
+      this.setAvailableVersion(version);
     } catch (error) {
-      console.error(`Failed to get (a valid) version: ${(error as Error).message}`); // eslint-disable-line no-console
+      console.error('Failed to update available version'); // eslint-disable-line no-console
+      console.error(error); // eslint-disable-line no-console
     }
+  };
+
+  private getAvailabeVersion = async (): Promise<string> => {
+    const response = await fetch(VERSION_FILE_PATH);
+    const data = await response.json();
+    return data.version.version;
   };
 
   private verifyCacheValidity = (): void => {
@@ -87,8 +91,20 @@ export default class ServiceWorkerAssistant {
     window.location.reload();
   };
 
+  private setInstalledVersion = (version: string): void => {
+    if (validateVersion(version)) {
+      this.store.commit('versionInformation/setInstalledVersion', version);
+    } else {
+      throw new Error(`Malformed installation version: ${version}`);
+    }
+  };
+
   private setAvailableVersion = (version: string): void => {
-    this.store.commit('versionInformation/setAvailableVersion', version);
+    if (validateVersion(version)) {
+      this.store.commit('versionInformation/setAvailableVersion', version);
+    } else {
+      throw new Error(`Malformed available version: ${version}`);
+    }
   };
 
   private setUpdateIsMandatory = (): void => {
