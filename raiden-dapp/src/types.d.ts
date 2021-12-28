@@ -12,12 +12,6 @@ export type Tokens = { [token: string]: Token };
 export type Transfers = { [key: string]: RaidenTransfer };
 export type ChannelAction = 'close' | 'deposit' | 'withdraw' | 'settle';
 
-export interface VersionInfo {
-  activeVersion: string;
-  availableVersion: string | undefined;
-  updateIsMandatory: boolean;
-}
-
 export interface RootState {
   isConnected: boolean;
   blockNumber: number;
@@ -34,7 +28,6 @@ export interface RootState {
   disclaimerAccepted: boolean;
   stateBackupReminderDateMs: number;
   persistDisclaimerAcceptance: boolean;
-  versionInfo: VersionInfo;
 }
 
 export interface SuggestedPartner {

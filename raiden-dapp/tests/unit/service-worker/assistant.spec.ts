@@ -130,7 +130,7 @@ describe('ServiceWorkerAssistant', () => {
     await createAssistant(true, '1.0.0');
 
     expect(store.commit).toHaveBeenCalledTimes(1);
-    expect(store.commit).toHaveBeenCalledWith('setAvailableVersion', '1.0.0');
+    expect(store.commit).toHaveBeenCalledWith('versionInformation/setAvailableVersion', '1.0.0');
   });
 
   test('update available version once per set interval', async () => {
@@ -173,7 +173,7 @@ describe('ServiceWorkerAssistant', () => {
     sendMessage(ServiceWorkerMessages.INSTALLATION_ERROR);
 
     expect(store.commit).toHaveBeenCalledTimes(1);
-    expect(store.commit).toHaveBeenCalledWith('setUpdateIsMandatory');
+    expect(store.commit).toHaveBeenCalledWith('versionInformation/setUpdateIsMandatory');
   });
 
   test('set update is mandatory when receiving cache is invalid message', async () => {
@@ -183,7 +183,7 @@ describe('ServiceWorkerAssistant', () => {
     sendMessage(ServiceWorkerMessages.CACHE_IS_INVALID);
 
     expect(store.commit).toHaveBeenCalledTimes(1);
-    expect(store.commit).toHaveBeenCalledWith('setUpdateIsMandatory');
+    expect(store.commit).toHaveBeenCalledWith('versionInformation/setUpdateIsMandatory');
   });
 
   test('trigger update sends update message to service worker', async () => {
