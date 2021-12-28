@@ -1,9 +1,9 @@
 <template>
   <span v-if="visible">
     <blurred-overlay :show="blocking" :fullscreen="true" />
-    <v-snackbar v-model="visible" class="update-snackbar" :timeout="-1" color="primary">
+    <v-snackbar v-model="visible" class="version-snackbar" :timeout="-1" color="primary">
       <v-container class="d-flex align-center py-0">
-        <div class="update-snackbar__message">{{ message }}</div>
+        <div class="version-snackbar__message">{{ message }}</div>
         <v-btn class="ml-5" dark text :loading="isUpdating" @click="update">
           {{ $t('update.update') }}
         </v-btn>
@@ -30,7 +30,7 @@ const { mapState: mapVersionInformationState, mapGetters: mapVersionInformationG
     ...mapVersionInformationGetters(['updateIsAvailable']),
   },
 })
-export default class UpdateSnackbar extends Vue {
+export default class VersionSnackbar extends Vue {
   isConnected!: boolean;
   updateIsMandatory!: boolean;
   updateIsAvailable!: boolean;
@@ -66,7 +66,7 @@ export default class UpdateSnackbar extends Vue {
 </script>
 
 <style lang="scss" scoped>
-.update-snackbar {
+.version-snackbar {
   &__message {
     text-align: justify;
   }
