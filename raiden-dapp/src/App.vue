@@ -24,7 +24,7 @@
       </a>
     </div>
     <offline-snackbar />
-    <update-snackbar />
+    <version-snackbar />
     <receiving-ongoing-snackbar />
     <notification-snackbar />
   </v-app>
@@ -38,7 +38,7 @@ import InstallBanner from '@/components/InstallBanner.vue';
 import NotificationSnackbar from '@/components/notification-panel/NotificationSnackbar.vue';
 import OfflineSnackbar from '@/components/OfflineSnackbar.vue';
 import ReceivingOngoingSnackbar from '@/components/ReceivingOngoingSnackbar.vue';
-import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
+import VersionSnackbar from '@/components/VersionSnackbar.vue';
 
 import NavigationMixin from './mixins/navigation-mixin';
 
@@ -46,7 +46,7 @@ import NavigationMixin from './mixins/navigation-mixin';
   components: {
     AppHeader,
     OfflineSnackbar,
-    UpdateSnackbar,
+    VersionSnackbar,
     NotificationSnackbar,
     ReceivingOngoingSnackbar,
     InstallBanner,

@@ -5,7 +5,7 @@ import Vuetify from 'vuetify';
 import Vuex from 'vuex';
 
 import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
-import UpdateSnackbar from '@/components/UpdateSnackbar.vue';
+import VersionSnackbar from '@/components/VersionSnackbar.vue';
 
 Vue.use(Vuetify);
 Vue.use(Vuex);
@@ -22,7 +22,7 @@ function createWrapper(options?: {
   isConnected?: boolean;
   updateIsAvailable?: boolean;
   updateIsMandatory?: boolean;
-}): Wrapper<UpdateSnackbar> {
+}): Wrapper<VersionSnackbar> {
   const vuetify = new Vuetify();
   const state = {
     isConnected: options?.isConnected ?? false,
@@ -43,7 +43,7 @@ function createWrapper(options?: {
     modules: { versionInformation: versionInformationModule },
   });
 
-  return mount(UpdateSnackbar, {
+  return mount(VersionSnackbar, {
     vuetify,
     store,
     mocks: {
@@ -54,33 +54,33 @@ function createWrapper(options?: {
   });
 }
 
-function clickUpdateButton(wrapper: Wrapper<UpdateSnackbar>): void {
+function clickUpdateButton(wrapper: Wrapper<VersionSnackbar>): void {
   const button = wrapper.get('button');
   button.trigger('click');
 }
 
-describe('UpdateSnackbar.vue', () => {
+describe('VersionSnackbar.vue', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   test('does not render snackbar if there is no update available nor is one mandatory', async () => {
     const wrapper = createWrapper({ updateIsAvailable: false, updateIsMandatory: false });
-    const snackbar = wrapper.find('.update-snackbar');
+    const snackbar = wrapper.find('.version-snackbar');
 
     expect(snackbar.exists()).toBe(false);
   });
 
   test('render snackbar if update is available', () => {
     const wrapper = createWrapper({ updateIsAvailable: true });
-    const snackbar = wrapper.find('.update-snackbar');
+    const snackbar = wrapper.find('.version-snackbar');
 
     expect(snackbar.exists()).toBe(true);
   });
 
   test('render snackbar if update is mandatory', () => {
     const wrapper = createWrapper({ updateIsMandatory: true });
-    const snackbar = wrapper.find('.update-snackbar');
+    const snackbar = wrapper.find('.version-snackbar');
 
     expect(snackbar.exists()).toBe(true);
   });
@@ -94,14 +94,14 @@ describe('UpdateSnackbar.vue', () => {
 
   test('render message that update is available', () => {
     const wrapper = createWrapper({ updateIsAvailable: true });
-    const message = wrapper.get('.update-snackbar__message');
+    const message = wrapper.get('.version-snackbar__message');
 
     expect(message.text()).toBe('update.optional');
   });
 
   test('render message that update is mandatory', () => {
     const wrapper = createWrapper({ updateIsAvailable: true });
-    const message = wrapper.get('.update-snackbar__message');
+    const message = wrapper.get('.version-snackbar__message');
 
     expect(message.text()).toBe('update.optional');
   });
