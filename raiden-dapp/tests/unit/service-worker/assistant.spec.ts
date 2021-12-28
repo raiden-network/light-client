@@ -173,6 +173,17 @@ describe('ServiceWorkerAssistant', () => {
     expect(windowReloadSpy).toHaveBeenCalledTimes(1);
   });
 
+  test('set installed version when receiving installation successful message', async () => {
+    await createAssistant();
+    store.commit.mockClear(); // Get rid of the intial available version update.
+
+    sendMessage(ServiceWorkerMessageIdentifier.INSTALLED_VERSION, { version: '1.0.0' });
+    await flushPromises(); // It must asynchronously fetch the version
+
+    expect(store.commit).toHaveBeenCalledTimes(1);
+    expect(store.commit).toHaveBeenCalledWith('versionInformation/setInstalledVersion', '1.0.0');
+  });
+
   test('set update is mandatory when receiving installation error message', async () => {
     await createAssistant();
     store.commit.mockClear(); // Get rid of the intial available version update.
@@ -216,13 +227,13 @@ describe('ServiceWorkerAssistant', () => {
     await createAssistant(true, 'version-1.2');
 
     expect(store.commit).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
   });
 
   test('do not update available version in store if parsing fails', async () => {
     await createAssistant(true, null);
 
     expect(store.commit).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
   });
 });
