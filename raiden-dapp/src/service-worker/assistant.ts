@@ -53,7 +53,7 @@ export default class ServiceWorkerAssistant {
       const version = data.version.version;
 
       if (validateVersion(version)) {
-        this.store.commit('setAvailableVersion', version);
+        this.setAvailableVersion(version);
       } else {
         throw new Error(`Maleformed version string: ${version}`);
       }
@@ -70,7 +70,11 @@ export default class ServiceWorkerAssistant {
     window.location.reload();
   };
 
+  private setAvailableVersion = (version: string): void => {
+    this.store.commit('versionInformation/setAvailableVersion', version);
+  };
+
   private setUpdateIsMandatory = (): void => {
-    this.store.commit('setUpdateIsMandatory');
+    this.store.commit('versionInformation/setUpdateIsMandatory');
   };
 }

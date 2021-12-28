@@ -18,23 +18,30 @@ const $serviceWorkerAssistant = {
   update: jest.fn(),
 };
 
-function createWrapper(
-  versionUpdateAvailable = false,
-  updateIsMandatory = false,
-  isConnected = false,
-): Wrapper<UpdateSnackbar> {
+function createWrapper(options?: {
+  isConnected?: boolean;
+  updateIsAvailable?: boolean;
+  updateIsMandatory?: boolean;
+}): Wrapper<UpdateSnackbar> {
   const vuetify = new Vuetify();
   const state = {
-    isConnected,
-    versionInfo: {
-      updateIsMandatory,
-    },
-  };
-  const getters = {
-    versionUpdateAvailable: () => versionUpdateAvailable,
+    isConnected: options?.isConnected ?? false,
   };
 
-  const store = new Vuex.Store({ state, getters });
+  const versionInformationModule = {
+    namespaced: true,
+    state: {
+      updateIsMandatory: options?.updateIsMandatory ?? false,
+    },
+    getters: {
+      updateIsAvailable: () => options?.updateIsAvailable ?? false,
+    },
+  };
+
+  const store = new Vuex.Store({
+    state,
+    modules: { versionInformation: versionInformationModule },
+  });
 
   return mount(UpdateSnackbar, {
     vuetify,
@@ -58,49 +65,49 @@ describe('UpdateSnackbar.vue', () => {
   });
 
   test('does not render snackbar if there is no update available nor is one mandatory', async () => {
-    const wrapper = createWrapper(false, false);
+    const wrapper = createWrapper({ updateIsAvailable: false, updateIsMandatory: false });
     const snackbar = wrapper.find('.update-snackbar');
 
     expect(snackbar.exists()).toBe(false);
   });
 
   test('render snackbar if update is available', () => {
-    const wrapper = createWrapper(true);
+    const wrapper = createWrapper({ updateIsAvailable: true });
     const snackbar = wrapper.find('.update-snackbar');
 
     expect(snackbar.exists()).toBe(true);
   });
 
   test('render snackbar if update is mandatory', () => {
-    const wrapper = createWrapper(undefined, true);
+    const wrapper = createWrapper({ updateIsMandatory: true });
     const snackbar = wrapper.find('.update-snackbar');
 
     expect(snackbar.exists()).toBe(true);
   });
 
   test('render blocking overlay if update is mandatory', () => {
-    const wrapper = createWrapper(undefined, true);
+    const wrapper = createWrapper({ updateIsMandatory: true });
     const overlay = wrapper.findComponent(BlurredOverlay);
 
     expect(overlay.exists()).toBe(true);
   });
 
   test('render message that update is available', () => {
-    const wrapper = createWrapper(true);
+    const wrapper = createWrapper({ updateIsAvailable: true });
     const message = wrapper.get('.update-snackbar__message');
 
     expect(message.text()).toBe('update.optional');
   });
 
   test('render message that update is mandatory', () => {
-    const wrapper = createWrapper(true);
+    const wrapper = createWrapper({ updateIsAvailable: true });
     const message = wrapper.get('.update-snackbar__message');
 
     expect(message.text()).toBe('update.optional');
   });
 
   test('trigger update does trigger the service worker assistant', () => {
-    const wrapper = createWrapper(true);
+    const wrapper = createWrapper({ updateIsAvailable: true });
 
     clickUpdateButton(wrapper);
 
@@ -108,7 +115,7 @@ describe('UpdateSnackbar.vue', () => {
   });
 
   test('trigger update does not disconnect raiden service if not connected', () => {
-    const wrapper = createWrapper(true, undefined, false);
+    const wrapper = createWrapper({ updateIsAvailable: true, isConnected: false });
 
     clickUpdateButton(wrapper);
 
@@ -116,7 +123,7 @@ describe('UpdateSnackbar.vue', () => {
   });
 
   test('trigger update does disconnect raiden service if connected', () => {
-    const wrapper = createWrapper(true, undefined, true);
+    const wrapper = createWrapper({ updateIsAvailable: true, isConnected: true });
 
     clickUpdateButton(wrapper);
 

@@ -15,35 +15,38 @@
 <script lang="ts">
 /* istanbul ignore file */
 import { Component, Vue } from 'vue-property-decorator';
-import { mapGetters, mapState } from 'vuex';
+import { createNamespacedHelpers, mapState } from 'vuex';
 
 import BlurredOverlay from '@/components/overlays/BlurredOverlay.vue';
-import type { VersionInfo } from '@/types';
+
+const { mapState: mapVersionInformationState, mapGetters: mapVersionInformationGetters } =
+  createNamespacedHelpers('versionInformation');
 
 @Component({
   components: { BlurredOverlay },
   computed: {
-    ...mapState(['isConnected', 'versionInfo']),
-    ...mapGetters(['versionUpdateAvailable']),
+    ...mapState(['isConnected']),
+    ...mapVersionInformationState(['updateIsMandatory']),
+    ...mapVersionInformationGetters(['updateIsAvailable']),
   },
 })
 export default class UpdateSnackbar extends Vue {
-  versionInfo!: VersionInfo;
   isConnected!: boolean;
-  versionUpdateAvailable!: boolean;
+  updateIsMandatory!: boolean;
+  updateIsAvailable!: boolean;
   isUpdating = false;
 
   get visible(): boolean {
-    return this.versionUpdateAvailable || this.versionInfo.updateIsMandatory;
+    return this.updateIsAvailable || this.updateIsMandatory;
   }
 
   get blocking(): boolean {
-    return this.versionInfo.updateIsMandatory;
+    return this.updateIsMandatory;
   }
 
   get message(): string {
     if (this.visible) {
-      const subKey = this.versionInfo.updateIsMandatory ? 'mandatory' : 'optional';
+      const subKey = this.updateIsMandatory ? 'mandatory' : 'optional';
       return this.$t(`update.${subKey}`) as string;
     } else {
       return '';

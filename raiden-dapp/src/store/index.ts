@@ -1,4 +1,3 @@
-import { compare as compareVersions, validate as validateVersion } from 'compare-versions';
 import type { BigNumber, providers } from 'ethers';
 import clone from 'lodash/clone';
 import filter from 'lodash/filter';
@@ -21,6 +20,8 @@ import { notifications } from '@/store/notifications';
 import type { UserDepositContractState } from '@/store/user-deposit-contract';
 import { userDepositContract } from '@/store/user-deposit-contract';
 import { userSettings, userSettingsLocalStorage } from '@/store/user-settings';
+import type { VersionInformationState } from '@/store/version-information';
+import { versionInformation, versionInformtaionLocalStorage } from '@/store/version-information';
 import type { RootState, Tokens, Transfers } from '@/types';
 
 import type { NotificationsState } from './notifications/types';
@@ -43,11 +44,6 @@ const _defaultState: RootState = {
   disclaimerAccepted: false,
   stateBackupReminderDateMs: 0,
   persistDisclaimerAcceptance: false,
-  versionInfo: {
-    activeVersion: process.env.PACKAGE_VERSION ?? '0.0.0',
-    availableVersion: undefined,
-    updateIsMandatory: false,
-  },
 };
 
 /**
@@ -83,6 +79,7 @@ const backupReminderLocalStorage = new VuexPersistence<RootState>({
 export type CombinedStoreState = RootState & {
   notifications: NotificationsState;
   userDepositContract: UserDepositContractState;
+  versionInformation: VersionInformationState;
 };
 
 const store: StoreOptions<CombinedStoreState> = {
@@ -152,14 +149,6 @@ const store: StoreOptions<CombinedStoreState> = {
     },
     updateStateBackupReminderDate(state: RootState, newReminderDate: number) {
       state.stateBackupReminderDateMs = newReminderDate;
-    },
-    setAvailableVersion(state: RootState, version: string) {
-      if (validateVersion(version)) {
-        state.versionInfo = { ...state.versionInfo, availableVersion: version };
-      }
-    },
-    setUpdateIsMandatory(state: RootState) {
-      state.versionInfo = { ...state.versionInfo, updateIsMandatory: true };
     },
   },
   actions: {},
@@ -253,14 +242,6 @@ const store: StoreOptions<CombinedStoreState> = {
     transfer: (state: RootState) => (paymentId: BigNumber) => {
       return Object.values(state.transfers).find((transfer) => transfer.paymentId.eq(paymentId));
     },
-    versionUpdateAvailable: (state: RootState): boolean => {
-      const { activeVersion, availableVersion } = state.versionInfo;
-      return (
-        !!activeVersion &&
-        !!availableVersion &&
-        compareVersions(availableVersion, activeVersion, '>')
-      );
-    },
   },
   plugins: [
     userSettingsLocalStorage.plugin,
@@ -271,6 +252,7 @@ const store: StoreOptions<CombinedStoreState> = {
     notifications,
     userDepositContract,
     userSettings,
+    versionInformation,
   },
 };
 
