@@ -21,7 +21,7 @@ import type { RootStateWithNotifications } from '@/store/notifications/types';
 import type { RootStateWithUserDepositContract } from '@/store/user-deposit-contract';
 import { userDepositContract } from '@/store/user-deposit-contract';
 import type { RootStateWithUserSettings } from '@/store/user-settings';
-import { userSettings, userSettingsLocalStorage } from '@/store/user-settings';
+import { createUserSettingsPersistencePlugin, userSettings } from '@/store/user-settings';
 import type { RootStateWithVersionInformation } from '@/store/version-information';
 import { versionInformation, versionInformtaionLocalStorage } from '@/store/version-information';
 import type { RootState, Tokens, Transfers } from '@/types';
@@ -244,7 +244,7 @@ const store: StoreOptions<CombinedStoreState> = {
     },
   },
   plugins: [
-    userSettingsLocalStorage.plugin,
+    createUserSettingsPersistencePlugin(),
     disclaimerLocalStorage.plugin,
     backupReminderLocalStorage.plugin,
   ],
