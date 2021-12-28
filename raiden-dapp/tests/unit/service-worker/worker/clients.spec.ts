@@ -35,10 +35,13 @@ describe('service worker clients', () => {
       const client = new MockedClient('client-id');
       const clients = new MockedClients([client]);
 
-      await sendMessageToClients.call({ clients }, 'message', { data: 1 });
+      await sendMessageToClients.call({ clients }, 'testIdentifier', { data: 1 });
 
       expect(client.postMessage).toHaveBeenCalledTimes(1);
-      expect(client.postMessage).toHaveBeenLastCalledWith('message', { data: 1 });
+      expect(client.postMessage).toHaveBeenLastCalledWith({
+        messageIdentifier: 'testIdentifier',
+        data: 1,
+      });
     });
 
     test('sends message to multiple connected clients', async () => {
@@ -46,12 +49,18 @@ describe('service worker clients', () => {
       const clientTwo = new MockedClient('client-id-two');
       const clients = new MockedClients([clientOne, clientTwo]);
 
-      await sendMessageToClients.call({ clients }, 'message', { data: 1 });
+      await sendMessageToClients.call({ clients }, 'testIdentifier', { data: 1 });
 
       expect(clientOne.postMessage).toHaveBeenCalledTimes(1);
-      expect(clientOne.postMessage).toHaveBeenLastCalledWith('message', { data: 1 });
+      expect(clientOne.postMessage).toHaveBeenLastCalledWith({
+        messageIdentifier: 'testIdentifier',
+        data: 1,
+      });
       expect(clientTwo.postMessage).toHaveBeenCalledTimes(1);
-      expect(clientTwo.postMessage).toHaveBeenLastCalledWith('message', { data: 1 });
+      expect(clientTwo.postMessage).toHaveBeenLastCalledWith({
+        messageIdentifier: 'testIdentifier',
+        data: 1,
+      });
     });
   });
 });

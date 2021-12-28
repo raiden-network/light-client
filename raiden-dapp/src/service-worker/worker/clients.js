@@ -15,10 +15,11 @@ export async function isAnyClientAvailable() {
  *
  * Requires to be bound to the service worker context!
  *
- * @param message - data of the message event to send
- * @param payload - additional payload to send with message (optional)
+ * @param messageIdentifier - used to match and identify messages by the receiver
+ * @param payload - additional payload to send in the message (optional)
  */
-export async function sendMessageToClients(message, payload) {
+export async function sendMessageToClients(messageIdentifier, payload) {
   const clients = await this.clients.matchAll();
-  clients.forEach((client) => client.postMessage(message, payload));
+  const message = { messageIdentifier, ...payload };
+  clients.forEach((client) => client.postMessage(message));
 }

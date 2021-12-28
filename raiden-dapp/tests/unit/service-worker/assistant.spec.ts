@@ -5,7 +5,10 @@ import flushPromises from 'flush-promises';
 import type { CommitOptions, Store as VuexStore } from 'vuex';
 
 import ServiceWorkerAssistant from '@/service-worker/assistant';
-import { ServiceWorkerAssistantMessages, ServiceWorkerMessages } from '@/service-worker/messages';
+import {
+  ServiceWorkerAssistantMessageIdentifier,
+  ServiceWorkerMessageIdentifier,
+} from '@/service-worker/messages';
 import type { CombinedStoreState } from '@/store/index';
 
 const Store = jest.fn((..._: any[]) => ({ commit: jest.fn() }));
@@ -54,7 +57,11 @@ async function respondWithServerVersion(this: string | null): Promise<Simplified
   return { json: parseJson };
 }
 
-function sendMessage(message: ServiceWorkerMessages): void {
+function sendMessage(
+  messageIdentifier: ServiceWorkerMessageIdentifier,
+  payload?: Record<string, unknown>,
+): void {
+  const message = { messageIdentifier, ...payload };
   const event = new MessageEvent('message', { data: message });
   serviceWorkerContainer.dispatchEvent(event);
 }
@@ -86,7 +93,7 @@ async function createAssistant(
 describe('ServiceWorkerAssistant', () => {
   let intervalIds: Array<number>;
   let windowReloadSpy: jest.Mock;
-  let consoleWarnSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
   const origLocation = global.window.location;
 
   beforeAll(() => {
@@ -116,7 +123,7 @@ describe('ServiceWorkerAssistant', () => {
   });
 
   beforeEach(() => {
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation((_message) => undefined);
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((_message) => undefined);
     intervalIds = [];
     jest.clearAllMocks();
     serviceWorkerContainer.clear();
@@ -147,9 +154,9 @@ describe('ServiceWorkerAssistant', () => {
     await sleep(500); // Add a padding to let all triggered interval handler finish
 
     expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledTimes(2);
-    expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledWith(
-      ServiceWorkerAssistantMessages.VERIFY_CACHE,
-    );
+    expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledWith({
+      messageIdentifier: ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE,
+    });
   });
 
   test('do not check for version update if service worker not supported', async () => {
@@ -161,7 +168,7 @@ describe('ServiceWorkerAssistant', () => {
   test('reloads window when receiving reload message', async () => {
     await createAssistant();
 
-    sendMessage(ServiceWorkerMessages.RELOAD_WINDOW);
+    sendMessage(ServiceWorkerMessageIdentifier.RELOAD_WINDOW);
 
     expect(windowReloadSpy).toHaveBeenCalledTimes(1);
   });
@@ -170,7 +177,15 @@ describe('ServiceWorkerAssistant', () => {
     await createAssistant();
     store.commit.mockClear(); // Get rid of the intial available version update.
 
-    sendMessage(ServiceWorkerMessages.INSTALLATION_ERROR);
+    const error = new Error('test installation error');
+    sendMessage(ServiceWorkerMessageIdentifier.INSTALLATION_ERROR, { error });
+
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+    expect(consoleErrorSpy).toHaveBeenNthCalledWith(
+      1,
+      'Service worker failed during installation phase.',
+    );
+    expect(consoleErrorSpy).toHaveBeenNthCalledWith(2, error);
 
     expect(store.commit).toHaveBeenCalledTimes(1);
     expect(store.commit).toHaveBeenCalledWith('versionInformation/setUpdateIsMandatory');
@@ -180,7 +195,7 @@ describe('ServiceWorkerAssistant', () => {
     await createAssistant();
     store.commit.mockClear(); // Get rid of the intial available version update.
 
-    sendMessage(ServiceWorkerMessages.CACHE_IS_INVALID);
+    sendMessage(ServiceWorkerMessageIdentifier.CACHE_IS_INVALID);
 
     expect(store.commit).toHaveBeenCalledTimes(1);
     expect(store.commit).toHaveBeenCalledWith('versionInformation/setUpdateIsMandatory');
@@ -192,22 +207,22 @@ describe('ServiceWorkerAssistant', () => {
     assistant.update();
 
     expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledTimes(1);
-    expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledWith(
-      ServiceWorkerAssistantMessages.UPDATE,
-    );
+    expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledWith({
+      messageIdentifier: ServiceWorkerAssistantMessageIdentifier.UPDATE,
+    });
   });
 
   test('do not update available version in store if version is invalid', async () => {
     await createAssistant(true, 'version-1.2');
 
     expect(store.commit).not.toHaveBeenCalled();
-    expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
   });
 
   test('do not update available version in store if parsing fails', async () => {
     await createAssistant(true, null);
 
     expect(store.commit).not.toHaveBeenCalled();
-    expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
   });
 });
