@@ -10,6 +10,7 @@ export interface RootStateWithVersionInformation {
 }
 
 export type VersionInformationGetters<S = VersionInformationState> = {
+  correctVersionIsLoaded: (state: S) => boolean;
   updateIsAvailable: (state: S) => boolean;
 };
 

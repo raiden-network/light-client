@@ -28,6 +28,14 @@ function compareSemanticVersions(
 
 export const getters: GetterTree<VersionInformationState, RootStateWithVersionInformation> &
   VersionInformationGetters = {
+  correctVersionIsLoaded(state) {
+    const { installedVersion, activeVersion } = state;
+    const noVersionIsInstalled = installedVersion === undefined;
+    return (
+      noVersionIsInstalled || // In case of an initial load or update it is always correct.
+      compareSemanticVersions(installedVersion, activeVersion, '=')
+    );
+  },
   updateIsAvailable(state) {
     return compareSemanticVersions(state.availableVersion, state.installedVersion, '>');
   },

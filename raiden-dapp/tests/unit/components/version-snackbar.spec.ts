@@ -22,6 +22,7 @@ function createWrapper(options?: {
   isConnected?: boolean;
   updateIsAvailable?: boolean;
   updateIsMandatory?: boolean;
+  correctVersionIsLoaded?: boolean;
 }): Wrapper<VersionSnackbar> {
   const vuetify = new Vuetify();
   const state = {
@@ -35,6 +36,7 @@ function createWrapper(options?: {
     },
     getters: {
       updateIsAvailable: () => options?.updateIsAvailable ?? false,
+      correctVersionIsLoaded: () => options?.correctVersionIsLoaded ?? true,
     },
   };
 
@@ -64,69 +66,100 @@ describe('VersionSnackbar.vue', () => {
     jest.clearAllMocks();
   });
 
-  test('does not render snackbar if there is no update available nor is one mandatory', async () => {
-    const wrapper = createWrapper({ updateIsAvailable: false, updateIsMandatory: false });
-    const snackbar = wrapper.find('.version-snackbar');
+  describe('render snackbar', () => {
+    test('not if correct version is loaded and no update is available or mandatory', async () => {
+      const wrapper = createWrapper({ updateIsAvailable: false, updateIsMandatory: false });
+      const snackbar = wrapper.find('.version-snackbar');
 
-    expect(snackbar.exists()).toBe(false);
+      expect(snackbar.exists()).toBe(false);
+    });
+
+    test('if not the correct version got loaded', () => {
+      const wrapper = createWrapper({ correctVersionIsLoaded: false });
+      const snackbar = wrapper.find('.version-snackbar');
+
+      expect(snackbar.exists()).toBe(true);
+    });
+
+    test('if update is available', () => {
+      const wrapper = createWrapper({ updateIsAvailable: true });
+      const snackbar = wrapper.find('.version-snackbar');
+
+      expect(snackbar.exists()).toBe(true);
+    });
+
+    test('if update is mandatory', () => {
+      const wrapper = createWrapper({ updateIsMandatory: true });
+      const snackbar = wrapper.find('.version-snackbar');
+
+      expect(snackbar.exists()).toBe(true);
+    });
   });
 
-  test('render snackbar if update is available', () => {
-    const wrapper = createWrapper({ updateIsAvailable: true });
-    const snackbar = wrapper.find('.version-snackbar');
+  describe('render blocking overlay', () => {
+    test('if wrong version is loaded', () => {
+      const wrapper = createWrapper({ correctVersionIsLoaded: false });
+      const overlay = wrapper.findComponent(BlurredOverlay);
 
-    expect(snackbar.exists()).toBe(true);
+      expect(overlay.exists()).toBe(true);
+    });
+
+    test('if update is mandatory', () => {
+      const wrapper = createWrapper({ updateIsMandatory: true });
+      const overlay = wrapper.findComponent(BlurredOverlay);
+
+      expect(overlay.exists()).toBe(true);
+    });
   });
 
-  test('render snackbar if update is mandatory', () => {
-    const wrapper = createWrapper({ updateIsMandatory: true });
-    const snackbar = wrapper.find('.version-snackbar');
+  describe('render message', () => {
+    test('not if wrong version is loaded', () => {
+      const wrapper = createWrapper({ correctVersionIsLoaded: false });
+      const message = wrapper.get('.version-snackbar__message');
 
-    expect(snackbar.exists()).toBe(true);
+      expect(message.isVisible()).toBeFalsy();
+    });
+
+    test('if update is available', () => {
+      const wrapper = createWrapper({ updateIsAvailable: true });
+      const message = wrapper.get('.version-snackbar__message');
+
+      expect(message.isVisible()).toBeTruthy();
+      expect(message.text()).toBe('update.optional');
+    });
+
+    test('if update is mandatory', () => {
+      const wrapper = createWrapper({ updateIsAvailable: true });
+      const message = wrapper.get('.version-snackbar__message');
+
+      expect(message.isVisible()).toBeTruthy();
+      expect(message.text()).toBe('update.optional');
+    });
   });
 
-  test('render blocking overlay if update is mandatory', () => {
-    const wrapper = createWrapper({ updateIsMandatory: true });
-    const overlay = wrapper.findComponent(BlurredOverlay);
+  describe('triggering the update button', () => {
+    test('triggers update on the service worker assistant', () => {
+      const wrapper = createWrapper({ updateIsAvailable: true });
 
-    expect(overlay.exists()).toBe(true);
-  });
+      clickUpdateButton(wrapper);
 
-  test('render message that update is available', () => {
-    const wrapper = createWrapper({ updateIsAvailable: true });
-    const message = wrapper.get('.version-snackbar__message');
+      expect($serviceWorkerAssistant.update).toHaveBeenCalledTimes(1);
+    });
 
-    expect(message.text()).toBe('update.optional');
-  });
+    test('does not disconnect the raiden service if not connected', () => {
+      const wrapper = createWrapper({ updateIsAvailable: true, isConnected: false });
 
-  test('render message that update is mandatory', () => {
-    const wrapper = createWrapper({ updateIsAvailable: true });
-    const message = wrapper.get('.version-snackbar__message');
+      clickUpdateButton(wrapper);
 
-    expect(message.text()).toBe('update.optional');
-  });
+      expect($raiden.disconnect).toHaveBeenCalledTimes(0);
+    });
 
-  test('trigger update does trigger the service worker assistant', () => {
-    const wrapper = createWrapper({ updateIsAvailable: true });
+    test('disconnects the raiden service if connected', () => {
+      const wrapper = createWrapper({ updateIsAvailable: true, isConnected: true });
 
-    clickUpdateButton(wrapper);
+      clickUpdateButton(wrapper);
 
-    expect($serviceWorkerAssistant.update).toHaveBeenCalledTimes(1);
-  });
-
-  test('trigger update does not disconnect raiden service if not connected', () => {
-    const wrapper = createWrapper({ updateIsAvailable: true, isConnected: false });
-
-    clickUpdateButton(wrapper);
-
-    expect($raiden.disconnect).toHaveBeenCalledTimes(0);
-  });
-
-  test('trigger update does disconnect raiden service if connected', () => {
-    const wrapper = createWrapper({ updateIsAvailable: true, isConnected: true });
-
-    clickUpdateButton(wrapper);
-
-    expect($raiden.disconnect).toHaveBeenCalledTimes(1);
+      expect($raiden.disconnect).toHaveBeenCalledTimes(1);
+    });
   });
 });
