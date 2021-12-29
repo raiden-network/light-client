@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.1.0] - 2021-12-29
+
 ### Added
 
 - [#3024] Prevent the usage of uninstalled versions
@@ -633,7 +635,8 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/raiden-network/light-client/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/raiden-network/light-client/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.2...v2.0.0
 [2.0.0-rc.2]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.1...v2.0.0-rc.2
