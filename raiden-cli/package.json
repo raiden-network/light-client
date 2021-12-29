@@ -1,6 +1,6 @@
 {
   "name": "@raiden_network/raiden-cli",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "author": "brainbot labs est.",
   "license": "MIT",
   "description": "Raiden Light Client standalone app with a REST API via HTTP",
