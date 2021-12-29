@@ -2,7 +2,7 @@
 import { validate as validateVersion } from 'compare-versions';
 import type { Store } from 'vuex';
 
-import type { CombinedStoreState } from '@/store/index';
+import type { RootStateWithVersionInformation } from '@/store/version-information';
 
 import {
   ServiceWorkerAssistantMessageIdentifier,
@@ -12,24 +12,51 @@ import {
 const VERSION_FILE_PATH = (process.env.BASE_URL ?? '/') + 'version.json';
 
 export default class ServiceWorkerAssistant {
+  private store: Store<RootStateWithVersionInformation>;
+  private serviceWorkerContainer: ServiceWorkerContainer;
+  private window: Window;
+  private console: Console;
+
   constructor(
-    private store: Store<CombinedStoreState>,
+    store: Store<RootStateWithVersionInformation>,
     updateAvailableVersionInterval = 1000 * 60 * 60,
     verifyCacheValidityInverval = 1000 * 10,
+    environment?: {
+      // for testing purpose
+      serviceWorkerContainer?: ServiceWorkerContainer | null;
+      window?: Window;
+      console?: Console;
+    },
   ) {
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.addEventListener('message', this.onMessage);
+    this.store = store;
+    this.serviceWorkerContainer =
+      environment?.serviceWorkerContainer ?? global.navigator.serviceWorker;
+    this.window = environment?.window ?? global.window;
+    this.console = environment?.console ?? global.console;
+
+    if (this.serviceWorkerContainer) {
+      this.serviceWorkerContainer.addEventListener('message', this.onMessage.bind(this));
       this.updateAvailableVersion();
-      setInterval(this.updateAvailableVersion, updateAvailableVersionInterval);
-      setInterval(this.verifyCacheValidity, verifyCacheValidityInverval);
+
+      setInterval(this.updateAvailableVersion.bind(this), updateAvailableVersionInterval);
+      setInterval(this.verifyCacheValidity.bind(this), verifyCacheValidityInverval);
     }
   }
 
-  public update = (): void => {
-    this.postMessage(ServiceWorkerAssistantMessageIdentifier.UPDATE);
-  };
+  public async update(): Promise<void> {
+    this.prepareUpdate();
+    await this.postMessage(ServiceWorkerAssistantMessageIdentifier.UPDATE);
+  }
 
-  private onMessage = (event: MessageEvent): void => {
+  public async verifyIfCorrectVersionGotLoaded(): Promise<void> {
+    if (!this.correctVersionIsLoaded && (await this.isAnyServiceWorkerRegistered())) {
+      this.console.error('Active version is not installed version.');
+      await this.unregisterAllServiceWorker();
+      this.reloadWindow();
+    }
+  }
+
+  private onMessage(event: MessageEvent): void {
     if (!(event.data && event.data.messageIdentifier)) return;
 
     const { messageIdentifier, ...payload } = event.data;
@@ -54,60 +81,80 @@ export default class ServiceWorkerAssistant {
       default:
         break;
     }
-  };
-
-  private reportInstallationError = (error: Error): void => {
-    console.error('Service worker failed during installation phase.'); // eslint-disable-line
-    console.error(error); // eslint-disable-line
-    this.setUpdateIsMandatory();
-  };
-
-  private updateAvailableVersion = async (): Promise<void> => {
-    try {
-      const version = await this.getAvailabeVersion();
-      this.setAvailableVersion(version);
-    } catch (error) {
-      console.error('Failed to update available version'); // eslint-disable-line no-console
-      console.error(error); // eslint-disable-line no-console
-    }
-  };
-
-  private getAvailabeVersion = async (): Promise<string> => {
-    const response = await fetch(VERSION_FILE_PATH);
-    const data = await response.json();
-    return data.version.version;
-  };
-
-  private verifyCacheValidity = (): void => {
-    this.postMessage(ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE);
-  };
-
-  private postMessage(messageIdentifier: ServiceWorkerAssistantMessageIdentifier) {
-    const message = { messageIdentifier };
-    navigator.serviceWorker.controller?.postMessage(message);
   }
 
-  private reloadWindow = (): void => {
-    window.location.reload();
-  };
+  private reportInstallationError(error: Error): void {
+    this.console.error('Service worker failed during installation phase.');
+    this.console.error(error);
+    this.setUpdateIsMandatory();
+  }
 
-  private setInstalledVersion = (version: string): void => {
+  private async updateAvailableVersion(): Promise<void> {
+    try {
+      const response = await this.window.fetch(VERSION_FILE_PATH);
+      const data = await response.json();
+      const version = data.version.version;
+      this.setAvailableVersion(version);
+    } catch (error) {
+      this.console.error('Failed to update available version');
+      this.console.error(error);
+    }
+  }
+
+  private verifyCacheValidity(): void {
+    this.postMessage(ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE);
+  }
+
+  async isAnyServiceWorkerRegistered(): Promise<boolean> {
+    const allServiceWokers = (await this.serviceWorkerContainer?.getRegistrations()) ?? [];
+    return allServiceWokers.length > 0;
+  }
+
+  private async postMessage(
+    messageIdentifier: ServiceWorkerAssistantMessageIdentifier,
+  ): Promise<void> {
+    if (this.serviceWorkerContainer) {
+      await this.serviceWorkerContainer.ready;
+      const message = { messageIdentifier };
+      this.serviceWorkerContainer.controller?.postMessage(message);
+    }
+  }
+
+  private async unregisterAllServiceWorker(): Promise<void> {
+    const allServiceWorkers = (await this.serviceWorkerContainer?.getRegistrations()) ?? [];
+
+    await Promise.all(allServiceWorkers.map(async (serviceWorker) => serviceWorker.unregister()));
+  }
+
+  private reloadWindow(): void {
+    this.window.location.reload();
+  }
+
+  private get correctVersionIsLoaded(): boolean {
+    return this.store.getters['versionInformation/correctVersionIsLoaded'];
+  }
+
+  private setInstalledVersion(version: string): void {
     if (validateVersion(version)) {
       this.store.commit('versionInformation/setInstalledVersion', version);
     } else {
       throw new Error(`Malformed installation version: ${version}`);
     }
-  };
+  }
 
-  private setAvailableVersion = (version: string): void => {
+  private setAvailableVersion(version: string): void {
     if (validateVersion(version)) {
       this.store.commit('versionInformation/setAvailableVersion', version);
     } else {
       throw new Error(`Malformed available version: ${version}`);
     }
-  };
+  }
 
-  private setUpdateIsMandatory = (): void => {
+  private setUpdateIsMandatory(): void {
     this.store.commit('versionInformation/setUpdateIsMandatory');
-  };
+  }
+
+  private prepareUpdate(): void {
+    this.store.commit('versionInformation/prepareUpdate');
+  }
 }

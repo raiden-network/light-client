@@ -8,8 +8,8 @@ import {
   MockedIDBFactory,
   MockedIDBObjectStore,
   MockedMessageEvent,
-  MockedRegistration,
   MockedRequest,
+  MockedServiceWorkerRegistration,
   mockEnvironmentForServiceWorker,
 } from '../../utils/mocks';
 
@@ -242,7 +242,7 @@ describe('service worker index', () => {
     });
 
     test('unregisters itself', async () => {
-      const registration = new MockedRegistration();
+      const registration = new MockedServiceWorkerRegistration();
       const context = mockEnvironmentForServiceWorker({ registration });
 
       await sendMessageToServiceWorker(context, ServiceWorkerAssistantMessageIdentifier.UPDATE);
@@ -328,7 +328,7 @@ describe('service worker index', () => {
       const caches = new MockedCacheStorage('workbox-precache-v2', cache);
       const clients = new MockedClients([]);
       const objectStore = new MockedIDBObjectStore('precacheEntries', []);
-      const registration = new MockedRegistration();
+      const registration = new MockedServiceWorkerRegistration();
       const precacheEntries = [{ url: 'https://test.tld/asset', revision: '1' }];
       const context = mockEnvironmentForServiceWorker({
         caches,

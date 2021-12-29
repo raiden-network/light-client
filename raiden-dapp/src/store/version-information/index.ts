@@ -30,7 +30,10 @@ export function createVersionInformationPeristencePlugin(
         installedVersion: state.versionInformation.installedVersion,
       },
     }),
-    filter: (mutation) => mutation.type === 'versionInformation/setInstalledVersion',
+    filter: (mutation) =>
+      ['versionInformation/setInstalledVersion', 'versionInformation/prepareUpdate'].includes(
+        mutation.type,
+      ),
   });
 
   return vuexPersistence.plugin;

@@ -17,4 +17,11 @@ export const mutations: MutationTree<VersionInformationState> & VersionInformati
   setUpdateIsMandatory(state) {
     state.updateIsMandatory = true;
   },
+  prepareUpdate(state) {
+    // Setting the installed version to undefined will allow to load a new
+    // version without setting it back to the installed version. This is
+    // necessary to allow this new loaded version to install itself, when it is
+    // intended.
+    state.installedVersion = undefined;
+  },
 };

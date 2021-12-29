@@ -18,4 +18,5 @@ export type VersionInformationMutations<S = VersionInformationState> = {
   setInstalledVersion(state: S, version: string): void;
   setAvailableVersion(state: S, version: string): void;
   setUpdateIsMandatory(state: S): void;
+  prepareUpdate(state: S): void;
 };

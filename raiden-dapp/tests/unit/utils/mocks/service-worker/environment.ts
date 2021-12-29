@@ -9,9 +9,9 @@ import {
   MockedIDBDatabase,
   MockedIDBFactory,
   MockedIDBObjectStore,
-  MockedRegistration,
   MockedRequest,
   MockedResponse,
+  MockedServiceWorkerRegistration,
 } from './';
 
 type CacheStorageEnvironment = {
@@ -73,7 +73,7 @@ type ServiceWorkerEnvironment = CacheStorageEnvironment &
   IndexedDatabaseEnvironment & {
     client: MockedClient;
     clients: MockedClients;
-    registration: MockedRegistration;
+    registration: MockedServiceWorkerRegistration;
     precacheEntries: { url: string; revision?: string }[];
   };
 
@@ -94,7 +94,7 @@ export function mockEnvironmentForServiceWorker(
 ): EventTarget {
   const client = environment?.client ?? new MockedClient();
   const clients = environment?.clients ?? new MockedClients([client]);
-  const registration = environment?.registration ?? new MockedRegistration();
+  const registration = environment?.registration ?? new MockedServiceWorkerRegistration();
   const precacheEntries = environment?.precacheEntries ?? [];
   const context = new EventTarget();
   const { caches } = mockCacheStorageInEnvironment({ ...environment });
