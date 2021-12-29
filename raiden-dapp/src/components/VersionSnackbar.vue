@@ -1,7 +1,7 @@
 <template>
   <span v-if="visible">
     <blurred-overlay :show="blocking" :fullscreen="true" />
-    <v-snackbar v-model="visible" class="version-snackbar" :timeout="-1" color="primary">
+    <v-snackbar v-model="showMessage" class="version-snackbar" :timeout="-1" color="primary">
       <v-container class="d-flex align-center py-0">
         <div class="version-snackbar__message">{{ message }}</div>
         <v-btn class="ml-5" dark text :loading="isUpdating" @click="update">
@@ -27,25 +27,30 @@ const { mapState: mapVersionInformationState, mapGetters: mapVersionInformationG
   computed: {
     ...mapState(['isConnected']),
     ...mapVersionInformationState(['updateIsMandatory']),
-    ...mapVersionInformationGetters(['updateIsAvailable']),
+    ...mapVersionInformationGetters(['correctVersionIsLoaded', 'updateIsAvailable']),
   },
 })
 export default class VersionSnackbar extends Vue {
   isConnected!: boolean;
+  correctVersionIsLoaded!: boolean;
   updateIsMandatory!: boolean;
   updateIsAvailable!: boolean;
   isUpdating = false;
 
   get visible(): boolean {
-    return this.updateIsAvailable || this.updateIsMandatory;
+    return !this.correctVersionIsLoaded || this.updateIsAvailable || this.updateIsMandatory;
   }
 
   get blocking(): boolean {
-    return this.updateIsMandatory;
+    return !this.correctVersionIsLoaded || this.updateIsMandatory;
+  }
+
+  get showMessage(): boolean {
+    return this.correctVersionIsLoaded && (this.updateIsAvailable || this.updateIsMandatory);
   }
 
   get message(): string {
-    if (this.visible) {
+    if (this.showMessage) {
       const subKey = this.updateIsMandatory ? 'mandatory' : 'optional';
       return this.$t(`update.${subKey}`) as string;
     } else {
