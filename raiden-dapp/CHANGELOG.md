@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- [#3024] Prevent the usage of uninstalled versions
+
+[#3024]: https://github.com/raiden-network/light-client/issues/3024
+
 ## [2.0.1] - 2021-12-24
 
 ### Fixed
