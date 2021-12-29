@@ -60,6 +60,10 @@ export default class App extends Mixins(NavigationMixin) {
     return process.env.VUE_APP_TERMS;
   }
 
+  created() {
+    this.$serviceWorkerAssistant.verifyIfCorrectVersionGotLoaded();
+  }
+
   destroyed() {
     this.$raiden.disconnect();
   }

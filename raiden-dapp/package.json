@@ -97,7 +97,6 @@
     "eslint-plugin-vue-i18n": "^0.3.0",
     "eslint-plugin-vuetify": "^1.0.1",
     "flush-promises": "^1.0.2",
-    "isomorphic-fetch": "^3.0.0",
     "jest": "^27.4.5",
     "jest-canvas-mock": "^2.3.1",
     "jest-fail-on-console": "^2.1.1",

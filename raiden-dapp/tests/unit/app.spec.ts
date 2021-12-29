@@ -22,6 +22,10 @@ let vuetify: Vuetify;
 let router: Mocked<VueRouter>;
 let $raiden: RaidenService;
 
+const $serviceWorkerAssistant = {
+  verifyIfCorrectVersionGotLoaded: jest.fn(),
+};
+
 const createWrapper = (imprint: string, terms: string): Wrapper<App> => {
   if (imprint && terms) {
     process.env.VUE_APP_IMPRINT = imprint;
@@ -44,12 +48,23 @@ const createWrapper = (imprint: string, terms: string): Wrapper<App> => {
     mocks: {
       $router: router,
       $raiden: $raiden,
+      $serviceWorkerAssistant,
       $t: (msg: string) => msg,
     },
   });
 };
 
 describe('App.vue', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  test('triggers service worker assistent to verify loaded version after creation', () => {
+    createWrapper('', '');
+
+    expect($serviceWorkerAssistant.verifyIfCorrectVersionGotLoaded).toHaveBeenCalledTimes(1);
+  });
+
   test('displays privacy policy and terms if env variables are set', () => {
     const wrapper = createWrapper('https://custom-imprint.test', 'https://custom-terms.test');
     const privacyPolicy = wrapper.find('.imprint__policy');

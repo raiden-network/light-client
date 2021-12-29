@@ -1,49 +1,28 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import 'isomorphic-fetch'; // Solve ReferenceError undefined Response
+import {
+  MockedServiceWorker,
+  MockedServiceWorkerContainer,
+  MockedServiceWorkerRegistration,
+} from '../utils/mocks';
 
+import { createLocalVue } from '@vue/test-utils';
 import flushPromises from 'flush-promises';
-import type { CommitOptions, Store as VuexStore } from 'vuex';
+import Vuex, { Store } from 'vuex';
 
 import ServiceWorkerAssistant from '@/service-worker/assistant';
 import {
   ServiceWorkerAssistantMessageIdentifier,
   ServiceWorkerMessageIdentifier,
 } from '@/service-worker/messages';
-import type { CombinedStoreState } from '@/store/index';
+import type { RootStateWithVersionInformation } from '@/store/version-information';
 
-const Store = jest.fn((..._: any[]) => ({ commit: jest.fn() }));
-type Store<S> = VuexStore<S>;
-
-interface SimplifiedResponse {
-  json: () => Promise<unknown>;
-}
-
-class ServiceWorkerContainer extends EventTarget {
-  private listeners!: unknown; // TODO: Why is the implementation not visible here?
-
-  public controller = {
-    postMessage: jest.fn(),
-  };
-
-  constructor() {
-    super();
-  }
-
-  public clear(): void {
-    this.listeners! = {};
-  }
-}
-
-const serviceWorkerContainer = new ServiceWorkerContainer();
-const store = new Store({}) as jest.Mocked<Store<CombinedStoreState>> & {
-  commit: jest.Mock<void, [string, unknown?, CommitOptions?]>;
-};
+const localVue = createLocalVue();
+localVue.use(Vuex);
 
 async function sleep(duration: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, duration));
 }
 
-async function respondWithServerVersion(this: string | null): Promise<SimplifiedResponse> {
+async function respondWithServerVersion(this: string | null): Promise<Response> {
   const parseJson = () =>
     new Promise((resolve, reject) => {
       if (this === null) {
@@ -54,10 +33,11 @@ async function respondWithServerVersion(this: string | null): Promise<Simplified
       }
     });
 
-  return { json: parseJson };
+  return { json: parseJson } as Response;
 }
 
-function sendMessage(
+function sendMessageFromServiceWorker(
+  serviceWorkerContainer: ServiceWorkerContainer,
   messageIdentifier: ServiceWorkerMessageIdentifier,
   payload?: Record<string, unknown>,
 ): void {
@@ -66,24 +46,75 @@ function sendMessage(
   serviceWorkerContainer.dispatchEvent(event);
 }
 
-async function createAssistant(
-  serviceWorkerIsSupported = true,
-  availableVersionOnServer: string | null = '1.0.0',
-  updateAvailableVersionInterval?: number,
-  verifyCacheValidityInverval?: number,
-): Promise<ServiceWorkerAssistant> {
-  Object.defineProperty(global.navigator, 'serviceWorker', {
-    value: serviceWorkerIsSupported ? serviceWorkerContainer : undefined,
+async function createAssistant(options?: {
+  availableVersionOnServer?: string | null;
+  updateAvailableVersionInterval?: number;
+  serviceWorker?: ServiceWorker;
+  serviceWorkerRegistrations?: ServiceWorkerRegistration[];
+  serviceWorkerContainer?: ServiceWorkerContainer | null;
+  verifyCacheValidityInverval?: number;
+  correctVersionIsLoaded?: boolean;
+  setInstalledVersion?: () => void;
+  setAvailableVersion?: () => void;
+  setUpdateIsMandatory?: () => void;
+  prepareUpdate?: () => void;
+  windowLocationReload?: () => void;
+  consoleError?: () => void;
+}): Promise<ServiceWorkerAssistant> {
+  const mutations = {
+    setInstalledVersion: options?.setInstalledVersion ?? jest.fn(),
+    setAvailableVersion: options?.setAvailableVersion ?? jest.fn(),
+    setUpdateIsMandatory: options?.setUpdateIsMandatory ?? jest.fn(),
+    prepareUpdate: options?.prepareUpdate ?? jest.fn(),
+  };
+
+  const getters = {
+    correctVersionIsLoaded: () => options?.correctVersionIsLoaded ?? true,
+  };
+
+  const versionInformation = {
+    namespaced: true,
+    mutations,
+    getters,
+  };
+
+  const store = new Store<RootStateWithVersionInformation>({
+    modules: { versionInformation },
   });
 
-  Object.defineProperty(global, 'fetch', {
-    value: respondWithServerVersion.bind(availableVersionOnServer),
+  const composedServiceWorkerContainer = new MockedServiceWorkerContainer({
+    serviceWorker: options?.serviceWorker,
+    serviceWorkerRegistrations: options?.serviceWorkerRegistrations,
   });
+
+  const mockedServiceWorkerContainer =
+    options?.serviceWorkerContainer === null
+      ? null
+      : options?.serviceWorkerContainer ?? composedServiceWorkerContainer;
+
+  const availableVersionOnServer =
+    options?.availableVersionOnServer !== undefined ? options?.availableVersionOnServer : '1.0.0';
+
+  const mockedFetch = respondWithServerVersion.bind(availableVersionOnServer) as Fetch;
+
+  const mockedWindow = {
+    location: { reload: options?.windowLocationReload ?? jest.fn() },
+    fetch: mockedFetch,
+  } as Window;
+
+  const mockedConsole = {
+    error: options?.consoleError ?? jest.fn(),
+  } as Console;
 
   const assistant = new ServiceWorkerAssistant(
     store,
-    updateAvailableVersionInterval,
-    verifyCacheValidityInverval,
+    options?.updateAvailableVersionInterval,
+    options?.verifyCacheValidityInverval,
+    {
+      serviceWorkerContainer: mockedServiceWorkerContainer,
+      window: mockedWindow,
+      console: mockedConsole,
+    },
   );
 
   await flushPromises();
@@ -92,21 +123,9 @@ async function createAssistant(
 
 describe('ServiceWorkerAssistant', () => {
   let intervalIds: Array<number>;
-  let windowReloadSpy: jest.Mock;
-  let consoleErrorSpy: jest.SpyInstance;
-  const origLocation = global.window.location;
 
   beforeAll(() => {
-    // Make sure we can set these non-writable properties for each test case.
-    Object.defineProperty(global.navigator, 'serviceWorker', { writable: true });
-    Object.defineProperty(global, 'fetch', { writable: true });
-
-    windowReloadSpy = jest.fn().mockImplementation(() => undefined);
-    Reflect.deleteProperty(global.window, 'location');
-    global.window.location = {
-      ...origLocation,
-      reload: windowReloadSpy,
-    };
+    jest.spyOn(console, 'error').mockImplementation(); // Silence jest-fail-on-console
 
     const originalSetInterval = global.setInterval;
 
@@ -117,123 +136,198 @@ describe('ServiceWorkerAssistant', () => {
     });
   });
 
-  afterAll(() => {
-    jest.resetAllMocks(); // Better safe than sorry.
-    global.window.location = origLocation;
-  });
-
   beforeEach(() => {
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation((_message) => undefined);
     intervalIds = [];
-    jest.clearAllMocks();
-    serviceWorkerContainer.clear();
   });
 
   afterEach(() => {
     intervalIds.forEach((id) => clearInterval(id));
   });
 
-  test('update available version once upon creation', async () => {
-    await createAssistant(true, '1.0.0');
+  test('do not check for version update if service worker not supported', async () => {
+    const setAvailableVersion = jest.fn();
+    await createAssistant({ serviceWorkerContainer: null, setAvailableVersion });
 
-    expect(store.commit).toHaveBeenCalledTimes(1);
-    expect(store.commit).toHaveBeenCalledWith('versionInformation/setAvailableVersion', '1.0.0');
+    expect(setAvailableVersion).toHaveBeenCalledTimes(0);
+  });
+
+  test('update available version once upon creation', async () => {
+    const setAvailableVersion = jest.fn();
+    await createAssistant({ setAvailableVersion });
+
+    expect(setAvailableVersion).toHaveBeenCalledTimes(1);
+    expect(setAvailableVersion).toHaveBeenCalledWith({}, '1.0.0');
   });
 
   test('update available version once per set interval', async () => {
-    await createAssistant(true, undefined, 300);
+    const setAvailableVersion = jest.fn();
+    await createAssistant({ updateAvailableVersionInterval: 300, setAvailableVersion });
 
     await sleep(800); // Add a padding to let all triggered interval handler finish
 
-    expect(store.commit).toHaveBeenCalledTimes(3); // Remind the inial update.
+    expect(setAvailableVersion).toHaveBeenCalledTimes(3); // Remind the inial update.
+  });
+
+  test('do not update available version in store if version is invalid', async () => {
+    const consoleError = jest.fn();
+    const setAvailableVersion = jest.fn();
+    await createAssistant({
+      availableVersionOnServer: 'version 2',
+      consoleError,
+      setAvailableVersion,
+    });
+
+    expect(consoleError).toHaveBeenCalledTimes(2);
+    expect(consoleError).toHaveBeenNthCalledWith(1, 'Failed to update available version');
+    expect(consoleError).toHaveBeenNthCalledWith(
+      2,
+      new Error('Malformed available version: version 2'),
+    );
+    expect(setAvailableVersion).not.toHaveBeenCalled();
+  });
+
+  test('do not update available version in store if parsing fails', async () => {
+    const consoleError = jest.fn();
+    const setAvailableVersion = jest.fn();
+    await createAssistant({
+      availableVersionOnServer: null,
+      consoleError,
+      setAvailableVersion,
+    });
+
+    expect(consoleError).toHaveBeenCalledTimes(2);
+    expect(consoleError).toHaveBeenNthCalledWith(1, 'Failed to update available version');
+    expect(consoleError).toHaveBeenNthCalledWith(2, 'Failed to parse json');
+    expect(setAvailableVersion).not.toHaveBeenCalled();
   });
 
   test('send verify cache message once per set interval', async () => {
-    await createAssistant(true, undefined, undefined, 200);
+    const serviceWorker = new MockedServiceWorker();
+    await createAssistant({ verifyCacheValidityInverval: 200, serviceWorker });
 
     await sleep(500); // Add a padding to let all triggered interval handler finish
 
-    expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledTimes(2);
-    expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledWith({
+    expect(serviceWorker.postMessage).toHaveBeenCalledTimes(2);
+    expect(serviceWorker.postMessage).toHaveBeenCalledWith({
       messageIdentifier: ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE,
     });
   });
 
-  test('do not check for version update if service worker not supported', async () => {
-    await createAssistant(false);
-
-    expect(store.commit).toHaveBeenCalledTimes(0);
-  });
-
   test('reloads window when receiving reload message', async () => {
-    await createAssistant();
+    const windowLocationReload = jest.fn();
+    const serviceWorkerContainer = new MockedServiceWorkerContainer();
+    await createAssistant({ windowLocationReload, serviceWorkerContainer });
 
-    sendMessage(ServiceWorkerMessageIdentifier.RELOAD_WINDOW);
+    sendMessageFromServiceWorker(
+      serviceWorkerContainer,
+      ServiceWorkerMessageIdentifier.RELOAD_WINDOW,
+    );
 
-    expect(windowReloadSpy).toHaveBeenCalledTimes(1);
+    expect(windowLocationReload).toHaveBeenCalledTimes(1);
   });
 
   test('set installed version when receiving installation successful message', async () => {
-    await createAssistant();
-    store.commit.mockClear(); // Get rid of the intial available version update.
+    const setInstalledVersion = jest.fn();
+    const serviceWorkerContainer = new MockedServiceWorkerContainer();
+    await createAssistant({ setInstalledVersion, serviceWorkerContainer });
 
-    sendMessage(ServiceWorkerMessageIdentifier.INSTALLED_VERSION, { version: '1.0.0' });
+    sendMessageFromServiceWorker(
+      serviceWorkerContainer,
+      ServiceWorkerMessageIdentifier.INSTALLED_VERSION,
+      { version: '1.0.0' },
+    );
     await flushPromises(); // It must asynchronously fetch the version
 
-    expect(store.commit).toHaveBeenCalledTimes(1);
-    expect(store.commit).toHaveBeenCalledWith('versionInformation/setInstalledVersion', '1.0.0');
+    expect(setInstalledVersion).toHaveBeenCalledTimes(1);
+    expect(setInstalledVersion).toHaveBeenCalledWith({}, '1.0.0');
   });
 
   test('set update is mandatory when receiving installation error message', async () => {
-    await createAssistant();
-    store.commit.mockClear(); // Get rid of the intial available version update.
+    const consoleError = jest.fn();
+    const setUpdateIsMandatory = jest.fn();
+    const serviceWorkerContainer = new MockedServiceWorkerContainer();
+    await createAssistant({ consoleError, setUpdateIsMandatory, serviceWorkerContainer });
 
     const error = new Error('test installation error');
-    sendMessage(ServiceWorkerMessageIdentifier.INSTALLATION_ERROR, { error });
+    sendMessageFromServiceWorker(
+      serviceWorkerContainer,
+      ServiceWorkerMessageIdentifier.INSTALLATION_ERROR,
+      { error },
+    );
 
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
-    expect(consoleErrorSpy).toHaveBeenNthCalledWith(
+    expect(consoleError).toHaveBeenCalledTimes(2);
+    expect(consoleError).toHaveBeenNthCalledWith(
       1,
       'Service worker failed during installation phase.',
     );
-    expect(consoleErrorSpy).toHaveBeenNthCalledWith(2, error);
+    expect(consoleError).toHaveBeenNthCalledWith(2, error);
 
-    expect(store.commit).toHaveBeenCalledTimes(1);
-    expect(store.commit).toHaveBeenCalledWith('versionInformation/setUpdateIsMandatory');
+    expect(setUpdateIsMandatory).toHaveBeenCalledTimes(1);
   });
 
   test('set update is mandatory when receiving cache is invalid message', async () => {
-    await createAssistant();
-    store.commit.mockClear(); // Get rid of the intial available version update.
+    const setUpdateIsMandatory = jest.fn();
+    const serviceWorkerContainer = new MockedServiceWorkerContainer();
+    await createAssistant({ setUpdateIsMandatory, serviceWorkerContainer });
 
-    sendMessage(ServiceWorkerMessageIdentifier.CACHE_IS_INVALID);
+    sendMessageFromServiceWorker(
+      serviceWorkerContainer,
+      ServiceWorkerMessageIdentifier.CACHE_IS_INVALID,
+    );
 
-    expect(store.commit).toHaveBeenCalledTimes(1);
-    expect(store.commit).toHaveBeenCalledWith('versionInformation/setUpdateIsMandatory');
+    expect(setUpdateIsMandatory).toHaveBeenCalledTimes(1);
   });
 
-  test('trigger update sends update message to service worker', async () => {
-    const assistant = await createAssistant();
+  describe('update()', () => {
+    test('prepare update in store module', async () => {
+      const prepareUpdate = jest.fn();
+      const assistant = await createAssistant({ prepareUpdate });
 
-    assistant.update();
+      assistant.update();
 
-    expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledTimes(1);
-    expect(serviceWorkerContainer.controller.postMessage).toHaveBeenCalledWith({
-      messageIdentifier: ServiceWorkerAssistantMessageIdentifier.UPDATE,
+      expect(prepareUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    test('send update message to service worker', async () => {
+      const serviceWorker = new MockedServiceWorker();
+      const assistant = await createAssistant({ serviceWorker });
+
+      assistant.update();
+      await flushPromises();
+
+      expect(serviceWorker.postMessage).toHaveBeenCalledTimes(1);
+      expect(serviceWorker.postMessage).toHaveBeenCalledWith({
+        messageIdentifier: ServiceWorkerAssistantMessageIdentifier.UPDATE,
+      });
     });
   });
 
-  test('do not update available version in store if version is invalid', async () => {
-    await createAssistant(true, 'version-1.2');
+  describe('verifyIfCorrectVersionGotLoaded()', () => {
+    test('unregister all registered service workers when not the correct version is loaded', async () => {
+      const serviceWorkerRegistrationOne = new MockedServiceWorkerRegistration();
+      const serviceWorkerRegistrationTwo = new MockedServiceWorkerRegistration();
+      const assistant = await createAssistant({
+        correctVersionIsLoaded: false,
+        serviceWorkerRegistrations: [serviceWorkerRegistrationOne, serviceWorkerRegistrationTwo],
+      });
 
-    expect(store.commit).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
-  });
+      await assistant.verifyIfCorrectVersionGotLoaded();
 
-  test('do not update available version in store if parsing fails', async () => {
-    await createAssistant(true, null);
+      expect(serviceWorkerRegistrationOne.unregister).toHaveBeenCalledTimes(1);
+      expect(serviceWorkerRegistrationTwo.unregister).toHaveBeenCalledTimes(1);
+    });
 
-    expect(store.commit).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+    test('reloads window when not the correct version is loaded', async () => {
+      const windowLocationReload = jest.fn();
+      const assistant = await createAssistant({
+        windowLocationReload,
+        correctVersionIsLoaded: false,
+        serviceWorkerRegistrations: [new MockedServiceWorkerRegistration()],
+      });
+
+      await assistant.verifyIfCorrectVersionGotLoaded();
+
+      expect(windowLocationReload).toHaveBeenCalledTimes(1);
+    });
   });
 });
