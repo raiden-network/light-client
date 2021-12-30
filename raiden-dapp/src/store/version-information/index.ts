@@ -28,6 +28,7 @@ export function createVersionInformationPeristencePlugin(
     reducer: (state) => ({
       versionInformation: {
         installedVersion: state.versionInformation.installedVersion,
+        updateInProgress: state.versionInformation.updateInProgress,
       },
     }),
     filter: (mutation) =>

@@ -5,6 +5,7 @@ export const defaultState = (): VersionInformationState => ({
   installedVersion: undefined,
   availableVersion: undefined,
   updateIsMandatory: false,
+  updateInProgress: false,
 });
 
 const state: VersionInformationState = defaultState();

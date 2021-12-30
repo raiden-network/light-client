@@ -8,6 +8,8 @@ export const mutations: MutationTree<VersionInformationState> & VersionInformati
     if (validateVersion(version)) {
       state.installedVersion = version;
     }
+
+    state.updateInProgress = false;
   },
   setAvailableVersion(state, version) {
     if (validateVersion(version)) {
@@ -18,10 +20,6 @@ export const mutations: MutationTree<VersionInformationState> & VersionInformati
     state.updateIsMandatory = true;
   },
   prepareUpdate(state) {
-    // Setting the installed version to undefined will allow to load a new
-    // version without setting it back to the installed version. This is
-    // necessary to allow this new loaded version to install itself, when it is
-    // intended.
-    state.installedVersion = undefined;
+    state.updateInProgress = true;
   },
 };

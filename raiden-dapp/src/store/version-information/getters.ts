@@ -17,7 +17,7 @@ import type {
 function compareSemanticVersions(
   firstVersion: unknown,
   secondVersion: unknown,
-  operator: '<' | '=' | '>',
+  operator: '<' | '<=' | '=' | '>',
 ): boolean {
   return (
     validateVersion(firstVersion as string) &&
@@ -29,12 +29,18 @@ function compareSemanticVersions(
 export const getters: GetterTree<VersionInformationState, RootStateWithVersionInformation> &
   VersionInformationGetters = {
   correctVersionIsLoaded(state) {
+    if (state.updateInProgress) {
+      return true; // During an update it can never be a wrong version.
+    }
+
     const { installedVersion, activeVersion } = state;
-    const noVersionIsInstalled = installedVersion === undefined;
-    return (
-      noVersionIsInstalled || // In case of an initial load or update it is always correct.
-      compareSemanticVersions(installedVersion, activeVersion, '=')
-    );
+
+    if (installedVersion === undefined) {
+      // Only versions up to this number do not persist this information.
+      return compareSemanticVersions(activeVersion, '2.0.1', '<=');
+    }
+
+    return compareSemanticVersions(installedVersion, activeVersion, '=');
   },
   updateIsAvailable(state) {
     return compareSemanticVersions(state.availableVersion, state.installedVersion, '>');
