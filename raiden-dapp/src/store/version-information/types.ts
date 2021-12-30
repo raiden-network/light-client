@@ -3,6 +3,7 @@ export interface VersionInformationState {
   installedVersion: string | undefined;
   availableVersion: string | undefined;
   updateIsMandatory: boolean;
+  updateInProgress: boolean;
 }
 
 export interface RootStateWithVersionInformation {

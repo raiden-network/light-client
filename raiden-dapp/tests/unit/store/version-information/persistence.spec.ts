@@ -22,7 +22,7 @@ function createStore(storage: Storage): Store<RootStateWithVersionInformation> {
 }
 
 describe('version information store persistence', () => {
-  test('write installed version to storage on updates', () => {
+  test('write installed version and update in progress flag to storage on updates', () => {
     const storage = new MockedLocalStorage();
     const store = createStore(storage);
 
@@ -31,7 +31,22 @@ describe('version information store persistence', () => {
     expect(storage.setItem).toHaveBeenCalledTimes(1);
     expect(storage.setItem).toHaveBeenCalledWith(
       'raiden_dapp_versionInformation',
-      JSON.stringify({ versionInformation: { installedVersion: '1.0.0' } }),
+      JSON.stringify({
+        versionInformation: { installedVersion: '1.0.0', updateInProgress: false },
+      }),
+    );
+  });
+
+  test('write update in progress flag to storage when preparing an update updates', () => {
+    const storage = new MockedLocalStorage();
+    const store = createStore(storage);
+
+    store.commit('versionInformation/prepareUpdate');
+
+    expect(storage.setItem).toHaveBeenCalledTimes(1);
+    expect(storage.setItem).toHaveBeenCalledWith(
+      'raiden_dapp_versionInformation',
+      JSON.stringify({ versionInformation: { updateInProgress: true } }),
     );
   });
 

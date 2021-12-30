@@ -20,6 +20,15 @@ describe('version information store mutations', () => {
 
       expect(state.installedVersion).toBe('1.0.0');
     });
+
+    test('sets update in progress to false', () => {
+      const state = defaultState();
+      state.updateInProgress = true;
+
+      mutations.setInstalledVersion(state, '1.0.0');
+
+      expect(state.updateInProgress).toBeFalsy();
+    });
   });
 
   describe('setAvailableVersion()', () => {
@@ -54,13 +63,13 @@ describe('version information store mutations', () => {
   });
 
   describe('prepareUpdate()', () => {
-    test('sets installed version to undefined', () => {
+    test('sets update in progress state', () => {
       const state = defaultState();
-      state.installedVersion = '1.0.0';
+      state.updateInProgress = false;
 
       mutations.prepareUpdate(state);
 
-      expect(state.installedVersion).toBeUndefined();
+      expect(state.updateInProgress).toBeTruthy();
     });
   });
 });
