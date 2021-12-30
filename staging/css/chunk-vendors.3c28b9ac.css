@@ -59455,6 +59455,32 @@ html.overflow-y-hidden {
 .v-tab--disabled, .v-tab--disabled * {
   pointer-events: none;
 }
+.theme--light.v-textarea.v-text-field--solo-inverted.v-input--is-focused textarea {
+  color: #FFFFFF;
+}
+.theme--light.v-textarea.v-text-field--solo-inverted.v-input--is-focused textarea::-moz-placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+.theme--light.v-textarea.v-text-field--solo-inverted.v-input--is-focused textarea:-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+.theme--light.v-textarea.v-text-field--solo-inverted.v-input--is-focused textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.theme--dark.v-textarea.v-text-field--solo-inverted.v-input--is-focused textarea {
+  color: rgba(0, 0, 0, 0.87);
+}
+.theme--dark.v-textarea.v-text-field--solo-inverted.v-input--is-focused textarea::-moz-placeholder {
+  color: rgba(0, 0, 0, 0.38);
+}
+.theme--dark.v-textarea.v-text-field--solo-inverted.v-input--is-focused textarea:-ms-input-placeholder {
+  color: rgba(0, 0, 0, 0.38);
+}
+.theme--dark.v-textarea.v-text-field--solo-inverted.v-input--is-focused textarea::placeholder {
+  color: rgba(0, 0, 0, 0.38);
+}
+
 .v-textarea textarea {
   align-self: stretch;
   flex: 1 1 auto;
@@ -59518,6 +59544,9 @@ html.overflow-y-hidden {
 }
 .v-textarea.v-text-field--solo {
   align-items: flex-start;
+}
+.v-textarea.v-text-field--solo .v-input__control textarea {
+  caret-color: auto;
 }
 .v-textarea.v-text-field--solo .v-input__prepend-inner,
 .v-textarea.v-text-field--solo .v-input__prepend-outer,
