@@ -13,11 +13,6 @@ import {
   mockEnvironmentForServiceWorker,
 } from '../../utils/mocks';
 
-import {
-  ServiceWorkerAssistantMessageIdentifier,
-  ServiceWorkerMessageIdentifier,
-} from '@/service-worker/messages';
-
 async function installServiceWorker(context: EventTarget): Promise<void> {
   require('@/service-worker/worker');
 
@@ -37,9 +32,9 @@ async function installAndActivateServiceWorker(context: EventTarget): Promise<vo
   await activateServiceWorker(context);
 }
 
-async function sendMessageToServiceWorker(
+async function sendMessageFromAssistantToServiceWorker(
   context: EventTarget,
-  messageIdentifier: ServiceWorkerAssistantMessageIdentifier,
+  message: unknown,
   installServiceWorker = true,
 ): Promise<void> {
   if (installServiceWorker) {
@@ -47,7 +42,7 @@ async function sendMessageToServiceWorker(
   }
 
   jest.clearAllMocks(); // Forget recorded data of previous installation and activation steps.
-  const messageEvent = new MockedMessageEvent('message', { messageIdentifier });
+  const messageEvent = new MockedMessageEvent('message', message);
   context.dispatchEvent(messageEvent);
   await messageEvent.waitToFinish();
 }
@@ -131,11 +126,12 @@ describe('service worker index', () => {
 
       await installAndActivateServiceWorker(context);
 
-      expect(client.postMessage).toHaveBeenCalledTimes(1);
-      expect(client.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: ServiceWorkerMessageIdentifier.INSTALLED_VERSION,
+      expect(client.postMessage).toHaveBeenCalledTimes(2);
+      expect(client.postMessage).toHaveBeenNthCalledWith(1, {
+        type: 'installed_version',
         version: '2.0.0',
       });
+      expect(client.postMessage).toHaveBeenNthCalledWith(2, 'installed_version');
     });
 
     test('sends window reload message after activation if taking over old version', async () => {
@@ -150,10 +146,9 @@ describe('service worker index', () => {
       expect(client.postMessage).not.toHaveBeenCalled();
 
       await activateServiceWorker(context);
-      expect(client.postMessage).toHaveBeenCalledTimes(1);
-      expect(client.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: ServiceWorkerMessageIdentifier.RELOAD_WINDOW,
-      });
+      expect(client.postMessage).toHaveBeenCalledTimes(2);
+      expect(client.postMessage).toHaveBeenNthCalledWith(1, { type: 'reload_window' });
+      expect(client.postMessage).toHaveBeenNthCalledWith(2, 'reload_window');
     });
 
     test('takes control of all clients when getting activated', async () => {
@@ -175,11 +170,12 @@ describe('service worker index', () => {
 
       await installAndActivateServiceWorker(context);
 
-      expect(client.postMessage).toHaveBeenCalledTimes(1);
-      expect(client.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: ServiceWorkerMessageIdentifier.INSTALLATION_ERROR,
+      expect(client.postMessage).toHaveBeenCalledTimes(2);
+      expect(client.postMessage).toHaveBeenNthCalledWith(1, {
+        type: 'installation_error',
         error: new Error('Cache given, but precache entries are missing!'),
       });
+      expect(client.postMessage).toHaveBeenNthCalledWith(2, 'installation_error');
     });
   });
 
@@ -220,91 +216,87 @@ describe('service worker index', () => {
     });
   });
 
-  describe('on update message', () => {
-    test('deletes cache for current version', async () => {
-      const caches = new MockedCacheStorage();
-      const context = mockEnvironmentForServiceWorker({ caches });
+  describe.each(['update', { type: 'update' }])(
+    'on update message (message format: %j)',
+    (message) => {
+      test('deletes cache for current version', async () => {
+        const caches = new MockedCacheStorage();
+        const context = mockEnvironmentForServiceWorker({ caches });
 
-      await sendMessageToServiceWorker(context, ServiceWorkerAssistantMessageIdentifier.UPDATE);
+        await sendMessageFromAssistantToServiceWorker(context, message);
 
-      expect(caches.delete).toHaveBeenCalledTimes(1);
-      expect(caches.delete).toHaveBeenLastCalledWith('workbox-precache-v2');
-    });
-
-    test('deletes database precache-entries', async () => {
-      const objectStore = new MockedIDBObjectStore('precacheEntries', []);
-      const context = mockEnvironmentForServiceWorker({ objectStore });
-
-      await sendMessageToServiceWorker(context, ServiceWorkerAssistantMessageIdentifier.UPDATE);
-
-      expect(objectStore.delete).toHaveBeenCalledTimes(1);
-      expect(objectStore.delete).toHaveBeenLastCalledWith('precacheEntries');
-    });
-
-    test('unregisters itself', async () => {
-      const registration = new MockedServiceWorkerRegistration();
-      const context = mockEnvironmentForServiceWorker({ registration });
-
-      await sendMessageToServiceWorker(context, ServiceWorkerAssistantMessageIdentifier.UPDATE);
-
-      expect(registration.unregister).toHaveBeenCalledTimes(1);
-    });
-
-    test('sends window reload message', async () => {
-      const client = new MockedClient();
-      const context = mockEnvironmentForServiceWorker({ client });
-
-      await sendMessageToServiceWorker(context, ServiceWorkerAssistantMessageIdentifier.UPDATE);
-
-      expect(client.postMessage).toHaveBeenCalledTimes(1);
-      expect(client.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: ServiceWorkerMessageIdentifier.RELOAD_WINDOW,
+        expect(caches.delete).toHaveBeenCalledTimes(1);
+        expect(caches.delete).toHaveBeenLastCalledWith('workbox-precache-v2');
       });
-    });
-  });
 
-  describe('on verify cache message', () => {
-    test('sends cache is invalid message if cache does not exist', async () => {
-      const caches = new MockedCacheStorage();
-      const client = new MockedClient();
-      const context = mockEnvironmentForServiceWorker({ caches, client });
-      await installAndActivateServiceWorker(context);
+      test('deletes database precache-entries', async () => {
+        const objectStore = new MockedIDBObjectStore('precacheEntries', []);
+        const context = mockEnvironmentForServiceWorker({ objectStore });
 
-      await caches.delete('workbox-precache-v2');
-      await sendMessageToServiceWorker(
-        context,
-        ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE,
-        false,
-      );
+        await sendMessageFromAssistantToServiceWorker(context, message);
 
-      expect(client.postMessage).toHaveBeenCalledTimes(1);
-      expect(client.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: ServiceWorkerMessageIdentifier.CACHE_IS_INVALID,
+        expect(objectStore.delete).toHaveBeenCalledTimes(1);
+        expect(objectStore.delete).toHaveBeenLastCalledWith('precacheEntries');
       });
-    });
 
-    test('sends cache is invalid message if cache is missing an entry', async () => {
-      const cache = new MockedCache();
-      const client = new MockedClient();
-      const precacheEntries = [
-        { url: 'https://test.tld/asset-one', revision: '1' },
-        { url: 'https://test.tld/asset-two', revision: '1' },
-      ];
-      const context = mockEnvironmentForServiceWorker({ cache, client, precacheEntries });
-      await installAndActivateServiceWorker(context);
+      test('unregisters itself', async () => {
+        const registration = new MockedServiceWorkerRegistration();
+        const context = mockEnvironmentForServiceWorker({ registration });
 
-      await cache.delete(new MockedRequest('https://test.tld/asset-one?__WB_REVISION__=1'));
-      await sendMessageToServiceWorker(
-        context,
-        ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE,
-      );
+        await sendMessageFromAssistantToServiceWorker(context, message);
 
-      expect(client.postMessage).toHaveBeenCalledTimes(1);
-      expect(client.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: ServiceWorkerMessageIdentifier.CACHE_IS_INVALID,
+        expect(registration.unregister).toHaveBeenCalledTimes(1);
       });
-    });
-  });
+
+      test('sends window reload message', async () => {
+        const client = new MockedClient();
+        const context = mockEnvironmentForServiceWorker({ client });
+
+        await sendMessageFromAssistantToServiceWorker(context, message);
+
+        expect(client.postMessage).toHaveBeenCalledTimes(2);
+        expect(client.postMessage).toHaveBeenNthCalledWith(1, { type: 'reload_window' });
+        expect(client.postMessage).toHaveBeenNthCalledWith(2, 'reload_window');
+      });
+    },
+  );
+
+  describe.each(['verify_cache', { type: 'verify_cache' }])(
+    'on verify cache message (message format: %j)',
+    (message) => {
+      test('sends cache is invalid message if cache does not exist', async () => {
+        const caches = new MockedCacheStorage();
+        const client = new MockedClient();
+        const context = mockEnvironmentForServiceWorker({ caches, client });
+        await installAndActivateServiceWorker(context);
+
+        await caches.delete('workbox-precache-v2');
+        await sendMessageFromAssistantToServiceWorker(context, message, false);
+
+        expect(client.postMessage).toHaveBeenCalledTimes(2);
+        expect(client.postMessage).toHaveBeenNthCalledWith(1, { type: 'cache_is_invalid' });
+        expect(client.postMessage).toHaveBeenNthCalledWith(2, 'cache_is_invalid');
+      });
+
+      test('sends cache is invalid message if cache is missing an entry', async () => {
+        const cache = new MockedCache();
+        const client = new MockedClient();
+        const precacheEntries = [
+          { url: 'https://test.tld/asset-one', revision: '1' },
+          { url: 'https://test.tld/asset-two', revision: '1' },
+        ];
+        const context = mockEnvironmentForServiceWorker({ cache, client, precacheEntries });
+        await installAndActivateServiceWorker(context);
+
+        await cache.delete(new MockedRequest('https://test.tld/asset-one?__WB_REVISION__=1'));
+        await sendMessageFromAssistantToServiceWorker(context, message);
+
+        expect(client.postMessage).toHaveBeenCalledTimes(2);
+        expect(client.postMessage).toHaveBeenNthCalledWith(1, { type: 'cache_is_invalid' });
+        expect(client.postMessage).toHaveBeenNthCalledWith(2, 'cache_is_invalid');
+      });
+    },
+  );
 
   describe('on routing errors', () => {
     test('sends cache is invalid message if detecting invalid cache and a client is available', async () => {
@@ -317,10 +309,9 @@ describe('service worker index', () => {
       await cache.delete(new MockedRequest('https://test.tld/asset?__WB_REVISION__=1'));
       await fetchUrlViaServiceWorker(context, 'https://test.tld/asset', false);
 
-      expect(client.postMessage).toHaveBeenCalledTimes(1);
-      expect(client.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: ServiceWorkerMessageIdentifier.CACHE_IS_INVALID,
-      });
+      expect(client.postMessage).toHaveBeenCalledTimes(2);
+      expect(client.postMessage).toHaveBeenNthCalledWith(1, { type: 'cache_is_invalid' });
+      expect(client.postMessage).toHaveBeenNthCalledWith(2, 'cache_is_invalid');
     });
 
     test('initates update if detecting invalid cache and no client is available', async () => {
