@@ -23,6 +23,7 @@ function createWrapper(options?: {
   updateIsAvailable?: boolean;
   updateIsMandatory?: boolean;
   correctVersionIsLoaded?: boolean;
+  updateInProgress?: boolean;
 }): Wrapper<VersionSnackbar> {
   const vuetify = new Vuetify();
   const state = {
@@ -33,6 +34,7 @@ function createWrapper(options?: {
     namespaced: true,
     state: {
       updateIsMandatory: options?.updateIsMandatory ?? false,
+      updateInProgress: options?.updateInProgress ?? false,
     },
     getters: {
       updateIsAvailable: () => options?.updateIsAvailable ?? false,
@@ -94,6 +96,13 @@ describe('VersionSnackbar.vue', () => {
 
       expect(snackbar.exists()).toBe(true);
     });
+
+    test('if update is in progress', () => {
+      const wrapper = createWrapper({ updateInProgress: true });
+      const snackbar = wrapper.find('.version-snackbar');
+
+      expect(snackbar.exists()).toBe(true);
+    });
   });
 
   describe('render blocking overlay', () => {
@@ -106,6 +115,13 @@ describe('VersionSnackbar.vue', () => {
 
     test('if update is mandatory', () => {
       const wrapper = createWrapper({ updateIsMandatory: true });
+      const overlay = wrapper.findComponent(BlurredOverlay);
+
+      expect(overlay.exists()).toBe(true);
+    });
+
+    test('if update is in progress', () => {
+      const wrapper = createWrapper({ updateInProgress: true });
       const overlay = wrapper.findComponent(BlurredOverlay);
 
       expect(overlay.exists()).toBe(true);
@@ -125,15 +141,23 @@ describe('VersionSnackbar.vue', () => {
       const message = wrapper.get('.version-snackbar__message');
 
       expect(message.isVisible()).toBeTruthy();
-      expect(message.text()).toBe('update.optional');
+      expect(message.text()).toBe('update.updateAvailable');
     });
 
     test('if update is mandatory', () => {
-      const wrapper = createWrapper({ updateIsAvailable: true });
+      const wrapper = createWrapper({ updateIsMandatory: true });
       const message = wrapper.get('.version-snackbar__message');
 
       expect(message.isVisible()).toBeTruthy();
-      expect(message.text()).toBe('update.optional');
+      expect(message.text()).toBe('update.updateMandatory');
+    });
+
+    test('if update is in progress', () => {
+      const wrapper = createWrapper({ updateInProgress: true });
+      const message = wrapper.get('.version-snackbar__message');
+
+      expect(message.isVisible()).toBeTruthy();
+      expect(message.text()).toBe('update.updateInProgress');
     });
   });
 
