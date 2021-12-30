@@ -9,10 +9,6 @@ import flushPromises from 'flush-promises';
 import Vuex, { Store } from 'vuex';
 
 import ServiceWorkerAssistant from '@/service-worker/assistant';
-import {
-  ServiceWorkerAssistantMessageIdentifier,
-  ServiceWorkerMessageIdentifier,
-} from '@/service-worker/messages';
 import type { RootStateWithVersionInformation } from '@/store/version-information';
 
 const localVue = createLocalVue();
@@ -36,12 +32,10 @@ async function respondWithServerVersion(this: string | null): Promise<Response> 
   return { json: parseJson } as Response;
 }
 
-function sendMessageFromServiceWorker(
+function sendMessageFromServiceWorkerToAssistant(
   serviceWorkerContainer: ServiceWorkerContainer,
-  messageIdentifier: ServiceWorkerMessageIdentifier,
-  payload?: Record<string, unknown>,
+  message: unknown,
 ): void {
-  const message = { messageIdentifier, ...payload };
   const event = new MessageEvent('message', { data: message });
   serviceWorkerContainer.dispatchEvent(event);
 }
@@ -144,138 +138,176 @@ describe('ServiceWorkerAssistant', () => {
     intervalIds.forEach((id) => clearInterval(id));
   });
 
-  test('do not check for version update if service worker not supported', async () => {
-    const setAvailableVersion = jest.fn();
-    await createAssistant({ serviceWorkerContainer: null, setAvailableVersion });
+  describe('update available version in the store module', () => {
+    test('not if service workers are not supported', async () => {
+      const setAvailableVersion = jest.fn();
+      await createAssistant({ serviceWorkerContainer: null, setAvailableVersion });
 
-    expect(setAvailableVersion).toHaveBeenCalledTimes(0);
-  });
-
-  test('update available version once upon creation', async () => {
-    const setAvailableVersion = jest.fn();
-    await createAssistant({ setAvailableVersion });
-
-    expect(setAvailableVersion).toHaveBeenCalledTimes(1);
-    expect(setAvailableVersion).toHaveBeenCalledWith({}, '1.0.0');
-  });
-
-  test('update available version once per set interval', async () => {
-    const setAvailableVersion = jest.fn();
-    await createAssistant({ updateAvailableVersionInterval: 300, setAvailableVersion });
-
-    await sleep(800); // Add a padding to let all triggered interval handler finish
-
-    expect(setAvailableVersion).toHaveBeenCalledTimes(3); // Remind the inial update.
-  });
-
-  test('do not update available version in store if version is invalid', async () => {
-    const consoleError = jest.fn();
-    const setAvailableVersion = jest.fn();
-    await createAssistant({
-      availableVersionOnServer: 'version 2',
-      consoleError,
-      setAvailableVersion,
+      expect(setAvailableVersion).not.toHaveBeenCalled();
     });
 
-    expect(consoleError).toHaveBeenCalledTimes(2);
-    expect(consoleError).toHaveBeenNthCalledWith(1, 'Failed to update available version');
-    expect(consoleError).toHaveBeenNthCalledWith(
-      2,
-      new Error('Malformed available version: version 2'),
-    );
-    expect(setAvailableVersion).not.toHaveBeenCalled();
-  });
+    test('once upon creation', async () => {
+      const setAvailableVersion = jest.fn();
+      await createAssistant({ setAvailableVersion });
 
-  test('do not update available version in store if parsing fails', async () => {
-    const consoleError = jest.fn();
-    const setAvailableVersion = jest.fn();
-    await createAssistant({
-      availableVersionOnServer: null,
-      consoleError,
-      setAvailableVersion,
+      expect(setAvailableVersion).toHaveBeenCalledTimes(1);
+      expect(setAvailableVersion).toHaveBeenCalledWith({}, '1.0.0');
     });
 
-    expect(consoleError).toHaveBeenCalledTimes(2);
-    expect(consoleError).toHaveBeenNthCalledWith(1, 'Failed to update available version');
-    expect(consoleError).toHaveBeenNthCalledWith(2, 'Failed to parse json');
-    expect(setAvailableVersion).not.toHaveBeenCalled();
-  });
+    test('once per set interval', async () => {
+      const setAvailableVersion = jest.fn();
+      await createAssistant({ updateAvailableVersionInterval: 300, setAvailableVersion });
 
-  test('send verify cache message once per set interval', async () => {
-    const serviceWorker = new MockedServiceWorker();
-    await createAssistant({ verifyCacheValidityInverval: 200, serviceWorker });
+      await sleep(800); // Add a padding to let all triggered interval handler finish
 
-    await sleep(500); // Add a padding to let all triggered interval handler finish
+      expect(setAvailableVersion).toHaveBeenCalledTimes(3); // Remind the inial update.
+    });
 
-    expect(serviceWorker.postMessage).toHaveBeenCalledTimes(2);
-    expect(serviceWorker.postMessage).toHaveBeenCalledWith({
-      messageIdentifier: ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE,
+    test('not if version is invalid', async () => {
+      const consoleError = jest.fn();
+      const setAvailableVersion = jest.fn();
+      await createAssistant({
+        availableVersionOnServer: 'version 2',
+        consoleError,
+        setAvailableVersion,
+      });
+
+      expect(consoleError).toHaveBeenCalledTimes(2);
+      expect(consoleError).toHaveBeenNthCalledWith(1, 'Failed to update available version');
+      expect(consoleError).toHaveBeenNthCalledWith(
+        2,
+        new Error('Malformed available version: version 2'),
+      );
+      expect(setAvailableVersion).not.toHaveBeenCalled();
+    });
+
+    test('not if fetch response parsing fails', async () => {
+      const consoleError = jest.fn();
+      const setAvailableVersion = jest.fn();
+      await createAssistant({
+        availableVersionOnServer: null,
+        consoleError,
+        setAvailableVersion,
+      });
+
+      expect(consoleError).toHaveBeenCalledTimes(2);
+      expect(consoleError).toHaveBeenNthCalledWith(1, 'Failed to update available version');
+      expect(consoleError).toHaveBeenNthCalledWith(2, 'Failed to parse json');
+      expect(setAvailableVersion).not.toHaveBeenCalled();
     });
   });
 
-  test('reloads window when receiving reload message', async () => {
-    const windowLocationReload = jest.fn();
-    const serviceWorkerContainer = new MockedServiceWorkerContainer();
-    await createAssistant({ windowLocationReload, serviceWorkerContainer });
+  describe('triggers cache verification', () => {
+    test('not if service workers are not supported', async () => {
+      const serviceWorker = new MockedServiceWorker();
+      await createAssistant({
+        serviceWorkerContainer: null,
+        verifyCacheValidityInverval: 200,
+        serviceWorker,
+      });
 
-    sendMessageFromServiceWorker(
-      serviceWorkerContainer,
-      ServiceWorkerMessageIdentifier.RELOAD_WINDOW,
-    );
+      await sleep(500); // Add a padding to let all triggered interval handler finish
 
-    expect(windowLocationReload).toHaveBeenCalledTimes(1);
+      expect(serviceWorker.postMessage).not.toHaveBeenCalled();
+    });
+
+    test('once per set interval', async () => {
+      const serviceWorker = new MockedServiceWorker();
+      await createAssistant({ verifyCacheValidityInverval: 200, serviceWorker });
+
+      await sleep(500); // Add a padding to let all triggered interval handler finish
+
+      expect(serviceWorker.postMessage).toHaveBeenCalledTimes(2);
+      expect(serviceWorker.postMessage).toHaveBeenCalledWith({ type: 'verify_cache' });
+    });
   });
 
-  test('set installed version when receiving installation successful message', async () => {
-    const setInstalledVersion = jest.fn();
-    const serviceWorkerContainer = new MockedServiceWorkerContainer();
-    await createAssistant({ setInstalledVersion, serviceWorkerContainer });
+  describe('on messages', () => {
+    test('reloads window when receiving reload message', async () => {
+      const message = { type: 'reload_window' };
+      const windowLocationReload = jest.fn();
+      const serviceWorkerContainer = new MockedServiceWorkerContainer();
+      await createAssistant({ windowLocationReload, serviceWorkerContainer });
 
-    sendMessageFromServiceWorker(
-      serviceWorkerContainer,
-      ServiceWorkerMessageIdentifier.INSTALLED_VERSION,
-      { version: '1.0.0' },
-    );
-    await flushPromises(); // It must asynchronously fetch the version
+      sendMessageFromServiceWorkerToAssistant(serviceWorkerContainer, message);
 
-    expect(setInstalledVersion).toHaveBeenCalledTimes(1);
-    expect(setInstalledVersion).toHaveBeenCalledWith({}, '1.0.0');
-  });
+      expect(windowLocationReload).toHaveBeenCalledTimes(1);
+    });
 
-  test('set update is mandatory when receiving installation error message', async () => {
-    const consoleError = jest.fn();
-    const setUpdateIsMandatory = jest.fn();
-    const serviceWorkerContainer = new MockedServiceWorkerContainer();
-    await createAssistant({ consoleError, setUpdateIsMandatory, serviceWorkerContainer });
+    test('set installed version when receiving installation successful message', async () => {
+      const message = { type: 'installed_version', version: '1.0.0' };
+      const setInstalledVersion = jest.fn();
+      const serviceWorkerContainer = new MockedServiceWorkerContainer();
+      await createAssistant({ setInstalledVersion, serviceWorkerContainer });
 
-    const error = new Error('test installation error');
-    sendMessageFromServiceWorker(
-      serviceWorkerContainer,
-      ServiceWorkerMessageIdentifier.INSTALLATION_ERROR,
-      { error },
-    );
+      sendMessageFromServiceWorkerToAssistant(serviceWorkerContainer, message);
+      await flushPromises(); // It must asynchronously fetch the version
 
-    expect(consoleError).toHaveBeenCalledTimes(2);
-    expect(consoleError).toHaveBeenNthCalledWith(
-      1,
-      'Service worker failed during installation phase.',
-    );
-    expect(consoleError).toHaveBeenNthCalledWith(2, error);
+      expect(setInstalledVersion).toHaveBeenCalledTimes(1);
+      expect(setInstalledVersion).toHaveBeenCalledWith({}, '1.0.0');
+    });
 
-    expect(setUpdateIsMandatory).toHaveBeenCalledTimes(1);
-  });
+    test('set update is mandatory when receiving installation error message', async () => {
+      const message = { type: 'installation_error', error: new Error('test error') };
+      const consoleError = jest.fn();
+      const setUpdateIsMandatory = jest.fn();
+      const serviceWorkerContainer = new MockedServiceWorkerContainer();
+      await createAssistant({ consoleError, setUpdateIsMandatory, serviceWorkerContainer });
 
-  test('set update is mandatory when receiving cache is invalid message', async () => {
-    const setUpdateIsMandatory = jest.fn();
-    const serviceWorkerContainer = new MockedServiceWorkerContainer();
-    await createAssistant({ setUpdateIsMandatory, serviceWorkerContainer });
+      sendMessageFromServiceWorkerToAssistant(serviceWorkerContainer, message);
 
-    sendMessageFromServiceWorker(
-      serviceWorkerContainer,
-      ServiceWorkerMessageIdentifier.CACHE_IS_INVALID,
-    );
+      expect(consoleError).toHaveBeenCalledTimes(2);
+      expect(consoleError).toHaveBeenNthCalledWith(
+        1,
+        'Service worker failed during installation phase.',
+      );
+      expect(consoleError).toHaveBeenNthCalledWith(2, new Error('test error'));
+      expect(setUpdateIsMandatory).toHaveBeenCalledTimes(1);
+    });
 
-    expect(setUpdateIsMandatory).toHaveBeenCalledTimes(1);
+    test('set update is mandatory when receiving cache is invalid message', async () => {
+      const message = { type: 'cache_is_invalid' };
+      const setUpdateIsMandatory = jest.fn();
+      const serviceWorkerContainer = new MockedServiceWorkerContainer();
+      await createAssistant({ setUpdateIsMandatory, serviceWorkerContainer });
+
+      sendMessageFromServiceWorkerToAssistant(serviceWorkerContainer, message);
+
+      expect(setUpdateIsMandatory).toHaveBeenCalledTimes(1);
+    });
+
+    test('can ignore messages that are not of interest', async () => {
+      const message = { type: 'verify_cache' };
+      const serviceWorkerContainer = new MockedServiceWorkerContainer();
+      await createAssistant({ serviceWorkerContainer });
+
+      sendMessageFromServiceWorkerToAssistant(serviceWorkerContainer, message);
+
+      // Just expect that no error gets thrown.
+    });
+
+    test('ignores message in old format', async () => {
+      // This is just one example message to mesaure the effect of doing nothing
+      // for a message that would cause an action in the new format.
+      const message = 'cache_is_invalid';
+      const setUpdateIsMandatory = jest.fn();
+      const serviceWorkerContainer = new MockedServiceWorkerContainer();
+      await createAssistant({ setUpdateIsMandatory, serviceWorkerContainer });
+
+      sendMessageFromServiceWorkerToAssistant(serviceWorkerContainer, message);
+
+      expect(setUpdateIsMandatory).not.toHaveBeenCalled();
+    });
+
+    test('ignores message in unknown format', async () => {
+      const message = { super: 'crazy' };
+      const serviceWorkerContainer = new MockedServiceWorkerContainer();
+      await createAssistant({ serviceWorkerContainer });
+
+      sendMessageFromServiceWorkerToAssistant(serviceWorkerContainer, message);
+
+      // Just expect that no error gets thrown.
+    });
   });
 
   describe('update()', () => {
@@ -296,9 +328,7 @@ describe('ServiceWorkerAssistant', () => {
       await flushPromises();
 
       expect(serviceWorker.postMessage).toHaveBeenCalledTimes(1);
-      expect(serviceWorker.postMessage).toHaveBeenCalledWith({
-        messageIdentifier: ServiceWorkerAssistantMessageIdentifier.UPDATE,
-      });
+      expect(serviceWorker.postMessage).toHaveBeenCalledWith({ type: 'update' });
     });
   });
 

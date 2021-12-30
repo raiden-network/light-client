@@ -1,5 +1,6 @@
 import { MockedClient, MockedClients } from '../../utils/mocks';
 
+import { ServiceWorkerMessageSimple, ServiceWorkerMessageType } from '@/service-worker/messages';
 import { isAnyClientAvailable, sendMessageToClients } from '@/service-worker/worker/clients';
 
 describe('service worker clients', () => {
@@ -34,13 +35,16 @@ describe('service worker clients', () => {
     test('sends message to a single connected client', async () => {
       const client = new MockedClient('client-id');
       const clients = new MockedClients([client]);
+      const message = new ServiceWorkerMessageSimple(ServiceWorkerMessageType.INSTALLED_VERSION, {
+        version: '1.0.0',
+      });
 
-      await sendMessageToClients.call({ clients }, 'testIdentifier', { data: 1 });
+      await sendMessageToClients.call({ clients }, message);
 
       expect(client.postMessage).toHaveBeenCalledTimes(1);
       expect(client.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: 'testIdentifier',
-        data: 1,
+        type: 'installed_version',
+        version: '1.0.0',
       });
     });
 
@@ -48,19 +52,39 @@ describe('service worker clients', () => {
       const clientOne = new MockedClient('client-id-one');
       const clientTwo = new MockedClient('client-id-two');
       const clients = new MockedClients([clientOne, clientTwo]);
+      const message = new ServiceWorkerMessageSimple(ServiceWorkerMessageType.INSTALLED_VERSION, {
+        version: '1.0.0',
+      });
 
-      await sendMessageToClients.call({ clients }, 'testIdentifier', { data: 1 });
+      await sendMessageToClients.call({ clients }, message);
 
       expect(clientOne.postMessage).toHaveBeenCalledTimes(1);
       expect(clientOne.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: 'testIdentifier',
-        data: 1,
+        type: 'installed_version',
+        version: '1.0.0',
       });
       expect(clientTwo.postMessage).toHaveBeenCalledTimes(1);
       expect(clientTwo.postMessage).toHaveBeenLastCalledWith({
-        messageIdentifier: 'testIdentifier',
-        data: 1,
+        type: 'installed_version',
+        version: '1.0.0',
       });
+    });
+
+    test('and send message to in new and old format', async () => {
+      const client = new MockedClient('client-id');
+      const clients = new MockedClients([client]);
+      const message = new ServiceWorkerMessageSimple(ServiceWorkerMessageType.INSTALLED_VERSION, {
+        version: '1.0.0',
+      });
+
+      await sendMessageToClients.call({ clients }, message, true);
+
+      expect(client.postMessage).toHaveBeenCalledTimes(2);
+      expect(client.postMessage).toHaveBeenNthCalledWith(1, {
+        type: 'installed_version',
+        version: '1.0.0',
+      });
+      expect(client.postMessage).toHaveBeenNthCalledWith(2, 'installed_version');
     });
   });
 });

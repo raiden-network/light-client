@@ -4,9 +4,11 @@ import type { Store } from 'vuex';
 
 import type { RootStateWithVersionInformation } from '@/store/version-information';
 
+import type { ServiceWorkerMessageHandler, ServiceWorkerMessagePayload } from './messages';
 import {
-  ServiceWorkerAssistantMessageIdentifier,
-  ServiceWorkerMessageIdentifier,
+  ServiceWorkerMessageEvent,
+  ServiceWorkerMessageSimple,
+  ServiceWorkerMessageType,
 } from './messages';
 
 const VERSION_FILE_PATH = (process.env.BASE_URL ?? '/') + 'version.json';
@@ -16,6 +18,7 @@ export default class ServiceWorkerAssistant {
   private serviceWorkerContainer: ServiceWorkerContainer;
   private window: Window;
   private console: Console;
+  private messageHandlers: Partial<Record<ServiceWorkerMessageType, ServiceWorkerMessageHandler>>;
 
   constructor(
     store: Store<RootStateWithVersionInformation>,
@@ -33,6 +36,12 @@ export default class ServiceWorkerAssistant {
       environment?.serviceWorkerContainer ?? global.navigator.serviceWorker;
     this.window = environment?.window ?? global.window;
     this.console = environment?.console ?? global.console;
+    this.messageHandlers = {
+      [ServiceWorkerMessageType.INSTALLED_VERSION]: this.handleInstalledVersionMessage,
+      [ServiceWorkerMessageType.INSTALLATION_ERROR]: this.handleInstallationErrorMessage,
+      [ServiceWorkerMessageType.CACHE_IS_INVALID]: this.handleCacheIsInvalidMessage,
+      [ServiceWorkerMessageType.RELOAD_WINDOW]: this.handleReloadWindowMessage,
+    };
 
     if (this.serviceWorkerContainer) {
       this.serviceWorkerContainer.addEventListener('message', this.onMessage.bind(this));
@@ -45,7 +54,7 @@ export default class ServiceWorkerAssistant {
 
   public async update(): Promise<void> {
     this.prepareUpdate();
-    await this.postMessage(ServiceWorkerAssistantMessageIdentifier.UPDATE);
+    await this.postMessage(ServiceWorkerMessageType.UPDATE);
   }
 
   public async verifyIfCorrectVersionGotLoaded(): Promise<void> {
@@ -57,37 +66,41 @@ export default class ServiceWorkerAssistant {
   }
 
   private onMessage(event: MessageEvent): void {
-    if (!(event.data && event.data.messageIdentifier)) return;
+    const message = new ServiceWorkerMessageEvent(event);
 
-    const { messageIdentifier, ...payload } = event.data;
+    // Skip old message formats. A client (us here) can never be connected to
+    // a worker of an older version than the client itself. Thereby the worker
+    // will send the message also in the new and more enriched format again.
+    // This is different for the worker which must expect to receive message
+    // from an client older then himself.
+    if (message.isInOldFormat) return;
 
-    switch (messageIdentifier) {
-      case ServiceWorkerMessageIdentifier.INSTALLED_VERSION:
-        this.setInstalledVersion(payload.version);
-        break;
+    this.messageHandlers[message.type]?.call(this, message.payload);
+  }
 
-      case ServiceWorkerMessageIdentifier.INSTALLATION_ERROR:
-        this.reportInstallationError(payload.error);
-        break;
+  private handleInstalledVersionMessage: ServiceWorkerMessageHandler = (payload) => {
+    const { version } = payload;
 
-      case ServiceWorkerMessageIdentifier.CACHE_IS_INVALID:
-        this.setUpdateIsMandatory();
-        break;
-
-      case ServiceWorkerMessageIdentifier.RELOAD_WINDOW:
-        this.reloadWindow();
-        break;
-
-      default:
-        break;
+    if (validateVersion(version as string)) {
+      this.store.commit('versionInformation/setInstalledVersion', version);
+    } else {
+      throw new Error(`Malformed installation version: ${version}`);
     }
-  }
+  };
 
-  private reportInstallationError(error: Error): void {
+  private handleInstallationErrorMessage: ServiceWorkerMessageHandler = (payload) => {
     this.console.error('Service worker failed during installation phase.');
-    this.console.error(error);
+    this.console.error(payload.error);
     this.setUpdateIsMandatory();
-  }
+  };
+
+  private handleCacheIsInvalidMessage: ServiceWorkerMessageHandler = () => {
+    this.setUpdateIsMandatory();
+  };
+
+  private handleReloadWindowMessage: ServiceWorkerMessageHandler = () => {
+    this.reloadWindow();
+  };
 
   private async updateAvailableVersion(): Promise<void> {
     try {
@@ -102,7 +115,7 @@ export default class ServiceWorkerAssistant {
   }
 
   private verifyCacheValidity(): void {
-    this.postMessage(ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE);
+    this.postMessage(ServiceWorkerMessageType.VERIFY_CACHE);
   }
 
   async isAnyServiceWorkerRegistered(): Promise<boolean> {
@@ -111,12 +124,13 @@ export default class ServiceWorkerAssistant {
   }
 
   private async postMessage(
-    messageIdentifier: ServiceWorkerAssistantMessageIdentifier,
+    type: ServiceWorkerMessageType,
+    payload: ServiceWorkerMessagePayload = {},
   ): Promise<void> {
     if (this.serviceWorkerContainer) {
       await this.serviceWorkerContainer.ready;
-      const message = { messageIdentifier };
-      this.serviceWorkerContainer.controller?.postMessage(message);
+      const message = new ServiceWorkerMessageSimple(type, payload);
+      this.serviceWorkerContainer.controller?.postMessage(message.encode());
     }
   }
 
@@ -132,14 +146,6 @@ export default class ServiceWorkerAssistant {
 
   private get correctVersionIsLoaded(): boolean {
     return this.store.getters['versionInformation/correctVersionIsLoaded'];
-  }
-
-  private setInstalledVersion(version: string): void {
-    if (validateVersion(version)) {
-      this.store.commit('versionInformation/setInstalledVersion', version);
-    } else {
-      throw new Error(`Malformed installation version: ${version}`);
-    }
   }
 
   private setAvailableVersion(version: string): void {

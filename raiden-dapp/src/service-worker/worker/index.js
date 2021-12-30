@@ -3,8 +3,9 @@ import { PrecacheController, PrecacheRoute } from 'workbox-precaching';
 import { registerRoute, setCatchHandler } from 'workbox-routing';
 
 import {
-  ServiceWorkerMessageIdentifier,
-  ServiceWorkerAssistantMessageIdentifier,
+  ServiceWorkerMessageType,
+  ServiceWorkerMessageSimple,
+  ServiceWorkerMessageEvent,
 } from '../messages';
 
 import {
@@ -18,19 +19,50 @@ import { doesCacheExist, isCacheInvalid, deleteCache } from './cache';
 self.controller = new PrecacheController({ fallbackToNetwork: false });
 self.route = new PrecacheRoute(self.controller);
 
+async function sendInstallationErrorMessage(error) {
+  const message = new ServiceWorkerMessageSimple(ServiceWorkerMessageType.INSTALLATION_ERROR, {
+    error,
+  });
+
+  await sendMessageToClients.call(this, message, true);
+}
+
+async function sendInstalledVersionMessage(version) {
+  const message = new ServiceWorkerMessageSimple(ServiceWorkerMessageType.INSTALLED_VERSION, {
+    version,
+  });
+
+  await sendMessageToClients.call(this, message, true);
+}
+
+async function sendReloadWindowMessage() {
+  const message = new ServiceWorkerMessageSimple(ServiceWorkerMessageType.RELOAD_WINDOW);
+  await sendMessageToClients.call(this, message, true);
+}
+
+async function sendCacheIsInvalidMessage() {
+  const message = new ServiceWorkerMessageSimple(ServiceWorkerMessageType.CACHE_IS_INVALID);
+  await sendMessageToClients.call(this, message, true);
+}
+
 async function update() {
   await deleteCache();
   await deletePreservedPrecacheEntries();
   await this.registration.unregister();
   // Note that despite we unregistered, we can still send a message.
-  await sendMessageToClients.call(this, ServiceWorkerMessageIdentifier.RELOAD_WINDOW);
+  await sendReloadWindowMessage.call(this);
 }
 
 async function verifyCacheValidity() {
   if (await isCacheInvalid.call(this)) {
-    sendMessageToClients.call(this, ServiceWorkerMessageIdentifier.CACHE_IS_INVALID);
+    await sendCacheIsInvalidMessage.call(this);
   }
 }
+
+self.messageHandlers = {
+  [ServiceWorkerMessageType.VERIFY_CACHE]: verifyCacheValidity,
+  [ServiceWorkerMessageType.UPDATE]: update,
+};
 
 async function onInstall(event) {
   const cacheExists = await doesCacheExist();
@@ -46,7 +78,7 @@ async function onInstall(event) {
     this.precacheEntries = preservedPrecacheEntries;
     this.controller.addToCacheList(this.precacheEntries);
   } else {
-    this.installError = new Error('Cache given, but precache entries are missing!');
+    this.installationError = new Error('Cache given, but precache entries are missing!');
   }
 }
 
@@ -58,44 +90,26 @@ async function onActivate(event) {
 
   await this.clients.claim();
 
-  if (this.installError !== undefined) {
-    sendMessageToClients.call(this, ServiceWorkerMessageIdentifier.INSTALLATION_ERROR, {
-      error: this.installError,
-    });
+  if (this.installationError !== undefined) {
+    await sendInstallationErrorMessage.call(this, this.installationError);
   } else if (this.shouldUpdate) {
-    sendMessageToClients.call(this, ServiceWorkerMessageIdentifier.INSTALLED_VERSION, {
-      version: process.env.PACKAGE_VERSION,
-    });
+    await sendInstalledVersionMessage.call(this, process.env.PACKAGE_VERSION);
   } else {
     // For unknown reason this is necessary to prevent bugs when an old version
     // gets taken over. We were not able find the root cause, just that it works.
-    await sendMessageToClients.call(this, ServiceWorkerMessageIdentifier.RELOAD_WINDOW);
+    await sendReloadWindowMessage.call(this);
   }
 }
 
 async function onMessage(event) {
-  if (!(event.data && event.data.messageIdentifier)) return;
-
-  const { messageIdentifier } = event.data;
-
-  switch (messageIdentifier) {
-    case ServiceWorkerAssistantMessageIdentifier.UPDATE:
-      await update.call(this);
-      break;
-
-    case ServiceWorkerAssistantMessageIdentifier.VERIFY_CACHE:
-      await verifyCacheValidity.call(this);
-      break;
-
-    default:
-      break;
-  }
+  const message = new ServiceWorkerMessageEvent(event);
+  await this.messageHandlers[message.type]?.call(this, message.payload);
 }
 
 async function onRouteError() {
   if (await isCacheInvalid.call(this)) {
     if (await isAnyClientAvailable.call(this)) {
-      sendMessageToClients.call(this, ServiceWorkerMessageIdentifier.CACHE_IS_INVALID);
+      await sendCacheIsInvalidMessage.call(this);
     } else {
       update.call(this);
       // Note that the user now has to reload the page himself. Since there is
