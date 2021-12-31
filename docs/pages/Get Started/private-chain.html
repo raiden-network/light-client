@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Private chains | raiden-ts - v1.1.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v1.1.0">
+	<title>Private chains | raiden-ts - v2.1.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v2.1.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../../assets/css/main.css">
 	<link rel="stylesheet" href="../../assets/css/pages.css">
@@ -24,7 +24,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../../index.html" class="title">raiden-ts - v1.1.0</a>
+					<a href="../../index.html" class="title">raiden-ts - v2.1.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -51,7 +51,7 @@
 		<div class="container">
 			<ul class="tsd-breadcrumb">
 				<li>
-					<a href="../../modules.html">raiden-ts - v1.1.0</a>
+					<a href="../../modules.html">raiden-ts - v2.1.0</a>
 				</li>
 				<li>
 					<a href="prerequisites.html">Get Started</a>
@@ -79,6 +79,7 @@
 					<li><a href="#setting-up-the-light-client-on-a-private-network">Setting up the Light Client on a private network</a><ul>
 							<li><a href="#identifying-the-correct-smart-contract-version">Identifying the correct smart contract version</a></li>
 							<li><a href="#locate-the-smart-contract-version">Locate the smart contract version</a></li>
+							<li><a href="#checkout-correct-version-of-raiden">Checkout correct version of raiden</a></li>
 						</ul>
 					</li>
 					<li><a href="#setting-up-the-development-environment">Setting up the Development Environment</a><ul>
@@ -95,9 +96,9 @@
 				<p>To use a private network you first have to deploy the contracts by hand.
 				Start by following this tutorial on how to deploy and run Raiden Network on a private chain:</p>
 				<ul>
-					<li><a href="https://raiden-network.readthedocs.io/en/latest/custom-setups/private_net_tutorial.html">Raiden on Private Network Tutorial</a> </li>
+					<li><a href="https://raiden-network.readthedocs.io/en/latest/custom-setups/private_net_tutorial.html">Raiden on Private Network Tutorial</a></li>
 				</ul>
-				<p>After finishing the guide above you should have a running Raiden node along with a private chain with the Raiden Network smart contracts deployed. Now you can move on to setting up the Light Client on your private network.</p>
+				<p>After finishing the guide above you should have a running Raiden node along with a private chain with the Raiden Network smart contracts deployed. But before that please go through <strong>Setting up the Light Client on a private network</strong> just below to figure the correct version of <code>raiden-contracts</code> and subsequently of <code>raiden</code> which will help us deploy the raiden contracts correctly.</p>
 				<a href="#setting-up-the-light-client-on-a-private-network" id="setting-up-the-light-client-on-a-private-network" style="color: inherit; text-decoration: none;">
 					<h2>Setting up the Light Client on a private network</h2>
 				</a>
@@ -115,23 +116,26 @@
 				<p>You can easily find out the version of the smart contracts used in your version of the Light Client by checking the <code>raiden-contracts</code> submodule in the Light Client GitHub repo.</p>
 				<ol>
 					<li>Navigate to the <a href="https://github.com/raiden-network/light-client">GitHub</a> project page</li>
-					<li>Locate the <code>raiden-ts</code> subdirectory and look for the <code>raiden-contracts</code> submodule <em>(something like<code>raiden-contracts @ dfc0da6</code>)</em></li>
-					<li>Look at the commit message and check if it includes the <code>raiden-contracts</code> version. If not, follow the submodule link to the contracts repository and locate the <code>setup.py</code> file. You&#39;ll find the version of the Raiden Contracts by looking at the version variable <em>(<code>VERSION = &#39;0.33.3&#39;</code>)</em></li>
+					<li>Locate the <code>raiden-ts</code> subdirectory and look for the <code>raiden-contracts</code> submodule <em>(something like<code>raiden-contracts @ 770c8cd</code>)</em></li>
+					<li>Look at the commit message and check if it includes the <code>raiden-contracts</code> version. If not, follow the submodule link to the contracts repository and locate the <code>setup.py</code> file. You&#39;ll find the version of the Raiden Contracts by looking at the version variable <em>(<code>VERSION = &#39;0.37.5&#39;</code>)</em></li>
 				</ol>
 				<p>After finding the <code>contracts</code> version you&#39;ll have to go to the <a href="https://github.com/raiden-network/raiden">Raiden</a> repo and locate a version of the python client compatible with your specific version of the smart contracts.</p>
 				<ol>
-					<li>Navigate to the <a href="https://github.com/raiden-network/raiden/blob/develop/requirements/requirements.txt#L66">requirements.txt</a> in the <code>requirements</code> folder on the Raiden repo <code>develop</code> branch</li>
+					<li>Navigate to the <a href="https://github.com/raiden-network/raiden/blob/v2.0.0/requirements/requirements.txt#L204">requirements.txt</a> in the <code>requirements</code> folder on the Raiden repo at a specific tag for example <code>v2.0.0</code>. list of all <a href="https://github.com/raiden-network/raiden/tags">raiden tags</a>.</li>
 					<li>You can see the <code>contracts</code> version used by looking at the <code>raiden-contracts</code> dependency.</li>
 				</ol>
-				<p>If the python client uses a newer version of the Raiden Contracts, you can use the <a href="https://github.com/raiden-network/raiden/blame/81e535808f6f4d047495b76a555f623d3a6838f0/requirements/requirements.txt#L66"><code>Blame</code></a> interface to find a commit with the correct version. By clicking the <code>View blame prior to this change</code> icon button in the <code>Blame</code> interface <em>(The icon displayed before the line number)</em> you can go through the commits until you locate a commit that matches the correct version.</p>
+				<p>If the python client uses a newer version of the Raiden Contracts, you can navigate to an older tag till you find the version of <code>raiden-contracts</code> dependency compatible with that of the <code>light-client</code> repository you intend to use.</p>
+				<a href="#checkout-correct-version-of-raiden" id="checkout-correct-version-of-raiden" style="color: inherit; text-decoration: none;">
+					<h3>Checkout correct version of raiden</h3>
+				</a>
+				<p>You need to check out the correct tag in the Raiden repo that you cloned when deploying Raiden Network on a private chain.</p>
+				<p>For example, if you need to use the <code>v2.0.0</code> tag, you need to first checkout the tag before continuing with the <a href="https://raiden-network.readthedocs.io/en/latest/custom-setups/private_net_tutorial.html#install-raiden-and-dependencies">Install Raiden and dependencies</a> tutorial after cloning the raiden repository.</p>
+				<pre><code class="language-bash"><span style="color: #000000">git checkout v2.0.0</span>
+</code></pre>
+				<p>If you&#39;ve done everything correctly after following <a href="https://raiden-network.readthedocs.io/en/latest/custom-setups/private_net_tutorial.html">Raiden on Private Network Tutorial</a> you should now have <code>Geth</code> running a private chain, with the Raiden contracts deployed, and a Raiden node running.</p>
 				<a href="#setting-up-the-development-environment" id="setting-up-the-development-environment" style="color: inherit; text-decoration: none;">
 					<h2>Setting up the Development Environment</h2>
 				</a>
-				<p>You need to check out the correct branch or tag in the Raiden repo that you cloned when deploying Raiden Network on a private chain.</p>
-				<p>For example, if you need to you the <code>v0.200.0-rc2</code> tag, you need to first checkout the tag before continuing with the tutorial.</p>
-				<pre><code class="language-bash"><span style="color: #000000">git checkout v0.200.0-rc2</span>
-</code></pre>
-				<p>If you&#39;ve done everything correctly you should now have <code>Geth</code> running a private chain, with the Raiden contracts deployed, and a Raiden node running.</p>
 				<a href="#locating-the-smart-contracts" id="locating-the-smart-contracts" style="color: inherit; text-decoration: none;">
 					<h3>Locating the Smart contracts</h3>
 				</a>
@@ -146,26 +150,21 @@
 				<a href="#starting-the-sdk" id="starting-the-sdk" style="color: inherit; text-decoration: none;">
 					<h3>Starting the SDK</h3>
 				</a>
-				<p>You can start using the SDK in your setup. If you want to learn more about using the SDK in your project you can reference the <a href="../installing-sdk/README.md">SDK installation</a> tutorial. </p>
+				<p>You can start using the SDK in your setup. If you want to learn more about using the SDK in your project you can reference the <a href="https://github.com/raiden-network/light-client#run-the-repository-code">SDK installation</a> tutorial.</p>
 				<p>To start the SDK on your private network setup, you need to import the private deployment files. You can find them in the <code>&lt;rootDir&gt;/src/deployment</code> directory.</p>
 				<pre><code class="language-typescript"><span style="color: #AF00DB">import</span><span style="color: #000000"> </span><span style="color: #001080">privateDeployment</span><span style="color: #000000"> </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;@/deployment/deployment_private_net.json&#039;</span><span style="color: #000000">;</span>
 <span style="color: #AF00DB">import</span><span style="color: #000000"> </span><span style="color: #001080">privateServicesDeployment</span><span style="color: #000000"> </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;@/deployment/deployment_services_private_net.json&#039;</span><span style="color: #000000">;</span>
 <span style="color: #AF00DB">import</span><span style="color: #000000"> { </span><span style="color: #001080">ContractsInfo</span><span style="color: #000000"> } </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;raiden-ts&#039;</span><span style="color: #000000">;</span>
 </code></pre>
-				<p>As soon as the imports exist, you need to construct the <code>contractsInfo</code> object and pass it to the Light Client SDK initialization logic. </p>
+				<p>As soon as the imports exist, you need to construct the <code>contractsInfo</code> object and pass it to the Light Client SDK initialization logic.</p>
 				<p>An example of the SDK initialization function follows:</p>
 				<pre><code class="language-typescript"><span style="color: #0000FF">async</span><span style="color: #000000"> </span><span style="color: #0000FF">function</span><span style="color: #000000"> </span><span style="color: #795E26">initialization</span><span style="color: #000000">() {</span>
-<span style="color: #000000">    </span><span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #795E26">contractsInfo</span><span style="color: #000000"> = ({</span>
-<span style="color: #000000">      ...</span><span style="color: #001080">privateDeployment</span><span style="color: #000000">.</span><span style="color: #001080">contracts</span><span style="color: #000000">,</span>
-<span style="color: #000000">      ...</span><span style="color: #001080">privateServicesDeployment</span><span style="color: #000000">.</span><span style="color: #001080">contracts</span>
-<span style="color: #000000">    } </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #267F99">unknown</span><span style="color: #000000">) </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #267F99">ContractsInfo</span><span style="color: #000000">;</span>
+<span style="color: #000000">  </span><span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">contractsInfo</span><span style="color: #000000"> = {</span>
+<span style="color: #000000">    ...</span><span style="color: #001080">privateDeployment</span><span style="color: #000000">.</span><span style="color: #001080">contracts</span><span style="color: #000000">,</span>
+<span style="color: #000000">    ...</span><span style="color: #001080">privateServicesDeployment</span><span style="color: #000000">.</span><span style="color: #001080">contracts</span><span style="color: #000000">,</span>
+<span style="color: #000000">  } </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #267F99">unknown</span><span style="color: #000000"> </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #267F99">ContractsInfo</span><span style="color: #000000">;</span>
 
-<span style="color: #000000">    </span><span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">raiden</span><span style="color: #000000"> = </span><span style="color: #AF00DB">await</span><span style="color: #000000"> </span><span style="color: #001080">Raiden</span><span style="color: #000000">.</span><span style="color: #795E26">create</span><span style="color: #000000">(</span>
-<span style="color: #000000">        </span><span style="color: #001080">provider</span><span style="color: #000000">,</span>
-<span style="color: #000000">        </span><span style="color: #098658">0</span><span style="color: #000000">,</span>
-<span style="color: #000000">        </span><span style="color: #001080">window</span><span style="color: #000000">.</span><span style="color: #001080">localStorage</span><span style="color: #000000">,</span>
-<span style="color: #000000">        </span><span style="color: #001080">contractsInfo</span>
-<span style="color: #000000">    );</span>
+<span style="color: #000000">  </span><span style="color: #0000FF">const</span><span style="color: #000000"> </span><span style="color: #0070C1">raiden</span><span style="color: #000000"> = </span><span style="color: #AF00DB">await</span><span style="color: #000000"> </span><span style="color: #001080">Raiden</span><span style="color: #000000">.</span><span style="color: #795E26">create</span><span style="color: #000000">(</span><span style="color: #001080">provider</span><span style="color: #000000">, </span><span style="color: #098658">0</span><span style="color: #000000">, </span><span style="color: #001080">window</span><span style="color: #000000">.</span><span style="color: #001080">localStorage</span><span style="color: #000000">, </span><span style="color: #001080">contractsInfo</span><span style="color: #000000">);</span>
 <span style="color: #000000">}</span>
 </code></pre>
 				<p>Calling the <code>initialization()</code> function should enable the SDK to manage channels and send payments in the development environment, using the previously deployed token.</p>
@@ -174,37 +173,50 @@
 				</a>
 				<p>Out of the box the dApp supports the following public test networks <code>Görli</code>, <code>Rinkeby</code> and <code>Ropsten</code>.</p>
 				<p>To run the dApp on any other network setup you need to deploy the smart contracts and change the dApp to use this setup.</p>
-				<p>If you require help running the dApp, you can follow the <a href="../installing-dapp/README.md">instructions</a>.</p>
-				<p>As soon as you have the dApp running you can locate the <a href="https://github.com/raiden-network/light-client/blob/3c2df8e496f329fac6f8b0ceafd4edaf40c1b736/raiden-dapp/src/services/raiden-service.ts#L18"><code>createRaiden</code></a> function and change it accordingly. </p>
+				<p>If you require help running the dApp, you can follow the <a href="https://github.com/raiden-network/light-client#install-and-run-the-dapp">instructions</a>.</p>
+				<p>As soon as you have the dApp running you can locate the <a href="https://github.com/raiden-network/light-client/blob/master/raiden-dapp/src/services/raiden-service.ts#L45"><code>createRaiden</code></a> function and change it accordingly.</p>
 				<p>First, you need to import the deployment information, as with the SDK setup.</p>
 				<pre><code class="language-typescript"><span style="color: #AF00DB">import</span><span style="color: #000000"> </span><span style="color: #001080">privateDeployment</span><span style="color: #000000"> </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;@/deployment/deployment_private_net.json&#039;</span><span style="color: #000000">;</span>
 <span style="color: #AF00DB">import</span><span style="color: #000000"> </span><span style="color: #001080">privateServicesDeployment</span><span style="color: #000000"> </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;@/deployment/deployment_services_private_net.json&#039;</span><span style="color: #000000">;</span>
-<span style="color: #AF00DB">import</span><span style="color: #000000"> { </span><span style="color: #001080">ContractsInfo</span><span style="color: #000000"> } </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;raiden-ts&#039;</span><span style="color: #000000">;</span>
+<span style="color: #AF00DB">import</span><span style="color: #000000"> </span><span style="color: #AF00DB">type</span><span style="color: #000000"> { </span><span style="color: #001080">ContractsInfo</span><span style="color: #000000"> } </span><span style="color: #AF00DB">from</span><span style="color: #000000"> </span><span style="color: #A31515">&#039;raiden-ts&#039;</span><span style="color: #000000">;</span>
 </code></pre>
-				<p>Then you need to construct the <code>contractsInfo</code> object. </p>
-				<p>The <a href="https://github.com/raiden-network/light-client/blob/3c2df8e496f329fac6f8b0ceafd4edaf40c1b736/raiden-dapp/src/services/raiden-service.ts#L18"><code>createRaiden</code></a> function should look like the example below:</p>
+				<p>Then you need to construct the <code>contractsInfo</code> object.</p>
+				<p>The <a href="https://github.com/raiden-network/light-client/blob/master/raiden-dapp/src/services/raiden-service.ts#L45"><code>createRaiden</code></a> function should look like the example below:</p>
 				<pre><code class="language-typescript"><span style="color: #000000">  </span><span style="color: #001080">private</span><span style="color: #000000"> </span><span style="color: #001080">static</span><span style="color: #000000"> </span><span style="color: #001080">async</span><span style="color: #000000"> </span><span style="color: #795E26">createRaiden</span><span style="color: #000000">(</span>
-<span style="color: #000000">    </span><span style="color: #001080">provider</span><span style="color: #000000">: </span><span style="color: #001080">any</span><span style="color: #000000">,</span>
-<span style="color: #000000">    </span><span style="color: #001080">account</span><span style="color: #000000">: </span><span style="color: #001080">string</span><span style="color: #000000"> | </span><span style="color: #001080">number</span><span style="color: #000000"> = </span><span style="color: #098658">0</span>
+<span style="color: #000000">    </span><span style="color: #001080">provider</span><span style="color: #000000">: </span><span style="color: #001080">providers</span><span style="color: #000000">.</span><span style="color: #001080">JsonRpcProvider</span><span style="color: #000000"> | </span><span style="color: #001080">string</span><span style="color: #000000">,</span>
+<span style="color: #000000">    </span><span style="color: #001080">privateKeyOrProviderAccountIndex</span><span style="color: #000000">: </span><span style="color: #001080">string</span><span style="color: #000000"> | </span><span style="color: #001080">number</span><span style="color: #000000"> = </span><span style="color: #098658">0</span><span style="color: #000000">,</span>
+<span style="color: #000000">    </span><span style="color: #001080">stateBackup</span><span style="color: #000000">?: </span><span style="color: #001080">string</span><span style="color: #000000">,</span>
+<span style="color: #000000">    </span><span style="color: #001080">subkey</span><span style="color: #000000">?: </span><span style="color: #0000FF">true</span><span style="color: #000000">,</span>
 <span style="color: #000000">  ): </span><span style="color: #267F99">Promise</span><span style="color: #000000">&lt;</span><span style="color: #001080">Raiden</span><span style="color: #000000">&gt; {</span>
-<span style="color: #000000">    const </span><span style="color: #795E26">contractsInfo</span><span style="color: #000000"> = ({</span>
+<span style="color: #000000">    const </span><span style="color: #001080">contractsInfo</span><span style="color: #000000"> = {</span>
 <span style="color: #000000">      ...</span><span style="color: #001080">privateDeployment</span><span style="color: #000000">.</span><span style="color: #001080">contracts</span><span style="color: #000000">,</span>
-<span style="color: #000000">      ...</span><span style="color: #001080">privateServicesDeployment</span><span style="color: #000000">.</span><span style="color: #001080">contracts</span>
-<span style="color: #000000">    } </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #267F99">unknown</span><span style="color: #000000">) </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #267F99">ContractsInfo</span><span style="color: #000000">;</span>
-<span style="color: #000000">    try {</span>
+<span style="color: #000000">      ...</span><span style="color: #001080">privateServicesDeployment</span><span style="color: #000000">.</span><span style="color: #001080">contracts</span><span style="color: #000000">,</span>
+<span style="color: #000000">    } </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #267F99">unknown</span><span style="color: #000000"> </span><span style="color: #AF00DB">as</span><span style="color: #000000"> </span><span style="color: #267F99">ContractsInfo</span><span style="color: #000000">;</span>
+<span style="color: #000000">..</span>
+<span style="color: #000000">..</span>
+<span style="color: #000000">..</span>
+<span style="color: #000000">  try {</span>
+<span style="color: #000000">      </span><span style="color: #008000">// const contracts = await ConfigProvider.contracts();</span>
+
 <span style="color: #000000">      return await Raiden.create(</span>
 <span style="color: #000000">        </span><span style="color: #001080">provider</span><span style="color: #000000">,</span>
-<span style="color: #000000">        </span><span style="color: #001080">account</span><span style="color: #000000">,</span>
-<span style="color: #000000">        window.</span><span style="color: #001080">localStorage</span><span style="color: #000000">,</span>
+<span style="color: #000000">        </span><span style="color: #001080">privateKeyOrProviderAccountIndex</span><span style="color: #000000">,</span>
+<span style="color: #000000">        </span><span style="color: #001080">storageOpts</span><span style="color: #000000">,</span>
 <span style="color: #000000">        </span><span style="color: #001080">contractsInfo</span><span style="color: #000000">,</span>
-<span style="color: #000000">        { </span><span style="color: #001080">pfsSafetyMargin:</span><span style="color: #000000"> </span><span style="color: #098658">1.1</span><span style="color: #000000"> }</span>
-<span style="color: #000000">      );</span>
-<span style="color: #000000">    } </span><span style="color: #AF00DB">catch</span><span style="color: #000000"> (</span><span style="color: #001080">e</span><span style="color: #000000">) {</span>
-<span style="color: #000000">      </span><span style="color: #AF00DB">throw</span><span style="color: #000000"> </span><span style="color: #0000FF">new</span><span style="color: #000000"> </span><span style="color: #795E26">RaidenInitializationFailed</span><span style="color: #000000">(</span><span style="color: #001080">e</span><span style="color: #000000">);</span>
-<span style="color: #000000">    }</span>
-<span style="color: #000000">  }</span>
+<span style="color: #000000">        {</span>
+<span style="color: #000000">          </span><span style="color: #001080">pfsSafetyMargin:</span><span style="color: #000000"> </span><span style="color: #098658">1.1</span><span style="color: #000000">,</span>
+<span style="color: #000000">          ...(</span><span style="color: #001080">process</span><span style="color: #000000">.</span><span style="color: #001080">env</span><span style="color: #000000">.</span><span style="color: #0070C1">VUE_APP_PFS</span>
+<span style="color: #000000">          ..</span>
+<span style="color: #000000">          ..</span>
 </code></pre>
-				<p>To finalize the setup, you also need to change MetaMask&#39;s RPC provider. Simply go MetaMask, find the network dropdown and select <code>Localhost 8545</code>. </p>
+				<p>Comment out <code>const contracts = await ConfigProvider.contracts();</code> and add <code>contractsInfo</code> just below the <code>storageOpts</code> variable.</p>
+				<p>Finally with these changes you need to run</p>
+				<pre><code class="language-bash"><span style="color: #000000">yarn workspace raiden-dapp serve</span>
+</code></pre>
+				<p>You might face issues with linting for that you will need to go in the <code>raiden-dapp</code> subfolder and run the following:</p>
+				<pre><code class="language-bash"><span style="color: #000000">yarn lint:fix</span>
+</code></pre>
+				<p>To finalize the setup, you also need to change MetaMask&#39;s RPC provider. Simply go MetaMask, find the network dropdown and select <code>Localhost 8545</code>.</p>
 				<blockquote>
 					<p>Note! This assumes that <code>Geth</code> runs on <code>http://localhost:8545</code>.</p>
 				</blockquote>
