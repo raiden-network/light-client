@@ -29,6 +29,8 @@ import {
 } from '@/store/version-information';
 import type { RootState, Tokens, Transfers } from '@/types';
 
+import { DISCLAIMER_STORAGE_KEY } from './constants';
+
 Vue.use(Vuex);
 
 const _defaultState: RootState = {
@@ -70,7 +72,7 @@ const disclaimerLocalStorage = new VuexPersistence<RootState>({
     disclaimerAccepted: state.persistDisclaimerAcceptance ? state.disclaimerAccepted : false,
   }),
   filter: (mutation) => mutation.type === 'acceptDisclaimer',
-  key: 'disclaimer',
+  key: DISCLAIMER_STORAGE_KEY,
 });
 
 const backupReminderLocalStorage = new VuexPersistence<RootState>({

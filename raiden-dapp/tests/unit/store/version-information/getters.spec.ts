@@ -3,17 +3,60 @@ import { defaultState } from '@/store/version-information/state';
 
 describe('version information store getters', () => {
   describe('correct version is loaded', () => {
-    test('is true when active version is equal to the installed version', () => {
+    let localStorageGetItemSpy: jest.SpyInstance;
+
+    beforeAll(() => {
+      localStorageGetItemSpy = jest.spyOn(Object.getPrototypeOf(window.localStorage), 'getItem');
+      localStorageGetItemSpy.mockImplementation((key: string): string | null =>
+        key === 'disclaimer' ? '{"some": "data"}' : null,
+      );
+    });
+
+    afterAll(() => {
+      localStorageGetItemSpy.mockRestore();
+    });
+
+    test('is true when user loaded the application for the first time', () => {
       const state = defaultState();
-      state.installedVersion = '1.0.0';
-      state.activeVersion = '1.0.0';
+      localStorageGetItemSpy.mockReturnValueOnce(null);
 
       expect(getters.correctVersionIsLoaded(state)).toBeTruthy();
     });
 
-    test('is true when no installed version is known', () => {
+    test('is true when an update is in progress', () => {
+      const state = defaultState();
+      state.updateInProgress = true;
+
+      expect(getters.correctVersionIsLoaded(state)).toBeTruthy();
+    });
+
+    test('is true when no installed version is known and active version <= 2.0.1', () => {
       const state = defaultState();
       state.installedVersion = undefined;
+      state.activeVersion = '2.0.1';
+
+      expect(getters.correctVersionIsLoaded(state)).toBeTruthy();
+
+      state.activeVersion = '1.1.0';
+
+      expect(getters.correctVersionIsLoaded(state)).toBeTruthy();
+    });
+
+    test('is false when no installed version is known and active version > 2.0.1', () => {
+      const state = defaultState();
+      state.installedVersion = undefined;
+      state.activeVersion = '2.0.2';
+
+      expect(getters.correctVersionIsLoaded(state)).toBeFalsy();
+
+      state.activeVersion = '3.0.0';
+
+      expect(getters.correctVersionIsLoaded(state)).toBeFalsy();
+    });
+
+    test('is true when active version is equal to the installed version', () => {
+      const state = defaultState();
+      state.installedVersion = '1.0.0';
       state.activeVersion = '1.0.0';
 
       expect(getters.correctVersionIsLoaded(state)).toBeTruthy();
