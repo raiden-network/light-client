@@ -1,0 +1,15 @@
+.settings[data-v-30993b7f] {
+  padding: 20px;
+}
+[data-v-30993b7f] .v-list {
+  background-color: #0f0e10 !important;
+}
+[data-v-30993b7f] .v-list-item__action {
+  -ms-flex-item-align: start !important;
+      align-self: start !important;
+  margin: 12px 0;
+}
+[data-v-30993b7f] .v-list-item__subtitle {
+  white-space: normal;
+  font-size: 12px;
+}
