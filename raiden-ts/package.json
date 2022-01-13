@@ -86,10 +86,10 @@
     "@ethersproject/contracts": "^5.5.0",
     "@ethersproject/hash": "^5.5.0",
     "@ethersproject/keccak256": "^5.5.0",
-    "@ethersproject/networks": "^5.5.1",
+    "@ethersproject/networks": "^5.5.2",
     "@ethersproject/properties": "^5.5.0",
-    "@ethersproject/providers": "^5.5.1",
-    "@ethersproject/random": "^5.5.0",
+    "@ethersproject/providers": "^5.5.2",
+    "@ethersproject/random": "^5.5.1",
     "@ethersproject/rlp": "^5.5.0",
     "@ethersproject/sha2": "^5.5.0",
     "@ethersproject/signing-key": "^5.5.0",
@@ -100,8 +100,8 @@
     "abort-controller": "^3.0.0",
     "decimal.js": "^10.3.1",
     "eciesjs": "^0.3.12",
-    "ethers": "^5.5.2",
-    "fp-ts": "^2.11.6",
+    "ethers": "^5.5.3",
+    "fp-ts": "^2.11.7",
     "io-ts": "^2.2.16",
     "isomorphic-fetch": "^3.0.0",
     "json-bigint": "^1.0.0",
@@ -115,7 +115,7 @@
     "redux-devtools-extension": "^2.13.9",
     "redux-logger": "^3.0.6",
     "redux-observable": "^2.0.0",
-    "rxjs": "^7.5.1"
+    "rxjs": "^7.5.2"
   },
   "optionalDependencies": {
     "pouchdb-adapter-indexeddb": "^7.2.2",
