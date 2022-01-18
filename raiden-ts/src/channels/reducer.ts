@@ -87,7 +87,6 @@ function channelOpenSuccessReducer(state: RaidenState, action: channelOpen.succe
     state: ChannelState.open,
     token: action.payload.token,
     tokenNetwork: action.meta.tokenNetwork,
-    settleTimeout: action.payload.settleTimeout,
     isFirstParticipant: action.payload.isFirstParticipant,
     openBlock: action.payload.txBlock,
     own: {

@@ -230,7 +230,7 @@ export function withdrawSendTxEpic(
               // don't send on-chain tx if we're 'revealTimeout' blocks from expiration
               // this is our confidence threshold when we can get a tx inside timeout
               assert(
-                req.expiration.gte(state.blockNumber + revealTimeout),
+                req.expiration.gte(Math.floor(Date.now() / 1e3 + revealTimeout)),
                 ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
               );
 
@@ -403,7 +403,7 @@ export function autoWithdrawExpireEpic(
         for (const req of requestMessages) {
           // do not withdraw.failure early for withdraws currently being processed
           if (busyWithdraws.has(withdrawKey(withdrawMetaFromRequest(req, channel)))) continue;
-          if (req.expiration.lt(state.blockNumber + revealTimeout)) {
+          if (req.expiration.lt(Math.ceil(Date.now() / 1e3 + revealTimeout))) {
             const coopSettleFailedKey = req.message_identifier.toHexString();
             if (!alreadyFailed.has(coopSettleFailedKey)) {
               alreadyFailed.add(coopSettleFailedKey);

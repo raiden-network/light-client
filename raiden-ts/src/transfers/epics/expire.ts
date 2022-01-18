@@ -1,9 +1,14 @@
 import type { Observable } from 'rxjs';
 import { from, merge, of } from 'rxjs';
-import { exhaustMap, filter, mergeMap, pluck, withLatestFrom } from 'rxjs/operators';
+import {
+  delay,
+  distinctUntilKeyChanged,
+  exhaustMap,
+  mergeMap,
+  withLatestFrom,
+} from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
-import { newBlock } from '../../channels/actions';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isResponseOf } from '../../utils/actions';
@@ -22,24 +27,24 @@ import { dispatchAndWait$ } from './utils';
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of transferExpire.request|transfer.failure actions
  */
 export function transferAutoExpireEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { config$ }: RaidenEpicDeps,
+  { config$, latest$ }: RaidenEpicDeps,
 ): Observable<transferExpire.request | transfer.failure> {
-  return action$.pipe(
-    filter(newBlock.is),
-    pluck('payload', 'blockNumber'),
-    withLatestFrom(state$, config$),
+  return state$.pipe(
+    distinctUntilKeyChanged('blockNumber'),
+    withLatestFrom(config$, latest$),
     // With interactive signing sending a lock expired message requires user
     // intervention. In that case it is possible for a new block to arrive
     // while waiting for the user permission, without the `exhaustMap` below
     // multiple signing requests would be emited *for the same lock*.
     // `exhaustMap` prevents that from happening, by blocking new signing
     // requests until the existing ones have been concluded.
-    exhaustMap(([blockNumber, { transfers }, { confirmationBlocks }]) =>
+    exhaustMap(([{ transfers }, { confirmationBlocks }, { blockTime }]) =>
       from(
         Object.values(transfers).filter(
           (r) =>
@@ -48,7 +53,7 @@ export function transferAutoExpireEpic(
             !r.expired &&
             !r.secretRegistered &&
             !r.channelClosed &&
-            r.expiration <= blockNumber - confirmationBlocks * 2,
+            r.expiration <= Date.now() / 1e3,
         ),
       ).pipe(
         mergeMap((doc) => {
@@ -59,12 +64,12 @@ export function transferAutoExpireEpic(
               action$,
               transferExpire.request(undefined, meta),
               isResponseOf(transferExpire, meta),
-            ),
+            ).pipe(delay(confirmationBlocks * blockTime)),
             // notify users that this transfer failed definitely
             of(
               transfer.failure(
                 new RaidenError(ErrorCodes.XFER_EXPIRED, {
-                  block: doc.transfer.lock.expiration.toString(),
+                  expiration: doc.transfer.lock.expiration,
                 }),
                 meta,
               ),
