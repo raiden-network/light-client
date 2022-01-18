@@ -37,9 +37,7 @@ function openChannel$(
   const tokenNetworkContract = getTokenNetworkContract(request.meta.tokenNetwork);
   return checkContractHasMethod$(tokenNetworkContract, 'openChannelWithDeposit').pipe(
     catchError(constant(of(false))),
-    withLatestFrom(config$),
-    mergeMap(([hasWithDepositMethod, { settleTimeout: configSettleTimeout }]) => {
-      const settleTimeout = request.payload.settleTimeout ?? configSettleTimeout;
+    mergeMap((hasWithDepositMethod) => {
       let open$;
       if (request.payload.deposit?.gt(0) && hasWithDepositMethod) {
         // if contract supports `openChannelWithDeposit`; ensureApprovedBalance$ is performed by
@@ -47,7 +45,7 @@ function openChannel$(
         open$ = transact(
           tokenNetworkContract,
           'openChannelWithDeposit',
-          [address, request.meta.partner, settleTimeout, request.payload.deposit],
+          [address, request.meta.partner, request.payload.deposit],
           deps,
           { subkey: null, error: ErrorCodes.CNL_OPENCHANNEL_FAILED },
         );
@@ -56,7 +54,7 @@ function openChannel$(
         open$ = transact(
           tokenNetworkContract,
           'openChannel',
-          [address, request.meta.partner, settleTimeout],
+          [address, request.meta.partner],
           deps,
           { subkey: null, error: ErrorCodes.CNL_OPENCHANNEL_FAILED },
         );

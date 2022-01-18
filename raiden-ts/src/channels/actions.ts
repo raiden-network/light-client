@@ -53,11 +53,10 @@ export interface tokenMonitored extends ActionType<typeof tokenMonitored> {}
 export const channelOpen = createAsyncAction(
   ChannelId,
   'channel/open',
-  t.partial({ settleTimeout: t.number, deposit: UInt(32) }),
+  t.partial({ deposit: UInt(32) }),
   t.type({
     id: t.number,
     token: Address,
-    settleTimeout: t.number,
     isFirstParticipant: t.boolean,
     txHash: Hash,
     txBlock: t.number,

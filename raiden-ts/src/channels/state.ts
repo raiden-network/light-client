@@ -44,7 +44,6 @@ export const Channel = t.intersection([
       id: t.number,
       token: Address,
       tokenNetwork: Address,
-      settleTimeout: t.number,
       isFirstParticipant: t.boolean,
       openBlock: t.number,
       own: ChannelEnd,
@@ -128,7 +127,6 @@ export interface ChannelBalances {
  * - id: channel identifier
  * - token: ERC20 token contract address
  * - tokenNetwork: TokenNetwork contract address
- * - settleTimeout: number of blocks after close when channel becomes settleable
  * - openBlock: block number in which channel was opened
  * - closeBlock: block in which channel got closed
  * - partner: partner's address
@@ -148,7 +146,6 @@ export interface RaidenChannel extends ChannelBalances {
   id: number;
   token: Address;
   tokenNetwork: Address;
-  settleTimeout: number;
   openBlock: number;
   closeBlock?: number;
   partner: Address;

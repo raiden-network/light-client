@@ -18,7 +18,6 @@ import type { ChannelEnd } from '../../channels/state';
 import { ChannelState } from '../../channels/state';
 import type { Lock } from '../../channels/types';
 import { channelAmounts, channelKey, channelUniqueKey } from '../../channels/utils';
-import type { RaidenConfig } from '../../config';
 import { Capabilities } from '../../constants';
 import { messageReceived, messageSend } from '../../messages/actions';
 import type { Processed, SecretRequest } from '../../messages/types';
@@ -41,7 +40,7 @@ import type { Fee } from '../../services/types';
 import type { RaidenState } from '../../state';
 import { matrixPresence } from '../../transport/actions';
 import { getCap } from '../../transport/utils';
-import type { RaidenEpicDeps } from '../../types';
+import type { Latest, RaidenEpicDeps } from '../../types';
 import { assert } from '../../utils';
 import { isActionOf } from '../../utils/actions';
 import { ErrorCodes, RaidenError } from '../../utils/error';
@@ -114,10 +113,10 @@ function transferRequestIsResolved(action: transfer.request): action is transfer
  *
  * @param state - Contains The current state of the app
  * @param action - transfer request action to be sent.
- * @param config - Config object
- * @param config.revealTimeout - The reveal timeout for the transfer.
- * @param config.confirmationBlocks - Confirmations block config
- * @param config.expiryFactor - The factor that the reveal timeouts gets multiplied with to calculate the lock expiration
+ * @param latest - Latest object
+ * @param latest.config - Config object
+ * @param latest.settleTimeout - contract's settleTimeout
+ * @param latest.blockTime - Average blockTime
  * @param deps - {@link RaidenEpicDeps}
  * @param deps.log - Logger instance
  * @param deps.address - Our address
@@ -128,38 +127,40 @@ function transferRequestIsResolved(action: transfer.request): action is transfer
 function makeAndSignTransfer$(
   state: RaidenState,
   action: transferRequestResolved,
-  { revealTimeout, confirmationBlocks, expiryFactor }: RaidenConfig,
+  { config, settleTimeout, blockTime }: Latest,
   { log, address, network, signer }: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned> {
+  const { revealTimeout, confirmationBlocks, expiryFactor } = config;
   const { tokenNetwork, fee, partner, userId } = action.payload;
   const channel = getOpenChannel(state, { tokenNetwork, partner });
 
-  assert(
-    !('expiration' in action.payload) ||
-      !action.payload.expiration ||
-      action.payload.expiration > state.blockNumber + revealTimeout,
+  const now = Math.round(Date.now() / 1e3); // now() in seconds (for messages and contracts)
+  let expiration;
+  if ('expiration' in action.payload && action.payload.expiration) {
+    expiration = action.payload.expiration; // reuse passed as is, in seconds
+  } else {
+    expiration = now;
+    if ('lockTimeout' in action.payload && action.payload.lockTimeout)
+      expiration += action.payload.lockTimeout;
+    else
+      expiration += Math.min(
+        revealTimeout * expiryFactor,
+        settleTimeout - confirmationBlocks * blockTime,
+      );
+  }
+  expiration = decode(UInt(32), Math.ceil(expiration));
+
+  // revealTimeout <= Δexpiration <= settleTimeout
+  // to ensure we'll have enough time to tx in case it expires, but it can't outlive channel
+  assert(expiration.gte(now + revealTimeout), [
     'expiration too soon',
-  );
-  const expiration = decode(
-    UInt(32),
-    'expiration' in action.payload && action.payload.expiration
-      ? action.payload.expiration
-      : 'lockTimeout' in action.payload && action.payload.lockTimeout
-      ? state.blockNumber + action.payload.lockTimeout
-      : Math.min(
-          state.blockNumber + Math.round(revealTimeout * expiryFactor),
-          state.blockNumber + channel.settleTimeout - confirmationBlocks,
-        ),
-  );
-  assert(expiration.lte(state.blockNumber + channel.settleTimeout), [
-    'expiration too far in the future',
-    {
-      expiration: expiration.toString(),
-      blockNumber: state.blockNumber,
-      settleTimeout: channel.settleTimeout,
-      revealTimeout,
-    },
+    { expiration, blockNumber: state.blockNumber, settleTimeout, revealTimeout },
   ]);
+  assert(expiration.lt(now + settleTimeout), [
+    'expiration too far in the future',
+    { expiration, blockNumber: state.blockNumber, settleTimeout, revealTimeout },
+  ]);
+
   const lock: Lock = {
     // fee is added to the lock amount; overflow is checked on locksSum below
     amount: action.payload.value.add(fee) as UInt<32>,
@@ -234,15 +235,15 @@ function sendTransferSigned(
   action: transferRequestResolved,
   deps: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned | transfer.failure> {
-  return combineLatest([state$, deps.config$]).pipe(
+  return combineLatest([state$, deps.latest$]).pipe(
     first(),
-    mergeMap(([state, config]) => {
+    mergeMap(([state, latest]) => {
       if (deps.db.storageKeys.has(transferKey(action.meta))) {
         // don't throw to avoid emitting transfer.failure, to just wait for already pending transfer
         deps.log.warn('transfer already present', action.meta);
         return EMPTY;
       }
-      return makeAndSignTransfer$(state, action, config, deps);
+      return makeAndSignTransfer$(state, action, latest, deps);
     }),
     catchError((err) => of(transfer.failure(err, action.meta))),
   );
@@ -453,7 +454,7 @@ function sendTransferExpired(
 function receiveTransferSigned(
   state$: Observable<RaidenState>,
   action: messageReceivedTyped<Signed<LockedTransfer>>,
-  { address, log, signer, config$, db }: RaidenEpicDeps,
+  { address, log, signer, config$, db, latest$ }: RaidenEpicDeps,
 ): Observable<
   | transferSigned
   | transfer.failure
@@ -464,9 +465,9 @@ function receiveTransferSigned(
 > {
   const secrethash = action.payload.message.lock.secrethash;
   const meta = { secrethash, direction: Direction.RECEIVED };
-  return combineLatest([state$, config$]).pipe(
+  return combineLatest([state$, config$, latest$]).pipe(
     first(),
-    mergeMap(([state, { revealTimeout, caps }]) => {
+    mergeMap(([state, { revealTimeout, caps }, { settleTimeout }]) => {
       const locked: Signed<LockedTransfer> = action.payload.message;
       if (db.storageKeys.has(transferKey(meta))) {
         log.warn('transfer already present', meta);
@@ -517,12 +518,12 @@ function receiveTransferSigned(
         locked.lock.amount.lte(partnerCapacity),
         'balanceProof total amount bigger than capacity',
       );
-      assert(locked.lock.expiration.lte(state.blockNumber + channel.settleTimeout), [
+      assert(locked.lock.expiration.lt(Math.ceil(Date.now() / 1e3 + settleTimeout)), [
         'expiration too far in the future',
         {
-          expiration: locked.lock.expiration.toString(),
+          expiration: locked.lock.expiration,
           blockNumber: state.blockNumber,
-          settleTimeout: channel.settleTimeout,
+          settleTimeout,
           revealTimeout,
         },
       ]);
@@ -545,12 +546,16 @@ function receiveTransferSigned(
       let request$: Observable<Secret | Signed<SecretRequest> | undefined> = of(undefined);
       if (locked.target === address) {
         let ignoredDetails;
+        // danger zone (our interval of confidence we can get secret register tx on-chain)
+        // starts revealTimeout millis before lock expiration (in secs)
+        const dangerZoneStart = locked.lock.expiration.sub(revealTimeout);
         if (!getCap(caps, Capabilities.RECEIVE)) ignoredDetails = { reason: 'receiving disabled' };
-        else if (!locked.lock.expiration.sub(revealTimeout).gt(state.blockNumber))
+        else if (!dangerZoneStart.mul(1e3).gt(Date.now()))
           ignoredDetails = {
             reason: 'lock expired or expires too soon',
-            lockExpiration: locked.lock.expiration.toString(),
-            dangerZoneStart: locked.lock.expiration.sub(revealTimeout).toString(),
+            lockExpiration: locked.lock.expiration,
+            dangerZoneStart,
+            revealTimeout,
           };
         if (ignoredDetails) {
           log.warn('Ignoring received transfer', ignoredDetails);
@@ -575,7 +580,7 @@ function receiveTransferSigned(
         }
       }
 
-      const processed$ = defer(() => {
+      const processed$ = defer(async () => {
         const processed: Processed = {
           type: MessageType.PROCESSED,
           message_identifier: locked.message_identifier,
@@ -864,7 +869,7 @@ function sendWithdrawRequest(
           ErrorCodes.CNL_WITHDRAW_AMOUNT_TOO_LOW,
         );
         assert(
-          action.meta.expiration >= state.blockNumber + revealTimeout,
+          action.meta.expiration >= Date.now() / 1e3 + revealTimeout,
           ErrorCodes.CNL_WITHDRAW_EXPIRES_SOON,
         );
       }

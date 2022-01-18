@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Observable } from 'rxjs';
+import { Observable, timer } from 'rxjs';
 import { combineLatest, EMPTY } from 'rxjs';
-import { filter, mergeMap, withLatestFrom } from 'rxjs/operators';
+import { filter, mergeMap, mergeWith, withLatestFrom } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';
 import { intervalFromConfig } from '../../config';
@@ -93,15 +93,15 @@ export function transferRetryMessageEpic(
           if (action.meta.direction === Direction.RECEIVED && transfer) {
             to = transfer.transfer.initiator;
             viaUserId = action.payload.userId;
-            stop$ = combineLatest([state$, transfer$]).pipe(
+            stop$ = transfer$.pipe(
               filter(
-                ([{ blockNumber }, transfer]) =>
+                (transfer) =>
                   /* transfer.secret would be enough, but let's test secretReveal to possibly retry
                    * failed RevealSecret sign prompts */
-                  !!(transfer.secretReveal || transfer.channelClosed) ||
-                  // or when we get inside the danger zone
-                  blockNumber > transfer.expiration - revealTimeout,
+                  !!(transfer.secretReveal || transfer.channelClosed),
               ),
+              // or when we get inside the danger zone
+              mergeWith(timer(new Date((transfer.expiration - revealTimeout) * 1e3))),
             );
           }
           break;
