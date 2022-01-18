@@ -35,6 +35,5 @@ export const CapsFallback = {
 } as const;
 
 export const RAIDEN_DEVICE_ID = 'RAIDEN';
-export const UDC_WITHDRAW_TIMEOUT = 100;
 export const DEFAULT_CONFIRMATIONS = 5;
 export const DEFAULT_MS_REWARD = parseEther('80') as UInt<32>;

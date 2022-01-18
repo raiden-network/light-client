@@ -1,15 +1,16 @@
 import { concat as concatBytes } from '@ethersproject/bytes';
 import type { Observable } from 'rxjs';
-import { combineLatest, defer, EMPTY, of } from 'rxjs';
+import { combineLatest, defer, EMPTY, of, timer } from 'rxjs';
 import {
   catchError,
-  distinctUntilKeyChanged,
-  exhaustMap,
+  concatMap,
+  delayWhen,
   filter,
   ignoreElements,
   map,
   mergeMap,
   pluck,
+  take,
   takeUntil,
   withLatestFrom,
 } from 'rxjs/operators';
@@ -28,39 +29,54 @@ import { encode } from '../../utils/data';
 import { commonAndFailTxErrors, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { completeWith, retryWhile, takeIf } from '../../utils/rx';
 import type { Hash, HexString } from '../../utils/types';
-import { channelSettle, channelSettleable, newBlock } from '../actions';
+import { channelSettle, channelSettleable } from '../actions';
 import type { Channel } from '../state';
 import { ChannelState } from '../state';
-import { channelKey, transact } from '../utils';
+import { channelKey, groupChannel, transact } from '../utils';
 
 /**
  * Process newBlocks, emits ChannelSettleableAction if any closed channel is now settleable
  *
  * @param action$ - Observable of newBlock actions
  * @param state$ - Observable of RaidenStates
+ * @param deps - Epics dependencies
+ * @param deps.getBlockTimestamp - Block's timestamp getter function
+ * @param deps.latest$ - Latest observable
  * @returns Observable of channelSettleable actions
  */
 export function channelSettleableEpic(
-  action$: Observable<RaidenAction>,
+  {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
+  { getBlockTimestamp, latest$ }: RaidenEpicDeps,
 ): Observable<channelSettleable> {
-  return action$.pipe(
-    filter(newBlock.is),
-    pluck('payload', 'blockNumber'),
-    withLatestFrom(state$),
-    mergeMap(function* ([currentBlock, state]) {
-      for (const channel of Object.values(state.channels)) {
-        if (
-          channel.state === ChannelState.closed &&
-          currentBlock >= channel.closeBlock + channel.settleTimeout
-        ) {
-          yield channelSettleable(
-            { settleableBlock: currentBlock },
+  return state$.pipe(
+    groupChannel(),
+    // for each channel's observable
+    mergeMap((grouped$) =>
+      grouped$.pipe(
+        filter(
+          (channel): channel is Channel & { state: ChannelState.closed } =>
+            channel.state === ChannelState.closed,
+        ),
+        // once detecting a closed channel, delay emit until after settleTimeout window after close
+        take(1),
+        delayWhen((channel) =>
+          getBlockTimestamp(channel.closeBlock).pipe(
+            withLatestFrom(latest$),
+            mergeMap(([closeTimestamp, { settleTimeout }]) =>
+              timer(new Date((closeTimestamp + settleTimeout) * 1e3)),
+            ),
+          ),
+        ),
+        withLatestFrom(state$),
+        map(([channel, { blockNumber: currentBlock }]) =>
+          channelSettleable(
+            { settleableBlock: currentBlock + 1 },
             { tokenNetwork: channel.tokenNetwork, partner: channel.partner.address },
-          );
-        }
-      }
-    }),
+          ),
+        ),
+      ),
+    ),
   );
 }
 
@@ -75,8 +91,8 @@ export function channelSettleableEpic(
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
- * @param deps.config$ - Config observable
  * @param deps.address - Our address
+ * @param deps.config$ - Config observable
  * @returns Observable of channelSettle.request actions
  */
 export function channelAutoSettleEpic(
@@ -85,36 +101,38 @@ export function channelAutoSettleEpic(
   { address, config$ }: RaidenEpicDeps,
 ): Observable<channelSettle.request> {
   return state$.pipe(
-    distinctUntilKeyChanged('blockNumber'),
-    withLatestFrom(config$, action$.pipe(getPresencesByAddress())),
-    mergeMap(function* ([
-      { blockNumber, channels },
-      { confirmationBlocks, revealTimeout },
-      presences,
-    ]) {
-      for (const channel of Object.values(channels)) {
-        if (channel.state !== ChannelState.settleable) continue;
-
-        const partnerIsOnlineLC = peerIsOnlineLC(presences[channel.partner.address]);
-        /* iff we are *sure* partner will wait longer (i.e. they're a LC and *we* are the closing
-         * side), then we autoSettle early; otherwise (it's a PC or they're the closing side),
-         * we can wait longer before autoSettling */
-        let waitConfirmations: number;
-        if (partnerIsOnlineLC && channel.closeParticipant === address)
-          waitConfirmations = confirmationBlocks;
-        else waitConfirmations = revealTimeout;
-
-        // not yet good to go, maybe partner is settling; skip and test later
-        if (blockNumber < channel.closeBlock + channel.settleTimeout + waitConfirmations) continue;
-
-        yield channelSettle.request(undefined, {
-          tokenNetwork: channel.tokenNetwork,
-          partner: channel.partner.address,
-        });
-      }
-    }),
+    groupChannel(),
+    // for each channel's observable
+    withLatestFrom(action$.pipe(getPresencesByAddress())),
+    mergeMap(([grouped$, presences]) =>
+      grouped$.pipe(
+        filter(
+          (channel): channel is Channel & { state: ChannelState.settleable } =>
+            channel.state === ChannelState.settleable,
+        ),
+        // once detecting a settleable channel, delay emit until after settleTimeout window after close
+        take(1),
+        withLatestFrom(config$),
+        delayWhen(([channel, { httpTimeout, revealTimeout }]) => {
+          const partnerIsOnlineLC = peerIsOnlineLC(presences[channel.partner.address]);
+          /* iff we are *sure* partner will wait longer (i.e. they're a LC and *we* are the closing
+           * side), then we autoSettle early; otherwise (it's a PC or they're the closing side),
+           * we can wait longer before autoSettling */
+          let waitTime: number;
+          if (partnerIsOnlineLC && channel.closeParticipant === address) waitTime = httpTimeout;
+          else waitTime = revealTimeout * 1e3;
+          return timer(waitTime);
+        }),
+        map(([channel]) =>
+          channelSettle.request(undefined, {
+            tokenNetwork: channel.tokenNetwork,
+            partner: channel.partner.address,
+          }),
+        ),
+      ),
+    ),
     // ensures only one auto request is handled at a time
-    exhaustMap((request) =>
+    concatMap((request) =>
       dispatchAndWait$(action$, request, isResponseOf(channelSettle, request.meta)),
     ),
     takeIf(config$.pipe(pluck('autoSettle'), completeWith(state$))),
@@ -252,7 +270,7 @@ function withdrawPairToCoopSettleParams([req, conf]: NonNullable<
   return {
     participant: req.participant,
     total_withdraw: req.total_withdraw,
-    expiration_block: req.expiration,
+    withdrawable_until: req.expiration,
     participant_signature: req.signature,
     partner_signature: conf.signature,
   };

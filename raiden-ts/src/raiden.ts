@@ -604,7 +604,6 @@ export class Raiden {
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
    * @param options - (optional) option parameter
-   * @param options.settleTimeout - Custom, one-time settle timeout
    * @param options.deposit - Deposit to perform in parallel with channel opening
    * @param options.confirmConfirmation - Whether to wait `confirmationBlocks` after last
    *    transaction confirmation; default=true
@@ -615,7 +614,6 @@ export class Raiden {
     token: string,
     partner: string,
     options: {
-      settleTimeout?: number;
       deposit?: BigNumberish;
       confirmConfirmation?: boolean;
     } = {},
@@ -624,17 +622,6 @@ export class Raiden {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const tokenNetwork = await this.monitorToken(token);
-
-    // Note that we use the advantage of the UInt decoding here, but immediately
-    // convert it to a plain number again.
-    const settleTimeout = !options.settleTimeout
-      ? undefined
-      : decode(
-          UInt(4),
-          options.settleTimeout,
-          ErrorCodes.DTA_INVALID_TIMEOUT,
-          this.log.info,
-        ).toNumber();
 
     const deposit = !options.deposit
       ? undefined
@@ -675,7 +662,7 @@ export class Raiden {
       });
     }
 
-    this.store.dispatch(channelOpen.request({ ...options, settleTimeout, deposit }, meta));
+    this.store.dispatch(channelOpen.request({ ...options, deposit }, meta));
 
     const [, openTxHash, depositTxHash] = await Promise.all([
       openPromise,
@@ -774,8 +761,9 @@ export class Raiden {
       const channel = this.state.channels[channelKey({ tokenNetwork, partner })];
       assert(channel, 'channel not found');
       const { ownTotalWithdrawable: totalWithdraw } = channelAmounts(channel);
-      const expiration =
-        this.state.blockNumber + this.config.revealTimeout + this.config.confirmationBlocks;
+      const expiration = Math.ceil(
+        Date.now() / 1e3 + this.config.revealTimeout * this.config.expiryFactor,
+      );
 
       const coopMeta = {
         direction: Direction.SENT,
@@ -872,7 +860,8 @@ export class Raiden {
    *     Is ignored if paths were already provided. If neither are set and config.pfs is not
    *     disabled (null), use it if set or if undefined (auto mode), fetches the best
    *     PFS from ServiceRegistry and automatically fetch routes from it.
-   * @param options.lockTimeout - Specify a lock timeout for transfer; default is 2 * revealTimeout
+   * @param options.lockTimeout - Specify a lock timeout for transfer;
+   *     default is expiryFactor * revealTimeout
    * @param options.encryptSecret - Whether to force encrypting the secret or not,
    *     if target supports it
    * @returns A promise to transfer's unique key (id) when it's accepted
@@ -1361,14 +1350,14 @@ export class Raiden {
    *    [[withdrawFromUDC]]; resolves to undefined if there's no current plan
    */
   public async getUDCWithdrawPlan(): Promise<
-    { amount: UInt<32>; block: number; ready: boolean } | undefined
+    { amount: UInt<32>; withdrawable_after: number; ready: boolean } | undefined
   > {
     const plan = await this.deps.userDepositContract.withdraw_plans(this.address);
-    if (plan.withdraw_block.isZero()) return;
+    if (plan.withdrawable_after.isZero()) return;
     return {
       amount: plan.amount as UInt<32>,
-      block: plan.withdraw_block.toNumber(),
-      ready: plan.withdraw_block.lte(this.state.blockNumber),
+      withdrawable_after: plan.withdrawable_after.toNumber() * 1e3,
+      ready: plan.withdrawable_after.lte(Date.now() / 1e3),
     };
   }
 
@@ -1423,12 +1412,7 @@ export class Raiden {
     };
     // wait for plan to be ready if needed
     if (!plan.ready)
-      await firstValueFrom(
-        this.state$.pipe(
-          pluckDistinct('blockNumber'),
-          filter((blockNumber) => blockNumber >= plan.block),
-        ),
-      );
+      await new Promise((resolve) => setTimeout(resolve, plan.withdrawable_after - Date.now()));
     const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
@@ -1445,7 +1429,7 @@ export class Raiden {
    * for this amount of tokens, then a transaction is sent on-chain to withdraw tokens to the
    * effective account.
    * If this process fails, the amount remains locked until it can be expired later (defaults to
-   * 2 * config.revealTimeout blocks).
+   * config.expiryFactory * config.revealTimeout seconds).
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
@@ -1476,7 +1460,9 @@ export class Raiden {
     );
     // if it's too big, it'll fail on withdraw request handling epic
     const totalWithdraw = ownWithdraw.add(requestedAmount) as UInt<32>;
-    const expiration = this.state.blockNumber + 2 * this.config.revealTimeout;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + this.config.expiryFactor * this.config.revealTimeout,
+    );
 
     const meta = {
       direction: Direction.SENT,

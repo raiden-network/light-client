@@ -118,7 +118,8 @@ const secretReveal$ = (
       const value = locked.lock.amount.sub(fee) as UInt<32>;
 
       assert(
-        request.expiration.lte(locked.lock.expiration) && request.expiration.gt(state.blockNumber),
+        request.expiration.lte(locked.lock.expiration) &&
+          request.expiration.gt(Math.floor(Date.now() / 1e3)),
         ['SecretRequest for expired transfer', { request, lock: locked.lock }],
       );
       assert(request.amount.gte(value), [
@@ -345,11 +346,9 @@ export function monitorSecretRegistryEpic(
           {
             secret: secret as Secret,
             txHash: event.transactionHash! as Hash,
-            txBlock: event.blockNumber!,
+            txBlock: event.blockNumber,
             confirmed:
-              event.blockNumber! + confirmationBlocks <= blockNumber
-                ? event.blockNumber! < transferState.expiration // false is like event got reorged/removed
-                : undefined,
+              event.blockNumber + confirmationBlocks <= blockNumber ? !event.removed : undefined,
           },
           { secrethash: secrethash as Hash, direction },
         );
@@ -393,20 +392,20 @@ export function transferAutoRegisterEpic(
 ): Observable<transferSecretRegister.request> {
   return state$.pipe(
     withLatestFrom(config$),
-    mergeMap(([{ blockNumber, transfers }, { revealTimeout }]) =>
-      from(
-        Object.values(transfers).filter(
-          (r) =>
-            r.direction === Direction.RECEIVED &&
-            !r.unlock && // not unlocked
-            !r.expired && // not expired
-            !!r.secret && // secret exist and isn't registered yet
-            !r.secretRegistered &&
-            // transfers which are inside the danger zone (revealTimeout before expiration)
-            r.expiration > blockNumber &&
-            r.expiration <= blockNumber + revealTimeout,
-        ),
-      ),
+    mergeMap(([{ transfers }, { revealTimeout }]) =>
+      Object.values(transfers).filter((r) => {
+        const now = Math.round(Date.now() / 1e3); // now() in seconds
+        return (
+          r.direction === Direction.RECEIVED &&
+          !r.unlock && // not unlocked
+          !r.expired && // not expired
+          !!r.secret && // secret exists and isn't registered yet
+          !r.secretRegistered &&
+          // transfers which are inside the danger zone (revealTimeout before expiration)
+          now < r.expiration &&
+          r.expiration <= now + revealTimeout
+        );
+      }),
     ),
     // emit each result every block
     // group results by transferKey, so we don't overlap requests for the same transfer
@@ -415,11 +414,11 @@ export function transferAutoRegisterEpic(
       duration: (grouped$) =>
         latest$.pipe(
           pluck('state'),
-          filter(({ blockNumber, transfers }) => {
+          filter(({ transfers }) => {
             const transferState = transfers[grouped$.key];
             return (
               !transferState ||
-              transferState.expiration < blockNumber ||
+              transferState.expiration < Date.now() / 1e3 ||
               !!transferState.unlock ||
               !!transferState.secretRegistered
             );
