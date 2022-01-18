@@ -12,8 +12,19 @@ import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, defer, firstValueFrom, merge, ReplaySubject } from 'rxjs';
-import { exhaustMap, filter, first, map, mergeMap, pluck, withLatestFrom } from 'rxjs/operators';
+import { AsyncSubject, defer, firstValueFrom, merge, ReplaySubject, timer } from 'rxjs';
+import {
+  exhaustMap,
+  filter,
+  first,
+  map,
+  mergeMap,
+  pluck,
+  retryWhen,
+  shareReplay,
+  tap,
+  withLatestFrom,
+} from 'rxjs/operators';
 
 import type { RaidenAction } from './actions';
 import { raidenShutdown, raidenSynced } from './actions';
@@ -61,6 +72,7 @@ import { isActionOf } from './utils/actions';
 import { jsonParse } from './utils/data';
 import { ErrorCodes, RaidenError } from './utils/error';
 import { getLogsByChunk$, getNetworkName } from './utils/ethers';
+import { LruCache } from './utils/lru';
 import { distinctRecordValues, pluckDistinct } from './utils/rx';
 import type { Hash, UInt } from './utils/types';
 import { Address, decode, isntNil, PrivateKey } from './utils/types';
@@ -585,6 +597,44 @@ export function waitChannelSettleable$(
 }
 
 /**
+ * Make a getBlockTimestamp function which caches the returned observable for a given blockNumber,
+ * retries in case of errors and clears the cache in case of permanent failure;
+ *
+ * @param provider - provider instance to get block info from
+ * @param maxErrors - maximum errors to retry
+ * @returns cached observable which emits block timestamp (in seconds) once and completes
+ */
+function makeBlockTimestampGetter(
+  provider: JsonRpcProvider,
+  maxErrors = 3,
+): RaidenEpicDeps['getBlockTimestamp'] {
+  const cache = new LruCache<number, Observable<number>>(128);
+  return function getBlockTimestamp(block: number): Observable<number> {
+    let cached = cache.get(block);
+    if (!cached) {
+      cached = defer(async () => provider.getBlock(block)).pipe(
+        map(({ timestamp }) => {
+          assert(timestamp, ['no timestamp in block', { block }]);
+          return timestamp;
+        }),
+        retryWhen((err$) =>
+          err$.pipe(
+            mergeMap((err, i) => {
+              if (i >= maxErrors) throw err;
+              return timer(provider.pollingInterval);
+            }),
+          ),
+        ),
+        tap({ error: () => cache.delete(block) }),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+      cache.set(block, cached);
+    }
+    return cached;
+  };
+}
+
+/**
  * Helper function to create the RaidenEpicDeps dependencies object for Raiden Epics
  *
  * @param state - Initial/previous RaidenState
@@ -612,10 +662,15 @@ export function makeDependencies(
     'Signer must be connected to a JsonRpcProvider',
   );
   const latest$ = new ReplaySubject<Latest>(1);
+  const config$ = latest$.pipe(pluckDistinct('config'));
+  const registryContract = TokenNetworkRegistry__factory.connect(
+    contractsInfo.TokenNetworkRegistry.address,
+    main?.signer ?? signer,
+  );
 
   return {
     latest$,
-    config$: latest$.pipe(pluckDistinct('config')),
+    config$,
     matrix$: new AsyncSubject<MatrixClient>(),
     signer,
     provider: signer.provider,
@@ -624,10 +679,7 @@ export function makeDependencies(
     log: logging.getLogger(`raiden:${state.address}`),
     defaultConfig: makeDefaultConfig({ network: signer.provider.network }, config),
     contractsInfo,
-    registryContract: TokenNetworkRegistry__factory.connect(
-      contractsInfo.TokenNetworkRegistry.address,
-      main?.signer ?? signer,
-    ),
+    registryContract,
     getTokenNetworkContract: memoize((address: Address) =>
       TokenNetwork__factory.connect(address, main?.signer ?? signer),
     ),
@@ -654,5 +706,6 @@ export function makeDependencies(
     db,
     init$: new ReplaySubject(),
     mediationFeeCalculator: standardCalculator,
+    getBlockTimestamp: makeBlockTimestampGetter(signer.provider),
   };
 }
