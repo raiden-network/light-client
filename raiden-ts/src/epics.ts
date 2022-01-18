@@ -27,7 +27,7 @@ import {
 
 import type { RaidenAction } from './actions';
 import { raidenConfigCaps, raidenShutdown } from './actions';
-import { blockStale, blockTime } from './channels/actions';
+import { blockStale, blockTime, contractSettleTimeout } from './channels/actions';
 import * as ChannelsEpics from './channels/epics';
 import type { RaidenConfig } from './config';
 import { Capabilities } from './constants';
@@ -172,6 +172,11 @@ export function getLatest$(
     pluck('payload', 'stale'),
     startWith(initialStale),
   );
+  const settleTimeout$ = action$.pipe(
+    filter(contractSettleTimeout.is),
+    pluck('payload'),
+    startWith(0),
+  );
   const caps$ = merge(
     state$.pipe(
       take(1), // initial caps depends on first state$ emit (initial)
@@ -235,19 +240,39 @@ export function getLatest$(
   );
 
   return combineLatest([
-    combineLatest([action$, state$, config$, whitelisted$, rtc$]),
-    combineLatest([udcDeposit$, blockTime$, stale$]),
+    action$,
+    state$,
+    config$,
+    whitelisted$,
+    rtc$,
+    udcDeposit$,
+    blockTime$,
+    stale$,
+    settleTimeout$,
   ]).pipe(
-    map(([[action, state, config, whitelisted, rtc], [udcDeposit, blockTime, stale]]) => ({
-      action,
-      state,
-      config,
-      whitelisted,
-      rtc,
-      udcDeposit,
-      blockTime,
-      stale,
-    })),
+    map(
+      ([
+        action,
+        state,
+        config,
+        whitelisted,
+        rtc,
+        udcDeposit,
+        blockTime,
+        stale,
+        settleTimeout,
+      ]) => ({
+        action,
+        state,
+        config,
+        whitelisted,
+        rtc,
+        udcDeposit,
+        blockTime,
+        stale,
+        settleTimeout,
+      }),
+    ),
   );
 }
 
