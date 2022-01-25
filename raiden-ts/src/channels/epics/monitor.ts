@@ -58,7 +58,7 @@ function scanRegistryTokenNetworks({
   const encodedAddress = defaultAbiCoder.encode(['address'], [address]);
   return getLogsByChunk$(
     provider,
-    Object.assign(registryContract.filters.TokenNetworkCreated(null, null), {
+    Object.assign(registryContract.filters.TokenNetworkCreated(), {
       fromBlock: contractsInfo.TokenNetworkRegistry.block_number,
       toBlock: provider.blockNumber,
     }),
@@ -68,7 +68,7 @@ function scanRegistryTokenNetworks({
     toArray(),
     mergeMap((logs) => {
       const alwaysMonitored$: Observable<tokenMonitored> = from(
-        logs.splice(0, 2).map(([token, tokenNetwork, event]) =>
+        logs.splice(0, 2).map(([token, tokenNetwork, , event]) =>
           tokenMonitored({
             token: token as Address,
             tokenNetwork: tokenNetwork as Address,
@@ -79,9 +79,9 @@ function scanRegistryTokenNetworks({
 
       let monitorsIfHasChannels$: Observable<tokenMonitored> = EMPTY;
       if (logs.length) {
-        const firstBlock = logs[0]![2].blockNumber;
+        const firstBlock = last(logs[0]!).blockNumber;
         const tokenNetworks = new Map<string, [token: Address, event: Event]>(
-          logs.map(([token, tokenNetwork, event]) => [tokenNetwork, [token as Address, event]]),
+          logs.map(([token, tokenNetwork, , event]) => [tokenNetwork, [token as Address, event]]),
         );
         const allTokenNetworkAddrs = Array.from(tokenNetworks.keys());
         // simultaneously query all tokenNetworks for channels from us and to us

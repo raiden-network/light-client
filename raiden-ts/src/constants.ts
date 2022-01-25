@@ -35,5 +35,6 @@ export const CapsFallback = {
 } as const;
 
 export const RAIDEN_DEVICE_ID = 'RAIDEN';
-export const DEFAULT_CONFIRMATIONS = 5;
-export const DEFAULT_MS_REWARD = parseEther('80') as UInt<32>;
+export const DEFAULT_CONFIRMATIONS = 5; // in blocks
+export const DEFAULT_MS_REWARD = parseEther('80') as UInt<32>; // 80 SVT
+export const DEFAULT_REVEAL_TIMEOUT = 10 * 60; // 10min in seconds
