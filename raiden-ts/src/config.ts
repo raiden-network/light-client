@@ -5,7 +5,12 @@ import * as t from 'io-ts';
 import type { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 
-import { Capabilities, DEFAULT_CONFIRMATIONS, DEFAULT_MS_REWARD } from './constants';
+import {
+  Capabilities,
+  DEFAULT_CONFIRMATIONS,
+  DEFAULT_MS_REWARD,
+  DEFAULT_REVEAL_TIMEOUT,
+} from './constants';
 import { PfsMode, PfsModeC } from './services/types';
 import { exponentialBackoff } from './transfers/epics/utils';
 import { Caps } from './transport/types';
@@ -24,10 +29,9 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *
  * - matrixServerLookup - Matrix server URL to fetch existing matrix servers from.
  *    After intializing a [[Raiden]] instance, the matrix server can't be changed later on.
- * - revealTimeout - Timeout for secrets to be revealed
- * - settleTimeout - Timeout for channels to be settled
- * - expiryFactor - Multiply revealTimeout to get how far in the future
- *    transfer expiration block should be
+ * - revealTimeout - Timeout for secrets to be revealed (in seconds)
+ * - expiryFactor - Multiply revealTimeout to get how far in the future transfer expiration block
+ *    should be
  * - httpTimeout - Used in http fetch requests
  * - additionalServices - Array of extra services URLs (or addresses, if URL set on SecretRegistry)
  * - pfsMode - One of 'disabled' (disables PFS usage and notifications), 'auto' (notifies all of
@@ -68,7 +72,6 @@ export const RaidenConfig = t.readonly(
     t.type({
       matrixServerLookup: t.string,
       revealTimeout: t.number,
-      settleTimeout: t.number,
       expiryFactor: t.number, // must be > 1.0
       httpTimeout: t.number,
       additionalServices: t.readonlyArray(t.union([Address, t.string])),
@@ -142,8 +145,7 @@ export function makeDefaultConfig(
         };
   return {
     matrixServerLookup: matrixServerInfos,
-    settleTimeout: 500,
-    revealTimeout: 50,
+    revealTimeout: DEFAULT_REVEAL_TIMEOUT,
     expiryFactor: 1.1, // must be > 1.0
     httpTimeout: 30e3,
     additionalServices: [],
