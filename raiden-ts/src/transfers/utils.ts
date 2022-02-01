@@ -76,7 +76,7 @@ export function makeSecret(length = 32): Secret {
  * @returns UInt<8>
  */
 export function makePaymentId(): UInt<8> {
-  return BigNumber.from(Date.now()) as UInt<8>;
+  return BigNumber.from(Date.now() + Math.round(Math.random() * 1e3)) as UInt<8>;
 }
 
 /**
@@ -85,7 +85,7 @@ export function makePaymentId(): UInt<8> {
  * @returns UInt<8>
  */
 export function makeMessageId(): UInt<8> {
-  return BigNumber.from(Date.now()) as UInt<8>;
+  return BigNumber.from(Date.now() + Math.round(Math.random() * 1e3)) as UInt<8>;
 }
 
 /**

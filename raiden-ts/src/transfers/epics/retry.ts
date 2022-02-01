@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Observable, timer } from 'rxjs';
-import { combineLatest, EMPTY } from 'rxjs';
+import type { Observable } from 'rxjs';
+import { EMPTY, timer } from 'rxjs';
 import { filter, mergeMap, mergeWith, withLatestFrom } from 'rxjs/operators';
 
 import type { RaidenAction } from '../../actions';

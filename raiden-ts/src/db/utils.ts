@@ -156,7 +156,7 @@ export async function getRaidenState(db: RaidenDatabase): Promise<any | undefine
     include_docs: true,
   });
   for (const { id, doc } of stateResults.rows) {
-    state[id.substr(statePrefix.length)] = doc!.value;
+    state[id.substring(statePrefix.length)] = doc!.value;
   }
 
   const channelsResults = await db.allDocs<Channel>({
@@ -165,8 +165,8 @@ export async function getRaidenState(db: RaidenDatabase): Promise<any | undefine
   });
   for (const { id, doc } of channelsResults.rows) {
     if ('settleBlock' in doc!)
-      state.oldChannels[id] = { ...doc!, _id: id.substr(channelsPrefix.length) };
-    else state.channels[channelKey(doc!)] = { ...doc!, _id: id.substr(channelsPrefix.length) };
+      state.oldChannels[id] = { ...doc!, _id: id.substring(channelsPrefix.length) };
+    else state.channels[channelKey(doc!)] = { ...doc!, _id: id.substring(channelsPrefix.length) };
   }
 
   const transfersResults = await db.find({
