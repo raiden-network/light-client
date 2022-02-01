@@ -244,10 +244,11 @@ export const Timed: <T extends t.Mixed>(codec: T) => TimedC<T> = memoize(
  * Given a value of type T, returns a Timed<T> with current time as 'ts' member
  *
  * @param v - Value to return with time
+ * @param ts - Timestamp to use, defaults to now
  * @returns copy of v added of a ts numeric timestamp
  */
-export function timed<T>(v: T): Timed<T> {
-  return { ...v, ts: Date.now() };
+export function timed<T>(v: T, ts = Date.now()): Timed<T> {
+  return { ...v, ts };
 }
 
 /**

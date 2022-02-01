@@ -110,6 +110,7 @@ export const transferSecretRegister = createAsyncAction(
   t.type({ secret: Secret }),
   t.type({
     secret: Secret,
+    txTimestamp: t.number,
     txHash: Hash,
     txBlock: t.number,
     // ConfirmableAction
