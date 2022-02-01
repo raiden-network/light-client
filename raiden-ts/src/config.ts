@@ -30,8 +30,7 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  * - matrixServerLookup - Matrix server URL to fetch existing matrix servers from.
  *    After intializing a [[Raiden]] instance, the matrix server can't be changed later on.
  * - revealTimeout - Timeout for secrets to be revealed (in seconds)
- * - expiryFactor - Multiply revealTimeout to get how far in the future transfer expiration block
- *    should be
+ * - expiryFactor - Multiply revealTimeout to get how far in the future transfer expiration should be
  * - httpTimeout - Used in http fetch requests
  * - additionalServices - Array of extra services URLs (or addresses, if URL set on SecretRegistry)
  * - pfsMode - One of 'disabled' (disables PFS usage and notifications), 'auto' (notifies all of
@@ -42,7 +41,7 @@ const RTCIceServer = t.type({ urls: t.union([t.string, t.array(t.string)]) });
  *    margin, or `[0.03, 0.0005]` to add a 3% over fee plus 0.05% over amount.
  * - pfsMaxPaths - Limit number of paths requested from PFS for a route.
  * - pfsMaxFee - Maximum fee we're willing to pay a PFS for a route (in SVT/RDN wei)
- * - pfsIouTimeout - Number of blocks to timeout an IOU to a PFS.
+ * - pfsIouTimeout - Number of seconds to timeout an IOU to a PFS.
  * - confirmationBlocks - How many blocks to wait before considering a transaction as confirmed
  * - monitoringReward - Reward to be paid to MS, in SVT/RDN; use Zero or null to disable
  * - logger - String specifying the console log level of redux-logger. Use '' to silence.
@@ -153,7 +152,7 @@ export function makeDefaultConfig(
     pfsSafetyMargin: 1.0, // multiplier
     pfsMaxPaths: 3,
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
-    pfsIouTimeout: 200000, // in blocks
+    pfsIouTimeout: 30 * 86400, // in seconds, defaults to 30 days (roughly 200k blocks)
     confirmationBlocks: DEFAULT_CONFIRMATIONS,
     monitoringReward: DEFAULT_MS_REWARD,
     logger: 'info',

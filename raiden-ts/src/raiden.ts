@@ -743,7 +743,7 @@ export class Raiden {
    * on, no payments can be performed on the channel. If for any reason the closeChannel
    * transaction fails, channel's state stays as 'closing', and this method can be called again
    * to retry sending 'closeChannel' transaction. After it's successful, channel becomes 'closed',
-   * and can be settled after 'settleTimeout' blocks (when it then becomes 'settleable').
+   * and can be settled after 'settleTimeout' seconds (when it then becomes 'settleable').
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
@@ -792,7 +792,7 @@ export class Raiden {
   /**
    * Settle channel between us and partner on tokenNetwork for token
    * This method will fail if called on a channel not in 'settleable' or 'settling' state.
-   * Channel becomes 'settleable' settleTimeout blocks after closed (detected automatically
+   * Channel becomes 'settleable' settleTimeout seconds after closed (detected automatically
    * while Raiden Light Client is running or later on restart). When calling it, channel state
    * becomes 'settling'. If for any reason transaction fails, it'll stay on this state, and this
    * method can be called again to re-send a settleChannel transaction.
@@ -1181,12 +1181,12 @@ export class Raiden {
    */
   public async getUDCCapacity(): Promise<BigNumber> {
     const balance = await getUdcBalance(this.deps.latest$);
-    const blockNumber = this.state.blockNumber;
+    const now = Math.round(Date.now() / 1e3); // in seconds
     const owedAmount = Object.values(this.state.iou)
       .reduce(
         (acc, value) => [
           ...acc,
-          ...Object.values(value).filter((value) => value.expiration_block.gte(blockNumber)),
+          ...Object.values(value).filter((value) => value.claimable_until.gte(now)),
         ],
         [] as IOU[],
       )
