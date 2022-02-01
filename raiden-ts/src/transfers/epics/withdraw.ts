@@ -3,6 +3,7 @@ import { combineLatest, defer, EMPTY, from, merge, of } from 'rxjs';
 import {
   catchError,
   concatMap,
+  distinctUntilChanged,
   filter,
   first,
   groupBy,
@@ -11,7 +12,6 @@ import {
   mapTo,
   mergeMap,
   mergeMapTo,
-  pluck,
   scan,
   share,
   startWith,
@@ -22,7 +22,6 @@ import {
 
 import type { RaidenAction } from '../../actions';
 import { ChannelState } from '../../channels';
-import { newBlock } from '../../channels/actions';
 import { channelKey, transact } from '../../channels/utils';
 import { intervalFromConfig } from '../../config';
 import { isMessageReceivedOfType, MessageType, Processed, signMessage } from '../../messages';
@@ -227,7 +226,7 @@ export function withdrawSendTxEpic(
                 'withdraw already performed',
               );
 
-              // don't send on-chain tx if we're 'revealTimeout' blocks from expiration
+              // don't send on-chain tx if we're 'revealTimeout' seconds from expiration
               // this is our confidence threshold when we can get a tx inside timeout
               assert(
                 req.expiration.gte(Math.floor(Date.now() / 1e3 + revealTimeout)),
@@ -360,18 +359,18 @@ function withdrawKey(meta: withdraw.request['meta']) {
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
  * @param deps.config$ - Config observable
+ * @param deps.latest$ - Latest observable
  * @returns Observable of withdrawExpired actions
  */
 export function autoWithdrawExpireEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { config$ }: RaidenEpicDeps,
+  { config$, latest$ }: RaidenEpicDeps,
 ): Observable<withdrawExpire.request | withdraw.failure> {
   const alreadyFailed = new Set<string>();
   const busyWithdraws = new Set<string>();
-  return action$.pipe(
-    filter(newBlock.is),
-    pluck('payload', 'blockNumber'),
+  return latest$.pipe(
+    distinctUntilChanged((a, b) => a.state.blockNumber === b.state.blockNumber),
     withLatestFrom(
       state$,
       config$,
@@ -390,7 +389,7 @@ export function autoWithdrawExpireEpic(
       ),
     ),
     mergeMap(function* ([
-      blockNumber,
+      { blockTime },
       state,
       { confirmationBlocks, revealTimeout },
       busyWithdraws,
@@ -414,7 +413,7 @@ export function autoWithdrawExpireEpic(
             }
           }
           if (
-            req.expiration.lt(blockNumber + confirmationBlocks * 2) &&
+            req.expiration.lt(Math.floor((Date.now() + confirmationBlocks * blockTime) / 1e3)) &&
             !channel.own.pendingWithdraws.some(matchWithdraw(MessageType.WITHDRAW_EXPIRED, req))
           )
             yield withdrawExpire.request(undefined, {

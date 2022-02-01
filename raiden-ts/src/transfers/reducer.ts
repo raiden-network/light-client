@@ -58,7 +58,7 @@ function transferSecretReducer(
     transferSecretRegister.success.is(action) &&
     action.payload.confirmed &&
     action.payload.txBlock !== transferState.secretRegistered?.txBlock &&
-    action.payload.txBlock < transferState.expiration
+    action.payload.txTimestamp <= transferState.expiration
   )
     state = {
       ...state,
@@ -66,7 +66,11 @@ function transferSecretReducer(
         ...state.transfers,
         [key]: {
           ...transferState,
-          secretRegistered: timed(pick(['txHash', 'txBlock'], action.payload)),
+          // special-case secretRegistered: instead of `timed`, use txTimestamp (to millis) as `ts`
+          secretRegistered: timed(
+            { txHash: action.payload.txHash, txBlock: action.payload.txBlock },
+            action.payload.txTimestamp * 1e3,
+          ),
         },
       },
     };

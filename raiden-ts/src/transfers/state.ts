@@ -134,7 +134,7 @@ export interface RaidenTransfer {
   value: BigNumber; // target transfer amount
   fee: BigNumber; // fee paid to mediators
   amount: BigNumber; // total transfer amount, equals value + fee
-  expirationBlock: number; // blockNumber in which this transfer expires (if doesn't succeed)
+  expiration: number; // timestamp (in seconds) in which this transfer expires (if doesn't succeed)
   startedAt: Date; // time of transfer start
   changedAt: Date; // time of current/last state (if transfer completed, end timestamp)
   /**

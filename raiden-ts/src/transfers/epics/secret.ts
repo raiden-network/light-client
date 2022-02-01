@@ -29,7 +29,7 @@ import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
-import { completeWith, pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
+import { completeWith, pluckDistinct, retryWhile, takeIf, withMergeFrom } from '../../utils/rx';
 import type { Hash, Secret, UInt } from '../../utils/types';
 import { isntNil, Signed, untime } from '../../utils/types';
 import {
@@ -312,12 +312,13 @@ export function transferRequestUnlockEpic(
  * @param deps.secretRegistryContract - SecretRegistry contract instance
  * @param deps.config$ - Config observable
  * @param deps.init$ - Init$ tasks subject
+ * @param deps.getBlockTimestamp - block timestamp getter function
  * @returns Observable of transferSecretRegister.success actions
  */
 export function monitorSecretRegistryEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { provider, secretRegistryContract, config$, init$ }: RaidenEpicDeps,
+  { provider, secretRegistryContract, config$, init$, getBlockTimestamp }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.success> {
   const initSub = new AsyncSubject<null>();
   init$.next(initSub);
@@ -331,9 +332,10 @@ export function monitorSecretRegistryEpic(
   }).pipe(
     completeWith(state$),
     map(logToContractEvent(secretRegistryContract)),
+    withMergeFrom(([, , event]) => getBlockTimestamp(event.blockNumber)),
     withLatestFrom(state$, config$),
     mergeMap(function* ([
-      [secrethash, secret, event],
+      [[secrethash, secret, event], txTimestamp],
       { transfers, blockNumber },
       { confirmationBlocks },
     ]) {
@@ -345,6 +347,7 @@ export function monitorSecretRegistryEpic(
         yield transferSecretRegister.success(
           {
             secret: secret as Secret,
+            txTimestamp,
             txHash: event.transactionHash! as Hash,
             txBlock: event.blockNumber,
             confirmed:
@@ -375,7 +378,7 @@ export function transferSuccessOnSecretRegisteredEpic(
 
 /**
  * Process newBlocks and pending received transfers. If we know the secret, and transfer doesn't
- * get unlocked before revealTimeout blocks are left to lock expiration, request to register secret
+ * get unlocked before revealTimeout seconds are left to lock expiration, request to register secret
  * TODO: check economic viability (and define what that means) of registering lock on-chain
  *
  * @param action$ - Observable of newBlock actions
