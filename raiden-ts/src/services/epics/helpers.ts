@@ -58,7 +58,7 @@ export function makeTimestamp(time = new Date()): string {
 function fetchLastIou$(
   pfs: PFS,
   tokenNetwork: Address,
-  { address, signer, network, contractsInfo, latest$, config$ }: RaidenEpicDeps,
+  { address, signer, network, contractsInfo, config$ }: RaidenEpicDeps,
 ): Observable<IOU> {
   return defer(() => {
     const timestamp = makeTimestamp(),
@@ -80,8 +80,8 @@ function fetchLastIou$(
         retryWhile(intervalFromConfig(config$), { onErrors: [...networkErrors, 'TimeoutError'] }),
       ),
     ),
-    withLatestFrom(latest$.pipe(pluck('state', 'blockNumber')), config$),
-    mergeMap(async ([response, blockNumber, { pfsIouTimeout }]) => {
+    withLatestFrom(config$),
+    mergeMap(async ([response, { pfsIouTimeout }]) => {
       if (response.status === 404) {
         return {
           sender: address,
@@ -89,8 +89,10 @@ function fetchLastIou$(
           chain_id: BigNumber.from(network.chainId) as UInt<32>,
           amount: Zero as UInt<32>,
           one_to_n_address: contractsInfo.OneToN.address,
-          expiration_block: BigNumber.from(blockNumber).add(pfsIouTimeout) as UInt<32>,
-        }; // return empty/zeroed IOU, but with valid new expiration_block
+          claimable_until: BigNumber.from(
+            Math.round(Date.now() / 1e3 + pfsIouTimeout),
+          ) as UInt<32>,
+        }; // return empty/zeroed IOU, but with valid new expiration
       }
       const text = await response.text();
       if (!response.ok)
@@ -124,7 +126,7 @@ function prepareNextIOU$(
       const cachedIOU = state.iou[tokenNetwork]?.[pfs.address];
       return cachedIOU ? of(cachedIOU) : fetchLastIou$(pfs, tokenNetwork, deps);
     }),
-    // increment lastIou by pfs.price; don't touch expiration_block, PFS doesn't like it getting
+    // increment lastIou by pfs.price; don't touch expiration, PFS doesn't like it getting
     // updated and will give an error asking to update previous IOU instead of creating a new one
     map((iou) => ({ ...iou, amount: iou.amount.add(pfs.price) as UInt<32> })),
     mergeMap((iou) => signIOU(deps.signer, iou)),
@@ -356,7 +358,7 @@ function requestPfs$(
       ? {
           ...iou,
           amount: UInt(32).encode(iou.amount),
-          expiration_block: UInt(32).encode(iou.expiration_block),
+          expiration: UInt(32).encode(iou.claimable_until),
           chain_id: UInt(32).encode(iou.chain_id),
         }
       : undefined,
