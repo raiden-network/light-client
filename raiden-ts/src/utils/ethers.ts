@@ -338,7 +338,7 @@ export async function contractHasMethod(
 ): Promise<boolean> {
   const code = await getContractCode(address, provider);
   const push4opcode = '63'; // 0x63 is PUSH4 opcode, prefixes sighash in method contracts
-  return code.includes(push4opcode + sighash.substr(2));
+  return code.includes(push4opcode + sighash.substring(2));
 }
 
 /**
