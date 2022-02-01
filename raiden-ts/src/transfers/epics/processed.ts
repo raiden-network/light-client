@@ -48,20 +48,20 @@ export function transferProcessedReceivedEpic(
           action.payload.message.message_identifier.eq(transferState.transfer.message_identifier)
         ) {
           yield transferProcessed({ message: action.payload.message }, meta);
-        } else if (
+        }
+        if (
           action.payload.message.message_identifier.eq(
             transferState.unlock?.message_identifier ?? -1,
           )
         ) {
           // Unlock's Processed also notifies whole transfer as success
           yield transfer.success(
-            {
-              balanceProof: getBalanceProofFromEnvelopeMessage(transferState.unlock!),
-            },
+            { balanceProof: getBalanceProofFromEnvelopeMessage(transferState.unlock!) },
             meta,
           );
           yield transferUnlockProcessed({ message: action.payload.message }, meta);
-        } else if (
+        }
+        if (
           action.payload.message.message_identifier.eq(
             transferState.expired?.message_identifier ?? -1,
           )
