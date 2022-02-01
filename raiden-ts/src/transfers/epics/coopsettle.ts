@@ -148,7 +148,7 @@ export function coopSettleEpic(
                   const partnerReq = channel.partner.pendingWithdraws.find(
                     (msg): msg is Signed<WithdrawRequest> =>
                       msg.type === MessageType.WITHDRAW_REQUEST &&
-                      msg.expiration.gte(state.blockNumber + revealTimeout) &&
+                      msg.expiration.gte(Math.floor(Date.now() / 1e3 + revealTimeout)) &&
                       msg.total_withdraw.eq(partnerTotalWithdrawable),
                   );
                   assert(partnerReq, 'partner request not found'); // shouldn't happen

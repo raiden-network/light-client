@@ -229,11 +229,15 @@ function channelSettleSuccessReducer(
 function markLocksAsRegistered(
   locks: readonly Lock[],
   secrethash: Hash,
-  registeredBlock: number,
+  registeredTimestamp: number,
 ): readonly Lock[] {
   let changed = false;
   const newLocks = locks.map((lock) => {
-    if (lock.secrethash !== secrethash || lock.registered || lock.expiration.lte(registeredBlock))
+    if (
+      lock.secrethash !== secrethash ||
+      lock.registered ||
+      lock.expiration.lte(registeredTimestamp)
+    )
       return lock;
     changed = true;
     return { ...lock, registered: true as const };
@@ -256,7 +260,7 @@ function channelLockRegisteredReducer(
     const newLocks = markLocksAsRegistered(
       channel[end].locks,
       action.meta.secrethash,
-      action.payload.txBlock,
+      action.payload.txTimestamp,
     );
     if (newLocks === channel[end].locks) continue;
     // only update state if locks changed
