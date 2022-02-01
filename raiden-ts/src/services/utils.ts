@@ -300,8 +300,7 @@ export function getPresenceFromService$(
   pfsAddrOrUrl: string,
   deps: Pick<RaidenEpicDeps, 'serviceRegistryContract' | 'log'>,
 ): Observable<matrixPresence.success> {
-  const { serviceRegistryContract } = deps;
-  return defer(async () => pfsAddressUrl(pfsAddrOrUrl, { serviceRegistryContract })).pipe(
+  return defer(async () => pfsAddressUrl(pfsAddrOrUrl, deps)).pipe(
     mergeMap((url) => fromFetch(`${url}/api/v1/address/${address}/metadata`)),
     mergeMap(async (res) => res.json()),
     map((json) => {

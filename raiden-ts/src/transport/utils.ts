@@ -1,5 +1,4 @@
 import { getAddress } from '@ethersproject/address';
-import omit from 'lodash/omit';
 import type { OperatorFunction } from 'rxjs';
 import { pipe } from 'rxjs';
 import { filter, scan, startWith } from 'rxjs/operators';
