@@ -1534,6 +1534,19 @@ export class Raiden {
       ),
     );
   }
+
+  /**
+   * Fetches contract's settleTimeout
+   *
+   * @returns settleTimeout constant value from contracts
+   */
+  public get settleTimeout(): number {
+    let settleTimeout!: number;
+    this.deps.latest$
+      .pipe(first())
+      .subscribe(({ settleTimeout: lastSettleTimeout }) => (settleTimeout = lastSettleTimeout));
+    return settleTimeout;
+  }
 }
 
 export default Raiden;
