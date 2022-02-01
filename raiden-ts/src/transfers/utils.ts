@@ -70,22 +70,24 @@ export function makeSecret(length = 32): Secret {
   return hexlify(randomBytes(length)) as Secret;
 }
 
+let lastPaymentId = 0;
 /**
- * Generates a random payment identifier, as an UInt<8> (64 bits)
+ * Generates a unique 64bits payment identifier
  *
- * @returns UInt<8>
+ * @returns Unique UInt<8>
  */
 export function makePaymentId(): UInt<8> {
-  return BigNumber.from(Date.now()) as UInt<8>;
+  return BigNumber.from((lastPaymentId = Math.max(lastPaymentId + 1, Date.now()))) as UInt<8>;
 }
 
+let lastMsgId = 0;
 /**
- * Generates a message identifier, as an UInt<8> (64 bits)
+ * Generates a unique 64bits message identifier
  *
- * @returns UInt<8>
+ * @returns Unique UInt<8>
  */
 export function makeMessageId(): UInt<8> {
-  return BigNumber.from(Date.now()) as UInt<8>;
+  return BigNumber.from((lastMsgId = Math.max(lastMsgId + 1, Date.now()))) as UInt<8>;
 }
 
 /**
