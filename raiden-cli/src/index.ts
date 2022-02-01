@@ -91,11 +91,6 @@ async function parseArguments() {
         default: 50,
         desc: 'Default transfer reveal timeout',
       },
-      defaultSettleTimeout: {
-        type: 'number',
-        default: 500,
-        desc: 'Default channel settle timeout',
-      },
       ethRpcEndpoint: {
         type: 'string',
         default: 'http://127.0.0.1:8545',
@@ -370,7 +365,6 @@ function createRaidenConfig(
     ...config,
     pollingInterval: Math.floor(argv.blockchainQueryInterval * 1000),
     revealTimeout: argv.defaultRevealTimeout,
-    settleTimeout: argv.defaultSettleTimeout,
     pfsMaxPaths: argv.pathfindingMaxPaths,
     pfsMaxFee: argv.pathfindingMaxFee,
     pfsIouTimeout: argv.pathfindingIouTimeout,
