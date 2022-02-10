@@ -1350,14 +1350,14 @@ export class Raiden {
    *    [[withdrawFromUDC]]; resolves to undefined if there's no current plan
    */
   public async getUDCWithdrawPlan(): Promise<
-    { amount: UInt<32>; withdrawable_after: number; ready: boolean } | undefined
+    { amount: UInt<32>; withdrawableAfter: number; ready: boolean } | undefined
   > {
     const plan = await this.deps.userDepositContract.withdraw_plans(this.address);
     if (plan.withdrawable_after.isZero()) return;
     return {
       amount: plan.amount as UInt<32>,
-      withdrawable_after: plan.withdrawable_after.toNumber() * 1e3,
-      ready: plan.withdrawable_after.lte(Date.now() / 1e3),
+      withdrawableAfter: plan.withdrawable_after.toNumber() * 1e3,
+      ready: plan.withdrawable_after.lte(Math.ceil(Date.now() / 1e3)),
     };
   }
 
@@ -1412,7 +1412,7 @@ export class Raiden {
     };
     // wait for plan to be ready if needed
     if (!plan.ready)
-      await new Promise((resolve) => setTimeout(resolve, plan.withdrawable_after - Date.now()));
+      await new Promise((resolve) => setTimeout(resolve, plan.withdrawableAfter - Date.now()));
     const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
