@@ -106,13 +106,13 @@ export function initNewBlockEpic(
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
- * @param deps.provider - Eth provider
+ * @param deps.getBlockTimestamp - Block timestamp getter function
  * @returns Observable of blockTime actions
  */
 export function blockTimeEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { provider }: RaidenEpicDeps,
+  { getBlockTimestamp }: RaidenEpicDeps,
 ): Observable<blockTime> {
   const fetchEach = 20;
   type BlockInfo = readonly [blockNumber: number, timestamp: number, blockTime?: number];
@@ -120,10 +120,8 @@ export function blockTimeEpic(
 
   // get block info for a given block number
   const getBlockInfo$ = (blockNumber: number) =>
-    defer(async () =>
-      provider
-        .getBlock(blockNumber)
-        .then(({ timestamp }): BlockInfo => [blockNumber, timestamp * 1000]),
+    getBlockTimestamp(blockNumber).pipe(
+      map((timestamp): BlockInfo => [blockNumber, timestamp * 1000]),
     );
 
   return action$.pipe(

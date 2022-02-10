@@ -3,7 +3,7 @@ import { combineLatest, defer, EMPTY, from, merge, of } from 'rxjs';
 import {
   catchError,
   concatMap,
-  distinctUntilChanged,
+  distinctUntilKeyChanged,
   filter,
   first,
   groupBy,
@@ -369,10 +369,10 @@ export function autoWithdrawExpireEpic(
 ): Observable<withdrawExpire.request | withdraw.failure> {
   const alreadyFailed = new Set<string>();
   const busyWithdraws = new Set<string>();
-  return latest$.pipe(
-    distinctUntilChanged((a, b) => a.state.blockNumber === b.state.blockNumber),
+  return state$.pipe(
+    distinctUntilKeyChanged('blockNumber'),
     withLatestFrom(
-      state$,
+      latest$,
       config$,
       action$.pipe(
         filter(isActionOf([withdrawBusy, withdraw.success, withdraw.failure])),
@@ -389,8 +389,8 @@ export function autoWithdrawExpireEpic(
       ),
     ),
     mergeMap(function* ([
-      { blockTime },
       state,
+      { blockTime },
       { confirmationBlocks, revealTimeout },
       busyWithdraws,
     ]) {
