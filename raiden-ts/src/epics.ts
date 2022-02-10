@@ -17,6 +17,7 @@ import {
   mergeMap,
   pluck,
   scan,
+  skip,
   skipUntil,
   startWith,
   take,
@@ -362,6 +363,8 @@ export function combineRaidenEpics(
           }),
         );
       }),
+      // if a second shutdownNotification$ fires, unsubscribe inconditionally
+      takeUntil(shutdownNotification$.pipe(skip(1))),
     );
     // also concat db teardown tasks, to be done after main epic completes
     const teardown$ = deps.db.busy$.pipe(
