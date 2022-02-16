@@ -999,7 +999,7 @@ describe('RaidenService', () => {
       subject.next({
         type: 'udc/withdraw/plan/success',
         payload: {
-          block: 5,
+          withdrawableAfter: 5,
           txHash: '0xTxHash',
           txBlock: 1,
           confirmed: true,
@@ -1011,7 +1011,7 @@ describe('RaidenService', () => {
         txHash: '0xTxHash',
         txBlock: 1,
         amount: constants.One,
-        withdrawBlock: 5,
+        withdrawableAfter: 5,
         confirmed: true,
       });
     });
@@ -1023,7 +1023,7 @@ describe('RaidenService', () => {
       subject.next({
         type: 'udc/withdraw/plan/success',
         payload: {
-          block: 5,
+          withdrawableAfter: 5,
           txHash: '0xTxHash',
           txBlock: 1,
           confirmed: false,
