@@ -72,12 +72,11 @@ describe('ChannelList.vue', () => {
     expect(wrapper.find('#settle-278').exists()).toBeFalsy();
   });
 
-  test('disable all buttons when a channel is "closed", settle button has counter', async () => {
+  test('disable all buttons when a channel is "closed"', async () => {
     expect(wrapper.find('#close-281').exists()).toBeFalsy();
     expect(wrapper.find('#deposit-281').attributes('disabled')).toBeTruthy();
     expect(wrapper.find('#withdraw-281').attributes('disabled')).toBeTruthy();
     expect(wrapper.find('#settle-281').attributes('disabled')).toBeTruthy();
-    expect(wrapper.find('#settle-281').text()).toMatch(/\b251\b/);
   });
 
   test('enable settle button when a channel is "settleable"', async () => {

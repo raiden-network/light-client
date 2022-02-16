@@ -71,11 +71,7 @@
               class="channel-list__action-button"
               @click="action(['settle', channel])"
             >
-              {{
-                channel.state === 'closed'
-                  ? channel.closeBlock + channel.settleTimeout - blockNumber + 1
-                  : $t('channel-actions.settle')
-              }}
+              {{ $t('channel-actions.settle') }}
             </v-btn>
           </div>
         </v-list-item>
