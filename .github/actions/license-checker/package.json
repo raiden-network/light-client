@@ -14,7 +14,7 @@
     "query-registry": "^2.2.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.33.1",
+    "@vercel/ncc": "^0.33.3",
     "eslint": "^7.32.0"
   }
 }
