@@ -15,22 +15,21 @@ Vue.use(Vuetify);
 Vue.filter('upperCase', Filters.upperCase);
 
 const udcToken = generateToken();
-const pendingPlannedWithdrawal: PlannedUdcWithdrawal = {
+
+const dateBeforeWithdrawable = new Date(100000 * 1000);
+const dateWhenWithdrawable = new Date(200000 * 1000);
+const dateAfterWithdrawable = new Date(300000 * 1000);
+
+const plannedWithdrawal: PlannedUdcWithdrawal = {
   txHash: '0xTxHash',
   txBlock: 80,
   amount: constants.One,
-  withdrawBlock: 110,
+  withdrawableAfter: Math.floor(dateWhenWithdrawable.getTime() / 1000),
   confirmed: true,
-};
-
-const readyPlannedWithdrawal: PlannedUdcWithdrawal = {
-  ...pendingPlannedWithdrawal,
-  withdrawBlock: 99,
 };
 
 function createWrapper(props: {
   plannedWithdrawal?: PlannedUdcWithdrawal;
-  blockNumber?: number;
 }): Wrapper<PlannedUdcWithdrawalInformation> {
   const vuetify = new Vuetify();
 
@@ -38,17 +37,29 @@ function createWrapper(props: {
     vuetify,
     propsData: {
       udcToken,
-      blockNumber: 100,
       ...props,
     },
     mocks: {
-      $t: (msg: string) => msg,
+      $t: (msg: string, placeholder: unknown[] = []) => `${msg} ${placeholder}`,
     },
   });
 }
 
 describe('PlannedUdcWithdrawalInformation.vue', () => {
+  const originalTimezone = process.env.TZ;
+
+  beforeAll(() => {
+    jest.useFakeTimers();
+    process.env.TZ = 'UTC';
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+    process.env.TZ = originalTimezone;
+  });
+
   test('should show that no withdrawal is in progress if withdraw plan property is missing', () => {
+    jest.setSystemTime(dateBeforeWithdrawable);
     const wrapper = createWrapper({ plannedWithdrawal: undefined });
 
     expect(wrapper.find('.planned-udc-withdrawal-information').text()).toBe(
@@ -57,7 +68,8 @@ describe('PlannedUdcWithdrawalInformation.vue', () => {
   });
 
   test('should display all relevant elements for pending withdrawal', () => {
-    const wrapper = createWrapper({ plannedWithdrawal: pendingPlannedWithdrawal });
+    jest.setSystemTime(dateBeforeWithdrawable);
+    const wrapper = createWrapper({ plannedWithdrawal });
     const statusIcon = wrapper.find('.planned-udc-withdrawal-information__status-icon');
     const amountDisplay = wrapper.findComponent(AmountDisplay);
     const message = wrapper.find('.planned-udc-withdrawal-information__message');
@@ -67,15 +79,30 @@ describe('PlannedUdcWithdrawalInformation.vue', () => {
     expect(message.exists()).toBe(true);
   });
 
-  test('should display correct counter of blocks until being ready for pending planned withdrawal', () => {
-    const wrapper = createWrapper({ plannedWithdrawal: pendingPlannedWithdrawal });
+  test('should display correct date when pending planned withdrawal becomes ready', () => {
+    jest.setSystemTime(dateBeforeWithdrawable);
+    const wrapper = createWrapper({ plannedWithdrawal });
     const message = wrapper.find('.planned-udc-withdrawal-information__message');
 
-    expect(message.text()).toMatch(/^10\s*UDC\.INFORMATION\.PENDING-MESSAGE$/);
+    const expectedText = `UDC.INFORMATION.PENDING-MESSAGE ${dateWhenWithdrawable.toLocaleString()}`
+    expect(message.text()).toBe(expectedText);
+  });
+
+  test('should set timer to update component when approximately becoming ready', async () => {
+    jest.setSystemTime(dateBeforeWithdrawable);
+    const wrapper = createWrapper({ plannedWithdrawal });
+
+    jest.setSystemTime(dateAfterWithdrawable);
+    jest.runAllTimers();
+    await wrapper.vm.$nextTick();
+
+    const message = wrapper.find('.planned-udc-withdrawal-information__message');
+    expect(message.text()).toBe('UDC.INFORMATION.READY-MESSAGE');
   });
 
   test('should display all relevant elements for ready planned withdrawal', () => {
-    const wrapper = createWrapper({ plannedWithdrawal: readyPlannedWithdrawal });
+    jest.setSystemTime(dateAfterWithdrawable);
+    const wrapper = createWrapper({ plannedWithdrawal });
     const statusIcon = wrapper.find('.planned-udc-withdrawal-information__status-icon');
     const amountDisplay = wrapper.findComponent(AmountDisplay);
     const message = wrapper.find('.planned-udc-withdrawal-information__message');
@@ -86,7 +113,8 @@ describe('PlannedUdcWithdrawalInformation.vue', () => {
   });
 
   test('should display correct message for ready planned withdrawal', () => {
-    const wrapper = createWrapper({ plannedWithdrawal: readyPlannedWithdrawal });
+    jest.setSystemTime(dateAfterWithdrawable);
+    const wrapper = createWrapper({ plannedWithdrawal });
     const message = wrapper.find('.planned-udc-withdrawal-information__message');
 
     expect(message.text()).toBe('UDC.INFORMATION.READY-MESSAGE');

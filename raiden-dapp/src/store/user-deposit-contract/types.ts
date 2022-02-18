@@ -6,7 +6,7 @@ export interface PlannedUdcWithdrawal {
   txHash: string;
   txBlock: number;
   amount: BigNumber;
-  withdrawBlock: number;
+  withdrawableAfter: number;
   confirmed: boolean | undefined;
 }
 
