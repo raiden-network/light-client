@@ -43,7 +43,6 @@
       <planned-udc-withdrawal-information
         :planned-withdrawal="plannedUdcWithdrawal"
         :udc-token="udcToken"
-        :block-number="blockNumber"
       />
     </div>
     <udc-deposit-dialog
@@ -94,7 +93,7 @@ const UDC_SECURITY_MARGIN_PERCENTAGE = 10;
     PlannedUdcWithdrawalInformation,
   },
   computed: {
-    ...mapState(['blockNumber', 'accountBalance', 'raidenAccountBalance']),
+    ...mapState(['accountBalance', 'raidenAccountBalance']),
     ...mapStateUserSettings(['useRaidenAccount']),
     ...mapStateUserDepositContract({
       udcToken: 'token',
@@ -110,7 +109,6 @@ export default class UDC extends Vue {
   );
   udcCapacity = constants.Zero;
   hasEnoughServiceTokens = false;
-  blockNumber!: number;
   accountBalance!: string;
   raidenAccountBalance!: string;
   mainnet!: boolean;

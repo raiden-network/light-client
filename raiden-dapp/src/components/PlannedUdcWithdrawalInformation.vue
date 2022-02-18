@@ -28,8 +28,7 @@
       <v-spacer />
 
       <span v-if="isPending" class="planned-udc-withdrawal-information__message">
-        {{ remainingBlocksUntilReady }}
-        {{ $t('udc.information.pending-message') | upperCase }}
+        {{ $t('udc.information.pending-message', [formattedWithdrawableAfterDate]) | upperCase }}
       </span>
 
       <span v-if="isReady" class="planned-udc-withdrawal-information__message">
@@ -40,7 +39,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop } from 'vue-property-decorator';
+import { Component, Prop, Watch } from 'vue-property-decorator';
 
 import AmountDisplay from '@/components/AmountDisplay.vue';
 import NavigationMixin from '@/mixins/navigation-mixin';
@@ -55,31 +54,55 @@ export default class PlannedUdcWithdrawalInformation extends NavigationMixin {
   @Prop({ required: true })
   udcToken!: Token;
 
-  @Prop({ required: true })
-  blockNumber!: number;
-
   readonly assetSourceDirectory = '@/assets/planned-udc-withdrawal';
+  private secondsUntilWithdrawable = 0;
 
   get noWithdrawInProgress(): boolean {
     return this.plannedWithdrawal === undefined;
   }
 
   get isPending(): boolean {
-    return this.plannedWithdrawal !== undefined && this.remainingBlocksUntilReady > 0;
+    return this.plannedWithdrawal !== undefined && this.secondsUntilWithdrawable > 0;
   }
 
   get isReady(): boolean {
-    return this.plannedWithdrawal !== undefined && this.remainingBlocksUntilReady <= 0;
+    return this.plannedWithdrawal !== undefined && this.secondsUntilWithdrawable <= 0;
   }
 
-  get remainingBlocksUntilReady(): number {
-    return this.plannedWithdrawal !== undefined
-      ? this.plannedWithdrawal.withdrawBlock - this.blockNumber
-      : 0;
+  get formattedWithdrawableAfterDate(): string {
+    if (this.plannedWithdrawal) {
+      const withdrawableAfterDate = new Date(this.plannedWithdrawal.withdrawableAfter * 1000);
+      return withdrawableAfterDate.toLocaleString();
+    } else {
+      return '';
+    }
   }
 
   get statusIconName(): string {
     return this.isReady ? 'ready' : this.isPending ? 'pending' : '';
+  }
+
+  // Do not use a calculated property here to allow triggering it manually. This
+  // is necessary as most other calculated properties are depending on this
+  // value here. But as this value changes by time and nothing reactive to Vue,
+  // this value will never change as long as it is the same withdraw plan.
+  calculuateSecondsUntilWithdrawable(): void {
+    const timestamp_now = Math.floor(Date.now() / 1000);
+    const withdrawableAfter = this.plannedWithdrawal?.withdrawableAfter ?? 0;
+    this.secondsUntilWithdrawable = withdrawableAfter ? withdrawableAfter - timestamp_now : 0;
+  }
+
+  // Manually triggers to update this component by re-calcuating the seconds
+  // remaining till the planned withdraw is ready. This is necessary as there is
+  // no other reactive auto-mechanism by Vue to recognize the special time
+  // event.
+  @Watch('plannedWithdrawal', { immediate: true, deep: true })
+  onPlannedWithdrawlChange() {
+    this.calculuateSecondsUntilWithdrawable();
+
+    if (this.secondsUntilWithdrawable > 0) {
+      setTimeout(this.calculuateSecondsUntilWithdrawable, this.secondsUntilWithdrawable * 1000);
+    }
   }
 }
 </script>
