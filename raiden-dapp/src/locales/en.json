@@ -225,8 +225,8 @@
     "withdrawal-planned": "The withdrawal from the user deposit has been planned. You will get notified when the withdrawal is complete.",
     "information": {
       "no-withdrawal-in-progress": "No withdrawal in progress",
-      "pending-message": "Blocks remaining...",
-      "ready-message": "Ready・Tokens get claimed automatically"
+      "pending-message": "Withdraw pending until {0}",
+      "ready-message": "Ready, tokens get claimed automatically"
     }
   },
   "backup-state": {
