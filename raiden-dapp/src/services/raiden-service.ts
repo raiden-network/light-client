@@ -481,7 +481,7 @@ export default class RaidenService {
           txHash: event.payload.txHash,
           txBlock: event.payload.txBlock,
           amount: event.meta.amount,
-          withdrawBlock: event.payload.block,
+          withdrawableAfter: event.payload.withdrawableAfter,
           confirmed: event.payload.confirmed,
         });
       }
