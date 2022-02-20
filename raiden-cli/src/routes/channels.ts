@@ -91,7 +91,7 @@ async function getChannels(this: Cli, request: Request, response: Response) {
     let channelsList = flattenChannelDictionary(channelsDict);
     if (token) channelsList = channelsList.filter((channel) => channel.token === token);
     if (partner) channelsList = channelsList.filter((channel) => channel.token === partner);
-    response.json(channelsList.map(transformChannelFormatForApi));
+    response.json(channelsList.map(transformChannelFormatForApi.bind(this)));
   }
 }
 
