@@ -459,7 +459,7 @@
                 "0x956b18Fb47F9626DDbA869feb3e91bF94224E767": {
                     "signature": "0xed99aff58e3b86853b6e7c14205689d2abbb8f89511dd5292bdc675942b656a779f0a24aec8ca72d1331d1cd8f5d786d2273f05969267699767ead65eaaf68b41b",
                     "one_to_n_address": "0xA514Da2418576CeC4070C82996f30532dDa99706",
-                    "expiration_block": {
+                    "claimable_until": {
                         "_hex": "0x35498a"
                     },
                     "amount": {

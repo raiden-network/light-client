@@ -35,7 +35,6 @@ const emptyChannelEnd: ChannelEnd = {
 const channelIn: Channel = {
   _id: channelUniqueKey({ tokenNetwork, partner: partnerIn, id: 17 }),
   id: 17,
-  settleTimeout: 500,
   tokenNetwork,
   token,
   state: ChannelState.open,
