@@ -50,6 +50,7 @@
     "@jest/console": "^27.5.1",
     "@jest/reporters": "^27.5.1",
     "@sastan/typedoc-plugin-pages": "^0.0.1",
+    "@sinonjs/fake-timers": "^9.1.0",
     "@typechain/ethers-v5": "^9.0.0",
     "@types/isomorphic-fetch": "^0.0.35",
     "@types/jest": "^27.4.1",
