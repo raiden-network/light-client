@@ -16,6 +16,9 @@ export interface CliArguments {
 export interface Cli {
   log: Logger;
   raiden: Raiden;
-  app?: Express;
-  server?: Server;
+}
+
+export interface App {
+  app: Express;
+  server: Server;
 }
