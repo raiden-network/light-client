@@ -53,8 +53,6 @@ import { dumpDatabaseToArray } from './db/utils';
 import { combineRaidenEpics, getLatest$ } from './epics';
 import {
   chooseOnchainAccount,
-  fetchContractsInfo,
-  getContracts,
   getContractWithSigner,
   getSigner,
   getState,
@@ -297,35 +295,15 @@ export class Raiden {
     }
 
     const network = await provider.getNetwork();
-
-    // if no ContractsInfo, try to populate from defaults
-    let contractsInfo;
-    if (!contractsOrUDCAddress) {
-      contractsInfo = getContracts(network);
-    } else if (typeof contractsOrUDCAddress === 'string') {
-      const [udcAddress, ...rest] = contractsOrUDCAddress.split(':');
-      // if an Address is provided, use it as UserDeposit contract address entrypoint and fetch
-      // all contracts from there
-      assert(Address.is(udcAddress), [
-        ErrorCodes.DTA_INVALID_ADDRESS,
-        { contractsOrUserDepositAddress: contractsOrUDCAddress },
-      ]);
-      contractsInfo = await fetchContractsInfo(
-        provider,
-        udcAddress,
-        ...(rest.map((s) => +s) as [number?]),
-      );
-    } else {
-      contractsInfo = contractsOrUDCAddress;
-    }
-
     const { signer, address, main } = await getSigner(account, provider, subkey, subkeyOriginUrl);
 
     // Build initial state or parse from database
     const { state, db } = await getState(
-      { network, contractsInfo, address, log: logging.getLogger(`raiden:${address}`) },
+      { provider, network, address, log: logging.getLogger(`raiden:${address}`) },
+      contractsOrUDCAddress,
       storage,
     );
+    const contractsInfo = state.contracts;
 
     assert(address === state.address, [
       ErrorCodes.RDN_STATE_ADDRESS_MISMATCH,
@@ -334,19 +312,14 @@ export class Raiden {
         state: state.address,
       },
     ]);
-    assert(
-      network.chainId === state.chainId &&
-        contractsInfo.TokenNetworkRegistry.address === state.registry,
-      [
-        ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
-        {
-          network: network.chainId,
-          contracts: contractsInfo.TokenNetworkRegistry.address,
-          stateNetwork: state.chainId,
-          stateRegistry: state.registry,
-        },
-      ],
-    );
+    assert(network.chainId === state.chainId, [
+      ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
+      {
+        network: network.chainId,
+        contracts: contractsInfo,
+        stateNetwork: state.chainId,
+      },
+    ]);
     const cleanConfig = config && decode(PartialRaidenConfig, omitBy(config, isUndefined));
 
     const deps = makeDependencies(state, cleanConfig, { signer, contractsInfo, db, main });
@@ -363,8 +336,8 @@ export class Raiden {
     this.log.info('Starting Raiden Light-Client', {
       prevBlockNumber: this.state.blockNumber,
       address: this.address,
-      TokenNetworkRegistry: this.deps.contractsInfo.TokenNetworkRegistry.address,
-      network: { name: this.deps.network.name, chainId: this.deps.network.chainId },
+      contracts: this.deps.contractsInfo,
+      network: this.deps.network,
       'raiden-ts': Raiden.version,
       'raiden-contracts': Raiden.contractVersion,
       config: this.config,
@@ -556,7 +529,7 @@ export class Raiden {
   public async getTokenList(): Promise<Address[]> {
     return await lastValueFrom(
       getLogsByChunk$(this.deps.provider, {
-        ...this.deps.registryContract.filters.TokenNetworkCreated(null, null),
+        ...this.deps.registryContract.filters.TokenNetworkCreated(),
         fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
         toBlock: await this.getBlockNumber(),
       }).pipe(

@@ -85,7 +85,7 @@ import { Address, decode, isntNil, PrivateKey } from './utils/types';
  * @param network - an account used for signing
  * @returns deployed contract information of the network
  */
-export const getContracts = (network: Network): ContractsInfo => {
+const getContracts = (network: Network): ContractsInfo => {
   switch (network.name) {
     case 'rinkeby':
       return {
@@ -121,7 +121,7 @@ export const getContracts = (network: Network): ContractsInfo => {
  * @returns Subkey's signer & address
  */
 async function genSubkey(network: Network, main: Signer, originUrl?: string) {
-  const url = originUrl ?? globalThis?.location?.origin ?? 'unknown';
+  const url = originUrl ?? globalThis.location?.origin ?? 'unknown';
   const message = `=== RAIDEN SUBKEY GENERATION ===
 
 Network: ${getNetworkName(network).toUpperCase()}
@@ -353,7 +353,7 @@ export async function waitConfirmation(
  * @param fromBlock - If specified, uses this as initial scanning block
  * @returns contracts info, with blockNumber as block of first registered tokenNetwork
  */
-export async function fetchContractsInfo(
+async function fetchContractsInfo(
   provider: JsonRpcProvider,
   userDeposit: Address,
   fromBlock?: number,
@@ -469,19 +469,12 @@ export function makeTokenInfoGetter({
 function validateDump(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dump: { _id: string; value: any }[],
-  {
-    address,
-    network,
-    contractsInfo,
-  }: Pick<RaidenEpicDeps, 'address' | 'network' | 'contractsInfo'>,
+  { address, network, udc }: { address: Address; network: Network; udc: Address },
 ) {
   const meta = dump[0] as unknown as RaidenDatabaseMeta;
   assert(meta?._id === '_meta', ErrorCodes.RDN_STATE_MIGRATION);
   assert(meta.address === address, ErrorCodes.RDN_STATE_ADDRESS_MISMATCH);
-  assert(
-    meta.registry === contractsInfo.TokenNetworkRegistry.address,
-    ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
-  );
+  assert(meta.udc === udc, ErrorCodes.RDN_STATE_NETWORK_MISMATCH);
   assert(meta.network === network.chainId, ErrorCodes.RDN_STATE_NETWORK_MISMATCH);
 
   assert(
@@ -493,10 +486,22 @@ function validateDump(
     ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
   );
   assert(
-    dump.find((l) => l._id === 'state.registry')?.value ===
-      contractsInfo.TokenNetworkRegistry.address,
+    dump.find((l) => l._id === 'state.contracts')?.value?.UserDeposit?.address === udc,
     ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
   );
+}
+
+function getUdcAndBlock(
+  contracts: Pick<ContractsInfo, 'UserDeposit'> | string,
+): [Address, number] {
+  if (typeof contracts === 'object')
+    return [contracts.UserDeposit.address, contracts.UserDeposit.block_number];
+  const match = contracts.match(/^(0x[0-9a-f]{40})(?::(\d+))?$/i);
+  assert(match && Address.is(match[1]), [
+    ErrorCodes.DTA_INVALID_ADDRESS,
+    { contractsOrUserDepositAddress: contracts },
+  ]);
+  return [match[1], match[2] ? +match[2] : 1];
 }
 
 /**
@@ -504,10 +509,11 @@ function validateDump(
  * `storageOrState` does not exist.
  *
  * @param deps - Partial epics dependencies-like object
+ * @param deps.provider - Provider instance
  * @param deps.address - current address of the signer
  * @param deps.network - current network
- * @param deps.contractsInfo - current contracts
  * @param deps.log - Logger instance
+ * @param contractsOrUDCAddress - ContractsInfo object or UDC address
  * @param storage - diverse storage related parameters to load from and save to
  * @param storage.state - Uploaded state: replaces database state; must be newer than database
  * @param storage.adapter - PouchDB adapter; default to 'indexeddb' on browsers and 'leveldb' on
@@ -517,20 +523,17 @@ function validateDump(
  */
 export async function getState(
   {
+    provider,
     address,
     network,
-    contractsInfo,
     log,
-  }: Pick<RaidenEpicDeps, 'address' | 'network' | 'contractsInfo' | 'log'>,
+  }: Pick<RaidenEpicDeps, 'provider' | 'address' | 'network' | 'log'>,
+  contractsOrUDCAddress: ContractsInfo | string = getContracts(network),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   storage: { state?: any; adapter?: any; prefix?: string } = {},
 ): Promise<{ db: RaidenDatabase; state: RaidenState }> {
-  const dbName = [
-    'raiden',
-    getNetworkName(network),
-    contractsInfo.TokenNetworkRegistry.address,
-    address,
-  ].join('_');
+  const [udc, fromBlock] = getUdcAndBlock(contractsOrUDCAddress);
+  const dbName = ['raiden', getNetworkName(network), udc, address].join('_');
 
   let db;
   const { state: stateDump, ...opts } = storage;
@@ -543,7 +546,7 @@ export async function getState(
     if (typeof dump === 'string') dump = jsonParse(dump);
 
     // perform some early simple validation on dump before persisting it in database
-    validateDump(dump, { address, network, contractsInfo });
+    validateDump(dump, { address, network, udc });
 
     db = await replaceDatabase.call(dbCtor, dump, dbName);
     // only if succeeds:
@@ -553,7 +556,14 @@ export async function getState(
 
   let state = await getRaidenState(db);
   if (!state) {
-    state = makeInitialState({ network, address, contractsInfo: contractsInfo });
+    let contractsInfo;
+    if (typeof contractsOrUDCAddress === 'string') {
+      log.warn('fetching contractsInfo from UDC entrypoint', { udc, fromBlock });
+      contractsInfo = await fetchContractsInfo(provider, udc, fromBlock);
+    } else {
+      contractsInfo = contractsOrUDCAddress;
+    }
+    state = makeInitialState({ network, address, contractsInfo });
     await putRaidenState(db, state);
   } else {
     state = decode(RaidenState, state);
