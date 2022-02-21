@@ -223,9 +223,9 @@ export function fromEthersEvent<T>(
         let resetBlock = target._lastBlockNumber;
         const innerBlockNumber = target.blockNumber;
         resetBlock =
-          resetBlock && resetBlock > 0
+          resetBlock && resetBlock > confirmations
             ? resetBlock
-            : innerBlockNumber && innerBlockNumber > 0
+            : innerBlockNumber && innerBlockNumber > confirmations
             ? innerBlockNumber
             : confirmations + 1;
         // starts 'blockQueue' with subscription-time's resetEventsBlock
