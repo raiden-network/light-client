@@ -1,8 +1,6 @@
-import constant from 'lodash/constant';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, combineLatest, concat, defer, EMPTY, from, of, timer } from 'rxjs';
+import { AsyncSubject, combineLatest, concat, defer, from, of, timer } from 'rxjs';
 import {
-  catchError,
   concatMap,
   debounceTime,
   distinctUntilChanged,
@@ -12,11 +10,13 @@ import {
   finalize,
   first,
   ignoreElements,
+  last,
   map,
   mapTo,
   mergeMap,
   pluck,
   scan,
+  skipUntil,
   startWith,
   switchMap,
   takeUntil,
@@ -30,7 +30,14 @@ import { intervalFromConfig } from '../../config';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { fromEthersEvent } from '../../utils/ethers';
-import { completeWith, lastMap, pluckDistinct, retryAsync$, retryWhile } from '../../utils/rx';
+import {
+  catchAndLog,
+  completeWith,
+  lastMap,
+  pluckDistinct,
+  retryAsync$,
+  retryWhile,
+} from '../../utils/rx';
 import { isntNil } from '../../utils/types';
 import { blockStale, blockTime, contractSettleTimeout, newBlock } from '../actions';
 
@@ -101,47 +108,47 @@ export function initNewBlockEpic(
 }
 
 /**
- * Every fetchEach=20 blocks, update average block time since previous request
+ * Fetch and calculate average blockTime every fetchEach=20, across maxSize=5 requests,
+ * i.e. moving average of 20*5=100 last blocks
  *
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
- * @param deps.getBlockTimestamp - Block timestamp getter function
+ * @param deps.getBlockTimestamp - Block timestamp (cached) getter function
+ * @param deps.log - Logger instance
  * @returns Observable of blockTime actions
  */
 export function blockTimeEpic(
   action$: Observable<RaidenAction>,
   {}: Observable<RaidenState>,
-  { getBlockTimestamp }: RaidenEpicDeps,
+  { log, getBlockTimestamp }: RaidenEpicDeps,
 ): Observable<blockTime> {
-  const fetchEach = 20;
-  type BlockInfo = readonly [blockNumber: number, timestamp: number, blockTime?: number];
-  let lastInfo: BlockInfo = [-fetchEach, 0]; // previously fetched block info
-
-  // get block info for a given block number
-  const getBlockInfo$ = (blockNumber: number) =>
-    getBlockTimestamp(blockNumber).pipe(
-      map((timestamp): BlockInfo => [blockNumber, timestamp * 1000]),
-    );
+  const fetchEach = 20; // how often to reevaluate
+  const maxSize = 5; // max queue size
+  const queue: number[] = []; // queue of past fetched (cached) block timestamps to reuse
 
   return action$.pipe(
     filter(newBlock.is),
     pluck('payload', 'blockNumber'),
-    filter((blockNumber) => blockNumber >= lastInfo[0] + fetchEach),
+    filter((blockNumber) => !queue.length || queue[queue.length - 1]! + fetchEach <= blockNumber),
     exhaustMap((blockNumber) => {
-      const prevInfo$ =
-        lastInfo[0] > 0 ? of(lastInfo) : getBlockInfo$(Math.max(1, blockNumber - fetchEach));
-      const curInfo$ = getBlockInfo$(blockNumber);
-      return combineLatest([prevInfo$, curInfo$]).pipe(
-        mergeMap(function* ([prevInfo, curInfo]) {
-          const avgBlockTime = (curInfo[1] - prevInfo[1]) / (curInfo[0] - prevInfo[0]);
-          // emit a new avg blockTime only if it changed
-          if (avgBlockTime !== lastInfo[2]) yield avgBlockTime;
-          lastInfo = [curInfo[0], curInfo[1], avgBlockTime]; // persist last BlockInfo
+      let pastBlock: number;
+      if (queue.length < maxSize) pastBlock = Math.max(1, blockNumber - fetchEach * maxSize);
+      else pastBlock = queue[0]!; // use front, but pop only if successfully fetched
+
+      return combineLatest([getBlockTimestamp(blockNumber), getBlockTimestamp(pastBlock)]).pipe(
+        filter(([curTs, pastTs]) => pastTs < curTs),
+        map(([curTs, pastTs]) => {
+          // in case of success and queue is full, pop_front pastNumber
+          if (queue.length >= maxSize) queue.splice(0, 1);
+          queue.push(blockNumber); // then push_back new blockNumber
+
+          return ((curTs - pastTs) * 1e3) / (blockNumber - pastBlock);
         }),
-        catchError(constant(EMPTY)), // ignore errors to retry next block
+        catchAndLog({ log: log.warn }),
       );
     }),
+    distinctUntilChanged(),
     map((avgBlockTime) => blockTime({ blockTime: avgBlockTime })),
   );
 }
@@ -155,14 +162,16 @@ export function blockTimeEpic(
  * @param deps - RaidenEpicDeps members
  * @param deps.config$ - Config observable
  * @param deps.latest$ - Latest observable
+ * @param deps.init$ - Init observable
  * @returns Observable of blockStale actions
  */
 export function blockStaleEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { latest$, config$ }: RaidenEpicDeps,
+  { latest$, config$, init$ }: RaidenEpicDeps,
 ): Observable<blockStale> {
   return state$.pipe(
+    skipUntil(init$.pipe(last())),
     pluckDistinct('blockNumber'),
     withLatestFrom(latest$, config$),
     // forEach block
