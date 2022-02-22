@@ -579,7 +579,7 @@ export class Raiden {
    * @param options - (optional) option parameter
    * @param options.deposit - Deposit to perform in parallel with channel opening
    * @param options.confirmConfirmation - Whether to wait `confirmationBlocks` after last
-   *    transaction confirmation; default=true
+   *    transaction confirmation; default=true if confirmationBlocks
    * @param onChange - Optional callback for status change notification
    * @returns txHash of channelOpen call, iff it succeeded
    */
@@ -599,7 +599,7 @@ export class Raiden {
     const deposit = !options.deposit
       ? undefined
       : decode(UInt(32), options.deposit, ErrorCodes.DTA_INVALID_DEPOSIT, this.log.info);
-    const confirmConfirmation = options.confirmConfirmation ?? true;
+    const confirmConfirmation = options.confirmConfirmation ?? !!this.config.confirmationBlocks;
 
     const meta = { tokenNetwork, partner };
     // wait for confirmation
@@ -663,14 +663,16 @@ export class Raiden {
    * @param amount - Number of tokens to deposit on channel
    * @param options - tx options
    * @param options.confirmConfirmation - Whether to wait `confirmationBlocks` after last
-   *    transaction confirmation; default=true
+   *    transaction confirmation; default=true if config.confirmationBlocks
    * @returns txHash of setTotalDeposit call, iff it succeeded
    */
   public async depositChannel(
     token: string,
     partner: string,
     amount: BigNumberish,
-    { confirmConfirmation = true }: { confirmConfirmation?: boolean } = {},
+    {
+      confirmConfirmation = !!this.config.confirmationBlocks,
+    }: { confirmConfirmation?: boolean } = {},
   ): Promise<Hash> {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
