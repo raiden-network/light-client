@@ -116,7 +116,6 @@ function transferRequestIsResolved(action: transfer.request): action is transfer
  * @param latest - Latest object
  * @param latest.config - Config object
  * @param latest.settleTimeout - contract's settleTimeout
- * @param latest.blockTime - Average blockTime
  * @param deps - {@link RaidenEpicDeps}
  * @param deps.log - Logger instance
  * @param deps.address - Our address
@@ -127,10 +126,10 @@ function transferRequestIsResolved(action: transfer.request): action is transfer
 function makeAndSignTransfer$(
   state: RaidenState,
   action: transferRequestResolved,
-  { config, settleTimeout, blockTime }: Latest,
+  { config, settleTimeout }: Latest,
   { log, address, network, signer }: RaidenEpicDeps,
 ): Observable<transferSecret | transferSigned> {
-  const { revealTimeout, confirmationBlocks, expiryFactor } = config;
+  const { revealTimeout, expiryFactor } = config;
   const { tokenNetwork, fee, partner, userId } = action.payload;
   const channel = getOpenChannel(state, { tokenNetwork, partner });
 
@@ -142,11 +141,7 @@ function makeAndSignTransfer$(
     expiration = now;
     if ('lockTimeout' in action.payload && action.payload.lockTimeout)
       expiration += action.payload.lockTimeout;
-    else
-      expiration += Math.min(
-        revealTimeout * expiryFactor,
-        settleTimeout - (confirmationBlocks * blockTime) / 1e3,
-      );
+    else expiration += Math.min(revealTimeout * expiryFactor, settleTimeout / 2);
   }
   expiration = decode(UInt(32), Math.ceil(expiration));
 
