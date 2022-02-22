@@ -218,18 +218,18 @@ export function fromEthersEvent<T>(
   let start = Date.now();
   return confirmations$.pipe(
     distinctUntilChanged(),
-    withMergeFrom((confirmations) => {
+    withMergeFrom((confirmationBlocks) => {
       if (!fromBlock) {
         let resetBlock = target._lastBlockNumber;
         const innerBlockNumber = target.blockNumber;
         resetBlock =
-          resetBlock && resetBlock > confirmations
+          resetBlock && resetBlock > confirmationBlocks
             ? resetBlock
-            : innerBlockNumber && innerBlockNumber > confirmations
+            : innerBlockNumber && innerBlockNumber > confirmationBlocks
             ? innerBlockNumber
-            : confirmations + 1;
+            : confirmationBlocks + 1;
         // starts 'blockQueue' with subscription-time's resetEventsBlock
-        fromBlock = resetBlock - confirmations;
+        fromBlock = resetBlock - confirmationBlocks;
       }
       blockQueue.splice(0, blockQueue.length, fromBlock);
 
@@ -238,12 +238,16 @@ export function fromEthersEvent<T>(
     debounceTime(Math.ceil(target.pollingInterval / 10)), // debounce bursts of blocks
     // exhaustMap will skip new events if it's still busy with a previous getLogs call,
     // but next [fromBlock] in queue always includes range for any skipped block
-    exhaustMap(([confirmations, blockNumber]) =>
-      getLogsByChunk$(target, { ...event, fromBlock: blockQueue[0], toBlock: blockNumber }).pipe(
+    exhaustMap(([confirmationBlocks, blockNumber]) =>
+      getLogsByChunk$(target, {
+        ...event,
+        fromBlock: blockQueue[0],
+        toBlock: blockNumber,
+      }).pipe(
         tap({
           next: (log) => {
             // don't clear blockQueue for non-confirmed logs
-            if (!log.blockNumber || log.blockNumber + confirmations > blockNumber) return;
+            if (!log.blockNumber || log.blockNumber + confirmationBlocks > blockNumber) return;
             const nextBlock = log.blockNumber + 1;
             // index of first block which should stay on the queue;
             let clearHead = blockQueue.findIndex((b) => b > nextBlock);
@@ -255,7 +259,8 @@ export function fromEthersEvent<T>(
           complete: () => {
             // if queue is full, pop_front 'fromBlock' which was just queried
             // half for confirmed, half for unconfirmed logs
-            while (blockQueue.length >= confirmations * 2) blockQueue.shift();
+            while (blockQueue.length && blockQueue.length >= confirmationBlocks * 2)
+              blockQueue.shift();
             if (onPastCompleted && start) {
               start = 0;
               // this is called only once as soon as first stretch/past scan completes

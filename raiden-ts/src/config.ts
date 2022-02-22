@@ -115,6 +115,8 @@ export const PartialRaidenConfig = t.readonly(
 );
 export interface PartialRaidenConfig extends t.TypeOf<typeof PartialRaidenConfig> {}
 
+const rollupChainIds = new Set([421611, 42161]);
+
 /**
  * Create a RaidenConfig from some common options
  *
@@ -153,7 +155,7 @@ export function makeDefaultConfig(
     pfsMaxPaths: 3,
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
     pfsIouTimeout: 30 * 86400, // in seconds, defaults to 30 days (roughly 200k blocks)
-    confirmationBlocks: DEFAULT_CONFIRMATIONS,
+    confirmationBlocks: rollupChainIds.has(network.chainId) ? 0 : DEFAULT_CONFIRMATIONS,
     monitoringReward: DEFAULT_MS_REWARD,
     logger: 'info',
     fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
