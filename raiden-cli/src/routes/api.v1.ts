@@ -52,8 +52,13 @@ export function makeApiV1Router(this: Cli): Router {
     });
   });
 
-  router.get('/address', (_request: Request, response: Response) => {
-    response.json({ our_address: this.raiden.address });
+  router.get('/address', async (_request: Request, response: Response) => {
+    response.json({
+      our_address: this.raiden.address,
+      eth_balance: (await this.raiden.getBalance()).toString(),
+      block_number: await this.raiden.getBlockNumber(),
+      network: this.raiden.network,
+    });
   });
 
   router.get('/status', (_request: Request, response: Response) => {
