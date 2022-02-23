@@ -36,11 +36,11 @@ import type { Latest, RaidenEpicDeps } from '../../types';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { retryWhile, withMergeFrom } from '../../utils/rx';
-import type { Address, Signature, Signed } from '../../utils/types';
-import { decode, UInt } from '../../utils/types';
+import type { Address, Signature } from '../../utils/types';
+import { decode, Signed, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
-import type { AddressMetadataMap, InputPaths, IOU, Paths, PFS } from '../types';
-import { Fee, LastIOUResults, PfsError, PfsMode, PfsResult } from '../types';
+import type { AddressMetadataMap, InputPaths, Paths, PFS } from '../types';
+import { Fee, IOU, LastIOUResults, PfsError, PfsMode, PfsResult } from '../types';
 import { choosePfs$, packIOU, signIOU } from '../utils';
 
 type RouteResult = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { error: PfsError });
@@ -300,14 +300,7 @@ function requestPfs$(
     to: target,
     value: UInt(32).encode(value),
     max_paths: pfsMaxPaths,
-    iou: iou
-      ? {
-          ...iou,
-          amount: UInt(32).encode(iou.amount),
-          expiration_block: UInt(32).encode(iou.expiration_block),
-          chain_id: UInt(32).encode(iou.chain_id),
-        }
-      : undefined,
+    iou: iou ? Signed(IOU).encode(iou) : undefined,
   });
 
   return fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {
