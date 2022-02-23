@@ -52,7 +52,7 @@
     "@sastan/typedoc-plugin-pages": "^0.0.1",
     "@typechain/ethers-v5": "^9.0.0",
     "@types/isomorphic-fetch": "^0.0.35",
-    "@types/jest": "^27.4.0",
+    "@types/jest": "^27.4.1",
     "@types/json-bigint": "^1.0.1",
     "@types/lodash": "^4.14.178",
     "@types/matrix-js-sdk": "^11.0.1",
