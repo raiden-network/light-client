@@ -216,7 +216,7 @@ export function contractSettleTimeoutEpic(
     return registryContract.callStatic.settle_timeout();
   }).pipe(
     retryWhile(intervalFromConfig(config$)),
-    map((settleTimeout) => contractSettleTimeout(settleTimeout.toNumber() /* seconds */)),
+    map((settleTimeout) => contractSettleTimeout(settleTimeout.toNumber())),
     tap(() => {
       done$.next(null);
       done$.complete();

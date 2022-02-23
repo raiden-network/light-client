@@ -1320,9 +1320,10 @@ export class Raiden {
   /**
    * Fetches our current UDC withdraw plan
    *
-   * @returns Promise to object containing maximum 'amount' planned for withdraw and 'block' at
-   *    which withdraw will become available, and 'ready' after it can be withdrawn with
-   *    [[withdrawFromUDC]]; resolves to undefined if there's no current plan
+   * @returns Promise to object containing maximum 'amount' planned for withdraw and
+   * 'withdrawableAfter' second at which withdraw will become available,
+   * and 'ready' after it can be withdrawn with [[withdrawFromUDC]];
+   * resolves to undefined if there's no current plan
    */
   public async getUDCWithdrawPlan(): Promise<
     { amount: UInt<32>; withdrawableAfter: number; ready: boolean } | undefined
@@ -1331,7 +1332,7 @@ export class Raiden {
     if (plan.withdrawable_after.isZero()) return;
     return {
       amount: plan.amount as UInt<32>,
-      withdrawableAfter: plan.withdrawable_after.toNumber() * 1e3,
+      withdrawableAfter: plan.withdrawable_after.toNumber(),
       ready: plan.withdrawable_after.lte(Math.ceil(Date.now() / 1e3)),
     };
   }
