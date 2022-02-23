@@ -206,7 +206,7 @@ export function udcWithdrawPlanRequestEpic(
         map(([[{ hash: txHash }, { blockNumber: txBlock }], { withdrawable_after }]) =>
           udcWithdrawPlan.success(
             {
-              withdrawableAfter: withdrawable_after.toNumber() * 1e3,
+              withdrawableAfter: withdrawable_after.toNumber(),
               txHash,
               txBlock,
               confirmed: undefined,
@@ -238,7 +238,7 @@ export function udcAutoWithdrawEpic(
   {}: Observable<RaidenState>,
   { userDepositContract, address, config$, log }: RaidenEpicDeps,
 ): Observable<udcWithdraw.request | udcWithdrawPlan.success> {
-  let nextCheckAfter = 0;
+  let nextCheckAfter = 0; // milliseconds
   const udcWithdrawTimeout$ = defer(async () =>
     (await userDepositContract.callStatic.withdraw_timeout()).toNumber(),
   ).pipe(retryWhile(intervalFromConfig(config$)), shareReplay({ bufferSize: 1, refCount: false }));
@@ -247,7 +247,7 @@ export function udcAutoWithdrawEpic(
     filter(() => Date.now() >= nextCheckAfter),
     exhaustMap(() =>
       combineLatest([
-        defer(async () => userDepositContract.withdraw_plans(address)),
+        defer(async () => userDepositContract.callStatic.withdraw_plans(address)),
         udcWithdrawTimeout$,
       ]).pipe(
         mergeMap(function* ([
@@ -256,19 +256,19 @@ export function udcAutoWithdrawEpic(
         ]) {
           const meta = { amount: amount as UInt<32> };
           if (withdrawableAfter.isZero()) {
-            nextCheckAfter = Date.now() + udcWithdrawTimeout;
+            nextCheckAfter = Date.now() + udcWithdrawTimeout * 1e3;
             return; // no plan, don't proceed to startupCheck
           }
           const startupCheck = nextCheckAfter === 0;
           if (startupCheck) {
             yield of(
               udcWithdrawPlan.success(
-                { withdrawableAfter: withdrawableAfter.toNumber() * 1e3, confirmed: true },
+                { withdrawableAfter: withdrawableAfter.toNumber(), confirmed: true },
                 meta,
               ),
             );
           }
-          if (withdrawableAfter.gt(Date.now())) {
+          if (withdrawableAfter.gt(Math.round(Date.now() / 1e3))) {
             nextCheckAfter = withdrawableAfter.toNumber() * 1e3;
           } else {
             yield dispatchAndWait$(

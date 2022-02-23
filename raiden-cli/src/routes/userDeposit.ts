@@ -109,11 +109,11 @@ async function determineAndExecuteRequestedInteraction(
 async function getUDCInfo(this: Cli, _request: Request, response: Response): Promise<void> {
   const balance = await this.raiden.getUDCCapacity();
   const totalDeposit = await this.raiden.getUDCTotalDeposit();
-  const svtAddress = await this.raiden.userDepositTokenAddress();
+  const udcTokenAddress = await this.raiden.userDepositTokenAddress();
   const udcAddress = this.raiden.contractsInfo.UserDeposit.address;
 
   response.json({
-    svt_address: svtAddress,
+    udc_token_address: udcTokenAddress,
     udc_address: udcAddress,
     balance: balance.toString(),
     total_deposit: totalDeposit.toString(),
