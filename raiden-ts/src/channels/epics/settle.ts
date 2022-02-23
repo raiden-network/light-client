@@ -110,7 +110,6 @@ export function channelAutoSettleEpic(
           (channel): channel is Channel & { state: ChannelState.settleable } =>
             channel.state === ChannelState.settleable,
         ),
-        // once detecting a settleable channel, delay emit until after settleTimeout window after close
         take(1),
         withLatestFrom(config$),
         delayWhen(([channel, { httpTimeout, revealTimeout }]) => {

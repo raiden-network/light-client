@@ -176,7 +176,7 @@ export function getLatest$(
   const settleTimeout$ = action$.pipe(
     filter(contractSettleTimeout.is),
     pluck('payload'),
-    startWith(0),
+    startWith(15000),
   );
   const caps$ = merge(
     state$.pipe(

@@ -32,6 +32,7 @@ export interface ApiChannel {
   total_deposit: string;
   total_withdraw: string;
   state: ApiChannelState;
+  settle_timeout: string;
   reveal_timeout: string;
 }
 
@@ -72,6 +73,7 @@ function transformChannelFormatForApi(this: Cli, channel: RaidenChannel): ApiCha
     total_deposit: channel.ownDeposit.toString(),
     total_withdraw: channel.ownWithdraw.toString(),
     state: transformChannelStateForApi(channel.state),
+    settle_timeout: this.raiden.settleTimeout.toString(),
     reveal_timeout: '50', // FIXME: Not defined here. Python client handles reveal timeout differently,
   };
 }
