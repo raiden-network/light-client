@@ -7,7 +7,7 @@ parameters:
 
   e2e_environment_docker_image:
     type: string
-    default: raidennetwork/lightclient-e2e-environment:v1.4.1
+    default: raidennetwork/lightclient-e2e-environment:v1.5.0
 
   working_directory:
     type: string
