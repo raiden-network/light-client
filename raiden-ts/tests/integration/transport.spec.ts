@@ -1,5 +1,5 @@
 import { ensureChannelIsOpen, ensurePresence, matrixServer } from './fixtures';
-import { fetch, makeRaiden, makeRaidens, makeSignature } from './mocks';
+import { fetch, makeRaiden, makeRaidens, makeSignature, sleep } from './mocks';
 
 import { hexlify } from '@ethersproject/bytes';
 import { randomBytes } from '@ethersproject/random';
@@ -25,7 +25,7 @@ import { getServerName } from '@/utils/matrix';
 import type { Address, PublicKey, Signed } from '@/utils/types';
 import { isntNil } from '@/utils/types';
 
-import { makeAddress, sleep } from '../utils';
+import { makeAddress } from '../utils';
 import type { MockedRaiden } from './mocks';
 
 const mockedRecoverPublicKey = jest.fn(
@@ -72,22 +72,18 @@ function mockRTC() {
       createOffer = jest.fn(async () => ({ type: 'offer', sdp: 'offerSdp' }));
       createAnswer = jest.fn(async () => ({ type: 'answer', sdp: 'answerSdp' }));
       setLocalDescription = jest.fn(async () => {
-        setTimeout(() => {
-          connection.emit('icecandidate', { candidate: 'candidate1Fail' });
-          connection.emit('icecandidate', { candidate: 'myCandidate' });
-          connection.emit('icecandidate', { candidate: null });
-        }, 5);
+        connection.emit('icecandidate', { candidate: 'candidate1Fail' });
+        connection.emit('icecandidate', { candidate: 'myCandidate' });
+        connection.emit('icecandidate', { candidate: null });
       });
       setRemoteDescription = jest.fn(async () => {
         /* remote */
       });
       addIceCandidate = jest.fn(async () => {
-        setTimeout(() => connection.emit('datachannel', { channel }), 2);
-        setTimeout(() => {
-          Object.assign(channel, { readyState: 'open' });
-          channel.emit('open', true);
-        }, 5);
-        setTimeout(() => channel.emit('message', { data: 'ping' }), 12);
+        connection.emit('datachannel', { channel });
+        Object.assign(channel, { readyState: 'open' });
+        channel.emit('open', true);
+        channel.emit('message', { data: 'ping' });
       });
       close = jest.fn();
     }
@@ -916,7 +912,7 @@ describe('rtcConnectionManagerEpic', () => {
 
   afterEach(() => {
     RTCPeerConnection.mockRestore();
-    jest.restoreAllMocks();
+    // jest.restoreAllMocks();
   });
 
   test('skip if no webrtc capability exists', async () => {
@@ -931,12 +927,16 @@ describe('rtcConnectionManagerEpic', () => {
 
     const partnerId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
 
+    let channel!: MockedDataChannel;
+    const sub = raiden.deps.latest$.subscribe(({ rtc }) => {
+      if (rtc[partner.address]) channel = rtc[partner.address] as MockedDataChannel;
+    });
     const promise = firstValueFrom(
       raiden.deps.latest$.pipe(pluck('rtc', partner.address), first(isntNil)),
     );
     await ensureChannelIsOpen([raiden, partner]);
+    await promise;
 
-    const channel = (await promise) as MockedDataChannel;
     expect(channel).toMatchObject({ readyState: 'open' });
     expect(raiden.output).toContainEqual(
       rtcChannel(expect.objectContaining({ readyState: 'open' }), { address: partner.address }),
@@ -978,11 +978,10 @@ describe('rtcConnectionManagerEpic', () => {
       ),
     );
 
+    await sleep(2e3, false);
     channel.emit('error', { error: new Error('errored') });
     // right after erroring, channel must be cleared
-    await expect(
-      firstValueFrom(raiden.deps.latest$.pipe(pluck('rtc', partner.address))),
-    ).resolves.toBeUndefined();
+    expect(raiden.output).toContainEqual(rtcChannel(undefined, { address: partner.address }));
 
     // erroring node should send a 'hangup' to partner
     expect(raiden.output).toContainEqual(
@@ -991,5 +990,8 @@ describe('rtcConnectionManagerEpic', () => {
         { address: partner.address, msgId: expect.any(String) },
       ),
     );
+
+    sub.unsubscribe();
+    await Promise.all([raiden.stop(), partner.stop()]);
   });
 });

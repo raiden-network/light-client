@@ -582,7 +582,7 @@ describe('Raiden', () => {
     expect(await raiden.getUDCWithdrawPlan()).toEqual(
       expect.objectContaining({
         amount: BigNumber.from(10),
-        withdrawableAfter: 223 * 1e3,
+        withdrawableAfter: 223,
         ready: true,
       }),
     );

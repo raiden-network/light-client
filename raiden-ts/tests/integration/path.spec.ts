@@ -12,7 +12,7 @@ import {
   token,
   tokenNetwork,
 } from './fixtures';
-import { fetch, makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } from './mocks';
+import { fetch, makeLog, makeRaiden, makeRaidens, providersEmit, sleep, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
@@ -33,7 +33,7 @@ import { ErrorCodes } from '@/utils/error';
 import type { Address, Int, Signature, UInt } from '@/utils/types';
 import { Signed } from '@/utils/types';
 
-import { makeAddress, sleep } from '../utils';
+import { makeAddress } from '../utils';
 import type { MockedRaiden } from './mocks';
 
 const pfsAddress = makeAddress();
@@ -48,7 +48,7 @@ function makeIou(raiden: MockedRaiden): IOU {
     receiver: pfsAddress,
     one_to_n_address: '0x0A0000000000000000000000000000000000000a' as Address,
     chain_id: BigNumber.from(raiden.deps.network.chainId) as UInt<32>,
-    expiration_block: BigNumber.from(3232341) as UInt<32>,
+    claimable_until: BigNumber.from(3232341) as UInt<32>,
     amount: BigNumber.from(100) as UInt<32>,
   };
 }
@@ -188,7 +188,7 @@ describe('PFS: pfsRequestEpic', () => {
     // Emitting the pathFind.request action to check pfsRequestEpic runs
     // and gives error for incorrect tokenNetwork contract address
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
-    await waitBlock();
+    await waitBlock(undefined, false); // we shouldn't wait much to avoid presence timing out
     await sleep(2 * raiden.config.pollingInterval);
 
     expect(raiden.output).toContainEqual(
@@ -215,7 +215,6 @@ describe('PFS: pfsRequestEpic', () => {
       value: amount,
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
-    await sleep();
     await sleep(raiden.config.pollingInterval);
     expect(raiden.output).not.toContainEqual(
       pathFind.success(expect.anything(), expect.anything()),
@@ -245,7 +244,7 @@ describe('PFS: pfsRequestEpic', () => {
 
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       matrixPresence.request(undefined, { address: target.address }),
@@ -265,7 +264,7 @@ describe('PFS: pfsRequestEpic', () => {
     raiden.store.dispatch(presenceFromClient(target, false));
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
@@ -288,7 +287,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       matrixPresence.request(undefined, { address: target.address }),
@@ -331,7 +330,7 @@ describe('PFS: pfsRequestEpic', () => {
       ),
     );
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.success(
@@ -358,7 +357,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     // self should be taken out of route
     expect(raiden.output).toContainEqual(
@@ -404,7 +403,7 @@ describe('PFS: pfsRequestEpic', () => {
       ),
     );
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.success(
@@ -431,7 +430,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.success(
@@ -506,7 +505,7 @@ describe('PFS: pfsRequestEpic', () => {
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
     const iou = makeIou(raiden);
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
 
     expect(raiden.output).toContainEqual(
@@ -558,7 +557,7 @@ describe('PFS: pfsRequestEpic', () => {
     raiden.store.dispatch(
       servicesValid(makeValidServices([makeAddress(), makeAddress(), makeAddress()])),
     );
-    await waitBlock();
+    await sleep();
 
     const pathFindMeta = {
       tokenNetwork,
@@ -567,7 +566,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
@@ -598,7 +597,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
@@ -631,7 +630,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
@@ -661,7 +660,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
 
     expect(raiden.output).toContainEqual(
@@ -698,7 +697,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(raiden.config.httpTimeout);
     expect(raiden.output).toContainEqual(
       pathFind.success(
@@ -759,7 +758,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.success(
@@ -788,7 +787,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
@@ -818,7 +817,7 @@ describe('PFS: pfsRequestEpic', () => {
       ),
     );
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
@@ -861,7 +860,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       iouPersist(
@@ -903,7 +902,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
@@ -942,7 +941,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
@@ -975,7 +974,7 @@ describe('PFS: pfsRequestEpic', () => {
 
     const result = {
       errors:
-        'The IOU is already claimed. Please start new session with different `expiration_block`.',
+        'The IOU is already claimed. Please start new session with different `claimable_until`.',
       error_code: 2105,
     };
     mockedPfsResponse.mockResolvedValueOnce({
@@ -992,7 +991,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       iouClear(undefined, { tokenNetwork, serviceAddress: iou.receiver }),
@@ -1022,7 +1021,7 @@ describe('PFS: pfsRequestEpic', () => {
     };
     raiden.store.dispatch(pathFind.request({}, pathFindMeta));
 
-    await waitBlock();
+    await waitBlock(undefined, false);
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
       pathFind.failure(
@@ -1173,78 +1172,77 @@ describe('PFS: pfsFeeUpdateEpic', () => {
   });
 });
 
-describe('PFS: pfsServiceRegistryMonitorEpic', () => {
-  test('success', async () => {
-    expect.assertions(1);
+test('PFS: pfsServiceRegistryMonitorEpic', async () => {
+  expect.assertions(1);
 
-    const raiden = await makeRaiden(undefined, false);
-    const { serviceRegistryContract } = raiden.deps;
+  const raiden = await makeRaiden(undefined, false);
+  const { serviceRegistryContract } = raiden.deps;
 
-    raiden.store.dispatch(raidenConfigUpdate({ pfsMode: PfsMode.auto }));
-    await raiden.start();
+  raiden.store.dispatch(raidenConfigUpdate({ pfsMode: PfsMode.auto }));
+  await raiden.start();
 
-    const validTill = BigNumber.from(Math.floor(Date.now() / 1000) + 86400), // tomorrow
-      registeredEncoded = defaultAbiCoder.encode(
-        ['uint256', 'uint256', 'address'],
-        [validTill, Zero, AddressZero],
+  await sleep(2e4);
+  const validTill = BigNumber.from(Math.floor(Date.now() / 1e3) + 100),
+    registeredEncoded = defaultAbiCoder.encode(
+      ['uint256', 'uint256', 'address'],
+      [validTill, Zero, AddressZero],
+    ),
+    expiredEncoded = defaultAbiCoder.encode(
+      ['uint256', 'uint256', 'address'],
+      [BigNumber.from(Math.floor(Date.now() / 1e3) - 5), Zero, AddressZero],
+    ),
+    expiringSoonEncoded = defaultAbiCoder.encode(
+      ['uint256', 'uint256', 'address'],
+      [BigNumber.from(Math.floor(Date.now() / 1e3) + 1), Zero, AddressZero],
+    );
+
+  // expired
+  await providersEmit(
+    {},
+    makeLog({
+      filter: serviceRegistryContract.filters.RegisteredService(pfsAddress, null, null, null),
+      data: expiredEncoded,
+    }),
+  );
+  await waitBlock();
+
+  // new event from previous expired service, but now valid=true
+  await providersEmit(
+    {},
+    makeLog({
+      filter: serviceRegistryContract.filters.RegisteredService(pfsAddress, null, null, null),
+      data: registeredEncoded, // non-indexed valid_till, deposit, deposit_contract
+    }),
+  );
+  await waitBlock();
+
+  // duplicated event, but valid
+  await providersEmit(
+    {},
+    makeLog({
+      filter: serviceRegistryContract.filters.RegisteredService(pfsAddress, null, null, null),
+      data: registeredEncoded, // non-indexed valid_till, deposit, deposit_contract
+    }),
+  );
+  await waitBlock();
+
+  // expires while waiting, doesn't make it to the list
+  await providersEmit(
+    {},
+    makeLog({
+      filter: serviceRegistryContract.filters.RegisteredService(
+        '0x0700000000000000000000000000000000000006',
+        null,
+        null,
+        null,
       ),
-      expiredEncoded = defaultAbiCoder.encode(
-        ['uint256', 'uint256', 'address'],
-        [BigNumber.from(Math.floor(Date.now() / 1000) - 86400), Zero, AddressZero],
-      ),
-      expiringSoonEncoded = defaultAbiCoder.encode(
-        ['uint256', 'uint256', 'address'],
-        [BigNumber.from(Math.floor(Date.now() / 1000) + 1), Zero, AddressZero],
-      );
+      data: expiringSoonEncoded,
+    }),
+  );
+  await waitBlock(raiden.deps.provider.blockNumber + raiden.config.confirmationBlocks + 1);
+  await sleep(100);
 
-    // expired
-    await providersEmit(
-      {},
-      makeLog({
-        filter: serviceRegistryContract.filters.RegisteredService(pfsAddress, null, null, null),
-        data: expiredEncoded,
-      }),
-    );
-    await waitBlock();
-
-    // new event from previous expired service, but now valid=true
-    await providersEmit(
-      {},
-      makeLog({
-        filter: serviceRegistryContract.filters.RegisteredService(pfsAddress, null, null, null),
-        data: registeredEncoded, // non-indexed valid_till, deposit, deposit_contract
-      }),
-    );
-    await waitBlock();
-
-    // duplicated event, but valid
-    await providersEmit(
-      {},
-      makeLog({
-        filter: serviceRegistryContract.filters.RegisteredService(pfsAddress, null, null, null),
-        data: registeredEncoded, // non-indexed valid_till, deposit, deposit_contract
-      }),
-    );
-    await waitBlock();
-
-    // expires while waiting, doesn't make it to the list
-    await providersEmit(
-      {},
-      makeLog({
-        filter: serviceRegistryContract.filters.RegisteredService(
-          '0x0700000000000000000000000000000000000006',
-          null,
-          null,
-          null,
-        ),
-        data: expiringSoonEncoded,
-      }),
-    );
-    await waitBlock(raiden.deps.provider.blockNumber + raiden.config.confirmationBlocks + 1);
-    await sleep(100);
-
-    expect(raiden.store.getState()).toMatchObject({
-      services: { [pfsAddress]: expect.any(Number) },
-    });
+  expect(raiden.store.getState()).toMatchObject({
+    services: { [pfsAddress]: expect.any(Number) },
   });
 });
