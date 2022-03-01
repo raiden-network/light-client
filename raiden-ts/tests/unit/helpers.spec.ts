@@ -1,39 +1,10 @@
-import type { Network } from '@ethersproject/networks';
 import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers';
 import { toUtf8String } from '@ethersproject/strings';
 import { Wallet } from '@ethersproject/wallet';
 
-import { getContracts, getSigner } from '@/helpers';
+import { getSigner } from '@/helpers';
 import Raiden from '@/raiden';
 import type { Address } from '@/utils/types';
-
-describe('getContracts', () => {
-  test('return contracts if network is ropsten, rinkeby or goerli', async () => {
-    const ropstenNetwork = { name: 'ropsten', chainId: 3 } as Network;
-    const rinkebyNetwork = { name: 'rinkeby', chainId: 4 } as Network;
-    const goerliNetwork = { name: 'goerli', chainId: 5 } as Network;
-
-    expect(getContracts(ropstenNetwork)).toHaveProperty('TokenNetworkRegistry');
-    expect(getContracts(ropstenNetwork)).toHaveProperty('ServiceRegistry');
-    expect(getContracts(ropstenNetwork)).toHaveProperty('UserDeposit');
-    expect(getContracts(rinkebyNetwork)).toHaveProperty('TokenNetworkRegistry');
-    expect(getContracts(rinkebyNetwork)).toHaveProperty('ServiceRegistry');
-    expect(getContracts(rinkebyNetwork)).toHaveProperty('UserDeposit');
-    expect(getContracts(goerliNetwork)).toHaveProperty('TokenNetworkRegistry');
-    expect(getContracts(goerliNetwork)).toHaveProperty('ServiceRegistry');
-    expect(getContracts(goerliNetwork)).toHaveProperty('UserDeposit');
-  });
-
-  test('supports mainnet', async () => {
-    const mainNetwork = { name: 'homestead', chainId: 1 } as Network;
-    expect(() => getContracts(mainNetwork)).not.toThrow();
-  });
-
-  test('throw if network is not supported', async () => {
-    const privateNetwork = { name: 'private-chain', chainId: 666 } as Network;
-    expect(() => getContracts(privateNetwork)).toThrow();
-  });
-});
 
 describe('getSigner', () => {
   const walletPK = '0x3333333333333333333333333333333333333333333333333333333333333333';

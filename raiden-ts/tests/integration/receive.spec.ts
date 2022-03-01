@@ -16,6 +16,7 @@ import {
   makeRaiden,
   makeRaidens,
   providersEmit,
+  sleep,
   waitBlock,
 } from './mocks';
 
@@ -53,7 +54,7 @@ import { getSecrethash, makeMessageId, makePaymentId, makeSecret } from '@/trans
 import type { Int, UInt } from '@/utils/types';
 import { Signed, untime } from '@/utils/types';
 
-import { makeHash, sleep } from '../utils';
+import { makeHash } from '../utils';
 
 const direction = Direction.RECEIVED;
 const paymentId = makePaymentId();
@@ -76,7 +77,7 @@ describe('receive transfers', () => {
         (doc) => !!doc.transferProcessed,
       );
 
-      const blockNumber = raiden.deps.provider.blockNumber;
+      const xferTs = Math.round(Date.now() / 1e3);
       partner.store.dispatch(
         transfer.request(
           {
@@ -100,10 +101,7 @@ describe('receive transfers', () => {
         },
         fee,
         partner: raiden.address,
-        expiration: expect.toBeWithin(
-          blockNumber + raiden.config.revealTimeout + 1,
-          Number.POSITIVE_INFINITY,
-        ),
+        expiration: xferTs + raiden.config.revealTimeout * raiden.config.expiryFactor,
       });
       const locked = (await sentState).transfer;
 
@@ -343,8 +341,8 @@ describe('receive transfers', () => {
         (doc) => !!doc.expiredProcessed,
       );
 
-      // advance blocks to trigger auto-expiration on partner
-      await waitBlock(sentState.expiration + 2 * partner.config.confirmationBlocks + 1);
+      // advance time to trigger auto-expiration on partner
+      await sleep(sentState.expiration * 1e3 - Date.now() + 10e3);
 
       await expect(receivedState).resolves.toMatchObject({
         expired: {
@@ -387,7 +385,7 @@ describe('receive transfers', () => {
       (await firstValueFrom(partner.deps.matrix$)).stopClient();
 
       const sentStatePromise = getOrWaitTransfer(partner, sentMeta, (doc) => !!doc.expired);
-      await waitBlock(pendingSentState.expiration + 2 * partner.config.confirmationBlocks + 1);
+      await sleep(pendingSentState.expiration * 1e3 - Date.now() + 10e3);
       const sentState = await sentStatePromise;
       const expired = untime(sentState.expired!);
 
@@ -423,7 +421,7 @@ describe('receive transfers', () => {
       (await firstValueFrom(partner.deps.matrix$)).stopClient();
 
       const sentStatePromise = getOrWaitTransfer(partner, sentMeta, (doc) => !!doc.expired);
-      await waitBlock(pendingSentState.expiration + 2 * partner.config.confirmationBlocks + 1);
+      await sleep(pendingSentState.expiration * 1e3 - Date.now() + 10e3);
       const sentState = await sentStatePromise;
       const expired = untime(sentState.expired!);
 
@@ -457,32 +455,31 @@ describe('receive transfers', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     const { secretRegistryContract } = raiden.deps;
-    const pendingSentState = await ensureTransferPending([partner, raiden]);
+    await ensureTransferPending([partner, raiden]);
 
     const sentState = getOrWaitTransfer(partner, sentMeta, (doc) => !!doc.unlockProcessed);
     const receivedState = getOrWaitTransfer(raiden, receivedMeta, (doc) => !!doc.unlockProcessed);
 
     const txHash = makeHash();
-    await waitBlock(pendingSentState.expiration);
-    // although we're already "on" the expiration block, the tx below "shows up" barely inside the
-    // expiration timeout, which should make it be accepted and unlocked
+    const txBlock = raiden.deps.provider.blockNumber;
     await providersEmit(
       {},
       makeLog({
-        blockNumber: pendingSentState.expiration - 1,
+        blockNumber: txBlock,
         transactionHash: txHash,
-        filter: secretRegistryContract.filters.SecretRevealed(secrethash, null),
+        filter: secretRegistryContract.filters.SecretRevealed(secrethash),
         data: secret,
       }),
     );
     // confirm secretRegistered after expiration, but register block is before
-    await waitBlock(pendingSentState.expiration + raiden.config.confirmationBlocks);
+    await waitBlock(txBlock + raiden.config.confirmationBlocks + 1, false);
+    await sleep();
 
     await expect(sentState).resolves.toMatchObject({
       secret,
       secretRegistered: {
         txHash,
-        txBlock: pendingSentState.expiration - 1,
+        txBlock,
         ts: expect.any(Number),
       },
     });
@@ -490,11 +487,11 @@ describe('receive transfers', () => {
       secret,
       secretRegistered: {
         txHash,
-        txBlock: pendingSentState.expiration - 1,
+        txBlock,
         ts: expect.any(Number),
       },
     });
-  });
+  }, 10e3);
 
   test('secret auto register', async () => {
     expect.assertions(5);
@@ -509,30 +506,30 @@ describe('receive transfers', () => {
 
     const receivedState = getOrWaitTransfer(raiden, receivedMeta, (doc) => !!doc.secretRegistered);
 
-    // advance to some block before start of the danger zone, secret not yet registered
-    await waitBlock(sentState.expiration - raiden.config.revealTimeout - 1);
+    // advance to some time before start of the danger zone, secret not yet registered
+    await sleep((sentState.expiration - raiden.config.revealTimeout - 1) * 1e3 - Date.now());
     expect(raiden.output).not.toContainEqual(
       transferSecretRegister.request(expect.anything(), expect.anything()),
     );
     expect(secretRegistryContract.registerSecret).not.toHaveBeenCalled();
 
-    // advance to some block inside the danger zone, secret get registered
-    await waitBlock(sentState.expiration - raiden.config.revealTimeout + 1);
+    // advance to some time inside the danger zone, secret gets registered
+    await sleep(2e3);
     expect(raiden.output).toContainEqual(transferSecretRegister.request({ secret }, receivedMeta));
     expect(secretRegistryContract.registerSecret).toHaveBeenCalledWith(secret, expect.anything());
-    // give some time to confirm register tx
-    await waitBlock();
     await waitBlock(
-      sentState.expiration - raiden.config.revealTimeout + raiden.config.confirmationBlocks + 2,
+      raiden.deps.provider.blockNumber + raiden.config.confirmationBlocks + 1,
+      false,
     );
+    await sleep();
 
     await expect(receivedState).resolves.toMatchObject({
       secret,
       secretRegistered: {
         txHash: (await secretRegistryContract.registerSecret.mock.results[0].value).hash,
-        txBlock: expect.toBeWithin(
-          sentState.expiration - raiden.config.revealTimeout + 1,
-          sentState.expiration,
+        ts: expect.toBeWithin(
+          (sentState.expiration - raiden.config.revealTimeout) * 1e3,
+          sentState.expiration * 1e3,
         ),
       },
     });

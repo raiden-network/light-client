@@ -28,6 +28,7 @@ import {
   makeRaidens,
   makeTransaction,
   providersEmit,
+  sleep,
   waitBlock,
 } from './mocks';
 
@@ -36,7 +37,7 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
 import { AddressZero, HashZero, Zero } from '@ethersproject/constants';
 import { firstValueFrom } from 'rxjs';
-import { first, pluck } from 'rxjs/operators';
+import { filter, first, pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate } from '@/actions';
 import { ChannelState } from '@/channels';
@@ -58,26 +59,35 @@ import { getLocksroot, transferKey } from '@/transfers/utils';
 import { ErrorCodes } from '@/utils/error';
 import type { UInt } from '@/utils/types';
 
-import { makeAddress, makeHash, sleep } from '../utils';
+import { makeAddress, makeHash } from '../utils';
 
 test('channelSettleableEpic', async () => {
   expect.assertions(3);
 
   const [raiden, partner] = await makeRaidens(2);
+
+  const closeBlockPromise = firstValueFrom(
+    raiden.action$.pipe(filter(channelClose.success.is), pluck('payload', 'txBlock')),
+  );
   await ensureChannelIsClosed([raiden, partner]);
 
-  await waitBlock(closeBlock + settleTimeout - 1);
+  const closeBlock = await closeBlockPromise;
+  const closeTs = (await firstValueFrom(raiden.deps.getBlockTimestamp(closeBlock))) * 1e3;
+  const settleTs = closeTs + settleTimeout * 1e3;
+
+  await sleep(settleTs - Date.now() - 10e3); // 10s before becoming settleable
   expect(getChannel(raiden, partner).state).toBe(ChannelState.closed);
 
-  await waitBlock(closeBlock + settleTimeout + 7);
+  await sleep(20e3); // +20s, after settleable
   expect(getChannel(raiden, partner).state).toBe(ChannelState.settleable);
+
   expect(raiden.output).toContainEqual(
     channelSettleable(
-      { settleableBlock: closeBlock + settleTimeout + 7 },
+      { settleableBlock: expect.any(Number) },
       { tokenNetwork, partner: partner.address },
     ),
   );
-});
+}, 10e3);
 
 describe('channelOpenEpic', () => {
   test('fails if channel exists', async () => {
@@ -86,9 +96,7 @@ describe('channelOpenEpic', () => {
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsOpen([raiden, partner]);
 
-    raiden.store.dispatch(
-      channelOpen.request({ settleTimeout }, { tokenNetwork, partner: partner.address }),
-    );
+    raiden.store.dispatch(channelOpen.request({}, { tokenNetwork, partner: partner.address }));
     expect(getChannel(raiden, partner).state).toBe(ChannelState.open);
     expect(raiden.output).toContainEqual(
       channelOpen.failure(expect.any(Error), { tokenNetwork, partner: partner.address }),
@@ -106,9 +114,7 @@ describe('channelOpenEpic', () => {
     tokenNetworkContract.openChannel.mockResolvedValue(openTx);
 
     await waitBlock(openBlock);
-    raiden.store.dispatch(
-      channelOpen.request({ settleTimeout }, { tokenNetwork, partner: partner.address }),
-    );
+    raiden.store.dispatch(channelOpen.request({}, { tokenNetwork, partner: partner.address }));
     await waitBlock();
     expect(tokenNetworkContract.openChannel).toHaveBeenCalled();
     expect(raiden.output).toContainEqual(
@@ -126,9 +132,7 @@ describe('channelOpenEpic', () => {
     const openTx = makeTransaction();
     tokenNetworkContract.openChannel.mockResolvedValue(openTx);
 
-    raiden.store.dispatch(
-      channelOpen.request({ settleTimeout }, { tokenNetwork, partner: partner.address }),
-    );
+    raiden.store.dispatch(channelOpen.request({}, { tokenNetwork, partner: partner.address }));
     await waitBlock();
 
     // result is undefined on success as the respective channelOpen.success is emitted by the
@@ -234,7 +238,6 @@ describe('channelEventsEpic', () => {
         {
           id: id - 1,
           token,
-          settleTimeout,
           isFirstParticipant: true,
           txHash: makeHash(),
           txBlock: openBlock - 4,
@@ -250,7 +253,7 @@ describe('channelEventsEpic', () => {
       {},
       makeLog({
         blockNumber: openBlock,
-        filter: tokenNetworkContract.filters.ChannelOpened(id, raiden.address, partner, null),
+        filter: tokenNetworkContract.filters.ChannelOpened(id, raiden.address, partner),
         data: settleTimeoutEncoded, // non-indexed settleTimeout goes in data
       }),
     );
@@ -858,7 +861,7 @@ describe('channelSettleEpic', () => {
       expect.anything(),
     );
     expect(settleTx.wait).toHaveBeenCalledTimes(1);
-  });
+  }, 10e3);
 
   test('success with own outdated balanceHash', async () => {
     expect.assertions(8);
@@ -1036,7 +1039,7 @@ describe('channelUnlockEpic', () => {
     await ensureChannelIsClosed([raiden, partner]);
     tokenNetworkContract.unlock.mockResolvedValue(makeTransaction(0));
 
-    await waitBlock(settleBlock);
+    await sleep(settleTimeout * 1e3);
     await ensureChannelIsSettled([raiden, partner]);
 
     expect(tokenNetworkContract.unlock).toHaveBeenCalledTimes(1);
@@ -1057,13 +1060,13 @@ describe('channelUnlockEpic', () => {
 
     await ensureChannelIsOpen([raiden, partner]);
     await ensureTransferPending([partner, raiden]);
-    partner.stop(); // ensure partner doesn't unlock
+    await partner.stop(); // ensure partner doesn't unlock
 
-    raiden.deps.provider.emit(
-      secretRegistryContract.filters.SecretRevealed(null, null),
+    await providersEmit(
+      {},
       makeLog({
         blockNumber: raiden.deps.provider.blockNumber + 1,
-        filter: secretRegistryContract.filters.SecretRevealed(secrethash, null),
+        filter: secretRegistryContract.filters.SecretRevealed(secrethash),
         data: defaultAbiCoder.encode(['bytes32'], [secret]),
       }),
     );
@@ -1102,7 +1105,7 @@ describe('channelAutoSettleEpic', () => {
   });
 
   test('non-closing side', async () => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     const [raiden, partner] = await makeRaidens(2);
 
@@ -1110,19 +1113,29 @@ describe('channelAutoSettleEpic', () => {
     raiden.store.dispatch(raidenConfigUpdate({ autoSettle: true }));
 
     // partner closes
+    const closeBlockPromise = firstValueFrom(
+      raiden.action$.pipe(filter(channelClose.success.is), pluck('payload', 'txBlock')),
+    );
     await ensureChannelIsClosed([partner, raiden]);
-    await waitBlock(settleBlock + 1);
+    const closeBlock = await closeBlockPromise;
+    const closeTs = await firstValueFrom(raiden.deps.getBlockTimestamp(closeBlock));
+    const settleTs = closeTs + settleTimeout;
 
-    // it should not close when settleable, if revealTimeout didn't pass yet
-    await waitBlock(settleBlock + 2 * confirmationBlocks + 1);
+    await sleep(settleTs * 1e3 - Date.now() + raiden.config.httpTimeout); // settleable
+    expect(raiden.output).toContainEqual(
+      channelSettleable(
+        { settleableBlock: expect.any(Number) },
+        { tokenNetwork, partner: partner.address },
+      ),
+    );
     expect(raiden.output).not.toContainEqual(channelSettle.request(undefined, expect.anything()));
 
-    await waitBlock(settleBlock + raiden.config.revealTimeout + 1);
+    await sleep(raiden.config.revealTimeout * 1e3);
     expect(raiden.output).toContainEqual(
       channelSettle.request(undefined, { tokenNetwork, partner: partner.address }),
     );
     expect(getChannel(raiden, partner)?.state).toBe(ChannelState.settling);
-  });
+  }, 10e3);
 });
 
 test('stale provider disables receiving', async () => {
@@ -1137,7 +1150,7 @@ test('stale provider disables receiving', async () => {
   expect(raiden.config.caps?.[Capabilities.RECEIVE]).toBeTruthy();
 
   // but after some long enough time, it gets auto-disabled because no new blocks went through
-  await sleep(4 * raiden.config.httpTimeout);
+  await sleep(4 * 15e3, false);
   expect(raiden.config.caps?.[Capabilities.RECEIVE]).toBe(0);
 
   // but if a block goes through, it gets re-enabled

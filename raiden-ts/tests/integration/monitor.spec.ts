@@ -16,6 +16,7 @@ import {
   mockedSignMessage,
   originalSignMessage,
   providersEmit,
+  sleep,
   waitBlock,
 } from './mocks';
 
@@ -151,11 +152,12 @@ describe('msMonitorRequestEpic', () => {
       }),
     );
 
-    userDepositContract.effectiveBalance.mockResolvedValue(monitoringReward.sub(1));
-    userDepositContract.total_deposit.mockResolvedValue(monitoringReward.sub(1));
-    await waitBlock();
-
     const balance = monitoringReward.sub(1) as UInt<32>;
+    userDepositContract.callStatic.effectiveBalance.mockResolvedValue(balance);
+    userDepositContract.callStatic.total_deposit.mockResolvedValue(balance);
+    await waitBlock();
+    await sleep();
+
     expect(raiden.output).toContainEqual(
       udcDeposit.success({ balance }, { totalDeposit: balance }),
     );
@@ -336,6 +338,7 @@ test('msMonitorNewBPEpic', async () => {
     }),
   );
   await waitBlock();
+  await sleep();
 
   expect(raiden.output).toContainEqual(
     msBalanceProofSent({

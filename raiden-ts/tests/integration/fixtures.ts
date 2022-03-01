@@ -1,15 +1,16 @@
-import { makeLog, providersEmit, waitBlock } from './mocks';
+import { makeLog, providersEmit, sleep, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
 import { HashZero, Zero } from '@ethersproject/constants';
 import { firstValueFrom } from 'rxjs';
-import { exhaustMap, first, pluck } from 'rxjs/operators';
+import { concatMap, filter, pluck } from 'rxjs/operators';
 
 import type { Channel } from '@/channels';
 import { ChannelState } from '@/channels';
 import { tokenMonitored } from '@/channels/actions';
 import { channelKey } from '@/channels/utils';
+import { DEFAULT_REVEAL_TIMEOUT } from '@/constants';
 import { transfer, transferSecret, transferUnlock } from '@/transfers/actions';
 import type { TransferState } from '@/transfers/state';
 import { Direction } from '@/transfers/state';
@@ -27,20 +28,20 @@ import { assert } from '@/utils';
 import type { Address, Hash, Int, PublicKey, Secret, UInt } from '@/utils/types';
 import { last } from '@/utils/types';
 
-import { makeAddress, makeHash, sleep } from '../utils';
+import { makeAddress, makeHash } from '../utils';
 import type { MockedRaiden } from './mocks';
 
 // fixture constants
 export const token = makeAddress();
 export const tokenNetwork = makeAddress();
-export const settleTimeout = 60;
-export const revealTimeout = 50;
+export const settleTimeout = 120;
+export const revealTimeout = DEFAULT_REVEAL_TIMEOUT;
 export const confirmationBlocks = 5;
 export const id = 17; // channelId
 export const isFirstParticipant = true;
 export const openBlock = 121;
-export const closeBlock = openBlock + revealTimeout;
-export const settleBlock = closeBlock + settleTimeout + 1;
+export const closeBlock = openBlock + 50;
+export const settleBlock = closeBlock + 500 + 1;
 export const txHash = makeHash();
 export const deposit = BigNumber.from(1000) as UInt<32>;
 export const matrixServer = 'matrix.raiden.test';
@@ -81,8 +82,8 @@ export async function getOrWaitTransfer(
   return await firstValueFrom(
     raiden.deps.latest$.pipe(
       pluck('state'),
-      exhaustMap((state) => getTransfer(state, raiden.deps.db, key).catch(() => undefined)),
-      first((transfer): transfer is NonNullable<typeof transfer> => {
+      concatMap((state) => getTransfer(state, raiden.deps.db, key).catch(() => undefined)),
+      filter((transfer): transfer is NonNullable<typeof transfer> => {
         if (!wait) {
           if (transfer) return true;
           else throw new Error('transfer not found');
@@ -142,7 +143,6 @@ export async function ensureChannelIsOpen(
         channelId,
         raiden.address,
         partner.address,
-        null,
       ),
       data: defaultAbiCoder.encode(['uint256'], [settleTimeout]),
     }),
@@ -212,7 +212,7 @@ export async function ensureChannelIsClosed([raiden, partner]: [
     makeLog({
       transactionHash: makeHash(),
       blockNumber: closeBlock,
-      filter: tokenNetworkContract.filters.ChannelClosed(id, raiden.address, 0, null),
+      filter: tokenNetworkContract.filters.ChannelClosed(id, raiden.address, 0),
       data: HashZero,
     }),
   );
@@ -257,6 +257,7 @@ export async function ensureChannelIsSettled([raiden, partner]: [
   );
   await waitBlock(settleBlock);
   await waitBlock(settleBlock + confirmationBlocks + 1); // confirmation
+  await waitBlock(); // confirmation
   if (raiden.started) assert(!getChannel(raiden, partner), 'Raiden channel not settled');
   if (partner.started) assert(!getChannel(partner, raiden), 'Partner channel not settled');
 }
@@ -385,7 +386,8 @@ export async function ensurePresence([raiden, partner]: [
       {
         userId: (await firstValueFrom(raiden.deps.matrix$)).getUserId()!,
         available: true,
-        ts: Date.now() + 120e3,
+        // ts far in the future ensures these presences stay cached
+        ts: Date.now() + 86.4e6,
         caps: (await firstValueFrom(raiden.deps.latest$)).config.caps!,
         pubkey: raiden.deps.signer.publicKey as PublicKey,
       },
@@ -397,7 +399,7 @@ export async function ensurePresence([raiden, partner]: [
       {
         userId: (await firstValueFrom(partner.deps.matrix$)).getUserId()!,
         available: true,
-        ts: Date.now() + 120e3,
+        ts: Date.now() + 86.4e6,
         caps: (await firstValueFrom(partner.deps.latest$)).config.caps!,
         pubkey: partner.deps.signer.publicKey as PublicKey,
       },
