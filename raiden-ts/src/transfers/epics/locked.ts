@@ -46,7 +46,7 @@ import { assert } from '../../utils';
 import { isActionOf } from '../../utils/actions';
 import { ErrorCodes, RaidenError } from '../../utils/error';
 import { LruCache } from '../../utils/lru';
-import { completeWith, pluckDistinct } from '../../utils/rx';
+import { completeWith, pluckDistinct, withMergeFrom } from '../../utils/rx';
 import type { Address, Hash } from '../../utils/types';
 import { decode, Secret, Signed, UInt, untime } from '../../utils/types';
 import {
@@ -258,6 +258,7 @@ function sendTransferSigned(
  * @param deps - Epics dependencies
  * @param deps.signer - The signer that will sign the message
  * @param deps.log - Logger instance
+ * @param deps.db - Database instance
  * @returns Observable of {@link transferUnlock.success} action.
  */
 function makeAndSignUnlock$(
@@ -265,7 +266,7 @@ function makeAndSignUnlock$(
   state: RaidenState,
   action: transferUnlock.request,
   transferState: TransferState,
-  { log, signer }: Pick<RaidenEpicDeps, 'log' | 'signer'>,
+  { log, signer, db }: Pick<RaidenEpicDeps, 'log' | 'signer' | 'db'>,
 ): Observable<transferUnlock.success> {
   const secrethash = action.meta.secrethash;
   const locked = transferState.transfer;
@@ -276,7 +277,7 @@ function makeAndSignUnlock$(
   let signed$: Observable<Signed<Unlock>>;
   if (transferState.unlock) {
     // unlock already signed, use cached
-    signed$ = of(transferState.unlock!);
+    signed$ = of(transferState.unlock);
   } else {
     assert(transferState.secret, 'unknown secret'); // never fails because we wait before
     assert(
@@ -311,9 +312,9 @@ function makeAndSignUnlock$(
   }
 
   return signed$.pipe(
+    withMergeFrom(async () => getTransfer(state$, db, action.meta)),
     withLatestFrom(state$),
-    map(([signed, state]) => {
-      const transferState = state.transfers[transferKey(action.meta)];
+    map(([[signed, transferState], state]) => {
       const channel = getOpenChannel(state, { tokenNetwork, partner });
       assert(
         transferState &&
@@ -350,12 +351,13 @@ function makeAndSignUnlock$(
 function sendTransferUnlocked(
   state$: Observable<RaidenState>,
   action: transferUnlock.request,
-  { signer, log, db }: RaidenEpicDeps,
+  deps: RaidenEpicDeps,
 ): Observable<transferUnlock.success | transferUnlock.failure> {
-  return defer(() => getTransfer(state$, db, action.meta)).pipe(
+  const { log, db } = deps;
+  return defer(async () => getTransfer(state$, db, action.meta)).pipe(
     withLatestFrom(state$),
     mergeMap(([transferState, state]) =>
-      makeAndSignUnlock$(state$, state, action, transferState, { log, signer }),
+      makeAndSignUnlock$(state$, state, action, transferState, deps),
     ),
     catchError((err) => {
       log.warn('Error trying to unlock after SecretReveal', err);
