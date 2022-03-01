@@ -48,7 +48,7 @@ function transferSecretReducer(
       transfers: {
         ...state.transfers,
         [key]: {
-          ...transferState,
+          ...state.transfers[key]!,
           secret: action.payload.secret,
         },
       },
@@ -58,14 +58,15 @@ function transferSecretReducer(
     transferSecretRegister.success.is(action) &&
     action.payload.confirmed &&
     action.payload.txBlock !== transferState.secretRegistered?.txBlock &&
-    action.payload.txTimestamp <= transferState.expiration
+    // TokenNetwork.sol::getLockedAmountFromLock()
+    action.payload.txTimestamp < transferState.expiration
   )
     state = {
       ...state,
       transfers: {
         ...state.transfers,
         [key]: {
-          ...transferState,
+          ...state.transfers[key]!,
           // special-case secretRegistered: instead of `timed`, use txTimestamp (to millis) as `ts`
           secretRegistered: timed(
             { txHash: action.payload.txHash, txBlock: action.payload.txBlock },
