@@ -1388,7 +1388,9 @@ export class Raiden {
     };
     // wait for plan to be ready if needed
     if (!plan.ready)
-      await new Promise((resolve) => setTimeout(resolve, plan.withdrawableAfter - Date.now()));
+      await new Promise((resolve) =>
+        setTimeout(resolve, plan.withdrawableAfter * 1e3 - Date.now()),
+      );
     const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
       ({ txHash }) => txHash,
     );
