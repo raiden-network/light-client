@@ -54,11 +54,11 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:5555/api/
 done
 
 echo Starting Node 1
-/opt/raiden/raiden --keystore-path /opt/raiden/config/keys --data-dir /opt/raiden/data  --password-file /opt/raiden/config/passwd --eth-rpc-endpoint http://localhost:8545 --accept-disclaimer true --api-address 0.0.0.0:5001 --default-reveal-timeout 20 --default-settle-timeout 40 --routing-mode pfs --pathfinding-service-address http://localhost:5555 --matrix-server http://localhost:9080 --address "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec" --log-file = /var/log/supervisor/node1.log --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
+/opt/raiden/raiden --keystore-path /opt/raiden/config/keys --data-dir /opt/raiden/data  --password-file /opt/raiden/config/passwd --eth-rpc-endpoint http://localhost:8545 --accept-disclaimer true --api-address 0.0.0.0:5001 --default-reveal-timeout 20 --routing-mode pfs --pathfinding-service-address http://localhost:5555 --matrix-server http://localhost:9080 --address "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec" --log-file = /var/log/supervisor/node1.log --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
 RAIDEN1_PID=$!
 
 echo Starting Node 2
-/opt/raiden/raiden --keystore-path /opt/raiden/config/keys --data-dir /opt/raiden/data  --password-file /opt/raiden/config/passwd --eth-rpc-endpoint http://localhost:8545 --accept-disclaimer true --api-address 0.0.0.0:5002 --routing-mode pfs --pathfinding-service-address http://localhost:5555 --matrix-server http://localhost:9080 --address "0xCBC49ec22c93DB69c78348C90cd03A323267db86" --log-file /var/log/supervisor/node2.log --default-reveal-timeout 20 --default-settle-timeout 40 --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
+/opt/raiden/raiden --keystore-path /opt/raiden/config/keys --data-dir /opt/raiden/data  --password-file /opt/raiden/config/passwd --eth-rpc-endpoint http://localhost:8545 --accept-disclaimer true --api-address 0.0.0.0:5002 --routing-mode pfs --pathfinding-service-address http://localhost:5555 --matrix-server http://localhost:9080 --address "0xCBC49ec22c93DB69c78348C90cd03A323267db86" --log-file /var/log/supervisor/node2.log --default-reveal-timeout 20 --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
 RAIDEN2_PID=$!
 
 NODE_TRIES=0
@@ -71,7 +71,7 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:5001/api/
   NODE_TRIES=$((NODE_TRIES + 1))
   if [ ! -n "$(ps -p $RAIDEN1_PID -o pid=)" ]; then
     echo 'restarting'
-    /opt/raiden/raiden --keystore-path /opt/raiden/config/keys --data-dir /opt/raiden/data  --password-file /opt/raiden/config/passwd --eth-rpc-endpoint http://localhost:8545 --accept-disclaimer true --api-address 0.0.0.0:5001 --routing-mode pfs --pathfinding-service-address http://localhost:5555 --matrix-server http://localhost:9080 --address "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec" --log-file /var/log/supervisor/node1.log.json --default-reveal-timeout 20 --default-settle-timeout 40 --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
+    /opt/raiden/raiden --keystore-path /opt/raiden/config/keys --data-dir /opt/raiden/data  --password-file /opt/raiden/config/passwd --eth-rpc-endpoint http://localhost:8545 --accept-disclaimer true --api-address 0.0.0.0:5001 --routing-mode pfs --pathfinding-service-address http://localhost:5555 --matrix-server http://localhost:9080 --address "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec" --log-file /var/log/supervisor/node1.log.json --default-reveal-timeout 20 --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
     RAIDEN1_PID=$!
   fi
   sleep 20
