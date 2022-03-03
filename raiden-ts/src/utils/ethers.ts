@@ -313,11 +313,19 @@ export function logToContractEvent<C extends Contract>(contract: C) {
  * @returns name or chainId as string
  */
 export function getNetworkName(network: Network) {
-  return network.name === 'unknown'
-    ? network.chainId.toString()
-    : network.name === 'homestead'
-    ? 'mainnet'
-    : network.name;
+  let name = network.name;
+  switch (network.name) {
+    case 'homestead':
+      name = 'mainnet';
+      break;
+    case 'arbitrum-rinkeby':
+      name = 'rinkeby-arbitrum';
+      break;
+    case 'unknown':
+      name = network.chainId.toString();
+      break;
+  }
+  return name;
 }
 
 // memoized get contract's code as hex string

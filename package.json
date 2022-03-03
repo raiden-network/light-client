@@ -51,6 +51,7 @@
     "jest": "^27.5.1",
     "**/redux-observable/rxjs": "^7.5.4",
     "@ethersproject/bignumber": "^5.5.0",
+    "@ethersproject/networks": "^5.5.2",
     "loglevel": "^1.8.0"
   }
 }
