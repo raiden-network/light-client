@@ -7,10 +7,12 @@ import { JsonRpcProvider } from '@ethersproject/providers';
 import { sha256 } from '@ethersproject/sha2';
 import { toUtf8Bytes } from '@ethersproject/strings';
 import { Wallet } from '@ethersproject/wallet';
+import { readFileSync } from 'fs';
 import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
+import path from 'path';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, defer, firstValueFrom, merge, ReplaySubject, timer } from 'rxjs';
 import {
@@ -56,17 +58,20 @@ import {
 import goerliDeploy from './deployment/deployment_goerli_unstable.json';
 import mainnetDeploy from './deployment/deployment_mainnet.json';
 import rinkebyDeploy from './deployment/deployment_rinkeby.json';
+import rinkebyArbitrumDeploy from './deployment/deployment_rinkeby-arbitrum.json';
 import ropstenDeploy from './deployment/deployment_ropsten.json';
 import goerliServicesDeploy from './deployment/deployment_services_goerli_unstable.json';
 import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
 import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
+import rinkebyArbitrumServicesDeploy from './deployment/deployment_services_rinkeby-arbitrum.json';
 import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
 import { makeInitialState, RaidenState } from './state';
 import { standardCalculator } from './transfers/mediate/types';
 import type { RaidenTransfer } from './transfers/state';
 import { Direction, TransferState } from './transfers/state';
 import { raidenTransfer } from './transfers/utils';
-import type { ContractsInfo, Latest, RaidenEpicDeps } from './types';
+import type { Latest, RaidenEpicDeps } from './types';
+import { ContractsInfo } from './types';
 import { assert } from './utils';
 import { isActionOf } from './utils/actions';
 import { jsonParse } from './utils/data';
@@ -74,43 +79,78 @@ import { ErrorCodes, RaidenError } from './utils/error';
 import { getLogsByChunk$, getNetworkName } from './utils/ethers';
 import { LruCache } from './utils/lru';
 import { distinctRecordValues, pluckDistinct } from './utils/rx';
-import type { Hash, UInt } from './utils/types';
+import type { Decodable, Hash, UInt } from './utils/types';
 import { Address, decode, isntNil, PrivateKey } from './utils/types';
 
 /**
- * Returns contract information depending on the passed [[Network]]. Currently, only
- * `rinkeby`, `ropsten` and `goerli` are supported.
- * Throws an exception if called with another [[Network]].
+ * Returns contract information depending on the passed [[Network]]. Currently, `mainnet`,
+ * `rinkeby`, `ropsten`, `goerli` and `rinkeby-arbitrum` are supported.
+ * The deployment info of these networks are embedded at build-time. In case it can't parse as one
+ * of those, we try to use NodeJS's `fs` (or compatible shims) utilities to read json directly
+ * from the `deployment` dist folder, and throw if it fails.
  *
- * @param network - an account used for signing
+ * @param network - Current network, as detected by ether's Provider (see @ethersproject/networks)
  * @returns deployed contract information of the network
  */
-const getContracts = (network: Network): ContractsInfo => {
+function getContracts(network: Network): ContractsInfo {
+  let info: Decodable<ContractsInfo>;
   switch (network.name) {
     case 'rinkeby':
-      return {
+      info = {
         ...rinkebyDeploy.contracts,
         ...rinkebyServicesDeploy.contracts,
-      } as unknown as ContractsInfo;
+      };
+      break;
     case 'ropsten':
-      return {
+      info = {
         ...ropstenDeploy.contracts,
         ...ropstenServicesDeploy.contracts,
-      } as unknown as ContractsInfo;
+      };
+      break;
     case 'goerli':
-      return {
+      info = {
         ...goerliDeploy.contracts,
         ...goerliServicesDeploy.contracts,
-      } as unknown as ContractsInfo;
+      };
+      break;
     case 'homestead':
-      return {
+      info = {
         ...mainnetDeploy.contracts,
         ...mainnetServicesDeploy.contracts,
-      } as unknown as ContractsInfo;
+      };
+      break;
+    case 'arbitrum-rinkeby':
+      info = {
+        ...rinkebyArbitrumDeploy.contracts,
+        ...rinkebyArbitrumServicesDeploy.contracts,
+      };
+      break;
     default:
-      throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, { network: network.name });
+      try {
+        info = {
+          ...JSON.parse(
+            readFileSync(
+              path.join(__dirname, 'deployment', `deployment_${getNetworkName(network)}.json`),
+              'utf-8',
+            ),
+          ),
+          ...JSON.parse(
+            readFileSync(
+              path.join(
+                __dirname,
+                'deployment',
+                `deployment_services_${getNetworkName(network)}.json`,
+              ),
+              'utf-8',
+            ),
+          ),
+        };
+      } catch (e) {
+        throw new RaidenError(ErrorCodes.RDN_UNRECOGNIZED_NETWORK, { network });
+      }
   }
-};
+  return decode(ContractsInfo, info);
+}
 
 /**
  * Generate, sign and return a subkey from provided main account
