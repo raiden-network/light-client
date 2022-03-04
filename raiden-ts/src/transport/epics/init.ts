@@ -29,6 +29,7 @@ import {
 import type { RaidenAction } from '../../actions';
 import { intervalFromConfig } from '../../config';
 import { RAIDEN_DEVICE_ID } from '../../constants';
+import { choosePfs$ } from '../../services/utils';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { assert } from '../../utils';
@@ -290,6 +291,11 @@ export function initMatrixEpic(
       } else {
         // previously used server
         if (server) servers$Array.push(of({ server, setup }));
+
+        // server from PFSs, will prefer/pick matrixServer compatible with explicit PFS
+        servers$Array.push(
+          choosePfs$(undefined, deps).pipe(map(({ matrixServer: server }) => ({ server }))),
+        );
 
         // fetched servers list
         // notice it may include stored server again, but no stored setup, which could be the
