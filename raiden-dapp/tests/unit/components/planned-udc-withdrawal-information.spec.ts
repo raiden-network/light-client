@@ -84,7 +84,7 @@ describe('PlannedUdcWithdrawalInformation.vue', () => {
     const wrapper = createWrapper({ plannedWithdrawal });
     const message = wrapper.find('.planned-udc-withdrawal-information__message');
 
-    const expectedText = `UDC.INFORMATION.PENDING-MESSAGE ${dateWhenWithdrawable.toLocaleString()}`
+    const expectedText = `UDC.INFORMATION.PENDING-MESSAGE ${dateWhenWithdrawable.toLocaleString()}`;
     expect(message.text()).toBe(expectedText);
   });
 
