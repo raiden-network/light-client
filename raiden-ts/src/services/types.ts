@@ -122,6 +122,7 @@ export const PFS = t.readonly(
   t.type({
     address: Address,
     url: t.string,
+    matrixServer: t.string,
     rtt: t.number,
     price: UInt(32),
     token: Address,
