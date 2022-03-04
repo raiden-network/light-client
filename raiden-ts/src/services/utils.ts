@@ -126,6 +126,7 @@ export async function pfsInfo(
    */
   const PathInfo = t.type({
     message: t.string,
+    matrix_server: t.string,
     network_info: t.type({
       // literals will fail if trying to decode anything different from these constants
       chain_id: t.literal(network.chainId),
@@ -158,6 +159,7 @@ export async function pfsInfo(
     return {
       address,
       url,
+      matrixServer: info.matrix_server,
       rtt,
       price,
       token: await serviceRegistryToken(serviceRegistryContract, provider.pollingInterval),
@@ -382,7 +384,8 @@ export function choosePfs$(
     first(),
     mergeMap(({ pfsMode, additionalServices }) => {
       if (pfsByAction) return of(pfsByAction);
-      else if (pfsMode === PfsMode.onlyAdditional) {
+      assert(pfsByAction !== null && pfsMode !== PfsMode.disabled, ErrorCodes.PFS_DISABLED);
+      if (pfsMode === PfsMode.onlyAdditional) {
         let firstError: Error;
         return from(additionalServices).pipe(
           concatMap((service) =>
