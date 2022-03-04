@@ -5,7 +5,7 @@ import inquirer from 'inquirer';
 import { getLogger } from 'loglevel';
 import * as path from 'path';
 
-import { assert, Raiden } from 'raiden-ts';
+import { Raiden } from 'raiden-ts';
 
 import { makeApp } from './app';
 import { createRaidenConfig, parseArguments } from './options';
