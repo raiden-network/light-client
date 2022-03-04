@@ -7,9 +7,22 @@ import * as t from 'io-ts';
 import memoize from 'lodash/memoize';
 import uniqBy from 'lodash/uniqBy';
 import type { Observable } from 'rxjs';
-import { defer, EMPTY, firstValueFrom, from } from 'rxjs';
+import { defer, EMPTY, firstValueFrom, from, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
-import { catchError, map, mergeMap, toArray } from 'rxjs/operators';
+import {
+  catchError,
+  concatMap,
+  delay,
+  first,
+  last,
+  map,
+  mergeAll,
+  mergeMap,
+  takeUntil,
+  tap,
+  throwIfEmpty,
+  toArray,
+} from 'rxjs/operators';
 
 import type { ServiceRegistry } from '../contracts';
 import { MessageTypeId } from '../messages/utils';
@@ -19,11 +32,12 @@ import type { RaidenEpicDeps } from '../types';
 import { encode, jsonParse } from '../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { LruCache } from '../utils/lru';
-import { retryAsync$ } from '../utils/rx';
+import { pluckDistinct, retryAsync$ } from '../utils/rx';
 import type { PublicKey, Signature, Signed } from '../utils/types';
 import { Address, decode, UInt } from '../utils/types';
+import type { pathFind } from './actions';
 import type { IOU, PFS } from './types';
-import { AddressMetadata, PfsError } from './types';
+import { AddressMetadata, PfsError, PfsMode } from './types';
 
 const serviceRegistryToken = memoize(
   async (serviceRegistryContract: ServiceRegistry, pollingInterval: number) =>
@@ -68,7 +82,7 @@ function validatePfsUrl(url: string) {
 const pfsAddressCache_ = new LruCache<string, Promise<Address>>(32);
 
 /**
- * Returns a cold observable which fetch PFS info & validate for a given server address or URL
+ * Fetch PFS info & validate for a given server address or URL
  *
  * This is a memoized function which caches by url or address, network and registry used.
  *
@@ -350,4 +364,53 @@ export async function signIOU(signer: Signer, iou: IOU): Promise<Signed<IOU>> {
   return signer
     .signMessage(packIOU(iou))
     .then((signature) => ({ ...iou, signature: signature as Signature }));
+}
+
+/**
+ * Choose best PFS and fetch info from it
+ *
+ * @param pfsByAction - Override config for this call: explicit PFS, disabled or undefined
+ * @param deps - Epics dependencies
+ * @returns Observable to choosen PFS
+ */
+export function choosePfs$(
+  pfsByAction: pathFind.request['payload']['pfs'],
+  deps: RaidenEpicDeps,
+): Observable<PFS> {
+  const { log, config$, latest$, init$ } = deps;
+  return config$.pipe(
+    first(),
+    mergeMap(({ pfsMode, additionalServices }) => {
+      if (pfsByAction) return of(pfsByAction);
+      else if (pfsMode === PfsMode.onlyAdditional) {
+        let firstError: Error;
+        return from(additionalServices).pipe(
+          concatMap((service) =>
+            defer(async () => pfsInfo(service, deps)).pipe(
+              catchError((e) => ((firstError ??= e), EMPTY)),
+            ),
+          ),
+          throwIfEmpty(() => firstError),
+        );
+      } else {
+        return latest$.pipe(
+          pluckDistinct('state', 'services'),
+          map((services) => [...additionalServices, ...Object.keys(services)]),
+          takeUntil(init$.pipe(last(), delay(10))),
+          first((services) => services.length > 0),
+          // fetch pfsInfo from whole list & sort it
+          mergeMap((services) => pfsListInfo(services, deps)),
+          mergeAll(),
+        );
+      }
+    }),
+    tap((pfs) => {
+      if (pfs.validTill < Date.now()) {
+        log.warn(
+          'WARNING: PFS registration not valid! This service deposit may have expired and it may not receive network updates anymore.',
+          pfs,
+        );
+      }
+    }),
+  );
 }

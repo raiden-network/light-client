@@ -35,13 +35,13 @@ import { getCap, stringifyCaps } from '../../transport/utils';
 import type { Latest, RaidenEpicDeps } from '../../types';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
-import { lastMap, retryWhile, withMergeFrom } from '../../utils/rx';
+import { retryWhile, withMergeFrom } from '../../utils/rx';
 import type { Address, Signature, Signed } from '../../utils/types';
 import { decode, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
 import type { AddressMetadataMap, InputPaths, IOU, Paths, PFS } from '../types';
 import { Fee, LastIOUResults, PfsError, PfsMode, PfsResult } from '../types';
-import { packIOU, pfsInfo, pfsListInfo, signIOU } from '../utils';
+import { choosePfs$, packIOU, signIOU } from '../utils';
 
 type RouteResult = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { error: PfsError });
 
@@ -206,14 +206,14 @@ function getRouteFromPfs$(
   action: pathFind.request,
   deps: RaidenEpicDeps,
 ): Observable<RouteResult> {
-  return deps.config$.pipe(
-    first(),
-    withMergeFrom((config) => getPfsInfo$(action.payload.pfs, config, deps)),
-    withMergeFrom(([, pfs]) => prepareNextIOU$(pfs, action.meta.tokenNetwork, deps)),
-    withMergeFrom(([[config, pfs], iou]) =>
+  return choosePfs$(action.payload.pfs, deps).pipe(
+    first(), // pop first/best PFS
+    withMergeFrom((pfs) => prepareNextIOU$(pfs, action.meta.tokenNetwork, deps)),
+    withLatestFrom(deps.config$),
+    withMergeFrom(([[pfs, iou], config]) =>
       requestPfs$(pfs, iou, action.meta, { address: deps.address, config }),
     ),
-    map(([[[config], iou], { response, text }]) => {
+    map(([[[, iou], config], { response, text }]) => {
       // any decode error here will throw early and end up in catchError
       const data = jsonParse(text);
 
@@ -283,59 +283,6 @@ function filterPaths$(
     map((paths) => {
       if (!paths.length) throw firstError ?? new RaidenError(ErrorCodes.PFS_NO_ROUTES_FOUND);
       return paths;
-    }),
-  );
-}
-
-function getPfsInfo$(
-  pfsByAction: pathFind.request['payload']['pfs'],
-  config: Pick<RaidenConfig, 'pfsMode' | 'additionalServices'>,
-  deps: RaidenEpicDeps,
-): Observable<PFS> {
-  const { log, latest$, init$ } = deps;
-  let pfs$: Observable<PFS> = EMPTY;
-  if (pfsByAction) pfs$ = of(pfsByAction);
-  else if (config.pfsMode === PfsMode.onlyAdditional)
-    pfs$ = defer(async () => {
-      let firstErr;
-      for (const pfsUrlOrAddr of config.additionalServices) {
-        try {
-          return await pfsInfo(pfsUrlOrAddr, deps);
-        } catch (e) {
-          firstErr ??= e;
-        }
-      }
-      throw firstErr;
-    });
-  else {
-    pfs$ = init$.pipe(
-      lastMap(() => latest$.pipe(first(), pluck('state', 'services'))),
-      // fetch pfsInfo from whole list & sort it
-      mergeMap((services) =>
-        pfsListInfo(config.additionalServices.concat(Object.keys(services)), deps).pipe(
-          map((pfsInfos) => {
-            log.info('Auto-selecting best PFS from:', pfsInfos);
-            assert(pfsInfos.length, [
-              ErrorCodes.PFS_INVALID_INFO,
-              {
-                services: Object.keys(services).join(','),
-                additionalServices: config.additionalServices.join(','),
-              },
-            ]);
-            return pfsInfos[0]!; // pop best ranked
-          }),
-        ),
-      ),
-    );
-  }
-  return pfs$.pipe(
-    tap((pfs) => {
-      if (pfs.validTill < Date.now()) {
-        log.warn(
-          'WARNING: PFS registration not valid! This service deposit may have expired and it may not receive network updates anymore.',
-          pfs,
-        );
-      }
     }),
   );
 }
