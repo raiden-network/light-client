@@ -15,7 +15,7 @@ import type { Delivered, Processed } from '@/messages/types';
 import { MessageType } from '@/messages/types';
 import { encodeJsonMessage, signMessage } from '@/messages/utils';
 import { servicesValid } from '@/services/actions';
-import { Service, ServiceDeviceId } from '@/services/types';
+import { PfsMode, Service, ServiceDeviceId } from '@/services/types';
 import { makeMessageId } from '@/transfers/utils';
 import { matrixPresence, matrixSetup, rtcChannel } from '@/transport/actions';
 import { getSortedAddresses } from '@/transport/utils';
@@ -195,12 +195,58 @@ describe('initMatrixEpic', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  test('matrix fetch server from PFS', async () => {
+    expect.assertions(3);
+
+    // set PfsMode.onlyAdditional and ensure it uses matrixServer from PFS
+    raiden.store.dispatch(
+      raidenConfigUpdate({ matrixServer: '', pfsMode: PfsMode.onlyAdditional }),
+    );
+    const resp = {
+      message: '',
+      matrix_server: 'http://transport.raiden.test',
+      network_info: {
+        chain_id: raiden.deps.network.chainId,
+        token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+      },
+      operator: 'TestOp',
+      payment_address: makeAddress(),
+      price_info: '100',
+      version: '0.1.2',
+    };
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: jest.fn(async () => jsonStringify(resp)),
+      json: jest.fn(async () => resp),
+    });
+    await raiden.start();
+    await sleep();
+
+    expect(raiden.output).toContainEqual(
+      matrixSetup({
+        server: resp.matrix_server,
+        setup: {
+          userId: `@${raiden.address.toLowerCase()}:${getServerName(resp.matrix_server)}`,
+          accessToken: expect.any(String),
+          deviceId: expect.any(String),
+          displayName: expect.any(String),
+        },
+      }),
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/v1\/info$/),
+      expect.anything(),
+    );
+  });
+
   test('matrix fetch servers list', async () => {
     expect.assertions(2);
 
     // make the matrixServer falsy otherwise fetchSortedMatrixServers$
     // inside initMatrixEpic is not called. This will force fetching server list
-    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
+    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '', pfsMode: PfsMode.disabled }));
     await raiden.start();
     await sleep();
 
@@ -227,7 +273,7 @@ describe('initMatrixEpic', () => {
       status: 404,
       json: jest.fn(async () => ({})),
     });
-    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
+    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '', pfsMode: PfsMode.disabled }));
 
     await raiden.start();
     await lastValueFrom(raiden.action$);
@@ -263,7 +309,7 @@ describe('initMatrixEpic', () => {
     });
 
     // set fetch list from matrixServerLookup
-    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
+    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '', pfsMode: PfsMode.disabled }));
     await raiden.start();
     await lastValueFrom(raiden.action$);
 

@@ -608,27 +608,21 @@ describe('transferRetryMessageEpic', () => {
 
 describe('transferAutoExpireEpic', () => {
   test('success!', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const [raiden, partner] = await makeRaidens(2);
     const sentState = await ensureTransferPending([raiden, partner]);
 
-    // expiration confirmed, enough blocks after
-    await sleep(sentState.expiration * 1e3 - Date.now() + 10e3);
-    expect(raiden.output).toContainEqual(transferExpire.request(undefined, meta));
-  }, 10e3);
-
-  test("don't emit if transfer didn't expire", async () => {
-    expect.assertions(1);
-
-    const [raiden, partner] = await makeRaidens(2);
-    const sentState = await ensureTransferPending([raiden, partner]);
-    // not yet expired
-    await sleep(sentState.expiration * 1e3 - Date.now() - raiden.config.httpTimeout);
+    // don't emit if transfer didn't expire
+    await sleep(sentState.expiration * 1e3 - Date.now() - 2e3);
     expect(raiden.output).not.toContainEqual(
       transferExpire.request(expect.anything(), expect.anything()),
     );
-  });
+
+    // expiration confirmed
+    await sleep(4e3);
+    expect(raiden.output).toContainEqual(transferExpire.request(undefined, meta));
+  }, 10e3);
 
   test("don't expire if secret registered before expiration", async () => {
     expect.assertions(1);
