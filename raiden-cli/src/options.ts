@@ -56,26 +56,31 @@ function parseFeeOption(args?: readonly string[]): AddressToFeeValue {
 
 function constructMediationFeeConfiguration(
   mediationFeeConfiguration: MediationFeeConfiguration = {},
-  cap: boolean,
-  flatFees?: AddressToFeeValue,
-  proportionalFees?: AddressToFeeValue,
-  imbalanceFees?: AddressToFeeValue,
+  {
+    capMediationFees,
+    flatFee = {},
+    proportionalFee = {},
+    proportionalImbalanceFee = {},
+  }: Pick<
+    Awaited<ReturnType<typeof parseArguments>>,
+    'capMediationFees' | 'flatFee' | 'proportionalFee' | 'proportionalImbalanceFee'
+  >,
 ): MediationFeeConfiguration {
-  for (const [address, value] of Object.entries(flatFees ?? {})) {
+  for (const [address, value] of Object.entries(flatFee)) {
     mediationFeeConfiguration = {
       ...mediationFeeConfiguration,
       [address]: { ...mediationFeeConfiguration[address], flat: value },
     };
   }
 
-  for (const [address, value] of Object.entries(proportionalFees ?? {})) {
+  for (const [address, value] of Object.entries(proportionalFee)) {
     mediationFeeConfiguration = {
       ...mediationFeeConfiguration,
       [address]: { ...mediationFeeConfiguration[address], proportional: value },
     };
   }
 
-  for (const [address, value] of Object.entries(imbalanceFees ?? {})) {
+  for (const [address, value] of Object.entries(proportionalImbalanceFee)) {
     mediationFeeConfiguration = {
       ...mediationFeeConfiguration,
       [address]: { ...mediationFeeConfiguration[address], imbalance: value },
@@ -86,7 +91,7 @@ function constructMediationFeeConfiguration(
     mediationFeeConfiguration[address] = {
       ...mediationFeeConfiguration[ethers.constants.AddressZero],
       ...configurationOfToken,
-      cap,
+      cap: capMediationFees,
     };
   }
 
@@ -100,6 +105,154 @@ function parseEndpoint(url: string): [string, number] {
   return [host || '127.0.0.1', +port];
 }
 
+const yargsOptions = {
+  datadir: {
+    type: 'string',
+    default: './storage',
+    desc: 'Dir path where to store state',
+  },
+  configFile: {
+    type: 'string',
+    desc: 'JSON file path containing config object',
+    normalize: true,
+  },
+  keystorePath: {
+    type: 'string',
+    default: './',
+    desc: 'Path for ethereum keystore directory',
+    normalize: true,
+  },
+  address: {
+    type: 'string',
+    desc: 'Address of private key to use',
+    check: Address.is,
+  },
+  passwordFile: {
+    type: 'string',
+    desc: 'Path for text file containing password for keystore file',
+    normalize: true,
+  },
+  userDepositContractAddress: {
+    type: 'string',
+    desc: "Address of UserDeposit contract to use as contract's entrypoint; optionally, append ':<block>' to start scanning since this block",
+  },
+  acceptDisclaimer: {
+    type: 'boolean',
+    desc: 'By setting this parameter you confirm that you have read, understood and accepted the disclaimer, privacy warning and terms of use.',
+  },
+  blockchainQueryInterval: {
+    type: 'number',
+    default: 5,
+    desc: 'Time interval after which to check for new blocks (in seconds)',
+  },
+  defaultRevealTimeout: {
+    type: 'number',
+    default: 50,
+    desc: 'Default transfer reveal timeout',
+  },
+  ethRpcEndpoint: {
+    type: 'string',
+    default: 'http://127.0.0.1:8545',
+    desc: 'Ethereum JSON RPC node endpoint to use for blockchain interaction',
+  },
+  logFile: {
+    type: 'string',
+    desc: 'Output all logs to this file instead of stdout/stderr',
+    normalize: true,
+  },
+  matrixServer: {
+    type: 'string',
+    default: 'auto',
+    desc: 'URL of Matrix Transport server',
+  },
+  rpc: {
+    type: 'boolean',
+    default: true,
+    desc: 'Start with or without the RPC server',
+  },
+  rpccorsdomain: {
+    type: 'string',
+    default: 'http://localhost:*/*',
+    desc: 'Comma separated list of domains to accept cross origin requests.',
+  },
+  apiAddress: {
+    type: 'string',
+    default: '127.0.0.1:5001',
+    desc: 'host:port to bind to and listen for API requests',
+    coerce: parseEndpoint,
+  },
+  routingMode: {
+    choices: ['pfs', 'local', 'private'] as const,
+    default: 'pfs',
+    desc: 'Anything else than "pfs" disables mediated transfers',
+  },
+  pathfindingServiceAddress: {
+    type: 'array',
+    desc: 'Force given PFS URL list to be used, automatically chosing the first responding provider for transfers, instead of auto-selecting valid from "ServiceRegistry" contract',
+  },
+  pathfindingMaxPaths: {
+    type: 'number',
+    default: 3,
+    desc: 'Set maximum number of paths to be requested from the path finding service.',
+  },
+  pathfindingMaxFee: {
+    type: 'string',
+    default: '50000000000000000',
+    desc: 'Set max fee per request paid to the path finding service.',
+    coerce: (value: unknown) => decode(UInt(32), value),
+  },
+  pathfindingIouTimeout: {
+    type: 'number',
+    default: 200000,
+    desc: 'Number of blocks before a new IOU to the path finding service expires.',
+  },
+  enableMonitoring: {
+    type: 'boolean',
+    default: false,
+    desc: "Enables monitoring if there's a UDC deposit",
+  },
+  flatFee: {
+    nargs: 2,
+    desc: 'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
+    coerce: parseFeeOption,
+  },
+  proportionalFee: {
+    nargs: 2,
+    desc: 'Sets the proportional fee required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
+    coerce: parseFeeOption,
+  },
+  proportionalImbalanceFee: {
+    nargs: 2,
+    desc: 'Sets the proportional imbalance fee penalty required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
+    coerce: parseFeeOption,
+  },
+  capMediationFees: {
+    type: 'boolean',
+    default: true,
+    desc: 'Enables capping mediation fees to not allow them to be negative (output transfers amount always less than or equal input transfers)',
+  },
+  gasPrice: {
+    desc: "Set gasPrice factor for transactions's priority fees, as a multiplier of default `maxPriorityFeePerGas` (2.5 Gwei); some aliases: medium=1.05, fast=1.2, rapid=1.5",
+    coerce(val?: string | string[]): number | undefined {
+      if (!val) return;
+      if (Array.isArray(val)) val = val[val.length - 1];
+      let value;
+      switch (val) {
+        case 'medium':
+          return 1.05;
+        case 'fast':
+          return 1.2;
+        case 'rapid':
+          return 1.5;
+        default:
+          value = +val;
+          assert(value && value > 0, 'invalid gasPrice');
+          return value;
+      }
+    },
+  },
+} as const;
+
 /**
  * Parse Raiden CLI parameters
  *
@@ -110,156 +263,7 @@ export async function parseArguments() {
   const result = await argv
     .env('RAIDEN')
     .usage('Usage: $0 [options]')
-    .options({
-      datadir: {
-        type: 'string',
-        default: './storage',
-        desc: 'Dir path where to store state',
-      },
-      configFile: {
-        type: 'string',
-        desc: 'JSON file path containing config object',
-        normalize: true,
-      },
-      keystorePath: {
-        type: 'string',
-        default: './',
-        desc: 'Path for ethereum keystore directory',
-        normalize: true,
-      },
-      address: {
-        type: 'string',
-        desc: 'Address of private key to use',
-        check: Address.is,
-      },
-      passwordFile: {
-        type: 'string',
-        desc: 'Path for text file containing password for keystore file',
-        normalize: true,
-      },
-      userDepositContractAddress: {
-        type: 'string',
-        desc: "Address of UserDeposit contract to use as contract's entrypoint; optionally, append ':<block>' to start scanning since this block",
-      },
-      acceptDisclaimer: {
-        type: 'boolean',
-        desc: 'By setting this parameter you confirm that you have read, understood and accepted the disclaimer, privacy warning and terms of use.',
-      },
-      blockchainQueryInterval: {
-        type: 'number',
-        default: 5,
-        desc: 'Time interval after which to check for new blocks (in seconds)',
-      },
-      defaultRevealTimeout: {
-        type: 'number',
-        default: 50,
-        desc: 'Default transfer reveal timeout',
-      },
-      ethRpcEndpoint: {
-        type: 'string',
-        default: 'http://127.0.0.1:8545',
-        desc: 'Ethereum JSON RPC node endpoint to use for blockchain interaction',
-      },
-      logFile: {
-        type: 'string',
-        desc: 'Output all logs to this file instead of stdout/stderr',
-        normalize: true,
-      },
-      matrixServer: {
-        type: 'string',
-        default: 'auto',
-        desc: 'URL of Matrix Transport server',
-      },
-      rpc: {
-        type: 'boolean',
-        default: true,
-        desc: 'Start with or without the RPC server',
-      },
-      rpccorsdomain: {
-        type: 'string',
-        default: 'http://localhost:*/*',
-        desc: 'Comma separated list of domains to accept cross origin requests.',
-      },
-      apiAddress: {
-        type: 'string',
-        default: '127.0.0.1:5001',
-        desc: 'host:port to bind to and listen for API requests',
-        coerce: parseEndpoint,
-      },
-      routingMode: {
-        choices: ['pfs', 'local', 'private'] as const,
-        default: 'pfs',
-        desc: 'Anything else than "pfs" disables mediated transfers',
-      },
-      pathfindingServiceAddress: {
-        type: 'array',
-        desc: 'Force given PFS URL list to be used, automatically chosing the first responding provider for transfers, instead of auto-selecting valid from "ServiceRegistry" contract',
-      },
-      pathfindingMaxPaths: {
-        type: 'number',
-        default: 3,
-        desc: 'Set maximum number of paths to be requested from the path finding service.',
-      },
-      pathfindingMaxFee: {
-        type: 'string',
-        default: '50000000000000000',
-        desc: 'Set max fee per request paid to the path finding service.',
-        coerce: (value) => decode(UInt(32), value),
-      },
-      pathfindingIouTimeout: {
-        type: 'number',
-        default: 200000,
-        desc: 'Number of blocks before a new IOU to the path finding service expires.',
-      },
-      enableMonitoring: {
-        type: 'boolean',
-        default: false,
-        desc: "Enables monitoring if there's a UDC deposit",
-      },
-      flatFee: {
-        type: 'string',
-        nargs: 2,
-        desc: 'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
-        coerce: parseFeeOption,
-      },
-      proportionalFee: {
-        type: 'string',
-        nargs: 2,
-        desc: 'Sets the proportional fee required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
-        coerce: parseFeeOption,
-      },
-      proportionalImbalanceFee: {
-        type: 'string',
-        nargs: 2,
-        desc: 'Sets the proportional imbalance fee penalty required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
-        coerce: parseFeeOption,
-      },
-      capMediationFees: {
-        type: 'boolean',
-        default: true,
-        desc: 'Enables capping mediation fees to not allow them to be negative (output transfers amount always less than or equal input transfers)',
-      },
-      gasPrice: {
-        desc: "Set gasPrice factor for transactions's priority fees, as a multiplier of default `maxPriorityFeePerGas` (2.5 Gwei); some aliases: medium=1.05, fast=1.2, rapid=1.5",
-        coerce(val?: string | string[]): number | undefined {
-          if (!val) return;
-          if (Array.isArray(val)) val = val[val.length - 1];
-          let value;
-          switch (val) {
-            case 'medium':
-              return 1.05;
-            case 'fast':
-              return 1.2;
-            case 'rapid':
-              return 1.5;
-            default:
-              value = +val;
-              assert(value && value > 0, 'invalid gasPrice');
-              return value;
-          }
-        },
-      },
-    })
+    .options(yargsOptions)
     .help()
     .alias('h', 'help')
     .version()
@@ -308,10 +312,7 @@ export async function createRaidenConfig(
 
   const mediationFees = constructMediationFeeConfiguration(
     config.mediationFees as MediationFeeConfiguration | undefined,
-    argv.capMediationFees,
-    argv.flatFee as unknown as AddressToFeeValue,
-    argv.proportionalFee as unknown as AddressToFeeValue,
-    argv.proportionalImbalanceFee as unknown as AddressToFeeValue,
+    argv,
   );
 
   config = { ...config, mediationFees };
