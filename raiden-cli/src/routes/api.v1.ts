@@ -39,7 +39,7 @@ export function makeApiV1Router(this: Cli): Router {
     response.json({ version: Raiden.version });
   });
 
-  router.get('/contracts', (_request: Request, response: Response) => {
+  router.get('/contracts', async (_request: Request, response: Response) => {
     const contracts = this.raiden.contractsInfo;
     response.json({
       contracts_version: Raiden.contractVersion,
@@ -48,7 +48,8 @@ export function makeApiV1Router(this: Cli): Router {
       service_registry_address: contracts.ServiceRegistry.address,
       user_deposit_address: contracts.UserDeposit.address,
       monitoring_service_address: contracts.MonitoringService.address,
-      one_to_n_address: '',
+      one_to_n_address: contracts.OneToN.address,
+      user_deposit_token_address: await this.raiden.userDepositTokenAddress(),
     });
   });
 
@@ -68,8 +69,8 @@ export function makeApiV1Router(this: Cli): Router {
     });
   });
 
-  router.post('/shutdown', (_request: Request, response: Response) => {
-    this.raiden.stop();
+  router.post('/shutdown', async (_request: Request, response: Response) => {
+    await this.raiden.stop();
     response.json({ status: 'shutdown' });
   });
 
