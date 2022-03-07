@@ -55,16 +55,8 @@ import {
   putRaidenState,
   replaceDatabase,
 } from './db/utils';
-import goerliDeploy from './deployment/deployment_goerli_unstable.json';
-import mainnetDeploy from './deployment/deployment_mainnet.json';
-import rinkebyDeploy from './deployment/deployment_rinkeby.json';
 import rinkebyArbitrumDeploy from './deployment/deployment_rinkeby-arbitrum.json';
-import ropstenDeploy from './deployment/deployment_ropsten.json';
-import goerliServicesDeploy from './deployment/deployment_services_goerli_unstable.json';
-import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
-import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
 import rinkebyArbitrumServicesDeploy from './deployment/deployment_services_rinkeby-arbitrum.json';
-import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
 import { makeInitialState, RaidenState } from './state';
 import { standardCalculator } from './transfers/mediate/types';
 import type { RaidenTransfer } from './transfers/state';
@@ -83,11 +75,10 @@ import type { Decodable, Hash, UInt } from './utils/types';
 import { Address, decode, isntNil, PrivateKey } from './utils/types';
 
 /**
- * Returns contract information depending on the passed [[Network]]. Currently, `mainnet`,
- * `rinkeby`, `ropsten`, `goerli` and `rinkeby-arbitrum` are supported.
- * The deployment info of these networks are embedded at build-time. In case it can't parse as one
+ * Returns contract information depending on the passed [[Network]].
+ * The deployment info of known networks are embedded at build-time. In case it can't parse as one
  * of those, we try to use NodeJS's `fs` (or compatible shims) utilities to read json directly
- * from the `deployment` dist folder, and throw if it fails.
+ * from the `deployment` dist folder.
  *
  * @param network - Current network, as detected by ether's Provider (see @ethersproject/networks)
  * @returns deployed contract information of the network
@@ -95,30 +86,10 @@ import { Address, decode, isntNil, PrivateKey } from './utils/types';
 function getContracts(network: Network): ContractsInfo {
   let info: Decodable<ContractsInfo>;
   switch (network.name) {
-    case 'rinkeby':
-      info = {
-        ...rinkebyDeploy.contracts,
-        ...rinkebyServicesDeploy.contracts,
-      };
-      break;
-    case 'ropsten':
-      info = {
-        ...ropstenDeploy.contracts,
-        ...ropstenServicesDeploy.contracts,
-      };
-      break;
-    case 'goerli':
-      info = {
-        ...goerliDeploy.contracts,
-        ...goerliServicesDeploy.contracts,
-      };
-      break;
-    case 'homestead':
-      info = {
-        ...mainnetDeploy.contracts,
-        ...mainnetServicesDeploy.contracts,
-      };
-      break;
+    // known networks go here; using imported JSONs instead of fs read embeds it at compile-time
+    // and should also work for bundled builds, which breaks more easily when trying to read at
+    // runtime due to missing or wrong path of JSONs in dist folders, but we still try that as
+    // fallback nin the `default` case
     case 'arbitrum-rinkeby':
       info = {
         ...rinkebyArbitrumDeploy.contracts,
