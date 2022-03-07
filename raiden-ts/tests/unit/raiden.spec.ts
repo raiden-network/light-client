@@ -1615,10 +1615,10 @@ describe('Raiden', () => {
       ),
     ).resolves.toBeDefined();
 
-    // test known network contracts
+    // test known network contracts (must be known network)
     (provider as jest.Mocked<JsonRpcProvider>).getNetwork.mockImplementation(async () => ({
-      name: 'goerli',
-      chainId: 5,
+      name: 'arbitrum-rinkeby',
+      chainId: 421611,
     }));
     await expect(
       Raiden.create.call(MockedRaiden as any, provider, wallet, { adapter: 'memory' }),
