@@ -49,7 +49,7 @@ export function makeApiV1Router(this: Cli): Router {
       user_deposit_address: contracts.UserDeposit.address,
       monitoring_service_address: contracts.MonitoringService.address,
       one_to_n_address: contracts.OneToN.address,
-      service_token_address: await this.raiden.userDepositTokenAddress(),
+      user_deposit_token_address: await this.raiden.userDepositTokenAddress(),
     });
   });
 
@@ -69,8 +69,8 @@ export function makeApiV1Router(this: Cli): Router {
     });
   });
 
-  router.post('/shutdown', (_request: Request, response: Response) => {
-    this.raiden.stop();
+  router.post('/shutdown', async (_request: Request, response: Response) => {
+    await this.raiden.stop();
     response.json({ status: 'shutdown' });
   });
 

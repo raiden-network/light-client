@@ -567,12 +567,10 @@ export async function getState(
 
   let state = await getRaidenState(db);
   if (!state) {
-    let contractsInfo;
-    if (typeof contractsOrUDCAddress === 'string') {
+    let contractsInfo = contractsOrUDCAddress;
+    if (typeof contractsInfo === 'string') {
       log.warn('fetching contractsInfo from UDC entrypoint', { udc, fromBlock });
       contractsInfo = await fetchContractsInfo(provider, udc, fromBlock);
-    } else {
-      contractsInfo = contractsOrUDCAddress;
     }
     state = makeInitialState({ network, address, contractsInfo });
     await putRaidenState(db, state);
