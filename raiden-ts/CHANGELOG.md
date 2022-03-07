@@ -1,6 +1,23 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- [#2916] **BREAKING** Switched timeouts to use timestamps (seconds) instead of blocks; previous Raiden stable releases and contracts used block numbers to count the passage of time (e.g. transfers, withdraws and channel settlement timeouts); the new refactored contracts use timestamps (in seconds) instead, which is more predictable on networks with random or on-demand block generation cadence, like rollups; while this change is motivated by the Arbitrum compatiblity effort, it's not restricted to rollups, and may eventually also be deployed to other networks
+- [#2976] **BREAKING** Switched to `arbitrum` branch of [raiden-contracts](https://github.com/raiden-network/raiden-contracts/tree/arbitrum); this contracts branch uses `block.timestamp`s to count timeouts, instead of block numbers; this also creates a new state for clients (new contracts, new state schema and entry)
+
+### Added
+- [#3069] SDK now can (and will first by default, in `auto` mode) query and use PFS's advertised `matrix-server` before `config.matrixServerLookup`
+- [#3034] SDK now accepts `config.confirmationBlocks = 0` (default for Arbitrum), speeding up transactions wait times on rollup environments
+- [#3068] Try to read `deployment` JSON files at runtime, besides embedded ones at transpilation-time
+
+### Removed
+- [#3034] Remove `settleTimeout` option from `config` and `Raiden.openChannel` methods, since this value is now constant per contract deployment (exposed through `Raiden.settleTimeout` getter)
+
+[#2916]: https://github.com/raiden-network/light-client/issues/2916
+[#2976]: https://github.com/raiden-network/light-client/issues/2976
+[#3034]: https://github.com/raiden-network/light-client/pull/3034
+[#3068]: https://github.com/raiden-network/light-client/pull/3068
+[#3069]: https://github.com/raiden-network/light-client/pull/3069
 
 ## [2.1.0] - 2021-12-29
 

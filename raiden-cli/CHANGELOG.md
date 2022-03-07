@@ -1,6 +1,16 @@
 # Changelog
 
 ## [Unreleased]
+### Removed
+- [#3034] Remove `--default-settle-timeout` CLI option, since this value isn't customizable anymore and instead constant per contract's deployment
+
+### Changed
+- [#3034] `--default-reveal-timeout` now receives seconds, instead of blocks
+
+### Added
+- [#3034 ] Add `OneToN` and `UserDepositToken` (SVT/RDN) addresses to `/contracts` and `/user_deposit` endpoints, `eth_balance`, current `block_number` and `network` info properties to `/address` endpoint
+
+[#3034]: https://github.com/raiden-network/light-client/pull/3034
 
 ## [2.1.0] - 2021-12-29
 
