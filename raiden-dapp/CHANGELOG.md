@@ -1,6 +1,14 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- [#3051] Adapt UDC withdraws to timestamps instead of block numbers
+
+### Removed
+- [#3053] Remove `settleTimeout` references and settlement block countdown, since these don't apply anymore
+
+[#3051]: https://github.com/raiden-network/light-client/issues/3051
+[#3053]: https://github.com/raiden-network/light-client/issues/3053
 
 ## [2.2.0] - 2022-04-22
 
