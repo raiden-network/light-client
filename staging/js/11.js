@@ -649,17 +649,6 @@ eval("/* WEBPACK VAR INJECTION */(function(Buffer) {\nexports.compare = function
 
 /***/ }),
 
-/***/ "../node_modules/node-libs-browser/mock/empty.js":
-/*!*******************************************************!*\
-  !*** ../node_modules/node-libs-browser/mock/empty.js ***!
-  \*******************************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-eval("//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiIsImZpbGUiOiIuLi9ub2RlX21vZHVsZXMvbm9kZS1saWJzLWJyb3dzZXIvbW9jay9lbXB0eS5qcy5qcyIsInNvdXJjZXNDb250ZW50IjpbXSwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///../node_modules/node-libs-browser/mock/empty.js\n");
-
-/***/ }),
-
 /***/ "../node_modules/pouchdb-adapter-leveldb-core/lib/index-browser.es.js":
 /*!****************************************************************************!*\
   !*** ../node_modules/pouchdb-adapter-leveldb-core/lib/index-browser.es.js ***!
