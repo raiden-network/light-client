@@ -46,7 +46,7 @@ function parseFeeOption(args?: readonly string[]): AddressToFeeValue {
   assert(args.length % 2 === 0, 'fees must have the format [address, number]');
 
   for (let i = 0; i < args.length; i += 2) {
-    assert(Address.is(args[i]), 'Invalid address');
+    assert(Address.is(args[i]), `Invalid address: ${i} = ${args[i]}`);
     assert(args[i + 1].match(/^\d+$/), 'Invalid numeric value');
     parsedOption[args[i]] = args[i + 1];
   }
@@ -212,16 +212,20 @@ const yargsOptions = {
     desc: "Enables monitoring if there's a UDC deposit",
   },
   flatFee: {
+    // this ensures addresses are not converted to numbers while preserving parseFeeOption return type
+    string: true as boolean,
     nargs: 2,
     desc: 'Sets the flat fee required for every mediation in wei of the mediated token for a certain token address: [address value] pair',
     coerce: parseFeeOption,
   },
   proportionalFee: {
+    string: true as boolean,
     nargs: 2,
     desc: 'Sets the proportional fee required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
     coerce: parseFeeOption,
   },
   proportionalImbalanceFee: {
+    string: true as boolean,
     nargs: 2,
     desc: 'Sets the proportional imbalance fee penalty required for every mediation, in micros (parts per million, 1% = 10000) of the mediated token for a certain token address: [address value] pair',
     coerce: parseFeeOption,
