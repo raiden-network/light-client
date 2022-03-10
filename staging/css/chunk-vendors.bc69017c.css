@@ -55909,6 +55909,7 @@ html.overflow-y-hidden {
   width: -moz-min-content;
   width: min-content;
   min-width: 100%;
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 2;
@@ -55918,18 +55919,21 @@ html.overflow-y-hidden {
   position: unset;
 }
 .v-calendar-category .v-calendar-daily__intervals-head {
+  position: -webkit-sticky;
   position: sticky;
   left: 0;
   top: 0;
   z-index: 2;
 }
 .v-calendar-category .v-calendar-daily_head-weekday {
+  position: -webkit-sticky;
   position: sticky;
   left: 50%;
   width: 50px;
 }
 .v-calendar-category .v-calendar-daily_head-day-label {
   width: 56px;
+  position: -webkit-sticky;
   position: sticky;
   left: 50%;
 }
@@ -55937,6 +55941,7 @@ html.overflow-y-hidden {
   min-width: 200px;
 }
 .v-calendar-category .v-calendar-daily__intervals-body {
+  position: -webkit-sticky;
   position: sticky;
   left: 0;
   z-index: 1;
@@ -57123,6 +57128,7 @@ html.overflow-y-hidden {
 }
 .v-data-table--fixed-header > .v-data-table__wrapper > table > thead > tr > th {
   border-bottom: 0px !important;
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 2;
