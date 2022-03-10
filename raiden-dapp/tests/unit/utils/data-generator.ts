@@ -113,7 +113,7 @@ export function generateChannel(
     ownWithdrawable: BigNumber.from(10 ** 8),
     completed: true,
     ...partialChannel,
-  } as RaidenChannel;
+  } as unknown as RaidenChannel;
 }
 
 /**
