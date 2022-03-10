@@ -58,7 +58,7 @@ export function makeTimestamp(time = new Date()): string {
 function fetchLastIou$(
   pfs: PFS,
   tokenNetwork: Address,
-  { address, signer, network, contractsInfo, latest$, config$ }: RaidenEpicDeps,
+  { address, log, signer, network, contractsInfo, latest$, config$ }: RaidenEpicDeps,
 ): Observable<IOU> {
   return defer(() => {
     const timestamp = makeTimestamp(),
@@ -83,30 +83,31 @@ function fetchLastIou$(
     withLatestFrom(latest$.pipe(pluck('state', 'blockNumber')), config$),
     mergeMap(async ([response, blockNumber, { pfsIouTimeout }]) => {
       if (response.status === 404) {
-        return {
+        const iou = {
           sender: address,
           receiver: pfs.address,
           chain_id: BigNumber.from(network.chainId) as UInt<32>,
           amount: Zero as UInt<32>,
           one_to_n_address: contractsInfo.OneToN.address,
           expiration_block: BigNumber.from(blockNumber).add(pfsIouTimeout) as UInt<32>,
-        }; // return empty/zeroed IOU, but with valid new expiration_block
+        };
+        log.warn('PFS: new IOU created', iou);
+        return iou; // return empty/zeroed IOU, but with valid new expiration
       }
       const text = await response.text();
-      if (!response.ok)
-        throw new RaidenError(ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, {
-          responseStatus: response.status,
-          responseText: text,
-        });
+      assert(response.ok, [
+        ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED,
+        { responseStatus: response.status, responseText: text },
+      ]);
 
       const { last_iou: lastIou } = decode(LastIOUResults, jsonParse(text));
       // accept last IOU only if it was signed by us
       const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
-      if (signer !== address)
-        throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, {
-          signer,
-          address,
-        });
+      assert(signer === address, [
+        ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH,
+        { signer, address, lastIou },
+      ]);
+      log.warn('PFS: fetched non-cached signed IOU from server', lastIou);
       return lastIou;
     }),
   );
