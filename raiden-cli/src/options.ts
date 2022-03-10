@@ -6,7 +6,17 @@ import inquirer from 'inquirer';
 import yargs from 'yargs/yargs';
 
 import type { Decodable, RaidenConfig } from 'raiden-ts';
-import { Address, assert, decode, PfsMode, UInt } from 'raiden-ts';
+import {
+  Address,
+  assert,
+  decode,
+  DEFAULT_PFS_IOU_TIMEOUT,
+  DEFAULT_PFS_MAX_PATHS,
+  DEFAULT_POLLING_INTERVAL,
+  DEFAULT_REVEAL_TIMEOUT,
+  PfsMode,
+  UInt,
+} from 'raiden-ts';
 
 import DEFAULT_RAIDEN_CONFIG from './config.json';
 import DISCLAIMER from './disclaimer.json';
@@ -142,13 +152,13 @@ const yargsOptions = {
   },
   blockchainQueryInterval: {
     type: 'number',
-    default: 5,
+    default: DEFAULT_POLLING_INTERVAL,
     desc: 'Time interval after which to check for new blocks (in seconds)',
   },
   defaultRevealTimeout: {
     type: 'number',
-    default: 50,
-    desc: 'Default transfer reveal timeout',
+    default: DEFAULT_REVEAL_TIMEOUT,
+    desc: 'Default transfer reveal timeout, in seconds',
   },
   ethRpcEndpoint: {
     type: 'string',
@@ -192,7 +202,7 @@ const yargsOptions = {
   },
   pathfindingMaxPaths: {
     type: 'number',
-    default: 3,
+    default: DEFAULT_PFS_MAX_PATHS,
     desc: 'Set maximum number of paths to be requested from the path finding service.',
   },
   pathfindingMaxFee: {
@@ -203,8 +213,8 @@ const yargsOptions = {
   },
   pathfindingIouTimeout: {
     type: 'number',
-    default: 200000,
-    desc: 'Number of blocks before a new IOU to the path finding service expires.',
+    default: DEFAULT_PFS_IOU_TIMEOUT,
+    desc: 'Number of seconds before a new IOU to the PFS expires.',
   },
   enableMonitoring: {
     type: 'boolean',
@@ -236,16 +246,19 @@ const yargsOptions = {
     desc: 'Enables capping mediation fees to not allow them to be negative (output transfers amount always less than or equal input transfers)',
   },
   gasPrice: {
-    desc: "Set gasPrice factor for transactions's priority fees, as a multiplier of default `maxPriorityFeePerGas` (2.5 Gwei); some aliases: medium=1.05, fast=1.2, rapid=1.5",
+    desc: "Set gasPrice factor for transactions's priority fees, as a multiplier of default `maxPriorityFeePerGas` (2.5 Gwei); some aliases: rpc=1.0, medium=1.05, fast=1.2, faster|rapid=1.5",
     coerce(val?: string | string[]): number | undefined {
       if (!val) return;
       if (Array.isArray(val)) val = val[val.length - 1];
       let value;
       switch (val) {
+        case 'rpc':
+          return 1.0;
         case 'medium':
           return 1.05;
         case 'fast':
           return 1.2;
+        case 'faster':
         case 'rapid':
           return 1.5;
         default:

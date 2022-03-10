@@ -9,6 +9,9 @@ import {
   Capabilities,
   DEFAULT_CONFIRMATIONS,
   DEFAULT_MS_REWARD,
+  DEFAULT_PFS_IOU_TIMEOUT,
+  DEFAULT_PFS_MAX_PATHS,
+  DEFAULT_POLLING_INTERVAL,
   DEFAULT_REVEAL_TIMEOUT,
 } from './constants';
 import { PfsMode, PfsModeC } from './services/types';
@@ -154,15 +157,15 @@ export function makeDefaultConfig(
     additionalServices: [],
     pfsMode: PfsMode.auto,
     pfsSafetyMargin: 1.0, // multiplier
-    pfsMaxPaths: 3,
+    pfsMaxPaths: DEFAULT_PFS_MAX_PATHS,
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
-    pfsIouTimeout: 30 * 86400, // in seconds, defaults to 30 days
+    pfsIouTimeout: DEFAULT_PFS_IOU_TIMEOUT, // in seconds, defaults to 30 days
     confirmationBlocks: rollupChainIds.has(network.chainId) ? 0 : DEFAULT_CONFIRMATIONS,
     monitoringReward: DEFAULT_MS_REWARD,
     logger: 'info',
     fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     rateToSvt: {},
-    pollingInterval: 5000,
+    pollingInterval: DEFAULT_POLLING_INTERVAL * 1e3,
     minimumAllowance: MaxUint256 as UInt<32>,
     autoSettle: false,
     autoUDCWithdraw: true,
