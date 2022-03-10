@@ -36,5 +36,9 @@ export const CapsFallback = {
 
 export const RAIDEN_DEVICE_ID = 'RAIDEN';
 export const UDC_WITHDRAW_TIMEOUT = 100;
-export const DEFAULT_CONFIRMATIONS = 5;
-export const DEFAULT_MS_REWARD = parseEther('80') as UInt<32>;
+export const DEFAULT_CONFIRMATIONS = 5; // in blocks
+export const DEFAULT_POLLING_INTERVAL = 5; // in seconds
+export const DEFAULT_MS_REWARD = parseEther('80') as UInt<32>; // 80 SVT
+export const DEFAULT_REVEAL_TIMEOUT = 50; // in blocks
+export const DEFAULT_PFS_IOU_TIMEOUT = 200000; // in blocks
+export const DEFAULT_PFS_MAX_PATHS = 3;

@@ -5,7 +5,15 @@ import * as t from 'io-ts';
 import type { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 
-import { Capabilities, DEFAULT_CONFIRMATIONS, DEFAULT_MS_REWARD } from './constants';
+import {
+  Capabilities,
+  DEFAULT_CONFIRMATIONS,
+  DEFAULT_MS_REWARD,
+  DEFAULT_PFS_IOU_TIMEOUT,
+  DEFAULT_PFS_MAX_PATHS,
+  DEFAULT_POLLING_INTERVAL,
+  DEFAULT_REVEAL_TIMEOUT,
+} from './constants';
 import { PfsMode, PfsModeC } from './services/types';
 import { exponentialBackoff } from './transfers/epics/utils';
 import { Caps } from './transport/types';
@@ -143,21 +151,21 @@ export function makeDefaultConfig(
   return {
     matrixServerLookup: matrixServerInfos,
     settleTimeout: 500,
-    revealTimeout: 50,
+    revealTimeout: DEFAULT_REVEAL_TIMEOUT,
     expiryFactor: 1.1, // must be > 1.0
     httpTimeout: 30e3,
     additionalServices: [],
     pfsMode: PfsMode.auto,
     pfsSafetyMargin: 1.0, // multiplier
-    pfsMaxPaths: 3,
+    pfsMaxPaths: DEFAULT_PFS_MAX_PATHS,
     pfsMaxFee: parseEther('0.05') as UInt<32>, // in SVT/RDN, 18 decimals
-    pfsIouTimeout: 200000, // in blocks
+    pfsIouTimeout: DEFAULT_PFS_IOU_TIMEOUT,
     confirmationBlocks: DEFAULT_CONFIRMATIONS,
     monitoringReward: DEFAULT_MS_REWARD,
     logger: 'info',
     fallbackIceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     rateToSvt: {},
-    pollingInterval: 5000,
+    pollingInterval: DEFAULT_POLLING_INTERVAL * 1e3,
     minimumAllowance: MaxUint256 as UInt<32>,
     autoSettle: false,
     autoUDCWithdraw: true,
