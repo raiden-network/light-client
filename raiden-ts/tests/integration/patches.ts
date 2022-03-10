@@ -15,7 +15,7 @@ jest.mock('@ethersproject/transactions', () => {
     ...actual,
     __esModule: true,
     computeAddress: jest.fn((sig: string): string => {
-      if (sig.startsWith('0x00000000')) return getAddress('0x' + sig.substr(-44, 40));
+      if (sig.startsWith('0x00000000')) return getAddress('0x' + sig.slice(-44, -4));
       return mockOrigComputeAddress(sig);
     }),
   };
@@ -26,7 +26,7 @@ jest.mock('@ethersproject/wallet', () => {
     ...jest.requireActual<any>('@ethersproject/wallet'),
     __esModule: true,
     verifyMessage: jest.fn((_: string, sig: string): string =>
-      getAddress('0x' + sig.substr(-44, 40)),
+      getAddress('0x' + sig.slice(-44, -4)),
     ),
   };
 });
@@ -38,13 +38,15 @@ jest.mock('@ethersproject/signing-key', () => {
     private _address?: string;
     signDigest({}: BytesLike): Signature {
       if (!this._address) this._address = mockOrigComputeAddress(this['publicKey']);
-      const s = HashZero.substr(0, 24) + this._address!.substr(2).toLowerCase() + '00';
+      const s = HashZero.slice(0, 24) + this._address!.slice(2).toLowerCase() + '00';
       return {
         r: HashZero,
         s,
         _vs: s,
         recoveryParam: 0,
         v: 27,
+        yParityAndS: '',
+        compact: '',
       };
     }
   }
