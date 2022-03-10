@@ -57,7 +57,7 @@ export function makeTimestamp(time = new Date()): string {
 function fetchLastIou$(
   pfs: PFS,
   tokenNetwork: Address,
-  { address, signer, network, contractsInfo, config$ }: RaidenEpicDeps,
+  { address, log, signer, network, contractsInfo, config$ }: RaidenEpicDeps,
 ): Observable<IOU> {
   return defer(() => {
     const timestamp = makeTimestamp(),
@@ -82,7 +82,7 @@ function fetchLastIou$(
     withLatestFrom(config$),
     mergeMap(async ([response, { pfsIouTimeout }]) => {
       if (response.status === 404) {
-        return {
+        const iou = {
           sender: address,
           receiver: pfs.address,
           chain_id: BigNumber.from(network.chainId) as UInt<32>,
@@ -91,23 +91,24 @@ function fetchLastIou$(
           claimable_until: BigNumber.from(
             Math.round(Date.now() / 1e3 + pfsIouTimeout),
           ) as UInt<32>,
-        }; // return empty/zeroed IOU, but with valid new expiration
+        };
+        log.warn('PFS: new IOU created', iou);
+        return iou; // return empty/zeroed IOU, but with valid new expiration
       }
       const text = await response.text();
-      if (!response.ok)
-        throw new RaidenError(ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED, {
-          responseStatus: response.status,
-          responseText: text,
-        });
+      assert(response.ok, [
+        ErrorCodes.PFS_LAST_IOU_REQUEST_FAILED,
+        { responseStatus: response.status, responseText: text },
+      ]);
 
       const { last_iou: lastIou } = decode(LastIOUResults, jsonParse(text));
       // accept last IOU only if it was signed by us
       const signer = verifyMessage(packIOU(lastIou), lastIou.signature);
-      if (signer !== address)
-        throw new RaidenError(ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH, {
-          signer,
-          address,
-        });
+      assert(signer === address, [
+        ErrorCodes.PFS_IOU_SIGNATURE_MISMATCH,
+        { signer, address, lastIou },
+      ]);
+      log.warn('PFS: fetched non-cached signed IOU from server', lastIou);
       return lastIou;
     }),
   );
