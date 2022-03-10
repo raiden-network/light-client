@@ -14,7 +14,7 @@ jobs:
         node-version: [14.x]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: 'ChangeLog Reminder'
         uses: ./.github/actions/changelog-reminder
         with:
@@ -25,7 +25,7 @@ jobs:
   block-fixup:
       runs-on: ubuntu-latest
       steps:
-        - uses: actions/checkout@v2.4.0
+        - uses: actions/checkout@v3.0.0
         - name: 'Block Fixup Commit Merge'
           uses: 13rac1/block-fixup-merge-action@v2.0.0
 
@@ -37,7 +37,7 @@ jobs:
       matrix:
         workspace: ['raiden-ts', 'raiden-dapp', 'raiden-cli']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Check licenses for workspace
         uses: ./.github/actions/license-checker
         with:
