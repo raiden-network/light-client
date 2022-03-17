@@ -9,6 +9,7 @@ import {
   ignoreElements,
   mergeMap,
   takeUntil,
+  tap,
   withLatestFrom,
 } from 'rxjs/operators';
 
@@ -195,6 +196,10 @@ export function channelUpdateEpic(
             { error: ErrorCodes.CNL_UPDATE_NONCLOSING_BP_FAILED },
           ),
         ),
+        tap({
+          next: (v) => log.info('Updated channel', { channel, v }),
+          error: (error) => log.info('Error updating channel', { channel, error }),
+        }),
         retryWhile(intervalFromConfig(config$), {
           onErrors: commonAndFailTxErrors,
           log: log.info,
