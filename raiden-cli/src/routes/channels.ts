@@ -74,7 +74,7 @@ function transformChannelFormatForApi(this: Cli, channel: RaidenChannel): ApiCha
     total_withdraw: channel.ownWithdraw.toString(),
     state: transformChannelStateForApi(channel.state),
     settle_timeout: this.raiden.settleTimeout.toString(),
-    reveal_timeout: '50', // FIXME: Not defined here. Python client handles reveal timeout differently,
+    reveal_timeout: this.raiden.config.revealTimeout.toString(),
   };
 }
 
