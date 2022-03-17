@@ -246,12 +246,14 @@ const yargsOptions = {
     desc: 'Enables capping mediation fees to not allow them to be negative (output transfers amount always less than or equal input transfers)',
   },
   gasPrice: {
-    desc: "Set gasPrice factor for transactions's priority fees, as a multiplier of default `maxPriorityFeePerGas` (2.5 Gwei); some aliases: rpc=1.0, medium=1.05, fast=1.2, faster|rapid=1.5",
+    string: true as boolean,
+    desc: "Set gasPrice factor for transactions's priority fees, as a multiplier of default `maxPriorityFeePerGas` (2.5 Gwei) or RPC gasPrice; some aliases: normal|rpc=1.0, medium=1.05, fast=1.2, faster|rapid=1.5",
     coerce(val?: string | string[]): number | undefined {
       if (!val) return;
       if (Array.isArray(val)) val = val[val.length - 1];
       let value;
       switch (val) {
+        case 'normal':
         case 'rpc':
           return 1.0;
         case 'medium':
@@ -263,7 +265,7 @@ const yargsOptions = {
           return 1.5;
         default:
           value = +val;
-          assert(value && value > 0, 'invalid gasPrice');
+          assert(value && value > 0, `invalid gasPrice: ${val}`);
           return value;
       }
     },
