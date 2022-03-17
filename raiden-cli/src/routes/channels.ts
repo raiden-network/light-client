@@ -63,7 +63,7 @@ function transformChannelStateForApi(state: ChannelState): ApiChannelState {
   return apiState;
 }
 
-function transformChannelFormatForApi(channel: RaidenChannel): ApiChannel {
+function transformChannelFormatForApi(this: Cli, channel: RaidenChannel): ApiChannel {
   return {
     channel_identifier: channel.id.toString(),
     token_network_address: channel.tokenNetwork,
@@ -74,7 +74,7 @@ function transformChannelFormatForApi(channel: RaidenChannel): ApiChannel {
     total_withdraw: channel.ownWithdraw.toString(),
     state: transformChannelStateForApi(channel.state),
     settle_timeout: channel.settleTimeout.toString(),
-    reveal_timeout: '50', // FIXME: Not defined here. Python client handles reveal timeout differently,
+    reveal_timeout: this.raiden.config.revealTimeout.toString(),
   };
 }
 
@@ -85,7 +85,7 @@ async function getChannels(this: Cli, request: Request, response: Response) {
   if (token && partner) {
     const channel = channelsDict[token]?.[partner];
     if (channel) {
-      response.json(transformChannelFormatForApi(channel));
+      response.json(transformChannelFormatForApi.call(this, channel));
     } else {
       response.status(404).send('The channel does not exist');
     }
@@ -110,7 +110,7 @@ async function openChannel(this: Cli, request: Request, response: Response, next
     const channel = await firstValueFrom(
       this.raiden.channels$.pipe(pluck(token, partner), first(isntNil)),
     );
-    response.status(201).json(transformChannelFormatForApi(channel));
+    response.status(201).json(transformChannelFormatForApi.call(this, channel));
   } catch (error) {
     if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
@@ -234,7 +234,7 @@ async function updateChannel(this: Cli, request: Request, response: Response, ne
         request.body.total_withdraw.toString(),
       );
     }
-    response.status(200).json(transformChannelFormatForApi(channel));
+    response.status(200).json(transformChannelFormatForApi.call(this, channel));
   } catch (error) {
     if (isInsuficientFundsError(error)) {
       response.status(402).send(error.message);
