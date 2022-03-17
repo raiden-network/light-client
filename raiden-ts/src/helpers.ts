@@ -55,7 +55,9 @@ import {
   putRaidenState,
   replaceDatabase,
 } from './db/utils';
+import goerliDeploy from './deployment/deployment_goerli_unstable.json';
 import rinkebyArbitrumDeploy from './deployment/deployment_rinkeby-arbitrum.json';
+import goerliServicesDeploy from './deployment/deployment_services_goerli_unstable.json';
 import rinkebyArbitrumServicesDeploy from './deployment/deployment_services_rinkeby-arbitrum.json';
 import { makeInitialState, RaidenState } from './state';
 import { standardCalculator } from './transfers/mediate/types';
@@ -91,10 +93,10 @@ function getContracts(network: Network): ContractsInfo {
     // runtime due to missing or wrong path of JSONs in dist folders, but we still try that as
     // fallback nin the `default` case
     case 'arbitrum-rinkeby':
-      info = {
-        ...rinkebyArbitrumDeploy.contracts,
-        ...rinkebyArbitrumServicesDeploy.contracts,
-      };
+      info = { ...rinkebyArbitrumDeploy.contracts, ...rinkebyArbitrumServicesDeploy.contracts };
+      break;
+    case 'goerli':
+      info = { ...goerliDeploy.contracts, ...goerliServicesDeploy.contracts };
       break;
     default:
       try {
