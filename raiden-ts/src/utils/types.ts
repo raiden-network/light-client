@@ -38,13 +38,13 @@ export function decode<C extends t.Mixed>(
     reporterAssert(decoded);
     return decoded.right;
   } catch (originalError) {
-    log?.('__decode failed:', codec, data);
+    log?.('__decode failed:', codec.name, codec, data, originalError);
 
-    if (!customError) {
-      throw originalError;
-    } else {
-      throw customError instanceof Error ? customError : new RaidenError(customError);
-    }
+    throw customError
+      ? customError instanceof Error
+        ? Object.assign(customError, { data })
+        : new RaidenError(customError, { data })
+      : Object.assign(originalError, { data });
   }
 }
 
@@ -276,7 +276,7 @@ export const Signed: <C extends t.Mixed>(codec: C) => SignedC<C> = memoize(
 /**
  * Memoized factory to create codecs validating an arbitrary class C
  *
- * @param C - Class to create a codec for
+ * @param name - Class to create a codec for
  * @returns Codec validating class C
  */
 export const instanceOf: <C>(name: string) => t.Type<C> = memoize(
