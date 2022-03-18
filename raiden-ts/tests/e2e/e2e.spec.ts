@@ -14,6 +14,8 @@ import { assert } from '@/utils';
 import { ErrorCodes, RaidenError } from '@/utils/error';
 import type { Address } from '@/utils/types';
 
+import { sleep } from '../utils';
+
 jest.setTimeout(500_000);
 
 const svtBalance = '1000000000000000000000';
@@ -226,6 +228,7 @@ describe('e2e', () => {
      * Close channel with PC
      */
     await expect(raiden.closeChannel(getToken(), partner1)).resolves.toMatch('0x');
+    await sleep(2e3); // wait a while for settle/success to be detected
 
     // channel coop-settled!
     await expect(raiden.settleChannel(getToken(), partner1)).rejects.toThrowWithMessage(
