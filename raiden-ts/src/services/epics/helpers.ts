@@ -220,7 +220,7 @@ function getRouteFromPfs$(
       const data = jsonParse(text);
 
       if (!response.ok) {
-        const error = decode(PfsError, data);
+        const error = decode(PfsError, data, undefined, deps.log.warn);
         return { iou, error };
       }
       return { iou, paths: parsePfsResponse(data, action.meta.value, config) };
