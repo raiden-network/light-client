@@ -56,6 +56,9 @@ export default class ChannelDepositAndTransferAction extends Mixins(ActionMixin)
 
     await this.$raiden.deposit(tokenAddress, partnerAddress, depositTokenAmount);
 
+    // Sleep for short while to let the partner node see the channel deposit event.
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
     this.depositStep.completed = true;
     this.depositStep.active = false;
     this.transferStep.active = true;
