@@ -1288,7 +1288,7 @@ export class Raiden {
   public async transferOnchainBalance(
     to: string,
     value: BigNumberish = MaxUint256,
-    { subkey, gasPrice }: { subkey?: boolean; gasPrice?: BigNumberish } = {},
+    { subkey, gasPrice: price }: { subkey?: boolean; gasPrice?: BigNumberish } = {},
   ): Promise<Hash> {
     assert(Address.is(to), [ErrorCodes.DTA_INVALID_ADDRESS, { to }], this.log.info);
 
@@ -1296,22 +1296,27 @@ export class Raiden {
 
     // we use provider.getGasPrice directly in order to use the old gasPrice for txs, which
     // allows us to predict exactly the final gasPrice and deplet balance
-    const price = gasPrice ? BigNumber.from(gasPrice) : await this.deps.provider.getGasPrice();
-    const gasLimit = BigNumber.from(21000);
+    const gasPrice = price ? BigNumber.from(price) : await this.deps.provider.getGasPrice();
 
     const curBalance = await this.getBalance(address);
+    const gasLimit = await this.deps.provider.estimateGas({
+      from: address,
+      to,
+      value: curBalance,
+    });
+
     // transferableBalance is current balance minus the cost of a single transfer as per gasPrice
-    const transferableBalance = curBalance.sub(price.mul(gasLimit));
+    const transferableBalance = curBalance.sub(gasPrice.mul(gasLimit));
     assert(
       transferableBalance.gt(Zero),
-      [ErrorCodes.RDN_INSUFFICIENT_BALANCE, { transferable: transferableBalance.toString() }],
-      this.log.info,
+      [ErrorCodes.RDN_INSUFFICIENT_BALANCE, { transferableBalance }],
+      this.log.warn,
     );
 
     // caps value to transferableBalance, so if it's too big, transfer all
     const amount = transferableBalance.lte(value) ? transferableBalance : BigNumber.from(value);
 
-    const tx = await signer.sendTransaction({ to, value: amount, gasPrice: price, gasLimit });
+    const tx = await signer.sendTransaction({ to, value: amount, gasPrice, gasLimit });
     const receipt = await tx.wait();
 
     assert(receipt.status, ErrorCodes.RDN_TRANSFER_ONCHAIN_BALANCE_FAILED, this.log.info);
