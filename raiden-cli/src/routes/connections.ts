@@ -2,7 +2,8 @@ import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { firstValueFrom } from 'rxjs';
 
-import { ChannelState, isntNil } from 'raiden-ts';
+import type { Address, Raiden } from 'raiden-ts';
+import { ChannelState } from 'raiden-ts';
 
 import type { Cli } from '../types';
 import {
@@ -20,6 +21,39 @@ export interface ApiConnection {
 
 export interface ApiTokenConnections {
   [token: string]: ApiConnection;
+}
+
+/**
+ * @param this - Raiden instance
+ * @param token - if set, close & settle only channels from this token
+ * @returns object containing list of closeTxs, settleTxs and partners
+ */
+export async function closeAndSettleAll(this: Raiden, token?: Address) {
+  const channelsDict = await firstValueFrom(this.channels$);
+  const promises: Promise<unknown>[] = [];
+  const result: {
+    closeTxs: string[];
+    settleTxs: string[];
+    partners: Address[];
+  } = { closeTxs: [], settleTxs: [], partners: [] };
+  for (const partnerChannels of Object.values(channelsDict)) {
+    for (const channel of Object.values(partnerChannels)) {
+      if (token && channel.token !== token) continue;
+      promises.push(
+        (async () => {
+          if ([ChannelState.open, ChannelState.closing].includes(channel.state)) {
+            result.closeTxs.push(await this.closeChannel(channel.token, channel.partner));
+          }
+          try {
+            result.settleTxs.push(await this.settleChannel(channel.token, channel.partner));
+          } catch (e) {} // maybe coop-settled
+          if (!result.partners.includes(channel.partner)) result.partners.push(channel.partner);
+        })(),
+      );
+    }
+  }
+  await Promise.all(promises);
+  return result;
 }
 
 async function getConnections(this: Cli, _request: Request, response: Response) {
@@ -95,7 +129,6 @@ async function connectTokenNetwork(
 
 /**
  * Closes all closeable channels in a token network
- * TODO: implement auto-settle (see discussion at #237)
  *
  * @param this - Cli object
  * @param request - Request param
@@ -106,23 +139,8 @@ async function disconnectTokenNetwork(this: Cli, request: Request, response: Res
   const token: string = request.params.tokenAddress;
   const channelsDict = await firstValueFrom(this.raiden.channels$);
   if (!channelsDict[token]) return response.status(404).send('No channels on tokenNetwork');
-  const closeableChannels = Object.values(channelsDict[token]).filter((channel) =>
-    [ChannelState.open, ChannelState.closing].includes(channel.state),
-  );
-  const promises: Promise<string | undefined>[] = [];
-  for (let i = 0; i < closeableChannels.length; i++) {
-    // if more than one channel to close, wait 1s between each call to avoid nonce races
-    if (i > 0) await new Promise((resolve) => setTimeout(resolve, 1000));
-    const channel = closeableChannels[i];
-    promises.push(
-      this.raiden.closeChannel(token, channel.partner).then(
-        () => channel.partner,
-        () => undefined,
-      ),
-    );
-  }
-  const partners: string[] = (await Promise.all(promises)).filter(isntNil);
-  response.json(partners);
+  const result = await closeAndSettleAll.call(this.raiden, token as Address);
+  response.json(result.partners);
 }
 
 /**
