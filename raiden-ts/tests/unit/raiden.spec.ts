@@ -22,16 +22,7 @@ import {
   ReplaySubject,
   Subject,
 } from 'rxjs';
-import {
-  filter,
-  first,
-  ignoreElements,
-  map,
-  mapTo,
-  mergeMap,
-  mergeMapTo,
-  pluck,
-} from 'rxjs/operators';
+import { filter, first, ignoreElements, map, mapTo, mergeMap, pluck } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
 import { raidenConfigUpdate, raidenShutdown, raidenStarted, raidenSynced } from '@/actions';
@@ -161,6 +152,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
       transactionHash: txHash,
     })),
     getFeeData: jest.fn(async () => ({ gasPrice: BigNumber.from(1e9) })),
+    estimateGas: jest.fn(async () => BigNumber.from(21e3)),
   });
   const signer = wallet.connect(provider);
   const latest$ = new ReplaySubject<Latest>(1);
@@ -276,7 +268,7 @@ describe('Raiden', () => {
   function initEpicMock(action$: Observable<RaidenAction>): Observable<RaidenAction> {
     return action$.pipe(
       filter(raidenStarted.is),
-      mergeMapTo([
+      mergeMap(() => [
         raidenSynced({
           tookMs: 9,
           initialBlock: 1,
@@ -286,17 +278,13 @@ describe('Raiden', () => {
     );
   }
 
-  function UDCDepositEpicMock(action$: Observable<RaidenAction>) {
+  function udcDepositEpicMock(action$: Observable<RaidenAction>) {
     return action$.pipe(
       filter(raidenStarted.is),
-      mapTo(
+      map(() =>
         udcDeposit.success(
-          {
-            balance: BigNumber.from(42) as UInt<32>,
-          },
-          {
-            totalDeposit: BigNumber.from(100) as UInt<32>,
-          },
+          { balance: BigNumber.from(42) as UInt<32> },
+          { totalDeposit: BigNumber.from(100) as UInt<32> },
         ),
       ),
     );
@@ -509,7 +497,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       dummyState,
       deps,
-      combineRaidenEpics([initEpicMock, UDCDepositEpicMock]),
+      combineRaidenEpics([initEpicMock, udcDepositEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
@@ -523,7 +511,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       dummyState,
       deps,
-      combineRaidenEpics([initEpicMock, UDCDepositEpicMock]),
+      combineRaidenEpics([initEpicMock, udcDepositEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
@@ -594,7 +582,7 @@ describe('Raiden', () => {
     function udcWithdrawEpicMock(action$: Observable<RaidenAction>) {
       return action$.pipe(
         filter(udcWithdrawPlan.request.is),
-        mapTo(
+        map(() =>
           udcWithdrawPlan.success(
             {
               block: withdrawBlock,
@@ -611,7 +599,7 @@ describe('Raiden', () => {
     const raiden = new Raiden(
       dummyState,
       deps,
-      combineRaidenEpics([initEpicMock, udcWithdrawEpicMock]),
+      combineRaidenEpics([initEpicMock, udcDepositEpicMock, udcWithdrawEpicMock]),
       dummyReducer,
     );
     await expect(raiden.start()).resolves.toBeUndefined();
