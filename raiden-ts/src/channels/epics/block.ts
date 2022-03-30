@@ -25,7 +25,7 @@ import {
 } from 'rxjs/operators';
 
 import type { ConfirmableAction, RaidenAction } from '../../actions';
-import { raidenSynced } from '../../actions';
+import { raidenConfigUpdate, raidenSynced } from '../../actions';
 import { intervalFromConfig } from '../../config';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
@@ -199,6 +199,7 @@ export function blockStaleEpic(
  * @param action$ - Observable of RaidenActions
  * @param state$ - Observable of RaidenStates
  * @param deps - RaidenEpicDeps members
+ * @param deps.log - Logger instance
  * @param deps.registryContract - TokenNetworkRegistry instance
  * @param deps.config$ - Config observable
  * @param deps.init$ - Observable of sync tasks
@@ -206,17 +207,32 @@ export function blockStaleEpic(
  */
 export function contractSettleTimeoutEpic(
   {}: Observable<RaidenAction>,
-  {}: Observable<RaidenState>,
-  { registryContract, config$, init$ }: RaidenEpicDeps,
-): Observable<contractSettleTimeout> {
+  state$: Observable<RaidenState>,
+  { log, registryContract, config$, init$ }: RaidenEpicDeps,
+): Observable<contractSettleTimeout | raidenConfigUpdate> {
   let done$: AsyncSubject<null>;
   return defer(async () => {
     done$ = new AsyncSubject();
     init$.next(done$);
     return registryContract.callStatic.settle_timeout();
   }).pipe(
+    map((settleTimeout) => settleTimeout.toNumber()),
     retryWhile(intervalFromConfig(config$)),
-    map((settleTimeout) => contractSettleTimeout(settleTimeout.toNumber())),
+    withLatestFrom(state$, config$),
+    mergeMap(function* ([settleTimeout, { config: userConfig }, { revealTimeout }]) {
+      yield contractSettleTimeout(settleTimeout);
+      if (revealTimeout <= settleTimeout / 2) return;
+      if (!('revealTimeout' in userConfig)) {
+        // in case user hasn't explicitly set config.revealTimeout, choose a sane default
+        yield raidenConfigUpdate({ revealTimeout: Math.floor(settleTimeout / 2) });
+      } else {
+        // otherwise, warn but don't error to allow them to reset it
+        log.warn('Invalid `config.revealTimeout` - transfers may fail', {
+          revealTimeout,
+          maxRevealTimeout: settleTimeout / 2,
+        });
+      }
+    }),
     tap(() => {
       done$.next(null);
       done$.complete();

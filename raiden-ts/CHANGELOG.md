@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- [#3118] Dynamically set `config.revealTimeout` to half of `tokenNetworkRegistryContract.settleTimeout`, if it'd be smaller than default of 600s
+
 ## [3.0.0] - 2022-05-02
 ### Fixed
 - [#3106] Fix bug where `Raiden.transferOnchainTokens` with `subkey=true` could be ignored and main account used instead
