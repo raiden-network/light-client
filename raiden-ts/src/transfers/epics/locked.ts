@@ -141,13 +141,13 @@ function makeAndSignTransfer$(
     expiration = now;
     if ('lockTimeout' in action.payload && action.payload.lockTimeout)
       expiration += action.payload.lockTimeout;
-    else expiration += Math.min(revealTimeout * expiryFactor, settleTimeout / 2);
+    else expiration += Math.min(revealTimeout * expiryFactor, settleTimeout - 1);
   }
   expiration = decode(UInt(32), Math.ceil(expiration));
 
-  // revealTimeout <= Δexpiration <= settleTimeout
+  // revealTimeout < Δexpiration < settleTimeout
   // to ensure we'll have enough time to tx in case it expires, but it can't outlive channel
-  assert(expiration.gte(now + revealTimeout), [
+  assert(expiration.gt(now + revealTimeout), [
     'expiration too soon',
     { expiration, blockNumber: state.blockNumber, settleTimeout, revealTimeout },
   ]);
