@@ -41,7 +41,7 @@
     "eslint-plugin-lodash": "^7.4.0",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
-    "prettier": "^2.6.0",
+    "prettier": "^2.6.1",
     "rimraf": "^3.0.2"
   },
   "resolutions": {
