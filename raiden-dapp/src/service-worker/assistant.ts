@@ -45,9 +45,9 @@ export default class ServiceWorkerAssistant {
 
     if (this.serviceWorkerContainer) {
       this.serviceWorkerContainer.addEventListener('message', this.onMessage.bind(this));
-      this.updateAvailableVersion();
+      // this.updateAvailableVersion();
 
-      setInterval(this.updateAvailableVersion.bind(this), updateAvailableVersionInterval);
+      // setInterval(this.updateAvailableVersion.bind(this), updateAvailableVersionInterval);
       setInterval(this.verifyCacheValidity.bind(this), verifyCacheValidityInverval);
     }
   }
@@ -82,7 +82,8 @@ export default class ServiceWorkerAssistant {
     const { version } = payload;
 
     if (validateVersion(version as string)) {
-      this.store.commit('versionInformation/setInstalledVersion', version);
+      // this.store.commit('versionInformation/setInstalledVersion', version);
+      return
     } else {
       throw new Error(`Malformed installation version: ${version}`);
     }

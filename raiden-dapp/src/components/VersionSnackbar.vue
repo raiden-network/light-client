@@ -40,7 +40,6 @@ export default class VersionSnackbar extends Vue {
 
   get visible(): boolean {
     return (
-      !this.correctVersionIsLoaded ||
       this.updateIsAvailable ||
       this.updateIsMandatory ||
       this.updateInProgress
