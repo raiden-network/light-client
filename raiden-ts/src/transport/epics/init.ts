@@ -309,12 +309,10 @@ export function initMatrixEpic(
       // on [re-]subscription (defer), pops next observable and subscribe to it
       return defer(() => servers$Array.shift() || EMPTY).pipe(
         catchError(andSuppress), // servers$ may error, so store lastError
+        // serially, try setting up client and validate its credential
         concatMap(({ server, setup }) =>
-          // serially, try setting up client and validate its credential
-          setupMatrixClient$(server, setup, deps).pipe(
-            // store and suppress any 'setupMatrixClient$' error
-            catchError(andSuppress),
-          ),
+          // store and suppress any 'setupMatrixClient$' error
+          setupMatrixClient$(server, setup, deps).pipe(catchError(andSuppress)),
         ),
         // on first setupMatrixClient$'s success, emit, complete and unsubscribe
         first(),
