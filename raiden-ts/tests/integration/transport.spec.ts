@@ -15,7 +15,7 @@ import type { Delivered, Processed } from '@/messages/types';
 import { MessageType } from '@/messages/types';
 import { encodeJsonMessage, signMessage } from '@/messages/utils';
 import { servicesValid } from '@/services/actions';
-import { Service, ServiceDeviceId } from '@/services/types';
+import { PfsMode, Service, ServiceDeviceId } from '@/services/types';
 import { makeMessageId } from '@/transfers/utils';
 import { matrixPresence, matrixSetup, rtcChannel } from '@/transport/actions';
 import { getSortedAddresses } from '@/transport/utils';
@@ -72,22 +72,18 @@ function mockRTC() {
       createOffer = jest.fn(async () => ({ type: 'offer', sdp: 'offerSdp' }));
       createAnswer = jest.fn(async () => ({ type: 'answer', sdp: 'answerSdp' }));
       setLocalDescription = jest.fn(async () => {
-        setTimeout(() => {
-          connection.emit('icecandidate', { candidate: 'candidate1Fail' });
-          connection.emit('icecandidate', { candidate: 'myCandidate' });
-          connection.emit('icecandidate', { candidate: null });
-        }, 5);
+        connection.emit('icecandidate', { candidate: 'candidate1Fail' });
+        connection.emit('icecandidate', { candidate: 'myCandidate' });
+        connection.emit('icecandidate', { candidate: null });
       });
       setRemoteDescription = jest.fn(async () => {
         /* remote */
       });
       addIceCandidate = jest.fn(async () => {
-        setTimeout(() => connection.emit('datachannel', { channel }), 2);
-        setTimeout(() => {
-          Object.assign(channel, { readyState: 'open' });
-          channel.emit('open', true);
-        }, 5);
-        setTimeout(() => channel.emit('message', { data: 'ping' }), 12);
+        connection.emit('datachannel', { channel });
+        Object.assign(channel, { readyState: 'open' });
+        channel.emit('open', true);
+        channel.emit('message', { data: 'ping' });
       });
       close = jest.fn();
     }
@@ -199,12 +195,58 @@ describe('initMatrixEpic', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  test('matrix fetch server from PFS', async () => {
+    expect.assertions(3);
+
+    // set PfsMode.onlyAdditional and ensure it uses matrixServer from PFS
+    raiden.store.dispatch(
+      raidenConfigUpdate({ matrixServer: '', pfsMode: PfsMode.onlyAdditional }),
+    );
+    const resp = {
+      message: '',
+      matrix_server: 'http://transport.raiden.test',
+      network_info: {
+        chain_id: raiden.deps.network.chainId,
+        token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+      },
+      operator: 'TestOp',
+      payment_address: makeAddress(),
+      price_info: '100',
+      version: '0.1.2',
+    };
+    fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: jest.fn(async () => jsonStringify(resp)),
+      json: jest.fn(async () => resp),
+    });
+    await raiden.start();
+    await sleep();
+
+    expect(raiden.output).toContainEqual(
+      matrixSetup({
+        server: resp.matrix_server,
+        setup: {
+          userId: `@${raiden.address.toLowerCase()}:${getServerName(resp.matrix_server)}`,
+          accessToken: expect.any(String),
+          deviceId: expect.any(String),
+          displayName: expect.any(String),
+        },
+      }),
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/v1\/info$/),
+      expect.anything(),
+    );
+  });
+
   test('matrix fetch servers list', async () => {
     expect.assertions(2);
 
     // make the matrixServer falsy otherwise fetchSortedMatrixServers$
     // inside initMatrixEpic is not called. This will force fetching server list
-    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
+    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '', pfsMode: PfsMode.disabled }));
     await raiden.start();
     await sleep();
 
@@ -231,7 +273,7 @@ describe('initMatrixEpic', () => {
       status: 404,
       json: jest.fn(async () => ({})),
     });
-    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
+    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '', pfsMode: PfsMode.disabled }));
 
     await raiden.start();
     await lastValueFrom(raiden.action$);
@@ -267,7 +309,7 @@ describe('initMatrixEpic', () => {
     });
 
     // set fetch list from matrixServerLookup
-    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '' }));
+    raiden.store.dispatch(raidenConfigUpdate({ matrixServer: '', pfsMode: PfsMode.disabled }));
     await raiden.start();
     await lastValueFrom(raiden.action$);
 
@@ -308,7 +350,14 @@ describe('matrixMonitorPresenceEpic', () => {
   const capabilities = 'mxc://test?Delivery=0';
 
   beforeAll(() => fetch.mockClear());
-  beforeEach(() => fetch.mockImplementation(async () => ({ ok: true, status: 200, json })));
+  beforeEach(() =>
+    fetch.mockImplementation(async () => ({
+      ok: true,
+      status: 200,
+      json,
+      text: jest.fn(async () => jsonStringify(await json())),
+    })),
+  );
   afterEach(() => fetch.mockRestore());
 
   test('fails when users does not have displayName', async () => {
@@ -316,13 +365,26 @@ describe('matrixMonitorPresenceEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     const partnerUserId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
+    // pfs /info response
+    json.mockImplementationOnce(async () => ({
+      matrix_server: (await firstValueFrom(raiden.deps.matrix$)).getHomeserverUrl(),
+      network_info: {
+        chain_id: raiden.deps.network.chainId,
+        token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+      },
+      payment_address: makeAddress(),
+      price_info: '100',
+    }));
     json.mockImplementationOnce(async () => ({ user_id: partnerUserId }));
 
     raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
 
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
-      matrixPresence.failure(expect.any(Error), { address: partner.address }),
+      matrixPresence.failure(
+        expect.objectContaining({ message: expect.stringContaining('Invalid value undefined') }),
+        { address: partner.address },
+      ),
     );
   });
 
@@ -331,6 +393,16 @@ describe('matrixMonitorPresenceEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     const partnerUserId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
+    // pfs /info response
+    json.mockImplementationOnce(async () => ({
+      matrix_server: (await firstValueFrom(raiden.deps.matrix$)).getHomeserverUrl(),
+      network_info: {
+        chain_id: raiden.deps.network.chainId,
+        token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+      },
+      payment_address: makeAddress(),
+      price_info: '100',
+    }));
     json.mockImplementationOnce(async () => ({
       user_id: partnerUserId,
       displayname: hexlify(randomBytes(65)),
@@ -344,7 +416,12 @@ describe('matrixMonitorPresenceEpic', () => {
 
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
-      matrixPresence.failure(expect.any(Error), { address: partner.address }),
+      matrixPresence.failure(
+        expect.objectContaining({
+          message: expect.stringContaining('Invalid metadata signature'),
+        }),
+        { address: partner.address },
+      ),
     );
   });
 
@@ -353,6 +430,17 @@ describe('matrixMonitorPresenceEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     const partnerUserId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
+    // pfs /info response
+    json.mockImplementationOnce(async () => ({
+      matrix_server: (await firstValueFrom(raiden.deps.matrix$)).getHomeserverUrl(),
+      network_info: {
+        chain_id: raiden.deps.network.chainId,
+        token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+      },
+      payment_address: makeAddress(),
+      price_info: '100',
+    }));
+    // pfs /metadata response
     json.mockImplementationOnce(async () => ({
       user_id: partnerUserId,
       displayname: partner.store.getState().transport.setup!.displayName,
@@ -916,7 +1004,7 @@ describe('rtcConnectionManagerEpic', () => {
 
   afterEach(() => {
     RTCPeerConnection.mockRestore();
-    jest.restoreAllMocks();
+    // jest.restoreAllMocks();
   });
 
   test('skip if no webrtc capability exists', async () => {
@@ -931,12 +1019,16 @@ describe('rtcConnectionManagerEpic', () => {
 
     const partnerId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
 
+    let channel!: MockedDataChannel;
+    const sub = raiden.deps.latest$.subscribe(({ rtc }) => {
+      if (rtc[partner.address]) channel = rtc[partner.address] as MockedDataChannel;
+    });
     const promise = firstValueFrom(
       raiden.deps.latest$.pipe(pluck('rtc', partner.address), first(isntNil)),
     );
     await ensureChannelIsOpen([raiden, partner]);
+    await promise;
 
-    const channel = (await promise) as MockedDataChannel;
     expect(channel).toMatchObject({ readyState: 'open' });
     expect(raiden.output).toContainEqual(
       rtcChannel(expect.objectContaining({ readyState: 'open' }), { address: partner.address }),
@@ -978,11 +1070,10 @@ describe('rtcConnectionManagerEpic', () => {
       ),
     );
 
+    await sleep(200);
     channel.emit('error', { error: new Error('errored') });
     // right after erroring, channel must be cleared
-    await expect(
-      firstValueFrom(raiden.deps.latest$.pipe(pluck('rtc', partner.address))),
-    ).resolves.toBeUndefined();
+    expect(raiden.output).toContainEqual(rtcChannel(undefined, { address: partner.address }));
 
     // erroring node should send a 'hangup' to partner
     expect(raiden.output).toContainEqual(
@@ -991,5 +1082,8 @@ describe('rtcConnectionManagerEpic', () => {
         { address: partner.address, msgId: expect.any(String) },
       ),
     );
+
+    sub.unsubscribe();
+    await Promise.all([raiden.stop(), partner.stop()]);
   });
 });

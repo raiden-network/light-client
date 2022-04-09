@@ -70,6 +70,7 @@ describe('PFS: pfsRequestEpic', () => {
   function makePfsInfoResponse() {
     return {
       message: 'pfs message',
+      matrix_server: 'http://transport.pfs.raiden.test',
       network_info: {
         chain_id: raiden.deps.network.chainId,
         token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
@@ -394,6 +395,7 @@ describe('PFS: pfsRequestEpic', () => {
           pfs: {
             address: pfsAddress,
             url: pfsUrl,
+            matrixServer: makePfsInfoResponse().matrix_server,
             rtt: 3,
             price: One as UInt<32>,
             token: (await raiden.deps.serviceRegistryContract.token()) as Address,

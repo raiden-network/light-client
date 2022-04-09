@@ -1,8 +1,7 @@
 import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
-import uniq from 'lodash/uniq';
 import type { Observable } from 'rxjs';
-import { combineLatest, from, of } from 'rxjs';
+import { of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -16,6 +15,7 @@ import {
   map,
   mergeMap,
   pluck,
+  shareReplay,
   startWith,
   switchMap,
   tap,
@@ -26,14 +26,14 @@ import {
 import type { RaidenAction } from '../../actions';
 import { channelMonitored } from '../../channels/actions';
 import { intervalFromConfig } from '../../config';
-import { PfsMode } from '../../services/types';
-import { getPresenceFromService$ } from '../../services/utils';
+import type { PFS } from '../../services/types';
+import { choosePfs$, getPresenceFromService$ } from '../../services/utils';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { isActionOf } from '../../utils/actions';
 import { networkErrors } from '../../utils/error';
 import { catchAndLog, completeWith, retryWhile, withMergeFrom } from '../../utils/rx';
-import type { Address } from '../../utils/types';
+import type { Address, Last } from '../../utils/types';
 import { matrixPresence } from '../actions';
 import { stringifyCaps } from '../utils';
 
@@ -41,34 +41,31 @@ import { stringifyCaps } from '../utils';
  * Fetch peer's presence info from services
  *
  * @param address - Address of interest
+ * @param pfs$ - Observable of cached best PFS
  * @param deps - Epics dependencies
  * @returns Observable of user with most recent presence
  */
 function searchAddressPresence$(
   address: Address,
-  deps: Pick<RaidenEpicDeps, 'latest$' | 'config$' | 'serviceRegistryContract' | 'log'>,
+  pfs$: Observable<PFS>,
+  deps: Pick<RaidenEpicDeps, 'config$'> & Last<Parameters<typeof getPresenceFromService$>>,
 ) {
-  const { config$, latest$ } = deps;
-  return combineLatest([latest$, config$]).pipe(
-    first(),
-    mergeMap(([{ state }, { pfsMode, additionalServices, httpTimeout }]) => {
-      let services = additionalServices;
-      if (pfsMode !== PfsMode.onlyAdditional)
-        services = uniq([...services, ...Object.keys(state.services)]);
-      return from(services).pipe(
-        concatMap((service) =>
-          getPresenceFromService$(address, service, deps).pipe(
-            timeout(httpTimeout),
-            catchAndLog(
-              { onErrors: networkErrors, maxRetries: 1 },
-              'Error fetching presence from service',
-              address,
-            ),
-          ),
+  return pfs$.pipe(
+    withLatestFrom(deps.config$),
+    concatMap(([{ url }, { httpTimeout }]) =>
+      getPresenceFromService$(address, url, deps).pipe(
+        timeout(httpTimeout),
+        // this catchAndLog will suppress error and retry next PFS only if error is a networkError,
+        // otherwise (e.g. address offline) will error early and become matrixPresence.failure
+        catchAndLog(
+          { onErrors: networkErrors, log: deps.log.debug },
+          'Error fetching presence from service',
+          address,
+          url,
         ),
-        first(),
-      );
-    }),
+      ),
+    ),
+    first(),
     catchError((err) => of(matrixPresence.failure(err, { address }))),
   );
 }
@@ -96,6 +93,7 @@ export function matrixMonitorPresenceEpic(
 ): Observable<matrixPresence.success | matrixPresence.failure> {
   const { latest$, config$ } = deps;
   const cache = new Map<Address, matrixPresence.success>();
+  const pfs$ = choosePfs$(undefined, deps, true).pipe(shareReplay());
   return action$.pipe(
     tap((action) => {
       if (matrixPresence.success.is(action)) cache.set(action.meta.address, action);
@@ -114,7 +112,7 @@ export function matrixMonitorPresenceEpic(
           // we already fetched this peer's presence recently, or there's an RTC channel with them
           if (cached && (Date.now() - cached.payload.ts < pollingInterval || address in rtc))
             return of(cached);
-          return searchAddressPresence$(address, deps);
+          return searchAddressPresence$(address, pfs$, deps);
         }),
       ),
     ),
