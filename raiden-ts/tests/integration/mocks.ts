@@ -27,7 +27,7 @@ import { applyMiddleware, createStore } from 'redux';
 import { createEpicMiddleware } from 'redux-observable';
 import type { Observable } from 'rxjs';
 import { AsyncSubject, firstValueFrom, lastValueFrom, ReplaySubject } from 'rxjs';
-import { filter, finalize } from 'rxjs/operators';
+import { filter, finalize, first, map } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
 import { raidenShutdown, raidenStarted } from '@/actions';
@@ -936,6 +936,11 @@ export async function makeRaiden(
     db,
     init$: new ReplaySubject<Observable<any>>(),
     mediationFeeCalculator: standardCalculator,
+    getBlockTimestamp: (block: number) =>
+      config$.pipe(
+        first(),
+        map(({ httpTimeout }) => (httpTimeout / 2e3) * block),
+      ),
   };
 
   const epicMiddleware = createEpicMiddleware<

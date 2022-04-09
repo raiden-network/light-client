@@ -294,7 +294,7 @@ export function initMatrixEpic(
 
         // server from PFSs, will prefer/pick matrixServer compatible with explicit PFS
         servers$Array.push(
-          choosePfs$(undefined, deps).pipe(map(({ matrixServer: server }) => ({ server }))),
+          choosePfs$(undefined, deps, true).pipe(map(({ matrixServer: server }) => ({ server }))),
         );
 
         // fetched servers list

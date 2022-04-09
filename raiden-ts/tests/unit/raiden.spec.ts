@@ -236,6 +236,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
     db,
     init$: new ReplaySubject(),
     mediationFeeCalculator: standardCalculator,
+    getBlockTimestamp: () => of(Math.round(Date.now() / 1e3)),
   };
 }
 
