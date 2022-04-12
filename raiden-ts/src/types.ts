@@ -1,6 +1,7 @@
 import type { Signer } from '@ethersproject/abstract-signer';
 import type { Network } from '@ethersproject/networks';
 import type { JsonRpcProvider } from '@ethersproject/providers';
+import * as t from 'io-ts';
 import type { Logger } from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { AsyncSubject, Observable, Subject } from 'rxjs';
@@ -20,21 +21,20 @@ import type { RaidenDatabase } from './db/types';
 import type { PFSFeeUpdate } from './messages/types';
 import type { RaidenState } from './state';
 import type { FeeModel } from './transfers/mediate/types';
-import type { Address, UInt } from './utils/types';
+import type { UInt } from './utils/types';
+import { Address } from './utils/types';
 
-interface Info {
-  address: Address;
-  block_number: number;
-}
-
-export interface ContractsInfo {
-  TokenNetworkRegistry: Info;
-  ServiceRegistry: Info;
-  UserDeposit: Info;
-  SecretRegistry: Info;
-  MonitoringService: Info;
-  OneToN: Info;
-}
+const ContractNames = t.keyof({
+  TokenNetworkRegistry: null,
+  ServiceRegistry: null,
+  UserDeposit: null,
+  SecretRegistry: null,
+  MonitoringService: null,
+  OneToN: null,
+});
+const ContractInfo = t.readonly(t.type({ address: Address, block_number: t.number }));
+export const ContractsInfo = t.readonly(t.record(ContractNames, ContractInfo));
+export type ContractsInfo = t.TypeOf<typeof ContractsInfo>;
 
 export interface Latest {
   action: RaidenAction;
