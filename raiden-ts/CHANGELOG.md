@@ -1,6 +1,16 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#3069] SDK now can (and will first by default, in `auto` mode) query and use PFS's advertised `matrix-server` before `config.matrixServerLookup`
+- [#3101] Try to read `deployment` JSON files at runtime, besides embedded ones at transpilation-time
+
+### Fixed
+- [#3100] Filter out registered but misconfigured PFSs used for presence requests which are operating on a different network
+
+[#3069]: https://github.com/raiden-network/light-client/pull/3069
+[#3100]: https://github.com/raiden-network/light-client/issues/3100
+[#3101]: https://github.com/raiden-network/light-client/pull/3101
 
 ## [2.1.0] - 2021-12-29
 
