@@ -100,6 +100,7 @@
     "abort-controller": "^3.0.0",
     "decimal.js": "^10.3.1",
     "eciesjs": "^0.3.14",
+    "eslint-import-resolver-typescript": "^2.7.0",
     "ethers": "^5.6.2",
     "fp-ts": "^2.11.9",
     "io-ts": "^2.2.16",
