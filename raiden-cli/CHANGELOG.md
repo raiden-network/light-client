@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#3101] Add `OneToN` and `UserDepositToken` (SVT/RDN) addresses to `/contracts` and `/user_deposit` endpoints, `eth_balance`, current `block_number` and `network` info properties to `/address` endpoint
+
+[#3101]: https://github.com/raiden-network/light-client/pull/3101
 
 ## [2.1.0] - 2021-12-29
 

@@ -303,14 +303,8 @@ describe('send transfer', () => {
 
       const promise = firstValueFrom(raiden.action$.pipe(first(transferUnlock.success.is)));
       raiden.store.dispatch(transferUnlock.request(undefined, meta));
-      await expect(promise).resolves.toEqual(
-        transferUnlock.success(
-          {
-            message: expectedUnlock,
-            partner: partner.address,
-          },
-          meta,
-        ),
+      await expect(promise).resolves.toMatchObject(
+        transferUnlock.success({ message: expectedUnlock, partner: partner.address }, meta),
       );
       // ensure it reused the previous cached expired message
       expect((await promise).payload.message).toBe(finalState.unlock);
