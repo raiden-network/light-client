@@ -2,12 +2,12 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { hexlify } from '@ethersproject/bytes';
 import { AddressZero, MaxUint256, One, Zero } from '@ethersproject/constants';
+import { Contract } from '@ethersproject/contracts';
 import { keccak256 } from '@ethersproject/keccak256';
 import type { ExternalProvider, Network } from '@ethersproject/providers';
 import { Formatter, JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 import { randomBytes } from '@ethersproject/random';
 import { Wallet } from '@ethersproject/wallet';
-import { Contract } from 'ethers';
 import memoize from 'lodash/memoize';
 import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
