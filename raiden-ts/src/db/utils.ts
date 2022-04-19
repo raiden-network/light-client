@@ -82,12 +82,12 @@ async function makeDatabase(
   db.setMaxListeners(30);
 
   await Promise.all([
-    db.createIndex({
+    /* db.createIndex({
       index: {
         name: 'byCleared',
         fields: ['cleared', 'direction'],
       },
-    }),
+    }), */
     db.createIndex({
       index: {
         name: 'byPartner',

@@ -17,6 +17,10 @@ import { TransferState } from '@/transfers/state';
 import { jsonParse } from '@/utils/data';
 import { decode } from '@/utils/types';
 
+logging.setLevel(
+  process.env['NODE_ENV'] === 'production' ? logging.levels.INFO : logging.levels.DEBUG,
+);
+
 test('migrate, decode & dump', async () => {
   // iterate over past stored JSON states & ensure they can be migrated to current
   const dir = path.join(__dirname, 'states');
