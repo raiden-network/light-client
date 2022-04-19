@@ -81,12 +81,12 @@ async function makeDatabase(
   db.setMaxListeners(30);
 
   await Promise.all([
-    db.createIndex({
+    /* db.createIndex({
       index: {
         name: 'byCleared',
         fields: ['cleared', 'direction'],
       },
-    }),
+    }), */
     db.createIndex({
       index: {
         name: 'byPartner',
@@ -175,7 +175,7 @@ export async function getRaidenState(db: RaidenDatabase): Promise<any | undefine
       direction: { $exists: true },
     },
   });
-  if (transfersResults.warning) log?.warn(transfersResults.warning, 'getRaidenState');
+  if (transfersResults.warning) log?.debug(transfersResults.warning, 'getRaidenState');
   for (const doc of transfersResults.docs) {
     state.transfers[doc._id] = doc;
   }
