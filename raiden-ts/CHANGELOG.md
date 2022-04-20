@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [2.2.0] - 2022-04-22
 ### Added
 - [#3069] SDK now can (and will first by default, in `auto` mode) query and use PFS's advertised `matrix-server` before `config.matrixServerLookup`
 - [#3101] Try to read `deployment` JSON files at runtime, besides embedded ones at transpilation-time
@@ -542,7 +544,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/raiden-network/light-client/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/raiden-network/light-client/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/raiden-network/light-client/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.2...v2.0.0

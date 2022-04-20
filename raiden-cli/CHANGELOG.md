@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [2.2.0] - 2022-04-22
 ### Added
 - [#3101] Add `OneToN` and `UserDepositToken` (SVT/RDN) addresses to `/contracts` and `/user_deposit` endpoints, `eth_balance`, current `block_number` and `network` info properties to `/address` endpoint
 - [#3101] You can now install/run raiden-cli from npmjs with `npx -p @raiden_network/raiden-cli raiden <options>`
@@ -97,7 +99,8 @@
 [#2054]: https://github.com/raiden-network/light-client/pulls/2054
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/raiden-network/light-client/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/raiden-network/light-client/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/raiden-network/light-client/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/raiden-network/light-client/compare/v2.0.0-rc.2...v2.0.0
