@@ -1,40 +1,7 @@
-#!/usr/bin/env bash
-
-set -e
-
-POSSIBLE_INDEX_JS_RELATIVE_PATHS=("index.js" "build/index.js" "bundle/index.js" "../@raiden_network/raiden-cli/index.js")
-SCRIPT_DIRECTORY="$(dirname "$(readlink --canonicalize "${BASH_SOURCE[0]}")")"
-INDEX_JS_PATH=""
-
-function source_possible_environment_file() {
-  local environment_file="${SCRIPT_DIRECTORY}/.env"
-
-  if [[ -f "$environment_file" ]]; then
-    set -a
-    source "$environment_file"
-    set +a
-  fi
+#!/usr/bin/env node
+try {
+  require('./build');
+} catch (e) {
+  require('./bundle');
 }
-
-
-function set_index_js_file_path() {
-  local possible_index_js_path
-
-  for relative_path in "${POSSIBLE_INDEX_JS_RELATIVE_PATHS[@]}"; do
-    possible_index_js_path="${SCRIPT_DIRECTORY}/${relative_path}"
-
-    if [[ -f "$possible_index_js_path" ]]; then
-      INDEX_JS_PATH=$possible_index_js_path
-      return
-    fi
-  done
-
-  echo "Could not find executable path for raiden-cli!"
-  exit 1
-}
-
-source_possible_environment_file
-set_index_js_file_path
-exec node "$INDEX_JS_PATH" "$@"
-
-# vim: filetype=sh
+// vim: filetype=js

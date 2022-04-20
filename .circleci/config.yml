@@ -360,6 +360,9 @@ workflows:
           mode: production
           requires:
             - build_sdk
+      - build_cli:
+          requires:
+            - build_sdk
       - generate_documentation:
           <<: *filter_release_tag
           requires:
@@ -375,3 +378,4 @@ workflows:
           context: 'Raiden Context'
           requires:
             - build_dapp
+            - build_cli
