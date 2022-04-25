@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- [#3106] Fix bug where `Raiden.transferOnchainTokens` with `subkey=true` could be ignored and main account used instead
+
+[#3106]: https://github.com/raiden-network/light-client/issues/3106
 
 ## [2.2.0] - 2022-04-22
 ### Added
