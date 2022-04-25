@@ -1345,15 +1345,15 @@ export class Raiden {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(to), [ErrorCodes.DTA_INVALID_ADDRESS, { to }], this.log.info);
 
-    const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
-    const tokenContract = getContractWithSigner(this.deps.getTokenContract(token), signer);
+    const { address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
     const curBalance = await this.getTokenBalance(token, address);
     // caps value to balance, so if it's too big, transfer all
     const amount = curBalance.lte(value) ? curBalance : BigNumber.from(value);
 
     const [, receipt] = await lastValueFrom(
-      transact(tokenContract, 'transfer', [to, amount], this.deps, {
+      transact(this.deps.getTokenContract(token), 'transfer', [to, amount], this.deps, {
+        subkey,
         error: ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED,
       }).pipe(
         retryWhile(intervalFromConfig(this.deps.config$), {

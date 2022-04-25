@@ -407,6 +407,7 @@ export function choosePfs$(
         );
       }
     }),
+    throwIfEmpty(constant(new RaidenError(ErrorCodes.PFS_INVALID_INFO))),
     tap((pfs) => {
       if (pfs.validTill < Date.now()) {
         log.warn(
