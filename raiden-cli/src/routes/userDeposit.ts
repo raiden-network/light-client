@@ -10,7 +10,7 @@ import {
 } from '../utils/validation';
 
 type DepositResponse = { transaction_hash: string };
-type PlanWithdrawResponse = { transaction_hash: string; planned_withdraw_block_number: number };
+type PlanWithdrawResponse = { transaction_hash: string; planned_withdrawable_after: number };
 type WithdrawResponse = { transaction_hash: string };
 
 const MalformedNumberValue = new Error('A provided number value was not decodable');
@@ -79,7 +79,7 @@ async function planWithdraw(this: Cli, amount: string): Promise<PlanWithdrawResp
   const withdrawPlan = await this.raiden.getUDCWithdrawPlan();
   return {
     transaction_hash: transactionHash,
-    planned_withdraw_block_number: withdrawPlan!.block, // The plan must exists here.
+    planned_withdrawable_after: withdrawPlan!.withdrawableAfter, // The plan must exists here.
   };
 }
 

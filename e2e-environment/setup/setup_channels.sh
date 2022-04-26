@@ -18,7 +18,7 @@ geth --syncmode full --gcmode archive --datadir "${DATA_DIR}" \
 
 GETH_PID=$!
 
-source /opt/services/venv/bin/activate
+source ${SERVICES_VENV}/bin/activate
 python3 -m raiden_libs.service_registry register \
   --log-level DEBUG \
   --keystore-file /opt/services/keystore/UTC--2020-03-11T15-39-16.935381228Z--2b5e1928c25c5a326dbb61fc9713876dd2904e34 \
@@ -33,17 +33,13 @@ SYNAPSE_PID=$!
 
 echo Synapse server is running at "${SYNAPSE_PID}"
 
-source /opt/raiden/bin/activate
-
-
-
 echo Start PFS
-source /opt/services/venv/bin/activate
+source ${SERVICES_VENV}/bin/activate
 pfs-entrypoint.sh &
 deactivate
 PFS_PID=$!
 
-source /opt/raiden/bin/activate
+source ${CONTRACTS_VENV}/bin/activate
 python -m raiden_contracts.deploy verify --rpc-provider http://localhost:8545 --contracts-version ${CONTRACTS_VERSION}
 
 PFS_RETRIES=0
@@ -58,15 +54,11 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:5555/api/
 done
 
 echo Starting Node 1
-raiden --config-file /opt/raiden/config/node1.toml \
-  --no-sync-check \
-  --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
+/opt/raiden/raiden --keystore-path /opt/raiden/config/keys --data-dir /opt/raiden/data  --password-file /opt/raiden/config/passwd --eth-rpc-endpoint http://localhost:8545 --accept-disclaimer true --api-address 0.0.0.0:5001 --default-reveal-timeout 20 --routing-mode pfs --pathfinding-service-address http://localhost:5555 --matrix-server http://localhost:9080 --address "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec" --log-file = /var/log/supervisor/node1.log --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
 RAIDEN1_PID=$!
 
 echo Starting Node 2
-raiden --config-file /opt/raiden/config/node2.toml \
-  --no-sync-check \
-  --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
+/opt/raiden/raiden --keystore-path /opt/raiden/config/keys --data-dir /opt/raiden/data  --password-file /opt/raiden/config/passwd --eth-rpc-endpoint http://localhost:8545 --accept-disclaimer true --api-address 0.0.0.0:5002 --routing-mode pfs --pathfinding-service-address http://localhost:5555 --matrix-server http://localhost:9080 --address "0xCBC49ec22c93DB69c78348C90cd03A323267db86" --log-file /var/log/supervisor/node2.log --default-reveal-timeout 20 --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
 RAIDEN2_PID=$!
 
 NODE_TRIES=0
@@ -79,9 +71,7 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:5001/api/
   NODE_TRIES=$((NODE_TRIES + 1))
   if [ ! -n "$(ps -p $RAIDEN1_PID -o pid=)" ]; then
     echo 'restarting'
-    raiden --config-file /opt/raiden/config/node1.toml \
-      --no-sync-check \
-      --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
+    /opt/raiden/raiden --keystore-path /opt/raiden/config/keys --data-dir /opt/raiden/data  --password-file /opt/raiden/config/passwd --eth-rpc-endpoint http://localhost:8545 --accept-disclaimer true --api-address 0.0.0.0:5001 --routing-mode pfs --pathfinding-service-address http://localhost:5555 --matrix-server http://localhost:9080 --address "0x517aAD51D0e9BbeF3c64803F86b3B9136641D9ec" --log-file /var/log/supervisor/node1.log.json --default-reveal-timeout 20 --user-deposit-contract-address "${USER_DEPOSIT_ADDRESS}" &
     RAIDEN1_PID=$!
   fi
   sleep 20
@@ -97,6 +87,7 @@ until $(curl --output /dev/null --silent --get --fail http://localhost:5002/api/
   sleep 20
 done
 
+pip install click requests
 prepare_channel.py --token "${TTT_TOKEN_ADDRESS}"
 
 echo Preparing to terminate at "${SYNAPSE_PID}"

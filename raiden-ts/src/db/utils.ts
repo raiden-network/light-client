@@ -10,6 +10,7 @@ import { concatMap, finalize, mergeMap, pluck, takeUntil } from 'rxjs/operators'
 import type { Channel } from '../channels';
 import { channelKey } from '../channels/utils';
 import type { RaidenState } from '../state';
+import type { ContractsInfo } from '../types';
 import { assert, ErrorCodec, ErrorCodes } from '../utils/error';
 import type { Address } from '../utils/types';
 import { last } from '../utils/types';
@@ -339,7 +340,8 @@ export async function databaseMeta(db: RaidenDatabase): Promise<RaidenDatabaseMe
     _id: '_meta',
     version: databaseVersion(db),
     network: (await db.get<{ value: number }>(statePrefix + 'chainId')).value,
-    registry: (await db.get<{ value: Address }>(statePrefix + 'registry')).value,
+    udc: (await db.get<{ value: ContractsInfo }>(statePrefix + 'contracts')).value.UserDeposit
+      .address,
     address: (await db.get<{ value: Address }>(statePrefix + 'address')).value,
     blockNumber: (await db.get<{ value: number }>(statePrefix + 'blockNumber')).value,
   };
@@ -397,12 +399,12 @@ export async function replaceDatabase(
       log?.error,
     );
     assert(
-      meta.registry === dbMeta.registry && meta.network === dbMeta.network,
+      meta.udc === dbMeta.udc && meta.network === dbMeta.network,
       [
         ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
         {
-          expectedRegistry: dbMeta.registry,
-          receivedRegistry: meta.registry,
+          expectedUdc: dbMeta.udc,
+          receivedUdc: meta.udc,
           expectedNetwork: dbMeta.network,
           receivedNetwork: meta.network,
         },

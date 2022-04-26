@@ -342,7 +342,7 @@ export function packIOU(iou: IOU) {
     encode(iou.sender, 20),
     encode(iou.receiver, 20),
     encode(iou.amount, 32),
-    encode(iou.expiration_block, 32),
+    encode(iou.claimable_until, 32),
   ]);
 }
 

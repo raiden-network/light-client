@@ -5,6 +5,7 @@ import {
   makeStruct,
   makeTransaction,
   makeWallet,
+  sleep,
   waitBlock,
 } from './mocks';
 
@@ -18,8 +19,6 @@ import { raidenConfigUpdate } from '@/actions';
 import { udcDeposit, udcWithdraw, udcWithdrawPlan } from '@/services/actions';
 import { ErrorCodes } from '@/utils/error';
 import type { Address, Hash, UInt } from '@/utils/types';
-
-import { sleep } from '../utils';
 
 test('monitorUdcBalanceEpic', async () => {
   expect.assertions(5);
@@ -41,7 +40,7 @@ test('monitorUdcBalanceEpic', async () => {
   const balance = BigNumber.from(23) as UInt<32>;
   userDepositContract.effectiveBalance.mockResolvedValue(balance);
   userDepositContract.total_deposit.mockResolvedValue(balance);
-  await waitBlock();
+  await sleep();
 
   expect(raiden.output).toContainEqual(udcDeposit.success({ balance }, { totalDeposit: balance }));
   await expect(
@@ -217,12 +216,12 @@ describe('udcWithdrawPlan', () => {
   test('withdraw request: success', async () => {
     const [raiden] = await makeRaidens(1);
     const amount = parseEther('5');
-    const withdrawBlock = BigNumber.from(500);
+    const withdrawableAfter = BigNumber.from(Math.round(Date.now() / 1e3) + 1500);
     raiden.deps.userDepositContract.withdraw_plans.mockResolvedValue(
-      makeStruct(['amount', 'withdraw_block'] as const, [amount, withdrawBlock]),
+      makeStruct(['amount', 'withdrawable_after'] as const, [amount, withdrawableAfter]),
     );
     raiden.deps.userDepositContract.withdraw_plans.mockResolvedValueOnce(
-      makeStruct(['amount', 'withdraw_block'] as const, [Zero, Zero]),
+      makeStruct(['amount', 'withdrawable_after'] as const, [Zero, Zero]),
     );
     const planTx = makeTransaction(1);
     raiden.deps.userDepositContract.planWithdraw.mockResolvedValue(planTx);
@@ -239,7 +238,7 @@ describe('udcWithdrawPlan', () => {
     expect(raiden.output).toContainEqual(
       udcWithdrawPlan.success(
         {
-          block: withdrawBlock.toNumber(),
+          withdrawableAfter: withdrawableAfter.toNumber(),
           txHash: planTx.hash as Hash,
           txBlock: expect.any(Number),
           confirmed: undefined,
@@ -275,14 +274,14 @@ describe('udcAutoWithdrawEpic', () => {
     const raiden = await makeRaiden(undefined, false);
 
     const amount = parseEther('5');
-    const withdrawBlock = BigNumber.from(500);
-    raiden.deps.userDepositContract.withdraw_plans.mockResolvedValue(
-      makeStruct(['amount', 'withdraw_block'] as const, [amount, withdrawBlock]),
+    const withdrawableAfter = BigNumber.from(Math.round(Date.now() / 1e3) + 10);
+    raiden.deps.userDepositContract.callStatic.withdraw_plans.mockResolvedValue(
+      makeStruct(['amount', 'withdrawable_after'] as const, [amount, withdrawableAfter]),
     );
 
     await raiden.start();
+    await sleep(withdrawableAfter.toNumber() * 1e3 - Date.now() + 20e3);
     await waitBlock();
-    await waitBlock(withdrawBlock.toNumber());
 
     expect(raiden.output).toContainEqual(
       udcWithdraw.request(undefined, { amount: amount as UInt<32> }),
@@ -300,13 +299,14 @@ describe('udcAutoWithdrawEpic', () => {
     );
 
     const amount = parseEther('5');
-    const withdrawBlock = BigNumber.from(raiden.deps.provider.blockNumber + 120);
+    const withdrawableAfter = BigNumber.from(Math.round(Date.now() / 1e3) + 10);
     raiden.deps.userDepositContract.withdraw_plans.mockResolvedValue(
-      makeStruct(['amount', 'withdraw_block'] as const, [amount, withdrawBlock]),
+      makeStruct(['amount', 'withdrawable_after'] as const, [amount, withdrawableAfter]),
     );
 
-    await waitBlock(withdrawBlock.toNumber() - 10);
-    await waitBlock(withdrawBlock.toNumber());
+    await waitBlock();
+    await sleep(15e3);
+    await waitBlock();
 
     expect(raiden.output).toContainEqual(
       udcWithdraw.request(undefined, { amount: amount as UInt<32> }),
@@ -334,6 +334,7 @@ describe('udcWithdraw', () => {
 
     raiden.store.dispatch(udcWithdraw.request(undefined, { amount: amount as UInt<32> }));
     await waitBlock();
+    await sleep();
 
     expect(raiden.output).toContainEqual(
       udcWithdraw.success(
@@ -373,6 +374,7 @@ describe('udcWithdraw', () => {
 
     raiden.store.dispatch(udcWithdraw.request(undefined, { amount: amount as UInt<32> }));
     await waitBlock();
+    await sleep();
 
     expect(raiden.output).toContainEqual(
       udcWithdraw.success(

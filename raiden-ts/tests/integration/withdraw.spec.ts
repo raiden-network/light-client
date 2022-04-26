@@ -11,7 +11,7 @@ import {
   presenceFromClient,
   tokenNetwork,
 } from './fixtures';
-import { makeLog, makeRaidens, makeTransaction, providersEmit, waitBlock } from './mocks';
+import { makeLog, makeRaidens, makeTransaction, providersEmit, sleep, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
@@ -31,7 +31,7 @@ import { makeMessageId } from '@/transfers/utils';
 import { ErrorCodes } from '@/utils/error';
 import type { Hash, UInt } from '@/utils/types';
 
-import { makeAddress, makeHash, sleep } from '../utils';
+import { makeAddress, makeHash } from '../utils';
 import type { MockedRaiden } from './mocks';
 
 describe('withdraw resolve', () => {
@@ -40,10 +40,9 @@ describe('withdraw resolve', () => {
 
     await ensureChannelIsOpen([raiden, partner]);
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,
@@ -62,10 +61,9 @@ describe('withdraw resolve', () => {
 
     await ensureChannelIsOpen([raiden, partner]);
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,
@@ -86,10 +84,9 @@ describe('withdraw resolve', () => {
     partner.stop();
     raiden.store.dispatch(presenceFromClient(partner, false));
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,
@@ -119,10 +116,9 @@ describe('withdraw resolve', () => {
     const tokenNetwork = makeAddress();
     await ensureChannelIsOpen([raiden, partner], { tokens: [token, tokenNetwork] });
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,
@@ -151,6 +147,9 @@ describe('withdraw receive request', () => {
   const direction = Direction.RECEIVED;
 
   async function receiveWithdrawRequest(raiden: MockedRaiden, partner: MockedRaiden) {
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const request: WithdrawRequest = {
       type: MessageType.WITHDRAW_REQUEST,
       message_identifier: makeMessageId(),
@@ -161,7 +160,7 @@ describe('withdraw receive request', () => {
       // withdrawable amount is partner.deposit + own.g
       total_withdraw: deposit.add(amount) as UInt<32>,
       nonce: getChannel(partner, raiden).own.nextNonce,
-      expiration: BigNumber.from(raiden.store.getState().blockNumber + 20) as UInt<32>,
+      expiration: BigNumber.from(expiration) as UInt<32>,
     };
     const message = await signMessage(partner.deps.signer, request);
 
@@ -294,7 +293,9 @@ describe('withdraw send request', () => {
       deposit.add(amount),
     );
     const totalWithdraw = deposit.add(amount) as UInt<32>;
-    const expiration = raiden.deps.provider.blockNumber + 2 * raiden.config.revealTimeout;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const nonce = getChannel(raiden, partner).own.nextNonce;
     const meta = {
       direction,
@@ -373,7 +374,9 @@ describe('withdraw send request', () => {
     await ensureChannelIsClosed([raiden, partner]);
 
     const totalWithdraw = deposit.add(amount) as UInt<32>;
-    const expiration = raiden.deps.provider.blockNumber + 2 * raiden.config.revealTimeout;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction,
       tokenNetwork,
@@ -408,7 +411,9 @@ describe('withdraw send request', () => {
     await ensureTransferUnlocked([partner, raiden], amount);
 
     const totalWithdraw = deposit.add(amount).add(1) as UInt<32>;
-    const expiration = raiden.deps.provider.blockNumber + 2 * raiden.config.revealTimeout;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction,
       tokenNetwork,
@@ -443,7 +448,9 @@ describe('withdraw send request', () => {
     await ensureTransferUnlocked([partner, raiden], amount);
 
     const totalWithdraw = deposit.add(amount) as UInt<32>;
-    const expiration = raiden.deps.provider.blockNumber + 2 * raiden.config.revealTimeout;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction,
       tokenNetwork,
@@ -452,7 +459,7 @@ describe('withdraw send request', () => {
       expiration,
     };
     // advance current block to revealTimeout before expiration, already too soon
-    await waitBlock(expiration - raiden.config.revealTimeout + 1);
+    await sleep((expiration - raiden.config.revealTimeout) * 1e3 - Date.now() + 1e3);
 
     // perform withdraw request
     raiden.store.dispatch(withdraw.request(undefined, meta));
@@ -480,7 +487,9 @@ describe('withdraw send request', () => {
     await ensureTransferUnlocked([partner, raiden], amount);
 
     const totalWithdraw = deposit.add(amount) as UInt<32>;
-    const expiration = raiden.deps.provider.blockNumber + 2 * raiden.config.revealTimeout;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction,
       tokenNetwork,
@@ -491,9 +500,9 @@ describe('withdraw send request', () => {
 
     // perform withdraw request
     raiden.store.dispatch(withdraw.request(undefined, meta));
-    await waitBlock();
+    await sleep();
     raiden.store.dispatch(withdraw.request(undefined, meta));
-    await waitBlock();
+    await sleep();
 
     // output has only one withdrawMessage.request, despite two withdraw.request
     expect(raiden.output.filter(withdrawMessage.request.is)).toEqual([
@@ -520,7 +529,9 @@ test('withdraw expire', async () => {
   await ensureTransferUnlocked([partner, raiden], amount);
 
   const totalWithdraw = deposit.add(amount) as UInt<32>;
-  const expiration = raiden.deps.provider.blockNumber + 2 * raiden.config.revealTimeout;
+  const expiration = Math.ceil(
+    Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+  );
   const sentMeta = {
     direction: Direction.SENT,
     tokenNetwork,
@@ -538,7 +549,7 @@ test('withdraw expire', async () => {
 
   // perform withdraw request
   raiden.store.dispatch(withdraw.request(undefined, sentMeta));
-  await waitBlock();
+  await sleep();
 
   expect(partner.output).toContainEqual(
     withdrawMessage.request(
@@ -547,8 +558,7 @@ test('withdraw expire', async () => {
     ),
   );
 
-  // advance current block to right after expiration, still unconfirmed
-  await waitBlock(expiration + 1);
+  // advance current block to right before expiration, still unconfirmed
   expect(raiden.output).not.toContainEqual(
     withdrawExpire.request(expect.anything(), expect.anything()),
   );
@@ -558,8 +568,8 @@ test('withdraw expire', async () => {
     nonce: expiredNonce,
   });
 
-  // confirm expiration block, request expire
-  await waitBlock(expiration + 2 * raiden.config.confirmationBlocks + 1);
+  // confirm expiration, request expire
+  await sleep(expiration * 1e3 - Date.now() + 1e3);
   expect(raiden.output).toContainEqual(withdrawExpire.request(undefined, sentMeta));
   const expired = raiden.output.find(withdrawExpire.success.is)!.payload.message;
   expect(expired).toEqual(expectedExpireMessage);
@@ -569,7 +579,6 @@ test('withdraw expire', async () => {
       expect.objectContaining({ address: partner.address }),
     ),
   );
-  await waitBlock();
   await sleep(raiden.config.httpTimeout);
 
   expect(partner.output).toContainEqual(
@@ -628,10 +637,9 @@ describe('coop-settle', () => {
 
     await ensureChannelIsOpen([raiden, partner]);
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,
@@ -693,10 +701,9 @@ describe('coop-settle', () => {
 
     await ensureChannelIsDeposited([raiden, partner], deposit);
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,
@@ -732,10 +739,9 @@ describe('coop-settle', () => {
 
     await ensureChannelIsDeposited([partner, raiden], deposit);
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,
@@ -763,10 +769,9 @@ describe('coop-settle', () => {
 
     await ensureTransferUnlocked([raiden, partner], amount);
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,
@@ -794,10 +799,9 @@ describe('coop-settle', () => {
     await ensureChannelIsDeposited([raiden, partner], deposit);
     await ensureChannelIsDeposited([partner, raiden], amount);
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,
@@ -828,10 +832,9 @@ describe('coop-settle', () => {
 
     await ensureTransferPending([raiden, partner], amount);
 
-    const expiration =
-      raiden.deps.provider.blockNumber +
-      raiden.config.revealTimeout +
-      raiden.config.confirmationBlocks;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + raiden.config.expiryFactor * raiden.config.revealTimeout,
+    );
     const meta = {
       direction: Direction.SENT,
       tokenNetwork,

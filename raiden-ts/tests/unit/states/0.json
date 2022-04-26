@@ -3,7 +3,7 @@
         "_id": "_meta",
         "version": 0,
         "network": 5,
-        "registry": "0x5a5CF4A63022F61F1506D1A2398490c2e8dfbb98",
+        "udc": "0x5a5CF4A63022F61F1506D1A2398490c2e8dfbb98",
         "address": "0x805CBe7481389d5DC1cA3caD4f66369bc21cb4E3",
         "blockNumber": 3386946
     },
@@ -459,7 +459,7 @@
                 "0x956b18Fb47F9626DDbA869feb3e91bF94224E767": {
                     "signature": "0xed99aff58e3b86853b6e7c14205689d2abbb8f89511dd5292bdc675942b656a779f0a24aec8ca72d1331d1cd8f5d786d2273f05969267699767ead65eaaf68b41b",
                     "one_to_n_address": "0xA514Da2418576CeC4070C82996f30532dDa99706",
-                    "expiration_block": {
+                    "claimable_until": {
                         "_hex": "0x35498a"
                     },
                     "amount": {
@@ -497,8 +497,33 @@
         "_id": "state.pendingTxs"
     },
     {
-        "value": "0x5a5CF4A63022F61F1506D1A2398490c2e8dfbb98",
-        "_id": "state.registry"
+        "value": {
+            "SecretRegistry": {
+                "address": "0xDEF219a11e3d7485075704Ec9ade6eF994c0b5B7",
+                "block_number": 5422544
+            },
+            "TokenNetworkRegistry": {
+                "address": "0x6758E306F5c0A9915Fa1BEfb41509a953c984383",
+                "block_number": 5422546
+            },
+            "ServiceRegistry": {
+                "address": "0xd477e123f4C31eBCbC32C86A8c480B99d2E2fFDe",
+                "block_number": 5422548
+            },
+            "UserDeposit": {
+                "address": "0x4470629c0Ae601c5FeC9Cc73Cff592b268922e60",
+                "block_number": 5422549
+            },
+            "MonitoringService": {
+                "address": "0xF0C649D5B0f49fFecA7D724825B0576CBEaAdEB2",
+                "block_number": 5422550
+            },
+            "OneToN": {
+                "address": "0x29B462e440194733b1Fe746Ee6aeE41A7769014E",
+                "block_number": 5422551
+            }
+        },
+        "_id": "state.contracts"
     },
     {
         "value": {

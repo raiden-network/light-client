@@ -87,6 +87,9 @@ export default class ChannelOpenAndTransferAction extends Mixins(ActionMixin) {
       this.handleOpenEvents,
     );
 
+    // Sleep for short while to let the partner node see the open channel event.
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
     this.depositStep.completed = true;
     this.depositStep.active = false;
     this.transferStep.active = true;

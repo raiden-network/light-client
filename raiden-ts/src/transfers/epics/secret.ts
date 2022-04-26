@@ -1,9 +1,9 @@
 import type { Observable } from 'rxjs';
-import { AsyncSubject, EMPTY, from, of } from 'rxjs';
+import { AsyncSubject, EMPTY, from, of, timer } from 'rxjs';
 import {
   catchError,
   concatMap,
-  endWith,
+  delayWhen,
   exhaustMap,
   filter,
   first,
@@ -11,6 +11,7 @@ import {
   ignoreElements,
   map,
   mergeMap,
+  mergeWith,
   pluck,
   takeUntil,
   withLatestFrom,
@@ -29,7 +30,7 @@ import type { RaidenEpicDeps } from '../../types';
 import { isActionOf, isConfirmationResponseOf } from '../../utils/actions';
 import { assert, commonTxErrors, ErrorCodes } from '../../utils/error';
 import { fromEthersEvent, logToContractEvent } from '../../utils/ethers';
-import { completeWith, pluckDistinct, retryWhile, takeIf } from '../../utils/rx';
+import { completeWith, pluckDistinct, retryWhile, withMergeFrom } from '../../utils/rx';
 import type { Hash, Secret, UInt } from '../../utils/types';
 import { isntNil, Signed, untime } from '../../utils/types';
 import {
@@ -118,7 +119,8 @@ const secretReveal$ = (
       const value = locked.lock.amount.sub(fee) as UInt<32>;
 
       assert(
-        request.expiration.lte(locked.lock.expiration) && request.expiration.gt(state.blockNumber),
+        request.expiration.lte(locked.lock.expiration) &&
+          request.expiration.gt(Math.floor(Date.now() / 1e3)),
         ['SecretRequest for expired transfer', { request, lock: locked.lock }],
       );
       assert(request.amount.gte(value), [
@@ -311,12 +313,13 @@ export function transferRequestUnlockEpic(
  * @param deps.secretRegistryContract - SecretRegistry contract instance
  * @param deps.config$ - Config observable
  * @param deps.init$ - Init$ tasks subject
+ * @param deps.getBlockTimestamp - block timestamp getter function
  * @returns Observable of transferSecretRegister.success actions
  */
 export function monitorSecretRegistryEpic(
   {}: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { provider, secretRegistryContract, config$, init$ }: RaidenEpicDeps,
+  { provider, secretRegistryContract, config$, init$, getBlockTimestamp }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.success> {
   const initSub = new AsyncSubject<null>();
   init$.next(initSub);
@@ -330,9 +333,10 @@ export function monitorSecretRegistryEpic(
   }).pipe(
     completeWith(state$),
     map(logToContractEvent(secretRegistryContract)),
+    withMergeFrom(([, , event]) => getBlockTimestamp(event.blockNumber)),
     withLatestFrom(state$, config$),
     mergeMap(function* ([
-      [secrethash, secret, event],
+      [[secrethash, secret, event], txTimestamp],
       { transfers, blockNumber },
       { confirmationBlocks },
     ]) {
@@ -340,16 +344,15 @@ export function monitorSecretRegistryEpic(
       for (const direction of Object.values(Direction)) {
         const key = transferKey({ secrethash: secrethash as Hash, direction });
         const transferState = transfers[key];
-        if (!transferState) continue;
+        if (!transferState || transferState.expiration <= txTimestamp) continue;
         yield transferSecretRegister.success(
           {
             secret: secret as Secret,
+            txTimestamp,
             txHash: event.transactionHash! as Hash,
-            txBlock: event.blockNumber!,
+            txBlock: event.blockNumber,
             confirmed:
-              event.blockNumber! + confirmationBlocks <= blockNumber
-                ? event.blockNumber! < transferState.expiration // false is like event got reorged/removed
-                : undefined,
+              event.blockNumber + confirmationBlocks <= blockNumber ? !event.removed : undefined,
           },
           { secrethash: secrethash as Hash, direction },
         );
@@ -376,76 +379,60 @@ export function transferSuccessOnSecretRegisteredEpic(
 
 /**
  * Process newBlocks and pending received transfers. If we know the secret, and transfer doesn't
- * get unlocked before revealTimeout blocks are left to lock expiration, request to register secret
+ * get unlocked before revealTimeout seconds are left to lock expiration, request to register secret
  * TODO: check economic viability (and define what that means) of registering lock on-chain
  *
  * @param action$ - Observable of newBlock actions
  * @param state$ - Observable of RaidenStates
  * @param deps - Epics dependencies
  * @param deps.config$ - Config observable
- * @param deps.latest$ - Latest observable
  * @returns Observable of transferSecretRegister.request actions
  */
 export function transferAutoRegisterEpic(
   action$: Observable<RaidenAction>,
   state$: Observable<RaidenState>,
-  { config$, latest$ }: RaidenEpicDeps,
+  { config$ }: RaidenEpicDeps,
 ): Observable<transferSecretRegister.request> {
+  const transferIsGone$ = ({ key }: { key: string }) =>
+    state$.pipe(filter(({ transfers }) => !(key in transfers)));
   return state$.pipe(
-    withLatestFrom(config$),
-    mergeMap(([{ blockNumber, transfers }, { revealTimeout }]) =>
-      from(
-        Object.values(transfers).filter(
-          (r) =>
-            r.direction === Direction.RECEIVED &&
-            !r.unlock && // not unlocked
-            !r.expired && // not expired
-            !!r.secret && // secret exist and isn't registered yet
-            !r.secretRegistered &&
-            // transfers which are inside the danger zone (revealTimeout before expiration)
-            r.expiration > blockNumber &&
-            r.expiration <= blockNumber + revealTimeout,
-        ),
-      ),
-    ),
-    // emit each result every block
-    // group results by transferKey, so we don't overlap requests for the same transfer
-    groupBy((transferState) => transferState._id, {
-      // durationSelector: should emit when we want to dispose of the grouped$ subject
-      duration: (grouped$) =>
-        latest$.pipe(
-          pluck('state'),
-          filter(({ blockNumber, transfers }) => {
-            const transferState = transfers[grouped$.key];
-            return (
-              !transferState ||
-              transferState.expiration < blockNumber ||
-              !!transferState.unlock ||
-              !!transferState.secretRegistered
-            );
-          }),
-        ),
-    }),
+    pluck('transfers'),
+    mergeMap((transfers) => Object.values(transfers)),
+    filter(({ direction }) => direction === Direction.RECEIVED),
+    groupBy(({ _id }) => _id, { duration: transferIsGone$ }),
     mergeMap((grouped$) =>
       grouped$.pipe(
-        exhaustMap((transferState) => {
-          const meta = { secrethash: transferState.secrethash, direction: Direction.RECEIVED };
-          // "hold" this (per transfer) exhaustMap until getting a response for the request
+        filter(({ secret }) => !!secret),
+        withLatestFrom(config$),
+        delayWhen(([{ expiration }, { revealTimeout }]) =>
+          // danger zone!
+          timer(new Date((expiration - revealTimeout) * 1e3)),
+        ),
+        exhaustMap(([{ secret, transfer: locked }]) => {
+          const meta = { secrethash: locked.lock.secrethash, direction: Direction.RECEIVED };
           return dispatchAndWait$(
             action$,
-            transferSecretRegister.request({ secret: transferState.secret! }, meta),
+            transferSecretRegister.request({ secret: secret! }, meta),
             isConfirmationResponseOf(transferSecretRegister, meta),
           );
         }),
-        // if grouped$ completes (e.g. because of durationSelector), give up on dispatchAndWait$
-        takeUntil(grouped$.pipe(ignoreElements(), endWith(1))),
-      ),
-    ),
-    takeIf(
-      config$.pipe(
-        pluck('caps'),
-        map((caps) => getCap(caps, Capabilities.RECEIVE)),
-        completeWith(action$),
+        takeUntil(
+          grouped$.pipe(
+            filter(
+              (t) =>
+                !!(
+                  t.unlock ||
+                  t.expired ||
+                  t.secretRegistered ||
+                  t.channelClosed ||
+                  // gives up immediatelly if already over expiration
+                  t.expiration <= Date.now() / 1e3
+                ),
+            ),
+            mergeWith(transferIsGone$(grouped$)),
+          ),
+        ),
+        completeWith(state$),
       ),
     ),
   );

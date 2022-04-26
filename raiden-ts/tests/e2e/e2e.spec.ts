@@ -56,7 +56,6 @@ async function createRaiden(account: number | string | Signer): Promise<Raiden> 
       pfsMode: PfsMode.onlyAdditional,
       matrixServer: 'http://localhost:9080',
       revealTimeout: 20,
-      settleTimeout: 40,
       pollingInterval: 1_000,
       httpTimeout: 10_000,
       expiryFactor: 2.0,

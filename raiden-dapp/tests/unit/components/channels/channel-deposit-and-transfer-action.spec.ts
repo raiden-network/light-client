@@ -88,13 +88,14 @@ describe('ChannelDepositAndTransferAction', () => {
     expect(wrapper.vm.$data.depositStep.active).toBeTruthy();
   });
 
-  test('completes deposit step and activates transfer step when deposit finishes', async () => {
+  test('completes deposit step and activates transfer step after a timeout when deposit finishes', async () => {
     const deposit = jest.fn().mockResolvedValue(undefined);
     const transfer = jest.fn().mockReturnValue(new Promise(() => undefined));
     const wrapper = createWrapper({ deposit, transfer });
 
     (wrapper.vm as any).runAction(defaultDepositOptions);
     await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     expect(wrapper.vm.$data.depositStep.completed).toBeTruthy();
     expect(wrapper.vm.$data.depositStep.active).toBeFalsy();
@@ -108,6 +109,7 @@ describe('ChannelDepositAndTransferAction', () => {
 
     (wrapper.vm as any).runAction(defaultDepositOptions);
     await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     expect(wrapper.vm.$data.depositStep.completed).toBeTruthy();
     expect(wrapper.vm.$data.transferStep.completed).toBeTruthy();

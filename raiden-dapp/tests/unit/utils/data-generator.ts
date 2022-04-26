@@ -103,7 +103,6 @@ export function generateChannel(
     openBlock: 1000,
     partner: '0x1D36124C90f53d491b6832F1c073F43E2550E35b' as Address,
     partnerDeposit: BigNumber.from(10 ** 8),
-    settleTimeout: 500,
     state: ChannelState.open,
     token: token ? (token.address as Address) : getRandomEthereumAddress(),
     tokenNetwork: getRandomEthereumAddress(),

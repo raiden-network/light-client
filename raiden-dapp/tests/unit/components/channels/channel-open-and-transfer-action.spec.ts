@@ -125,13 +125,14 @@ describe('ChannelOpenAndTransferAction', () => {
     expect(wrapper.vm.$data.depositStep.active).toBeTruthy();
   });
 
-  test('completes deposit step and activates transfer step when channel open finishes', async () => {
+  test('completes deposit step and activates transfer step after a timeout when channel open finishes', async () => {
     const openChannel = mockedOpenChannel.bind({ events: [EventTypes.OPENED], resolve: true });
     const transfer = jest.fn().mockReturnValue(new Promise(() => undefined));
     const wrapper = createWrapper({ openChannel, transfer });
 
     (wrapper.vm as any).runAction(defaultOpenChannelOptions);
     await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     expect(wrapper.vm.$data.openStep.completed).toBeTruthy();
     expect(wrapper.vm.$data.depositStep.completed).toBeTruthy();
@@ -146,10 +147,11 @@ describe('ChannelOpenAndTransferAction', () => {
 
     await (wrapper.vm as any).runAction(defaultOpenChannelOptions);
     await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     expect(wrapper.vm.$data.openStep.completed).toBeTruthy();
     expect(wrapper.vm.$data.depositStep.completed).toBeTruthy();
     expect(wrapper.vm.$data.transferStep.completed).toBeTruthy();
     expect(wrapper.vm.$data.transferStep.active).toBeFalsy();
-  });
+  }, 7000);
 });

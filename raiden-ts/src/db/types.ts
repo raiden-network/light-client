@@ -19,7 +19,7 @@ export interface RaidenDatabaseMeta {
   _id: '_meta';
   version: number;
   network: number;
-  registry: Address;
+  udc: Address;
   address: Address;
   blockNumber: number;
 }

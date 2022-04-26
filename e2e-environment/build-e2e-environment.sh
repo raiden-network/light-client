@@ -15,7 +15,7 @@ if docker_image_exists_locally && [[ $1 != "--force" ]]; then
 fi
 
 echo -e "\nBuild the Docker image for the end-to-end environment"
-docker build --tag "$DOCKER_IMAGE_NAME" "$E2E_ENVIRONMENT_DIRECTORY"
+docker build --progress=plain --tag "$DOCKER_IMAGE_NAME" "$E2E_ENVIRONMENT_DIRECTORY"
 
 extract_deployment_information
 

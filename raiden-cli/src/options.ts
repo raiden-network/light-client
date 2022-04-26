@@ -158,7 +158,7 @@ const yargsOptions = {
   defaultRevealTimeout: {
     type: 'number',
     default: DEFAULT_REVEAL_TIMEOUT,
-    desc: 'Default transfer reveal timeout',
+    desc: 'Default transfer reveal timeout, in seconds',
   },
   ethRpcEndpoint: {
     type: 'string',
@@ -214,7 +214,7 @@ const yargsOptions = {
   pathfindingIouTimeout: {
     type: 'number',
     default: DEFAULT_PFS_IOU_TIMEOUT,
-    desc: 'Number of blocks before a new IOU to the PFS expires.',
+    desc: 'Number of seconds before a new IOU to the PFS expires.',
   },
   enableMonitoring: {
     type: 'boolean',

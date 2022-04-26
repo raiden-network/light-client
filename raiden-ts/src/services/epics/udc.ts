@@ -1,7 +1,7 @@
 import { Zero } from '@ethersproject/constants';
 import constant from 'lodash/constant';
 import type { Observable } from 'rxjs';
-import { defer, EMPTY, forkJoin, of } from 'rxjs';
+import { combineLatest, defer, EMPTY, forkJoin, of } from 'rxjs';
 import {
   catchError,
   concatMap,
@@ -12,6 +12,7 @@ import {
   mergeAll,
   mergeMap,
   pluck,
+  shareReplay,
   startWith,
   take,
   withLatestFrom,
@@ -21,7 +22,6 @@ import type { RaidenAction } from '../../actions';
 import { newBlock } from '../../channels/actions';
 import { ensureApprovedBalance$, transact } from '../../channels/utils';
 import { intervalFromConfig } from '../../config';
-import { UDC_WITHDRAW_TIMEOUT } from '../../constants';
 import type { HumanStandardToken, UserDeposit } from '../../contracts';
 import { getContractWithSigner } from '../../helpers';
 import type { RaidenState } from '../../state';
@@ -203,10 +203,10 @@ export function udcWithdrawPlanRequestEpic(
             first(({ amount }) => amount.gte(action.meta.amount)),
           ),
         ),
-        map(([[{ hash: txHash }, { blockNumber: txBlock }], { withdraw_block }]) =>
+        map(([[{ hash: txHash }, { blockNumber: txBlock }], { withdrawable_after }]) =>
           udcWithdrawPlan.success(
             {
-              block: withdraw_block.toNumber(),
+              withdrawableAfter: withdrawable_after.toNumber(),
               txHash,
               txBlock,
               confirmed: undefined,
@@ -238,27 +238,38 @@ export function udcAutoWithdrawEpic(
   {}: Observable<RaidenState>,
   { userDepositContract, address, config$, log }: RaidenEpicDeps,
 ): Observable<udcWithdraw.request | udcWithdrawPlan.success> {
-  let nextCheckBlock = 0;
+  let nextCheckAfter = 0; // milliseconds
+  const udcWithdrawTimeout$ = defer(async () =>
+    (await userDepositContract.callStatic.withdraw_timeout()).toNumber(),
+  ).pipe(retryWhile(intervalFromConfig(config$)), shareReplay({ bufferSize: 1, refCount: false }));
   return action$.pipe(
     filter(newBlock.is),
-    pluck('payload', 'blockNumber'),
-    filter((currentBlock) => currentBlock >= nextCheckBlock),
-    exhaustMap((currentBlock) =>
-      defer(async () => userDepositContract.withdraw_plans(address)).pipe(
-        mergeMap(function* ({ amount, withdraw_block: withdrawBlock }) {
+    filter(() => Date.now() >= nextCheckAfter),
+    exhaustMap(() =>
+      combineLatest([
+        defer(async () => userDepositContract.callStatic.withdraw_plans(address)),
+        udcWithdrawTimeout$,
+      ]).pipe(
+        mergeMap(function* ([
+          { amount, withdrawable_after: withdrawableAfter },
+          udcWithdrawTimeout,
+        ]) {
           const meta = { amount: amount as UInt<32> };
-          if (withdrawBlock.isZero()) {
-            nextCheckBlock = currentBlock + UDC_WITHDRAW_TIMEOUT;
+          if (withdrawableAfter.isZero()) {
+            nextCheckAfter = Date.now() + udcWithdrawTimeout * 1e3;
             return; // no plan, don't proceed to startupCheck
           }
-          const startupCheck = nextCheckBlock === 0;
+          const startupCheck = nextCheckAfter === 0;
           if (startupCheck) {
             yield of(
-              udcWithdrawPlan.success({ block: withdrawBlock.toNumber(), confirmed: true }, meta),
+              udcWithdrawPlan.success(
+                { withdrawableAfter: withdrawableAfter.toNumber(), confirmed: true },
+                meta,
+              ),
             );
           }
-          if (withdrawBlock.gt(currentBlock)) {
-            nextCheckBlock = withdrawBlock.toNumber();
+          if (withdrawableAfter.gt(Math.round(Date.now() / 1e3))) {
+            nextCheckAfter = withdrawableAfter.toNumber() * 1e3;
           } else {
             yield dispatchAndWait$(
               action$,

@@ -144,7 +144,7 @@ export const IOU = t.readonly(
     sender: Address,
     receiver: Address,
     amount: UInt(32),
-    expiration_block: UInt(32),
+    claimable_until: UInt(32),
     one_to_n_address: Address,
     chain_id: UInt(32),
   }),

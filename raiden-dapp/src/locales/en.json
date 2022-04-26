@@ -225,8 +225,8 @@
     "withdrawal-planned": "The withdrawal from the user deposit has been planned. You will get notified when the withdrawal is complete.",
     "information": {
       "no-withdrawal-in-progress": "No withdrawal in progress",
-      "pending-message": "Blocks remaining...",
-      "ready-message": "Ready・Tokens get claimed automatically"
+      "pending-message": "Withdraw pending until {0}",
+      "ready-message": "Ready, tokens get claimed automatically"
     }
   },
   "backup-state": {
@@ -248,7 +248,7 @@
     "transfer-from-raiden-account": "Transfer ETH from Raiden Account to Main Account"
   },
   "update": {
-    "updateAvailable": "A new version is available.",
+    "updateAvailable": "A new version is available. Please make sure to withdraw your funds before updating!",
     "updateMandatory": "Something happened to the local cached version. Perhaps the browser storage got cleared. You must update to get the app working again. You will not lose your current state.",
     "update": "Update",
     "updateInProgress": "Please wait for the update to finish."

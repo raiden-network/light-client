@@ -73,7 +73,7 @@ function transformChannelFormatForApi(this: Cli, channel: RaidenChannel): ApiCha
     total_deposit: channel.ownDeposit.toString(),
     total_withdraw: channel.ownWithdraw.toString(),
     state: transformChannelStateForApi(channel.state),
-    settle_timeout: channel.settleTimeout.toString(),
+    settle_timeout: this.raiden.settleTimeout.toString(),
     reveal_timeout: this.raiden.config.revealTimeout.toString(),
   };
 }
@@ -104,7 +104,6 @@ async function openChannel(this: Cli, request: Request, response: Response, next
     // TODO: We ignore the provided `reveal_timeout` until #1656 provides
     // a better solution.
     await this.raiden.openChannel(token, partner, {
-      settleTimeout: request.body.settle_timeout,
       deposit: request.body.total_deposit?.toString(),
     });
     const channel = await firstValueFrom(

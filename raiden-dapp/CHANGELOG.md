@@ -1,6 +1,18 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- [#3078] Fix quick pay feature for Arbitrum and zero confirmation blocks
+
+### Changed
+- [#3051] Adapt UDC withdraws to timestamps instead of block numbers
+
+### Removed
+- [#3053] Remove `settleTimeout` references and settlement block countdown, since these don't apply anymore
+
+[#3051]: https://github.com/raiden-network/light-client/issues/3051
+[#3053]: https://github.com/raiden-network/light-client/issues/3053
+[#3078]: https://github.com/raiden-network/light-client/issues/3078
 
 ## [2.2.0] - 2022-04-22
 

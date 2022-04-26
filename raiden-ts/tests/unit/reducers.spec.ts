@@ -91,10 +91,7 @@ describe('raidenReducer', () => {
 
   describe('channelOpen', () => {
     test('new channelOpen is not persisted', () => {
-      const newState = raidenReducer(
-        state,
-        channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
-      );
+      const newState = raidenReducer(state, channelOpen.request({}, { tokenNetwork, partner }));
       expect(newState.channels).toStrictEqual({});
     });
 
@@ -104,7 +101,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -123,7 +119,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -139,7 +134,6 @@ describe('raidenReducer', () => {
           own: { address, deposit: Zero },
           partner: { address: partner, deposit: Zero },
           id: channelId,
-          settleTimeout,
           openBlock,
           token,
           tokenNetwork,
@@ -150,7 +144,7 @@ describe('raidenReducer', () => {
     test('channelOpen.failure', () => {
       const error = new RaidenError(ErrorCodes.CNL_OPENCHANNEL_FAILED);
       const newState = [
-        channelOpen.request({ settleTimeout }, { tokenNetwork, partner }),
+        channelOpen.request({}, { tokenNetwork, partner }),
         channelOpen.failure(error, { tokenNetwork, partner }),
       ].reduce(raidenReducer, state);
       expect(newState.channels).toStrictEqual({});
@@ -164,7 +158,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -260,7 +253,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -389,7 +381,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -442,7 +433,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -520,7 +510,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -562,7 +551,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -618,7 +606,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -686,7 +673,6 @@ describe('raidenReducer', () => {
         channelOpen.success(
           {
             id: channelId,
-            settleTimeout,
             isFirstParticipant,
             token,
             txHash,
@@ -877,7 +863,7 @@ describe('raidenReducer', () => {
       receiver: pfsAddress,
       one_to_n_address: '0x0A0000000000000000000000000000000000000a' as Address,
       chain_id: BigNumber.from(1337) as UInt<32>,
-      expiration_block: BigNumber.from(3232341) as UInt<32>,
+      claimable_until: BigNumber.from(3232341) as UInt<32>,
       amount: BigNumber.from(100) as UInt<32>,
     };
     const signedIou = await signIOU(signer, iou);
