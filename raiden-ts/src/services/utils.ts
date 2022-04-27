@@ -4,6 +4,7 @@ import { hashMessage } from '@ethersproject/hash';
 import { recoverPublicKey } from '@ethersproject/signing-key';
 import { computeAddress } from '@ethersproject/transactions';
 import * as t from 'io-ts';
+import constant from 'lodash/constant';
 import memoize from 'lodash/memoize';
 import uniqBy from 'lodash/uniqBy';
 import type { Observable } from 'rxjs';
@@ -32,8 +33,8 @@ import type { RaidenEpicDeps } from '../types';
 import { encode, jsonParse } from '../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../utils/error';
 import { LruCache } from '../utils/lru';
-import { pluckDistinct, retryAsync$ } from '../utils/rx';
-import type { PublicKey, Signature, Signed } from '../utils/types';
+import { pluckDistinct, retryAsync$, withMergeFrom } from '../utils/rx';
+import type { Last, PublicKey, Signature, Signed } from '../utils/types';
 import { Address, decode, UInt } from '../utils/types';
 import type { pathFind } from './actions';
 import type { IOU, PFS } from './types';
@@ -121,22 +122,23 @@ export async function pfsInfo(
   const { pfsMaxFee } = await firstValueFrom(config$);
   const { state } = await firstValueFrom(latest$);
   const { services } = state;
-  /**
-   * Codec for PFS /api/v1/info result schema
-   */
-  const PathInfo = t.type({
-    message: t.string,
-    matrix_server: t.string,
-    network_info: t.type({
-      // literals will fail if trying to decode anything different from these constants
-      chain_id: t.literal(network.chainId),
-      token_network_registry_address: t.literal(contractsInfo.TokenNetworkRegistry.address),
-    }),
-    operator: t.string,
-    payment_address: Address,
-    price_info: UInt(32),
-    version: t.string,
-  });
+  /** Codec for PFS /api/v1/info result schema */
+  const PfsInfo = t.type(
+    {
+      matrix_server: t.string,
+      network_info: t.type(
+        {
+          // literals will fail if trying to decode anything different from these constants
+          chain_id: t.literal(network.chainId),
+          token_network_registry_address: t.literal(contractsInfo.TokenNetworkRegistry.address),
+        },
+        'NetworkInfo',
+      ),
+      payment_address: Address,
+      price_info: UInt(32),
+    },
+    'PfsInfo',
+  );
 
   try {
     // if it's an address, fetch url from ServiceRegistry, else it's already the URL
@@ -147,11 +149,11 @@ export async function pfsInfo(
     const rtt = Date.now() - start;
     const text = await res.text();
     assert(res.ok, [ErrorCodes.PFS_ERROR_RESPONSE, { text }]);
-    const info = decode(PathInfo, jsonParse(text));
+    const info = decode(PfsInfo, jsonParse(text));
 
     const { payment_address: address, price_info: price } = info;
     assert(price.lte(pfsMaxFee), [ErrorCodes.PFS_TOO_EXPENSIVE, { price }]);
-    pfsAddressCache_.set(url, Promise.resolve(info.payment_address));
+    pfsAddressCache_.set(url, Promise.resolve(address));
     const validTill =
       services[address] ??
       (await serviceRegistryContract.callStatic.service_valid_till(address)).toNumber() * 1e3;
@@ -219,27 +221,13 @@ export const pfsInfoAddress = Object.assign(
  */
 export function pfsListInfo(
   pfsList: readonly (string | Address)[],
-  deps: Pick<
-    RaidenEpicDeps,
-    | 'log'
-    | 'serviceRegistryContract'
-    | 'network'
-    | 'contractsInfo'
-    | 'provider'
-    | 'config$'
-    | 'latest$'
-  >,
+  deps: Pick<RaidenEpicDeps, 'log'> & Last<Parameters<typeof pfsInfo>>,
 ): Observable<PFS[]> {
-  const { log } = deps;
   return from(pfsList).pipe(
-    mergeMap(function (addrOrUrl) {
-      return defer(async () => pfsInfo(addrOrUrl, deps)).pipe(
-        catchError((err) => {
-          log.warn(`Error trying to fetch PFS info for "${addrOrUrl}" - ignoring:`, err);
-          return EMPTY;
-        }),
-      );
-    }, 5),
+    mergeMap(
+      (addrOrUrl) => defer(async () => pfsInfo(addrOrUrl, deps)).pipe(catchError(constant(EMPTY))),
+      5,
+    ),
     toArray(),
     map((list) => {
       assert(list.length || !pfsList.length, ErrorCodes.PFS_INVALID_INFO);
@@ -317,9 +305,12 @@ export function getPresenceFromService$(
   deps: Pick<RaidenEpicDeps, 'serviceRegistryContract' | 'log'>,
 ): Observable<matrixPresence.success> {
   return defer(async () => pfsAddressUrl(pfsAddrOrUrl, deps)).pipe(
-    mergeMap((url) => fromFetch(`${url}/api/v1/address/${address}/metadata`)),
-    mergeMap(async (res) => res.json()),
-    map((json) => {
+    withMergeFrom((url) =>
+      fromFetch(`${url}/api/v1/address/${address}/metadata`).pipe(
+        mergeMap(async (res) => res.json()),
+      ),
+    ),
+    map(([url, json]) => {
       try {
         const metadata = decode(AddressMetadata, json);
         const presence = validateAddressMetadata(metadata, address, deps);
@@ -329,7 +320,7 @@ export function getPresenceFromService$(
       } catch (err) {
         try {
           const { errors: msg, ...details } = decode(PfsError, json);
-          err = new RaidenError(msg, details);
+          err = new RaidenError(msg, { ...details, pfs: url });
         } catch (e) {}
         throw err;
       }
@@ -373,11 +364,13 @@ export async function signIOU(signer: Signer, iou: IOU): Promise<Signed<IOU>> {
  *
  * @param pfsByAction - Override config for this call: explicit PFS, disabled or undefined
  * @param deps - Epics dependencies
+ * @param sortByRtt - Whether to sort PFSs by rtt, instead of price (default)
  * @returns Observable to choosen PFS
  */
 export function choosePfs$(
   pfsByAction: pathFind.request['payload']['pfs'],
   deps: RaidenEpicDeps,
+  sortByRtt = false,
 ): Observable<PFS> {
   const { log, config$, latest$, init$ } = deps;
   return config$.pipe(
@@ -399,16 +392,22 @@ export function choosePfs$(
         return latest$.pipe(
           pluckDistinct('state', 'services'),
           map((services) => [...additionalServices, ...Object.keys(services)]),
-          // takeUntil above first will error if, after init$ and concatenating additionalServices,
-          // we still could not find a valid service
           takeUntil(init$.pipe(last(), delay(10))),
           first((services) => services.length > 0),
           // fetch pfsInfo from whole list & sort it
-          mergeMap((services) => pfsListInfo(services, deps)),
-          mergeAll(),
+          mergeMap((services) => {
+            if (sortByRtt)
+              return from(services).pipe(
+                mergeMap((addrOrUrl) =>
+                  defer(async () => pfsInfo(addrOrUrl, deps)).pipe(catchError(constant(EMPTY))),
+                ),
+              );
+            else return pfsListInfo(services, deps).pipe(mergeAll()); // sort by price
+          }),
         );
       }
     }),
+    throwIfEmpty(constant(new RaidenError(ErrorCodes.PFS_INVALID_INFO))),
     tap((pfs) => {
       if (pfs.validTill < Date.now()) {
         log.warn(

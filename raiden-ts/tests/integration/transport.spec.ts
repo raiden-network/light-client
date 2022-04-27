@@ -350,7 +350,14 @@ describe('matrixMonitorPresenceEpic', () => {
   const capabilities = 'mxc://test?Delivery=0';
 
   beforeAll(() => fetch.mockClear());
-  beforeEach(() => fetch.mockImplementation(async () => ({ ok: true, status: 200, json })));
+  beforeEach(() =>
+    fetch.mockImplementation(async () => ({
+      ok: true,
+      status: 200,
+      json,
+      text: jest.fn(async () => jsonStringify(await json())),
+    })),
+  );
   afterEach(() => fetch.mockRestore());
 
   test('fails when users does not have displayName', async () => {
@@ -358,13 +365,26 @@ describe('matrixMonitorPresenceEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     const partnerUserId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
+    // pfs /info response
+    json.mockImplementationOnce(async () => ({
+      matrix_server: (await firstValueFrom(raiden.deps.matrix$)).getHomeserverUrl(),
+      network_info: {
+        chain_id: raiden.deps.network.chainId,
+        token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+      },
+      payment_address: makeAddress(),
+      price_info: '100',
+    }));
     json.mockImplementationOnce(async () => ({ user_id: partnerUserId }));
 
     raiden.store.dispatch(matrixPresence.request(undefined, { address: partner.address }));
 
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
-      matrixPresence.failure(expect.any(Error), { address: partner.address }),
+      matrixPresence.failure(
+        expect.objectContaining({ message: expect.stringContaining('Invalid value undefined') }),
+        { address: partner.address },
+      ),
     );
   });
 
@@ -373,6 +393,16 @@ describe('matrixMonitorPresenceEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     const partnerUserId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
+    // pfs /info response
+    json.mockImplementationOnce(async () => ({
+      matrix_server: (await firstValueFrom(raiden.deps.matrix$)).getHomeserverUrl(),
+      network_info: {
+        chain_id: raiden.deps.network.chainId,
+        token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+      },
+      payment_address: makeAddress(),
+      price_info: '100',
+    }));
     json.mockImplementationOnce(async () => ({
       user_id: partnerUserId,
       displayname: hexlify(randomBytes(65)),
@@ -386,7 +416,12 @@ describe('matrixMonitorPresenceEpic', () => {
 
     await sleep(2 * raiden.config.pollingInterval);
     expect(raiden.output).toContainEqual(
-      matrixPresence.failure(expect.any(Error), { address: partner.address }),
+      matrixPresence.failure(
+        expect.objectContaining({
+          message: expect.stringContaining('Invalid metadata signature'),
+        }),
+        { address: partner.address },
+      ),
     );
   });
 
@@ -395,6 +430,17 @@ describe('matrixMonitorPresenceEpic', () => {
 
     const [raiden, partner] = await makeRaidens(2);
     const partnerUserId = (await firstValueFrom(partner.deps.matrix$)).getUserId()!;
+    // pfs /info response
+    json.mockImplementationOnce(async () => ({
+      matrix_server: (await firstValueFrom(raiden.deps.matrix$)).getHomeserverUrl(),
+      network_info: {
+        chain_id: raiden.deps.network.chainId,
+        token_network_registry_address: raiden.deps.contractsInfo.TokenNetworkRegistry.address,
+      },
+      payment_address: makeAddress(),
+      price_info: '100',
+    }));
+    // pfs /metadata response
     json.mockImplementationOnce(async () => ({
       user_id: partnerUserId,
       displayname: partner.store.getState().transport.setup!.displayName,

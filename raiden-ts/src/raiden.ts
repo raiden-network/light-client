@@ -46,7 +46,7 @@ import type { RaidenChannels } from './channels/state';
 import { ChannelState } from './channels/state';
 import { channelAmounts, channelKey, transact } from './channels/utils';
 import type { RaidenConfig } from './config';
-import { PartialRaidenConfig } from './config';
+import { intervalFromConfig, PartialRaidenConfig } from './config';
 import { ShutdownReason } from './constants';
 import { CustomToken__factory } from './contracts';
 import { dumpDatabaseToArray } from './db/utils';
@@ -89,9 +89,9 @@ import { EventTypes } from './types';
 import { assert } from './utils';
 import { asyncActionToPromise, isActionOf } from './utils/actions';
 import { jsonParse } from './utils/data';
-import { ErrorCodes, RaidenError } from './utils/error';
+import { commonTxErrors, ErrorCodes, RaidenError } from './utils/error';
 import { getLogsByChunk$ } from './utils/ethers';
-import { pluckDistinct } from './utils/rx';
+import { pluckDistinct, retryWhile } from './utils/rx';
 import type { Decodable } from './utils/types';
 import { Address, decode, Hash, Secret, UInt } from './utils/types';
 import versions from './versions.json';
@@ -1250,7 +1250,7 @@ export class Raiden {
   public async transferOnchainBalance(
     to: string,
     value: BigNumberish = MaxUint256,
-    { subkey, gasPrice }: { subkey?: boolean; gasPrice?: BigNumberish } = {},
+    { subkey, gasPrice: price }: { subkey?: boolean; gasPrice?: BigNumberish } = {},
   ): Promise<Hash> {
     assert(Address.is(to), [ErrorCodes.DTA_INVALID_ADDRESS, { to }], this.log.info);
 
@@ -1258,22 +1258,27 @@ export class Raiden {
 
     // we use provider.getGasPrice directly in order to use the old gasPrice for txs, which
     // allows us to predict exactly the final gasPrice and deplet balance
-    const price = gasPrice ? BigNumber.from(gasPrice) : await this.deps.provider.getGasPrice();
-    const gasLimit = BigNumber.from(21000);
+    const gasPrice = price ? BigNumber.from(price) : await this.deps.provider.getGasPrice();
 
     const curBalance = await this.getBalance(address);
+    const gasLimit = await this.deps.provider.estimateGas({
+      from: address,
+      to,
+      value: curBalance,
+    });
+
     // transferableBalance is current balance minus the cost of a single transfer as per gasPrice
-    const transferableBalance = curBalance.sub(price.mul(gasLimit));
+    const transferableBalance = curBalance.sub(gasPrice.mul(gasLimit));
     assert(
       transferableBalance.gt(Zero),
-      [ErrorCodes.RDN_INSUFFICIENT_BALANCE, { transferable: transferableBalance.toString() }],
-      this.log.info,
+      [ErrorCodes.RDN_INSUFFICIENT_BALANCE, { transferableBalance }],
+      this.log.warn,
     );
 
     // caps value to transferableBalance, so if it's too big, transfer all
     const amount = transferableBalance.lte(value) ? transferableBalance : BigNumber.from(value);
 
-    const tx = await signer.sendTransaction({ to, value: amount, gasPrice: price, gasLimit });
+    const tx = await signer.sendTransaction({ to, value: amount, gasPrice, gasLimit });
     const receipt = await tx.wait();
 
     assert(receipt.status, ErrorCodes.RDN_TRANSFER_ONCHAIN_BALANCE_FAILED, this.log.info);
@@ -1302,17 +1307,23 @@ export class Raiden {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(to), [ErrorCodes.DTA_INVALID_ADDRESS, { to }], this.log.info);
 
-    const { signer, address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
-    const tokenContract = getContractWithSigner(this.deps.getTokenContract(token), signer);
+    const { address } = chooseOnchainAccount(this.deps, subkey ?? this.config.subkey);
 
     const curBalance = await this.getTokenBalance(token, address);
     // caps value to balance, so if it's too big, transfer all
     const amount = curBalance.lte(value) ? curBalance : BigNumber.from(value);
 
     const [, receipt] = await lastValueFrom(
-      transact(tokenContract, 'transfer', [to, amount], this.deps, {
+      transact(this.deps.getTokenContract(token), 'transfer', [to, amount], this.deps, {
+        subkey,
         error: ErrorCodes.RDN_TRANSFER_ONCHAIN_TOKENS_FAILED,
-      }),
+      }).pipe(
+        retryWhile(intervalFromConfig(this.deps.config$), {
+          maxRetries: 3,
+          onErrors: commonTxErrors,
+          log: this.log.info,
+        }),
+      ),
     );
     return receipt.transactionHash as Hash;
   }
@@ -1338,19 +1349,18 @@ export class Raiden {
   }
 
   /**
-   * Records a UDC withdraw plan for our UDC deposit
+   * Records a UDC withdraw plan for our UDC deposit, capped at whole balance.
    *
-   * Maximum 'value' which can be planned is current [[getUDCCapacity]] plus current
-   * [[getUDCWithdrawPlan]].amount, since new plan overwrites previous.
-   *
-   * @param value - Maximum value which we may try to withdraw. An error will be thrown if this
-   *    value is larger than [[getUDCCapacity]]+[[getUDCWithdrawPlan]].amount
+   * @param value - Maximum value which we may try to withdraw.
    * @returns Promise to hash of plan transaction, if it succeeds.
    */
-  public async planUDCWithdraw(value: BigNumberish): Promise<Hash> {
-    const meta = {
-      amount: decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error),
-    };
+  public async planUDCWithdraw(value: BigNumberish = MaxUint256): Promise<Hash> {
+    const withdrawable = await getUdcBalance(this.deps.latest$);
+    assert(withdrawable.gt(0), 'nothing to withdraw from UDC');
+    const amount = withdrawable.lte(value)
+      ? withdrawable
+      : decode(UInt(32), value, ErrorCodes.DTA_INVALID_AMOUNT, this.log.error);
+    const meta = { amount };
     const promise = asyncActionToPromise(udcWithdrawPlan, meta, this.action$, true).then(
       ({ txHash }) => txHash!,
     );

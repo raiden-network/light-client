@@ -1,6 +1,6 @@
 {
   "name": "@raiden_network/raiden-cli",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "author": "brainbot labs est.",
   "license": "MIT",
   "description": "Raiden Light Client standalone app with a REST API via HTTP",
@@ -33,7 +33,7 @@
     "build/**"
   ],
   "bin": {
-    "raiden-cli": "./raiden"
+    "raiden": "./raiden"
   },
   "devDependencies": {
     "@types/express": "^4.17.13",

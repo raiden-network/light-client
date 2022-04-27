@@ -113,7 +113,7 @@ async function getUDCInfo(this: Cli, _request: Request, response: Response): Pro
   const udcAddress = this.raiden.contractsInfo.UserDeposit.address;
 
   response.json({
-    udc_token_address: udcTokenAddress,
+    user_deposit_token_address: udcTokenAddress,
     udc_address: udcAddress,
     balance: balance.toString(),
     total_deposit: totalDeposit.toString(),
