@@ -43,7 +43,7 @@ export default class ServiceWorkerAssistant {
       [ServiceWorkerMessageType.RELOAD_WINDOW]: this.handleReloadWindowMessage,
     };
 
-    if (this.serviceWorkerContainer) {
+    if (this.serviceWorkerContainer && process.env.VUE_APP_SERVICE_WORKER_DISABLED !== 'true') {
       this.serviceWorkerContainer.addEventListener('message', this.onMessage.bind(this));
       this.updateAvailableVersion();
 
