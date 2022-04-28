@@ -43,7 +43,11 @@ function userLoadedApplicationForTheFirstTime(): boolean {
 export const getters: GetterTree<VersionInformationState, RootStateWithVersionInformation> &
   VersionInformationGetters = {
   correctVersionIsLoaded(state) {
-    if (userLoadedApplicationForTheFirstTime() || state.updateInProgress) {
+    if (
+      userLoadedApplicationForTheFirstTime() ||
+      state.updateInProgress ||
+      process.env.VUE_APP_SERVICE_WORKER_DISABLED === 'true'
+    ) {
       return true;
     }
 

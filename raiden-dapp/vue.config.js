@@ -13,6 +13,11 @@ function getPackageVersion() {
   return packageInfo.version ?? '0.0.0';
 }
 
+// if service worker not explicitly enabled, disable if not root BASE_URL
+if (!process.env.VUE_APP_SERVICE_WORKER_DISABLED && (process.env.BASE_URL ?? '/') !== '/') {
+  process.env.VUE_APP_SERVICE_WORKER_DISABLED = 'true';
+}
+
 /*
  * Note that it is not necessary to exclude the version file from the to
  * cache assets. The version file gets generated during the build and is
