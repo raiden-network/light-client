@@ -119,7 +119,7 @@ jobs:
       mode:
         description: Mode to configure the environment of the dApp build
         type: enum
-        enum: [production, staging, development, e2e, raiden-package]
+        enum: [production, staging, development, e2e, raiden-package, v2]
     executor: base-executor
     working_directory: << pipeline.parameters.working_directory >>/raiden-dapp
     steps:
@@ -333,6 +333,41 @@ workflows:
             - build_sdk
       - deploy_gh_pages:
           public_path: /staging
+          requires:
+            - build_dapp
+            - test_dapp_unit
+            - test_dapp_e2e
+
+  publish_v2:
+    when:
+      equal: [v2, << pipeline.git.branch >>]
+
+    jobs:
+      - install
+      - build_sdk:
+          requires:
+            - install
+      - test_sdk_unit:
+          requires:
+            - install
+      - test_sdk_integration:
+          requires:
+            - install
+      - test_sdk_e2e:
+          requires:
+            - install
+      - build_dapp:
+          mode: v2
+          requires:
+            - build_sdk
+      - test_dapp_unit:
+          requires:
+            - build_sdk
+      - test_dapp_e2e:
+          requires:
+            - build_sdk
+      - deploy_gh_pages:
+          public_path: /v2
           requires:
             - build_dapp
             - test_dapp_unit
