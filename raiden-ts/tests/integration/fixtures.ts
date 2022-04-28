@@ -1,4 +1,4 @@
-import { makeLog, providersEmit, waitBlock } from './mocks';
+import { makeLog, providersEmit, sleep, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { BigNumber } from '@ethersproject/bignumber';
@@ -28,20 +28,20 @@ import { assert } from '@/utils';
 import type { Address, Hash, Int, PublicKey, Secret, UInt } from '@/utils/types';
 import { last } from '@/utils/types';
 
-import { makeAddress, makeHash, sleep } from '../utils';
+import { makeAddress, makeHash } from '../utils';
 import type { MockedRaiden } from './mocks';
 
 // fixture constants
 export const token = makeAddress();
 export const tokenNetwork = makeAddress();
-export const settleTimeout = 60;
+export const settleTimeout = 120;
 export const revealTimeout = DEFAULT_REVEAL_TIMEOUT;
 export const confirmationBlocks = 5;
 export const id = 17; // channelId
 export const isFirstParticipant = true;
 export const openBlock = 121;
-export const closeBlock = openBlock + revealTimeout;
-export const settleBlock = closeBlock + settleTimeout + 1;
+export const closeBlock = openBlock + 50;
+export const settleBlock = closeBlock + 500 + 1;
 export const txHash = makeHash();
 export const deposit = BigNumber.from(1000) as UInt<32>;
 export const matrixServer = 'matrix.raiden.test';
@@ -143,7 +143,6 @@ export async function ensureChannelIsOpen(
         channelId,
         raiden.address,
         partner.address,
-        null,
       ),
       data: defaultAbiCoder.encode(['uint256'], [settleTimeout]),
     }),

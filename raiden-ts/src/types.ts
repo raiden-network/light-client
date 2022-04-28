@@ -45,6 +45,7 @@ export interface Latest {
   udcDeposit: { balance: UInt<32>; totalDeposit: UInt<32> };
   blockTime: number;
   stale: boolean;
+  settleTimeout: number;
 }
 
 export interface RaidenEpicDeps {

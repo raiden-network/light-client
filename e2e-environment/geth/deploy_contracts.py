@@ -20,9 +20,6 @@ GAS_PRICE = 10
 
 UNLIMITED = 115792089237316195423570985008687907853269984665640564039457584007913129639935
 
-SETTLE_TIMEOUT_MIN = 20
-SETTLE_TIMEOUT_MAX = 555_428
-
 SERVICE_DEPOSIT_BUMP_NUMERATOR = 6
 SERVICE_DEPOSIT_BUMP_DENOMINATOR = 5
 SERVICE_DEPOSIT_DECAY_CONSTANT = 17_280_000
@@ -30,6 +27,7 @@ INITIAL_SERVICE_DEPOSIT_PRICE = 2_000_000_000_000_000_000_000
 SERVICE_DEPOSIT_MIN_PRICE = 1_000
 SERVICE_REGISTRATION_DURATION = 17_280_000
 
+USER_DEPOSIT_WITHDRAW_TIMEOUT = 30
 
 @click.command()
 @click.option("--keystore-file", required=True, type=click.Path(exists=True, dir_okay=False))
@@ -70,13 +68,12 @@ def main(keystore_file: str, contract_version: str, password: str, output: str, 
         wait=120,
         contracts_version=contract_version,
     )
+    print("other version:", deployer.contract_manager.contracts_version)
 
     print('Deploying Raiden contracts')
     try:
         deployed_contracts_info = deployer.deploy_raiden_contracts(
             max_num_of_token_networks=UNLIMITED,
-            settle_timeout_min=SETTLE_TIMEOUT_MIN,
-            settle_timeout_max=SETTLE_TIMEOUT_MAX,
             reuse_secret_registry_from_deploy_file=None
         )
     except Exception as err:
@@ -135,6 +132,7 @@ def main(keystore_file: str, contract_version: str, password: str, output: str, 
         deployed_service_contracts_info = deployer.deploy_service_contracts(
             token_address=svt_token_address,
             user_deposit_whole_balance_limit=UNLIMITED,
+            user_deposit_withdraw_timeout=USER_DEPOSIT_WITHDRAW_TIMEOUT,
             service_registry_controller=owner,
             initial_service_deposit_price=INITIAL_SERVICE_DEPOSIT_PRICE,
             service_deposit_bump_numerator=SERVICE_DEPOSIT_BUMP_NUMERATOR,
@@ -154,6 +152,7 @@ def main(keystore_file: str, contract_version: str, password: str, output: str, 
             deployed_contracts_info=deployed_service_contracts_info,
             token_address=svt_token_address,
             user_deposit_whole_balance_limit=UNLIMITED,
+            user_deposit_withdraw_timeout=USER_DEPOSIT_WITHDRAW_TIMEOUT,
             token_network_registry_address=token_network_registry_address,
         )
     except Exception as err:

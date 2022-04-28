@@ -24,6 +24,9 @@ export interface blockTime extends ActionType<typeof blockTime> {}
 export const blockStale = createAction('block/stale', t.type({ stale: t.boolean }));
 export interface blockStale extends ActionType<typeof blockStale> {}
 
+export const contractSettleTimeout = createAction('contract/settleTimeout', t.number);
+export interface contractSettleTimeout extends ActionType<typeof contractSettleTimeout> {}
+
 /**
  * A new token network is detected in the TokenNetworkRegistry instance
  * fromBlock is only set on the first time, to fetch and handle past events
@@ -50,11 +53,10 @@ export interface tokenMonitored extends ActionType<typeof tokenMonitored> {}
 export const channelOpen = createAsyncAction(
   ChannelId,
   'channel/open',
-  t.partial({ settleTimeout: t.number, deposit: UInt(32) }),
+  t.partial({ deposit: UInt(32) }),
   t.type({
     id: t.number,
     token: Address,
-    settleTimeout: t.number,
     isFirstParticipant: t.boolean,
     txHash: Hash,
     txBlock: t.number,

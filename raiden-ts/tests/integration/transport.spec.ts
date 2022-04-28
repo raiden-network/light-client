@@ -1,5 +1,5 @@
 import { ensureChannelIsOpen, ensurePresence, matrixServer } from './fixtures';
-import { fetch, makeRaiden, makeRaidens, makeSignature } from './mocks';
+import { fetch, makeRaiden, makeRaidens, makeSignature, sleep } from './mocks';
 
 import { hexlify } from '@ethersproject/bytes';
 import { randomBytes } from '@ethersproject/random';
@@ -25,7 +25,7 @@ import { getServerName } from '@/utils/matrix';
 import type { Address, PublicKey, Signed } from '@/utils/types';
 import { isntNil } from '@/utils/types';
 
-import { makeAddress, sleep } from '../utils';
+import { makeAddress } from '../utils';
 import type { MockedRaiden } from './mocks';
 
 const mockedRecoverPublicKey = jest.fn(
@@ -1070,7 +1070,7 @@ describe('rtcConnectionManagerEpic', () => {
       ),
     );
 
-    await sleep(200);
+    await sleep(2e3, false);
     channel.emit('error', { error: new Error('errored') });
     // right after erroring, channel must be cleared
     expect(raiden.output).toContainEqual(rtcChannel(undefined, { address: partner.address }));

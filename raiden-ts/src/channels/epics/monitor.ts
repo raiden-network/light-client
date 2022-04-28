@@ -58,7 +58,7 @@ function scanRegistryTokenNetworks({
   const encodedAddress = defaultAbiCoder.encode(['address'], [address]);
   return getLogsByChunk$(
     provider,
-    Object.assign(registryContract.filters.TokenNetworkCreated(null, null), {
+    Object.assign(registryContract.filters.TokenNetworkCreated(), {
       fromBlock: contractsInfo.TokenNetworkRegistry.block_number,
       toBlock: provider.blockNumber,
     }),
@@ -68,7 +68,7 @@ function scanRegistryTokenNetworks({
     toArray(),
     mergeMap((logs) => {
       const alwaysMonitored$: Observable<tokenMonitored> = from(
-        logs.splice(0, 2).map(([token, tokenNetwork, event]) =>
+        logs.splice(0, 2).map(([token, tokenNetwork, , event]) =>
           tokenMonitored({
             token: token as Address,
             tokenNetwork: tokenNetwork as Address,
@@ -79,9 +79,9 @@ function scanRegistryTokenNetworks({
 
       let monitorsIfHasChannels$: Observable<tokenMonitored> = EMPTY;
       if (logs.length) {
-        const firstBlock = logs[0]![2].blockNumber;
+        const firstBlock = last(logs[0]!).blockNumber;
         const tokenNetworks = new Map<string, [token: Address, event: Event]>(
-          logs.map(([token, tokenNetwork, event]) => [tokenNetwork, [token as Address, event]]),
+          logs.map(([token, tokenNetwork, , event]) => [tokenNetwork, [token as Address, event]]),
         );
         const allTokenNetworkAddrs = Array.from(tokenNetworks.keys());
         // simultaneously query all tokenNetworks for channels from us and to us
@@ -293,7 +293,7 @@ function mapChannelEventsToAction(
         let action;
         switch (topic) {
           case openTopic: {
-            const [, p1, p2, settleTimeout] = args as ChannelOpenedEvent;
+            const [, p1, p2] = args as ChannelOpenedEvent;
             // filter out open events not with us
             if ((address === p1 || address === p2) && (!channel || id > channel.id)) {
               const partner = (address == p1 ? p2 : p1) as Address;
@@ -301,7 +301,6 @@ function mapChannelEventsToAction(
                 {
                   id,
                   token: token as Address,
-                  settleTimeout: settleTimeout.toNumber(),
                   isFirstParticipant: address === p1,
                   txHash,
                   txBlock,
@@ -393,14 +392,14 @@ function fetchPastChannelEvents$(
   return merge(
     getLogsByChunk$(
       provider,
-      Object.assign(tokenNetworkContract.filters.ChannelOpened(null, address, null, null), {
+      Object.assign(tokenNetworkContract.filters.ChannelOpened(null, address, null), {
         fromBlock,
         toBlock,
       }),
     ),
     getLogsByChunk$(
       provider,
-      Object.assign(tokenNetworkContract.filters.ChannelOpened(null, null, address, null), {
+      Object.assign(tokenNetworkContract.filters.ChannelOpened(null, null, address), {
         fromBlock,
         toBlock,
       }),

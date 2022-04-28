@@ -12,7 +12,7 @@ const plannedWithdrawal: PlannedUdcWithdrawal = {
   txHash: '0xTxHash',
   txBlock: 1,
   amount: constants.One,
-  withdrawBlock: 5,
+  withdrawableAfter: 5,
   confirmed: undefined,
 };
 

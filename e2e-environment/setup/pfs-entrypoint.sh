@@ -6,6 +6,8 @@ export PFS_PASSWORD=1234
 export WORKER_COUNT=1
 export ETH_RPC="http://localhost:8545"
 
+sleep 10s
+
 /opt/services/venv/bin/python -m pathfinding_service.cli \
     --accept-disclaimer \
     --host 0.0.0.0 \

@@ -67,7 +67,7 @@ export const udcWithdrawPlan = createAsyncAction(
   'udc/withdraw/plan',
   t.undefined,
   t.intersection([
-    t.type({ block: t.number }),
+    t.type({ withdrawableAfter: t.number /* seconds */ }),
     t.partial({ txHash: Hash, txBlock: t.number, confirmed: t.union([t.undefined, t.boolean]) }),
   ]),
 );

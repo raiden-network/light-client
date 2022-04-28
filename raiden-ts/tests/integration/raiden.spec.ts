@@ -9,7 +9,7 @@ import {
   tokenNetwork,
   txHash,
 } from './fixtures';
-import { makeLog, makeRaiden, waitBlock } from './mocks';
+import { makeLog, makeRaiden, sleep, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { HashZero, One } from '@ethersproject/constants';
@@ -22,7 +22,7 @@ import { ShutdownReason } from '@/constants';
 import { ErrorCodes, RaidenError } from '@/utils/error';
 import { last } from '@/utils/types';
 
-import { makeAddress, sleep } from '../utils';
+import { makeAddress } from '../utils';
 
 const partner = makeAddress();
 
@@ -51,6 +51,7 @@ describe('raiden init epics', () => {
         makeLog({
           blockNumber: 65 + i,
           filter: registryContract.filters.TokenNetworkCreated(makeAddress(), makeAddress()),
+          data: defaultAbiCoder.encode(['uint256'], [settleTimeout]),
         }),
       );
     }
@@ -60,6 +61,7 @@ describe('raiden init epics', () => {
       makeLog({
         blockNumber: 71,
         filter: registryContract.filters.TokenNetworkCreated(token, tokenNetwork),
+        data: defaultAbiCoder.encode(['uint256'], [settleTimeout]),
       }),
     );
     raiden.deps.provider.emit(
@@ -67,6 +69,7 @@ describe('raiden init epics', () => {
       makeLog({
         blockNumber: 72,
         filter: registryContract.filters.TokenNetworkCreated(otherToken, otherTokenNetwork),
+        data: defaultAbiCoder.encode(['uint256'], [settleTimeout]),
       }),
     );
     // on tokenNetwork ChannelOpened getLogs, return a channel (network of interest)
@@ -74,13 +77,7 @@ describe('raiden init epics', () => {
       {},
       makeLog({
         blockNumber: 73,
-        filter: tokenNetworkContract.filters.ChannelOpened(
-          id,
-          raiden.address,
-          raiden.address,
-          null,
-        ),
-        data: defaultAbiCoder.encode(['uint256'], [settleTimeout]),
+        filter: tokenNetworkContract.filters.ChannelOpened(id, raiden.address, raiden.address),
       }),
     );
 
@@ -89,7 +86,7 @@ describe('raiden init epics', () => {
     const promise = firstValueFrom(raiden.action$.pipe(first(tokenMonitored.is)));
 
     await raiden.start();
-    await waitBlock();
+    await sleep();
     // since we put some delay on retryAsync$, we need to wait
     await promise;
 
@@ -116,7 +113,6 @@ describe('raiden init epics', () => {
       channelOpen.success(
         {
           id,
-          settleTimeout,
           isFirstParticipant,
           token,
           txHash,
@@ -192,7 +188,6 @@ describe('confirmationEpic', () => {
         {
           id,
           token,
-          settleTimeout,
           isFirstParticipant: true,
           txHash,
           txBlock: openBlock,
@@ -249,7 +244,6 @@ describe('confirmationEpic', () => {
         {
           id,
           token,
-          settleTimeout,
           isFirstParticipant: true,
           txHash,
           txBlock: openBlock,

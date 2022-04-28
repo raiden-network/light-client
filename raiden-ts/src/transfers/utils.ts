@@ -204,7 +204,7 @@ export function raidenTransfer(state: TransferState): RaidenTransfer {
     value,
     fee: state.fee,
     amount: transfer.lock.amount,
-    expirationBlock: transfer.lock.expiration.toNumber(),
+    expiration: transfer.lock.expiration.toNumber(),
     startedAt,
     changedAt,
     success,

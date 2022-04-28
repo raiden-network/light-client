@@ -135,12 +135,12 @@ export function coopSettleEpic(
                   const ownReq = channel.own.pendingWithdraws.find(
                     (msg): msg is Signed<WithdrawRequest> =>
                       msg.type === MessageType.WITHDRAW_REQUEST &&
-                      msg.expiration.gte(state.blockNumber + revealTimeout) &&
+                      msg.expiration.gte(Math.floor(Date.now() / 1e3 + revealTimeout)) &&
                       msg.total_withdraw.eq(ownTotalWithdrawable) &&
                       !!msg.coop_settle, // only requests where coop_settle is true
                   );
                   // not our request or expires too soon
-                  assert(ownReq && !ownReq.expiration.lt(state.blockNumber + revealTimeout), '');
+                  assert(ownReq, 'own request not found');
 
                   const ownConfirmation = channel.own.pendingWithdraws.find(
                     matchWithdraw(MessageType.WITHDRAW_CONFIRMATION, ownReq),
@@ -148,7 +148,7 @@ export function coopSettleEpic(
                   const partnerReq = channel.partner.pendingWithdraws.find(
                     (msg): msg is Signed<WithdrawRequest> =>
                       msg.type === MessageType.WITHDRAW_REQUEST &&
-                      msg.expiration.gte(state.blockNumber + revealTimeout) &&
+                      msg.expiration.gte(Math.floor(Date.now() / 1e3 + revealTimeout)) &&
                       msg.total_withdraw.eq(partnerTotalWithdrawable),
                   );
                   assert(partnerReq, 'partner request not found'); // shouldn't happen

@@ -3,13 +3,9 @@
 echo "Setting up private chain"
 
 # Setting up a virtual environment for the raiden contracts
-VENV=/tmp/deploy_venv
-python3 -m venv $VENV
-source $VENV/bin/activate
+. ${CONTRACTS_VENV}/bin/activate
 pip install -U pip wheel
-pip install mypy_extensions
-pip install click>=7.0
-pip install raiden-contracts==${CONTRACTS_PACKAGE_VERSION}
+pip install mypy_extensions click>=7.0 eth_account web3
 
 GETH_RESULT=$(geth --datadir "${DATA_DIR}" account new --password "${PASSWORD_FILE}")
 
@@ -43,15 +39,15 @@ deploy_contracts.py --contract-version "${CONTRACTS_VERSION}" \
   --password "${PASSWORD}"
 
 if [[ -f ${SMARTCONTRACTS_ENV_FILE} ]]; then
-  cp ${VENV}/lib/python3.9/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_private_net.json /opt/deployment/
-  cp ${VENV}/lib/python3.9/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_services_private_net.json /opt/deployment/
+  cp ${CONTRACTS_VENV}/lib/python3.9/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_private_net.json ${DEPLOYMENT_DIRECTORY}
+  cp ${CONTRACTS_VENV}/lib/python3.9/site-packages/raiden_contracts/data_${CONTRACTS_VERSION}/deployment_services_private_net.json ${DEPLOYMENT_DIRECTORY}
 
-  if [[ ! -f /opt/deployment/deployment_private_net.json ]]; then
+  if [[ ! -f ${DEPLOYMENT_DIRECTORY}/deployment_private_net.json ]]; then
     echo 'Could not find the deployment_private_net.json'
     exit 1
   fi
 
-  if [[ ! -f /opt/deployment/deployment_services_private_net.json ]]; then
+  if [[ ! -f ${DEPLOYMENT_DIRECTORY}/deployment_services_private_net.json ]]; then
     echo 'Could not find the deployment_services_private_net.json'
     exit 1
   fi
@@ -60,8 +56,6 @@ if [[ -f ${SMARTCONTRACTS_ENV_FILE} ]]; then
   echo 'Deployment was successful'
   kill -s TERM ${GETH_PID}
 
-  # Cleanup the temporary virtual environment used during the deployment
-  rm -rf $VENV
   exit 0
 else
   echo 'Deployment failed'

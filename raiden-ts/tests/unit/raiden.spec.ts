@@ -220,7 +220,7 @@ function makeDummyDependencies(): RaidenEpicDeps {
       withdraw_plans: jest.fn(async () => {
         return {
           amount: BigNumber.from(10) as UInt<32>,
-          withdraw_block: BigNumber.from(223),
+          withdrawable_after: BigNumber.from(223),
           block: BigNumber.from(123),
         };
       }),
@@ -567,12 +567,11 @@ describe('Raiden', () => {
     const raiden = new Raiden(dummyState, deps, combineRaidenEpics([initEpicMock]), dummyReducer);
     await expect(raiden.start()).resolves.toBeUndefined();
 
-    const withdrawPlan = await raiden.getUDCWithdrawPlan();
-    expect(withdrawPlan).toEqual(
+    expect(await raiden.getUDCWithdrawPlan()).toEqual(
       expect.objectContaining({
         amount: BigNumber.from(10),
-        block: 223,
-        ready: false,
+        withdrawableAfter: 223,
+        ready: true,
       }),
     );
   });
@@ -585,12 +584,8 @@ describe('Raiden', () => {
         filter(udcWithdrawPlan.request.is),
         map(() =>
           udcWithdrawPlan.success(
-            {
-              block: withdrawBlock,
-            },
-            {
-              amount: BigNumber.from(withdrawAmount) as UInt<32>,
-            },
+            { withdrawableAfter: Math.round(Date.now() / 1e3 + 10) },
+            { amount: BigNumber.from(withdrawAmount) as UInt<32> },
           ),
         ),
       );
@@ -606,14 +601,13 @@ describe('Raiden', () => {
     await expect(raiden.start()).resolves.toBeUndefined();
 
     const payload = firstValueFrom(
-      raiden.action$.pipe(
-        first(udcWithdrawPlan.success.is),
-        map((e) => e.payload),
-      ),
+      raiden.action$.pipe(first(udcWithdrawPlan.success.is), pluck('payload')),
     );
 
     raiden.planUDCWithdraw(withdrawBlock);
-    await expect(payload).resolves.toEqual(expect.objectContaining({ block: withdrawBlock }));
+    await expect(payload).resolves.toEqual(
+      expect.objectContaining({ withdrawableAfter: expect.any(Number) }),
+    );
   });
 
   test('withdrawFromUDC', async () => {
@@ -741,7 +735,6 @@ describe('Raiden', () => {
         state: ChannelState.open,
         token: action.payload.token,
         tokenNetwork: action.meta.tokenNetwork,
-        settleTimeout: action.payload.settleTimeout,
         isFirstParticipant: action.payload.isFirstParticipant,
         openBlock: action.payload.txBlock,
         own: {
@@ -768,7 +761,6 @@ describe('Raiden', () => {
             {
               id: channelId,
               token,
-              settleTimeout,
               isFirstParticipant,
               txHash: channelOpenHash,
               txBlock: 118,
@@ -805,7 +797,7 @@ describe('Raiden', () => {
     );
     await expect(raiden.start()).resolves.toBeUndefined();
 
-    await expect(raiden.openChannel(token, partner, { settleTimeout, deposit })).resolves.toEqual(
+    await expect(raiden.openChannel(token, partner, { deposit })).resolves.toEqual(
       channelOpenHash,
     );
   });
@@ -1135,7 +1127,6 @@ describe('Raiden', () => {
 
   test('withdrawChannel', async () => {
     const amount = BigNumber.from('3000000000000000000');
-    const revealTimeout = 50;
     const deps = makeDummyDependencies();
     deps.registryContract = {
       token_to_token_networks: jest.fn().mockImplementation(async () => tokenNetwork),
@@ -1167,27 +1158,19 @@ describe('Raiden', () => {
       state: ChannelState.open,
       token: token,
       tokenNetwork: tokenNetwork,
-      settleTimeout: settleTimeout,
       isFirstParticipant: isFirstParticipant,
       openBlock: txBlock,
       own: ownEnd,
       partner: partnerEnd,
     };
     const { ownWithdraw } = channelAmounts(channel);
-    const withdrawMeta = {
-      direction: Direction.SENT,
-      tokenNetwork,
-      partner,
-      totalWithdraw: ownWithdraw.add(amount) as UInt<32>,
-      expiration: dummyState.blockNumber + 2 * revealTimeout,
-    };
     function channelWithdrawEpicMock(action$: Observable<RaidenAction>) {
       return action$.pipe(
         mergeMap(function* (action) {
           if (withdrawResolve.is(action)) {
             yield withdraw.request(action.payload, action.meta);
           } else if (withdraw.request.is(action)) {
-            yield withdraw.success({ txHash, txBlock, confirmed: true }, withdrawMeta);
+            yield withdraw.success({ txHash, txBlock, confirmed: true }, action.meta);
           }
         }),
       );
@@ -1208,7 +1191,13 @@ describe('Raiden', () => {
     const withdrawRequestPromise = firstValueFrom(raiden.action$.pipe(first(withdraw.request.is)));
     await expect(raiden.withdrawChannel(token, partner, amount)).resolves.toEqual(txHash);
     await expect(withdrawRequestPromise).resolves.toEqual(
-      withdraw.request(undefined, withdrawMeta),
+      withdraw.request(undefined, {
+        direction: Direction.SENT,
+        tokenNetwork,
+        partner,
+        totalWithdraw: ownWithdraw.add(amount) as UInt<32>,
+        expiration: expect.any(Number),
+      }),
     );
   });
 
@@ -1614,10 +1603,10 @@ describe('Raiden', () => {
       ),
     ).resolves.toBeDefined();
 
-    // test known network contracts
+    // test known network contracts (must be known network)
     (provider as jest.Mocked<JsonRpcProvider>).getNetwork.mockImplementation(async () => ({
-      name: 'goerli',
-      chainId: 5,
+      name: 'arbitrum-rinkeby',
+      chainId: 421611,
     }));
     await expect(
       Raiden.create.call(MockedRaiden as any, provider, wallet, { adapter: 'memory' }),

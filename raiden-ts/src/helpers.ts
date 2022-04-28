@@ -56,13 +56,9 @@ import {
   replaceDatabase,
 } from './db/utils';
 import goerliDeploy from './deployment/deployment_goerli_unstable.json';
-import mainnetDeploy from './deployment/deployment_mainnet.json';
-import rinkebyDeploy from './deployment/deployment_rinkeby.json';
-import ropstenDeploy from './deployment/deployment_ropsten.json';
+import rinkebyArbitrumDeploy from './deployment/deployment_rinkeby-arbitrum.json';
 import goerliServicesDeploy from './deployment/deployment_services_goerli_unstable.json';
-import mainnetServicesDeploy from './deployment/deployment_services_mainnet.json';
-import rinkebyServicesDeploy from './deployment/deployment_services_rinkeby.json';
-import ropstenServicesDeploy from './deployment/deployment_services_ropsten.json';
+import rinkebyArbitrumServicesDeploy from './deployment/deployment_services_rinkeby-arbitrum.json';
 import { makeInitialState, RaidenState } from './state';
 import { standardCalculator } from './transfers/mediate/types';
 import type { RaidenTransfer } from './transfers/state';
@@ -81,41 +77,26 @@ import type { Decodable, Hash, UInt } from './utils/types';
 import { Address, decode, isntNil, PrivateKey } from './utils/types';
 
 /**
- * Returns contract information depending on the passed [[Network]]. Currently, `mainnet`,
- * `rinkeby`, `ropsten` and `goerli` are supported.
- * The deployment info of these networks are embedded at build-time. In case it can't parse as one
+ * Returns contract information depending on the passed [[Network]].
+ * The deployment info of known networks are embedded at build-time. In case it can't parse as one
  * of those, we try to use NodeJS's `fs` (or compatible shims) utilities to read json directly
- * from the `deployment` dist folder, and throw if it fails.
+ * from the `deployment` dist folder.
  *
  * @param network - Current network, as detected by ether's Provider (see @ethersproject/networks)
  * @returns deployed contract information of the network
  */
-export function getContracts(network: Network): ContractsInfo {
+function getContracts(network: Network): ContractsInfo {
   let info: Decodable<ContractsInfo>;
   switch (network.name) {
-    case 'rinkeby':
-      info = {
-        ...rinkebyDeploy.contracts,
-        ...rinkebyServicesDeploy.contracts,
-      };
-      break;
-    case 'ropsten':
-      info = {
-        ...ropstenDeploy.contracts,
-        ...ropstenServicesDeploy.contracts,
-      };
+    // known networks go here; using imported JSONs instead of fs read embeds it at compile-time
+    // and should also work for bundled builds, which breaks more easily when trying to read at
+    // runtime due to missing or wrong path of JSONs in dist folders, but we still try that as
+    // fallback nin the `default` case
+    case 'arbitrum-rinkeby':
+      info = { ...rinkebyArbitrumDeploy.contracts, ...rinkebyArbitrumServicesDeploy.contracts };
       break;
     case 'goerli':
-      info = {
-        ...goerliDeploy.contracts,
-        ...goerliServicesDeploy.contracts,
-      };
-      break;
-    case 'homestead':
-      info = {
-        ...mainnetDeploy.contracts,
-        ...mainnetServicesDeploy.contracts,
-      };
+      info = { ...goerliDeploy.contracts, ...goerliServicesDeploy.contracts };
       break;
     default:
       try {
@@ -153,7 +134,7 @@ export function getContracts(network: Network): ContractsInfo {
  * @returns Subkey's signer & address
  */
 async function genSubkey(network: Network, main: Signer, originUrl?: string) {
-  const url = originUrl ?? globalThis?.location?.origin ?? 'unknown';
+  const url = originUrl ?? globalThis.location?.origin ?? 'unknown';
   const message = `=== RAIDEN SUBKEY GENERATION ===
 
 Network: ${getNetworkName(network).toUpperCase()}
@@ -276,7 +257,6 @@ export const mapRaidenChannels = (channels: RaidenState['channels']): RaidenChan
       id: channel.id,
       token: channel.token,
       tokenNetwork: channel.tokenNetwork,
-      settleTimeout: channel.settleTimeout,
       openBlock: channel.openBlock,
       closeBlock: 'closeBlock' in channel ? channel.closeBlock : undefined,
       partner: channel.partner.address,
@@ -386,7 +366,7 @@ export async function waitConfirmation(
  * @param fromBlock - If specified, uses this as initial scanning block
  * @returns contracts info, with blockNumber as block of first registered tokenNetwork
  */
-export async function fetchContractsInfo(
+async function fetchContractsInfo(
   provider: JsonRpcProvider,
   userDeposit: Address,
   fromBlock?: number,
@@ -502,19 +482,12 @@ export function makeTokenInfoGetter({
 function validateDump(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dump: { _id: string; value: any }[],
-  {
-    address,
-    network,
-    contractsInfo,
-  }: Pick<RaidenEpicDeps, 'address' | 'network' | 'contractsInfo'>,
+  { address, network, udc }: { address: Address; network: Network; udc: Address },
 ) {
   const meta = dump[0] as unknown as RaidenDatabaseMeta;
   assert(meta?._id === '_meta', ErrorCodes.RDN_STATE_MIGRATION);
   assert(meta.address === address, ErrorCodes.RDN_STATE_ADDRESS_MISMATCH);
-  assert(
-    meta.registry === contractsInfo.TokenNetworkRegistry.address,
-    ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
-  );
+  assert(meta.udc === udc, ErrorCodes.RDN_STATE_NETWORK_MISMATCH);
   assert(meta.network === network.chainId, ErrorCodes.RDN_STATE_NETWORK_MISMATCH);
 
   assert(
@@ -526,10 +499,22 @@ function validateDump(
     ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
   );
   assert(
-    dump.find((l) => l._id === 'state.registry')?.value ===
-      contractsInfo.TokenNetworkRegistry.address,
+    dump.find((l) => l._id === 'state.contracts')?.value?.UserDeposit?.address === udc,
     ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
   );
+}
+
+function getUdcAndBlock(
+  contracts: Pick<ContractsInfo, 'UserDeposit'> | string,
+): [Address, number] {
+  if (typeof contracts === 'object')
+    return [contracts.UserDeposit.address, contracts.UserDeposit.block_number];
+  const match = contracts.match(/^(0x[0-9a-f]{40})(?::(\d+))?$/i);
+  assert(match && Address.is(match[1]), [
+    ErrorCodes.DTA_INVALID_ADDRESS,
+    { contractsOrUserDepositAddress: contracts },
+  ]);
+  return [match[1], match[2] ? +match[2] : 1];
 }
 
 /**
@@ -537,10 +522,11 @@ function validateDump(
  * `storageOrState` does not exist.
  *
  * @param deps - Partial epics dependencies-like object
+ * @param deps.provider - Provider instance
  * @param deps.address - current address of the signer
  * @param deps.network - current network
- * @param deps.contractsInfo - current contracts
  * @param deps.log - Logger instance
+ * @param contractsOrUDCAddress - ContractsInfo object or UDC address
  * @param storage - diverse storage related parameters to load from and save to
  * @param storage.state - Uploaded state: replaces database state; must be newer than database
  * @param storage.adapter - PouchDB adapter; default to 'indexeddb' on browsers and 'leveldb' on
@@ -550,20 +536,17 @@ function validateDump(
  */
 export async function getState(
   {
+    provider,
     address,
     network,
-    contractsInfo,
     log,
-  }: Pick<RaidenEpicDeps, 'address' | 'network' | 'contractsInfo' | 'log'>,
+  }: Pick<RaidenEpicDeps, 'provider' | 'address' | 'network' | 'log'>,
+  contractsOrUDCAddress: ContractsInfo | string = getContracts(network),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   storage: { state?: any; adapter?: any; prefix?: string } = {},
 ): Promise<{ db: RaidenDatabase; state: RaidenState }> {
-  const dbName = [
-    'raiden',
-    getNetworkName(network),
-    contractsInfo.TokenNetworkRegistry.address,
-    address,
-  ].join('_');
+  const [udc, fromBlock] = getUdcAndBlock(contractsOrUDCAddress);
+  const dbName = ['raiden', getNetworkName(network), udc, address].join('_');
 
   let db;
   const { state: stateDump, ...opts } = storage;
@@ -576,7 +559,7 @@ export async function getState(
     if (typeof dump === 'string') dump = jsonParse(dump);
 
     // perform some early simple validation on dump before persisting it in database
-    validateDump(dump, { address, network, contractsInfo });
+    validateDump(dump, { address, network, udc });
 
     db = await replaceDatabase.call(dbCtor, dump, dbName);
     // only if succeeds:
@@ -586,7 +569,12 @@ export async function getState(
 
   let state = await getRaidenState(db);
   if (!state) {
-    state = makeInitialState({ network, address, contractsInfo: contractsInfo });
+    let contractsInfo = contractsOrUDCAddress;
+    if (typeof contractsInfo === 'string') {
+      log.warn('fetching contractsInfo from UDC entrypoint', { udc, fromBlock });
+      contractsInfo = await fetchContractsInfo(provider, udc, fromBlock);
+    }
+    state = makeInitialState({ network, address, contractsInfo });
     await putRaidenState(db, state);
   } else {
     state = decode(RaidenState, state);

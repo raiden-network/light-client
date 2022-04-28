@@ -1,5 +1,5 @@
 import type { Observable } from 'rxjs';
-import { combineLatest, concat, from, of, timer } from 'rxjs';
+import { AsyncSubject, combineLatest, concat, defer, from, of, timer } from 'rxjs';
 import {
   concatMap,
   debounceTime,
@@ -20,17 +20,26 @@ import {
   startWith,
   switchMap,
   takeUntil,
+  tap,
   withLatestFrom,
 } from 'rxjs/operators';
 
 import type { ConfirmableAction, RaidenAction } from '../../actions';
 import { raidenSynced } from '../../actions';
+import { intervalFromConfig } from '../../config';
 import type { RaidenState } from '../../state';
 import type { RaidenEpicDeps } from '../../types';
 import { fromEthersEvent } from '../../utils/ethers';
-import { catchAndLog, completeWith, lastMap, pluckDistinct, retryAsync$ } from '../../utils/rx';
+import {
+  catchAndLog,
+  completeWith,
+  lastMap,
+  pluckDistinct,
+  retryAsync$,
+  retryWhile,
+} from '../../utils/rx';
 import { isntNil } from '../../utils/types';
-import { blockStale, blockTime, newBlock } from '../actions';
+import { blockStale, blockTime, contractSettleTimeout, newBlock } from '../actions';
 
 /**
  * Emits raidenSynced when all init$ tasks got completed
@@ -181,6 +190,37 @@ export function blockStaleEpic(
     ),
     distinctUntilChanged(),
     map((stale) => blockStale({ stale })),
+  );
+}
+
+/**
+ * Fetch settleTimeout from contract once
+ *
+ * @param action$ - Observable of RaidenActions
+ * @param state$ - Observable of RaidenStates
+ * @param deps - RaidenEpicDeps members
+ * @param deps.registryContract - TokenNetworkRegistry instance
+ * @param deps.config$ - Config observable
+ * @param deps.init$ - Observable of sync tasks
+ * @returns Observable of contractSettleTimeout actions
+ */
+export function contractSettleTimeoutEpic(
+  {}: Observable<RaidenAction>,
+  {}: Observable<RaidenState>,
+  { registryContract, config$, init$ }: RaidenEpicDeps,
+): Observable<contractSettleTimeout> {
+  let done$: AsyncSubject<null>;
+  return defer(async () => {
+    done$ = new AsyncSubject();
+    init$.next(done$);
+    return registryContract.callStatic.settle_timeout();
+  }).pipe(
+    retryWhile(intervalFromConfig(config$)),
+    map((settleTimeout) => contractSettleTimeout(settleTimeout.toNumber())),
+    tap(() => {
+      done$.next(null);
+      done$.complete();
+    }),
   );
 }
 

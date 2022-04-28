@@ -53,8 +53,6 @@ import { dumpDatabaseToArray } from './db/utils';
 import { combineRaidenEpics, getLatest$ } from './epics';
 import {
   chooseOnchainAccount,
-  fetchContractsInfo,
-  getContracts,
   getContractWithSigner,
   getSigner,
   getState,
@@ -297,35 +295,15 @@ export class Raiden {
     }
 
     const network = await provider.getNetwork();
-
-    // if no ContractsInfo, try to populate from defaults
-    let contractsInfo;
-    if (!contractsOrUDCAddress) {
-      contractsInfo = getContracts(network);
-    } else if (typeof contractsOrUDCAddress === 'string') {
-      const [udcAddress, ...rest] = contractsOrUDCAddress.split(':');
-      // if an Address is provided, use it as UserDeposit contract address entrypoint and fetch
-      // all contracts from there
-      assert(Address.is(udcAddress), [
-        ErrorCodes.DTA_INVALID_ADDRESS,
-        { contractsOrUserDepositAddress: contractsOrUDCAddress },
-      ]);
-      contractsInfo = await fetchContractsInfo(
-        provider,
-        udcAddress,
-        ...(rest.map((s) => +s) as [number?]),
-      );
-    } else {
-      contractsInfo = contractsOrUDCAddress;
-    }
-
     const { signer, address, main } = await getSigner(account, provider, subkey, subkeyOriginUrl);
 
     // Build initial state or parse from database
     const { state, db } = await getState(
-      { network, contractsInfo, address, log: logging.getLogger(`raiden:${address}`) },
+      { provider, network, address, log: logging.getLogger(`raiden:${address}`) },
+      contractsOrUDCAddress,
       storage,
     );
+    const contractsInfo = state.contracts;
 
     assert(address === state.address, [
       ErrorCodes.RDN_STATE_ADDRESS_MISMATCH,
@@ -334,19 +312,14 @@ export class Raiden {
         state: state.address,
       },
     ]);
-    assert(
-      network.chainId === state.chainId &&
-        contractsInfo.TokenNetworkRegistry.address === state.registry,
-      [
-        ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
-        {
-          network: network.chainId,
-          contracts: contractsInfo.TokenNetworkRegistry.address,
-          stateNetwork: state.chainId,
-          stateRegistry: state.registry,
-        },
-      ],
-    );
+    assert(network.chainId === state.chainId, [
+      ErrorCodes.RDN_STATE_NETWORK_MISMATCH,
+      {
+        network: network.chainId,
+        contracts: contractsInfo,
+        stateNetwork: state.chainId,
+      },
+    ]);
     const cleanConfig = config && decode(PartialRaidenConfig, omitBy(config, isUndefined));
 
     const deps = makeDependencies(state, cleanConfig, { signer, contractsInfo, db, main });
@@ -363,8 +336,8 @@ export class Raiden {
     this.log.info('Starting Raiden Light-Client', {
       prevBlockNumber: this.state.blockNumber,
       address: this.address,
-      TokenNetworkRegistry: this.deps.contractsInfo.TokenNetworkRegistry.address,
-      network: { name: this.deps.network.name, chainId: this.deps.network.chainId },
+      contracts: this.deps.contractsInfo,
+      network: this.deps.network,
       'raiden-ts': Raiden.version,
       'raiden-contracts': Raiden.contractVersion,
       config: this.config,
@@ -556,7 +529,7 @@ export class Raiden {
   public async getTokenList(): Promise<Address[]> {
     return await lastValueFrom(
       getLogsByChunk$(this.deps.provider, {
-        ...this.deps.registryContract.filters.TokenNetworkCreated(null, null),
+        ...this.deps.registryContract.filters.TokenNetworkCreated(),
         fromBlock: this.deps.contractsInfo.TokenNetworkRegistry.block_number,
         toBlock: await this.getBlockNumber(),
       }).pipe(
@@ -604,7 +577,6 @@ export class Raiden {
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
    * @param options - (optional) option parameter
-   * @param options.settleTimeout - Custom, one-time settle timeout
    * @param options.deposit - Deposit to perform in parallel with channel opening
    * @param options.confirmConfirmation - Whether to wait `confirmationBlocks` after last
    *    transaction confirmation; default=true if confirmationBlocks
@@ -615,7 +587,6 @@ export class Raiden {
     token: string,
     partner: string,
     options: {
-      settleTimeout?: number;
       deposit?: BigNumberish;
       confirmConfirmation?: boolean;
     } = {},
@@ -624,17 +595,6 @@ export class Raiden {
     assert(Address.is(token), [ErrorCodes.DTA_INVALID_ADDRESS, { token }], this.log.info);
     assert(Address.is(partner), [ErrorCodes.DTA_INVALID_ADDRESS, { partner }], this.log.info);
     const tokenNetwork = await this.monitorToken(token);
-
-    // Note that we use the advantage of the UInt decoding here, but immediately
-    // convert it to a plain number again.
-    const settleTimeout = !options.settleTimeout
-      ? undefined
-      : decode(
-          UInt(4),
-          options.settleTimeout,
-          ErrorCodes.DTA_INVALID_TIMEOUT,
-          this.log.info,
-        ).toNumber();
 
     const deposit = !options.deposit
       ? undefined
@@ -675,7 +635,7 @@ export class Raiden {
       });
     }
 
-    this.store.dispatch(channelOpen.request({ ...options, settleTimeout, deposit }, meta));
+    this.store.dispatch(channelOpen.request({ ...options, deposit }, meta));
 
     const [, openTxHash, depositTxHash] = await Promise.all([
       openPromise,
@@ -758,7 +718,7 @@ export class Raiden {
    * on, no payments can be performed on the channel. If for any reason the closeChannel
    * transaction fails, channel's state stays as 'closing', and this method can be called again
    * to retry sending 'closeChannel' transaction. After it's successful, channel becomes 'closed',
-   * and can be settled after 'settleTimeout' blocks (when it then becomes 'settleable').
+   * and can be settled after 'settleTimeout' seconds (when it then becomes 'settleable').
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
@@ -776,8 +736,9 @@ export class Raiden {
       const channel = this.state.channels[channelKey({ tokenNetwork, partner })];
       assert(channel, 'channel not found');
       const { ownTotalWithdrawable: totalWithdraw } = channelAmounts(channel);
-      const expiration =
-        this.state.blockNumber + this.config.revealTimeout + this.config.confirmationBlocks;
+      const expiration = Math.ceil(
+        Date.now() / 1e3 + this.config.revealTimeout * this.config.expiryFactor,
+      );
 
       const coopMeta = {
         direction: Direction.SENT,
@@ -806,7 +767,7 @@ export class Raiden {
   /**
    * Settle channel between us and partner on tokenNetwork for token
    * This method will fail if called on a channel not in 'settleable' or 'settling' state.
-   * Channel becomes 'settleable' settleTimeout blocks after closed (detected automatically
+   * Channel becomes 'settleable' settleTimeout seconds after closed (detected automatically
    * while Raiden Light Client is running or later on restart). When calling it, channel state
    * becomes 'settling'. If for any reason transaction fails, it'll stay on this state, and this
    * method can be called again to re-send a settleChannel transaction.
@@ -874,7 +835,8 @@ export class Raiden {
    *     Is ignored if paths were already provided. If neither are set and config.pfs is not
    *     disabled (null), use it if set or if undefined (auto mode), fetches the best
    *     PFS from ServiceRegistry and automatically fetch routes from it.
-   * @param options.lockTimeout - Specify a lock timeout for transfer; default is 2 * revealTimeout
+   * @param options.lockTimeout - Specify a lock timeout for transfer;
+   *     default is expiryFactor * revealTimeout
    * @param options.encryptSecret - Whether to force encrypting the secret or not,
    *     if target supports it
    * @returns A promise to transfer's unique key (id) when it's accepted
@@ -1194,12 +1156,12 @@ export class Raiden {
    */
   public async getUDCCapacity(): Promise<BigNumber> {
     const balance = await getUdcBalance(this.deps.latest$);
-    const blockNumber = this.state.blockNumber;
+    const now = Math.round(Date.now() / 1e3); // in seconds
     const owedAmount = Object.values(this.state.iou)
       .reduce(
         (acc, value) => [
           ...acc,
-          ...Object.values(value).filter((value) => value.expiration_block.gte(blockNumber)),
+          ...Object.values(value).filter((value) => value.claimable_until.gte(now)),
         ],
         [] as IOU[],
       )
@@ -1369,19 +1331,20 @@ export class Raiden {
   /**
    * Fetches our current UDC withdraw plan
    *
-   * @returns Promise to object containing maximum 'amount' planned for withdraw and 'block' at
-   *    which withdraw will become available, and 'ready' after it can be withdrawn with
-   *    [[withdrawFromUDC]]; resolves to undefined if there's no current plan
+   * @returns Promise to object containing maximum 'amount' planned for withdraw and
+   * 'withdrawableAfter' second at which withdraw will become available,
+   * and 'ready' after it can be withdrawn with [[withdrawFromUDC]];
+   * resolves to undefined if there's no current plan
    */
   public async getUDCWithdrawPlan(): Promise<
-    { amount: UInt<32>; block: number; ready: boolean } | undefined
+    { amount: UInt<32>; withdrawableAfter: number; ready: boolean } | undefined
   > {
     const plan = await this.deps.userDepositContract.withdraw_plans(this.address);
-    if (plan.withdraw_block.isZero()) return;
+    if (plan.withdrawable_after.isZero()) return;
     return {
       amount: plan.amount as UInt<32>,
-      block: plan.withdraw_block.toNumber(),
-      ready: plan.withdraw_block.lte(this.state.blockNumber),
+      withdrawableAfter: plan.withdrawable_after.toNumber(),
+      ready: plan.withdrawable_after.lte(Math.ceil(Date.now() / 1e3)),
     };
   }
 
@@ -1435,11 +1398,8 @@ export class Raiden {
     };
     // wait for plan to be ready if needed
     if (!plan.ready)
-      await firstValueFrom(
-        this.state$.pipe(
-          pluckDistinct('blockNumber'),
-          filter((blockNumber) => blockNumber >= plan.block),
-        ),
+      await new Promise((resolve) =>
+        setTimeout(resolve, plan.withdrawableAfter * 1e3 - Date.now()),
       );
     const promise = asyncActionToPromise(udcWithdraw, meta, this.action$, true).then(
       ({ txHash }) => txHash,
@@ -1457,7 +1417,7 @@ export class Raiden {
    * for this amount of tokens, then a transaction is sent on-chain to withdraw tokens to the
    * effective account.
    * If this process fails, the amount remains locked until it can be expired later (defaults to
-   * 2 * config.revealTimeout blocks).
+   * config.expiryFactory * config.revealTimeout seconds).
    *
    * @param token - Token address on currently configured token network registry
    * @param partner - Partner address
@@ -1488,7 +1448,9 @@ export class Raiden {
     );
     // if it's too big, it'll fail on withdraw request handling epic
     const totalWithdraw = ownWithdraw.add(requestedAmount) as UInt<32>;
-    const expiration = this.state.blockNumber + 2 * this.config.revealTimeout;
+    const expiration = Math.ceil(
+      Date.now() / 1e3 + this.config.expiryFactor * this.config.revealTimeout,
+    );
 
     const meta = {
       direction: Direction.SENT,
@@ -1559,6 +1521,19 @@ export class Raiden {
         }),
       ),
     );
+  }
+
+  /**
+   * Fetches contract's settleTimeout
+   *
+   * @returns settleTimeout constant value from contracts
+   */
+  public get settleTimeout(): number {
+    let settleTimeout!: number;
+    this.deps.latest$
+      .pipe(first())
+      .subscribe(({ settleTimeout: lastSettleTimeout }) => (settleTimeout = lastSettleTimeout));
+    return settleTimeout;
   }
 }
 

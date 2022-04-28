@@ -15,7 +15,6 @@ import {
   first,
   map,
   mergeMap,
-  pluck,
   tap,
   timeout,
   toArray,
@@ -36,11 +35,11 @@ import type { Latest, RaidenEpicDeps } from '../../types';
 import { jsonParse, jsonStringify } from '../../utils/data';
 import { assert, ErrorCodes, networkErrors, RaidenError } from '../../utils/error';
 import { retryWhile, withMergeFrom } from '../../utils/rx';
-import type { Address, Signature, Signed } from '../../utils/types';
-import { decode, UInt } from '../../utils/types';
+import type { Address, Signature } from '../../utils/types';
+import { decode, Signed, UInt } from '../../utils/types';
 import { iouClear, iouPersist, pathFind } from '../actions';
-import type { AddressMetadataMap, InputPaths, IOU, Paths, PFS } from '../types';
-import { Fee, LastIOUResults, PfsError, PfsMode, PfsResult } from '../types';
+import type { AddressMetadataMap, InputPaths, Paths, PFS } from '../types';
+import { Fee, IOU, LastIOUResults, PfsError, PfsMode, PfsResult } from '../types';
 import { choosePfs$, packIOU, signIOU } from '../utils';
 
 type RouteResult = { iou: Signed<IOU> | undefined } & ({ paths: Paths } | { error: PfsError });
@@ -58,7 +57,7 @@ export function makeTimestamp(time = new Date()): string {
 function fetchLastIou$(
   pfs: PFS,
   tokenNetwork: Address,
-  { address, log, signer, network, contractsInfo, latest$, config$ }: RaidenEpicDeps,
+  { address, log, signer, network, contractsInfo, config$ }: RaidenEpicDeps,
 ): Observable<IOU> {
   return defer(() => {
     const timestamp = makeTimestamp(),
@@ -80,8 +79,8 @@ function fetchLastIou$(
         retryWhile(intervalFromConfig(config$), { onErrors: [...networkErrors, 'TimeoutError'] }),
       ),
     ),
-    withLatestFrom(latest$.pipe(pluck('state', 'blockNumber')), config$),
-    mergeMap(async ([response, blockNumber, { pfsIouTimeout }]) => {
+    withLatestFrom(config$),
+    mergeMap(async ([response, { pfsIouTimeout }]) => {
       if (response.status === 404) {
         const iou = {
           sender: address,
@@ -89,7 +88,9 @@ function fetchLastIou$(
           chain_id: BigNumber.from(network.chainId) as UInt<32>,
           amount: Zero as UInt<32>,
           one_to_n_address: contractsInfo.OneToN.address,
-          expiration_block: BigNumber.from(blockNumber).add(pfsIouTimeout) as UInt<32>,
+          claimable_until: BigNumber.from(
+            Math.round(Date.now() / 1e3 + pfsIouTimeout),
+          ) as UInt<32>,
         };
         log.warn('PFS: new IOU created', iou);
         return iou; // return empty/zeroed IOU, but with valid new expiration
@@ -125,7 +126,7 @@ function prepareNextIOU$(
       const cachedIOU = state.iou[tokenNetwork]?.[pfs.address];
       return cachedIOU ? of(cachedIOU) : fetchLastIou$(pfs, tokenNetwork, deps);
     }),
-    // increment lastIou by pfs.price; don't touch expiration_block, PFS doesn't like it getting
+    // increment lastIou by pfs.price; don't touch expiration, PFS doesn't like it getting
     // updated and will give an error asking to update previous IOU instead of creating a new one
     map((iou) => ({ ...iou, amount: iou.amount.add(pfs.price) as UInt<32> })),
     mergeMap((iou) => signIOU(deps.signer, iou)),
@@ -300,14 +301,7 @@ function requestPfs$(
     to: target,
     value: UInt(32).encode(value),
     max_paths: pfsMaxPaths,
-    iou: iou
-      ? {
-          ...iou,
-          amount: UInt(32).encode(iou.amount),
-          expiration_block: UInt(32).encode(iou.expiration_block),
-          chain_id: UInt(32).encode(iou.chain_id),
-        }
-      : undefined,
+    iou: iou ? Signed(IOU).encode(iou) : undefined,
   });
 
   return fromFetch(`${pfs.url}/api/v1/${tokenNetwork}/paths`, {

@@ -13,7 +13,15 @@ import {
   secrethash,
   tokenNetwork,
 } from './fixtures';
-import { makeLog, makeRaiden, makeRaidens, providersEmit, waitBlock } from './mocks';
+import {
+  makeLog,
+  makeRaiden,
+  makeRaidens,
+  mockedClock,
+  providersEmit,
+  sleep,
+  waitBlock,
+} from './mocks';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { MaxUint256, Zero } from '@ethersproject/constants';
@@ -22,7 +30,7 @@ import { firstValueFrom } from 'rxjs';
 import { first, pluck } from 'rxjs/operators';
 
 import { raidenConfigUpdate } from '@/actions';
-import { channelClose, newBlock } from '@/channels/actions';
+import { channelClose } from '@/channels/actions';
 import { channelUniqueKey } from '@/channels/utils';
 import { Capabilities } from '@/constants';
 import { messageReceived, messageSend } from '@/messages/actions';
@@ -43,7 +51,7 @@ import { getSecrethash, makePaymentId, makeSecret, transferKey } from '@/transfe
 import { isResponseOf } from '@/utils/actions';
 import type { Int, UInt } from '@/utils/types';
 
-import { makeHash, sleep } from '../utils';
+import { makeHash } from '../utils';
 import type { MockedRaiden } from './mocks';
 
 const direction = Direction.SENT;
@@ -134,7 +142,7 @@ describe('send transfer', () => {
     const [raiden, partner] = await makeRaidens(2);
     await ensureChannelIsDeposited([raiden, partner]);
 
-    const requestBlock = raiden.deps.provider.blockNumber;
+    const requestTs = Math.round(Date.now() / 1e3);
     const request = transfer.request(
       {
         tokenNetwork,
@@ -147,10 +155,10 @@ describe('send transfer', () => {
       meta,
     );
     raiden.store.dispatch(request);
-    await waitBlock();
+    await sleep();
 
     raiden.store.dispatch(request);
-    await waitBlock();
+    await sleep();
 
     const expectedLockedTransfer = expect.objectContaining({
       type: MessageType.LOCKED_TRANSFER,
@@ -158,9 +166,9 @@ describe('send transfer', () => {
       lock: {
         secrethash,
         amount: value.add(fee),
-        expiration: BigNumber.from(Math.round(1.1 * raiden.config.revealTimeout)).add(
-          requestBlock,
-        ),
+        expiration: BigNumber.from(
+          Math.round(raiden.config.expiryFactor * raiden.config.revealTimeout),
+        ).add(requestTs),
       },
       signature: expect.any(String),
     });
@@ -208,13 +216,11 @@ describe('send transfer', () => {
       meta,
     );
     raiden.store.dispatch(request);
-    await waitBlock();
+    await sleep();
 
     expect(raiden.output).toContainEqual(
       transfer.failure(
-        expect.objectContaining({
-          message: expect.stringContaining('overflow'),
-        }),
+        expect.objectContaining({ message: expect.stringContaining('overflow') }),
         meta,
       ),
     );
@@ -239,7 +245,7 @@ describe('send transfer', () => {
         meta,
       ),
     );
-    await sleep(raiden.config.httpTimeout);
+    await sleep();
 
     expect(raiden.output).not.toContainEqual(transferSigned(expect.anything(), expect.anything()));
     expect(raiden.output).toContainEqual(
@@ -258,21 +264,25 @@ describe('send transfer', () => {
       const { secretRegistryContract } = raiden.deps;
       const sentState = await ensureTransferPending([raiden, partner]);
 
-      await waitBlock(sentState.expiration - 1);
+      // await sleep(sentState.expiration * 1e3 - Date.now() - 2e3);
 
       const unlock = firstValueFrom(
         raiden.action$.pipe(first(transferUnlock.success.is), pluck('payload', 'message')),
       );
+      const txBlock = raiden.deps.provider.blockNumber;
       await providersEmit(
         {},
         makeLog({
-          blockNumber: sentState.expiration - 1,
-          filter: secretRegistryContract.filters.SecretRevealed(secrethash, null),
+          blockNumber: txBlock,
+          filter: secretRegistryContract.filters.SecretRevealed(secrethash),
           data: secret,
         }),
       );
       // confirm secretRegistered
-      await waitBlock(sentState.expiration + raiden.config.confirmationBlocks);
+      await waitBlock(txBlock + raiden.config.confirmationBlocks + 1, false);
+      mockedClock.clock.setSystemTime(sentState.expiration * 1e3 + 2e3);
+      await sleep(1e3);
+      // await sleep(sentState.expiration * 1e3 - Date.now() + 2e3);
 
       const expectedUnlock = expect.objectContaining({
         type: MessageType.UNLOCK,
@@ -306,8 +316,8 @@ describe('send transfer', () => {
       await expect(promise).resolves.toMatchObject(
         transferUnlock.success({ message: expectedUnlock, partner: partner.address }, meta),
       );
-      // ensure it reused the previous cached expired message
-      expect((await promise).payload.message).toBe(finalState.unlock);
+      // ensure it reused the previous cached expired message, possibly from db
+      expect((await promise).payload.message).toEqual(finalState.unlock);
 
       expectChannelsAreInSync([raiden, partner]);
     });
@@ -365,37 +375,6 @@ describe('send transfer', () => {
 
       expectChannelsAreInSync([raiden, partner]);
     });
-
-    test('fail: lock expired', async () => {
-      expect.assertions(4);
-
-      const [raiden, partner] = await makeRaidens(2);
-      const sentState = await ensureTransferPending([raiden, partner]);
-
-      await waitBlock(sentState.expiration - 1);
-      const promise = firstValueFrom(
-        raiden.action$.pipe(first(isResponseOf(transferUnlock, meta))),
-      );
-      // we see expiration block before partner, so we don't unlock
-      raiden.store.dispatch(newBlock({ blockNumber: sentState.expiration }));
-      partner.store.dispatch(
-        transferSecret({ secret }, { secrethash, direction: Direction.RECEIVED }),
-      );
-      partner.store.dispatch(newBlock({ blockNumber: sentState.expiration }));
-      await promise;
-
-      expect(raiden.output).not.toContainEqual(
-        transferUnlock.success(expect.anything(), expect.anything()),
-      );
-      expect(raiden.output).toContainEqual(
-        transferUnlock.failure(
-          expect.objectContaining({ message: expect.stringContaining('lock expired') }),
-          meta,
-        ),
-      );
-
-      expectChannelsAreInSync([raiden, partner]);
-    });
   });
 
   describe('transferExpire.request', () => {
@@ -405,7 +384,7 @@ describe('send transfer', () => {
       const [raiden, partner] = await makeRaidens(2);
       const sentState = await ensureTransferPending([raiden, partner]);
 
-      await waitBlock(sentState.expiration + 2 * raiden.config.confirmationBlocks + 1);
+      await sleep(sentState.expiration * 1e3 - Date.now() + raiden.config.httpTimeout * 2);
 
       const expectedExpired = expect.objectContaining({
         type: MessageType.LOCK_EXPIRED,
@@ -484,7 +463,7 @@ describe('send transfer', () => {
       const [raiden, partner] = await makeRaidens(2);
       const sentState = await ensureTransferPending([raiden, partner]);
 
-      await waitBlock(sentState.expiration - 1);
+      await sleep(sentState.expiration * 1e3 - Date.now() - 2e3);
       const promise = firstValueFrom(
         raiden.action$.pipe(first(isResponseOf(transferExpire, meta))),
       );
@@ -511,12 +490,12 @@ describe('send transfer', () => {
       const [raiden, partner] = await makeRaidens(2);
       const sentState = await ensureTransferUnlocked([raiden, partner]);
 
-      await waitBlock(sentState.expiration + 1);
+      await sleep(sentState.expiration * 1e3 - Date.now() + 1e3);
       const promise = firstValueFrom(
         raiden.action$.pipe(first(isResponseOf(transferExpire, meta))),
       );
-
       raiden.store.dispatch(transferExpire.request(undefined, meta));
+
       await expect(promise).resolves.toEqual(
         transferExpire.failure(
           expect.objectContaining({ message: expect.stringContaining('already unlocked') }),
@@ -609,8 +588,8 @@ describe('transferRetryMessageEpic', () => {
 
     const sentState = await pendingTransfer([raiden, partner]);
 
-    // expiration confirmed, enough blocks after
-    await waitBlock(sentState.expiration + 2 * raiden.config.confirmationBlocks + 1);
+    // expiration confirmed
+    await sleep(sentState.expiration * 1e3 - Date.now() + 2e3);
     expect(raiden.output).toContainEqual(transferExpire.request(undefined, meta));
 
     await sleep(raiden.config.httpTimeout);
@@ -623,39 +602,21 @@ describe('transferRetryMessageEpic', () => {
 
 describe('transferAutoExpireEpic', () => {
   test('success!', async () => {
-    expect.assertions(1);
+    expect.assertions(2);
 
     const [raiden, partner] = await makeRaidens(2);
     const sentState = await ensureTransferPending([raiden, partner]);
 
-    // expiration confirmed, enough blocks after
-    await waitBlock(sentState.expiration + 2 * raiden.config.confirmationBlocks + 1);
+    // don't emit if transfer didn't expire
+    await sleep(sentState.expiration * 1e3 - Date.now() - 2e3);
+    expect(raiden.output).not.toContainEqual(
+      transferExpire.request(expect.anything(), expect.anything()),
+    );
+
+    // expiration confirmed
+    await sleep(4e3);
     expect(raiden.output).toContainEqual(transferExpire.request(undefined, meta));
-  });
-
-  test("don't emit if transfer didn't expire", async () => {
-    expect.assertions(1);
-
-    const [raiden, partner] = await makeRaidens(2);
-    const sentState = await ensureTransferPending([raiden, partner]);
-    // not yet expired
-    await waitBlock(sentState.expiration - 1);
-    expect(raiden.output).not.toContainEqual(
-      transferExpire.request(expect.anything(), expect.anything()),
-    );
-  });
-
-  test("don't emit if expired but not confirmed yet", async () => {
-    expect.assertions(1);
-
-    const [raiden, partner] = await makeRaidens(2);
-    const sentState = await ensureTransferPending([raiden, partner]);
-    // not yet confirmed
-    await waitBlock(sentState.expiration + raiden.config.confirmationBlocks - 1);
-    expect(raiden.output).not.toContainEqual(
-      transferExpire.request(expect.anything(), expect.anything()),
-    );
-  });
+  }, 10e3);
 
   test("don't expire if secret registered before expiration", async () => {
     expect.assertions(1);
@@ -665,19 +626,18 @@ describe('transferAutoExpireEpic', () => {
     const sentState = await ensureTransferPending([raiden, partner]);
     await partner.stop();
 
-    await waitBlock(sentState.expiration - 1);
+    const txBlock = raiden.deps.provider.blockNumber + 1;
     await providersEmit(
       {},
       makeLog({
-        blockNumber: sentState.expiration - 1,
-        filter: secretRegistryContract.filters.SecretRevealed(secrethash, null),
+        blockNumber: txBlock,
+        filter: secretRegistryContract.filters.SecretRevealed(secrethash),
         data: secret,
       }),
     );
-    // confirm secretRegistered
-    await waitBlock(sentState.expiration + raiden.config.confirmationBlocks);
+    await waitBlock(txBlock + raiden.config.confirmationBlocks + 1, false);
     // enough confirmation blocks for expiration
-    await waitBlock(sentState.expiration + 2 * raiden.config.confirmationBlocks + 1);
+    await sleep(sentState.expiration * 1e3 - Date.now() + 10e3);
 
     expect(raiden.output).not.toContainEqual(
       transferExpire.request(expect.anything(), expect.anything()),
@@ -692,20 +652,18 @@ describe('transferAutoExpireEpic', () => {
     const sentState = await ensureTransferPending([raiden, partner]);
     await partner.stop();
 
-    await waitBlock(sentState.expiration);
-    // register secret mined after (at) expiration
+    await sleep(sentState.expiration * 1e3 - Date.now()); // goto expiration timestamp
+    const txBlock = raiden.deps.provider.blockNumber + 1; // secret registered at this block
     await providersEmit(
       {},
       makeLog({
-        blockNumber: sentState.expiration,
-        filter: secretRegistryContract.filters.SecretRevealed(secrethash, null),
+        blockNumber: txBlock,
+        filter: secretRegistryContract.filters.SecretRevealed(secrethash),
         data: secret,
       }),
     );
-    // confirm secretRegistered
-    await waitBlock(sentState.expiration + raiden.config.confirmationBlocks + 1);
-    // enough confirmation blocks for expiration
-    await waitBlock(sentState.expiration + 2 * raiden.config.confirmationBlocks + 1);
+    await waitBlock(txBlock + raiden.config.confirmationBlocks + 1, false); // confirm
+    await sleep(10e3); // give some time to check
 
     expect(raiden.output).toContainEqual(transferExpire.request(undefined, meta));
   });
@@ -726,11 +684,12 @@ describe('monitorSecretRegistryEpic', () => {
       makeLog({
         blockNumber: txBlock,
         transactionHash: makeHash(),
-        filter: secretRegistryContract.filters.SecretRevealed(getSecrethash(unknownSecret), null),
+        filter: secretRegistryContract.filters.SecretRevealed(getSecrethash(unknownSecret)),
         data: unknownSecret, // non-indexed secret
       }),
     );
-    await waitBlock();
+    await waitBlock(txBlock + raiden.config.confirmationBlocks + 1);
+
     expect(raiden.output).not.toContainEqual(
       transferSecretRegister.success(expect.anything(), expect.anything()),
     );
@@ -743,8 +702,8 @@ describe('monitorSecretRegistryEpic', () => {
     const { secretRegistryContract } = raiden.deps;
     const sentState = await ensureTransferPending([raiden, partner]);
 
-    await waitBlock(sentState.expiration);
-    const txBlock = sentState.expiration;
+    await sleep(sentState.expiration * 1e3 - Date.now());
+    const txBlock = raiden.deps.provider.blockNumber + 1;
     await providersEmit(
       {},
       makeLog({
@@ -753,10 +712,11 @@ describe('monitorSecretRegistryEpic', () => {
         data: secret, // non-indexed secret
       }),
     );
-    await waitBlock(sentState.expiration + raiden.config.confirmationBlocks);
+    await waitBlock(txBlock + raiden.config.confirmationBlocks + 1, false);
+    await sleep(10e3);
 
     expect(raiden.output).not.toContainEqual(
-      transferSecretRegister.success(expect.objectContaining({ confirmed: true }), meta),
+      transferSecretRegister.success(expect.anything(), expect.anything()),
     );
   });
 
@@ -772,25 +732,34 @@ describe('monitorSecretRegistryEpic', () => {
     const txBlock = raiden.deps.provider.blockNumber;
     const txHash = makeHash();
     // an emitted secret which isn't of interest is ignored
-    await waitBlock(txBlock);
     await providersEmit(
       {},
       makeLog({
         blockNumber: txBlock,
         transactionHash: txHash,
-        filter: secretRegistryContract.filters.SecretRevealed(secrethash, null),
+        filter: secretRegistryContract.filters.SecretRevealed(secrethash),
         data: secret, // non-indexed secret
       }),
     );
-    await waitBlock(txBlock + 1);
-    await waitBlock(txBlock + raiden.config.confirmationBlocks + 1);
+    await waitBlock(txBlock + raiden.config.confirmationBlocks + 1, false);
+    await sleep(2e3);
 
+    const txTimestamp = await firstValueFrom(raiden.deps.getBlockTimestamp(txBlock));
     expect(raiden.output).toContainEqual(
-      transferSecretRegister.success({ secret, txHash, txBlock, confirmed: true }, meta),
+      transferSecretRegister.success(
+        {
+          txTimestamp,
+          secret,
+          txHash,
+          txBlock,
+          confirmed: true,
+        },
+        meta,
+      ),
     );
     await expect(getOrWaitTransfer(raiden, meta)).resolves.toMatchObject({
       secret,
-      secretRegistered: { txBlock, txHash, ts: expect.any(Number) },
+      secretRegistered: { txBlock, txHash, ts: txTimestamp * 1e3 },
     });
     expect(getChannel(raiden, partner).own.locks).toContainEqual(
       expect.objectContaining({

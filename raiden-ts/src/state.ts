@@ -9,7 +9,7 @@ import { PartialRaidenConfig } from './config';
 import { IOU, ServicesValidityMap } from './services/types';
 import { TransferState } from './transfers/state';
 import { RaidenMatrixSetup } from './transport/state';
-import type { ContractsInfo } from './types';
+import { ContractsInfo } from './types';
 import { Address, Signed } from './utils/types';
 
 // types
@@ -17,7 +17,7 @@ const _RaidenState = t.readonly(
   t.type({
     address: Address,
     chainId: t.number,
-    registry: Address,
+    contracts: ContractsInfo,
     blockNumber: t.number,
     config: PartialRaidenConfig,
     channels: t.readonly(t.record(t.string /* ChannelKey */, Channel)),
@@ -68,7 +68,7 @@ export function makeInitialState(
   return {
     address,
     chainId: network.chainId,
-    registry: contractsInfo.TokenNetworkRegistry.address,
+    contracts: contractsInfo,
     blockNumber: contractsInfo.TokenNetworkRegistry.block_number,
     channels: {},
     oldChannels: {},

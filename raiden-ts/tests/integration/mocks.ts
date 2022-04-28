@@ -17,6 +17,7 @@ import type {
 import { Web3Provider } from '@ethersproject/providers';
 import { parseEther } from '@ethersproject/units';
 import { verifyMessage, Wallet } from '@ethersproject/wallet';
+import FakeTimers from '@sinonjs/fake-timers';
 import { EventEmitter } from 'events';
 import memoize from 'lodash/memoize';
 import logging from 'loglevel';
@@ -26,8 +27,8 @@ import type { Store } from 'redux';
 import { applyMiddleware, createStore } from 'redux';
 import { createEpicMiddleware } from 'redux-observable';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, firstValueFrom, lastValueFrom, ReplaySubject } from 'rxjs';
-import { filter, finalize, first, map } from 'rxjs/operators';
+import { AsyncSubject, firstValueFrom, lastValueFrom, of, ReplaySubject } from 'rxjs';
+import { filter, finalize } from 'rxjs/operators';
 
 import type { RaidenAction } from '@/actions';
 import { raidenShutdown, raidenStarted } from '@/actions';
@@ -70,7 +71,7 @@ import { pluckDistinct } from '@/utils/rx';
 import type { Signature } from '@/utils/types';
 import { Address, decode, Secret } from '@/utils/types';
 
-import { makeAddress, makeHash, sleep } from '../utils';
+import { makeAddress, makeHash } from '../utils';
 
 jest.mock('@/messages/utils', () => ({
   ...jest.requireActual<any>('@/messages/utils'),
@@ -604,10 +605,23 @@ const monitoringServiceAddress = makeAddress();
 const secretRegistryAddress = makeAddress();
 const pollingInterval = 10;
 
-process.on('unhandledRejection', (reason, p) => {
-  logging.error('Unhandled Rejection at: Promise', p, 'reason:', reason);
-  // application specific logging, throwing an error, or other logic here
+export const mockedClock = {
+  initTime: Date.now(),
+  clock: null as unknown as FakeTimers.InstalledClock,
+};
+
+beforeAll(() => {
+  // eslint-disable-next-line import/no-named-as-default-member
+  mockedClock.clock = FakeTimers.install({ now: 1, shouldAdvanceTime: true });
+
+  process.on('unhandledRejection', (reason, p) => {
+    // eslint-disable-next-line no-console
+    console.error('Unhandled Rejection at: Promise', p, 'reason:', reason);
+    // application specific logging, throwing an error, or other logic here
+  });
 });
+
+afterAll(() => mockedClock.clock.uninstall());
 
 /**
  * Create a mock of a Raiden client for epics
@@ -741,6 +755,7 @@ export async function makeRaiden(
   ) as MockedContract<TokenNetworkRegistry>;
   spyContract(registryContract, 'TokenNetworkRegistry', seenSighashes);
   registryContract.token_to_token_networks.mockImplementation(async () => makeAddress());
+  registryContract.settle_timeout.mockResolvedValue(BigNumber.from(120));
 
   const getTokenNetworkContract = memoize((address: string): MockedContract<TokenNetwork> => {
     const tokenNetworkContract = TokenNetwork__factory.connect(
@@ -816,8 +831,9 @@ export async function makeRaiden(
   userDepositContract.total_deposit.mockResolvedValue(DEFAULT_MS_REWARD);
   userDepositContract.effectiveBalance.mockResolvedValue(DEFAULT_MS_REWARD);
   userDepositContract.withdraw_plans.mockResolvedValue(
-    makeStruct(['amount', 'withdraw_block'] as const, [Zero, Zero]),
+    makeStruct(['amount', 'withdrawable_after'] as const, [Zero, Zero]),
   );
+  userDepositContract.withdraw_timeout.mockResolvedValue(BigNumber.from(10));
 
   const secretRegistryContract = SecretRegistry__factory.connect(
     secretRegistryAddress,
@@ -883,7 +899,6 @@ export async function makeRaiden(
       additionalServices: ['pfs.raiden.test'],
       pollingInterval,
       httpTimeout: 300,
-      settleTimeout: 60,
       revealTimeout: 50,
       confirmationBlocks: 5,
       logger: 'debug',
@@ -936,11 +951,7 @@ export async function makeRaiden(
     db,
     init$: new ReplaySubject<Observable<any>>(),
     mediationFeeCalculator: standardCalculator,
-    getBlockTimestamp: (block: number) =>
-      config$.pipe(
-        first(),
-        map(({ httpTimeout }) => (httpTimeout / 2e3) * block),
-      ),
+    getBlockTimestamp: (block: number) => of(Math.ceil(mockedClock.initTime / 1e3) + block),
   };
 
   const epicMiddleware = createEpicMiddleware<
@@ -950,7 +961,6 @@ export async function makeRaiden(
     RaidenEpicDeps
   >({ dependencies: deps });
   const output: RaidenAction[] = [];
-  let lastTime = Date.now();
   const store = createStore(
     raidenReducer,
     initialState as any,
@@ -960,8 +970,7 @@ export async function makeRaiden(
         if (raiden.started) {
           output.push(action);
           const now = Date.now();
-          log.debug(`[${address}] action$ (+${now - lastTime}ms):`, action);
-          lastTime = now;
+          log.debug(`[${address}] action$ (@${now}):`, action);
         }
         return next(action);
       },
@@ -992,6 +1001,7 @@ export async function makeRaiden(
     },
     started: undefined,
     stop: async () => {
+      raiden.started = false;
       raiden.store.dispatch(raidenShutdown({ reason: ShutdownReason.STOP }));
       await lastValueFrom(raiden.deps.db.busy$, { defaultValue: undefined });
       raiden.deps.provider.removeAllListeners();
@@ -1008,6 +1018,7 @@ export async function makeRaiden(
   if (start) {
     await raiden.start();
   }
+  mockedClock.initTime = Date.now();
   return raiden;
 }
 
@@ -1034,7 +1045,7 @@ export async function providersEmit(eventName: EventType, ...args: any[]): Promi
     mockedClients.map((r) => new Promise((resolve) => r.deps.provider.once(eventName, resolve))),
   );
   mockedClients.forEach((r) => r.deps.provider.emit(eventName, ...args));
-  await sleep(); // fromEthersEvent needs to debounce emits
+  await mockedClock.clock.nextAsync(); // fromEthersEvent needs to debounce emits
   await promise;
 }
 
@@ -1042,17 +1053,41 @@ export async function providersEmit(eventName: EventType, ...args: any[]): Promi
  * Emit blocks to all connected providers
  *
  * @param block - block number to be emitted, or else increment by one
+ * @param passTime - Whether to pass time to keep it in sync with current block
  * @returns Promise resolved after all mockedClients fetch block
  */
-export async function waitBlock(block?: number): Promise<void> {
-  if (!block) block = mockedClients[0].deps.provider.blockNumber + 1;
+export async function waitBlock(
+  block = mockedClients[0].deps.provider.blockNumber + 1,
+  passTime = true,
+): Promise<void> {
   const promise = Promise.all(
-    mockedClients.map((r) =>
-      firstValueFrom(r.deps.latest$.pipe(filter(({ state }) => state.blockNumber >= block!)), {
-        defaultValue: undefined,
-      }),
-    ),
+    mockedClients
+      .filter((r) => !!r.started)
+      .map((r) =>
+        firstValueFrom(r.deps.latest$.pipe(filter(({ state }) => state.blockNumber >= block!))),
+      ),
   );
-  await providersEmit('block', block);
+  if (passTime) {
+    const blockTs = await firstValueFrom(mockedClients[0].deps.getBlockTimestamp(block));
+    const sleepTs = blockTs * 1e3 > Date.now() ? blockTs * 1e3 - Date.now() : 1;
+    mockedClock.clock.tick(sleepTs);
+  }
+  providersEmit('block', block);
   await promise;
+}
+
+/**
+ * Asynchronously wait for some time
+ *
+ * @param ms - milliseconds to wait
+ * @param emitBlocks - emit new blocks after passing time
+ * @returns Promise to void
+ */
+export async function sleep(ms = 10, emitBlocks = true): Promise<void> {
+  if (ms > 0) await mockedClock.clock.tickAsync(ms);
+  else await mockedClock.clock.nextAsync();
+  const block = Math.floor((Date.now() - mockedClock.initTime) / 1e3);
+  if (emitBlocks && mockedClients.length && block !== mockedClients[0].deps.provider.blockNumber) {
+    await waitBlock(block, false);
+  }
 }
