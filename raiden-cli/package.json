@@ -51,7 +51,7 @@
     "ethers": "^5.6.4",
     "express": "^4.18.0",
     "http-errors": "^2.0.0",
-    "inquirer": "^8.2.3",
+    "inquirer": "^8.2.4",
     "loglevel": "^1.8.0",
     "morgan": "^1.10.0",
     "node-localstorage": "^2.2.1",
