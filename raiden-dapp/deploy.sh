@@ -40,7 +40,9 @@ git remote add --fetch origin "$remote"
 if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
   git checkout gh-pages
   # delete any old site as we are going to replace it
-  git rm -rf ./${PUBLIC_PATH} --ignore-unmatch
+  rm -f ./${PUBLIC_PATH}/* # first, delete all first-level files
+  # then only these folders, possibly preserving other paths
+  rm -rf ./${PUBLIC_PATH}/{css,docs,fonts,img,js}/
 else
   git checkout --orphan gh-pages
 fi
@@ -58,8 +60,8 @@ fi
 
 # stage any changes and new files
 git add -A
-# now commit, ignoring branch gh-pages doesn't seem to work, so trying skip
 
+# now commit, ignoring branch gh-pages doesn't seem to work, so trying skip
 git commit -m "Automated deployment to GitHub Pages: ${CIRCLE_SHA1} [skip ci]" --allow-empty
 
 # and push, but send any output to /dev/null to hide anything sensitive
