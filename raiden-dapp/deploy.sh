@@ -40,7 +40,8 @@ git remote add --fetch origin "$remote"
 if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
   git checkout gh-pages
   # delete any old site as we are going to replace it
-  rm -f ./${PUBLIC_PATH}/* # first, delete all first-level files
+  # first, delete all first-level files
+  find ./${PUBLIC_PATH} -maxdepth 1 ! -type d -delete
   # then only these folders, possibly preserving other paths
   rm -rf ./${PUBLIC_PATH}/{css,docs,fonts,img,js}/
 else
