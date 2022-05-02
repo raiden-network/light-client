@@ -321,6 +321,9 @@ export function getNetworkName(network: Network) {
     case 'arbitrum-rinkeby':
       name = 'rinkeby-arbitrum';
       break;
+    case 'arbitrum':
+      name = 'arbitrum-one';
+      break;
     case 'unknown':
       name = network.chainId.toString();
       break;
