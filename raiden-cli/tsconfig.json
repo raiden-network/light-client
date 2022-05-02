@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
+    "target": "ES2020",
     "module": "commonjs",
     "outDir": "./build",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "strict": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "allowJs": true,
-    "lib": ["ES2019", "dom"],
+    "lib": ["ES2020", "dom"],
     "baseUrl": "."
   },
   "include": [
