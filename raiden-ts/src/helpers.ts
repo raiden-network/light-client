@@ -55,8 +55,10 @@ import {
   putRaidenState,
   replaceDatabase,
 } from './db/utils';
+import arbitrumOneDeploy from './deployment/deployment_arbitrum-one.json';
 import goerliDeploy from './deployment/deployment_goerli_unstable.json';
 import rinkebyArbitrumDeploy from './deployment/deployment_rinkeby-arbitrum.json';
+import arbitrumOneServicesDeploy from './deployment/deployment_services_arbitrum-one.json';
 import goerliServicesDeploy from './deployment/deployment_services_goerli_unstable.json';
 import rinkebyArbitrumServicesDeploy from './deployment/deployment_services_rinkeby-arbitrum.json';
 import { makeInitialState, RaidenState } from './state';
@@ -94,6 +96,9 @@ function getContracts(network: Network): ContractsInfo {
     // fallback nin the `default` case
     case 'arbitrum-rinkeby':
       info = { ...rinkebyArbitrumDeploy.contracts, ...rinkebyArbitrumServicesDeploy.contracts };
+      break;
+    case 'arbitrum':
+      info = { ...arbitrumOneDeploy.contracts, ...arbitrumOneServicesDeploy.contracts };
       break;
     case 'goerli':
       info = { ...goerliDeploy.contracts, ...goerliServicesDeploy.contracts };
