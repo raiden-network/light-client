@@ -47,10 +47,11 @@ You can install the package from the [NPM registry](https://www.npmjs.com/):
 
 ```sh
 $ yarn global add @raiden_network/raiden-cli
-$ raiden-cli --help
+$ # ensure yarn global path is in your $PATH, e.g. with `export PATH="$(yarn global bin):$PATH"`
+$ raiden --help
 $ # or
 $ npm install --global @raiden_network/raiden-cli
-$ raiden-cli --help
+$ raiden --help
 ```
 
 ## Development
@@ -73,20 +74,16 @@ If getting out-of-memory errors, you can build these files on a more capable mac
 
 You can see a summary of the options:
 ```sh
-node build/index.js --help
-# or
-node build/bundle.js --help
+./raiden --help
 ```
 
 The CLI currently exposes parameters to configure the Raiden node that runs behind the REST service.
 
-To run the CLI for the very first time, the only two thing necessary are a keystore file and an Ethereum node.
+Calling it without parameters will run with default options, which include trying to use `http://localhost:8545` as Ethereum JSON RPC Endpoint, looking for keystore JSONs in `./` (and showing a selection menu) and storing database in `./storage`. You probably want to change these options, e.g.:
 
 ```sh
-node build/index.js -e https://provider.web3:8545 -k /path/privkey.json
+./raiden --eth-rpc-endpoint https://goerli.infura.io/v3/YOUR-PROJECT-ID --datadir ~/.raiden --keystore-path ~/.ethereum/goerli/keystore --address 0xYourAddress
 ```
-
-This starts the Raiden node and connects to a REST interface. The state is stored in `./storage` as JSON files. It is expected that the account is already funded with ETH to pay for on-chain transactions.
 
 ### Documentation
 

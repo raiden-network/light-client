@@ -143,15 +143,19 @@ jobs:
     steps:
       - attach_workspace: *attach_options
       - run:
-          name: Build CLI
-          command: yarn build
-      - run:
-          name: Compress CLI bundle
+          name: Build CLI and bundle
           command: |
-            cp --verbose ./raiden ./package.json ./build/
-            tar --create --gzip --verbose --file raiden-cli.tgz ./build --transform='s/^build/raiden-cli/'
+            yarn build
+            yarn build:bundle
+      - run:
+          name: Compress CLI and bundle
+          command: |
+            mkdir -p ./cli/
+            yarn pack --out ./cli/%s-%v.tgz
+            cp --verbose ./raiden ./package.json ./bundle/
+            tar --create --gzip --verbose --file ./cli/raiden-cli-bundle.tgz ./bundle --transform='s/^bundle/raiden-cli/'
       - store_artifacts:
-          path: raiden-cli.tgz
+          path: ./cli
 
   lint:
     working_directory: << pipeline.parameters.working_directory >>
@@ -396,6 +400,7 @@ workflows:
           requires:
             - build_sdk
       - build_cli:
+          <<: *filter_release_tag
           requires:
             - build_sdk
       - generate_documentation:
@@ -412,5 +417,5 @@ workflows:
           <<: *filter_release_tag
           context: 'Raiden Context'
           requires:
-            - build_dapp
+            - build_sdk
             - build_cli

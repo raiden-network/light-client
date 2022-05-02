@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 try {
   require('./build');
-} catch (e) {
-  require('./bundle');
+} catch (e){
+  try {
+    require('./bundle');
+  } catch (e) {
+    require('.');
+  }
 }
 // vim: filetype=js
