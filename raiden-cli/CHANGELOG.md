@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+## [3.0.0] - 2022-05-02
 ### Removed
 - [#3034] Remove `--default-settle-timeout` CLI option, since this value isn't customizable anymore and instead constant per contract's deployment
 
@@ -109,7 +110,8 @@
 [#2054]: https://github.com/raiden-network/light-client/pulls/2054
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/raiden-network/light-client/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/raiden-network/light-client/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/raiden-network/light-client/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/raiden-network/light-client/compare/v2.0.0...v2.0.1
