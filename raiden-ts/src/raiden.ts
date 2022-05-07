@@ -1298,12 +1298,20 @@ export class Raiden {
     // allows us to predict exactly the final gasPrice and deplet balance
     const gasPrice = price ? BigNumber.from(price) : await this.deps.provider.getGasPrice();
 
-    const curBalance = await this.getBalance(address);
-    const gasLimit = await this.deps.provider.estimateGas({
-      from: address,
-      to,
-      value: curBalance,
-    });
+    let curBalance, gasLimit;
+    for (let try_ = 0; !curBalance || !gasLimit; try_++) {
+      // curBalance may take some tries to be updated right after a tx
+      try {
+        curBalance = await this.getBalance(address);
+        gasLimit = await this.deps.provider.estimateGas({
+          from: address,
+          to,
+          value: curBalance,
+        });
+      } catch (e) {
+        if (try_ >= 5) throw e;
+      }
+    }
 
     // transferableBalance is current balance minus the cost of a single transfer as per gasPrice
     const transferableBalance = curBalance.sub(gasPrice.mul(gasLimit));
