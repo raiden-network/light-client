@@ -21,12 +21,19 @@ else
     --publish 127.0.0.1:5001:5001 \
     --publish 127.0.0.1:5002:5002 \
     --publish 127.0.0.1:8545:8545 \
+    --volume supervisord.conf:/etc/supervisor/conf.d/supervisord.conf \
     "$DOCKER_IMAGE_NAME" \
     >/dev/null
 fi
 
 echo -e "\nWait to make sure all services are up and running"
 sleep 10s
+
+# fix pollingInterval in raiden nodes and print config
+curl -X PATCH -H 'content-type: application/json' \
+  -d '{"pollingInterval":500}' http://localhost:5001/api/v1/config || true
+curl -X PATCH -H 'content-type: application/json' \
+  -d '{"pollingInterval":500}' http://localhost:5002/api/v1/config || true
 
 export DEPLOYMENT_INFO="${DEPLOYMENT_INFORMATION_DIRECTORY}/deployment_private_net.json"
 export DEPLOYMENT_SERVICES_INFO="${DEPLOYMENT_INFORMATION_DIRECTORY}/deployment_services_private_net.json"

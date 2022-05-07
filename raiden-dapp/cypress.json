@@ -13,5 +13,6 @@
   "baseUrl": "http://localhost:5000",
   "modifyObstructiveCode": false,
   "videoUploadOnPasses": false,
-  "chromeWebSecurity": false
+  "chromeWebSecurity": false,
+  "defaultCommandTimeout": 5000
 }
