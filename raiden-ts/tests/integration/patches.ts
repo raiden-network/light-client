@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getAddress } from '@ethersproject/address';
 import type { BytesLike, Signature, SignatureLike } from '@ethersproject/bytes';
+import { concat, hexZeroPad, splitSignature } from '@ethersproject/bytes';
 import { HashZero } from '@ethersproject/constants';
 import type { Network } from '@ethersproject/networks';
 import type { JsonRpcProvider } from '@ethersproject/providers';
@@ -15,7 +16,7 @@ jest.mock('@ethersproject/transactions', () => {
     ...actual,
     __esModule: true,
     computeAddress: jest.fn((sig: string): string => {
-      if (sig.startsWith('0x00000000')) return getAddress('0x' + sig.slice(-44, -4));
+      if (sig.startsWith('0x00000000')) return getAddress('0x' + sig.slice(-42, -2));
       return mockOrigComputeAddress(sig);
     }),
   };
@@ -25,8 +26,8 @@ jest.mock('@ethersproject/wallet', () => {
   return {
     ...jest.requireActual<any>('@ethersproject/wallet'),
     __esModule: true,
-    verifyMessage: jest.fn((_: string, sig: string): string =>
-      getAddress('0x' + sig.slice(-44, -4)),
+    verifyMessage: jest.fn((_: string, sig: SignatureLike): string =>
+      getAddress('0x' + splitSignature(sig).s.slice(-40)),
     ),
   };
 });
@@ -38,16 +39,9 @@ jest.mock('@ethersproject/signing-key', () => {
     private _address?: string;
     signDigest({}: BytesLike): Signature {
       if (!this._address) this._address = mockOrigComputeAddress(this['publicKey']);
-      const s = HashZero.slice(0, 24) + this._address!.slice(2).toLowerCase() + '00';
-      return {
-        r: HashZero,
-        s,
-        _vs: s,
-        recoveryParam: 0,
-        v: 27,
-        yParityAndS: '',
-        compact: '',
-      };
+      return splitSignature(
+        concat([HashZero, hexZeroPad(this._address.toLowerCase(), 32), '0x00']),
+      );
     }
   }
   return {
