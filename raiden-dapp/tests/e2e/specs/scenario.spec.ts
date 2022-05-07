@@ -80,6 +80,7 @@ describe('dApp e2e tests', () => {
     navigateToTokenDepositFromTransferScreen();
     enterDepositTokenAmountForOpenedChannel(uiTimeout);
     depositTokensToOpenedChannel();
+    cy.wait(uiTimeout); // wait deposit to be detected by partner
     navigateToChannelsList();
     enterTokenWithdrawalAmoutFromChannelsList(uiTimeout);
     withdrawTokens();
