@@ -56299,13 +56299,13 @@ html.overflow-y-hidden {
 .theme--light.v-calendar-category .v-calendar-category__column-header {
   border-right: #e0e0e0 1px solid;
 }
-.theme--light.v-calendar-category .v-calendar-category .v-calendar-daily__head {
+.theme--light.v-calendar-category .v-calendar-daily__head {
   background: #FFFFFF;
 }
-.theme--light.v-calendar-category .v-calendar-category .v-calendar-daily__intervals-head {
+.theme--light.v-calendar-category .v-calendar-daily__intervals-head {
   background: #FFFFFF;
 }
-.theme--light.v-calendar-category .v-calendar-category .v-calendar-daily__intervals-body {
+.theme--light.v-calendar-category .v-calendar-daily__intervals-body {
   background: #FFFFFF;
 }
 
@@ -56313,13 +56313,13 @@ html.overflow-y-hidden {
 .theme--dark.v-calendar-category .v-calendar-category__column-header {
   border-right: #9e9e9e 1px solid;
 }
-.theme--dark.v-calendar-category .v-calendar-category .v-calendar-daily__head {
+.theme--dark.v-calendar-category .v-calendar-daily__head {
   background: #303030;
 }
-.theme--dark.v-calendar-category .v-calendar-category .v-calendar-daily__intervals-head {
+.theme--dark.v-calendar-category .v-calendar-daily__intervals-head {
   background: #303030;
 }
-.theme--dark.v-calendar-category .v-calendar-category .v-calendar-daily__intervals-body {
+.theme--dark.v-calendar-category .v-calendar-daily__intervals-body {
   background: #303030;
 }
 
