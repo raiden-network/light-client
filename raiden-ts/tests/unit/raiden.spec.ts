@@ -48,7 +48,7 @@ import {
   TokenNetwork__factory,
   TokenNetworkRegistry__factory,
 } from '@/contracts';
-import { changes$, dumpDatabaseToArray } from '@/db/utils';
+import { changes$ } from '@/db/utils';
 import { combineRaidenEpics } from '@/epics';
 import { signMessage } from '@/messages';
 import { messageServiceSend } from '@/messages/actions';
@@ -1429,30 +1429,6 @@ describe('Raiden', () => {
       MaxUint256,
       expect.anything(),
     );
-  });
-
-  test('dumpDatabase', async () => {
-    const mockDump = dumpDatabaseToArray as jest.MockedFunction<typeof dumpDatabaseToArray>;
-    const result = [{ _id: '1', value: 345 }];
-    mockDump.mockResolvedValue(result);
-
-    const deps = makeDummyDependencies();
-    const raiden = new Raiden(
-      dummyState,
-      deps,
-      combineRaidenEpics([dummyEpic, initEpicMock]),
-      dummyReducer,
-    );
-    await raiden.start();
-
-    const promise = raiden.dumpDatabase();
-    // test dump promise waits for raiden to be stopped
-    await expect(
-      Promise.race([promise, new Promise((resolve) => setTimeout(resolve, 10))]),
-    ).resolves.toBeUndefined(); // timeout wins, promise pending
-    raiden.stop(); // stop will cause it to continue
-    await expect(promise).resolves.toBe(result);
-    expect(mockDump).toHaveBeenCalled();
   });
 
   test('create', async () => {
