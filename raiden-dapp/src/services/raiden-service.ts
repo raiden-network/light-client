@@ -639,9 +639,8 @@ export default class RaidenService {
   }
 
   /* istanbul ignore next */
-  async stopAndGetDatabaseDump() {
-    this._raiden!.stop();
-    return this._raiden!.dumpDatabase();
+  async *getDatabaseDump() {
+    yield* this._raiden!.dumpDatabase();
   }
 
   /* istanbul ignore next */
