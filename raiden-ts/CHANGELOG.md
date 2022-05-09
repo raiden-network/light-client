@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- [#3122] `Raiden.dumpDatabase` now returns an `AsyncIterable` of database rows objects, which allow to stream even big state dumps without having to accumulate everything in memory; also, it doesn't require stopping SDK to dump state anymore
+
+[#3122]: https://github.com/raiden-network/light-client/issues/3122
+
 ## [3.0.0] - 2022-05-02
 ### Fixed
 - [#3106] Fix bug where `Raiden.transferOnchainTokens` with `subkey=true` could be ignored and main account used instead

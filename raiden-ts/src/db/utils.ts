@@ -4,13 +4,21 @@ import logging from 'loglevel';
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import type { Observable } from 'rxjs';
-import { BehaviorSubject, defer, from, fromEvent, lastValueFrom, merge } from 'rxjs';
-import { concatMap, finalize, mergeMap, pluck, takeUntil } from 'rxjs/operators';
+import {
+  BehaviorSubject,
+  defer,
+  firstValueFrom,
+  from,
+  fromEvent,
+  lastValueFrom,
+  merge,
+} from 'rxjs';
+import { concatMap, filter, finalize, mergeMap, pluck, takeUntil } from 'rxjs/operators';
 
 import type { Channel } from '../channels';
 import { channelKey } from '../channels/utils';
 import type { RaidenState } from '../state';
-import { assert, ErrorCodec, ErrorCodes } from '../utils/error';
+import { assert, ErrorCodes } from '../utils/error';
 import type { Address } from '../utils/types';
 import { last } from '../utils/types';
 import { getDefaultPouchAdapter } from './adapter';
@@ -449,6 +457,8 @@ export async function* dumpDatabase(db: RaidenDatabase, { batch = 10 }: { batch?
   let changed: string | undefined;
   const feed = db.changes({ since: 'now', live: true });
   feed.on('change', ({ id }) => (changed = id));
+  await firstValueFrom(db.busy$.pipe(filter((v) => !v)));
+  db.busy$.next(true);
   try {
     yield await databaseMeta(db);
     let startkey = 'a';
@@ -468,40 +478,7 @@ export async function* dumpDatabase(db: RaidenDatabase, { batch = 10 }: { batch?
       else break;
     }
   } finally {
+    db.busy$.next(false);
     feed.cancel();
   }
-}
-
-async function reopenDatabase(db: RaidenDatabase): Promise<RaidenDatabase> {
-  return makeDatabase.call(db.constructor, db.name);
-}
-
-/**
- * Creates an array containing all documents in the database; retries database change errors
- *
- * @param db - Database to dump
- * @param opts - Options
- * @param opts.batch - Size of batches to fetch and yield
- * @returns Array of documents
- */
-export async function dumpDatabaseToArray(db: RaidenDatabase, opts?: { batch?: number }) {
-  const { log } = db.constructor.__defaults;
-  let shouldCloseAfter = false;
-  for (let _try = 10; _try > 0; --_try) {
-    try {
-      const result = [];
-      for await (const doc of dumpDatabase(db, opts)) {
-        result.push(doc);
-      }
-      if (shouldCloseAfter) await db.close(); // on success
-      return result;
-    } catch (e) {
-      if (ErrorCodec.is(e) && e.message.includes('database is closed')) {
-        shouldCloseAfter = true;
-        db = await reopenDatabase(db);
-      }
-      log?.warn('Restarting dump because', e);
-    }
-  }
-  throw new Error('Could not dump database');
 }

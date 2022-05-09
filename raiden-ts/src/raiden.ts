@@ -49,7 +49,7 @@ import type { RaidenConfig } from './config';
 import { intervalFromConfig, PartialRaidenConfig } from './config';
 import { ShutdownReason } from './constants';
 import { CustomToken__factory } from './contracts';
-import { dumpDatabaseToArray } from './db/utils';
+import { dumpDatabase } from './db/utils';
 import { combineRaidenEpics, getLatest$ } from './epics';
 import {
   chooseOnchainAccount,
@@ -511,13 +511,10 @@ export class Raiden {
   /**
    * Dumps database content for backup
    *
-   * @returns JSON object or array containing database content
+   * @yields Rows of objects
    */
-  public async dumpDatabase() {
-    // only wait for db to be closed if it was started
-    if (this.started !== undefined)
-      await lastValueFrom(this.deps.db.busy$, { defaultValue: undefined });
-    return dumpDatabaseToArray(this.deps.db);
+  public async *dumpDatabase() {
+    yield* dumpDatabase(this.deps.db);
   }
 
   /**

@@ -6,7 +6,7 @@ import path from 'path';
 import defaultMigrations from '@/db/migrations';
 import type { Migrations } from '@/db/types';
 import {
-  dumpDatabaseToArray,
+  dumpDatabase,
   getDatabaseConstructorFromOptions,
   getRaidenState,
   latestVersion,
@@ -63,8 +63,8 @@ test('migrate, decode & dump', async () => {
       expect(TransferState.is(decodedTransfer)).toBe(true);
     }
 
-    await db.close(); // ensure dumpDatabase can reopen it if needed
-    const newDump = await dumpDatabaseToArray(db);
+    const newDump = [];
+    for await (const row of dumpDatabase(db)) newDump.push(row);
     expect(newDump.length).toBeGreaterThanOrEqual(dump.length);
   }
 });
