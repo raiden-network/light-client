@@ -62,6 +62,8 @@ export function navigateToBackupState() {
  *
  */
 export function navigateToTokenSelect() {
+  navigateBackToAccountMenu();
+  navigateBackToTransferScreenFromOverlay();
   cy.log('navigate to token select');
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
   cy.get('[data-cy=transfer_inputs]').should('exist');

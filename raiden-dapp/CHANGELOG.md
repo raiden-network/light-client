@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- [#3122] `Backup State` doesn't require SDK to be shut down anymore
+
+[#3122]: https://github.com/raiden-network/light-client/issues/3122
+
 ## [3.0.0] - 2022-05-02
 ### Fixed
 - [#3078] Fix quick pay feature for Arbitrum and zero confirmation blocks
