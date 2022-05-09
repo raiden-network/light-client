@@ -73,7 +73,6 @@ describe('dApp e2e tests', () => {
     navigateToAccountMenu();
     navigateToBackupState();
     downloadState();
-    connectToDApp();
     navigateToTokenSelect();
     navigateToConnectNewTokenFromTokenOverlay();
     navigateBackToTransferScreenFromOverlay();

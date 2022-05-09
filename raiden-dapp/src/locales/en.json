@@ -234,7 +234,7 @@
     "disabled-download": "Downloading the state is only possible when connected to the dApp",
     "disabled-upload": "Uploading the state is only possible when the dApp is disconnected",
     "download": "Download State",
-    "download-warning": "Downloading the state will force the dApp to shut down",
+    "download-warning": "Keep your state backup private and safe",
     "download-button": "Download",
     "upload": "Upload State and Connect",
     "upload-drag-and-drop": "Drag and drop state file",
