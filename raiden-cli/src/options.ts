@@ -121,6 +121,11 @@ const yargsOptions = {
     default: './storage',
     desc: 'Dir path where to store state',
   },
+  loadState: {
+    type: 'string',
+    desc: 'Path to JSON file to upload/rehydrate state from',
+    normalize: true,
+  },
   configFile: {
     type: 'string',
     desc: 'JSON file path containing config object',

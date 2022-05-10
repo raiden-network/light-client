@@ -136,7 +136,10 @@ async function main() {
   const raiden = await Raiden.create(
     argv.ethRpcEndpoint,
     wallet.privateKey,
-    { prefix: argv.datadir.endsWith('/') ? argv.datadir : argv.datadir + '/' },
+    {
+      prefix: argv.datadir.endsWith('/') ? argv.datadir : argv.datadir + '/',
+      state: argv.loadState ? JSON.parse(await fs.readFile(argv.loadState, 'utf-8')) : undefined,
+    },
     argv.userDepositContractAddress,
     config,
   );

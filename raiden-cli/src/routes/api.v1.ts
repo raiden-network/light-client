@@ -84,5 +84,16 @@ export function makeApiV1Router(this: Cli): Router {
     response.json(RaidenConfig.encode(this.raiden.config));
   });
 
+  router.get('/state.json', async (_request: Request, response: Response) => {
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.write('[');
+    let count = 0;
+    for await (const row of this.raiden.dumpDatabase()) {
+      response.write((count++ ? ',\n' : '\n') + JSON.stringify(row));
+    }
+    response.write('\n]');
+    response.end();
+  });
+
   return router;
 }
