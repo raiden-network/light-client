@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- [#3122] `/api/v1/state.json` endpoint to allow downloading/backing up and `--load-state <path.json>` parameter to upload/rehydrate state/database in a fresh instance
+
+[#3122]: https://github.com/raiden-network/light-client/issues/3122
+
 ## [3.0.0] - 2022-05-02
 ### Removed
 - [#3034] Remove `--default-settle-timeout` CLI option, since this value isn't customizable anymore and instead constant per contract's deployment
