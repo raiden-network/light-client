@@ -14,7 +14,7 @@ import logging from 'loglevel';
 import type { MatrixClient } from 'matrix-js-sdk';
 import path from 'path';
 import type { Observable } from 'rxjs';
-import { AsyncSubject, defer, firstValueFrom, merge, ReplaySubject, timer } from 'rxjs';
+import { AsyncSubject, defer, firstValueFrom, ReplaySubject, timer } from 'rxjs';
 import {
   exhaustMap,
   filter,
@@ -64,7 +64,7 @@ import rinkebyArbitrumServicesDeploy from './deployment/deployment_services_rink
 import { makeInitialState, RaidenState } from './state';
 import { standardCalculator } from './transfers/mediate/types';
 import type { RaidenTransfer } from './transfers/state';
-import { Direction, TransferState } from './transfers/state';
+import { TransferState } from './transfers/state';
 import { raidenTransfer } from './transfers/utils';
 import type { Latest, RaidenEpicDeps } from './types';
 import { ContractsInfo } from './types';
@@ -74,7 +74,7 @@ import { jsonParse } from './utils/data';
 import { ErrorCodes, RaidenError } from './utils/error';
 import { getLogsByChunk$, getNetworkName } from './utils/ethers';
 import { LruCache } from './utils/lru';
-import { distinctRecordValues, pluckDistinct } from './utils/rx';
+import { pluckDistinct } from './utils/rx';
 import type { Decodable, Hash, UInt } from './utils/types';
 import { Address, decode, isntNil, PrivateKey } from './utils/types';
 
@@ -223,29 +223,19 @@ export const getSigner = async (
 };
 
 /**
- * Initializes the [[transfers$]] observable
- * TODO: properly paginate this, in case of too much transfers in history to stream
+ * Provides a live stream of transfer documents containing transfer updates
+ * If you want pagination, use [[getTransfers]] instead
  *
- * @param state$ - Observable of RaidenStates
  * @param db - Database instance
  * @returns observable of sent and completed Raiden transfers
  */
-export function initTransfers$(
-  state$: Observable<RaidenState>,
-  db: RaidenDatabase,
-): Observable<RaidenTransfer> {
-  return merge(
-    changes$<TransferStateish>(db, {
-      since: 0,
-      include_docs: true,
-      selector: { direction: { $in: Object.values(Direction) } },
-    }).pipe(
-      pluck('doc'),
-      filter(isntNil),
-      map((doc) => decode(TransferState, doc)),
-    ),
-    state$.pipe(pluckDistinct('transfers'), distinctRecordValues(), pluck(1)),
-  ).pipe(map(raidenTransfer));
+export function initTransfers$(db: RaidenDatabase): Observable<RaidenTransfer> {
+  return changes$<TransferStateish>(db, {
+    since: 0,
+    live: true,
+    include_docs: true,
+    selector: { 'transfer.ts': { $gt: 0 } },
+  }).pipe(map(({ doc }) => raidenTransfer(decode(TransferState, doc))));
 }
 
 /**

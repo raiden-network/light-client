@@ -49,7 +49,7 @@ import type { RaidenConfig } from './config';
 import { intervalFromConfig, PartialRaidenConfig } from './config';
 import { ShutdownReason } from './constants';
 import { CustomToken__factory } from './contracts';
-import { dumpDatabase } from './db/utils';
+import { dumpDatabase, getTransfers } from './db/utils';
 import { combineRaidenEpics, getLatest$ } from './epics';
 import {
   chooseOnchainAccount,
@@ -132,10 +132,7 @@ export class Raiden {
    * Every time a transfer state is updated, it's emitted here. 'key' property is unique and
    * may be used as identifier to know which transfer got updated.
    */
-  public readonly transfers$: Observable<RaidenTransfer> = initTransfers$(
-    this.state$,
-    this.deps.db,
-  );
+  public readonly transfers$: Observable<RaidenTransfer> = initTransfers$(this.deps.db);
 
   /** RaidenConfig object */
   public config!: RaidenConfig;
@@ -820,6 +817,27 @@ export class Raiden {
     const promise = asyncActionToPromise(matrixPresence, meta, this.action$);
     this.store.dispatch(matrixPresence.request(undefined, meta));
     return promise;
+  }
+
+  /**
+   * Get list of past and pending transfers
+   *
+   * @param filter - Filter options
+   * @param filter.pending - true: only pending; false: only completed; undefined: all
+   * @param filter.token - filter by token address
+   * @param filter.partner - filter by partner address
+   * @param filter.end - filter by initiator or target address
+   * @param options - PouchDB.ChangesOptions object
+   * @param options.offset - Offset to skip entries
+   * @param options.limit - Limit number of entries
+   * @param options.desc - Set to true to get newer transfers first
+   * @returns promise to array of all transfers
+   */
+  public async getTransfers(
+    filter?: { pending?: boolean; token?: string; partner?: string; end?: string },
+    options?: { offset?: number; limit?: number; desc?: boolean },
+  ): Promise<RaidenTransfer[]> {
+    return getTransfers(this.deps.db, filter, options);
   }
 
   /**
