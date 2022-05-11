@@ -398,6 +398,15 @@ export class Raiden {
   }
 
   /**
+   * Current provider getter
+   *
+   * @returns ether's provider instance
+   */
+  public get provider(): JsonRpcProvider {
+    return this.deps.provider;
+  }
+
+  /**
    * Get current account address (subkey's address, if subkey is being used)
    *
    * @returns Instance address
