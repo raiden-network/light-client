@@ -27,6 +27,7 @@
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
     "build": "tsc --skipLibCheck",
     "build:bundle": "TS_NODE_PROJECT=./ignored ncc build -C ./src/index.ts -o ./bundle",
+    "build:webui": "curl https://files.pythonhosted.org/packages/32/4e/ee2ff9b3a92d41b1eb69d58d43467ee4279d3c55ae8f640c763031540324/raiden-webui-1.2.1.tar.gz | tar -xzvf - -C ./build/ --strip-components=2 raiden-webui-1.2.1/raiden_webui/ui",
     "preinstall": "npx only-allow yarn"
   },
   "files": [
