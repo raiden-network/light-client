@@ -530,9 +530,11 @@ export class Raiden {
   /**
    * Returns a list of all token addresses registered as token networks in registry
    *
+   * @param rescan - Whether to rescan events from scratch
    * @returns Promise to list of token addresses
    */
-  public async getTokenList(): Promise<Address[]> {
+  public async getTokenList(rescan = false): Promise<Address[]> {
+    if (!rescan) return Object.keys(this.state.tokens) as Address[];
     return await lastValueFrom(
       getLogsByChunk$(this.deps.provider, {
         ...this.deps.registryContract.filters.TokenNetworkCreated(),

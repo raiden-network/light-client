@@ -108,7 +108,7 @@ export function getLogsByChunk$(
     let curChunk = Math.min(chunk, toBlock - fromBlock + 1);
     let retry = 5;
     // every time repeatWhen re-subscribes to this defer, yield (current/retried/next) range/chunk
-    return defer(async () =>
+    return defer<Promise<Log[]>>(async () =>
       provider.send('eth_getLogs', [
         {
           ...filter,
@@ -119,7 +119,7 @@ export function getLogsByChunk$(
     ).pipe(
       // mimics the post-request handling on BaseProvider.getLogs
       map((logs) => {
-        logs.forEach((log: { removed?: boolean }) => {
+        logs.forEach((log) => {
           if (log.removed == null) log.removed = false;
         });
         return Formatter.arrayOf(provider.formatter.filterLog.bind(provider.formatter))(
