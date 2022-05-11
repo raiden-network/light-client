@@ -18,9 +18,12 @@ import { concatMap, filter, finalize, mergeMap, pluck, takeUntil } from 'rxjs/op
 import type { Channel } from '../channels';
 import { channelKey } from '../channels/utils';
 import type { RaidenState } from '../state';
+import type { RaidenTransfer } from '../transfers/state';
+import { TransferState } from '../transfers/state';
+import { raidenTransfer } from '../transfers/utils';
 import { assert, ErrorCodes } from '../utils/error';
 import type { Address } from '../utils/types';
-import { last } from '../utils/types';
+import { decode, last } from '../utils/types';
 import { getDefaultPouchAdapter } from './adapter';
 import defaultMigrations from './migrations';
 import type {
@@ -50,6 +53,39 @@ function byPrefix(prefix: string, descending = false) {
 }
 
 async function databaseProps(db: RaidenDatabase) {
+  await Promise.all([
+    /* db.createIndex({
+      index: {
+        name: 'byCleared',
+        fields: ['cleared', 'direction'],
+      },
+    }), */
+    db.createIndex({
+      index: {
+        name: 'byPartner',
+        fields: ['direction', 'partner'],
+      },
+    }),
+    db.createIndex({
+      index: {
+        name: 'bySecrethash',
+        fields: ['secrethash'],
+      },
+    }),
+    db.createIndex({
+      index: {
+        name: 'byChannel',
+        fields: ['channel'],
+      },
+    }),
+    db.createIndex({
+      index: {
+        name: 'byTransferTs',
+        fields: ['transfer.ts'],
+      },
+    }),
+  ]);
+
   const storageKeys = new Set<string>();
   const results = await db.allDocs({ startkey: 'a', endkey: 'z\ufff0' });
   results.rows.forEach(({ id }) => storageKeys.add(id));
@@ -87,33 +123,6 @@ async function makeDatabase(
 ): Promise<RaidenDatabase> {
   const db = new this(name);
   db.setMaxListeners(30);
-
-  await Promise.all([
-    /* db.createIndex({
-      index: {
-        name: 'byCleared',
-        fields: ['cleared', 'direction'],
-      },
-    }), */
-    db.createIndex({
-      index: {
-        name: 'byPartner',
-        fields: ['direction', 'partner'],
-      },
-    }),
-    db.createIndex({
-      index: {
-        name: 'bySecrethash',
-        fields: ['secrethash'],
-      },
-    }),
-    db.createIndex({
-      index: {
-        name: 'byChannel',
-        fields: ['channel'],
-      },
-    }),
-  ]);
 
   return databaseProps(db);
 }
@@ -481,4 +490,54 @@ export async function* dumpDatabase(db: RaidenDatabase, { batch = 10 }: { batch?
     db.busy$.next(false);
     feed.cancel();
   }
+}
+
+const pendingFields = [
+  'unlockProcessed',
+  'expiredProcessed',
+  'secretRegistered',
+  'channelSettled',
+];
+/**
+ * Efficently get transfers from database when paging with offset and limit
+ *
+ * @param db - Database instance
+ * @param filter - Filter options
+ * @param filter.pending - true: only pending; false: only completed; undefined: all
+ * @param filter.token - filter by token address
+ * @param filter.partner - filter by partner address
+ * @param filter.end - filter by initiator or target address
+ * @param opts - Changes options
+ * @param opts.offset - Offset to skip entries
+ * @param opts.limit - Limit number of entries
+ * @param opts.desc - Set to true to get new transfers first
+ * @returns Promise to array of results
+ */
+export async function getTransfers(
+  db: RaidenDatabase,
+  filter?: { pending?: boolean; token?: string; partner?: string; end?: string },
+  { offset: skip, desc, ...opts }: { offset?: number; limit?: number; desc?: boolean } = {},
+): Promise<RaidenTransfer[]> {
+  const $and: any[] = [{ 'transfer.ts': { $gt: 0 } }];
+  if (filter) {
+    if (filter.pending) {
+      for (const field of pendingFields) $and.push({ [field]: { $exists: false } });
+    } else if (filter.pending === false) {
+      $and.push({ $or: pendingFields.map((field) => ({ [field]: { $exists: true } })) });
+    }
+    if ('token' in filter) $and.push({ 'transfer.token': filter.token });
+    if ('partner' in filter) $and.push({ partner: filter.partner });
+    if ('end' in filter)
+      $and.push({
+        $or: [{ 'transfer.initiator': filter.end }, { 'transfer.target': filter.end }],
+      });
+  }
+  const { docs, warning } = await db.find({
+    selector: { $and },
+    sort: [{ 'transfer.ts': desc ? 'desc' : 'asc' }],
+    skip,
+    ...opts,
+  });
+  if (warning) db.__opts.log?.warn('db.getTransfers', warning);
+  return docs.map((doc) => raidenTransfer(decode(TransferState, doc)));
 }
