@@ -275,6 +275,11 @@ const yargsOptions = {
       }
     },
   },
+  webUi: {
+    type: 'boolean',
+    default: false,
+    desc: 'Serves Raiden webUI in /ui path',
+  },
 } as const;
 
 /**
