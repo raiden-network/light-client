@@ -1,13 +1,10 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { timer } from 'rxjs';
-import { filter, map, takeUntil, toArray } from 'rxjs/operators';
 
 import type { RaidenTransfer } from 'raiden-ts';
-import { isntNil } from 'raiden-ts';
 
 import type { Cli } from '../types';
-import { validateOptionalAddressParameter } from '../utils/validation';
+import { queryAsNumbers, validateOptionalAddressParameter } from '../utils/validation';
 
 export enum ApiTransferRole {
   initiator = 'initiator',
@@ -52,23 +49,22 @@ function transformSdkToApiPendingTransfer(
 }
 
 async function getPendingTransfers(this: Cli, request: Request, response: Response) {
-  this.raiden.transfers$
-    .pipe(
-      filter((transfer) => !transfer.completed),
-      filter(
-        (transfer) =>
-          !request.params.tokenAddress || request.params.tokenAddress === transfer.token,
-      ),
-      filter(
-        (transfer) =>
-          !request.params.partnerAddress || request.params.partnerAddress === transfer.partner,
-      ),
-      takeUntil(timer(0)),
-      map(transformSdkToApiPendingTransfer.bind(this)),
-      filter(isntNil),
-      toArray(),
-    )
-    .subscribe((transfers) => response.json(transfers));
+  let filter: Parameters<typeof this.raiden['getTransfers']>[0];
+  if (request.params.tokenAddress) {
+    filter = { pending: true, token: request.params.tokenAddress };
+    if (request.params.partnerAddress) filter['partner'] = request.params.partnerAddress;
+  } else filter = { pending: true };
+
+  this.raiden
+    .getTransfers(filter, queryAsNumbers(request.query))
+    .then((transfers) => transfers.map(transformSdkToApiPendingTransfer))
+    .then(
+      (r) => response.json(r),
+      (e) => {
+        this.log.error(e);
+        response.status(400).send(e);
+      },
+    );
 }
 
 /**

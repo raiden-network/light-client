@@ -1,7 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
-import { timer } from 'rxjs';
-import { filter, map, takeUntil, toArray } from 'rxjs/operators';
 
 import type { RaidenError, RaidenTransfer } from 'raiden-ts';
 import { ErrorCodes } from 'raiden-ts';
@@ -11,19 +9,20 @@ import {
   isInsuficientFundsError,
   isInvalidParameterError,
   isTransferFailedError,
+  queryAsNumbers,
   validateAddressParameter,
   validateOptionalAddressParameter,
 } from '../utils/validation';
 
-export enum ApiPaymentEvent {
+enum ApiPaymentEvent {
   sent = 'EventPaymentSentSuccess',
   received = 'EventPaymentReceivedSuccess',
 }
 
-export interface ApiPayment {
+interface ApiPayment {
   event: ApiPaymentEvent;
-  initiator_address: string;
-  target_address: string;
+  initiator: string;
+  target: string;
   token_address: string;
   amount: string;
   identifier: string;
@@ -37,14 +36,14 @@ function transformSdkTransferToApiPayment(transfer: RaidenTransfer): ApiPayment 
   // enough. We need to clarify this and agree on a single representation.
   return {
     event: ApiPaymentEvent[transfer.direction],
-    initiator_address: transfer.initiator,
-    target_address: transfer.target,
+    initiator: transfer.initiator,
+    target: transfer.target,
     token_address: transfer.token,
     amount: transfer.value.toString(),
     identifier: transfer.paymentId.toString(),
     secret: transfer.secret ?? '',
     secret_hash: transfer.secrethash,
-    log_time: transfer.changedAt.toISOString(),
+    log_time: transfer.startedAt.toISOString().slice(0, 23),
   };
 }
 
@@ -64,20 +63,22 @@ function isConflictError(error: unknown): error is RaidenError {
 }
 
 function getPayments(this: Cli, request: Request, response: Response) {
-  this.raiden.transfers$
-    .pipe(
-      filter((t) => !request.params.tokenAddress || request.params.tokenAddress === t.token),
-      filter(
-        (t) =>
-          !request.params.endAddress ||
-          request.params.endAddress === t.target ||
-          request.params.endAddress === t.initiator,
-      ),
-      takeUntil(timer(0)),
-      map(transformSdkTransferToApiPayment),
-      toArray(),
-    )
-    .subscribe((payments) => response.json(payments));
+  let filter: Parameters<typeof this.raiden['getTransfers']>[0];
+  if (request.params.tokenAddress) {
+    filter = { token: request.params.tokenAddress };
+    if (request.params.endAddress) filter['end'] = request.params.endAddress;
+  }
+
+  this.raiden
+    .getTransfers(filter, queryAsNumbers(request.query))
+    .then((transfers) => transfers.map(transformSdkTransferToApiPayment))
+    .then(
+      (r) => response.json(r),
+      (e) => {
+        this.log.error(e);
+        response.status(400).send(e);
+      },
+    );
 }
 
 async function doTransfer(this: Cli, request: Request, response: Response, next: NextFunction) {
