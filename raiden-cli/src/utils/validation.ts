@@ -137,3 +137,17 @@ export function isInsuficientFundsError(error: any): error is RaidenError {
     ].includes(error.message)
   );
 }
+
+const numRe = /^\d+$/;
+
+/**
+ * Convert query parameters from strings to numbers
+ *
+ * @param query - query params mapping
+ * @returns mapping with numeric strings converted to numbers
+ */
+export function queryAsNumbers(query: any) {
+  return Object.fromEntries(
+    Object.entries<string>(query).map(([k, v]) => [k, numRe.test(v) ? +v : v]),
+  );
+}
