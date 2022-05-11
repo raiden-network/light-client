@@ -148,7 +148,7 @@ async function main() {
   const cli: Cli | (Cli & App) = { log, raiden };
   if (argv.apiAddress) {
     const [host, port] = argv.apiAddress;
-    const app = makeApp.call(cli, argv.rpccorsdomain);
+    const app = makeApp.call(cli, argv.rpccorsdomain, argv.webUi);
     const server = app.listen(port, host, () =>
       cli.log.info(`Server started at: http://${host}:${port}`),
     );
