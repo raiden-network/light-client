@@ -53,14 +53,12 @@ export function enterAndSelectHub(uiTimeout: number, partnerAddress: string) {
 }
 
 /**
- * @param uiTimeout - Timeout to wait
  */
-export function enterChannelDepositAmount(uiTimeout: number) {
+export function enterChannelDepositAmount() {
   cy.log('enter channel deposit amount');
   cy.get('[data-cy=channel-action-form]').should('exist');
   cy.contains('Open Channel');
   cy.get('[data-cy=channel-action-form__token-amount__input]').type('0.5');
-  cy.wait(uiTimeout);
 }
 
 /**
@@ -101,15 +99,13 @@ export function enterTransferAddress(uiTimeout: number, partnerAddress: string) 
 }
 
 /**
- * @param uiTimeout - Timeout to wait
  */
-export function enterTransferAmount(uiTimeout: number) {
+export function enterTransferAmount() {
   cy.log('enter transfer amount');
   // cypress selectors: raiden-dapp/src/components/transfer/TransferInputs.vue
   cy.get('[data-cy=transfer_inputs]').should('exist');
   // cypress selectors: raiden-dapp/src/components/AmountInput.vue
   cy.get('[data-cy=amount_input]').type('0.0001');
-  cy.wait(uiTimeout);
 }
 
 /**
@@ -146,17 +142,19 @@ export function makeMediatedTransfer(uiTimeout: number) {
 }
 
 /**
- *
+ * @param uiTimeout - Timeout
  */
-export function downloadState() {
+export function downloadState(uiTimeout: number) {
   cy.log('download state');
   // cypress selectors: raiden-dapp/src/views/account/BackupState.vue
   cy.get('[data-cy=backup_state]').should('exist');
+  cy.wait(uiTimeout);
   cy.get('[data-cy=backup_state_buttons_download_state]').click();
   // cypress selectors: raiden-dapp/src/components/account/backup-state/DownloadStateDialog.vue
   cy.getWithCustomTimeout('[data-cy=download_state_button]').should('exist');
+  cy.getWithCustomTimeout('[data-cy=download_state_button]').should('not.be.disabled');
   cy.get('[data-cy=download_state_button]').click();
-  cy.getWithCustomTimeout('[data-cy=backup_state]').should('not.exist');
+  cy.wait(uiTimeout);
 }
 
 /**
