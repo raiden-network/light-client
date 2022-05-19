@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Wrapper } from '@vue/test-utils';
 import { mount } from '@vue/test-utils';
 import Vue from 'vue';
@@ -12,6 +11,11 @@ Vue.use(Vuetify);
 describe('DownloadStateDialog.vue', () => {
   let wrapper: Wrapper<DownloadStateDialog>;
   let vuetify: Vuetify;
+  const $raiden = {
+    getDatabaseDump: jest.fn(async function* () {
+      yield { test: 1 };
+    }),
+  };
 
   beforeEach(() => {
     vuetify = new Vuetify();
@@ -21,6 +25,7 @@ describe('DownloadStateDialog.vue', () => {
       stubs: ['v-dialog'],
       mocks: {
         $t: (msg: string) => msg,
+        $raiden,
       },
       propsData: {
         visible: true,
@@ -41,10 +46,8 @@ describe('DownloadStateDialog.vue', () => {
   });
 
   test('calls method for getting and downloading state', async () => {
-    (wrapper.vm as any).getAndDownloadState = jest.fn();
     wrapper.findComponent(ActionButton).trigger('click');
     await wrapper.vm.$nextTick();
-
-    expect((wrapper.vm as any).getAndDownloadState).toBeCalled();
+    expect($raiden.getDatabaseDump).toBeCalled();
   });
 });

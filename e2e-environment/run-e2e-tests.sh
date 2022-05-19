@@ -21,7 +21,7 @@ else
     --publish 127.0.0.1:5001:5001 \
     --publish 127.0.0.1:5002:5002 \
     --publish 127.0.0.1:8545:8545 \
-    --volume supervisord.conf:/etc/supervisor/conf.d/supervisord.conf \
+    --volume $(dirname "${BASH_SOURCE[0]}")/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf \
     "$DOCKER_IMAGE_NAME" \
     >/dev/null
 fi

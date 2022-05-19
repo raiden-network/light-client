@@ -13,17 +13,19 @@
       <action-button
         data-cy="download_state_button"
         class="download-state__button"
-        enabled
         full-width
+        :enabled="!!href"
+        :href="href"
+        :download="filename"
         :text="$t('backup-state.download-button')"
-        @click="getAndDownloadState()"
+        @click="cancel"
       />
     </v-card-actions>
   </raiden-dialog>
 </template>
 
 <script lang="ts">
-import { Component, Emit, Mixins, Prop } from 'vue-property-decorator';
+import { Component, Emit, Mixins, Prop, Watch } from 'vue-property-decorator';
 
 import ActionButton from '@/components/ActionButton.vue';
 import RaidenDialog from '@/components/dialogs/RaidenDialog.vue';
@@ -39,20 +41,23 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
   @Prop({ required: true, type: Boolean, default: false })
   visible!: boolean;
 
+  href = '';
+  filename = '';
+
   @Emit()
   cancel(): boolean {
     return true;
   }
 
-  /* istanbul ignore next */
-  async getAndDownloadState() {
-    const filename = `raiden_lc_state_${new Date().toISOString()}.json`;
-    const stateFileURL = await this.getStateFileURL(filename);
-    const downloadLink = this.createDownloadLink(filename, stateFileURL);
-
-    downloadLink.click();
-    this.revokeDownloadURL(stateFileURL, downloadLink);
-    this.visible = false;
+  @Watch('visible', { immediate: true })
+  async onVisibilityChanged(visible: boolean) {
+    if (!visible) {
+      this.href = '';
+      this.filename = '';
+    } else {
+      this.filename = `raiden_lc_state_${new Date().toISOString()}.json`;
+      this.href = await this.getStateFileURL(this.filename);
+    }
   }
 
   /* istanbul ignore next */
@@ -65,23 +70,6 @@ export default class DownloadStateDialog extends Mixins(NavigationMixin) {
     stateJSON += '\n]';
     const file = new File([stateJSON], filename, { type: 'application/json' });
     return URL.createObjectURL(file);
-  }
-
-  /* istanbul ignore next */
-  createDownloadLink(filename: string, url: string): HTMLAnchorElement {
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.style.display = 'none';
-    return document.body.appendChild(anchor);
-  }
-
-  /* istanbul ignore next */
-  revokeDownloadURL(stateFileURL: string, downloadLink: HTMLAnchorElement): void {
-    setTimeout(() => {
-      URL.revokeObjectURL(stateFileURL);
-      document.body.removeChild(downloadLink);
-    }, 1);
   }
 }
 </script>
