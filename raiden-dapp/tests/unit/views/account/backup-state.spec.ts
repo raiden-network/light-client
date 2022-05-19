@@ -22,6 +22,11 @@ describe('BackupState.vue', () => {
       stubs: ['v-dialog'],
       mocks: {
         $t: (msg: string) => msg,
+        $raiden: {
+          async *getDatabaseDump() {
+            yield { test: 1 };
+          },
+        },
       },
       store,
     });

@@ -59,20 +59,20 @@ describe('dApp e2e tests', () => {
     mintAndDepositUtilityTokenFromSelectHubScreen();
     mintConnectedTokenFromSelectHubScreen();
     enterAndSelectHub(uiTimeout, partnerAddress);
-    enterChannelDepositAmount(uiTimeout);
+    enterChannelDepositAmount();
     openChannel();
     navigateToNotificationPanel();
     deleteTopNotification(); // This must be the sticky backup notification.
     closeNotificationPanel();
     enterTransferAddress(uiTimeout, partnerAddress);
-    enterTransferAmount(uiTimeout);
+    enterTransferAmount();
     makeDirectTransfer(uiTimeout);
     enterTransferAddress(uiTimeout, thirdAddres);
-    enterTransferAmount(uiTimeout);
+    enterTransferAmount();
     makeMediatedTransfer(uiTimeout);
     navigateToAccountMenu();
     navigateToBackupState();
-    downloadState();
+    downloadState(uiTimeout);
     navigateToTokenSelect();
     navigateToConnectNewTokenFromTokenOverlay();
     navigateBackToTransferScreenFromOverlay();

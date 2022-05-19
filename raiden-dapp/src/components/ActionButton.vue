@@ -3,6 +3,8 @@
     type="submit"
     :disabled="!enabled"
     :loading="loading"
+    :href="href"
+    :download="download"
     data-cy="action_button"
     class="text-capitalize action-button"
     :class="{
@@ -59,6 +61,12 @@ export default class ActionButton extends Vue {
 
   @Prop({ type: Boolean, default: false })
   angular?: boolean;
+
+  @Prop({ type: String })
+  href?: string;
+
+  @Prop({ type: String })
+  download?: string;
 
   @Emit()
   click(): boolean {
