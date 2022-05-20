@@ -10,8 +10,8 @@
     "lint": "eslint ./src/index.js"
   },
   "dependencies": {
-    "@actions/core": "^1.8.0",
-    "query-registry": "^2.3.0"
+    "@actions/core": "^1.8.2",
+    "query-registry": "^2.4.0"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.33.4",

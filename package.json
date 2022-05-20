@@ -46,11 +46,11 @@
   },
   "resolutions": {
     "typescript": "4.6.4",
-    "@types/node": "^14.18.16",
+    "@types/node": "^14.18.18",
     "jest-environment-jsdom": "^27.5.1",
     "jest": "^27.5.1",
     "**/redux-observable/rxjs": "^7.5.5",
-    "@ethersproject/bignumber": "^5.6.0",
+    "@ethersproject/bignumber": "^5.6.1",
     "@ethersproject/signing-key": "^5.6.1",
     "loglevel": "^1.8.0"
   }
