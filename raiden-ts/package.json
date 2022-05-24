@@ -109,7 +109,7 @@
     "json-canonicalize": "^1.0.4",
     "lodash": "^4.17.21",
     "loglevel": "^1.8.0",
-    "matrix-js-sdk": "^17.2.0",
+    "matrix-js-sdk": "^18.0.0",
     "pouchdb": "^7.3.0",
     "pouchdb-find": "^7.3.0",
     "redux": "^4.2.0",
