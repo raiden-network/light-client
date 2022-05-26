@@ -1,10 +1,9 @@
 import { Capacitor } from '@capacitor/core';
 import type { BigNumber, BigNumberish, providers } from 'ethers';
-import { constants, utils } from 'ethers';
+import { utils } from 'ethers';
 import PouchDB from 'pouchdb';
 import type { ObservedValueOf } from 'rxjs';
 import { exhaustMap, filter } from 'rxjs/operators';
-import asyncPool from 'tiny-async-pool';
 import type Router from 'vue-router';
 import type { Store } from 'vuex';
 
@@ -564,14 +563,13 @@ export default class RaidenService {
   async fetchAndUpdateTokenData(
     tokens: string[] = Object.values(this.store.state.tokens).map((m) => m.address),
   ): Promise<void> {
-    if (!tokens.length) return;
-    const fetchToken = async (address: string): Promise<void> =>
-      this.getToken(address).then((token) => {
+    await Promise.all(
+      tokens.map(async (address: string) => {
+        const token = await this.getToken(address);
         if (!token) return;
-        this.store.commit('updateTokens', { [token.address]: token });
-      });
-
-    await asyncPool(6, tokens, fetchToken);
+        this.store.commit('updateTokens', { [address]: token });
+      }),
+    );
   }
 
   async transfer(
@@ -678,17 +676,13 @@ export default class RaidenService {
     }
     const allTokenAddresses = await raiden.getTokenList();
     const balances: Tokens = {};
-    const fetchTokenBalance = async (address: string): Promise<void> =>
-      raiden.getTokenBalance(address, raiden.address).then((balance) => {
-        if (balance.gt(constants.Zero)) {
-          balances[address] = {
-            address,
-            balance,
-          };
-        }
-      });
-
-    await asyncPool(6, allTokenAddresses, fetchTokenBalance);
+    await Promise.all(
+      allTokenAddresses.map(async (address) => {
+        const balance = await raiden.getTokenBalance(address, raiden.address);
+        if (!balance?.gt(0)) return;
+        balances[address] = { address, balance };
+      }),
+    );
     const tokens: Tokens = {};
     Object.keys(balances).forEach((address) => {
       const cached = this.store.state.tokens[address];
@@ -698,15 +692,13 @@ export default class RaidenService {
       }
     });
 
-    const fetchTokenInfo = async (address: string): Promise<void> =>
-      raiden.getTokenInfo(address).then((token) => {
-        tokens[address] = { ...token, ...balances[address] };
-      });
-
     const missingInfo = Object.keys(balances);
-    if (missingInfo.length > 0) {
-      await asyncPool(6, missingInfo, fetchTokenInfo);
-    }
+    await Promise.all(
+      missingInfo.map(async (address) => {
+        const token = await raiden.getTokenInfo(address);
+        tokens[address] = { ...token, ...balances[address] };
+      }),
+    );
 
     return Object.values(tokens);
   }
