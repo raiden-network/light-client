@@ -1,4 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk';
+import { Method } from 'matrix-js-sdk';
 import { encodeUri } from 'matrix-js-sdk/lib/utils';
 
 /**
@@ -30,5 +31,5 @@ export function getUserPresence(
 }> {
   const path = encodeUri('/presence/$userId/status', { $userId: userId });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (matrix as any).http.authedRequest(undefined, 'GET', path);
+  return matrix.http.authedRequest(undefined as any, Method.Get, path);
 }

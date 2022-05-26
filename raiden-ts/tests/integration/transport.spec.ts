@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ensureChannelIsOpen, ensurePresence, matrixServer } from './fixtures';
 import { fetch, makeRaiden, makeRaidens, makeSignature, sleep } from './mocks';
 
@@ -507,7 +508,7 @@ test('matrixLeaveUnknownRoomsEpic', async () => {
   const matrix = (await firstValueFrom(raiden.deps.matrix$)) as jest.Mocked<MatrixClient>;
   const roomId = `!unknownRoomId:${matrixServer}`;
 
-  matrix.emit('Room', {
+  matrix.emit('Room' as any, {
     roomId,
     getCanonicalAlias: jest.fn(),
     getAliases: jest.fn(() => []),

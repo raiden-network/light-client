@@ -386,7 +386,7 @@ export function matrixMessageReceivedEpic(
         }),
         completeWith(action$),
         mergeMap(([[event], presence]) => {
-          const lines: string[] = (event.getContent().body ?? '').split('\n');
+          const lines: string[] = (event.getContent()['body'] ?? '').split('\n');
           return scheduled(lines, asapScheduler).pipe(
             map((line) => {
               let message;

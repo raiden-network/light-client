@@ -13,7 +13,7 @@
     "build": "yarn workspaces run build",
     "lint": "yarn workspaces run lint",
     "test": "yarn workspace raiden-ts test && yarn workspace raiden-dapp test",
-    "prepare": "rimraf ./node_modules/matrix-js-sdk/lib/*.d.ts && yarn workspace raiden-ts prepare"
+    "prepare": "yarn workspace raiden-ts prepare"
   },
   "repository": {
     "type": "git",
