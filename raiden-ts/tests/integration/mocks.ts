@@ -17,7 +17,7 @@ import type {
 import { Web3Provider } from '@ethersproject/providers';
 import { parseEther } from '@ethersproject/units';
 import { verifyMessage, Wallet } from '@ethersproject/wallet';
-import FakeTimers from '@sinonjs/fake-timers';
+import * as FakeTimers from '@sinonjs/fake-timers';
 import { EventEmitter } from 'events';
 import memoize from 'lodash/memoize';
 import logging from 'loglevel';
@@ -429,7 +429,7 @@ function mockedMatrixCreateClient({
       for (const client of mockedClients) {
         if (client.address === address) continue;
         const matrix = await firstValueFrom(client.deps.matrix$);
-        matrix.emit('event', {
+        matrix.emit('event' as any, {
           getType: () => 'm.presence',
           getSender: () => userId,
           getContent: () => ({ presence }),
@@ -449,7 +449,7 @@ function mockedMatrixCreateClient({
       }
       const room = mockedRooms[roomId];
       if (invite?.[0]) await matrix.invite(room.roomId, invite[0]);
-      matrix.emit('Room.myMembership', room, room.members[userId]);
+      matrix.emit('Room.myMembership' as any, room, room.members[userId]);
       return room;
     }),
     getRoom: jest.fn((roomId) => {
@@ -471,9 +471,13 @@ function mockedMatrixCreateClient({
       for (const client of mockedClients) {
         const matrix = await firstValueFrom(client.deps.matrix$);
         if (!room.getMember(matrix.getUserId()!)) continue;
-        matrix.emit('RoomMember.membership', { getSender: () => userId }, room.getMember(userId));
+        matrix.emit(
+          'RoomMember.membership' as any,
+          { getSender: () => userId },
+          room.getMember(userId),
+        );
       }
-      matrix.emit('Room.myMembership', room, room.members[userId]);
+      matrix.emit('Room.myMembership' as any, room, room.members[userId]);
       return room;
     }),
     getRooms: jest.fn(() => Object.values(mockedRooms).filter((room) => userId in room.members)),
@@ -490,7 +494,11 @@ function mockedMatrixCreateClient({
       for (const client of mockedClients) {
         const matrix = await firstValueFrom(client.deps.matrix$);
         if (!room.getMember(matrix.getUserId()!)) continue;
-        matrix.emit('RoomMember.membership', { getSender: () => userId }, room.getMember(peerId));
+        matrix.emit(
+          'RoomMember.membership' as any,
+          { getSender: () => userId },
+          room.getMember(peerId),
+        );
       }
     }),
     leave: jest.fn(async (roomId: string) => {
@@ -501,9 +509,13 @@ function mockedMatrixCreateClient({
       for (const client of mockedClients) {
         const matrix = await firstValueFrom(client.deps.matrix$);
         if (!room.getMember(matrix.getUserId()!)) continue;
-        matrix.emit('RoomMember.membership', { getSender: () => userId }, room.getMember(userId));
+        matrix.emit(
+          'RoomMember.membership' as any,
+          { getSender: () => userId },
+          room.getMember(userId),
+        );
       }
-      matrix.emit('Room.myMembership', room, room.members[userId]);
+      matrix.emit('Room.myMembership' as any, room, room.members[userId]);
     }),
     sendEvent: jest.fn(async (roomId: string, type: string, content: any) => {
       assert(address, 'matrix.sendEvent but client not started');
@@ -514,7 +526,7 @@ function mockedMatrixCreateClient({
         const matrix = await firstValueFrom(client.deps.matrix$);
         if (!room.getMember(matrix.getUserId()!)) continue;
         matrix.emit(
-          'Room.timeline',
+          'Room.timeline' as any,
           {
             getType: jest.fn(() => type),
             getSender: jest.fn(() => userId),
@@ -534,7 +546,7 @@ function mockedMatrixCreateClient({
             const matrix = await firstValueFrom(client.deps.matrix$);
             if (partnerId !== matrix.getUserId()) continue;
             for (const content of Object.values(map)) {
-              matrix.emit('toDeviceEvent', {
+              matrix.emit('toDeviceEvent' as any, {
                 getType: jest.fn(() => type),
                 getSender: jest.fn(() => userId),
                 getContent: jest.fn(() => content),
@@ -611,7 +623,6 @@ export const mockedClock = {
 };
 
 beforeAll(() => {
-  // eslint-disable-next-line import/no-named-as-default-member
   mockedClock.clock = FakeTimers.install({ now: 1, shouldAdvanceTime: true });
 
   process.on('unhandledRejection', (reason, p) => {

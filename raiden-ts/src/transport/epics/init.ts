@@ -1,7 +1,7 @@
 import * as t from 'io-ts';
 import sortBy from 'lodash/sortBy';
 import type { Filter, MatrixClient } from 'matrix-js-sdk';
-import { createClient } from 'matrix-js-sdk';
+import { createClient, PushRuleKind } from 'matrix-js-sdk';
 import { logger as matrixLogger } from 'matrix-js-sdk/lib/logger';
 import type { Observable } from 'rxjs';
 import { combineLatest, defer, EMPTY, from, merge, of } from 'rxjs';
@@ -81,7 +81,7 @@ function startMatrixSync(
       defer(async () =>
         Promise.all([
           createMatrixFilter(matrix),
-          matrix.setPushRuleEnabled('global', 'override', '.m.rule.master', true),
+          matrix.setPushRuleEnabled('global', PushRuleKind.Override, '.m.rule.master', true),
         ]),
       ).pipe(
         // delay startClient (going online) to after raiden is synced
@@ -218,8 +218,7 @@ function setupMatrixClient$(
             // set it here, and login doesn't set deviceId, so we set all credential
             // parameters again here after successful login or register
             matrix.deviceId = device_id;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (matrix as any).http.opts.accessToken = access_token;
+            matrix.http.opts.accessToken = access_token;
             matrix.credentials = { userId };
 
             // displayName must be signature of full userId for our messages to be accepted
