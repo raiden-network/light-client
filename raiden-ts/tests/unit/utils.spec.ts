@@ -91,7 +91,7 @@ describe('getLogsByChunk$', () => {
         defaultValue: undefined,
       }),
     ).rejects.toBe(error);
-    expect(provider.send).toHaveBeenCalledTimes(5);
+    expect(provider.send).toHaveBeenCalledTimes(7);
     expect(provider.send).toHaveBeenCalledWith('eth_getLogs', [
       {
         fromBlock: hexlify(20),
@@ -581,5 +581,5 @@ test('templateLiteral', () => {
   assert(myLiteral.is(str));
   // eslint-disable-next-line prefer-const
   encapsulated = `$${str}$`; // assigning only possible if str is properly inferred
-  expect(myLiteral.is(encapsulated.substr(1, 5))).toBe(true);
+  expect(myLiteral.is(encapsulated.substring(1, 6))).toBe(true);
 });
