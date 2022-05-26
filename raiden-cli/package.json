@@ -24,7 +24,7 @@
   ],
   "scripts": {
     "lint": "eslint --max-warnings 0 --ext '.ts' .",
-    "build": "tsc",
+    "build": "tsc --skipLibCheck",
     "build:bundle": "TS_NODE_PROJECT=./ignored ncc build -C ./src/index.ts -o ./bundle",
     "preinstall": "npx only-allow yarn"
   },
