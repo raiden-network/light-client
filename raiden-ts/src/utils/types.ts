@@ -37,7 +37,7 @@ export function decode<C extends t.Mixed>(
     const decoded = codec.decode(data);
     reporterAssert(decoded);
     return decoded.right;
-  } catch (originalError) {
+  } catch (originalError: any) {
     log?.('__decode failed:', codec.name, codec, data, originalError);
 
     throw customError
