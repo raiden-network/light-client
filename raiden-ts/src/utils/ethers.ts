@@ -106,7 +106,7 @@ export function getLogsByChunk$(
   return defer(() => {
     let start = fromBlock;
     let curChunk = Math.min(chunk, toBlock - fromBlock + 1);
-    let retry = 3;
+    let retry = 5;
     // every time repeatWhen re-subscribes to this defer, yield (current/retried/next) range/chunk
     return defer(async () =>
       provider.send('eth_getLogs', [
@@ -141,8 +141,8 @@ export function getLogsByChunk$(
       // if it still fail [retry] times on lower bound, give up;
       // otherwise wait pollingInterval before retrying
       catchError((err) => {
-        if (retry >= 0) return timer(provider.pollingInterval).pipe(ignoreElements());
-        throw err;
+        if (retry < 0) throw err;
+        return timer(provider.pollingInterval).pipe(ignoreElements());
       }),
       // repeat from inner defer while there's still ranges to scan
       repeatWhen((complete$) => complete$.pipe(takeWhile(() => start <= toBlock))),
