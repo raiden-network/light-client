@@ -12,6 +12,7 @@
     "start": "yarn workspace raiden-ts build && yarn workspace raiden-dapp run serve",
     "build": "yarn workspaces run build",
     "lint": "yarn workspaces run lint",
+    "clean": "yarn workspaces run clean",
     "test": "yarn workspace raiden-ts test && yarn workspace raiden-dapp test",
     "prepare": "yarn workspace raiden-ts prepare"
   },
