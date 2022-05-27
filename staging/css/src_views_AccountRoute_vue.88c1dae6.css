@@ -1,0 +1,51 @@
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/views/AccountRoute.vue?vue&type=style&index=0&id=76b70f56&lang=scss&scoped=true& ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+#account-route-wrapper[data-v-76b70f56] {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  position: absolute;
+  z-index: 20;
+}
+@media only screen and (max-width: 600px) {
+#account-route-wrapper[data-v-76b70f56] {
+    height: 100vh;
+    width: 100%;
+}
+}
+.account-route[data-v-76b70f56] {
+  background: #0f0e10;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  height: 844px;
+  margin-top: 25px;
+  width: 620px;
+  overflow-y: auto;
+}
+@media only screen and (max-width: 600px) {
+.account-route[data-v-76b70f56] {
+    border-radius: 0;
+    height: 100vh;
+    margin-top: 0;
+    width: 100%;
+}
+}
+.account-route__header[data-v-76b70f56] {
+  display: flex;
+  height: 80px;
+}
+.account-route__footer[data-v-76b70f56] {
+  align-items: flex-end;
+  color: #323232;
+  display: flex;
+  flex: 1;
+  font-size: 13px;
+  justify-content: center;
+  padding-bottom: 25px;
+  text-align: center;
+}
+.account-route__footer__contracts-version[data-v-76b70f56] {
+  padding-left: 15px;
+}

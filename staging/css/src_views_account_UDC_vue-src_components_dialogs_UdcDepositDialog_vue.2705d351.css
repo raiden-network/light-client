@@ -1,0 +1,163 @@
+/*!*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/components/AmountDisplay.vue?vue&type=style&index=0&id=2ea71c4a&lang=scss&scoped=true& ***!
+  \*****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+.amount-display[data-v-2ea71c4a] {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+.amount-display--inline[data-v-2ea71c4a] {
+  display: inline;
+}
+.amount-display--full-width[data-v-2ea71c4a] {
+  width: 100%;
+}
+.amount-display__formatted-amount--warning[data-v-2ea71c4a] {
+  color: #ea6464;
+}
+/*!****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/components/dialogs/UdcDepositDialog.vue?vue&type=style&index=0&id=57e308c6&lang=scss&scoped=true& ***!
+  \****************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+.udc-deposit-dialog[data-v-57e308c6] {
+  background-color: #141414;
+  border-radius: 10px !important;
+  padding: 20px 20px 55px 20px;
+}
+.udc-deposit-dialog__balance[data-v-57e308c6] {
+  font-size: 14px;
+  text-align: center;
+  width: 100%;
+}
+.udc-deposit-dialog--progress[data-v-57e308c6] {
+  margin-top: 20px;
+}
+.udc-deposit-dialog--progress span[data-v-57e308c6] {
+  margin-top: 22px;
+}
+.udc-deposit-dialog--uniswap-url[data-v-57e308c6] {
+  text-decoration: none;
+}
+.udc-deposit-dialog__close[data-v-57e308c6] {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+}
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/components/dialogs/UdcWithdrawalDialog.vue?vue&type=style&index=0&id=4b370dcd&scoped=true&lang=scss& ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+.udc-withdrawal-dialog__done[data-v-4b370dcd] {
+  width: 110px;
+  height: 110px;
+  margin: 0 auto;
+}
+.udc-withdrawal-dialog__available-eth[data-v-4b370dcd] {
+  border-radius: 8px;
+  color: #84878a;
+  background-color: #262829;
+  padding: 4px 8px;
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.udc-withdrawal-dialog__available-eth--too-low[data-v-4b370dcd] {
+  color: #ff0000;
+  background-color: #420d0d;
+}
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/components/PlannedUdcWithdrawalInformation.vue?vue&type=style&index=0&lang=scss& ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+.planned-udc-withdrawal-information {
+  width: 100%;
+  height: 24px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+.planned-udc-withdrawal-information--no-progress {
+  color: #7a7a80;
+  background-color: #232323;
+}
+.planned-udc-withdrawal-information--pending {
+  color: #ffc700;
+  background-color: #293300;
+}
+.planned-udc-withdrawal-information--ready {
+  color: #00ff66;
+  background-color: #003214;
+}
+.planned-udc-withdrawal-information__amount {
+  font-size: 15px;
+}
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/views/account/UDC.vue?vue&type=style&index=0&id=e105f0f0&scoped=true&lang=scss& ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+hr[data-v-e105f0f0] {
+  border: solid 1px #646464;
+  margin-top: 50px;
+}
+.udc[data-v-e105f0f0] {
+  padding: 26px;
+}
+.udc > div[data-v-e105f0f0] {
+  margin-bottom: 16px;
+}
+.udc__content-box[data-v-e105f0f0] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 16px;
+  border-radius: 8px;
+  color: #7a7a80;
+  background-color: #1c1c1c;
+  font-size: 12px;
+  line-height: 18px;
+}
+.udc__content-box--nested[data-v-e105f0f0] {
+  flex-direction: row;
+  width: auto;
+  color: #84878a;
+  background-color: #262829;
+  padding: 4px 8px;
+}
+.udc__content-box--nested > *[data-v-e105f0f0] {
+  margin: 0 4px;
+}
+.udc__content-box__header[data-v-e105f0f0] {
+  font-size: 15px;
+  align-self: flex-start;
+}
+.udc__content-box > div[data-v-e105f0f0] {
+  margin-bottom: 8px;
+}
+.udc__amount[data-v-e105f0f0] {
+  color: #ffffff;
+  font-size: 31px;
+  line-height: 47px;
+}
+.udc__actions[data-v-e105f0f0] {
+  display: flex;
+}
+.udc__actions__button[data-v-e105f0f0] {
+  display: flex;
+  flex-grow: 1;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border-radius: 8px;
+  color: #44ddff;
+  background-color: #182d32;
+  font-size: 14px;
+  line-height: 16px;
+}
+.udc__actions__button[data-v-e105f0f0]:not(:last-child) {
+  margin-right: 16px;
+}
+.udc__actions__button[data-v-e105f0f0]:hover {
+  background-color: #213e45;
+  cursor: pointer;
+}
+.udc__actions__button img[data-v-e105f0f0] {
+  margin-right: 5px;
+}

@@ -1,0 +1,148 @@
+/*!***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/views/account/Settings.vue?vue&type=style&index=0&id=30993b7f&scoped=true&lang=scss& ***!
+  \***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+.settings[data-v-30993b7f] {
+  padding: 20px;
+}
+[data-v-30993b7f] .v-list {
+  background-color: #0f0e10 !important;
+}
+[data-v-30993b7f] .v-list-item__action {
+  align-self: start !important;
+  margin: 12px 0;
+}
+[data-v-30993b7f] .v-list-item__subtitle {
+  white-space: normal;
+  font-size: 12px;
+}
+/*!****************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-29[0].rules[0].use[1]!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-29[0].rules[0].use[2]!../node_modules/sass-loader/dist/cjs.js??clonedRuleSet-29[0].rules[0].use[3]!../node_modules/vuetify/src/components/VSwitch/VSwitch.sass ***!
+  \****************************************************************************************************************************************************************************************************************************************************************************************************************/
+.theme--light.v-input--switch .v-input--switch__thumb {
+  color: #FFFFFF;
+}
+.theme--light.v-input--switch .v-input--switch__track {
+  color: rgba(0, 0, 0, 0.38);
+}
+.theme--light.v-input--switch.v-input--is-disabled:not(.v-input--is-dirty) .v-input--switch__thumb {
+  color: #fafafa !important;
+}
+.theme--light.v-input--switch.v-input--is-disabled:not(.v-input--is-dirty) .v-input--switch__track {
+  color: rgba(0, 0, 0, 0.12) !important;
+}
+
+.theme--dark.v-input--switch .v-input--switch__thumb {
+  color: #bdbdbd;
+}
+.theme--dark.v-input--switch .v-input--switch__track {
+  color: rgba(255, 255, 255, 0.3);
+}
+.theme--dark.v-input--switch.v-input--is-disabled:not(.v-input--is-dirty) .v-input--switch__thumb {
+  color: #424242 !important;
+}
+.theme--dark.v-input--switch.v-input--is-disabled:not(.v-input--is-dirty) .v-input--switch__track {
+  color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.v-input--switch__track, .v-input--switch__thumb {
+  background-color: currentColor;
+  pointer-events: none;
+  transition: inherit;
+}
+.v-input--switch__track {
+  border-radius: 8px;
+  width: 36px;
+  height: 14px;
+  left: 2px;
+  position: absolute;
+  opacity: 0.6;
+  right: 2px;
+  top: calc(50% - 7px);
+}
+.v-input--switch__thumb {
+  border-radius: 50%;
+  top: calc(50% - 10px);
+  height: 20px;
+  position: relative;
+  width: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+}
+.v-input--switch .v-input--selection-controls__input {
+  width: 38px;
+}
+.v-input--switch .v-input--selection-controls__ripple {
+  top: calc(50% - 24px);
+}
+.v-input--switch.v-input--dense .v-input--switch__thumb {
+  width: 18px;
+  height: 18px;
+}
+.v-input--switch.v-input--dense .v-input--switch__track {
+  height: 12px;
+  width: 32px;
+}
+.v-input--switch.v-input--dense.v-input--switch--inset .v-input--switch__track {
+  height: 22px;
+  width: 44px;
+  top: calc(50% - 12px);
+  left: -3px;
+}
+.v-input--switch.v-input--dense .v-input--selection-controls__ripple {
+  top: calc(50% - 22px);
+}
+.v-input--switch.v-input--is-dirty.v-input--is-disabled {
+  opacity: 0.6;
+}
+.v-application--is-ltr .v-input--switch .v-input--selection-controls__ripple {
+  left: -14px;
+}
+.v-application--is-ltr .v-input--switch.v-input--dense .v-input--selection-controls__ripple {
+  left: -12px;
+}
+.v-application--is-ltr .v-input--switch.v-input--is-dirty .v-input--selection-controls__ripple,
+.v-application--is-ltr .v-input--switch.v-input--is-dirty .v-input--switch__thumb {
+  transform: translate(20px, 0);
+}
+.v-application--is-rtl .v-input--switch .v-input--selection-controls__ripple {
+  right: -14px;
+}
+.v-application--is-rtl .v-input--switch.v-input--dense .v-input--selection-controls__ripple {
+  right: -12px;
+}
+.v-application--is-rtl .v-input--switch.v-input--is-dirty .v-input--selection-controls__ripple,
+.v-application--is-rtl .v-input--switch.v-input--is-dirty .v-input--switch__thumb {
+  transform: translate(-20px, 0);
+}
+.v-input--switch:not(.v-input--switch--flat):not(.v-input--switch--inset) .v-input--switch__thumb {
+  box-shadow: 0px 2px 4px -1px rgba(0, 0, 0, 0.2), 0px 4px 5px 0px rgba(0, 0, 0, 0.14), 0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+}
+.v-input--switch--inset .v-input--switch__track,
+.v-input--switch--inset .v-input--selection-controls__input {
+  width: 48px;
+}
+.v-input--switch--inset .v-input--switch__track {
+  border-radius: 14px;
+  height: 28px;
+  left: -4px;
+  opacity: 0.32;
+  top: calc(50% - 14px);
+}
+.v-application--is-ltr .v-input--switch--inset .v-input--selection-controls__ripple,
+.v-application--is-ltr .v-input--switch--inset .v-input--switch__thumb {
+  transform: translate(0, 0) !important;
+}
+.v-application--is-rtl .v-input--switch--inset .v-input--selection-controls__ripple,
+.v-application--is-rtl .v-input--switch--inset .v-input--switch__thumb {
+  transform: translate(-6px, 0) !important;
+}
+.v-application--is-ltr .v-input--switch--inset.v-input--is-dirty .v-input--selection-controls__ripple,
+.v-application--is-ltr .v-input--switch--inset.v-input--is-dirty .v-input--switch__thumb {
+  transform: translate(20px, 0) !important;
+}
+.v-application--is-rtl .v-input--switch--inset.v-input--is-dirty .v-input--selection-controls__ripple,
+.v-application--is-rtl .v-input--switch--inset.v-input--is-dirty .v-input--switch__thumb {
+  transform: translate(-26px, 0) !important;
+}
