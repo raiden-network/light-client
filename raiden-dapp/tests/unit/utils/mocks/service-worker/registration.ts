@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export class MockedServiceWorkerRegistration
   extends EventTarget
   implements ServiceWorkerRegistration
@@ -6,7 +7,7 @@ export class MockedServiceWorkerRegistration
   public readonly installing = null;
   public readonly waiting = null;
   public readonly active = null;
-  public readonly navigationPreload = null;
+  public readonly navigationPreload = null as any;
   public readonly pushManager = {} as unknown as PushManager;
   public readonly sync = null;
   public readonly index = null;
