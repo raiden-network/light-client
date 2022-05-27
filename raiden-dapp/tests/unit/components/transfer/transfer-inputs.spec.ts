@@ -46,6 +46,8 @@ describe('TransferInputs.vue', () => {
       token,
       noChannels: false,
       maxChannelCapacity: constants.One,
+      transferAmount: '',
+      targetAddress: '',
     },
   });
 

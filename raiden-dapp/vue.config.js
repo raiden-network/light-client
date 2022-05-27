@@ -1,5 +1,7 @@
 const path = require('path');
 
+const { defineConfig } = require('@vue/cli-service');
+const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const VersionFilePlugin = require('webpack-version-file-plugin');
 const { DefinePlugin } = require('webpack');
@@ -34,9 +36,7 @@ function setupServiceWorkerRelatedPlugins(config) {
   });
 
   const versionEnvironmentVariablePlugin = new DefinePlugin({
-    'process.env': {
-      PACKAGE_VERSION: "'" + getPackageVersion() + "'",
-    },
+    'process.env.PACKAGE_VERSION': JSON.stringify(getPackageVersion()),
   });
 
   const injectServiceWorkerPlugin = new InjectManifest({
@@ -53,7 +53,7 @@ function setupServiceWorkerRelatedPlugins(config) {
   );
 }
 
-module.exports = {
+module.exports = defineConfig({
   productionSourceMap: false,
   // https://forum.vuejs.org/t/solution-to-building-error-in-circleci-or-any-other-machine-with-cpu-limitations/40862
   parallel: !process.env.CIRCLECI,
@@ -64,6 +64,8 @@ module.exports = {
         .rule('raiden-source-maps')
         .test(/\.js$/)
         .pre()
+        .exclude.add(/\bnode_modules\b/)
+        .end()
         .use('source-map-loader')
         .loader('source-map-loader');
     }
@@ -93,6 +95,9 @@ module.exports = {
 
   // check -> https://github.com/vuejs/vue-cli/issues/2978
   configureWebpack: (config) => {
+    config.plugins.push(new NodePolyfillPlugin());
+    (config.resolve.fallback ??= {})['fs'] = false;
+
     config.performance = {
       maxAssetSize,
       maxEntrypointSize: maxAssetSize,
@@ -149,4 +154,4 @@ module.exports = {
 
     setupServiceWorkerRelatedPlugins(config);
   },
-};
+});
