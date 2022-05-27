@@ -6,6 +6,7 @@
   "author": "brainbot labs est.",
   "scripts": {
     "preinstall": "npx only-allow yarn",
+    "clean": "rimraf dist/ coverage/",
     "build": "vue-cli-service build",
     "build:raiden-package": "vue-cli-service build --mode raiden-package",
     "test:unit": "vue-cli-service test:unit",
