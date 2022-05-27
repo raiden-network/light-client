@@ -1,9 +1,10 @@
 {
   "extends": ["config:base"],
   "commitMessagePrefix": "deps:",
+  "ignoreDeps": ["sass"],
   "packageRules": [
     {
-      "excludePackagePatterns": ["^typescript$", "^typedoc$", "typedoc-plugin", "^python$", "^eslint", "^@typescript-eslint", "^sass$"],
+      "excludePackagePatterns": ["^typescript$", "^typedoc$", "typedoc-plugin", "^python$", "^eslint", "^@typescript-eslint"],
       "matchUpdateTypes": ["minor", "patch", "lockFileMaintenance", "pin", "digest", "rollback", "bump"],
       "groupName": "all non-major dependencies and lockFile maintenance",
       "groupSlug": "all-minor-patch-lock",
@@ -11,10 +12,8 @@
     },
     {
       "matchPackageNames": ["typescript"],
-      "matchUpdateTypes": ["minor", "patch"],
       "groupName": "typescript",
-      "groupSlug": "typescript",
-      "schedule": ["before 8am on thursday"]
+      "groupSlug": "typescript"
     },
     {
       "matchPackagePatterns": ["^typedoc$", "typedoc-plugin"],

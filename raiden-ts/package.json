@@ -99,7 +99,6 @@
     "abort-controller": "^3.0.0",
     "decimal.js": "^10.3.1",
     "eciesjs": "^0.3.14",
-    "eslint-import-resolver-typescript": "^2.7.1",
     "fp-ts": "^2.12.1",
     "io-ts": "^2.2.16",
     "isomorphic-fetch": "^3.0.0",
