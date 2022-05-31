@@ -7,8 +7,12 @@
 ### Changed
 - [#3122] `Raiden.dumpDatabase` now returns an `AsyncIterable` of database rows objects, which allow to stream even big state dumps without having to accumulate everything in memory; also, it doesn't require stopping SDK to dump state anymore
 
+### Added
+- [#3123] `Raiden.getTransfers` method, an easier way to get, filter and paginate over past transfers.
+
 [#3118]: https://github.com/raiden-network/light-client/pull/3118
 [#3122]: https://github.com/raiden-network/light-client/issues/3122
+[#3123]: https://github.com/raiden-network/light-client/issues/3123
 
 ## [3.0.0] - 2022-05-02
 ### Fixed
