@@ -142,6 +142,7 @@ jobs:
           command: |
             yarn build
             yarn build:bundle
+            yarn build:webui
       - run:
           name: Compress CLI and bundle
           command: |
