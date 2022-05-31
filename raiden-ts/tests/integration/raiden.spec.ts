@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
+  amount,
   confirmationBlocks,
+  deposit,
+  ensureChannelIsDeposited,
+  ensureTransferPending,
+  ensureTransferUnlocked,
   id,
   isFirstParticipant,
   openBlock,
@@ -9,7 +14,7 @@ import {
   tokenNetwork,
   txHash,
 } from './fixtures';
-import { makeLog, makeRaiden, sleep, waitBlock } from './mocks';
+import { makeLog, makeRaiden, makeRaidens, sleep, waitBlock } from './mocks';
 
 import { defaultAbiCoder } from '@ethersproject/abi';
 import { HashZero, One } from '@ethersproject/constants';
@@ -19,7 +24,11 @@ import { first } from 'rxjs/operators';
 import { raidenShutdown, raidenSynced } from '@/actions';
 import { channelMonitored, channelOpen, newBlock, tokenMonitored } from '@/channels/actions';
 import { ShutdownReason } from '@/constants';
+import { getTransfers } from '@/db/utils';
+import { Direction } from '@/transfers/state';
+import { makeSecret } from '@/transfers/utils';
 import { ErrorCodes, RaidenError } from '@/utils/error';
+import type { UInt } from '@/utils/types';
 import { last } from '@/utils/types';
 
 import { makeAddress } from '../utils';
@@ -274,4 +283,39 @@ describe('confirmationEpic', () => {
     );
     expect(raiden.deps.provider.getTransactionReceipt).toHaveBeenCalledTimes(2);
   });
+});
+
+test('getTransfers', async () => {
+  expect.assertions(10);
+
+  const [raiden, partner] = await makeRaidens(2);
+
+  await ensureChannelIsDeposited([raiden, partner], deposit);
+  await ensureChannelIsDeposited([partner, raiden], deposit);
+  const secret = makeSecret();
+  await ensureTransferUnlocked([raiden, partner], amount.mul(2) as UInt<32>, { secret });
+  await ensureTransferPending([partner, raiden], amount);
+  await sleep();
+
+  await expect(getTransfers(raiden.deps.db)).resolves.toHaveLength(2);
+  await expect(
+    getTransfers(raiden.deps.db, undefined, { offset: 1, limit: 1, desc: true }),
+  ).resolves.toEqual([expect.objectContaining({ direction: Direction.SENT, secret })]);
+  await expect(getTransfers(raiden.deps.db, { pending: true })).resolves.toHaveLength(1);
+  await expect(getTransfers(raiden.deps.db, { pending: false })).resolves.toHaveLength(1);
+
+  await expect(getTransfers(raiden.deps.db, { token })).resolves.toHaveLength(2);
+  await expect(getTransfers(raiden.deps.db, { token: tokenNetwork })).resolves.toHaveLength(0);
+  await expect(
+    getTransfers(raiden.deps.db, { token, partner: partner.address }),
+  ).resolves.toHaveLength(2);
+  await expect(
+    getTransfers(raiden.deps.db, { token, partner: raiden.address }),
+  ).resolves.toHaveLength(0);
+  await expect(getTransfers(raiden.deps.db, { token, end: raiden.address })).resolves.toHaveLength(
+    2,
+  );
+  await expect(getTransfers(raiden.deps.db, { token, end: tokenNetwork })).resolves.toHaveLength(
+    0,
+  );
 });

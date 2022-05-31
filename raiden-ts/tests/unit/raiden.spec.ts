@@ -48,7 +48,7 @@ import {
   TokenNetwork__factory,
   TokenNetworkRegistry__factory,
 } from '@/contracts';
-import { changes$ } from '@/db/utils';
+import * as dbModule from '@/db/utils';
 import { combineRaidenEpics } from '@/epics';
 import { signMessage } from '@/messages';
 import { messageServiceSend } from '@/messages/actions';
@@ -82,9 +82,12 @@ import { Address, timed } from '@/utils/types';
 import { makeAddress, makeHash, makePublicKey, sleep } from '../utils';
 
 jest.mock('@ethersproject/providers');
-jest.mock('@/db/utils');
 
-(changes$ as jest.MockedFunction<typeof changes$>).mockReturnValue(EMPTY);
+jest.spyOn(dbModule as any, 'dumpDatabase').mockImplementation(async function* () {
+  yield '' as any;
+});
+jest.spyOn(dbModule as any, 'getTransfers');
+jest.spyOn(dbModule as any, 'changes$').mockReturnValue(EMPTY);
 
 export const fetch = jest.fn(async (_url?: string) => ({
   ok: true,
@@ -158,16 +161,18 @@ function makeDummyDependencies(): RaidenEpicDeps {
   const latest$ = new ReplaySubject<Latest>(1);
   const config$ = latest$.pipe(pluckDistinct('config'));
   const matrix$ = new AsyncSubject<MatrixClient>();
+  const log = logging.getLogger(`raiden:${address}`);
+  log.setLevel(logging.levels.INFO);
   const db = {
+    __opts: { log },
     busy$: new BehaviorSubject(false),
     close: jest.fn(),
     storageKeys: new Set<string>(),
     get: jest.fn(),
+    find: jest.fn(async () => ({ docs: [] })),
   } as any;
 
   const defaultConfig = makeDefaultConfig({ network });
-  const log = logging.getLogger(`raiden:${address}`);
-  log.setLevel(logging.levels.INFO);
 
   return {
     latest$,
@@ -975,7 +980,7 @@ describe('Raiden', () => {
           args: { token_address: token },
         } as any),
     );
-    await expect(raiden.getTokenList()).resolves.toEqual([token]);
+    await expect(raiden.getTokenList(true)).resolves.toEqual([token]);
   });
 
   test('closeChannel', async () => {
@@ -1428,6 +1433,53 @@ describe('Raiden', () => {
       MaxUint256,
       MaxUint256,
       expect.anything(),
+    );
+  });
+
+  test('getTransfers', async () => {
+    expect.assertions(4);
+
+    const deps = makeDummyDependencies();
+    const raiden = new Raiden(dummyState, deps, combineRaidenEpics([dummyEpic]), dummyReducer);
+
+    await expect(raiden.getTransfers({ pending: true })).resolves.toBeArray();
+    expect(deps.db.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selector: {
+          $and: expect.arrayContaining([
+            { 'transfer.ts': { $gt: 0 } },
+            { unlockProcessed: { $exists: false } },
+          ]),
+        },
+        sort: [{ 'transfer.ts': 'asc' }],
+      }),
+    );
+
+    (deps.db.find as jest.Mock).mockClear();
+    (deps.db.find as jest.Mock).mockResolvedValue({
+      docs: [{ test: 'not a TransferState' }],
+      warning: 'not optimized',
+    });
+    await expect(
+      raiden.getTransfers({
+        pending: false,
+        token: '0xtoken',
+        end: '0xend',
+        partner: '0xpartner',
+      }),
+    ).rejects.toBeInstanceOf(Error);
+    expect(deps.db.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selector: {
+          $and: expect.arrayContaining([
+            { $or: expect.arrayContaining([{ unlockProcessed: { $exists: true } }]) },
+            { 'transfer.token': '0xtoken' },
+            { partner: '0xpartner' },
+            { $or: expect.arrayContaining([{ 'transfer.initiator': '0xend' }]) },
+          ]),
+        },
+        sort: [{ 'transfer.ts': 'asc' }],
+      }),
     );
   });
 

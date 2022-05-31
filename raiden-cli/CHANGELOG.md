@@ -3,8 +3,10 @@
 ## [Unreleased]
 ### Added
 - [#3122] `/api/v1/state.json` endpoint to allow downloading/backing up and `--load-state <path.json>` parameter to upload/rehydrate state/database in a fresh instance
+- [#3123] **Experimental**: `--web-ui` option to serve [Raiden WebUI](https://github.com/raiden-network/webui) from `/ui` route; requires `yarn build:webui`
 
 [#3122]: https://github.com/raiden-network/light-client/issues/3122
+[#3123]: https://github.com/raiden-network/light-client/issues/3123
 
 ## [3.0.0] - 2022-05-02
 ### Removed
