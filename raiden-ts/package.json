@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "prepare": "yarn run versions && yarn run contracts",
-    "build": "yarn clean:build && yarn prepare && tsc --skipLibCheck && tsc --skipLibCheck -p ./tsconfig.cjs.json && yarn run contracts:post",
+    "build": "yarn clean:build && yarn prepare && tsc -p ./tsconfig.esm.json && tsc -p ./tsconfig.cjs.json && yarn run contracts:post",
     "test": "yarn lint && NODE_ENV=development jest --coverage --testPathIgnorePatterns tests/e2e",
     "test:unit": "NODE_ENV=development jest --coverage tests/unit",
     "test:integration": "NODE_ENV=development jest --coverage tests/integration",
@@ -22,7 +22,7 @@
     "contracts:post": "node ./scripts/copyContracts.js postbuild",
     "contracts": "yarn run contracts:pre && yarn run contracts:build",
     "versions": "node ./scripts/versions.js",
-    "docs": "typedoc",
+    "docs": "typedoc --tsconfig ./tsconfig.esm.json",
     "prepack": "yarn clean:rest && yarn build && yarn run docs",
     "update-submodules": "git submodule sync && git submodule update --init"
   },
