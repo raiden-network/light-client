@@ -467,7 +467,7 @@ describe('PFS: pfsRequestEpic', () => {
     raiden.store.dispatch(raidenConfigUpdate({ pfsMode: PfsMode.auto, additionalServices: [] }));
 
     // pfsAddress1 will be accepted with default https:// schema
-    raiden.deps.serviceRegistryContract.urls.mockImplementation(async (addr) => urls[addr]);
+    raiden.deps.serviceRegistryContract.urls.mockImplementation(async (addr) => urls[await addr]);
 
     const pfsInfoResponse = makePfsInfoResponse();
 
