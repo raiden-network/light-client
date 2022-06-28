@@ -197,12 +197,9 @@ function setupMatrixClient$(
               }),
             ).pipe(
               catchError(async (err) => {
+                const registerData = { username, password, device_id: RAIDEN_DEVICE_ID };
                 try {
-                  return await matrix.registerRequest({
-                    username,
-                    password,
-                    device_id: RAIDEN_DEVICE_ID,
-                  });
+                  return await matrix.registerRequest(registerData);
                 } catch (e) {
                   // if register fails, throws login error as it's more informative
                   throw err;
