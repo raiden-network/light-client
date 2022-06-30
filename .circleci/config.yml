@@ -20,7 +20,12 @@ parameters:
 anchor_1: &attach_options
   at: << pipeline.parameters.working_directory >>
 
-anchor_2: &executor_shared_options
+anchor_2: &filter_release_tag
+  filters:
+    tags:
+      only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+
+anchor_3: &executor_shared_options
   working_directory: << pipeline.parameters.working_directory >>
   environment:
     JEST_JUNIT_OUTPUT_DIR: << pipeline.parameters.test_report_directory >>
@@ -386,31 +391,39 @@ workflows:
     # by a new tag must use a tag filter. Else the job does not get executed, no
     # matter its dependencies or anything else.
     jobs:
-      - install
+      - install:
+          <<: *filter_release_tag
       - build_sdk:
+          <<: *filter_release_tag
           requires:
             - install
       - build_dapp:
+          <<: *filter_release_tag
           mode: production
           requires:
             - build_sdk
       - build_cli:
+          <<: *filter_release_tag
           requires:
             - build_sdk
       - generate_documentation:
+          <<: *filter_release_tag
           requires:
             - build_dapp
       - deploy_gh_pages:
+          <<: *filter_release_tag
           public_path: /
           requires:
             - build_dapp
             - generate_documentation
       - approve_publish:
+          <<: *filter_release_tag
           type: approval
           requires:
             - build_sdk
             - build_cli
       - publish_on_npm_registry:
+          <<: *filter_release_tag
           context: 'Raiden Context'
           requires:
             - approve_publish
