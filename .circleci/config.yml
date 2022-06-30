@@ -158,6 +158,10 @@ jobs:
             tar --create --gzip --verbose --file ./cli/raiden-cli-bundle.tgz ./bundle --transform='s/^bundle/raiden-cli/'
       - store_artifacts:
           path: ./cli
+      - persist_to_workspace:
+          root: << pipeline.parameters.working_directory >>
+          paths:
+            - ./*
 
   lint:
     working_directory: << pipeline.parameters.working_directory >>
