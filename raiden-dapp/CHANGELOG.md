@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [3.1.0] - 2022-06-30
 ### Changed
 - [#3122] `Backup State` doesn't require SDK to be shut down anymore
 
@@ -655,7 +657,8 @@
 - Add link to privacy policy.
 - Add basic transfer screen.
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/raiden-network/light-client/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/raiden-network/light-client/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/raiden-network/light-client/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/raiden-network/light-client/compare/v2.0.1...v2.1.0
