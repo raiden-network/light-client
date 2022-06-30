@@ -3632,7 +3632,7 @@ module.exports = JSON.parse('{"PFS_EMPTY_URL":"A registered Pathfinding Service 
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"sdk":"3.0.0","contracts":"0.50.1"}');
+module.exports = JSON.parse('{"sdk":"3.1.0","contracts":"0.50.1"}');
 
 /***/ })
 
