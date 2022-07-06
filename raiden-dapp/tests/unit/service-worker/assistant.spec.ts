@@ -116,7 +116,7 @@ async function createAssistant(options?: {
 }
 
 describe('ServiceWorkerAssistant', () => {
-  let intervalIds: Array<number>;
+  let intervalIds: NodeJS.Timer[];
 
   beforeAll(() => {
     jest.spyOn(console, 'error').mockImplementation(); // Silence jest-fail-on-console
