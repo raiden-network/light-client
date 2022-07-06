@@ -2,7 +2,7 @@
 import type { LogMessage, LogType } from '@jest/console';
 import { CustomConsole } from '@jest/console';
 import type { Event, State } from 'jest-circus';
-import NodeEnvironment from 'jest-environment-node';
+import { TestEnvironment as NodeEnvironment } from 'jest-environment-node';
 import util from 'util';
 
 type Level = 'log' | 'error' | 'warn' | 'info' | 'debug';
