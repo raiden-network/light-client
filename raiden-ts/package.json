@@ -65,7 +65,7 @@
     "jest": "^27.5.1",
     "jest-environment-node": "^27.5.1",
     "jest-extended": "^2.0.0",
-    "jest-junit": "^13.2.0",
+    "jest-junit": "^14.0.0",
     "pouchdb-adapter-memory": "^7.3.0",
     "pouchdb-debug": "^7.2.1",
     "rimraf": "^3.0.2",
