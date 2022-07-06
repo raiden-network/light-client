@@ -50,6 +50,7 @@
     "**/redux-observable/rxjs": "^7.5.5",
     "@ethersproject/bignumber": "^5.6.2",
     "@ethersproject/signing-key": "^5.6.2",
-    "loglevel": "^1.8.0"
+    "loglevel": "^1.8.0",
+    "jest": "^28.1.2"
   }
 }
