@@ -14,7 +14,7 @@ import { mockInput } from '../utils/interaction-utils';
 
 jest.mock('lodash/debounce', () => jest.fn((fn) => fn));
 jest.mock('@/services/raiden-service');
-jest.useFakeTimers('modern');
+jest.useFakeTimers();
 
 Vue.use(Vuetify);
 
