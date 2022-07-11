@@ -146,8 +146,8 @@ jobs:
           name: Build CLI and bundle
           command: |
             yarn build
-            yarn build:bundle
             yarn build:webui
+            yarn build:bundle
       - run:
           name: Compress CLI and bundle
           command: |
@@ -156,6 +156,13 @@ jobs:
             mv --verbose ./*raiden-cli*.tgz ./cli/
             cp --verbose ./raiden ./package.json ./bundle/
             tar --create --gzip --verbose --file ./cli/raiden-cli-bundle.tgz ./bundle --transform='s/^bundle/raiden-cli/'
+      - run:
+          name: Smoketest CLI and bundle
+          command: |
+            ./raiden --help
+            ./raiden --version
+            ./bundle/raiden --help
+            ./bundle/raiden --version
       - store_artifacts:
           path: ./cli
       - persist_to_workspace:
