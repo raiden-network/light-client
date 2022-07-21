@@ -31,11 +31,11 @@
     "raiden-cli"
   ],
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.30.5",
-    "@typescript-eslint/parser": "^5.30.5",
-    "eslint": "^8.19.0",
+    "@typescript-eslint/eslint-plugin": "^5.30.7",
+    "@typescript-eslint/parser": "^5.30.7",
+    "eslint": "^8.20.0",
     "eslint-config-prettier": "^8.5.0",
-    "eslint-import-resolver-typescript": "^3.2.4",
+    "eslint-import-resolver-typescript": "^3.3.0",
     "eslint-plugin-import": "2.26.0",
     "eslint-plugin-jsdoc": "^39.3.3",
     "eslint-plugin-lodash": "^7.4.0",
