@@ -66,7 +66,7 @@
     "@cypress/code-coverage": "^3.10.0",
     "@cypress/webpack-preprocessor": "^5.12.0",
     "@kazupon/vue-i18n-loader": "^0.5.0",
-    "@mdi/font": "^6.9.96",
+    "@mdi/font": "^7.0.96",
     "@namics/stylelint-bem": "^7.0.0",
     "@testing-library/jest-dom": "^5.16.4",
     "@types/jest": "^28.1.6",
