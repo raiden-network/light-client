@@ -1,13 +1,13 @@
-ARG RAIDEN_VERSION="v3.0.0rc9"
-ARG CONTRACTS_PACKAGE_VERSION="0.40.0"
+ARG RAIDEN_VERSION="v3.0.1"
+ARG CONTRACTS_PACKAGE_VERSION="0.40.3"
 ARG CONTRACTS_VERSION="0.40.0"
 ARG SERVICES_VERSION="v1.0.0"
 ARG SYNAPSE_VERSION="v1.35.1"
 ARG RAIDEN_SYNAPSE_MODULES="0.1.3"
 ARG OS_NAME="LINUX"
-ARG GETH_VERSION="1.10.13"
-ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.10.13-7a0c19f8.tar.gz"
-ARG GETH_MD5_LINUX="a1dfdd549ee779654c196d1b01e0ca67"
+ARG GETH_VERSION="1.10.20"
+ARG GETH_URL_LINUX="https://gethstore.blob.core.windows.net/builds/geth-linux-amd64-1.10.20-8f2416a8.tar.gz"
+ARG GETH_MD5_LINUX="d1793b47659cb6b1bb753b6bae2792bb"
 
 FROM python:3.9 as raiden-builder
 ARG RAIDEN_VERSION
@@ -30,6 +30,7 @@ ARG RAIDEN_SYNAPSE_MODULES
 
 RUN /synapse-venv/bin/pip install \
     "matrix-synapse[postgres,redis]==${SYNAPSE_VERSION}" \
+    "jinja2<3.1.0" \
     psycopg2 \
     coincurve \
     pycryptodome \
