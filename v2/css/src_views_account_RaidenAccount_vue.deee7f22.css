@@ -1,0 +1,78 @@
+/*!*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/views/account/RaidenAccount.vue?vue&type=style&index=0&id=569cc264&scoped=true&lang=scss& ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+.raiden-account[data-v-569cc264] {
+  width: 100%;
+}
+.raiden-account__title[data-v-569cc264] {
+  font-size: 18px;
+  margin-top: 50px;
+  padding-bottom: 50px;
+  text-align: center;
+}
+.raiden-account__column[data-v-569cc264] {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+.raiden-account__column__card[data-v-569cc264] {
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  height: 140px;
+  width: 100%;
+}
+.raiden-account__column__card__title[data-v-569cc264] {
+  padding-top: 20px;
+  flex: none;
+  font-size: 16px;
+  text-align: center;
+}
+.raiden-account__column__card__image[data-v-569cc264] {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  width: 30px;
+}
+.raiden-account__column__card__image__raiden-logo[data-v-569cc264] {
+  filter: invert(77%) sepia(19%) saturate(6534%) hue-rotate(157deg) brightness(81%) contrast(91%);
+}
+@keyframes spin-data-v-569cc264 {
+from {
+    transform: rotate(0deg);
+}
+to {
+    transform: rotate(360deg);
+}
+}
+.raiden-account__amount-input[data-v-569cc264] {
+  align-items: center;
+  display: flex;
+  margin-top: 50px;
+}
+.raiden-account__amount-input__toggle[data-v-569cc264] {
+  margin-bottom: 5px;
+  margin-left: 10px;
+}
+.raiden-account__amount-input[data-v-569cc264]  .v-btn:active .v-icon {
+  animation-name: spin-data-v-569cc264;
+  animation-duration: 250ms;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+.raiden-account__error[data-v-569cc264] {
+  margin-left: 90px;
+  margin-right: 90px;
+  margin-top: 70px;
+}
+.raiden-account__progress-wrapper[data-v-569cc264] {
+  flex-direction: column;
+  padding-top: 40%;
+  text-align: center;
+}
+.raiden-account__progress-hint[data-v-569cc264] {
+  margin-top: 30px;
+}
