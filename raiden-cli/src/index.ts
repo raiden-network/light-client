@@ -14,7 +14,7 @@ import { setupLoglevel } from './utils/logging';
 
 if (!('RTCPeerConnection' in globalThis)) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  Object.assign(globalThis, require('wrtc'));
+  Object.assign(globalThis, require('@koush/wrtc'));
 }
 
 async function getKeystoreAccounts(keystorePath: string): Promise<{ [addr: string]: string[] }> {

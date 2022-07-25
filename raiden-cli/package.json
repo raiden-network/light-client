@@ -60,7 +60,7 @@
     "node-localstorage": "^2.2.1",
     "raiden-ts": "^2.2.0",
     "rxjs": "^7.5.6",
-    "wrtc": "^0.4.7",
+    "@koush/wrtc": "^0.5.3",
     "yargs": "^17.5.1"
   }
 }
