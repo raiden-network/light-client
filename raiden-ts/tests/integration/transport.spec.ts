@@ -984,7 +984,7 @@ describe('rtcConnectionManagerEpic', () => {
   beforeAll(() => {
     if (!('RTCPeerConnection' in globalThis)) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      Object.assign(globalThis, require('wrtc'));
+      Object.assign(globalThis, require('@koush/wrtc'));
     }
   });
 
