@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Overview | raiden-ts - v3.1.0</title>
-	<meta name="description" content="Documentation for raiden-ts - v3.1.0">
+	<title>Overview | raiden-ts - v2.3.0</title>
+	<meta name="description" content="Documentation for raiden-ts - v2.3.0">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../../assets/css/main.css">
 	<link rel="stylesheet" href="../../assets/css/pages.css">
@@ -24,7 +24,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../../index.html" class="title">raiden-ts - v3.1.0</a>
+					<a href="../../index.html" class="title">raiden-ts - v2.3.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -51,7 +51,7 @@
 		<div class="container">
 			<ul class="tsd-breadcrumb">
 				<li>
-					<a href="../../modules.html">raiden-ts - v3.1.0</a>
+					<a href="../../modules.html">raiden-ts - v2.3.0</a>
 				</li>
 				<li>
 					<a href="README.html">Using the Raiden CLI</a>
@@ -94,9 +94,7 @@
 				<ul>
 					<li><p><strong>Layer 1 works reliably:</strong> That means that you have got a web3 provider (eg. MetaMask) that is always synced and working reliably. If there are any problems or bugs on the client then Raiden can not work reliably.</p>
 					</li>
-					<li><p><strong>Persistency of local DB:</strong> Your local state database is stored in your browser storage (IndexedDB). This data should not be deleted by the user or tampered with in any way. Frequent backups are also recommended. Deleting this storage could mean losing funds.</p>
-					</li>
-					<li><p><strong>Dedicated account for Raiden:</strong> We need to have a specific Ethereum account dedicated to Raiden. Creating any manual transaction with the account that Raiden uses, while the Raiden client is running, can result in undefined behavior.</p>
+					<li><p><strong>Persistency of local DB:</strong> Your local state database is stored in a Leveldown database at <code>--datadir</code> path (default <code>./storage</code>). This data should not be deleted by the user or tampered with in any way. Frequent backups are also recommended. Deleting this storage could mean losing funds.</p>
 					</li>
 					<li><p><strong>Raiden account has sufficient ETH:</strong> Raiden will try to warn you if there is not enough ETH in your Raiden account in order to maintain your current open channels and go through their entire cycle. But it is your job as the user to refill your account with ETH and always have it filled.</p>
 					</li>
@@ -106,7 +104,7 @@
 					</li>
 					<li><p><strong>Ethereum client is not changed:</strong> Swapping the Ethereum client while transactions are not mined is considered unsafe. We recommend avoiding switching Ethereum clients once the Raiden node is running.</p>
 					</li>
-					<li><p><strong>Raiden REST API is never exposed to the public:</strong> For Raiden&#39;s operation, the client needs to be able to sign transactions at any point in time. Therefore you should never expose the Raiden Rest API to the public. Be very careful when changing the <code>--rpc</code> and <code>--rpccorsdomain</code> values.</p>
+					<li><p><strong>Raiden REST API is never exposed to the public:</strong> For Raiden&#39;s operation, the client needs to be able to sign transactions at any point in time. Therefore you should never expose the Raiden Rest API to the public. Be very careful when changing the <code>--api-address</code> and <code>--rpccorsdomain</code> values.</p>
 					</li>
 				</ul>
 				<a href="#try-it-out" id="try-it-out" style="color: inherit; text-decoration: none;">
@@ -114,11 +112,25 @@
 				</a>
 				<p>You can install the package from the <a href="https://www.npmjs.com/">NPM registry</a>:</p>
 				<pre><code class="language-sh"><span style="color: #000000">$ yarn global add @raiden_network/raiden-cli</span>
-<span style="color: #000000">$ </span><span style="color: #008000"># ensure yarn global path is in your $PATH, e.g. with `export PATH=&quot;$(yarn global bin):$PATH&quot;`</span>
+<span style="color: #000000">$ </span><span style="color: #0000FF">export</span><span style="color: #000000"> PATH=</span><span style="color: #A31515">&quot;$(yarn global bin):</span><span style="color: #001080">$PATH</span><span style="color: #A31515">&quot;</span>
 <span style="color: #000000">$ raiden --help</span>
-<span style="color: #000000">$ </span><span style="color: #008000"># or</span>
+<span style="color: #008000"># or</span>
 <span style="color: #000000">$ npm install --global @raiden_network/raiden-cli</span>
 <span style="color: #000000">$ raiden --help</span>
+</code></pre>
+				<a href="#aarch64-arm64-environments" id="aarch64-arm64-environments" style="color: inherit; text-decoration: none;">
+					<h3>Aarch64 (ARM64) environments</h3>
+				</a>
+				<p>The Light Client has some development and runtime native libraries as dependencies which may require a proper architecture to work.
+				In Arm64 processors (e.g. Apple M1 computers) you may want to ensure the following libraries are properly installed for your native architecture:</p>
+				<pre><code class="language-sh"><span style="color: #000000">$ brew install pkg-config cairo pango libpng jpeg giflib librsvg</span>
+</code></pre>
+				<p>Alternatively, use <a href="https://support.apple.com/en-us/HT211861">Rosetta</a> to switch to a <code>x86_64</code> environment:</p>
+				<pre><code class="language-sh"><span style="color: #000000">$ arch -x86_64 </span><span style="color: #001080">$SHELL</span>
+</code></pre>
+				<p>Then, ensure NodeJS VM as well as <code>node_modules</code> dependencies are installed for this architecture.</p>
+				<pre><code class="language-sh"><span style="color: #000000">$ node -p process.arch</span>
+<span style="color: #000000">x64</span>
 </code></pre>
 				<a href="#development" id="development" style="color: inherit; text-decoration: none;">
 					<h2>Development</h2>
@@ -129,11 +141,12 @@
 				<pre><code class="language-sh"><span style="color: #000000">yarn install</span>
 <span style="color: #000000">yarn workspace raiden-ts build </span><span style="color: #008000"># build local dependency</span>
 <span style="color: #000000">yarn workspace @raiden_network/raiden-cli build </span><span style="color: #008000"># build the dependent output</span>
-<span style="color: #000000">yarn workspace @raiden_network/raiden-cli build:bundle </span><span style="color: #008000"># build the bundled output</span>
+<span style="color: #000000">yarn workspace @raiden_network/raiden-cli build:webui </span><span style="color: #008000"># download and place webUI files</span>
+<span style="color: #000000">yarn workspace @raiden_network/raiden-cli build:bundle </span><span style="color: #008000"># build the bundled output; optional</span>
 </code></pre>
 				<p>The <code>build</code> script will output <code>./build/index.js</code>, which requires that the dependencies are in place in the <code>../raiden-ts/node_modules</code>, <code>../raiden-ts/dist*/</code> and <code>./node_modules/</code> folders.
-				The <code>build:bundle</code> script will output <code>./build/bundle.js</code>, which depends only on <code>*.node</code> native libraries copied to the same output folder, therefore is a portable bundle which can be moved around (as long as the native libraries are in the same folder).</p>
-				<p>If getting out-of-memory errors, you can build these files on a more capable machine, just be careful to copy the correct native libraries to the output folder if on a different architecture (e.g. copy <code>./node_modules/wrtc/build/Release/wrtc.node</code> to <code>./build</code>)</p>
+				The <code>build:bundle</code> script will output <code>./bundle/index.js</code>, which depends only on <code>*.node</code> native libraries copied to the same output folder, therefore is a portable bundle which can be moved around (as long as the native libraries are in the same folder).</p>
+				<p>If getting out-of-memory errors, you can build these files on a more capable machine, just be careful to copy the correct native libraries to the output folder if on a different architecture (e.g. copy <code>./node_modules/wrtc/build/Release/wrtc.node</code> to <code>./bundle</code>)</p>
 				<a href="#run-the-cli" id="run-the-cli" style="color: inherit; text-decoration: none;">
 					<h3>Run the CLI</h3>
 				</a>
@@ -148,6 +161,17 @@
 					<h3>Documentation</h3>
 				</a>
 				<p>The <a href="https://raiden-network.readthedocs.io/en/latest/rest_api.html">Raiden API documentation</a> describes the available API endpoints and provides example requests and responses.</p>
+				<a href="#custom-options" id="custom-options" style="color: inherit; text-decoration: none;">
+					<h3>Custom options</h3>
+				</a>
+				<p>The CLI diverges slightly (in a compatible manner) from the Python Client REST API above, mostly adding some more information to certain endpoints, new useful endpoints to expose specifics of CLI&#39;s internals and command-line parameters for new features, while ignoring certain unsupported parameters from the Python Client&#39;s entrypoint command. Here are some notable examples:</p>
+				<ul>
+					<li><code>GET|PATCH /api/v1/config</code>: returns the current config of the SDK and allows changing specific options at runtime;</li>
+					<li><code>GET /api/v1/state.json</code>: returns the state (database) dump, as a JSON array, in real time;</li>
+					<li><code>--load-state &lt;state.json&gt;</code>: command-line option to reload/rehydrate a previous state in a new machine/folder/instance</li>
+				</ul>
+				<p>Note: <code>/api/v1/state.json</code> and <code>--load-state</code> are compatible with dApp&#39;s State Backup / Upload functionality, allowing one to migrate between one another;
+				Warning: be sure to not run two instances on the same network and account simultaneously; also, if you ran an instance for any amount of time on another client, you must download and sync the state manually on the other session, as to avoid getting out of sync with the network.</p>
 				<a href="#contributing" id="contributing" style="color: inherit; text-decoration: none;">
 					<h2>Contributing</h2>
 				</a>
