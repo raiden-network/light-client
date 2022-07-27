@@ -116,9 +116,9 @@
     "rxjs": "^7.5.6"
   },
   "optionalDependencies": {
+    "@koush/wrtc": "^0.5.3",
     "pouchdb-adapter-indexeddb": "^7.3.0",
-    "pouchdb-adapter-leveldb": "^7.3.0",
-    "wrtc": "^0.4.7"
+    "pouchdb-adapter-leveldb": "^7.3.0"
   },
   "files": [
     "/dist",

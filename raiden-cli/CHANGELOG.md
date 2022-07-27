@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [2.3.0] - 2022-07-22
+### Fixed
+- [#3135] Fixed some native dependencies to allow installing and running in ARM64 processors (e.g. Apple's M1 computers)
+
+### Changed
+- [#3160] Backport v3.1.0 improvements to `v2` series (supporting [raiden-contracts v0.40 Coruscant](https://github.com/raiden-network/raiden-contracts/releases/tag/v0.40.0) and Ethereum Mainnet). Notably, `--web-ui` option is available on v2 Mainnet series.
+
+[#3135]: https://github.com/raiden-network/light-client/issues/3135
+[#3160]: https://github.com/raiden-network/light-client/pull/3160
+
 ## [3.1.0] - 2022-06-30
 ### Added
 - [#3122] `/api/v1/state.json` endpoint to allow downloading/backing up and `--load-state <path.json>` parameter to upload/rehydrate state/database in a fresh instance
@@ -118,6 +128,7 @@
 
 
 [Unreleased]: https://github.com/raiden-network/light-client/compare/v3.1.0...HEAD
+[2.3.0]: https://github.com/raiden-network/light-client/compare/v2.2.0...v2.3.0
 [3.1.0]: https://github.com/raiden-network/light-client/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/raiden-network/light-client/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/raiden-network/light-client/compare/v2.1.0...v2.2.0

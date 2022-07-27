@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [2.3.0] - 2022-07-22
+- [#3160] Backport v3.1.0 improvements to `v2` series (supporting [raiden-contracts v0.40 Coruscant](https://github.com/raiden-network/raiden-contracts/releases/tag/v0.40.0) and Ethereum Mainnet)
+
+[#3160]: https://github.com/raiden-network/light-client/pull/3160
+
 ## [3.1.0] - 2022-06-30
 ### Fixed
 - [#3118] Dynamically set `config.revealTimeout` to half of `tokenNetworkRegistryContract.settleTimeout`, if it'd be smaller than default of 600s
@@ -578,6 +583,7 @@
 
 
 [Unreleased]: https://github.com/raiden-network/light-client/compare/v3.1.0...HEAD
+[2.3.0]: https://github.com/raiden-network/light-client/compare/v2.2.0...v2.3.0
 [3.1.0]: https://github.com/raiden-network/light-client/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/raiden-network/light-client/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/raiden-network/light-client/compare/v2.1.0...v2.2.0

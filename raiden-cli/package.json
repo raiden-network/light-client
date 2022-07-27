@@ -50,6 +50,7 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "@koush/wrtc": "^0.5.3",
     "cors": "^2.8.5",
     "ethers": "^5.6.9",
     "express": "^4.18.1",
@@ -60,7 +61,6 @@
     "node-localstorage": "^2.2.1",
     "raiden-ts": "^3.0.0",
     "rxjs": "^7.5.6",
-    "wrtc": "^0.4.7",
     "yargs": "^17.5.1"
   }
 }
