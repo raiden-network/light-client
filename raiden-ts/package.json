@@ -1,6 +1,6 @@
 {
   "name": "raiden-ts",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Raiden Light Client Typescript/Javascript SDK",
   "main": "dist:cjs/index.js",
   "module": "dist/index.js",
@@ -116,9 +116,9 @@
     "rxjs": "^7.5.6"
   },
   "optionalDependencies": {
+    "@koush/wrtc": "^0.5.3",
     "pouchdb-adapter-indexeddb": "^7.3.0",
-    "pouchdb-adapter-leveldb": "^7.3.0",
-    "@koush/wrtc": "^0.5.3"
+    "pouchdb-adapter-leveldb": "^7.3.0"
   },
   "files": [
     "/dist",
