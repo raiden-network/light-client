@@ -2,7 +2,13 @@
 
 ## [Unreleased]
 
-## [2.3.0] - 2022-07-22
+## [3.1.1] - 2022-07-28
+### Fixed
+- [#3161] Update dependencies and merge fixes from `v2`
+
+[#3161]: https://github.com/raiden-network/light-client/pull/3161
+
+## [2.3.0] - 2022-07-27
 - [#3160] Backport v3.1.0 improvements to `v2` series (supporting [raiden-contracts v0.40 Coruscant](https://github.com/raiden-network/raiden-contracts/releases/tag/v0.40.0) and Ethereum Mainnet)
 
 [#3160]: https://github.com/raiden-network/light-client/pull/3160
@@ -582,7 +588,8 @@
 - Add protocol message implementation.
 
 
-[Unreleased]: https://github.com/raiden-network/light-client/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/raiden-network/light-client/compare/v3.1.1...HEAD
+[3.1.1]: https://github.com/raiden-network/light-client/compare/v3.1.0...v3.1.1
 [2.3.0]: https://github.com/raiden-network/light-client/compare/v2.2.0...v2.3.0
 [3.1.0]: https://github.com/raiden-network/light-client/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/raiden-network/light-client/compare/v2.2.0...v3.0.0
