@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import { ethers, Wallet } from 'ethers';
 import { promises as fs } from 'fs';
-import inquirer from 'inquirer';
+import { prompt } from 'inquirer';
 import { getLogger } from 'loglevel';
 import * as path from 'path';
 
@@ -39,7 +39,7 @@ async function getWallet(
   if (!Object.keys(keys).length)
     throw new Error(`No account found on keystore directory "${keystoreDir}"`);
   else if (!address)
-    ({ address } = await inquirer.prompt<{ address: string }>([
+    ({ address } = await prompt<{ address: string }>([
       { type: 'list', name: 'address', message: 'Account:', choices: Object.keys(keys) },
     ]));
   else if (!(address in keys)) throw new Error(`Could not find keystore file for "${address}"`);
@@ -47,7 +47,7 @@ async function getWallet(
   let password;
   if (passwordFile) password = (await fs.readFile(passwordFile, 'utf-8')).split('\n').shift()!;
   else
-    ({ password } = await inquirer.prompt<{ password: string }>([
+    ({ password } = await prompt<{ password: string }>([
       { type: 'password', name: 'password', message: `[${address}] Password:`, mask: '*' },
     ]));
 
