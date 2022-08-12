@@ -2,7 +2,7 @@
 import type { BigNumberish } from 'ethers';
 import { ethers } from 'ethers';
 import { promises as fs } from 'fs';
-import inquirer from 'inquirer';
+import { prompt } from 'inquirer';
 import yargs from 'yargs/yargs';
 
 import type { Decodable, RaidenConfig } from 'raiden-ts';
@@ -33,7 +33,7 @@ type MediationFeeConfiguration = {
 async function checkDisclaimer(accepted?: boolean): Promise<void> {
   console.info(DISCLAIMER);
   if (accepted === undefined) {
-    ({ accepted } = await inquirer.prompt<{ accepted: boolean }>([
+    ({ accepted } = await prompt<{ accepted: boolean }>([
       {
         type: 'confirm',
         name: 'accepted',
