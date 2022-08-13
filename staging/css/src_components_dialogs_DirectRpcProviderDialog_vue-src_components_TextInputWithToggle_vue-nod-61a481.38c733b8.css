@@ -55,6 +55,7 @@
 }
 .v-input--switch .v-input--selection-controls__input {
   width: 38px;
+  transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
 }
 .v-input--switch .v-input--selection-controls__ripple {
   top: calc(50% - 24px);
@@ -76,7 +77,7 @@
 .v-input--switch.v-input--dense .v-input--selection-controls__ripple {
   top: calc(50% - 22px);
 }
-.v-input--switch.v-input--is-dirty.v-input--is-disabled {
+.v-input--switch.v-input--is-dirty.v-input--is-disabled .v-input--selection-controls__input {
   opacity: 0.6;
 }
 .v-application--is-ltr .v-input--switch .v-input--selection-controls__ripple {
@@ -129,20 +130,42 @@
 .v-application--is-rtl .v-input--switch--inset.v-input--is-dirty .v-input--switch__thumb {
   transform: translate(-26px, 0) !important;
 }
-/*!**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/views/account/Settings.vue?vue&type=style&index=0&id=30993b7f&scoped=true&lang=scss& ***!
-  \**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
-.settings[data-v-30993b7f] {
-  padding: 20px;
+/*!**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ../node_modules/css-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[1]!../node_modules/@vue/vue-loader-v15/lib/loaders/stylePostLoader.js!../node_modules/postcss-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[2]!./node_modules/sass-loader/dist/cjs.js??clonedRuleSet-22[0].rules[0].use[3]!../node_modules/@vue/vue-loader-v15/lib/index.js??vue-loader-options!./src/components/TextInputWithToggle.vue?vue&type=style&index=0&lang=scss& ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************/
+.text-input-with-toggle {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: #d8d8d8;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px !important;
+  font-size: 14px;
+  text-align: left;
+  margin: 20px 0;
+  padding: 16px;
 }
-[data-v-30993b7f] .v-list {
-  background-color: #0f0e10 !important;
+@media only screen and (max-width: 600px) {
+.text-input-with-toggle {
+    margin: 10px 0;
 }
-[data-v-30993b7f] .v-list-item__action {
-  align-self: start !important;
-  margin: 12px 0;
 }
-[data-v-30993b7f] .v-list-item__subtitle {
-  white-space: normal;
-  font-size: 12px;
+.text-input-with-toggle__toggle {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  height: 32px;
+}
+.text-input-with-toggle__input {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #d8d8d8;
+  height: 36px;
+  margin-top: 8px;
+  padding: 8px 8px 8px 16px;
+  width: 100%;
+}
+.text-input-with-toggle__input:disabled {
+  opacity: 30%;
 }

@@ -265,12 +265,12 @@
 }
 .v-input__slot {
   align-items: center;
-  color: inherit;
   display: flex;
   margin-bottom: 8px;
   min-height: inherit;
   position: relative;
   transition: 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+  transition-property: height, min-height;
   width: 100%;
 }
 .v-input--dense > .v-input__control > .v-input__slot {
