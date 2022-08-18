@@ -14,7 +14,7 @@ ARG SYNAPSE_VENV=/opt/synapse/venv
 ARG SERVICES_VENV=/opt/services/venv
 
 
-FROM node:16.16.0 as raiden-builder
+FROM node:16.17.0 as raiden-builder
 
 WORKDIR /app/raiden
 
