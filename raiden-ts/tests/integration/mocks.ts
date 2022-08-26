@@ -727,6 +727,7 @@ export async function makeRaiden(
     maxFeePerGas: BigNumber.from(1e9),
     maxPriorityFeePerGas: BigNumber.from(2.5e9),
     gasPrice: null,
+    lastBaseFeePerGas: null,
   });
   jest.spyOn(provider, 'listAccounts').mockResolvedValue([address]);
   // See: https://github.com/cartant/rxjs-marbles/issues/11
