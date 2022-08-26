@@ -940,6 +940,7 @@ describe('Raiden', () => {
       maxFeePerGas: BigNumber.from(3e9),
       maxPriorityFeePerGas: BigNumber.from(2e9),
       gasPrice: null,
+      lastBaseFeePerGas: BigNumber.from(3e9),
     });
     Object.assign(deps.provider, { blockNumber: deps.provider.blockNumber + 1 });
 
