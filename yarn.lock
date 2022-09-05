@@ -11497,10 +11497,10 @@ jest-extended@^3.1.0:
     jest-diff "^29.0.0"
     jest-get-type "^29.0.0"
 
-jest-fail-on-console@^2.5.0:
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/jest-fail-on-console/-/jest-fail-on-console-2.5.0.tgz#86d80d9e2365f3e7bcbb46276bbce29d30be3eec"
-  integrity sha512-VOxmGPY5DG4LkOwQtue4dTK486fjYQO1mkFnrvO5tkGi5e6G4JlxvaRO3KiCFk7ZLUOxgqgnQTGoGinagxHeDg==
+jest-fail-on-console@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/jest-fail-on-console/-/jest-fail-on-console-3.0.1.tgz#7fe21bd97007fc13be5198761dc0e26c6e3fa08c"
+  integrity sha512-1811WQIY9lZN9wGkp7S6y69vw9+u6I21dmnRwXo6jSuF6Xv5OlN4msNCeKEVlc/C2H5N8dqLKuQlTAzQZ0mJlw==
   dependencies:
     chalk "^4.1.0"
 
