@@ -27,7 +27,7 @@
     "@capacitor/core": "^4.1.0",
     "@fontsource/roboto": "^4.5.8",
     "@walletconnect/web3-provider": "^1.8.0",
-    "compare-versions": "^4.1.4",
+    "compare-versions": "^5.0.1",
     "cordova-sqlite-storage": "^6.0.0",
     "core-js": "^3.25.0",
     "eslint-plugin-cypress": "^2.12.1",
