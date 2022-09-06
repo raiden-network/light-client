@@ -4,10 +4,10 @@
   "ignoreDeps": ["sass"],
   "packageRules": [
     {
-      "excludePackagePatterns": ["^typescript$", "^typedoc$", "typedoc-plugin", "^python$", "^eslint", "^@typescript-eslint"],
-      "matchUpdateTypes": ["minor", "patch", "lockFileMaintenance", "pin", "digest", "rollback", "bump"],
-      "groupName": "all non-major dependencies and lockFile maintenance",
-      "groupSlug": "all-minor-patch-lock",
+      "excludePackagePatterns": ["^typescript$", "^typedoc$", "typedoc-plugin", "^python$"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch",
       "schedule": ["before 8am on thursday"]
     },
     {
@@ -19,12 +19,6 @@
       "matchPackagePatterns": ["^typedoc$", "typedoc-plugin"],
       "groupName": "typedoc",
       "groupSlug": "typedoc",
-      "dependencyDashboardApproval": true
-    },
-    {
-      "matchPackagePatterns": ["eslint", "^@typescript-eslint"],
-      "groupName": "eslint",
-      "groupSlug": "eslint",
       "dependencyDashboardApproval": true
     },
     {
