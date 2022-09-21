@@ -89,12 +89,12 @@ jobs:
       - restore_cache:
           name: Restore Yarn Package Cache
           keys:
-            - raiden-v7-yarn-{{ checksum "yarn.lock" }}
-            - raiden-v7-yarn-
+            - raiden-v10-yarn-{{ checksum "yarn.lock" }}
+            - raiden-v10-yarn-
       - run: yarn install
       - save_cache:
           name: Save Yarn Package Cache
-          key: raiden-v7-yarn-{{ checksum "yarn.lock" }}
+          key: raiden-v10-yarn-{{ checksum "yarn.lock" }}
           paths:
             - ./node_modules
             - ~/.cache # Cypress stores its stuff here.
