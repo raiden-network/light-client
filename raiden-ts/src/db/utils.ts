@@ -136,7 +136,10 @@ async function makeDatabase(
  * @returns Observable of changes responses
  */
 // eslint-disable-next-line @typescript-eslint/ban-types
-export function changes$<T = {}>(db: RaidenDatabase, options?: PouchDB.Core.ChangesOptions) {
+export function changes$<T extends {} = {}>(
+  db: RaidenDatabase,
+  options?: PouchDB.Core.ChangesOptions,
+) {
   // concat allows second defer to be skipped in case of first()/take(1) succeeding
   return defer(() => {
     const feed = db.changes<T>(options);
