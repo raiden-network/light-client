@@ -116,7 +116,7 @@ Reading the documentation is highly recommended for anyone who wishes to better 
 ```
             +-------------------+
             |                   |
-            |   Raiden dApp     |
+            |  Raiden dApp/CLI  |
             |                   |
             |  vue/vuex/vuetify |
             |                   |

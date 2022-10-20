@@ -13,7 +13,7 @@
   Architecture description, code style and patterns, tips & tricks, caveats, typing and pits to avoid!
 </h4>
 
-The Raiden Light Client SDK requires a Web3 provider like [MetaMask](https://metamask.io), [Parity](https://www.parity.io) or [Geth](https://geth.ethereum.org) and is built on the following concepts and libraries:
+The Raiden Light Client SDK requires a Web3 provider like [MetaMask](https://metamask.io) or [Geth](https://geth.ethereum.org) and is built on the following concepts and libraries:
 
 - Functional programming
 - [Redux](https://redux.js.org) architecture
@@ -51,13 +51,13 @@ In this section we will dive into the the internal machinery of the SDK and outl
 
 ### Vertical (Stack)
 
-Instead of using classes as in object-oriented programming the SDK is written in a functional way and uses functions and type schemas like interfaces to separate logic and data.
+Instead of using classes as in object-oriented programming, the SDK is written in a functional way and uses functions and type schemas like interfaces to separate logic and data.
 
-The main entrypoint in the SDK is the [Raiden](classes/raiden.html), which provides access to all functionality. It is instantiated through the [`async Raiden.create`](classes/raiden.html#create) static method. This method returns a ready-to-use `Raiden` client object which instantiates and starts a central Redux `store`.
+The main entrypoint and one of the only classes in the SDK is [Raiden](classes/raiden.html), which provides access to all functionality. It is instantiated through the [`async Raiden.create`](classes/raiden.html#create) static factory. This method returns a ready-to-use `Raiden` client object which instantiates and starts a central Redux `store`.
 
 The Redux `store` is responsible for handling the **actions** that change the **state** through the **reducers**.
 
-All **actions** go through the **Epics** (observables factory functions) middleware where synchronous and asynchronous tasks can be performed with the help of **observables**. Any new action that is output gets fed back to the Redux store and continues down this _actions pipeline_.
+All **actions** go through the **Epics** (observables factory functions) middleware where synchronous and asynchronous tasks can be performed with the help of **observables** (pipe/chains of operator functions which acts on input actions and state changes, and output actions as result). Any new action that is output gets fed back to the Redux store and continues down this _actions pipeline_.
 
 The `Raiden` client dispatches **request** actions to the `store` and waits for a respective **success** or **failure** to flow through the actions pipeline. These actions are created using [createAction](https://github.com/raiden-network/light-client/blob/9abc8aac99b800ffbd127a6edb278b653fc9a450/raiden-ts/src/utils/actions.ts#L68) and [createAsyncAction](https://github.com/raiden-network/light-client/blob/master/raiden-ts/src/utils/actions.ts#L218) with the [Flux Standard Action](https://github.com/redux-utilities/flux-standard-action) schema/pattern.
 
@@ -158,7 +158,7 @@ Additional notes:
 - During shutdown/stop, the final data synchronization is been safely awaited for.
 - The database is used as source to do dump or upload backups (can be transferred between clients).
 - Old database scheme versions get automatically migrated during startup before the load to the Redux state.
-- Clients requests which try to read historic data might be slower due to the database read, while all protocol relevant operations are blazing fast, operating on in-memory data.
+- Clients requests which try to read historic data might be slower due to the database read, while all protocol relevant operations are blazing fast, operating on the in-memory state.
 
 ## Typing System
 
@@ -166,7 +166,7 @@ TypeScript helps us check for correctness and aid implementation, validation and
 
 However, when we are dealing with unknown data we cannot always be sure it matches our expectations. To bridge this gap we use the [`io-ts`](https://github.com/gcanti/io-ts) library.
 
-`io-ts` solves this by allowing you to create **codecs**: real runtime objects which are able to verify the expectations (e.g. type) of any data, validating it and type guarding your code. They're also able to decode data from some (usually a more primitive) input type to the expected runtime instance/value, as well as encode a value to a given output format. Better yet, each codec have an associated compile-time **type**, to tell TypeScript what the output data of a codec looks like, allowing TypeScript to do its magic without needing to declare twice your data structure (one for runtime validation, other for compile-time type checks).
+`io-ts` solves this by allowing you to create **codecs**: actual runtime objects which are able to verify the schema (e.g. outline and types) of any data, validating it and type guarding your code. They're also able to decode data from some (usually a more primitive) input type to the expected runtime instance/value, as well as encode a value to a given output format. Better yet, each codec have an associated compile-time **type**, to tell TypeScript what the output data of a codec looks like, allowing TypeScript to do its magic without needing to declare twice your data structure (one for runtime validation, other for compile-time type checks).
 Finally, codecs can be composed in almost any way supported by TypeScript, making it very powerful. Example:
 
 ```typescript
@@ -184,7 +184,7 @@ We use `io-ts` to validate unsafe data and provide strong guarantees, define our
 
 ### Branded types
 
-TypeScript branded types (aka. poor man's nominal typing) helps developers provide hints/refinements about specific types which can be compared to full inheritance systems in OOP paradigms. It consists basically of making a branded type `TB` as the intersection of base type `A` with some brand `B`, which makes the branded type more specific. So, `type TB = number & { brand }` is equivalent in OO of making an inherited/child class `TB` extending `number`. You can still pass `TB` where `number` is expected (and it's a child of number), but you can't pass a simple `number` where `TB` is expected unless you type-cast or decode/validate it as such.
+TypeScript branded types (aka. refinements, or poor man's nominal typing) helps developers provide validators about specific types which can be compared to full inheritance systems in OOP paradigms. It consists basically of making a branded type `TB` as the intersection of base type `A` with some brand `B`, which makes the branded type more specific. So, `type TB = number & { brand }` is equivalent in OO of making an inherited/child class `TB` extending `number`. You can still pass `TB` where `number` is expected (and it's a child of number), but you can't pass a simple `number` where `TB` is expected unless you type-cast, assert or decode/validate it as such.
 
 On TypeScript, all this normally happens only at compile-time (the brand usually is just an interface with a `unique symbol`), having no impact at runtime, when the variable would effectivelly be a simple `number`. `io-ts` allows us to have codecs which also validate if a parent type matches the expectations to be considered a branded/child type, allowing us to also have specific type safety beyond just validating if some data is a `string` or not.
 
@@ -228,7 +228,7 @@ We implemented custom functions to generate actions, with the direct advantage o
 - `createAction` and `createAsyncAction` provide a simple way to create typesafe and serializable actions
 - `createReducer` simplifies creation of reducers which can be extended with additional actions handlers
 
-`FSA` actions may contain data in both `payload` and `meta` properties. As FSA convention dictates that on `error=true` case payload should be the `Error` which happened, the rule of thumb is to use `meta` for any data which may be needed to filter the error action going through (e.g. `{ tokenNetwork, partner }` on channel actions). It's also recommended to be consistent on `meta` on request/success/error-related actions. All other data should go on `payload` as usual.
+`FSA` actions may contain data in both `payload` and `meta` properties. As FSA convention dictates that on `error=true` case payload should be the `Error` which happened, the rule of thumb is to use `meta` for any data which may be needed to uniquely identify the error action going through (e.g. `{ tokenNetwork, partner }` on channel actions). It's also recommended to be consistent on `meta` on request/success/error-related actions. All other data should go on `payload` as usual.
 
 ## Reducers
 
@@ -244,11 +244,12 @@ Reducers are one of the simplest parts to write. Just some heads-up:
 
 ## Epics
 
-Epics are just functions, which receive 3 parameters: `action$`, `state$` and `deps`, and create a cold observable which, when subscribed, perform this epic's duties. They can choose to act on any action or state change, or even dependencies, but it's important they try to follow the UNIX philosophy: do one thing, and do it well. So, as much as possible, each epic should listen a single event type, and output only the minimal action set as outcome of its specific task. The `action$` input observable should be declared as `Observable<RaidenAction>`, as every action goes through (although filtered as early as possible), but try to declare the output as specifically as possible, with a tagged union of any possible action output type.
+Epics are just functions, which receive 3 parameters: `action$`, `state$` and `deps`, and return a cold observable which, when subscribed, perform this epic's duties. These observables are subscribed in parallel. They can choose to act on any action or state change, or even dependencies, but it's important they try to follow the UNIX philosophy: do one thing, and do it well. So, as much as possible, each epic should listen a single event type, and output only the minimal action set as outcome of its specific task. The `action$` input observable should be declared as `Observable<RaidenAction>`, as every action goes through (although filtered as early as possible), but try to declare the output as specifically as possible, with a tagged union of any possible action output type.
 
 ### Hints, tips & tricks and pitfalls when developing epics
 
-- Be careful to not complete the output observable if the system is still running, or its function will be lost, as subscriptions aren't restarted.
+- Be careful to not complete the output observable if the system is still running, or its function will be lost, as subscriptions aren't restarted, unless it's a one-shot epic.
+- On normal `redux-observable`, epics can't depend on a specific initialization or teardown order, but in order to enable clean teardown, a order is established explicitly in `src/epics.ts`: epics declared early may assume epics declared later are still alive when they're shutting down.
 - Any unhandled exception (which shouldn't happen in normal operation) will cause a `raidenShutdown` action which in turn triggers completion of the inputs (`action$` and `state$`). The individual epics then have `httpTimeout` to detect this completion and gracefully complete on their own once they finish their latest async tasks/teardown. During this time some output action may still go through and change state, but this this will only be received by epics later in the subscription queue (as earlier epics should already have completed, i.e. a serial completion mechanism signaled by completion of the input observables). After this timeout, if some epic didn't complete, they're logged and then unsubscribed. Only after that the database is flushed and closed.
 - Notice that catching the error in the first-level operator pipeline in an epic may prevent sdk's shutdown, but unless you're returning a long-lived/useful epic inside `catchError`, the main observable will already have completed/errored here, and whatever is above it will be noop on new/further actions; if you want to catch and handle an action, make sure to handle this action inside a `*Map` operator, and `catchError` by the end of it before returning values back to your top-level pipe.
 - If an epic acts directly (like a map) on `action$`, take care to filter early on the specific action you listen to and output a different action, or else your action output will feedback on your epic and cause an infinite loop. Same if you depend on a `state$` change and your output action causes the same state change that just went through.
@@ -278,7 +279,7 @@ action.pipe(
 
 ### `Latest`/`deps.latest$`:
 
-The `withLatestFrom` issue mentioned above caused a pattern to emerge: `multicast`ing outer input values (usually mapped) to some `ReplaySubject(1)`, which were then used in inner observables which depended on having a way to fetch the latest values which may have been calculated even before the inner ones got subscribed. To avoid repeating this again and again, creating a callback-hell of nested observables and multicasted subjects, we decided to collect some of these more relevant values on a single, central subject, kept on the epics dependencies: `deps.latest$`.
+The `withLatestFrom` issue mentioned above caused a pattern to emerge: `connect`ing outer input values (usually mapped) to some `ReplaySubject(1)`, which were then used in inner observables which depended on having a way to fetch the latest values which may have been calculated even before the inner ones got subscribed. To avoid repeating this again and again, creating a callback-hell of nested observables and multicasted subjects, we decided to collect some of these more relevant values on a single, central subject, kept on the epics dependencies: `deps.latest$`.
 
 This subject gets populated by a special `latestEpic`, which is the first one to receive actions/state changes notifications, and is the last one to be unsubscribed; it then maps the actions and keeps relevant values in a single object, which gets updated when any of these values change.
 
@@ -294,7 +295,7 @@ The SDK tests are located at the [raiden-ts/tests](https://github.com/raiden-net
 
 ### Unit tests
 
-The unit tests try to cover as much as possible the individual functions, by testing behavior through expected and unexpected inputs, and their respective outputs. For that, we use extensively [jest mocks](https://jestjs.io/docs/en/mock-functions) to contextually replace external and internal dependencies of each tested function, and force the external logic to behave on the different (possible, conceivable) ways and ensure the our tested logic handles all of them. Most of the unit mocks are in [raiden/tests/unit/mocks.ts](https://github.com/raiden-network/light-client/blob/master/raiden-ts/tests/unit/mocks.ts), but some others are needed to be put in the beginning of the respective test files, for the mocking to take place before importing code using the mocked logic.
+The unit tests try to cover as much as possible the individual functions, by testing behavior through expected and unexpected inputs, and their respective outputs. For that, we use extensively [jest mocks](https://jestjs.io/docs/en/mock-functions) to contextually replace external and internal dependencies of each tested function, and force the external logic to behave on the different (possible, conceivable) ways and ensure that our tested logic handles all of them.
 
 We try to split unit tests by kind of tested function. Most of the tested functions are pure (like `utils`, or `reducers`). To add a new test, simply add the `describe` and `test` calls to the respective function type.
 
@@ -307,7 +308,7 @@ The hardest to unit test are the epics. As they conceive most of the Raiden logi
 
 ### E2E tests
 
-The end-to-end tests check the SDK without any mocking by running it on custom chain and with running synapse matrix servers. This setup is run in a container, with the configuration being available in the [`e2e-environment` directory](https://github.com/raiden-network/light-client/blob/master/e2e-environment).
+The end-to-end tests check the SDK without any mocking by running it on a development network and with actual synapse matrix servers. This setup runs in a container, with the configuration being available in the [`e2e-environment` directory](https://github.com/raiden-network/light-client/blob/master/e2e-environment).
 
 The key of these end-to-end tests is to find a good balance. The most important and extensive end-to-end tests are run by the [Scenario Player](https://github.com/raiden-network/scenario-player) on a nightly time shift. These test runs take very long, use a real blockchain with a real deployed Raiden Service Bundle. Furthermore they run on a special server cluster.
 Therefore it is the purpose of the end-to-end tests here to provide a more light-weight and fast complementation. The requirements are that they can run in an independent environment on any developers local PC, as well as within a continuous integration environment to verify pull requests. And they need to run fast enough so they do not hinder developers daily workflow (i.e. in maximum a couple of minutes).
