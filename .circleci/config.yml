@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   base_docker_image:
     type: string
-    default: cimg/node:lts-browsers
+    default: cimg/node:16.18.1-browsers
 
   e2e_environment_docker_image:
     type: string
