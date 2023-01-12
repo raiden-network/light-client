@@ -24,7 +24,7 @@ ETH is required for withdrawing either of the following tokens from a Raiden Acc
 - _Service tokens_ (like _SVT_ on Goerli or _RDN_ on Mainnet) or
 - tokens that have been used to open any channels, i.e. (_TTT_ or any other TestToken on testnets or _DAI_ and _WETH_ on Mainnet).
 
-You can transfer ETH in either direction, from your Main Account to you Raiden Account or vice versa.
+You can transfer ETH in either direction, from your Main Account to your Raiden Account or vice versa.
 
 ![transfer-eth-account](https://user-images.githubusercontent.com/15123108/102342273-0596bb80-3fbf-11eb-952c-c65b61a9d47a.png 'Transfer ETH Account')
 
