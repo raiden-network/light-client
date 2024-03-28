@@ -139,7 +139,7 @@ export default class TransferRoute extends Vue {
     }
 
     // From the SDK implementation it should not be possible undefined here as
-    // it should have thrown earier on the fetch procedure.
+    // it should have thrown earlier on the fetch procedure.
     return this.tokensWithChannels[tokenAddress];
   }
 
