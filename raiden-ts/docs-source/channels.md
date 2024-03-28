@@ -11,7 +11,7 @@ The channel information shown is the
 3. the `state`
 4. the down arrow indicating `deposit` to the channel
 5. the up arrow indicating `withdraw` from the channel
-6. the `close` button indicating closing of the offchain micro-payment network with your partner which will kick off a timer which will eventually tranform to a `settle` button. Clicking this you can settle accounts and get back your deposit inside the channel.
+6. the `close` button indicating closing of the offchain micro-payment network with your partner which will kick off a timer which will eventually transform to a `settle` button. Clicking this you can settle accounts and get back your deposit inside the channel.
 
 ## Deposit Tokens
 
