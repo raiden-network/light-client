@@ -110,7 +110,7 @@
     "pouchdb": "^7.3.0",
     "pouchdb-find": "^7.3.0",
     "redux": "^4.2.0",
-    "redux-devtools-extension": "^2.13.9",
+    "@redux-devtools/extension": "^3.0.0",
     "redux-logger": "^3.0.6",
     "redux-observable": "^2.0.0",
     "rxjs": "^7.5.6"
