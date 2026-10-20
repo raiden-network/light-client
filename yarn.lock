@@ -16547,10 +16547,10 @@ vuetify-loader@^1.9.2:
     file-loader "^6.2.0"
     loader-utils "^2.0.0"
 
-vuetify@^2.6.10:
-  version "2.6.10"
-  resolved "https://registry.yarnpkg.com/vuetify/-/vuetify-2.6.10.tgz#b86cd7a97bf8cd3828a72c349795b5b3c539ebc2"
-  integrity sha512-fgUeRDDCwYkwu6WGEEKGe7IdfzOsXJCZGrqkn1pcS2ycuoDL8mR2/dejH5iFNnBY6MnsT365PAGn0J+9otjfQg==
+vuetify@^3.0.0:
+  version "3.13.7"
+  resolved "https://registry.yarnpkg.com/vuetify/-/vuetify-3.13.7.tgz#60da404ce36488e4b5337c3510a9cd5448d51d8f"
+  integrity sha512-HJ93r7kPRz9U1Xfd4vqseG1lL98LAG9a25jDZ+P4x9VEmK+ucpbQ56r2tTqeIUlCOxrl3FCmjNYL82WeRtOosA==
 
 vuex-persist@^3.1.3:
   version "3.1.3"
